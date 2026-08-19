@@ -35,16 +35,16 @@ def mostrar_matriz(lista):
 while True:
 
     try:
-        print("""
-        \n=== PRÁCTICA DE MATRICES ===
-        
-    --- opciones (índices empiezan en 1) ---
-    
-    1. Modificar elemento
-    2. Consultar elemento
-    3. Ver matriz completa
-    4. Salir
-    """)
+        print("\n"
+              "        \n=== PRÁCTICA DE MATRICES ===\n"
+              "        \n"
+              "--- opciones (índices empiezan en 1) ---\n"
+              "    \n"
+              "1. Modificar elemento\n"
+              "2. Consultar elemento\n"
+              "3. Ver matriz completa\n"
+              "4. Salir\n"
+              "    ")
         opcion = input("==> ").strip().lower()
 
         match opcion:
