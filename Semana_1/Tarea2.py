@@ -1,3 +1,11 @@
+# ===== TAREA 2: MENÚ INTERACTIVO DE MATRICES =====
+
+# -> Indicaciones
+
+# - Implemente una matriz de 3x3
+# - Permita introducir valores y consultar un elemento
+# - No utilizar bibliotecas especializadas
+
 lista = [[12, 34, 11], [45, 60, 11], [22, 51, 81]]
 
 
@@ -9,7 +17,7 @@ def pedir_indices():
                 print("Error: fila fuera de rango. Intenta de nuevo")
             else: break
 
-        except (ValueError or TypeError):
+        except (ValueError, TypeError):
             print("Error: Ingrese un numero valido.\n")
             continue
 
@@ -20,7 +28,7 @@ def pedir_indices():
                 print("Error: columna fuera de rango. Intente de nuevo.\n")
             else: break
 
-        except (ValueError or TypeError):
+        except (ValueError, TypeError):
             print("\nError: Ingrese un numero valido.")
     return fila, columna
 
