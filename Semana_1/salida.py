@@ -37,7 +37,7 @@ def imprimir_matriz(matriz):
         print(linea)
 
 
-def imprimir_paso_gauss_jordan(paso):
+def imprimir_paso(paso):
     matriz_antes = obtener_lineas_matriz(paso["antes"])
     matriz_despues = obtener_lineas_matriz(paso["despues"])
     operacion = f"  {paso['operacion']}  "
@@ -55,3 +55,7 @@ def imprimir_paso_gauss_jordan(paso):
             texto_operacion = " " * ancho_operacion
 
         print(f"{linea_antes:<{ancho_antes}}{texto_operacion}{linea_despues}")
+
+
+# Se conserva el nombre anterior para no romper llamadas existentes.
+imprimir_paso_gauss_jordan = imprimir_paso

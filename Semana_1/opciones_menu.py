@@ -1,15 +1,19 @@
 from entradas import (
+    pedir_coeficiente,
     pedir_dimensiones,
     pedir_elemento_matriz,
     pedir_indices,
-    pedir_nuevo_numero
+    pedir_nuevo_numero,
+    pedir_si_no,
+    pedir_termino_independiente
 )
 from logica_matrices import (
+    aplicar_gauss,
     generar_matriz,
-    resolver_gauss_jordan,
-    validar_dimensiones_gauss_jordan
+    resolver_gauss,
+    resolver_gauss_jordan
 )
-from salida import imprimir_matriz, imprimir_paso_gauss_jordan
+from salida import imprimir_matriz, imprimir_paso
 
 
 def validar_matriz(matriz):
@@ -27,13 +31,16 @@ def crear_matriz():
     matriz = []
 
     print("\n==== Elementos de la matriz: ====")
-    for i in range(filas):
+    for indice_fila in range(filas):
         fila = []
-        print(f"\nFila {i + 1}: ")
-        matriz.append(fila)
-        for j in range(columnas):
-            valor = pedir_elemento_matriz(i + 1, j + 1)
+        print(f"\nFila {indice_fila + 1}: ")
+        for indice_columna in range(columnas):
+            valor = pedir_elemento_matriz(
+                indice_fila + 1,
+                indice_columna + 1
+            )
             fila.append(valor)
+        matriz.append(fila)
 
     print("\nMatriz creada correctamente!")
     return matriz
@@ -46,6 +53,42 @@ def generador_matriz():
     matriz = generar_matriz(filas, columnas)
 
     print("\nMatriz generada correctamente!")
+    return matriz
+
+
+def crear_sistema_ecuaciones():
+    print("\n==== Crear sistema de ecuaciones ====")
+    print("La primera ecuación define la cantidad de incógnitas.")
+
+    matriz = []
+    numero_ecuacion = 1
+    coeficientes_primera_ecuacion = []
+    numero_incognita = 1
+
+    print(f"\nEcuación {numero_ecuacion}")
+    while True:
+        coeficientes_primera_ecuacion.append(
+            pedir_coeficiente(numero_incognita)
+        )
+        if not pedir_si_no("¿Añadir otra incógnita?"):
+            break
+        numero_incognita += 1
+
+    coeficientes_primera_ecuacion.append(
+        pedir_termino_independiente(numero_ecuacion)
+    )
+    matriz.append(coeficientes_primera_ecuacion)
+
+    while pedir_si_no("¿Añadir otra ecuación?"):
+        numero_ecuacion += 1
+        print(f"\nEcuación {numero_ecuacion}")
+        fila = []
+        for indice in range(1, numero_incognita + 1):
+            fila.append(pedir_coeficiente(indice))
+        fila.append(pedir_termino_independiente(numero_ecuacion))
+        matriz.append(fila)
+
+    print("\nSistema creado correctamente!")
     return matriz
 
 
@@ -80,30 +123,81 @@ def mostrar_matriz(matriz):
     imprimir_matriz(matriz)
 
 
-def resolver_gauss_jordan_menu(matriz):
-    if not validar_matriz(matriz):
-        return
-
-    es_valida, mensaje = validar_dimensiones_gauss_jordan(matriz)
-    if not es_valida:
-        print(f"\n{mensaje}")
-        return
-
-    print("\n==== Método de Gauss-Jordan ====")
-    matriz_reducida, pasos, analisis = resolver_gauss_jordan(matriz)
-
+def imprimir_pasos(pasos):
     if pasos:
         print("\n==== Pasos realizados ====\n")
         for indice, paso in enumerate(pasos):
             print(f"Paso {indice + 1}:")
-            imprimir_paso_gauss_jordan(paso)
+            imprimir_paso(paso)
             print()
     else:
         print("\nNo fue necesario realizar operaciones por filas.")
 
+
+def resolver_gauss_menu(matriz, es_sistema=False):
+    if not validar_matriz(matriz):
+        return
+
+    print("\n==== Método de Gauss ====")
+    try:
+        if es_sistema:
+            (
+                matriz_escalonada,
+                pasos,
+                _pivotes,
+                analisis,
+                soluciones,
+                pasos_sustitucion
+            ) = resolver_gauss(matriz)
+        else:
+            matriz_escalonada, pasos, _pivotes = aplicar_gauss(matriz)
+            analisis = [
+                "La matriz no está marcada como sistema aumentado.",
+                "Se muestra únicamente su forma escalonada."
+            ]
+            soluciones = None
+            pasos_sustitucion = []
+    except ValueError as error:
+        print(f"\n{error}")
+        return
+
+    imprimir_pasos(pasos)
+    print("==== Matriz escalonada ====\n")
+    imprimir_matriz(matriz_escalonada)
+
+    if pasos_sustitucion:
+        print("\n==== Sustitución regresiva ====")
+        for paso in pasos_sustitucion:
+            print(paso)
+
+    if soluciones is not None:
+        print("\n==== Soluciones ====")
+        for indice, solucion in enumerate(soluciones, start=1):
+            print(f"x{indice} = {solucion}")
+
+    print("\n==== Análisis ====")
+    for linea in analisis:
+        print(linea)
+
+
+def resolver_gauss_jordan_menu(matriz, es_sistema=False):
+    if not validar_matriz(matriz):
+        return
+
+    print("\n==== Método de Gauss-Jordan ====")
+    try:
+        matriz_reducida, pasos, analisis = resolver_gauss_jordan(
+            matriz,
+            es_sistema=es_sistema
+        )
+    except ValueError as error:
+        print(f"\n{error}")
+        return
+
+    imprimir_pasos(pasos)
     print("==== Matriz reducida ====\n")
     imprimir_matriz(matriz_reducida)
 
-    print("\n==== Análisis ====\n")
+    print("\n==== Análisis ====")
     for linea in analisis:
         print(linea)

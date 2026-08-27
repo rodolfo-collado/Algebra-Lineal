@@ -1,36 +1,59 @@
 from opciones_menu import (
     consultar_elemento,
     crear_matriz,
+    crear_sistema_ecuaciones,
     generador_matriz,
     modificar_elemento,
     mostrar_matriz,
-    resolver_gauss_jordan_menu
+    resolver_gauss_jordan_menu,
+    resolver_gauss_menu
 )
 
+
 matriz = []
+es_sistema = False
+
 while True:
-    print("\n"
-          "-----------------------------------------"
-          "        \n==== PRÁCTICA DE MATRICES ====\n"
-          "        \n"
-          "--- opciones (índices empiezan en 1) ---\n"
-          "    \n"
-          "1. Generar matriz\n"
-          "2. Crear matriz\n"
-          "3. Modificar elemento\n"
-          "4. Consultar elemento\n"
-          "5. Ver matriz completa\n"
-          "6. Resolver por Gauss-Jordan\n"
-          "7. Salir\n"
-          "    ")
+    print(
+        "\n"
+        "-----------------------------------------"
+        "        \n==== PRÁCTICA DE MATRICES ====\n"
+        "        \n--- opciones (índices empiezan en 1) ---\n"
+        "    \n"
+        "1. Generar matriz\n"
+        "2. Crear matriz\n"
+        "3. Crear sistema de ecuaciones\n"
+        "4. Modificar elemento\n"
+        "5. Consultar elemento\n"
+        "6. Ver matriz completa\n"
+        "7. Resolver por Gauss\n"
+        "8. Resolver por Gauss-Jordan\n"
+        "9. Salir\n"
+        "    "
+    )
     opcion = input("==> ").strip()
 
     match opcion:
-        case "1": matriz = generador_matriz()
-        case "2": matriz = crear_matriz()
-        case "3": modificar_elemento(matriz)
-        case "4": consultar_elemento(matriz)
-        case "5": mostrar_matriz(matriz)
-        case "6": resolver_gauss_jordan_menu(matriz)
-        case "7": break
-        case _: print("\nError: Selección inválida.")
+        case "1":
+            matriz = generador_matriz()
+            es_sistema = False
+        case "2":
+            matriz = crear_matriz()
+            es_sistema = False
+        case "3":
+            matriz = crear_sistema_ecuaciones()
+            es_sistema = True
+        case "4":
+            modificar_elemento(matriz)
+        case "5":
+            consultar_elemento(matriz)
+        case "6":
+            mostrar_matriz(matriz)
+        case "7":
+            resolver_gauss_menu(matriz, es_sistema)
+        case "8":
+            resolver_gauss_jordan_menu(matriz, es_sistema)
+        case "9":
+            break
+        case _:
+            print("\nError: Selección inválida.")
