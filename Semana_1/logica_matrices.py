@@ -36,23 +36,9 @@ def validar_matriz(matriz):
     return True, ""
 
 
-def validar_matriz_aumentada(matriz):
-    es_valida, mensaje = validar_matriz(matriz)
-    if not es_valida:
-        return es_valida, mensaje
-
-    if len(matriz[0]) < 2:
-        return False, (
-            "Error: Un sistema debe tener al menos una incógnita y "
-            "un término independiente."
-        )
-
-    return True, ""
-
-
 def validar_dimensiones_gauss_jordan(matriz):
     """Valida la estructura de una matriz aumentada rectangular."""
-    return validar_matriz_aumentada(matriz)
+    return validar_matriz(matriz)
 
 
 def convertir_matriz_a_fracciones(matriz):
@@ -94,7 +80,7 @@ def texto_factor(factor):
 
 
 def _validar_matriz_para_operar(matriz):
-    es_valida, mensaje = validar_matriz_aumentada(matriz)
+    es_valida, mensaje = validar_matriz(matriz)
     if not es_valida:
         raise ValueError(mensaje)
 
@@ -282,7 +268,7 @@ def fila_contradictoria(fila, cantidad_incognitas):
 
 def obtener_tipo_sistema(matriz):
     """Clasifica un sistema usando los rangos de A y de la matriz aumentada."""
-    es_valida, mensaje = validar_matriz_aumentada(matriz)
+    es_valida, mensaje = validar_matriz(matriz)
     if not es_valida:
         raise ValueError(mensaje)
 
@@ -305,7 +291,7 @@ def obtener_tipo_sistema(matriz):
 
 
 def analizar_sistema(matriz):
-    es_valida, mensaje = validar_matriz_aumentada(matriz)
+    es_valida, mensaje = validar_matriz(matriz)
     if not es_valida:
         raise ValueError(mensaje)
 
@@ -365,7 +351,7 @@ def sustitucion_regresiva(matriz_escalonada, pivotes, cantidad_incognitas=None):
     if cantidad_incognitas is None:
         cantidad_incognitas = cantidad_columnas - 1
 
-    if cantidad_incognitas <= 0 or cantidad_incognitas >= cantidad_columnas:
+    if cantidad_incognitas < 0 or cantidad_incognitas >= cantidad_columnas:
         raise ValueError("La cantidad de incógnitas no es válida.")
 
     if len(pivotes) != cantidad_incognitas:
@@ -428,7 +414,7 @@ def resolver_gauss(matriz):
 
 def extraer_soluciones_gauss_jordan(matriz_reducida, pivotes):
     """Extrae los términos independientes de los pivotes de una RREF."""
-    es_valida, mensaje = validar_matriz_aumentada(matriz_reducida)
+    es_valida, mensaje = validar_matriz(matriz_reducida)
     if not es_valida:
         raise ValueError(mensaje)
 
