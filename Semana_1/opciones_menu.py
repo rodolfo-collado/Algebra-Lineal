@@ -1,11 +1,9 @@
 from entradas import (
-    pedir_coeficiente,
     pedir_dimensiones,
     pedir_elemento_matriz,
     pedir_indices,
     pedir_nuevo_numero,
-    pedir_si_no,
-    pedir_termino_independiente
+    parsear_sistema
 )
 from logica_matrices import (
     generar_matriz,
@@ -57,35 +55,14 @@ def generador_matriz():
 
 def crear_sistema_ecuaciones():
     print("\n==== Crear sistema de ecuaciones ====")
-    print("La primera ecuación define la cantidad de incógnitas.")
+    print("Ingrese el sistema separando las ecuaciones con ';':")
+    texto = input("> ")
 
-    matriz = []
-    numero_ecuacion = 1
-    coeficientes_primera_ecuacion = []
-    numero_incognita = 1
-
-    print(f"\nEcuación {numero_ecuacion}")
-    while True:
-        coeficientes_primera_ecuacion.append(
-            pedir_coeficiente(numero_incognita)
-        )
-        if not pedir_si_no("¿Añadir otra incógnita?"):
-            break
-        numero_incognita += 1
-
-    coeficientes_primera_ecuacion.append(
-        pedir_termino_independiente(numero_ecuacion)
-    )
-    matriz.append(coeficientes_primera_ecuacion)
-
-    while pedir_si_no("¿Añadir otra ecuación?"):
-        numero_ecuacion += 1
-        print(f"\nEcuación {numero_ecuacion}")
-        fila = []
-        for indice in range(1, numero_incognita + 1):
-            fila.append(pedir_coeficiente(indice))
-        fila.append(pedir_termino_independiente(numero_ecuacion))
-        matriz.append(fila)
+    try:
+        matriz = parsear_sistema(texto)
+    except ValueError as error:
+        print(f"\n{error}")
+        return []
 
     print("\nSistema creado correctamente!")
     return matriz
@@ -155,6 +132,10 @@ def resolver_gauss_menu(matriz):
     print("==== Matriz escalonada ====\n")
     imprimir_matriz(matriz_escalonada)
 
+    print("\n==== Análisis ====")
+    for linea in analisis:
+        print(linea)
+
     if pasos_sustitucion:
         print("\n==== Sustitución regresiva ====")
         for paso in pasos_sustitucion:
@@ -164,10 +145,6 @@ def resolver_gauss_menu(matriz):
         print("\n==== Soluciones ====")
         for indice, solucion in enumerate(soluciones, start=1):
             print(f"x{indice} = {solucion}")
-
-    print("\n==== Análisis ====")
-    for linea in analisis:
-        print(linea)
 
 
 def resolver_gauss_jordan_menu(matriz):

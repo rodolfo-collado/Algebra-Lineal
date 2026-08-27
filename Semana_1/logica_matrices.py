@@ -2,6 +2,11 @@ import random
 from fractions import Fraction
 
 
+TIPO_SOLUCION_UNICA = "Consistente de solución única"
+TIPO_SOLUCIONES_INFINITAS = "Consistente de soluciones infinitas"
+TIPO_INCONSISTENTE = "Inconsistente"
+
+
 def generar_matriz(filas, columnas):
     matriz = []
 
@@ -282,12 +287,12 @@ def obtener_tipo_sistema(matriz):
     )
 
     if hay_contradiccion or rango_coeficientes != rango_aumentada:
-        return "incompatible"
+        return TIPO_INCONSISTENTE
 
     if rango_coeficientes == cantidad_incognitas:
-        return "compatible determinado"
+        return TIPO_SOLUCION_UNICA
 
-    return "compatible indeterminado"
+    return TIPO_SOLUCIONES_INFINITAS
 
 
 def analizar_sistema(matriz):
@@ -295,34 +300,18 @@ def analizar_sistema(matriz):
     if not es_valida:
         raise ValueError(mensaje)
 
-    cantidad_incognitas = len(matriz[0]) - 1
-    rango_coeficientes = obtener_rango(matriz, cantidad_incognitas)
-    rango_aumentada = obtener_rango(matriz)
     tipo_sistema = obtener_tipo_sistema(matriz)
 
-    resultado = [
-        f"Rango de la matriz de coeficientes: {rango_coeficientes}.",
-        f"Rango de la matriz aumentada: {rango_aumentada}."
+    if tipo_sistema == TIPO_INCONSISTENTE:
+        return [f"{TIPO_INCONSISTENTE}.", "No tiene solución."]
+
+    if tipo_sistema == TIPO_SOLUCION_UNICA:
+        return [f"{TIPO_SOLUCION_UNICA}."]
+
+    return [
+        f"{TIPO_SOLUCIONES_INFINITAS}.",
+        "Tiene infinitas soluciones."
     ]
-
-    if tipo_sistema == "incompatible":
-        resultado.extend([
-            "Sistema incompatible.",
-            "Apareció una fila del tipo 0 = k, con k distinto de 0.",
-            "No tiene solución."
-        ])
-    elif tipo_sistema == "compatible determinado":
-        resultado.extend([
-            "Sistema compatible determinado.",
-            "Tiene exactamente una solución."
-        ])
-    else:
-        resultado.extend([
-            "Sistema compatible indeterminado.",
-            "Tiene infinitas soluciones porque hay menos pivotes que incógnitas."
-        ])
-
-    return resultado
 
 
 def formatear_expresion_sustitucion(fila, columna, cantidad_incognitas):
@@ -395,7 +384,7 @@ def resolver_gauss(matriz):
     soluciones = None
     pasos_sustitucion = []
 
-    if obtener_tipo_sistema(matriz_escalonada) == "compatible determinado":
+    if obtener_tipo_sistema(matriz_escalonada) == TIPO_SOLUCION_UNICA:
         soluciones, pasos_sustitucion = sustitucion_regresiva(
             matriz_escalonada,
             pivotes,
@@ -438,12 +427,11 @@ def resolver_gauss_jordan(matriz):
     matriz_reducida, pasos, pivotes = aplicar_gauss_jordan(matriz)
     analisis = analizar_sistema(matriz_reducida)
 
-    if obtener_tipo_sistema(matriz_reducida) == "compatible determinado":
+    if obtener_tipo_sistema(matriz_reducida) == TIPO_SOLUCION_UNICA:
         soluciones = extraer_soluciones_gauss_jordan(
             matriz_reducida,
             pivotes
         )
-        analisis.append("Solución única:")
         analisis.extend(
             f"x{indice} = {formatear_numero_operacion(solucion)}"
             for indice, solucion in enumerate(soluciones, start=1)

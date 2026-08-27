@@ -16,6 +16,7 @@ from logica_matrices import (  # noqa: E402
     resolver_gauss_jordan,
     validar_dimensiones_gauss_jordan
 )
+from entradas import parsear_sistema  # noqa: E402
 from opciones_menu import crear_sistema_ecuaciones  # noqa: E402
 
 
@@ -27,9 +28,13 @@ class PruebasGaussYSistemas(unittest.TestCase):
 
         self.assertEqual(
             obtener_tipo_sistema(resultado[0]),
-            "compatible determinado"
+            "Consistente de solución única"
         )
         self.assertEqual(resultado[4], [Fraction(2), Fraction(1)])
+        self.assertEqual(
+            analizar_sistema(matriz),
+            ["Consistente de solución única."]
+        )
 
     def test_gauss_jordan_extrae_la_solucion_unica(self):
         matriz = [[1, 1, 3], [1, -1, 1]]
@@ -41,7 +46,7 @@ class PruebasGaussYSistemas(unittest.TestCase):
 
     def test_entrada_de_sistema_produce_la_misma_matriz(self):
         respuestas = iter([
-            "1", "s", "1", "n", "3", "s", "1", "-1", "1", "n"
+            "x1 + x2 = 3; x1 - x2 = 1"
         ])
 
         with patch("builtins.input", side_effect=respuestas):
@@ -57,26 +62,87 @@ class PruebasGaussYSistemas(unittest.TestCase):
         self.assertIn("x1 = 2", analisis)
         self.assertIn("x2 = 1", analisis)
 
+    def test_parsea_variables_ausentes_y_tres_incognitas(self):
+        texto = "x1 - 3x2 - 5x3 = 0; x2 + x3 = 3"
+
+        self.assertEqual(
+            parsear_sistema(texto),
+            [[1, -3, -5, 0], [0, 1, 1, 3]]
+        )
+
+    def test_parsea_variables_ausentes_en_ecuaciones(self):
+        texto = "x1 + x3 = 5; x2 - x3 = 2"
+
+        self.assertEqual(
+            parsear_sistema(texto),
+            [[1, 0, 1, 5], [0, 1, -1, 2]]
+        )
+
+    def test_parsea_coeficientes_implicitos(self):
+        self.assertEqual(
+            parsear_sistema("-x1 + x2 = -4"),
+            [[-1, 1, -4]]
+        )
+
+    def test_parsea_fracciones_decimales_y_espacios(self):
+        matriz = parsear_sistema(" 0.5 x1 + 3/4x2 = 5/2 ")
+
+        self.assertEqual(
+            matriz,
+            [[Fraction(1, 2), Fraction(3, 4), Fraction(5, 2)]]
+        )
+
+    def test_rechaza_formatos_de_sistema_invalidos(self):
+        entradas_invalidas = [
+            "x1 + = 3",
+            "x0 + x1 = 4",
+            "x1 + abc = 2",
+            "x1 + x2",
+            "x1 = 2 = 3"
+        ]
+
+        for texto in entradas_invalidas:
+            with self.subTest(texto=texto):
+                with self.assertRaises(ValueError):
+                    parsear_sistema(texto)
+
+    def test_menu_maneja_entrada_invalida_sin_excepcion(self):
+        with patch("builtins.input", return_value="x1 + = 3"):
+            matriz = crear_sistema_ecuaciones()
+
+        self.assertEqual(matriz, [])
+
     def test_sistema_con_infinitas_soluciones(self):
         matriz = [[1, 1, 2], [2, 2, 4]]
 
         self.assertEqual(
             obtener_tipo_sistema(matriz),
-            "compatible indeterminado"
+            "Consistente de soluciones infinitas"
         )
         self.assertTrue(
             any(
-                "compatible indeterminado" in linea
+                "Consistente de soluciones infinitas" in linea
                 for linea in analizar_sistema(matriz)
             )
+        )
+        self.assertEqual(
+            analizar_sistema(matriz),
+            [
+                "Consistente de soluciones infinitas.",
+                "Tiene infinitas soluciones."
+            ]
         )
 
     def test_sistema_incompatible(self):
         matriz = [[1, 1, 2], [1, 1, 3]]
 
-        self.assertEqual(obtener_tipo_sistema(matriz), "incompatible")
+        self.assertEqual(obtener_tipo_sistema(matriz), "Inconsistente")
         self.assertTrue(
-            any("Sistema incompatible" in linea for linea in analizar_sistema(matriz))
+            any("Inconsistente" in linea for linea in analizar_sistema(matriz))
+        )
+        self.assertEqual(
+            analizar_sistema(matriz),
+            ["Inconsistente.", "No tiene solución."]
         )
 
     def test_mas_ecuaciones_que_incognitas_con_solucion_unica(self):
@@ -87,7 +153,7 @@ class PruebasGaussYSistemas(unittest.TestCase):
         self.assertEqual(resultado[4], [Fraction(1), Fraction(1)])
         self.assertEqual(
             obtener_tipo_sistema(resultado[0]),
-            "compatible determinado"
+            "Consistente de solución única"
         )
 
     def test_menos_ecuaciones_que_incognitas(self):
@@ -95,7 +161,7 @@ class PruebasGaussYSistemas(unittest.TestCase):
 
         self.assertEqual(
             obtener_tipo_sistema(matriz),
-            "compatible indeterminado"
+            "Consistente de soluciones infinitas"
         )
 
     def test_matriz_rectangular_general(self):
