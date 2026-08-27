@@ -1,4 +1,11 @@
-from funciones import *
+from opciones_menu import (
+    consultar_elemento,
+    crear_matriz,
+    generador_matriz,
+    modificar_elemento,
+    mostrar_matriz,
+    resolver_gauss_jordan_menu
+)
 
 matriz = []
 while True:
@@ -13,7 +20,8 @@ while True:
           "3. Modificar elemento\n"
           "4. Consultar elemento\n"
           "5. Ver matriz completa\n"
-          "6. Salir\n"
+          "6. Resolver por Gauss-Jordan\n"
+          "7. Salir\n"
           "    ")
     opcion = input("==> ").strip()
 
@@ -23,7 +31,6 @@ while True:
         case "3": modificar_elemento(matriz)
         case "4": consultar_elemento(matriz)
         case "5": mostrar_matriz(matriz)
-        case "6": break
+        case "6": resolver_gauss_jordan_menu(matriz)
+        case "7": break
         case _: print("\nError: Selección inválida.")
-
-
