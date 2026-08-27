@@ -8,7 +8,6 @@ from entradas import (
     pedir_termino_independiente
 )
 from logica_matrices import (
-    aplicar_gauss,
     generar_matriz,
     resolver_gauss,
     resolver_gauss_jordan
@@ -134,29 +133,20 @@ def imprimir_pasos(pasos):
         print("\nNo fue necesario realizar operaciones por filas.")
 
 
-def resolver_gauss_menu(matriz, es_sistema=False):
+def resolver_gauss_menu(matriz):
     if not validar_matriz(matriz):
         return
 
     print("\n==== Método de Gauss ====")
     try:
-        if es_sistema:
-            (
-                matriz_escalonada,
-                pasos,
-                _pivotes,
-                analisis,
-                soluciones,
-                pasos_sustitucion
-            ) = resolver_gauss(matriz)
-        else:
-            matriz_escalonada, pasos, _pivotes = aplicar_gauss(matriz)
-            analisis = [
-                "La matriz no está marcada como sistema aumentado.",
-                "Se muestra únicamente su forma escalonada."
-            ]
-            soluciones = None
-            pasos_sustitucion = []
+        (
+            matriz_escalonada,
+            pasos,
+            _pivotes,
+            analisis,
+            soluciones,
+            pasos_sustitucion
+        ) = resolver_gauss(matriz)
     except ValueError as error:
         print(f"\n{error}")
         return
@@ -180,15 +170,14 @@ def resolver_gauss_menu(matriz, es_sistema=False):
         print(linea)
 
 
-def resolver_gauss_jordan_menu(matriz, es_sistema=False):
+def resolver_gauss_jordan_menu(matriz):
     if not validar_matriz(matriz):
         return
 
     print("\n==== Método de Gauss-Jordan ====")
     try:
         matriz_reducida, pasos, analisis = resolver_gauss_jordan(
-            matriz,
-            es_sistema=es_sistema
+            matriz
         )
     except ValueError as error:
         print(f"\n{error}")

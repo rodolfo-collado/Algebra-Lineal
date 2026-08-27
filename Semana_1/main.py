@@ -11,7 +11,6 @@ from opciones_menu import (
 
 
 matriz = []
-es_sistema = False
 
 while True:
     print(
@@ -36,13 +35,10 @@ while True:
     match opcion:
         case "1":
             matriz = generador_matriz()
-            es_sistema = False
         case "2":
             matriz = crear_matriz()
-            es_sistema = False
         case "3":
             matriz = crear_sistema_ecuaciones()
-            es_sistema = True
         case "4":
             modificar_elemento(matriz)
         case "5":
@@ -50,9 +46,9 @@ while True:
         case "6":
             mostrar_matriz(matriz)
         case "7":
-            resolver_gauss_menu(matriz, es_sistema)
+            resolver_gauss_menu(matriz)
         case "8":
-            resolver_gauss_jordan_menu(matriz, es_sistema)
+            resolver_gauss_jordan_menu(matriz)
         case "9":
             break
         case _:

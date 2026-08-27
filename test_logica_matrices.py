@@ -2,6 +2,7 @@ import sys
 import unittest
 from fractions import Fraction
 from pathlib import Path
+from unittest.mock import patch
 
 
 sys.path.insert(0, str(Path(__file__).parent / "Semana_1"))
@@ -12,8 +13,10 @@ from logica_matrices import (  # noqa: E402
     analizar_sistema,
     obtener_tipo_sistema,
     resolver_gauss,
+    resolver_gauss_jordan,
     validar_dimensiones_gauss_jordan
 )
+from opciones_menu import crear_sistema_ecuaciones  # noqa: E402
 
 
 class PruebasGaussYSistemas(unittest.TestCase):
@@ -27,6 +30,32 @@ class PruebasGaussYSistemas(unittest.TestCase):
             "compatible determinado"
         )
         self.assertEqual(resultado[4], [Fraction(2), Fraction(1)])
+
+    def test_gauss_jordan_extrae_la_solucion_unica(self):
+        matriz = [[1, 1, 3], [1, -1, 1]]
+
+        _, _, analisis = resolver_gauss_jordan(matriz)
+
+        self.assertIn("x1 = 2", analisis)
+        self.assertIn("x2 = 1", analisis)
+
+    def test_entrada_de_sistema_produce_la_misma_matriz(self):
+        respuestas = iter([
+            "1", "s", "1", "n", "3", "s", "1", "-1", "1", "n"
+        ])
+
+        with patch("builtins.input", side_effect=respuestas):
+            matriz = crear_sistema_ecuaciones()
+
+        matriz_manual = [[1, 1, 3], [1, -1, 1]]
+        self.assertEqual(matriz, matriz_manual)
+        self.assertEqual(
+            resolver_gauss(matriz)[4],
+            resolver_gauss(matriz_manual)[4]
+        )
+        _, _, analisis = resolver_gauss_jordan(matriz)
+        self.assertIn("x1 = 2", analisis)
+        self.assertIn("x2 = 1", analisis)
 
     def test_sistema_con_infinitas_soluciones(self):
         matriz = [[1, 1, 2], [2, 2, 4]]
@@ -89,13 +118,16 @@ class PruebasGaussYSistemas(unittest.TestCase):
         self.assertGreater(len(pasos_jordan), len(pasos))
 
     def test_gauss_no_hace_eliminacion_hacia_arriba(self):
-        matriz = [[1, 1], [1, -1]]
+        matriz = [[1, 1, 3], [1, -1, 1]]
 
         escalonada, _, _ = aplicar_gauss(matriz)
 
         self.assertEqual(
             escalonada,
-            [[Fraction(1), Fraction(1)], [Fraction(0), Fraction(1)]]
+            [
+                [Fraction(1), Fraction(1), Fraction(3)],
+                [Fraction(0), Fraction(1), Fraction(1)]
+            ]
         )
 
 

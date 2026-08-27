@@ -36,7 +36,7 @@ def validar_matriz(matriz):
     return True, ""
 
 
-def validar_matriz_sistema(matriz):
+def validar_matriz_aumentada(matriz):
     es_valida, mensaje = validar_matriz(matriz)
     if not es_valida:
         return es_valida, mensaje
@@ -51,8 +51,8 @@ def validar_matriz_sistema(matriz):
 
 
 def validar_dimensiones_gauss_jordan(matriz):
-    """Valida únicamente la estructura, sin restringir las dimensiones."""
-    return validar_matriz(matriz)
+    """Valida la estructura de una matriz aumentada rectangular."""
+    return validar_matriz_aumentada(matriz)
 
 
 def convertir_matriz_a_fracciones(matriz):
@@ -93,32 +93,25 @@ def texto_factor(factor):
     return f"- ({formatear_numero_operacion(factor)})"
 
 
-def _validar_matriz_para_operar(matriz, es_sistema):
-    if es_sistema:
-        es_valida, mensaje = validar_matriz_sistema(matriz)
-    else:
-        es_valida, mensaje = validar_matriz(matriz)
-
+def _validar_matriz_para_operar(matriz):
+    es_valida, mensaje = validar_matriz_aumentada(matriz)
     if not es_valida:
         raise ValueError(mensaje)
 
 
-def aplicar_gauss(matriz, es_sistema=False):
+def aplicar_gauss(matriz):
     """Devuelve la forma escalonada, los pasos y las posiciones de pivote.
 
-    Una matriz general puede usar todas sus columnas como columnas de pivote.
-    Cuando ``es_sistema`` es verdadero, la última columna se trata como el
-    término independiente y no se usa para buscar pivotes.
+    La última columna siempre representa los términos independientes. Por
+    tanto, las columnas anteriores son las columnas de las incógnitas.
     """
-    _validar_matriz_para_operar(matriz, es_sistema)
+    _validar_matriz_para_operar(matriz)
 
     matriz_escalonada = convertir_matriz_a_fracciones(matriz)
     pasos = []
     cantidad_filas = len(matriz_escalonada)
     cantidad_columnas = len(matriz_escalonada[0])
-    limite_columnas_pivote = (
-        cantidad_columnas - 1 if es_sistema else cantidad_columnas
-    )
+    limite_columnas_pivote = cantidad_columnas - 1
     fila_pivote = 0
     pivotes = []
 
@@ -195,12 +188,9 @@ def aplicar_gauss(matriz, es_sistema=False):
     return matriz_escalonada, pasos, pivotes
 
 
-def aplicar_gauss_jordan(matriz, es_sistema=False):
+def aplicar_gauss_jordan(matriz):
     """Aplica Gauss y después elimina los valores sobre cada pivote."""
-    matriz_reducida, pasos, pivotes = aplicar_gauss(
-        matriz,
-        es_sistema=es_sistema
-    )
+    matriz_reducida, pasos, pivotes = aplicar_gauss(matriz)
     cantidad_columnas = len(matriz_reducida[0])
 
     for fila_pivote, columna in reversed(pivotes):
@@ -292,7 +282,7 @@ def fila_contradictoria(fila, cantidad_incognitas):
 
 def obtener_tipo_sistema(matriz):
     """Clasifica un sistema usando los rangos de A y de la matriz aumentada."""
-    es_valida, mensaje = validar_matriz_sistema(matriz)
+    es_valida, mensaje = validar_matriz_aumentada(matriz)
     if not es_valida:
         raise ValueError(mensaje)
 
@@ -300,7 +290,12 @@ def obtener_tipo_sistema(matriz):
     rango_coeficientes = obtener_rango(matriz, cantidad_incognitas)
     rango_aumentada = obtener_rango(matriz)
 
-    if rango_coeficientes != rango_aumentada:
+    hay_contradiccion = any(
+        fila_contradictoria(fila, cantidad_incognitas)
+        for fila in matriz
+    )
+
+    if hay_contradiccion or rango_coeficientes != rango_aumentada:
         return "incompatible"
 
     if rango_coeficientes == cantidad_incognitas:
@@ -310,7 +305,7 @@ def obtener_tipo_sistema(matriz):
 
 
 def analizar_sistema(matriz):
-    es_valida, mensaje = validar_matriz_sistema(matriz)
+    es_valida, mensaje = validar_matriz_aumentada(matriz)
     if not es_valida:
         raise ValueError(mensaje)
 
@@ -344,7 +339,7 @@ def analizar_sistema(matriz):
     return resultado
 
 
-def formatear_expresion_sustitucion(fila, columna, soluciones, cantidad_incognitas):
+def formatear_expresion_sustitucion(fila, columna, cantidad_incognitas):
     expresion = formatear_numero_operacion(fila[cantidad_incognitas])
 
     for indice in range(columna + 1, cantidad_incognitas):
@@ -390,7 +385,6 @@ def sustitucion_regresiva(matriz_escalonada, pivotes, cantidad_incognitas=None):
         expresion = formatear_expresion_sustitucion(
             matriz[fila],
             columna,
-            soluciones,
             cantidad_incognitas
         )
         suma_conocida = sum(
@@ -410,10 +404,7 @@ def sustitucion_regresiva(matriz_escalonada, pivotes, cantidad_incognitas=None):
 
 
 def resolver_gauss(matriz):
-    matriz_escalonada, pasos, pivotes = aplicar_gauss(
-        matriz,
-        es_sistema=True
-    )
+    matriz_escalonada, pasos, pivotes = aplicar_gauss(matriz)
     analisis = analizar_sistema(matriz_escalonada)
     soluciones = None
     pasos_sustitucion = []
@@ -435,33 +426,41 @@ def resolver_gauss(matriz):
     )
 
 
-def analizar_resultado_gauss_jordan(
-    matriz,
-    pivotes=None,
-    tipo_matriz=None,
-    es_sistema=None
-):
-    """Compatibilidad con el nombre anterior, sin inferir sistemas por forma."""
-    if es_sistema is None:
-        es_sistema = tipo_matriz == "aumentada"
+def extraer_soluciones_gauss_jordan(matriz_reducida, pivotes):
+    """Extrae los términos independientes de los pivotes de una RREF."""
+    es_valida, mensaje = validar_matriz_aumentada(matriz_reducida)
+    if not es_valida:
+        raise ValueError(mensaje)
 
-    if not es_sistema:
-        return [
-            "La matriz se redujo sin interpretarla como un sistema de ecuaciones."
-        ]
+    cantidad_incognitas = len(matriz_reducida[0]) - 1
+    if len(pivotes) != cantidad_incognitas:
+        raise ValueError(
+            "La matriz no tiene un pivote para cada incógnita."
+        )
 
-    return analizar_sistema(matriz)
+    soluciones = [Fraction(0) for _ in range(cantidad_incognitas)]
+    for fila, columna in pivotes:
+        soluciones[columna] = (
+            Fraction(matriz_reducida[fila][cantidad_incognitas])
+            / matriz_reducida[fila][columna]
+        )
+
+    return soluciones
 
 
-def resolver_gauss_jordan(matriz, es_sistema=False):
-    matriz_reducida, pasos, pivotes = aplicar_gauss_jordan(
-        matriz,
-        es_sistema=es_sistema
-    )
-    analisis = (
-        analizar_sistema(matriz_reducida)
-        if es_sistema
-        else analizar_resultado_gauss_jordan(matriz_reducida, pivotes)
-    )
+def resolver_gauss_jordan(matriz):
+    matriz_reducida, pasos, pivotes = aplicar_gauss_jordan(matriz)
+    analisis = analizar_sistema(matriz_reducida)
+
+    if obtener_tipo_sistema(matriz_reducida) == "compatible determinado":
+        soluciones = extraer_soluciones_gauss_jordan(
+            matriz_reducida,
+            pivotes
+        )
+        analisis.append("Solución única:")
+        analisis.extend(
+            f"x{indice} = {formatear_numero_operacion(solucion)}"
+            for indice, solucion in enumerate(soluciones, start=1)
+        )
 
     return matriz_reducida, pasos, analisis
