@@ -7,50 +7,9 @@ PATRON_TERMINO = re.compile(
 )
 
 
-def pedir_dimensiones():
-    while True:
-        try:
-            filas = int(input("\nIngrese la cantidad de filas: "))
-            if filas <= 0:
-                print("Error: Cantidad de filas negativa.")
-                continue
-
-            columnas = int(input("Ingrese la cantidad de columnas: "))
-            if columnas <= 0:
-                print("Error: Cantidad de columnas negativa.")
-                continue
-
-        except ValueError:
-            print("Error: Ingrese un numero valido.")
-            continue
-
-        return filas, columnas
-
-
-def pedir_indices(matriz):
-    while True:
-        try:
-            fila = int(input("\nIngrese el índice de la fila: "))
-            if fila <= 0 or fila > len(matriz):
-                print("Error: Fila fuera de rango.")
-                continue
-
-            columna = int(input("Ingrese el índice de la columna: "))
-            if columna <= 0 or columna > len(matriz[fila - 1]):
-                print("Error: Columna fuera de rango.")
-                continue
-
-        except ValueError:
-            print("Error: Ingrese un número válido.")
-            continue
-        break
-
-    return fila, columna
-
-
 def convertir_a_numero(texto):
-    """Acepta enteros, decimales y fracciones sin perder exactitud."""
-    numero = Fraction(texto.strip())
+    """Convierte enteros, decimales y fracciones a valores exactos."""
+    numero = Fraction(texto.strip().replace(" ", ""))
     if numero.denominator == 1:
         return numero.numerator
 
@@ -62,24 +21,6 @@ def _convertir_fraccion_a_numero(numero):
         return numero.numerator
 
     return numero
-
-
-def pedir_elemento_matriz(fila, columna):
-    while True:
-        try:
-            return convertir_a_numero(
-                input(f"Ingrese el elemento [{fila},{columna}]: ")
-            )
-        except (ValueError, ZeroDivisionError):
-            print("Error: Ingrese un número válido.\n")
-
-
-def pedir_nuevo_numero():
-    while True:
-        try:
-            return convertir_a_numero(input("\nIngresa el nuevo número: "))
-        except (ValueError, ZeroDivisionError):
-            print("Error: Número inválido.")
 
 
 def _separar_terminos(expresion):
@@ -96,8 +37,7 @@ def _separar_terminos(expresion):
 
 
 def parsear_ecuacion(ecuacion):
-    ecuacion = ecuacion.strip()
-    partes = ecuacion.split("=")
+    partes = ecuacion.strip().split("=")
     if len(partes) != 2:
         raise ValueError("cada ecuación debe tener un único signo '='")
 
@@ -107,7 +47,7 @@ def parsear_ecuacion(ecuacion):
         raise ValueError("la ecuación debe tener dos lados no vacíos")
 
     try:
-        termino_independiente = Fraction(lado_derecho.replace(" ", ""))
+        termino_independiente = convertir_a_numero(lado_derecho)
     except (ValueError, ZeroDivisionError):
         raise ValueError("el término independiente debe ser numérico") from None
 
@@ -122,11 +62,15 @@ def parsear_ecuacion(ecuacion):
 
         signo, texto_coeficiente, texto_indice = coincidencia.groups()
         indice = int(texto_indice)
-        coeficiente = (
-            Fraction(1)
-            if texto_coeficiente == ""
-            else Fraction(texto_coeficiente)
-        )
+        try:
+            coeficiente = (
+                Fraction(1)
+                if texto_coeficiente == ""
+                else Fraction(texto_coeficiente)
+            )
+        except (ValueError, ZeroDivisionError):
+            raise ValueError("el coeficiente debe ser numérico") from None
+
         if signo == "-":
             coeficiente *= -1
 
@@ -135,7 +79,7 @@ def parsear_ecuacion(ecuacion):
     if not coeficientes:
         raise ValueError("la ecuación debe contener al menos una variable")
 
-    return coeficientes, termino_independiente
+    return coeficientes, Fraction(termino_independiente)
 
 
 def parsear_sistema(texto):
@@ -147,10 +91,11 @@ def parsear_sistema(texto):
     if any(not ecuacion for ecuacion in ecuaciones):
         raise ValueError("separación de ecuaciones inválida")
 
-    ecuaciones_parseadas = []
     try:
-        for ecuacion in ecuaciones:
-            ecuaciones_parseadas.append(parsear_ecuacion(ecuacion))
+        ecuaciones_parseadas = [
+            parsear_ecuacion(ecuacion)
+            for ecuacion in ecuaciones
+        ]
     except ValueError as error:
         raise ValueError(f"Formato de sistema inválido: {error}") from None
 
