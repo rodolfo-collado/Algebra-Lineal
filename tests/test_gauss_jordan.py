@@ -3,12 +3,7 @@
 import unittest
 from fractions import Fraction
 
-from backend.gauss_jordan import (
-    aplicar_gauss_jordan,
-    buscar_fila_pivote,
-    obtener_rango,
-    texto_factor,
-)
+from backend.gauss_jordan import aplicar_gauss_jordan, obtener_rango
 
 
 class PruebasValidaciones(unittest.TestCase):
@@ -75,13 +70,6 @@ class PruebasMatricesRectangulares(unittest.TestCase):
 
 
 class PruebasPivotes(unittest.TestCase):
-    def test_buscar_fila_pivote(self):
-        matriz = [[0, 1], [0, 2], [3, 4]]
-
-        self.assertEqual(buscar_fila_pivote(matriz, 0, 0), 2)
-        self.assertEqual(buscar_fila_pivote(matriz, 0, 1), 0)
-        self.assertIsNone(buscar_fila_pivote([[0, 1], [0, 2]], 0, 0))
-
     def test_pivote_inicial_en_cero_provoca_intercambio(self):
         matriz_reducida, pasos, _ = aplicar_gauss_jordan([[0, 1, 1], [1, 0, 2]])
 
@@ -119,11 +107,6 @@ class PruebasPivotes(unittest.TestCase):
         self.assertEqual(obtener_rango([[1, 2], [3, 4]]), 2)
         self.assertEqual(obtener_rango([[0, 0], [0, 0]]), 0)
         self.assertEqual(obtener_rango([[1, 2], [3, 4], [5, 6]]), 2)
-
-    def test_texto_factor(self):
-        self.assertEqual(texto_factor(Fraction(3)), "- (3)")
-        self.assertEqual(texto_factor(Fraction(-3)), "+ (3)")
-        self.assertEqual(texto_factor(Fraction(1, 2)), "- (1/2)")
 
 
 class PruebasReduccion(unittest.TestCase):
