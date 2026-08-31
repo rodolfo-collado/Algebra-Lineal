@@ -1,5 +1,4 @@
-from backend.gauss_jordan import validar_dimensiones_gauss_jordan
-from backend.matrices import generar_matriz
+from backend.matrices import generar_matriz, validar_matriz_rectangular
 from backend.sistemas import resolver_gauss_jordan
 from frontend.terminal import consola
 from frontend.terminal.entradas import (
@@ -94,7 +93,7 @@ def resolver_gauss_jordan_menu(matriz):
     if not validar_matriz(matriz):
         return
 
-    es_valida, mensaje = validar_dimensiones_gauss_jordan(matriz)
+    es_valida, mensaje = validar_matriz_rectangular(matriz)
     if not es_valida:
         consola.error(mensaje)
         return

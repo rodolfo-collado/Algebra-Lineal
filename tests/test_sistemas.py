@@ -63,25 +63,21 @@ class PruebasSistemas(unittest.TestCase):
             ],
         )
 
-    def test_matriz_cuadrada_invertible(self):
+    def test_matriz_cuadrada_se_interpreta_como_aumentada(self):
+        # 2 ecuaciones y 1 variable: x = 1/2 y x = 1 se contradicen.
         matriz_reducida, _, analisis = resolver_gauss_jordan([[2, 1], [1, 1]])
 
-        self.assertEqual(matriz_reducida, [[1, 0], [0, 1]])
-        self.assertEqual(
-            analisis, ["La matriz cuadrada es invertible y se redujo a la identidad."]
-        )
+        self.assertEqual(matriz_reducida, [[1, Fraction(1, 2)], [0, Fraction(1, 2)]])
+        self.assertEqual(analisis[0], "Sistema incompatible.")
 
-    def test_matriz_cuadrada_singular(self):
+    def test_ecuacion_redundante_deja_solucion_unica(self):
+        # 2 ecuaciones y 1 variable: la segunda es el doble de la primera.
         matriz_reducida, _, analisis = resolver_gauss_jordan([[1, 2], [2, 4]])
 
         self.assertEqual(matriz_reducida, [[1, 2], [0, 0]])
         self.assertEqual(
             analisis,
-            [
-                "La matriz cuadrada es singular.",
-                "No se consiguieron pivotes en todas las columnas.",
-                "Si se interpreta como sistema homogéneo, tiene infinitas soluciones.",
-            ],
+            ["Sistema compatible determinado.", "Solución única:", "x1 = 2"],
         )
 
 
