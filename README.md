@@ -21,11 +21,24 @@ indeterminado e incompatible; para matrices cuadradas indica si son invertibles 
 singulares. Los cálculos usan `fractions.Fraction`, así que los resultados son
 exactos y se muestran como fracciones cuando no son enteros.
 
+La interfaz de terminal usa colores, limpia la pantalla entre secciones y espera
+una confirmación antes de volver al menú, para que los resultados se puedan leer
+con calma.
+
 ## Requisitos
 
 - Python 3.10 o superior. El menú usa `match` / `case`, disponible desde esa versión.
-- Sin dependencias externas: el proyecto solo utiliza la biblioteca estándar
-  (`random` y `fractions`). Por eso no hay `requirements.txt`.
+- Una única dependencia externa, `colorama`, usada solo para dar color a la
+  terminal. Los cálculos siguen apoyándose únicamente en la biblioteca estándar
+  (`random` y `fractions`).
+
+## Instalación
+
+Desde la raíz del repositorio:
+
+```bash
+python -m pip install -r requirements.txt
+```
 
 ## Ejecución
 
@@ -77,6 +90,9 @@ y estructuras propias del lenguaje.
 únicamente representa números racionales con exactitud, no resuelve ningún
 algoritmo por sí mismo.
 
+`colorama` también está permitido, pero únicamente para dar color a la terminal:
+no participa en ningún cálculo ni sustituye ningún algoritmo.
+
 ## Estructura actual
 
 El proyecto separa la lógica matemática de la interfaz:
@@ -84,18 +100,22 @@ El proyecto separa la lógica matemática de la interfaz:
 ```text
 Algebra-Lineal/
 ├── main.py                     # punto de entrada de la aplicación
+├── requirements.txt
 ├── README.md
 ├── CONTRIBUTING.md
 ├── backend/
 │   └── logica_matrices.py      # Gauss-Jordan, validaciones y análisis
 ├── frontend/
 │   └── terminal/
-│       ├── menu.py             # bucle del menú y acciones de cada opción
+│       ├── menu.py             # bucle del menú y navegación
+│       ├── opciones.py         # qué hace cada opción del menú
 │       ├── entradas.py         # lectura y validación de datos del usuario
-│       └── salida.py           # formateo e impresión de matrices y pasos
+│       ├── salida.py           # formateo e impresión de matrices y pasos
+│       └── consola.py          # colores, limpieza de pantalla y pausas
 └── tests/
     ├── test_logica_matrices.py
-    └── test_salida.py
+    ├── test_salida.py
+    └── test_consola.py
 ```
 
 `backend/` contiene lógica pura: no usa `input()` ni `print()` y no depende de
