@@ -1,48 +1,13 @@
-import random
+"""Reduccion de matrices por Gauss-Jordan, registrando cada paso."""
+
 from fractions import Fraction
 
-
-def generar_matriz(filas, columnas):
-    matriz = []
-
-    for i in range(filas):
-        matriz.append([])
-        for j in range(columnas):
-            num = random.randint(0, 20)
-            matriz[i].append(num)
-
-    return matriz
-
-
-def copiar_matriz(matriz):
-    copia = []
-
-    for fila in matriz:
-        copia.append(fila.copy())
-
-    return copia
-
-
-def convertir_matriz_a_fracciones(matriz):
-    matriz_fracciones = []
-
-    for fila in matriz:
-        nueva_fila = []
-        for numero in fila:
-            nueva_fila.append(Fraction(numero))
-        matriz_fracciones.append(nueva_fila)
-
-    return matriz_fracciones
-
-
-def es_matriz_rectangular(matriz):
-    columnas = len(matriz[0])
-
-    for fila in matriz:
-        if len(fila) != columnas:
-            return False
-
-    return True
+from backend.matrices import (
+    convertir_matriz_a_fracciones,
+    copiar_matriz,
+    es_matriz_rectangular,
+    formatear_numero_operacion
+)
 
 
 def obtener_tipo_gauss_jordan(matriz):
@@ -88,12 +53,6 @@ def registrar_paso(pasos, matriz_antes, operacion, matriz_despues):
         "operacion": operacion,
         "despues": copiar_matriz(matriz_despues)
     })
-
-
-def formatear_numero_operacion(numero):
-    if numero.denominator == 1:
-        return str(numero.numerator)
-    return f"{numero.numerator}/{numero.denominator}"
 
 
 def texto_factor(factor):
@@ -195,60 +154,3 @@ def obtener_rango(matriz, columnas_limite):
                 break
 
     return rango
-
-
-def analizar_resultado_gauss_jordan(matriz, pivotes, tipo_matriz):
-    filas = len(matriz)
-    columnas = len(matriz[0])
-
-    if tipo_matriz == "cuadrada":
-        rango = obtener_rango(matriz, columnas)
-        if rango == filas:
-            return ["La matriz cuadrada es invertible y se redujo a la identidad."]
-
-        return [
-            "La matriz cuadrada es singular.",
-            "No se consiguieron pivotes en todas las columnas.",
-            "Si se interpreta como sistema homogéneo, tiene infinitas soluciones."
-        ]
-
-    columnas_coeficientes = columnas - 1
-    rango_coeficientes = obtener_rango(matriz, columnas_coeficientes)
-
-    for fila in matriz:
-        coeficientes_en_cero = True
-        for columna in range(columnas_coeficientes):
-            if fila[columna] != 0:
-                coeficientes_en_cero = False
-                break
-
-        if coeficientes_en_cero and fila[-1] != 0:
-            return [
-                "Sistema incompatible.",
-                "Apareció una fila del tipo 0 = k, con k distinto de 0.",
-                "No tiene solución."
-            ]
-
-    if rango_coeficientes < columnas_coeficientes:
-        return [
-            "Sistema compatible indeterminado.",
-            "Tiene infinitas soluciones porque no hay pivote para cada variable."
-        ]
-
-    soluciones = [Fraction(0) for _ in range(columnas_coeficientes)]
-    for fila, columna in pivotes:
-        if columna < columnas_coeficientes:
-            soluciones[columna] = matriz[fila][-1]
-
-    resultado = ["Sistema compatible determinado.", "Solución única:"]
-    for indice, solucion in enumerate(soluciones):
-        resultado.append(f"x{indice + 1} = {formatear_numero_operacion(solucion)}")
-
-    return resultado
-
-
-def resolver_gauss_jordan(matriz):
-    matriz_reducida, pasos, pivotes, tipo_matriz = aplicar_gauss_jordan(matriz)
-    analisis = analizar_resultado_gauss_jordan(matriz_reducida, pivotes, tipo_matriz)
-
-    return matriz_reducida, pasos, analisis

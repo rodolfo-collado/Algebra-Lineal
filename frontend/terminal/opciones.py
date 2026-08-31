@@ -1,8 +1,6 @@
-from backend.logica_matrices import (
-    generar_matriz,
-    resolver_gauss_jordan,
-    validar_dimensiones_gauss_jordan
-)
+from backend.gauss_jordan import validar_dimensiones_gauss_jordan
+from backend.matrices import generar_matriz
+from backend.sistemas import resolver_gauss_jordan
 from frontend.terminal import consola
 from frontend.terminal.entradas import (
     pedir_dimensiones,
