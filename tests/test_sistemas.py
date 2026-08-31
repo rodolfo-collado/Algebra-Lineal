@@ -10,6 +10,7 @@ from backend.sistemas import (
     SOLUCIONES_INFINITAS,
     contar_variables,
     ecuaciones_de_matriz,
+    formatear_fila_aumentada,
     interpretar_resultado,
     resolver_sistema_gauss,
     resolver_sistema_gauss_jordan,
@@ -107,6 +108,24 @@ class PruebasSolucionUnica(unittest.TestCase):
         self.assertEqual(resultado["clasificacion"], SOLUCION_UNICA)
         self.assertEqual(resultado["soluciones"], [2])
 
+    def test_la_lectura_directa_no_depende_de_una_matriz_cuadrada(self):
+        resultado = resolver_sistema_gauss_jordan(
+            [[1, 0, 2], [0, 1, 3], [0, 0, 0]]
+        )
+
+        self.assertEqual(resultado["clasificacion"], SOLUCION_UNICA)
+        self.assertTrue(resultado["solucion_directa"])
+        self.assertEqual(resultado["variables_libres"], [])
+        self.assertEqual(resultado["filas_nulas"][0]["fila"], 3)
+
+    def test_gauss_no_declara_directa_una_forma_que_requiere_sustitucion(self):
+        resultado = resolver_sistema_gauss(
+            [[1, 2, -1, 4], [0, 1, 3, 5], [0, 0, 1, 2]]
+        )
+
+        self.assertEqual(resultado["clasificacion"], SOLUCION_UNICA)
+        self.assertFalse(resultado["solucion_directa"])
+
 
 class PruebasSolucionesInfinitas(unittest.TestCase):
     def test_dos_ecuaciones_y_tres_variables(self):
@@ -134,6 +153,43 @@ class PruebasSolucionesInfinitas(unittest.TestCase):
             [[1, 1, 1, 3], [0, 0, 0, 0], [0, 0, 0, 0]],
         )
         self.assertEqual(resultado["clasificacion"], SOLUCIONES_INFINITAS)
+
+    def test_fila_nula_y_variable_libre_justifican_la_clasificacion(self):
+        resultado = resolver_sistema_gauss_jordan(
+            [[1, 0, -5, 1], [0, 1, 1, 4], [0, 0, 0, 0]]
+        )
+
+        self.assertEqual(resultado["variables_libres"], [3])
+        self.assertEqual(resultado["filas_nulas"][0]["fila"], 3)
+        self.assertIn("[0 0 0 | 0]", resultado["justificacion"][0])
+        self.assertIn("x3 no tiene pivote", resultado["justificacion"][-1])
+
+    def test_sistema_rectangular_no_inventa_una_fila_nula(self):
+        resultado = resolver_sistema_gauss_jordan(
+            [[1, 2, -1, 4], [0, 1, 1, 2]]
+        )
+
+        self.assertEqual(resultado["clasificacion"], SOLUCIONES_INFINITAS)
+        self.assertEqual(resultado["filas_nulas"], [])
+        self.assertEqual(resultado["variables_libres"], [3])
+        self.assertEqual(
+            resultado["justificacion"],
+            ["La variable x3 no tiene pivote, por lo que es libre."],
+        )
+
+    def test_varias_variables_libres_se_explican_juntas(self):
+        matriz = [
+            [1, 6, 0, 3, 0, 0],
+            [0, 0, 1, -4, 0, 5],
+            [0, 0, 0, 0, 1, 7],
+        ]
+        resultado = resolver_sistema_gauss_jordan(matriz)
+
+        self.assertEqual(resultado["variables_libres"], [2, 4])
+        self.assertIn(
+            "Las variables x2 y x4 no tienen pivote, por lo que son libres.",
+            resultado["justificacion"],
+        )
 
 
 class PruebasInconsistencia(unittest.TestCase):
@@ -169,6 +225,48 @@ class PruebasInconsistencia(unittest.TestCase):
             [[1, Fraction(1, 2)], [0, Fraction(1, 2)]],
         )
         self.assertEqual(resultado["clasificacion"], INCONSISTENTE)
+
+    def test_evidencia_usa_la_fila_real_en_ambos_metodos(self):
+        matriz = [[1, 1, 2], [1, 1, 3]]
+
+        for resolver in (resolver_sistema_gauss, resolver_sistema_gauss_jordan):
+            with self.subTest(metodo=resolver.__name__):
+                resultado = resolver(matriz)
+                evidencia = resultado["fila_inconsistente"]
+
+                self.assertEqual(evidencia["fila"], 2)
+                self.assertEqual(evidencia["termino_independiente"], Fraction(1))
+                self.assertEqual(evidencia["representacion"], [0, 0, 1])
+                self.assertTrue(
+                    all(
+                        isinstance(valor, Fraction)
+                        for valor in evidencia["representacion"]
+                    )
+                )
+                self.assertEqual(resultado["ecuaciones_resultantes"][1], "0 = 1")
+                self.assertEqual(resultado["solucion_general"], [])
+                self.assertEqual(resultado["variables_libres"], [])
+
+    def test_la_contradiccion_fraccionaria_conserva_exactitud(self):
+        resultado = resolver_sistema_gauss_jordan([[3, 1], [1, 1]])
+        evidencia = resultado["fila_inconsistente"]
+
+        self.assertEqual(
+            evidencia["termino_independiente"], Fraction(2, 3)
+        )
+        self.assertIsInstance(evidencia["termino_independiente"], Fraction)
+        self.assertIn("[0 | 2/3]", resultado["justificacion"][0])
+        self.assertIn("0 = 2/3", resultado["justificacion"][0])
+
+    def test_x3_igual_a_cinco_es_una_ecuacion_valida(self):
+        for resolver in (resolver_sistema_gauss, resolver_sistema_gauss_jordan):
+            with self.subTest(metodo=resolver.__name__):
+                resultado = resolver([[0, 0, 1, 5]])
+
+                self.assertEqual(resultado["clasificacion"], SOLUCIONES_INFINITAS)
+                self.assertIsNone(resultado["fila_inconsistente"])
+                self.assertEqual(resultado["variables_libres"], [1, 2])
+                self.assertEqual(resultado["solucion_general"][-1], "x3 = 5")
 
 
 class PruebasValidacionDeSistemas(unittest.TestCase):
@@ -395,6 +493,11 @@ class PruebasEcuacionesDeMatriz(unittest.TestCase):
         with self.assertRaises(ValueError):
             ecuaciones_de_matriz([[1], [2]])
 
+    def test_formato_de_fila_aumentada_no_usa_la_representacion_de_python(self):
+        fila = [0, Fraction(0), 0, Fraction(-2, 3)]
+
+        self.assertEqual(formatear_fila_aumentada(fila), "[0 0 0 | -2/3]")
+
 
 class PruebasVariablesLibres(unittest.TestCase):
     def test_una_columna_sin_pivote_deja_libre_a_su_variable(self):
@@ -528,8 +631,9 @@ class PruebasSolucionDeSistemasInconsistentes(unittest.TestCase):
     def test_no_existe_solucion(self):
         resultado = interpretar_resultado(self.MATRIZ, [(0, 0)], 3)
 
-        self.assertEqual(resultado["solucion_general"], [SIN_SOLUCION])
+        self.assertEqual(resultado["solucion_general"], [])
         self.assertEqual(resultado["soluciones"], [])
+        self.assertIn("no tiene solución", resultado["justificacion"][-1])
 
     def test_una_columna_sin_pivote_no_declara_variables_libres(self):
         for resolver in (resolver_sistema_gauss, resolver_sistema_gauss_jordan):

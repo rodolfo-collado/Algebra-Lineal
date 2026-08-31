@@ -194,11 +194,38 @@ class PruebasOrdenDeLaSalida(unittest.TestCase):
             [
                 "Pasos realizados",
                 "Matriz reducida",
-                "Sistema resultante",
                 "Clasificación",
                 "Solución",
             ],
         )
+
+    def test_gauss_jordan_no_repite_una_solucion_directa(self):
+        salida = resolver(opciones.resolver_por_gauss_jordan, SOLUCION_UNICA_3X4)
+
+        self.assertNotIn("Sistema resultante", salida)
+        self.assertIn("Solución", salida)
+        self.assertIn("x1 = 1", salida)
+        self.assertIn("x2 = -2", salida)
+        self.assertIn("x3 = 3", salida)
+
+    def test_la_solucion_directa_mantiene_fracciones_exactas(self):
+        salida = resolver(
+            opciones.resolver_por_gauss_jordan,
+            [[1, 0, 3], [0, 3, 2]],
+        )
+
+        self.assertNotIn("Sistema resultante", salida)
+        self.assertIn("x1 = 3", salida)
+        self.assertIn("x2 = 2/3", salida)
+
+    def test_una_fila_redundante_no_obliga_a_repetir_el_sistema(self):
+        salida = resolver(
+            opciones.resolver_por_gauss_jordan,
+            [[1, 0, 2], [0, 1, 3], [0, 0, 0]],
+        )
+
+        self.assertIn(SOLUCION_UNICA, salida)
+        self.assertNotIn("Sistema resultante", salida)
 
     def test_las_variables_libres_no_ocupan_una_seccion_aparte(self):
         salida = resolver(opciones.resolver_por_gauss, UNA_LIBRE_3X4)
@@ -223,6 +250,20 @@ class PruebasSistemaResultanteEnPantalla(unittest.TestCase):
             seccion(salida, "Sistema resultante"), ["x1 - 2x3 = 4", "0 = 3"]
         )
 
+    def test_inconsistencia_muestra_la_evidencia_completa(self):
+        matriz = [[1, 0, 2, 4], [0, 1, -1, 3], [0, 0, 0, 5]]
+        salida = resolver(opciones.resolver_por_gauss_jordan, matriz)
+
+        for fragmento in (
+            "Sistema resultante",
+            "0 = 5",
+            "fila 3",
+            "[0 0 0 | 5]",
+            INCONSISTENTE,
+            "no tiene solución",
+        ):
+            self.assertIn(fragmento, salida)
+
 
 class PruebasSolucionEnPantalla(unittest.TestCase):
     def test_solucion_unica(self):
@@ -235,38 +276,58 @@ class PruebasSolucionEnPantalla(unittest.TestCase):
     def test_una_variable_libre(self):
         salida = resolver(opciones.resolver_por_gauss_jordan, UNA_LIBRE_3X4)
 
-        self.assertEqual(
-            seccion(salida, "Solución"),
-            ["x1 = 1 + 5x3", "x2 = 4 - x3", "x3 es libre"],
+        self.assertIn("Sistema resultante", salida)
+        self.assertIn(SOLUCIONES_INFINITAS, salida)
+        self.assertIn("fila 3", salida)
+        self.assertIn("[0 0 0 | 0]", salida)
+        self.assertIn("x3 no tiene pivote", salida)
+        self.assertIn("x1 = 1 + 5x3", salida)
+        self.assertIn("x2 = 4 - x3", salida)
+        self.assertIn("x3 es libre", salida)
+
+    def test_infinita_sin_fila_nula_se_justifica_por_el_pivote_faltante(self):
+        salida = resolver(
+            opciones.resolver_por_gauss_jordan,
+            [[1, 2, -1, 4], [0, 1, 1, 2]],
         )
+
+        self.assertIn("Sistema resultante", salida)
+        self.assertIn(SOLUCIONES_INFINITAS, salida)
+        self.assertIn("x3 no tiene pivote", salida)
+        self.assertIn("x3 es libre", salida)
+        self.assertNotIn("[0 0 0 | 0]", salida)
 
     def test_varias_variables_libres(self):
         salida = resolver(opciones.resolver_por_gauss, VARIAS_LIBRES_3X6)
 
-        self.assertEqual(
-            seccion(salida, "Solución"),
-            [
-                "x1 = -6x2 - 3x4",
-                "x2 es libre",
-                "x3 = 5 + 4x4",
-                "x4 es libre",
-                "x5 = 7",
-            ],
-        )
+        self.assertIn("x2 y x4 no tienen pivote", salida)
+        for linea in (
+            "x1 = -6x2 - 3x4",
+            "x2 es libre",
+            "x3 = 5 + 4x4",
+            "x4 es libre",
+            "x5 = 7",
+        ):
+            self.assertIn(linea, salida)
 
     def test_una_variable_pivote_no_depende_de_otra(self):
         salida = resolver(opciones.resolver_por_gauss, ENTRE_PIVOTES_2X4)
 
-        self.assertEqual(
-            seccion(salida, "Solución"), ["x1 = 3", "x2 = 2 - x3", "x3 es libre"]
-        )
+        self.assertIn("x3 no tiene pivote", salida)
+        self.assertIn("x1 = 3", salida)
+        self.assertIn("x2 = 2 - x3", salida)
+        self.assertIn("x3 es libre", salida)
 
     def test_sistema_inconsistente(self):
         for funcion in (opciones.resolver_por_gauss, opciones.resolver_por_gauss_jordan):
             with self.subTest(metodo=funcion.__name__):
                 salida = resolver(funcion, INCONSISTENTE_2X4)
 
-                self.assertEqual(seccion(salida, "Solución"), ["No existe solución."])
+                self.assertIn("Sistema resultante", salida)
+                self.assertIn("0 = 3", salida)
+                self.assertIn("fila 2", salida)
+                self.assertIn("[0 0 0 | 3]", salida)
+                self.assertIn("no tiene solución", salida)
                 self.assertNotIn("es libre", salida)
 
 
