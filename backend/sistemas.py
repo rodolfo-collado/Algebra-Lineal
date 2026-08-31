@@ -41,19 +41,47 @@ def validar_matriz_aumentada(matriz_aumentada):
     return True, ""
 
 
+def fila_sin_coeficientes(fila, cantidad_variables):
+    return all(fila[columna] == 0 for columna in range(cantidad_variables))
+
+
+def datos_de_fila(fila, indice, cantidad_variables):
+    """Conserva la fila exacta y su indice de usuario, que empieza en uno."""
+    return {
+        "fila": indice + 1,
+        "termino_independiente": Fraction(fila[cantidad_variables]),
+        "representacion": [Fraction(valor) for valor in fila]
+    }
+
+
+def fila_inconsistente(matriz_resuelta, cantidad_variables):
+    """Primera fila del tipo 0 = k, con k distinto de cero."""
+    # Búsqueda de filas contradictorias
+    for indice, fila in enumerate(matriz_resuelta):
+        if (
+            fila_sin_coeficientes(fila, cantidad_variables)
+            and fila[cantidad_variables] != 0
+        ):
+            return datos_de_fila(fila, indice, cantidad_variables)
+
+    return None
+
+
 def tiene_fila_inconsistente(matriz_resuelta, cantidad_variables):
-    # Fila del tipo 0 = k, con k distinto de 0
-    for fila in matriz_resuelta:
-        coeficientes_en_cero = True
-        for columna in range(cantidad_variables):
-            if fila[columna] != 0:
-                coeficientes_en_cero = False
-                break
+    return fila_inconsistente(matriz_resuelta, cantidad_variables) is not None
 
-        if coeficientes_en_cero and fila[cantidad_variables] != 0:
-            return True
 
-    return False
+def filas_nulas(matriz_resuelta, cantidad_variables):
+    """Filas 0 = 0 que evidencian ecuaciones redundantes."""
+    # Identificación de filas redundantes
+    return [
+        datos_de_fila(fila, indice, cantidad_variables)
+        for indice, fila in enumerate(matriz_resuelta)
+        if (
+            fila_sin_coeficientes(fila, cantidad_variables)
+            and fila[cantidad_variables] == 0
+        )
+    ]
 
 
 def clasificar_sistema(matriz_resuelta, pivotes, cantidad_variables):
@@ -62,7 +90,8 @@ def clasificar_sistema(matriz_resuelta, pivotes, cantidad_variables):
         return INCONSISTENTE
 
     # Sin un pivote por variable quedan variables sin determinar.
-    if len(pivotes) < cantidad_variables:
+    columnas_pivote = {columna for _, columna in pivotes}
+    if len(columnas_pivote) < cantidad_variables:
         return SOLUCIONES_INFINITAS
 
     return SOLUCION_UNICA
@@ -103,6 +132,105 @@ def variables_libres(pivotes, cantidad_variables):
         for columna in range(cantidad_variables)
         if columna not in columnas_pivote
     ]
+
+
+def permite_lectura_directa(matriz_resuelta, pivotes, cantidad_variables):
+    """Indica si cada fila pivote ya tiene la forma directa xN = C."""
+    columnas_pivote = {columna for _, columna in pivotes}
+    if columnas_pivote != set(range(cantidad_variables)):
+        return False
+
+    for indice_fila, columna_pivote in pivotes:
+        fila = matriz_resuelta[indice_fila]
+        if fila[columna_pivote] != 1:
+            return False
+
+        for columna in range(cantidad_variables):
+            if columna != columna_pivote and fila[columna] != 0:
+                return False
+
+    return True
+
+
+def formatear_fila_aumentada(fila, cantidad_variables=None):
+    """Escribe una fila aumentada como [0 0 | C], con fracciones exactas."""
+    if cantidad_variables is None:
+        cantidad_variables = len(fila) - 1
+
+    if len(fila) != cantidad_variables + 1:
+        raise ValueError("Error: La fila no coincide con la cantidad de variables.")
+
+    coeficientes = " ".join(
+        formatear_fraccion(Fraction(fila[columna]))
+        for columna in range(cantidad_variables)
+    )
+    termino = formatear_fraccion(Fraction(fila[cantidad_variables]))
+    return f"[{coeficientes} | {termino}]"
+
+
+def enumerar_variables(indices):
+    nombres = [f"x{indice}" for indice in indices]
+    if len(nombres) == 1:
+        return nombres[0]
+
+    return f"{', '.join(nombres[:-1])} y {nombres[-1]}"
+
+
+def agregar_parrafo(lineas, texto):
+    if lineas:
+        lineas.append("")
+    lineas.append(texto)
+
+
+def construir_justificacion(
+    clasificacion, contradiccion, redundantes, libres, cantidad_variables
+):
+    """Construye una explicación breve desde evidencia estructurada."""
+    lineas = []
+
+    if clasificacion == INCONSISTENTE:
+        fila = contradiccion["fila"]
+        representacion = formatear_fila_aumentada(
+            contradiccion["representacion"], cantidad_variables
+        )
+        termino = formatear_fraccion(contradiccion["termino_independiente"])
+        agregar_parrafo(
+            lineas,
+            f"En la fila {fila} se obtiene {representacion}, "
+            f"que equivale a 0 = {termino}."
+        )
+        agregar_parrafo(
+            lineas,
+            "Como esta igualdad es imposible, el sistema es inconsistente "
+            "y no tiene solución."
+        )
+        return lineas
+
+    if clasificacion != SOLUCIONES_INFINITAS:
+        return lineas
+
+    for redundante in redundantes:
+        representacion = formatear_fila_aumentada(
+            redundante["representacion"], cantidad_variables
+        )
+        agregar_parrafo(
+            lineas,
+            f"En la fila {redundante['fila']} se obtiene {representacion}, "
+            "por lo que esa ecuación no agrega una nueva condición."
+        )
+
+    nombres = enumerar_variables(libres)
+    if len(libres) == 1:
+        texto_libres = (
+            f"La variable {nombres} no tiene pivote, por lo que es libre."
+        )
+    else:
+        texto_libres = (
+            f"Las variables {nombres} no tienen pivote, por lo que son libres."
+        )
+    agregar_parrafo(lineas, texto_libres)
+
+    return lineas
 
 
 def solucion_general(matriz_resuelta, pivotes, cantidad_variables):
@@ -165,6 +293,8 @@ def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
         matriz_resuelta, pivotes, cantidad_variables
     )
     ecuaciones = ecuaciones_de_matriz(matriz_resuelta)
+    contradiccion = fila_inconsistente(matriz_resuelta, cantidad_variables)
+    redundantes = filas_nulas(matriz_resuelta, cantidad_variables)
 
     # Una contradicción anula el conjunto solución aunque falten pivotes: sin
     # solución no hay nada que declarar libre.
@@ -172,8 +302,15 @@ def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
         return {
             "clasificacion": clasificacion,
             "ecuaciones_resultantes": ecuaciones,
-            "solucion_general": [SIN_SOLUCION],
-            "soluciones": []
+            "solucion_general": [],
+            "soluciones": [],
+            "fila_inconsistente": contradiccion,
+            "filas_nulas": redundantes,
+            "variables_libres": [],
+            "solucion_directa": False,
+            "justificacion": construir_justificacion(
+                clasificacion, contradiccion, redundantes, [], cantidad_variables
+            )
         }
 
     expresiones = solucion_general(matriz_resuelta, pivotes, cantidad_variables)
@@ -188,7 +325,19 @@ def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
         "clasificacion": clasificacion,
         "ecuaciones_resultantes": ecuaciones,
         "solucion_general": formatear_solucion_general(expresiones, libres),
-        "soluciones": soluciones
+        "soluciones": soluciones,
+        "fila_inconsistente": None,
+        "filas_nulas": redundantes,
+        "variables_libres": libres,
+        "solucion_directa": (
+            clasificacion == SOLUCION_UNICA
+            and permite_lectura_directa(
+                matriz_resuelta, pivotes, cantidad_variables
+            )
+        ),
+        "justificacion": construir_justificacion(
+            clasificacion, None, redundantes, libres, cantidad_variables
+        )
     }
 
 

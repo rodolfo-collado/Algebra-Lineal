@@ -172,6 +172,22 @@ def mostrar_sustitucion(pasos):
     mostrar_seccion("Sustitución regresiva", lineas)
 
 
+def mostrar_interpretacion(resultado, pasos_sustitucion=None):
+    """Presenta solo las secciones que aportan a la clasificación obtenida."""
+    if not resultado["solucion_directa"]:
+        mostrar_seccion("Sistema resultante", resultado["ecuaciones_resultantes"])
+
+    mostrar_seccion("Clasificación", [resultado["clasificacion"]])
+    if pasos_sustitucion:
+        mostrar_sustitucion(pasos_sustitucion)
+
+    lineas_solucion = list(resultado["justificacion"])
+    if lineas_solucion and resultado["solucion_general"]:
+        lineas_solucion.append("")
+    lineas_solucion.extend(resultado["solucion_general"])
+    mostrar_seccion("Solución", lineas_solucion)
+
+
 def validar_como_sistema(matriz):
     """La matriz activa solo se interpreta como sistema al pedir un método."""
     if not validar_matriz(matriz):
@@ -197,11 +213,7 @@ def resolver_por_gauss(matriz):
     mostrar_seccion(
         "Matriz escalonada", obtener_lineas_matriz(resultado["matriz_escalonada"])
     )
-    mostrar_seccion("Sistema resultante", resultado["ecuaciones_resultantes"])
-    mostrar_seccion("Clasificación", [resultado["clasificacion"]])
-    if resultado["pasos_sustitucion"]:
-        mostrar_sustitucion(resultado["pasos_sustitucion"])
-    mostrar_seccion("Solución", resultado["solucion_general"])
+    mostrar_interpretacion(resultado, resultado["pasos_sustitucion"])
 
 
 def resolver_por_gauss_jordan(matriz):
@@ -216,6 +228,4 @@ def resolver_por_gauss_jordan(matriz):
     mostrar_seccion(
         "Matriz reducida", obtener_lineas_matriz(resultado["matriz_reducida"])
     )
-    mostrar_seccion("Sistema resultante", resultado["ecuaciones_resultantes"])
-    mostrar_seccion("Clasificación", [resultado["clasificacion"]])
-    mostrar_seccion("Solución", resultado["solucion_general"])
+    mostrar_interpretacion(resultado)
