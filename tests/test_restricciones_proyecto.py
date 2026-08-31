@@ -99,6 +99,7 @@ class PruebasImportsProhibidos(unittest.TestCase):
 
         self.assertIn("main.py", revisados)
         self.assertIn("backend/gauss_jordan.py", revisados)
+        self.assertIn("backend/parser_sistemas.py", revisados)
         self.assertIn("frontend/terminal/opciones.py", revisados)
         self.assertIn("tests/test_restricciones_proyecto.py", revisados)
 
