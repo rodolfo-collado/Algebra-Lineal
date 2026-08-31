@@ -76,3 +76,17 @@ Thumbs.db
 *~
 *.swp
 *.swo
+
+
+# =========================
+# Asistentes de IA / agentes locales
+# =========================
+
+CLAUDE.md
+.claude/
+AGENTS.md
+GEMINI.md
+.cursor/
+.cursorignore
+.cursorrules
+.aider*
