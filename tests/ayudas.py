@@ -17,3 +17,12 @@ def capturar(funcion, *argumentos):
         funcion(*argumentos)
 
     return buffer.getvalue()
+
+
+def capturar_con_resultado(funcion, *argumentos):
+    """Como capturar, pero tambien devuelve lo que la funcion retorna."""
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        resultado = funcion(*argumentos)
+
+    return resultado, buffer.getvalue()
