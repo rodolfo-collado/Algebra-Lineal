@@ -155,14 +155,41 @@ def formatear_solucion_general(expresiones, libres):
     return lineas
 
 
-def obtener_soluciones(matriz_reducida, pivotes, cantidad_variables):
-    """Solo tiene sentido cuando cada variable tiene su pivote."""
-    soluciones = [Fraction(0) for _ in range(cantidad_variables)]
+def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
+    """Lee una matriz ya resuelta: ecuaciones, clasificacion y solucion.
 
-    for fila, columna in pivotes:
-        soluciones[columna] = matriz_reducida[fila][cantidad_variables]
+    La comparten Gauss y Gauss-Jordan. Cada uno le pasa su propia matriz, de
+    modo que el sistema resultante puede diferir aunque la solucion coincida.
+    """
+    clasificacion = clasificar_sistema(
+        matriz_resuelta, pivotes, cantidad_variables
+    )
+    ecuaciones = ecuaciones_de_matriz(matriz_resuelta)
 
-    return soluciones
+    # Una contradicción anula el conjunto solución aunque falten pivotes: sin
+    # solución no hay nada que declarar libre.
+    if clasificacion == INCONSISTENTE:
+        return {
+            "clasificacion": clasificacion,
+            "ecuaciones_resultantes": ecuaciones,
+            "solucion_general": [SIN_SOLUCION],
+            "soluciones": []
+        }
+
+    expresiones = solucion_general(matriz_resuelta, pivotes, cantidad_variables)
+    libres = variables_libres(pivotes, cantidad_variables)
+
+    # Sin variables libres cada expresión ya es su valor constante.
+    soluciones = []
+    if clasificacion == SOLUCION_UNICA:
+        soluciones = [expresion["constante"] for expresion in expresiones]
+
+    return {
+        "clasificacion": clasificacion,
+        "ecuaciones_resultantes": ecuaciones,
+        "solucion_general": formatear_solucion_general(expresiones, libres),
+        "soluciones": soluciones
+    }
 
 
 def texto_sustitucion(fila, columna, cantidad_variables, soluciones):
@@ -232,8 +259,8 @@ def resolver_sistema_gauss(matriz_aumentada):
     """Escalona el sistema y despeja las variables por sustitucion regresiva.
 
     Toma la ultima columna como terminos independientes. Devuelve la matriz
-    escalonada, los pasos de eliminacion, los pasos de la sustitucion, la
-    clasificacion y las soluciones (vacias si no hay solucion unica).
+    escalonada, los pasos de eliminacion, los pasos de la sustitucion y la
+    interpretacion del resultado.
     """
     es_valida, mensaje = validar_matriz_aumentada(matriz_aumentada)
     if not es_valida:
@@ -244,15 +271,15 @@ def resolver_sistema_gauss(matriz_aumentada):
     matriz_escalonada, pasos, pivotes = aplicar_gauss(
         matriz_aumentada, cantidad_variables
     )
-    clasificacion = clasificar_sistema(
+    interpretacion = interpretar_resultado(
         matriz_escalonada, pivotes, cantidad_variables
     )
 
-    soluciones = []
+    # La sustitución numérica paso a paso solo se muestra con solución única;
+    # el conjunto solución sale siempre del mismo modelo general.
     pasos_sustitucion = []
-    # Sin solución única no se sustituye: no se inventan valores libres.
-    if clasificacion == SOLUCION_UNICA:
-        soluciones, pasos_sustitucion = sustitucion_regresiva(
+    if interpretacion["clasificacion"] == SOLUCION_UNICA:
+        _, pasos_sustitucion = sustitucion_regresiva(
             matriz_escalonada, pivotes, cantidad_variables
         )
 
@@ -260,17 +287,15 @@ def resolver_sistema_gauss(matriz_aumentada):
         "matriz_escalonada": matriz_escalonada,
         "pasos": pasos,
         "pasos_sustitucion": pasos_sustitucion,
-        "clasificacion": clasificacion,
-        "soluciones": soluciones
+        **interpretacion
     }
 
 
 def resolver_sistema_gauss_jordan(matriz_aumentada):
-    """Reduce el sistema y lee las soluciones de la forma reducida.
+    """Reduce el sistema y lee el resultado de la forma reducida.
 
     Toma la ultima columna como terminos independientes. Devuelve la matriz
-    reducida, los pasos, la clasificacion y las soluciones (vacias si no hay
-    solucion unica).
+    reducida, los pasos y la interpretacion del resultado.
     """
     es_valida, mensaje = validar_matriz_aumentada(matriz_aumentada)
     if not es_valida:
@@ -281,15 +306,9 @@ def resolver_sistema_gauss_jordan(matriz_aumentada):
     matriz_reducida, pasos, pivotes = aplicar_gauss_jordan(
         matriz_aumentada, cantidad_variables
     )
-    clasificacion = clasificar_sistema(matriz_reducida, pivotes, cantidad_variables)
-
-    soluciones = []
-    if clasificacion == SOLUCION_UNICA:
-        soluciones = obtener_soluciones(matriz_reducida, pivotes, cantidad_variables)
 
     return {
         "matriz_reducida": matriz_reducida,
         "pasos": pasos,
-        "clasificacion": clasificacion,
-        "soluciones": soluciones
+        **interpretar_resultado(matriz_reducida, pivotes, cantidad_variables)
     }
