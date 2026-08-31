@@ -241,21 +241,20 @@ Algebra-Lineal/
     └── test_restricciones_proyecto.py
 ```
 
-Dentro de `backend/` la dependencia también va en un solo sentido:
+Dentro de `backend/` la dependencia también va en un solo sentido, donde `→`
+significa «depende de»:
 
 ```text
-matrices
-   ↑
-operaciones_filas
-   ↑          ↑
-gauss   ←  gauss_jordan
-   ↑          ↑
-      sistemas
+sistemas  →  gauss_jordan  →  gauss  →  operaciones_filas  →  matrices
 ```
 
-`parser_sistemas.py` no depende de ningún otro módulo del proyecto: recibe texto y
-devuelve una matriz, o lanza `ValueError`. Eso permitirá reutilizarlo tal cual
-desde otra interfaz.
+Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
+eliminación hacia arriba, así que la diferencia entre los dos métodos está en un
+único bloque de código.
+
+`parser_sistemas.py` queda fuera de esa cadena porque no depende de ningún otro
+módulo del proyecto: recibe texto y devuelve una matriz, o lanza `ValueError`. Eso
+permitirá reutilizarlo tal cual desde otra interfaz.
 
 `backend/` contiene lógica pura: no usa `input()` ni `print()` y no depende de
 ninguna interfaz. `frontend/terminal/` es quien consume el backend y concentra
