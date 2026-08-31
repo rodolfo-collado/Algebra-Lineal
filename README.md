@@ -32,13 +32,13 @@ exactos y se muestran como fracciones cuando no son enteros.
 Desde la raíz del repositorio:
 
 ```bash
-python Semana_1/main.py
+python main.py
 ```
 
 En Windows también funciona:
 
 ```bash
-py -3 Semana_1/main.py
+py -3 main.py
 ```
 
 Para salir, elige la opción `7` del menú.
@@ -79,20 +79,35 @@ algoritmo por sí mismo.
 
 ## Estructura actual
 
+El proyecto separa la lógica matemática de la interfaz:
+
 ```text
 Algebra-Lineal/
+├── main.py                     # punto de entrada de la aplicación
 ├── README.md
 ├── CONTRIBUTING.md
-├── Semana_1/
-│   ├── main.py              # menú principal
-│   ├── opciones_menu.py     # acciones de cada opción del menú
-│   ├── entradas.py          # lectura y validación de datos del usuario
-│   ├── logica_matrices.py   # backend matemático (Gauss-Jordan, validaciones)
-│   └── salida.py            # formateo e impresión de matrices y pasos
+├── backend/
+│   └── logica_matrices.py      # Gauss-Jordan, validaciones y análisis
+├── frontend/
+│   └── terminal/
+│       ├── menu.py             # bucle del menú y acciones de cada opción
+│       ├── entradas.py         # lectura y validación de datos del usuario
+│       └── salida.py           # formateo e impresión de matrices y pasos
 └── tests/
     ├── test_logica_matrices.py
     └── test_salida.py
 ```
+
+`backend/` contiene lógica pura: no usa `input()` ni `print()` y no depende de
+ninguna interfaz. `frontend/terminal/` es quien consume el backend y concentra
+toda la interacción por consola. La dependencia va siempre en un sentido:
+
+```text
+frontend  →  backend
+```
+
+Esa separación deja espacio para añadir más adelante otra interfaz bajo
+`frontend/` sin tocar la lógica matemática.
 
 ## Desarrollo
 
