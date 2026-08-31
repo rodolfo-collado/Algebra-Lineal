@@ -180,9 +180,10 @@ Son dos operaciones distintas que comparten piezas:
 No dupliques el escalonamiento para implementar un método nuevo, y no añadas otra
 capa si las utilidades actuales se pueden reutilizar tal cual.
 
-Los dos métodos deben coincidir en la clasificación y, cuando la solución es
-única, en las soluciones. Lo único que cambia es el procedimiento que se muestra,
-así que las pruebas comparan resultados, nunca pasos.
+Los dos métodos deben coincidir siempre en la clasificación y en la solución
+final. Pueden diferir en los pasos, en la matriz resultante y en el sistema
+resultante, porque uno llega a la forma escalonada y el otro a la reducida. Las
+pruebas comparan resultados, nunca pasos.
 
 Las clasificaciones visibles son exactamente estas tres:
 
@@ -193,6 +194,25 @@ Inconsistente
 ```
 
 No se muestran rangos al usuario.
+
+## La interpretación del resultado vive en el backend
+
+Traducir una matriz resuelta a su sistema de ecuaciones, detectar las variables
+libres y despejar el conjunto solución son operaciones matemáticas, no de
+presentación. Van en `backend/` y deben poder reutilizarse desde cualquier
+frontend. Reglas:
+
+- `backend/sistemas.py` devuelve el sistema resultante y la solución ya listos
+  para mostrarse; el frontend solo les pone título y color;
+- ninguna de esas cadenas puede llevar códigos ANSI, títulos ni nada específico
+  de la terminal: `x1 = 1 + 5x3`, `x3 es libre` o `0 = 3` sirven igual en HTML;
+- las expresiones lineales se construyen con `backend/expresiones.py`, calculando
+  con `Fraction` y formateando solo al final. No se despeja concatenando texto;
+- Gauss y Gauss-Jordan comparten esa interpretación. No dupliques la lectura del
+  resultado por método;
+- una columna sin pivote produce una variable libre; una fila `0 = k` con `k`
+  distinto de cero produce un sistema inconsistente. Son casos distintos, y en el
+  segundo no se declara ninguna variable libre.
 
 ## El parser no depende del frontend
 

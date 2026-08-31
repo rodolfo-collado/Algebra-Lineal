@@ -11,10 +11,42 @@ from tests.ayudas import capturar, capturar_con_resultado, sin_ansi
 SOLUCION_UNICA_3X4 = [[1, 2, 3, 6], [2, -3, 2, 14], [3, 1, -1, -2]]
 INFINITAS_2X4 = [[1, 1, 1, 6], [0, 1, 2, 5]]
 INCONSISTENTE_2X3 = [[1, 1, 2], [1, 1, 5]]
+UNA_LIBRE_3X4 = [[1, 0, -5, 1], [0, 1, 1, 4], [0, 0, 0, 0]]
+VARIAS_LIBRES_3X6 = [[1, 6, 0, 3, 0, 0], [0, 0, 1, -4, 0, 5], [0, 0, 0, 0, 1, 7]]
+ENTRE_PIVOTES_2X4 = [[1, 1, 1, 5], [0, 1, 1, 2]]
+INCONSISTENTE_2X4 = [[1, 0, -2, 4], [0, 0, 0, 3]]
+
+TITULOS = (
+    "Pasos realizados",
+    "Matriz escalonada",
+    "Matriz reducida",
+    "Sistema resultante",
+    "Clasificación",
+    "Sustitución regresiva",
+    "Solución",
+)
 
 
 def resolver(funcion, matriz):
     return sin_ansi(capturar(funcion, matriz))
+
+
+def titulos_en_orden(salida):
+    return [linea for linea in salida.splitlines() if linea in TITULOS]
+
+
+def seccion(salida, titulo):
+    """Las lineas con contenido de una seccion, hasta el titulo siguiente."""
+    lineas = salida.splitlines()
+    contenido = []
+
+    for linea in lineas[lineas.index(titulo) + 1:]:
+        if linea in TITULOS:
+            break
+        if linea.strip():
+            contenido.append(linea)
+
+    return contenido
 
 
 class PruebasCreacionDeSistemaDirecto(unittest.TestCase):
@@ -136,6 +168,108 @@ class PruebasResolverPorGaussJordan(unittest.TestCase):
         self.assertIn(INCONSISTENTE, salida)
 
 
+class PruebasOrdenDeLaSalida(unittest.TestCase):
+    """Siempre aparecen matriz, sistema resultante, clasificacion y solucion."""
+
+    def test_gauss(self):
+        salida = resolver(opciones.resolver_por_gauss, SOLUCION_UNICA_3X4)
+
+        self.assertEqual(
+            titulos_en_orden(salida),
+            [
+                "Pasos realizados",
+                "Matriz escalonada",
+                "Sistema resultante",
+                "Clasificación",
+                "Sustitución regresiva",
+                "Solución",
+            ],
+        )
+
+    def test_gauss_jordan(self):
+        salida = resolver(opciones.resolver_por_gauss_jordan, SOLUCION_UNICA_3X4)
+
+        self.assertEqual(
+            titulos_en_orden(salida),
+            [
+                "Pasos realizados",
+                "Matriz reducida",
+                "Sistema resultante",
+                "Clasificación",
+                "Solución",
+            ],
+        )
+
+    def test_las_variables_libres_no_ocupan_una_seccion_aparte(self):
+        salida = resolver(opciones.resolver_por_gauss, UNA_LIBRE_3X4)
+
+        self.assertNotIn("Variables básicas", salida)
+        self.assertNotIn("Variables libres", salida)
+
+
+class PruebasSistemaResultanteEnPantalla(unittest.TestCase):
+    def test_incluye_las_filas_nulas(self):
+        salida = resolver(opciones.resolver_por_gauss, UNA_LIBRE_3X4)
+
+        self.assertEqual(
+            seccion(salida, "Sistema resultante"),
+            ["x1 - 5x3 = 1", "x2 + x3 = 4", "0 = 0"],
+        )
+
+    def test_incluye_la_contradiccion(self):
+        salida = resolver(opciones.resolver_por_gauss, INCONSISTENTE_2X4)
+
+        self.assertEqual(
+            seccion(salida, "Sistema resultante"), ["x1 - 2x3 = 4", "0 = 3"]
+        )
+
+
+class PruebasSolucionEnPantalla(unittest.TestCase):
+    def test_solucion_unica(self):
+        salida = resolver(opciones.resolver_por_gauss, SOLUCION_UNICA_3X4)
+
+        self.assertEqual(
+            seccion(salida, "Solución"), ["x1 = 1", "x2 = -2", "x3 = 3"]
+        )
+
+    def test_una_variable_libre(self):
+        salida = resolver(opciones.resolver_por_gauss_jordan, UNA_LIBRE_3X4)
+
+        self.assertEqual(
+            seccion(salida, "Solución"),
+            ["x1 = 1 + 5x3", "x2 = 4 - x3", "x3 es libre"],
+        )
+
+    def test_varias_variables_libres(self):
+        salida = resolver(opciones.resolver_por_gauss, VARIAS_LIBRES_3X6)
+
+        self.assertEqual(
+            seccion(salida, "Solución"),
+            [
+                "x1 = -6x2 - 3x4",
+                "x2 es libre",
+                "x3 = 5 + 4x4",
+                "x4 es libre",
+                "x5 = 7",
+            ],
+        )
+
+    def test_una_variable_pivote_no_depende_de_otra(self):
+        salida = resolver(opciones.resolver_por_gauss, ENTRE_PIVOTES_2X4)
+
+        self.assertEqual(
+            seccion(salida, "Solución"), ["x1 = 3", "x2 = 2 - x3", "x3 es libre"]
+        )
+
+    def test_sistema_inconsistente(self):
+        for funcion in (opciones.resolver_por_gauss, opciones.resolver_por_gauss_jordan):
+            with self.subTest(metodo=funcion.__name__):
+                salida = resolver(funcion, INCONSISTENTE_2X4)
+
+                self.assertEqual(seccion(salida, "Solución"), ["No existe solución."])
+                self.assertNotIn("es libre", salida)
+
+
 class PruebasEquivalenciaEnPantalla(unittest.TestCase):
     """Ambas opciones deben coincidir en clasificacion y soluciones."""
 
@@ -164,6 +298,34 @@ class PruebasEquivalenciaEnPantalla(unittest.TestCase):
         for linea in ("x1 = 1", "x2 = -2", "x3 = 3"):
             self.assertIn(linea, por_gauss)
             self.assertIn(linea, por_gauss_jordan)
+
+    def test_la_solucion_coincide_tambien_con_variables_libres(self):
+        matrices = (
+            UNA_LIBRE_3X4, VARIAS_LIBRES_3X6, ENTRE_PIVOTES_2X4, INCONSISTENTE_2X4
+        )
+
+        for matriz in matrices:
+            with self.subTest(matriz=matriz):
+                por_gauss = resolver(opciones.resolver_por_gauss, matriz)
+                por_gauss_jordan = resolver(
+                    opciones.resolver_por_gauss_jordan, matriz
+                )
+
+                self.assertEqual(
+                    seccion(por_gauss, "Solución"),
+                    seccion(por_gauss_jordan, "Solución"),
+                )
+
+    def test_el_sistema_resultante_puede_diferir(self):
+        por_gauss = resolver(opciones.resolver_por_gauss, ENTRE_PIVOTES_2X4)
+        por_gauss_jordan = resolver(
+            opciones.resolver_por_gauss_jordan, ENTRE_PIVOTES_2X4
+        )
+
+        self.assertNotEqual(
+            seccion(por_gauss, "Sistema resultante"),
+            seccion(por_gauss_jordan, "Sistema resultante"),
+        )
 
 
 class PruebasValidacionAntesDeResolver(unittest.TestCase):
