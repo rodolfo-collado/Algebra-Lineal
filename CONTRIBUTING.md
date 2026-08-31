@@ -63,7 +63,7 @@ python -m unittest discover -v
 Comprueba también que la aplicación siga iniciando:
 
 ```bash
-python Semana_1/main.py
+python main.py
 ```
 
 ## Restricciones matemáticas

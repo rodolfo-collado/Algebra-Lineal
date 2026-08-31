@@ -3,7 +3,7 @@
 import unittest
 from fractions import Fraction
 
-from salida import formatear_numero, obtener_lineas_matriz
+from frontend.terminal.salida import formatear_numero, obtener_lineas_matriz
 
 
 class PruebasFormatoDeNumeros(unittest.TestCase):
