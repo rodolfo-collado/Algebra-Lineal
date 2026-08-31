@@ -2,7 +2,14 @@
 
 from fractions import Fraction
 
-from backend.expresiones import crear_expresion, formatear_ecuacion
+from backend.expresiones import (
+    crear_expresion,
+    expresion_de_variable,
+    formatear_ecuacion,
+    formatear_expresion,
+    multiplicar_expresion,
+    restar_expresiones
+)
 from backend.gauss import aplicar_gauss
 from backend.gauss_jordan import aplicar_gauss_jordan
 from backend.matrices import formatear_fraccion, validar_matriz_rectangular
@@ -11,6 +18,8 @@ from backend.operaciones_filas import texto_factor
 SOLUCION_UNICA = "Consistente de solución única"
 SOLUCIONES_INFINITAS = "Consistente de soluciones infinitas"
 INCONSISTENTE = "Inconsistente"
+
+SIN_SOLUCION = "No existe solución."
 
 
 def contar_variables(matriz_aumentada):
@@ -82,6 +91,68 @@ def ecuaciones_de_matriz(matriz_aumentada):
         ecuaciones.append(formatear_ecuacion(izquierda, fila[cantidad_variables]))
 
     return ecuaciones
+
+
+def variables_libres(pivotes, cantidad_variables):
+    """Las variables cuya columna no llego a tener pivote."""
+    # Identificación de columnas pivote: las demás columnas quedan libres.
+    columnas_pivote = {columna for _, columna in pivotes}
+
+    return [
+        columna + 1
+        for columna in range(cantidad_variables)
+        if columna not in columnas_pivote
+    ]
+
+
+def solucion_general(matriz_resuelta, pivotes, cantidad_variables):
+    """Expresa cada variable pivote en funcion unicamente de las libres.
+
+    Devuelve una expresion lineal por variable, de x1 a xn, en ese orden. Cada
+    variable libre queda representada por si misma. Sirve igual para una forma
+    escalonada que para una forma reducida.
+    """
+    expresiones = {
+        variable: expresion_de_variable(variable)
+        for variable in range(1, cantidad_variables + 1)
+    }
+
+    # Sustitución regresiva simbólica: los pivotes se recorren de abajo hacia
+    # arriba, así que al despejar uno los de su derecha ya están despejados.
+    for fila, columna in reversed(pivotes):
+        valores = matriz_resuelta[fila]
+        despejada = crear_expresion(valores[cantidad_variables])
+
+        # Sustitución de las variables ya despejadas.
+        for siguiente in range(columna + 1, cantidad_variables):
+            coeficiente = valores[siguiente]
+            if coeficiente == 0:
+                continue
+
+            despejada = restar_expresiones(
+                despejada,
+                multiplicar_expresion(expresiones[siguiente + 1], coeficiente)
+            )
+
+        expresiones[columna + 1] = multiplicar_expresion(
+            despejada, Fraction(1, 1) / valores[columna]
+        )
+
+    return [expresiones[variable] for variable in range(1, cantidad_variables + 1)]
+
+
+def formatear_solucion_general(expresiones, libres):
+    """Una linea por variable, en orden, marcando cuales quedaron libres."""
+    sin_pivote = set(libres)
+    lineas = []
+
+    for variable, expresion in enumerate(expresiones, start=1):
+        if variable in sin_pivote:
+            lineas.append(f"x{variable} es libre")
+        else:
+            lineas.append(f"x{variable} = {formatear_expresion(expresion)}")
+
+    return lineas
 
 
 def obtener_soluciones(matriz_reducida, pivotes, cantidad_variables):
