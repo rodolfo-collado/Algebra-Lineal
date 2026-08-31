@@ -105,6 +105,22 @@ no participa en ningún cálculo ni sustituye ningún algoritmo.
 
 No agregues NumPy, SciPy, SymPy ni equivalentes a las dependencias del proyecto.
 
+## Matrices y sistemas de ecuaciones
+
+Son dos conceptos distintos y el código debe mantenerlos separados:
+
+- Gauss-Jordan se aplica a **cualquier matriz rectangular**. No se rechaza una
+  matriz por no ser cuadrada ni por no tener la forma `n x (n+1)`.
+- El significado de una matriz **no se deduce de sus dimensiones**. Una matriz
+  `3 x 3` puede ser una matriz cualquiera o el sistema de 3 ecuaciones y 2
+  variables.
+- Cuando una matriz representa un sistema, quien llama lo indica de forma
+  explícita usando `resolver_sistema`, y la última columna son los términos
+  independientes.
+
+Al escribir el algoritmo, no asumas que toda columna tendrá pivote, que toda fila
+tendrá pivote ni que la matriz terminará como la identidad.
+
 ## Comentarios en el código
 
 Comenta solo cuando ayude a entender una decisión que no es evidente. Prefiere
