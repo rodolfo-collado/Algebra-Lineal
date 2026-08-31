@@ -5,13 +5,18 @@ from fractions import Fraction
 
 from backend.sistemas import (
     INCONSISTENTE,
+    SIN_SOLUCION,
     SOLUCION_UNICA,
     SOLUCIONES_INFINITAS,
     contar_variables,
+    ecuaciones_de_matriz,
+    interpretar_resultado,
     resolver_sistema_gauss,
     resolver_sistema_gauss_jordan,
+    solucion_general,
     sustitucion_regresiva,
     validar_matriz_aumentada,
+    variables_libres,
 )
 
 # Sistemas usados para comprobar que ambos metodos coinciden.
@@ -29,7 +34,24 @@ SISTEMAS = (
     [[1, 1, 2], [1, 1, 5]],
     [[1, 1, 1, 3], [2, 2, 2, 7]],
     [[1, 1, 2], [1, -1, 0], [1, 1, 5]],
+    # Una variable libre, con x1 dependiendo todavia de otra variable pivote.
+    [[1, 1, 1, 5], [0, 1, 1, 2]],
+    [[1, 0, -5, 1], [0, 1, 1, 4], [0, 0, 0, 0]],
+    # Dos variables libres, una de ellas por ecuaciones redundantes.
+    [[1, 6, 0, 3, 0, 0], [0, 0, 1, -4, 0, 5], [0, 0, 0, 0, 1, 7]],
+    [[2, 4, 6, 8], [1, 2, 3, 4]],
+    # Fracciones con una variable libre.
+    [[Fraction(1, 2), Fraction(-3, 4), 0, Fraction(2, 3)], [0, 1, Fraction(1, 3), 2]],
 )
+
+
+def evaluar(expresion, valores):
+    """Sustituye valores concretos en una expresion lineal."""
+    total = expresion["constante"]
+    for variable, coeficiente in expresion["coeficientes"].items():
+        total += coeficiente * valores[variable]
+
+    return total
 
 
 class PruebasSolucionUnica(unittest.TestCase):
@@ -333,6 +355,204 @@ class PruebasSustitucionRegresiva(unittest.TestCase):
         self.assertEqual(matriz, [[1, 2, 5], [0, 1, 1]])
 
 
+class PruebasEcuacionesDeMatriz(unittest.TestCase):
+    """Traduccion de una matriz aumentada al sistema que representa."""
+
+    def test_matriz_identidad(self):
+        self.assertEqual(
+            ecuaciones_de_matriz([[1, 0, 3], [0, 1, 2]]), ["x1 = 3", "x2 = 2"]
+        )
+
+    def test_una_variable_ausente_no_aparece(self):
+        self.assertEqual(
+            ecuaciones_de_matriz([[1, 0, -5, 1], [0, 1, 1, 4]]),
+            ["x1 - 5x3 = 1", "x2 + x3 = 4"],
+        )
+
+    def test_una_fila_nula_se_muestra_como_cero_igual_a_cero(self):
+        self.assertEqual(ecuaciones_de_matriz([[1, 1, 2], [0, 0, 0]])[1], "0 = 0")
+
+    def test_una_contradiccion_se_muestra_como_cero_igual_a_k(self):
+        self.assertEqual(ecuaciones_de_matriz([[1, 1, 2], [0, 0, 5]])[1], "0 = 5")
+
+    def test_coeficientes_fraccionarios(self):
+        matriz = [[Fraction(1, 2), Fraction(-3, 4), Fraction(2, 3)]]
+
+        self.assertEqual(ecuaciones_de_matriz(matriz), ["1/2x1 - 3/4x2 = 2/3"])
+
+    def test_coeficientes_de_uno_y_menos_uno(self):
+        self.assertEqual(ecuaciones_de_matriz([[1, -1, 0]]), ["x1 - x2 = 0"])
+
+    def test_varias_variables(self):
+        matriz = [[1, 6, 0, 3, 0, 0], [0, 0, 1, -4, 0, 5], [0, 0, 0, 0, 1, 7]]
+
+        self.assertEqual(
+            ecuaciones_de_matriz(matriz),
+            ["x1 + 6x2 + 3x4 = 0", "x3 - 4x4 = 5", "x5 = 7"],
+        )
+
+    def test_una_matriz_invalida_lanza_valueerror(self):
+        with self.assertRaises(ValueError):
+            ecuaciones_de_matriz([[1], [2]])
+
+
+class PruebasVariablesLibres(unittest.TestCase):
+    def test_una_columna_sin_pivote_deja_libre_a_su_variable(self):
+        self.assertEqual(variables_libres([(0, 0), (1, 1)], 3), [3])
+
+    def test_varias_columnas_sin_pivote(self):
+        self.assertEqual(variables_libres([(0, 0), (1, 2), (2, 4)], 5), [2, 4])
+
+    def test_un_pivote_por_variable_no_deja_libres(self):
+        self.assertEqual(variables_libres([(0, 0), (1, 1)], 2), [])
+
+
+class PruebasSolucionGeneral(unittest.TestCase):
+    def test_una_variable_libre(self):
+        matriz = [[1, 0, -5, 1], [0, 1, 1, 4], [0, 0, 0, 0]]
+        resultado = interpretar_resultado(matriz, [(0, 0), (1, 1)], 3)
+
+        self.assertEqual(resultado["clasificacion"], SOLUCIONES_INFINITAS)
+        self.assertEqual(
+            resultado["solucion_general"],
+            ["x1 = 1 + 5x3", "x2 = 4 - x3", "x3 es libre"],
+        )
+
+    def test_varias_variables_libres_en_orden_de_variable(self):
+        matriz = [[1, 6, 0, 3, 0, 0], [0, 0, 1, -4, 0, 5], [0, 0, 0, 0, 1, 7]]
+        resultado = interpretar_resultado(matriz, [(0, 0), (1, 2), (2, 4)], 5)
+
+        self.assertEqual(
+            resultado["solucion_general"],
+            [
+                "x1 = -6x2 - 3x4",
+                "x2 es libre",
+                "x3 = 5 + 4x4",
+                "x4 es libre",
+                "x5 = 7",
+            ],
+        )
+
+    def test_una_variable_pivote_se_despeja_hasta_depender_solo_de_las_libres(self):
+        # x1 depende de x2, que a su vez todavia depende de la variable libre.
+        matriz = [[1, 1, 1, 5], [0, 1, 1, 2]]
+        resultado = interpretar_resultado(matriz, [(0, 0), (1, 1)], 3)
+
+        self.assertEqual(
+            resultado["solucion_general"], ["x1 = 3", "x2 = 2 - x3", "x3 es libre"]
+        )
+
+    def test_el_despeje_mantiene_fracciones_exactas(self):
+        resultado = interpretar_resultado([[-3, 4, -5, 2]], [(0, 0)], 3)
+
+        self.assertEqual(
+            resultado["solucion_general"],
+            ["x1 = -2/3 + 4/3x2 - 5/3x3", "x2 es libre", "x3 es libre"],
+        )
+
+    def test_la_solucion_unica_usa_el_mismo_modelo(self):
+        matriz = [[1, 0, 0, 1], [0, 1, 0, -2], [0, 0, 1, 3]]
+        resultado = interpretar_resultado(matriz, [(0, 0), (1, 1), (2, 2)], 3)
+
+        self.assertEqual(resultado["clasificacion"], SOLUCION_UNICA)
+        self.assertEqual(
+            resultado["solucion_general"], ["x1 = 1", "x2 = -2", "x3 = 3"]
+        )
+        self.assertEqual(resultado["soluciones"], [1, -2, 3])
+
+    def test_ninguna_expresion_depende_de_una_variable_pivote(self):
+        pivotes = [(0, 0), (1, 1)]
+        expresiones = solucion_general([[1, 1, 1, 5], [0, 1, 1, 2]], pivotes, 3)
+        libres = set(variables_libres(pivotes, 3))
+
+        for expresion in expresiones:
+            self.assertLessEqual(set(expresion["coeficientes"]), libres)
+
+    def test_los_valores_se_mantienen_como_fracciones(self):
+        expresiones = solucion_general([[2, 1, 3]], [(0, 0)], 2)
+
+        self.assertEqual(expresiones[0]["constante"], Fraction(3, 2))
+        self.assertEqual(expresiones[0]["coeficientes"], {2: Fraction(-1, 2)})
+
+
+class PruebasSolucionGeneralSatisfaceElSistema(unittest.TestCase):
+    """Cualquier valor de las variables libres debe cumplir las ecuaciones."""
+
+    CASOS = (
+        ([[1, 0, -5, 1], [0, 1, 1, 4], [0, 0, 0, 0]], [(0, 0), (1, 1)], 3),
+        ([[1, 1, 1, 5], [0, 1, 1, 2]], [(0, 0), (1, 1)], 3),
+        (
+            [[1, 6, 0, 3, 0, 0], [0, 0, 1, -4, 0, 5], [0, 0, 0, 0, 1, 7]],
+            [(0, 0), (1, 2), (2, 4)],
+            5,
+        ),
+        ([[-3, 4, -5, 2]], [(0, 0)], 3),
+    )
+
+    def test_las_ecuaciones_se_cumplen_con_valores_arbitrarios(self):
+        for matriz, pivotes, cantidad_variables in self.CASOS:
+            with self.subTest(matriz=matriz):
+                expresiones = solucion_general(matriz, pivotes, cantidad_variables)
+                libres = variables_libres(pivotes, cantidad_variables)
+
+                # Valores arbitrarios y fraccionarios para las variables libres.
+                valores = {
+                    variable: Fraction(indice + 2, 3)
+                    for indice, variable in enumerate(libres)
+                }
+                for variable in range(1, cantidad_variables + 1):
+                    if variable not in valores:
+                        valores[variable] = evaluar(
+                            expresiones[variable - 1], valores
+                        )
+
+                for fila in matriz:
+                    total = sum(
+                        fila[columna] * valores[columna + 1]
+                        for columna in range(cantidad_variables)
+                    )
+                    self.assertEqual(total, fila[cantidad_variables])
+
+
+class PruebasSolucionDeSistemasInconsistentes(unittest.TestCase):
+    MATRIZ = [[1, 0, -2, 4], [0, 0, 0, 3]]
+
+    def test_la_contradiccion_queda_visible_en_el_sistema_resultante(self):
+        resultado = interpretar_resultado(self.MATRIZ, [(0, 0)], 3)
+
+        self.assertEqual(resultado["clasificacion"], INCONSISTENTE)
+        self.assertEqual(
+            resultado["ecuaciones_resultantes"], ["x1 - 2x3 = 4", "0 = 3"]
+        )
+
+    def test_no_existe_solucion(self):
+        resultado = interpretar_resultado(self.MATRIZ, [(0, 0)], 3)
+
+        self.assertEqual(resultado["solucion_general"], [SIN_SOLUCION])
+        self.assertEqual(resultado["soluciones"], [])
+
+    def test_una_columna_sin_pivote_no_declara_variables_libres(self):
+        for resolver in (resolver_sistema_gauss, resolver_sistema_gauss_jordan):
+            with self.subTest(metodo=resolver.__name__):
+                resultado = resolver(self.MATRIZ)
+
+                for linea in resultado["solucion_general"]:
+                    self.assertNotIn("es libre", linea)
+
+    def test_una_variable_libre_no_vuelve_inconsistente_el_sistema(self):
+        resultado = resolver_sistema_gauss([[1, 1, 1, 6], [0, 1, 2, 5]])
+
+        self.assertEqual(resultado["clasificacion"], SOLUCIONES_INFINITAS)
+        self.assertIn("x3 es libre", resultado["solucion_general"])
+
+    def test_una_fila_nula_tampoco_vuelve_inconsistente_el_sistema(self):
+        resultado = resolver_sistema_gauss([[1, 1, 2], [1, 1, 2]])
+
+        self.assertEqual(resultado["clasificacion"], SOLUCIONES_INFINITAS)
+        self.assertEqual(resultado["ecuaciones_resultantes"][1], "0 = 0")
+        self.assertNotIn(SIN_SOLUCION, resultado["solucion_general"])
+
+
 class PruebasEquivalenciaDeMetodos(unittest.TestCase):
     """Cambia el procedimiento mostrado, no el resultado matematico."""
 
@@ -390,6 +610,55 @@ class PruebasEquivalenciaDeMetodos(unittest.TestCase):
                         for columna in range(cantidad_variables)
                     )
                     self.assertEqual(total, fila[cantidad_variables])
+
+    def test_ambos_metodos_dan_la_misma_solucion_general(self):
+        for matriz in SISTEMAS:
+            with self.subTest(matriz=matriz):
+                por_gauss = resolver_sistema_gauss(matriz)
+                por_gauss_jordan = resolver_sistema_gauss_jordan(matriz)
+
+                self.assertEqual(
+                    por_gauss["solucion_general"],
+                    por_gauss_jordan["solucion_general"],
+                )
+
+    def test_los_sistemas_de_prueba_cubren_una_y_dos_variables_libres(self):
+        cantidades = set()
+        for matriz in SISTEMAS:
+            solucion = resolver_sistema_gauss(matriz)["solucion_general"]
+            cantidades.add(
+                sum(1 for linea in solucion if linea.endswith("es libre"))
+            )
+
+        self.assertLessEqual({0, 1, 2}, cantidades)
+
+    def test_el_sistema_resultante_describe_la_matriz_de_cada_metodo(self):
+        for matriz in SISTEMAS:
+            with self.subTest(matriz=matriz):
+                por_gauss = resolver_sistema_gauss(matriz)
+                por_gauss_jordan = resolver_sistema_gauss_jordan(matriz)
+
+                self.assertEqual(
+                    por_gauss["ecuaciones_resultantes"],
+                    ecuaciones_de_matriz(por_gauss["matriz_escalonada"]),
+                )
+                self.assertEqual(
+                    por_gauss_jordan["ecuaciones_resultantes"],
+                    ecuaciones_de_matriz(por_gauss_jordan["matriz_reducida"]),
+                )
+
+    def test_el_sistema_resultante_puede_diferir_aunque_la_solucion_coincida(self):
+        matriz = [[1, 1, 1, 5], [0, 1, 1, 2]]
+        por_gauss = resolver_sistema_gauss(matriz)
+        por_gauss_jordan = resolver_sistema_gauss_jordan(matriz)
+
+        self.assertNotEqual(
+            por_gauss["ecuaciones_resultantes"],
+            por_gauss_jordan["ecuaciones_resultantes"],
+        )
+        self.assertEqual(
+            por_gauss["solucion_general"], por_gauss_jordan["solucion_general"]
+        )
 
 
 if __name__ == "__main__":
