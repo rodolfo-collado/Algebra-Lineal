@@ -110,19 +110,25 @@ Inconsistente
 
 ## Interpretación del resultado
 
-Los dos métodos terminan mostrando lo mismo y en el mismo orden:
+La salida se adapta a la clasificación obtenida. La matriz, la clasificación y
+la solución siempre se muestran; el **sistema resultante** se conserva cuando
+ayuda a interpretar una forma escalonada, una variable libre o una
+contradicción. Si la matriz ya permite leer directamente `x1 = C1`, `x2 = C2`,
+etc., no se repiten esas mismas ecuaciones antes de la solución.
+
+Por ejemplo, una solución única leída directamente se presenta de forma breve:
 
 ```text
-matriz resultante
-sistema resultante
-clasificación
-solución
+Consistente de solución única
+
+x1 = 3
+x2 = 2/3
 ```
 
-El **sistema resultante** es la matriz obtenida traducida de vuelta a ecuaciones:
-la escalonada en Gauss y la reducida en Gauss-Jordan, así que puede diferir entre
-los dos métodos. Las filas nulas (`0 = 0`) y las contradictorias (`0 = 3`) también
-se escriben, porque forman parte del sistema al que se llegó.
+En Gauss, el sistema resultante sí se mantiene cuando permite seguir la
+sustitución regresiva. Las filas nulas (`0 = 0`) no cambian por sí solas la
+clasificación: si todas las variables tienen pivote, la solución sigue siendo
+única.
 
 La **solución** es la interpretación final del conjunto solución. Si falta algún
 pivote, las variables de esas columnas quedan libres y las demás se despejan en
@@ -134,7 +140,13 @@ Sistema resultante
 x1 - 5x3 = 1
 x2 + x3 = 4
 
+Clasificación
+
+Consistente de soluciones infinitas
+
 Solución
+
+La variable x3 no tiene pivote, por lo que es libre.
 
 x1 = 1 + 5x3
 x2 = 4 - x3
@@ -146,17 +158,21 @@ variable pivote. Para `x1 + x2 + x3 = 5` junto a `x2 + x3 = 2`, la solución es
 `x1 = 3`, no `x1 = 5 - x2 - x3`. Todo se calcula con fracciones exactas, y las
 variables se listan de `x1` a `xn` aunque algunas sean libres.
 
-Una contradicción deja el sistema sin conjunto solución, así que no se declara
-ninguna variable libre:
+Cuando existe una fila contradictoria, se muestra su posición y su contenido
+exacto. Por ejemplo:
 
 ```text
-Solución
+0 = 5
 
-No existe solución.
+En la fila 3 se obtiene [0 0 0 | 5], que equivale a 0 = 5.
+
+Como esta igualdad es imposible, el sistema es inconsistente y no tiene solución.
 ```
 
-Esta lectura del resultado vive completa en `backend/`, sin colores ni textos de
-terminal, para que cualquier interfaz pueda mostrarla tal cual.
+La evidencia estructurada —fila contradictoria, filas redundantes, columnas sin
+pivote y valores como `Fraction`— se calcula en `backend/`. La terminal solo la
+presenta, de modo que una interfaz futura puede reutilizar la misma interpretación
+sin reconstruir conclusiones matemáticas.
 
 Gauss-Jordan sigue sirviendo para reducir **cualquier matriz rectangular**
 (`2 x 3`, `3 x 2`, `4 x 3`, etc.), sin exigir matrices cuadradas ni de la forma
