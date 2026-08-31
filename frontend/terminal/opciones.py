@@ -17,7 +17,8 @@ from frontend.terminal.entradas import (
 from frontend.terminal.salida import (
     formatear_numero,
     imprimir_matriz,
-    imprimir_paso
+    imprimir_paso,
+    obtener_lineas_matriz
 )
 
 _AVISO_INDICES = "Los índices de filas y columnas empiezan en 1."
@@ -150,29 +151,25 @@ def mostrar_pasos(pasos):
         print()
 
 
-def mostrar_matriz_resultante(titulo, matriz):
+def mostrar_seccion(titulo, lineas):
+    """Un subtitulo y sus lineas ya formateadas por el backend."""
     consola.subtitulo(titulo)
     print()
-    imprimir_matriz(matriz)
+    for linea in lineas:
+        print(linea)
 
 
 def mostrar_sustitucion(pasos):
-    consola.subtitulo("Sustitución regresiva")
-    print()
+    lineas = []
+
     for paso in pasos:
         valor = formatear_numero(paso["valor"])
         if paso["expresion"] == valor:
-            print(f"x{paso['variable']} = {valor}")
+            lineas.append(f"x{paso['variable']} = {valor}")
         else:
-            print(f"x{paso['variable']} = {paso['expresion']} = {valor}")
+            lineas.append(f"x{paso['variable']} = {paso['expresion']} = {valor}")
 
-
-def mostrar_resultado(clasificacion, soluciones):
-    consola.subtitulo("Resultado")
-    print()
-    print(clasificacion)
-    for indice, solucion in enumerate(soluciones):
-        print(f"x{indice + 1} = {formatear_numero(solucion)}")
+    mostrar_seccion("Sustitución regresiva", lineas)
 
 
 def validar_como_sistema(matriz):
@@ -197,10 +194,14 @@ def resolver_por_gauss(matriz):
     resultado = resolver_sistema_gauss(matriz)
 
     mostrar_pasos(resultado["pasos"])
-    mostrar_matriz_resultante("Matriz escalonada", resultado["matriz_escalonada"])
+    mostrar_seccion(
+        "Matriz escalonada", obtener_lineas_matriz(resultado["matriz_escalonada"])
+    )
+    mostrar_seccion("Sistema resultante", resultado["ecuaciones_resultantes"])
+    mostrar_seccion("Clasificación", [resultado["clasificacion"]])
     if resultado["pasos_sustitucion"]:
         mostrar_sustitucion(resultado["pasos_sustitucion"])
-    mostrar_resultado(resultado["clasificacion"], resultado["soluciones"])
+    mostrar_seccion("Solución", resultado["solucion_general"])
 
 
 def resolver_por_gauss_jordan(matriz):
@@ -212,5 +213,9 @@ def resolver_por_gauss_jordan(matriz):
     resultado = resolver_sistema_gauss_jordan(matriz)
 
     mostrar_pasos(resultado["pasos"])
-    mostrar_matriz_resultante("Matriz reducida", resultado["matriz_reducida"])
-    mostrar_resultado(resultado["clasificacion"], resultado["soluciones"])
+    mostrar_seccion(
+        "Matriz reducida", obtener_lineas_matriz(resultado["matriz_reducida"])
+    )
+    mostrar_seccion("Sistema resultante", resultado["ecuaciones_resultantes"])
+    mostrar_seccion("Clasificación", [resultado["clasificacion"]])
+    mostrar_seccion("Solución", resultado["solucion_general"])
