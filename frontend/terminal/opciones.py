@@ -1,6 +1,9 @@
 from backend.gauss_jordan import aplicar_gauss_jordan
 from backend.matrices import generar_matriz, validar_matriz_rectangular
-from backend.sistemas import resolver_sistema, validar_matriz_aumentada
+from backend.sistemas import (
+    resolver_sistema_gauss_jordan,
+    validar_matriz_aumentada
+)
 from frontend.terminal import consola
 from frontend.terminal.entradas import (
     pedir_dimensiones,
@@ -135,7 +138,7 @@ def resolver_sistema_menu(matriz):
 
     consola.titulo("Sistema de ecuaciones por Gauss-Jordan")
     consola.info("La última columna se interpreta como los términos independientes.")
-    resultado = resolver_sistema(matriz)
+    resultado = resolver_sistema_gauss_jordan(matriz)
     mostrar_reduccion(resultado["pasos"], resultado["matriz_reducida"])
 
     consola.subtitulo("Resultado")
