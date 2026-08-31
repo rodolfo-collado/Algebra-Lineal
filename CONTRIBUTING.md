@@ -159,11 +159,59 @@ Son dos conceptos distintos y el código debe mantenerlos separados:
   `3 x 3` puede ser una matriz cualquiera o el sistema de 3 ecuaciones y 2
   variables.
 - Cuando una matriz representa un sistema, quien llama lo indica de forma
-  explícita usando `resolver_sistema`, y la última columna son los términos
-  independientes.
+  explícita usando `resolver_sistema_gauss` o `resolver_sistema_gauss_jordan`, y
+  la última columna son los términos independientes.
+- Antes de resolver, la comprobación se hace con `validar_matriz_aumentada`, no
+  comparando `filas` con `columnas`.
 
 Al escribir el algoritmo, no asumas que toda columna tendrá pivote, que toda fila
 tendrá pivote ni que la matriz terminará como la identidad.
+
+## Gauss y Gauss-Jordan
+
+Son dos operaciones distintas que comparten piezas:
+
+- `backend/operaciones_filas.py` tiene las operaciones elementales (buscar
+  pivote, intercambiar, normalizar, eliminar) y el registro de pasos.
+- `backend/gauss.py` solo elimina **hacia abajo** y deja la forma escalonada.
+- `backend/gauss_jordan.py` parte de `aplicar_gauss` y solo añade la eliminación
+  **hacia arriba**.
+
+No dupliques el escalonamiento para implementar un método nuevo, y no añadas otra
+capa si las utilidades actuales se pueden reutilizar tal cual.
+
+Los dos métodos deben coincidir en la clasificación y, cuando la solución es
+única, en las soluciones. Lo único que cambia es el procedimiento que se muestra,
+así que las pruebas comparan resultados, nunca pasos.
+
+Las clasificaciones visibles son exactamente estas tres:
+
+```text
+Consistente de solución única
+Consistente de soluciones infinitas
+Inconsistente
+```
+
+No se muestran rangos al usuario.
+
+## El parser no depende del frontend
+
+`backend/parser_sistemas.py` convierte texto en una matriz aumentada y es la
+única puerta de entrada de los sistemas escritos a mano. Reglas:
+
+- no puede usar `input()`, `print()`, `colorama` ni nada de `frontend/`;
+- recibe texto y devuelve una matriz, o lanza `ValueError` con un mensaje
+  entendible;
+- el frontend atrapa ese `ValueError` y lo muestra con las utilidades de consola;
+- la interpretación se hace con `re`, nunca con `eval`, `exec` ni librerías
+  algebraicas externas.
+
+La conversión de texto a número está centralizada en `convertir_a_numero`. Si hace
+falta leer un número en otro sitio, reutilízala en vez de escribir otro parser.
+
+El parser devuelve solo la matriz aumentada, sin metadata sobre su origen: el
+backend matemático no debe saber si el sistema se escribió como texto o se ingresó
+coeficiente por coeficiente.
 
 ## Comentarios en el código
 
