@@ -10,31 +10,28 @@ La aplicación se usa desde la terminal, mediante un menú interactivo.
 
 - Generar una matriz con valores aleatorios a partir de sus dimensiones.
 - Crear una matriz ingresando cada elemento manualmente.
+- Crear un sistema de ecuaciones, escribiéndolo directamente como texto o
+  ingresando sus coeficientes uno por uno.
 - Modificar un elemento en una posición dada.
 - Consultar un elemento en una posición dada.
 - Mostrar la matriz completa con las columnas alineadas.
-- Reducir por Gauss-Jordan cualquier matriz rectangular, mostrando los pasos
-  realizados y la matriz reducida.
-- Resolver la matriz como sistema de ecuaciones, mostrando los pasos, la matriz
-  reducida y la clasificación del sistema.
+- Resolver el sistema por **Gauss**, mostrando la eliminación hacia abajo, la
+  matriz escalonada, la sustitución regresiva y las soluciones.
+- Resolver el sistema por **Gauss-Jordan**, mostrando la reducción completa, la
+  matriz reducida y las soluciones.
 
-Reducir una matriz y resolver un sistema son dos operaciones distintas, y el menú
-las separa. Gauss-Jordan no exige matrices cuadradas ni de la forma `n x (n+1)`:
-funciona con cualquier matriz rectangular (`2 x 3`, `3 x 2`, `4 x 3`, etc.), y no
-todas las columnas ni todas las filas tienen que terminar con un pivote.
-
-Una matriz solo se interpreta como sistema de ecuaciones cuando se elige esa
-opción del menú. En ese caso la **última columna** se toma explícitamente como los
-términos independientes; el significado nunca se deduce de las dimensiones. Por
-eso una matriz `3 x 3` puede ser una matriz cualquiera o el sistema de 3
-ecuaciones y 2 variables, según la opción que se use.
-
-La clasificación del sistema es una de estas tres:
+El menú principal es este:
 
 ```text
-Consistente de solución única
-Consistente de soluciones infinitas
-Inconsistente
+1. Generar matriz
+2. Crear matriz
+3. Crear sistema de ecuaciones
+4. Modificar elemento
+5. Consultar elemento
+6. Ver matriz
+7. Resolver por Gauss
+8. Resolver por Gauss-Jordan
+9. Salir
 ```
 
 Los cálculos usan `fractions.Fraction`, así que los resultados son exactos y se
@@ -44,6 +41,79 @@ La interfaz de terminal usa colores, limpia la pantalla entre secciones y espera
 una confirmación antes de volver al menú, para que los resultados se puedan leer
 con calma.
 
+## Sistemas de ecuaciones
+
+La opción `Crear sistema de ecuaciones` abre un submenú:
+
+```text
+1. Ingresar sistema directamente
+2. Ingresar coeficientes manualmente
+3. Volver
+```
+
+En el ingreso directo se escribe el sistema completo, separando las ecuaciones
+con `;`:
+
+```text
+x1 - 3x2 - 5x3 = 0; x2 + x3 = 3
+```
+
+que produce esta matriz aumentada:
+
+```text
+[  1  -3  -5   0 ]
+[  0   1   1   3 ]
+```
+
+Las variables son `x1`, `x2`, `x3`, … con índice desde 1. Se admiten espacios
+libres, coeficientes implícitos (`x1` vale `1x1` y `-x2` vale `-1x2`), variables
+ausentes (valen cero), enteros, fracciones (`1/2x1`) y decimales (`0.5x1`). El
+lado derecho del `=` debe ser un número.
+
+El ingreso manual pide la cantidad de variables y de ecuaciones, y luego cada
+coeficiente y cada término independiente. Ambas formas producen exactamente la
+misma matriz aumentada, así que son intercambiables.
+
+Volver al menú, o escribir un sistema con un formato inválido, deja intacta la
+matriz activa: solo un sistema creado correctamente la reemplaza.
+
+## Resolver un sistema
+
+Una matriz solo se interpreta como sistema de ecuaciones cuando se elige uno de
+los dos métodos de resolución. En ese caso la **última columna** se toma
+explícitamente como los términos independientes; el significado nunca se deduce
+de las dimensiones. Por eso una matriz `3 x 3` puede ser una matriz cualquiera o
+el sistema de 3 ecuaciones y 2 variables, según la opción que se use. Da igual si
+la matriz se creó con `Crear matriz` o con `Crear sistema de ecuaciones`.
+
+La diferencia entre los dos métodos está en el procedimiento:
+
+- **Gauss** solo elimina hacia abajo. Deja la matriz escalonada y, cuando la
+  solución es única, despeja las variables de abajo hacia arriba mediante
+  sustitución regresiva.
+- **Gauss-Jordan** continúa eliminando hacia arriba hasta la forma reducida, y
+  las soluciones se leen directamente de la última columna.
+
+Para el mismo sistema los dos llegan a la misma clasificación y, cuando hay
+solución única, a las mismas soluciones.
+
+La clasificación del sistema es una de estas tres:
+
+```text
+Consistente de solución única
+Consistente de soluciones infinitas
+Inconsistente
+```
+
+Cuando hay infinitas soluciones o el sistema es inconsistente no se ejecuta la
+sustitución regresiva: no se inventan valores para las variables libres.
+
+Gauss-Jordan sigue sirviendo para reducir **cualquier matriz rectangular**
+(`2 x 3`, `3 x 2`, `4 x 3`, etc.), sin exigir matrices cuadradas ni de la forma
+`n x (n+1)`, y sin suponer que toda fila o toda columna acabe con pivote. Esa
+capacidad vive en `backend/gauss_jordan.py` y se puede reutilizar, aunque el menú
+esté orientado a resolver sistemas.
+
 ## Requisitos
 
 - [uv](https://docs.astral.sh/uv/) instalado. Consulta su documentación oficial
@@ -51,8 +121,8 @@ con calma.
 - Python 3.13. La versión está fijada en `.python-version`, y `uv` la descarga por
   ti si todavía no la tienes.
 - Una única dependencia externa, `colorama`, usada solo para dar color a la
-  terminal. Los cálculos siguen apoyándose únicamente en la biblioteca estándar
-  (`random` y `fractions`).
+  terminal. Los cálculos y la interpretación de los sistemas siguen apoyándose
+  únicamente en la biblioteca estándar (`random`, `fractions` y `re`).
 
 ## Instalación
 
@@ -75,7 +145,7 @@ Desde la raíz del repositorio:
 uv run python main.py
 ```
 
-Para salir, elige la opción `8` del menú.
+Para salir, elige la opción `9` del menú.
 
 ## Pruebas
 
@@ -85,10 +155,12 @@ Desde la raíz del repositorio:
 uv run python -m unittest discover -v
 ```
 
-Actualmente son 93 pruebas. Las de `tests/` cubren las reglas matemáticas del
-backend (validaciones, matrices rectangulares, pivotes y clasificación de
-sistemas), el formateo de salida y las restricciones académicas del proyecto.
-Sirven para detectar regresiones cuando el proyecto crezca.
+Actualmente son 269 pruebas. Las de `tests/` cubren las reglas matemáticas del
+backend (validaciones, matrices rectangulares, pivotes, escalonamiento,
+sustitución regresiva y clasificación de sistemas), el parser de sistemas, la
+equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal y las
+restricciones académicas del proyecto. Sirven para detectar regresiones cuando el
+proyecto crezca.
 
 Para comprobar que todo el código compila:
 
@@ -142,7 +214,10 @@ Algebra-Lineal/
 │       └── ci.yml              # integración continua
 ├── backend/
 │   ├── matrices.py             # utilidades generales y validaciones
-│   ├── gauss_jordan.py         # reducción paso a paso y rango
+│   ├── operaciones_filas.py    # operaciones elementales y registro de pasos
+│   ├── gauss.py                # escalonamiento hacia abajo
+│   ├── gauss_jordan.py         # reducción completa y rango
+│   ├── parser_sistemas.py      # texto de ecuaciones → matriz aumentada
 │   └── sistemas.py             # matriz aumentada, clasificación y soluciones
 ├── frontend/
 │   └── terminal/
@@ -153,18 +228,33 @@ Algebra-Lineal/
 │       └── consola.py          # colores, limpieza de pantalla y pausas
 └── tests/
     ├── test_matrices.py
+    ├── test_operaciones_filas.py
+    ├── test_gauss.py
     ├── test_gauss_jordan.py
+    ├── test_parser_sistemas.py
     ├── test_sistemas.py
+    ├── test_entradas.py
+    ├── test_opciones.py
+    ├── test_menu.py
     ├── test_salida.py
     ├── test_consola.py
     └── test_restricciones_proyecto.py
 ```
 
-Dentro de `backend/` la dependencia también va en un solo sentido:
+Dentro de `backend/` la dependencia también va en un solo sentido, donde `→`
+significa «depende de»:
 
 ```text
-sistemas  →  gauss_jordan  →  matrices
+sistemas  →  gauss_jordan  →  gauss  →  operaciones_filas  →  matrices
 ```
+
+Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
+eliminación hacia arriba, así que la diferencia entre los dos métodos está en un
+único bloque de código.
+
+`parser_sistemas.py` queda fuera de esa cadena porque no depende de ningún otro
+módulo del proyecto: recibe texto y devuelve una matriz, o lanza `ValueError`. Eso
+permitirá reutilizarlo tal cual desde otra interfaz.
 
 `backend/` contiene lógica pura: no usa `input()` ni `print()` y no depende de
 ninguna interfaz. `frontend/terminal/` es quien consume el backend y concentra

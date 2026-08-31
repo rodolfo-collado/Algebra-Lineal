@@ -39,7 +39,8 @@ def imprimir_matriz(matriz):
         print(linea)
 
 
-def imprimir_paso_gauss_jordan(paso):
+def imprimir_paso(paso):
+    """Muestra la matriz antes y despues de una operacion por filas."""
     matriz_antes = obtener_lineas_matriz(paso["antes"])
     matriz_despues = obtener_lineas_matriz(paso["despues"])
     operacion = f"  {paso['operacion']}  "

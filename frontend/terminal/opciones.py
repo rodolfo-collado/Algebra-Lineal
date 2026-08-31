@@ -1,20 +1,30 @@
-from backend.gauss_jordan import aplicar_gauss_jordan
-from backend.matrices import generar_matriz, validar_matriz_rectangular
-from backend.sistemas import resolver_sistema, validar_matriz_aumentada
+from backend.matrices import generar_matriz
+from backend.parser_sistemas import SEPARADOR_ECUACIONES, parsear_sistema
+from backend.sistemas import (
+    resolver_sistema_gauss,
+    resolver_sistema_gauss_jordan,
+    validar_matriz_aumentada
+)
 from frontend.terminal import consola
 from frontend.terminal.entradas import (
     pedir_dimensiones,
     pedir_elemento_matriz,
     pedir_indices,
-    pedir_nuevo_numero
+    pedir_nuevo_numero,
+    pedir_sistema_manual,
+    pedir_texto_sistema
 )
 from frontend.terminal.salida import (
     formatear_numero,
     imprimir_matriz,
-    imprimir_paso_gauss_jordan
+    imprimir_paso
 )
 
 _AVISO_INDICES = "Los índices de filas y columnas empiezan en 1."
+_AVISO_COLUMNA_FINAL = (
+    "La última columna se interpreta como los términos independientes."
+)
+_EJEMPLO_SISTEMA = "x1 - 3x2 - 5x3 = 0; x2 + x3 = 3"
 
 
 def validar_matriz(matriz):
@@ -58,6 +68,36 @@ def generador_matriz():
     return matriz
 
 
+def crear_sistema_directo():
+    """Devuelve la matriz aumentada, o None si el texto no se pudo interpretar."""
+    consola.titulo("Sistema escrito directamente")
+    consola.info(f"Separa las ecuaciones con '{SEPARADOR_ECUACIONES}'.")
+    consola.info(f"Ejemplo: {_EJEMPLO_SISTEMA}")
+
+    try:
+        matriz = parsear_sistema(pedir_texto_sistema())
+    except ValueError as error:
+        # Un texto inválido no reemplaza la matriz activa.
+        consola.error(str(error))
+        return None
+
+    consola.exito("Sistema creado correctamente.")
+    print()
+    imprimir_matriz(matriz)
+    return matriz
+
+
+def crear_sistema_manual():
+    consola.titulo("Sistema por coeficientes")
+
+    matriz = pedir_sistema_manual()
+
+    consola.exito("Sistema creado correctamente.")
+    print()
+    imprimir_matriz(matriz)
+    return matriz
+
+
 def modificar_elemento(matriz):
     if not validar_matriz(matriz):
         return
@@ -82,7 +122,10 @@ def consultar_elemento(matriz):
     fila, columna = pedir_indices(matriz)
 
     numero = matriz[fila - 1][columna - 1]
-    consola.exito(f"El elemento en la posición [{fila},{columna}] = {numero}")
+    consola.exito(
+        f"El elemento en la posición [{fila},{columna}] = "
+        f"{formatear_numero(numero)}"
+    )
 
 
 def mostrar_matriz(matriz):
@@ -94,52 +137,80 @@ def mostrar_matriz(matriz):
     imprimir_matriz(matriz)
 
 
-def mostrar_reduccion(pasos, matriz_reducida):
-    if pasos:
-        consola.subtitulo("Pasos realizados")
-        print()
-        for indice, paso in enumerate(pasos):
-            consola.info(f"Paso {indice + 1}:")
-            imprimir_paso_gauss_jordan(paso)
-            print()
-    else:
+def mostrar_pasos(pasos):
+    if not pasos:
         consola.advertencia("No fue necesario realizar operaciones por filas.")
+        return
 
-    consola.subtitulo("Matriz reducida")
+    consola.subtitulo("Pasos realizados")
     print()
-    imprimir_matriz(matriz_reducida)
+    for indice, paso in enumerate(pasos):
+        consola.info(f"Paso {indice + 1}:")
+        imprimir_paso(paso)
+        print()
 
 
-def reducir_matriz_menu(matriz):
+def mostrar_matriz_resultante(titulo, matriz):
+    consola.subtitulo(titulo)
+    print()
+    imprimir_matriz(matriz)
+
+
+def mostrar_sustitucion(pasos):
+    consola.subtitulo("Sustitución regresiva")
+    print()
+    for paso in pasos:
+        valor = formatear_numero(paso["valor"])
+        if paso["expresion"] == valor:
+            print(f"x{paso['variable']} = {valor}")
+        else:
+            print(f"x{paso['variable']} = {paso['expresion']} = {valor}")
+
+
+def mostrar_resultado(clasificacion, soluciones):
+    consola.subtitulo("Resultado")
+    print()
+    print(clasificacion)
+    for indice, solucion in enumerate(soluciones):
+        print(f"x{indice + 1} = {formatear_numero(solucion)}")
+
+
+def validar_como_sistema(matriz):
+    """La matriz activa solo se interpreta como sistema al pedir un método."""
     if not validar_matriz(matriz):
-        return
-
-    es_valida, mensaje = validar_matriz_rectangular(matriz)
-    if not es_valida:
-        consola.error(mensaje)
-        return
-
-    consola.titulo("Reducción por Gauss-Jordan")
-    matriz_reducida, pasos, _ = aplicar_gauss_jordan(matriz)
-    mostrar_reduccion(pasos, matriz_reducida)
-
-
-def resolver_sistema_menu(matriz):
-    if not validar_matriz(matriz):
-        return
+        return False
 
     es_valida, mensaje = validar_matriz_aumentada(matriz)
     if not es_valida:
         consola.error(mensaje)
+        return False
+
+    return True
+
+
+def resolver_por_gauss(matriz):
+    if not validar_como_sistema(matriz):
         return
 
-    consola.titulo("Sistema de ecuaciones por Gauss-Jordan")
-    consola.info("La última columna se interpreta como los términos independientes.")
-    resultado = resolver_sistema(matriz)
-    mostrar_reduccion(resultado["pasos"], resultado["matriz_reducida"])
+    consola.titulo("Resolución por Gauss")
+    consola.info(_AVISO_COLUMNA_FINAL)
+    resultado = resolver_sistema_gauss(matriz)
 
-    consola.subtitulo("Resultado")
-    print()
-    print(resultado["clasificacion"])
-    for indice, solucion in enumerate(resultado["soluciones"]):
-        print(f"x{indice + 1} = {formatear_numero(solucion)}")
+    mostrar_pasos(resultado["pasos"])
+    mostrar_matriz_resultante("Matriz escalonada", resultado["matriz_escalonada"])
+    if resultado["pasos_sustitucion"]:
+        mostrar_sustitucion(resultado["pasos_sustitucion"])
+    mostrar_resultado(resultado["clasificacion"], resultado["soluciones"])
+
+
+def resolver_por_gauss_jordan(matriz):
+    if not validar_como_sistema(matriz):
+        return
+
+    consola.titulo("Resolución por Gauss-Jordan")
+    consola.info(_AVISO_COLUMNA_FINAL)
+    resultado = resolver_sistema_gauss_jordan(matriz)
+
+    mostrar_pasos(resultado["pasos"])
+    mostrar_matriz_resultante("Matriz reducida", resultado["matriz_reducida"])
+    mostrar_resultado(resultado["clasificacion"], resultado["soluciones"])

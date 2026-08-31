@@ -5,7 +5,7 @@ from fractions import Fraction
 
 from frontend.terminal.salida import (
     formatear_numero,
-    imprimir_paso_gauss_jordan,
+    imprimir_paso,
     obtener_lineas_matriz,
 )
 from tests.ayudas import capturar, sin_ansi
@@ -52,7 +52,7 @@ class PruebasTextoSinColor(unittest.TestCase):
         self.assertEqual(lineas, ["[ -11/7   2 ]", "[     3   4 ]"])
 
 
-class PruebasPasoDeGaussJordan(unittest.TestCase):
+class PruebasPasoDeReduccion(unittest.TestCase):
     PASO = {
         "antes": [[1, 1, 3], [1, -1, 1]],
         "operacion": "F2 = F2 - (1)F1",
@@ -60,7 +60,7 @@ class PruebasPasoDeGaussJordan(unittest.TestCase):
     }
 
     def test_los_codigos_ansi_no_descuadran_las_matrices(self):
-        salida = sin_ansi(capturar(imprimir_paso_gauss_jordan, self.PASO))
+        salida = sin_ansi(capturar(imprimir_paso, self.PASO))
 
         self.assertEqual(
             salida.splitlines(),
@@ -71,7 +71,7 @@ class PruebasPasoDeGaussJordan(unittest.TestCase):
         )
 
     def test_solo_la_operacion_lleva_color(self):
-        lineas = capturar(imprimir_paso_gauss_jordan, self.PASO).splitlines()
+        lineas = capturar(imprimir_paso, self.PASO).splitlines()
 
         self.assertNotIn("\x1b", lineas[0])
         self.assertIn("\x1b[0m", lineas[1])

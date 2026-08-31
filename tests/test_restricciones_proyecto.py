@@ -98,7 +98,9 @@ class PruebasImportsProhibidos(unittest.TestCase):
         revisados = {archivo.relative_to(RAIZ).as_posix() for archivo in archivos_python()}
 
         self.assertIn("main.py", revisados)
+        self.assertIn("backend/gauss.py", revisados)
         self.assertIn("backend/gauss_jordan.py", revisados)
+        self.assertIn("backend/parser_sistemas.py", revisados)
         self.assertIn("frontend/terminal/opciones.py", revisados)
         self.assertIn("tests/test_restricciones_proyecto.py", revisados)
 
