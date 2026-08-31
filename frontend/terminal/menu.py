@@ -5,7 +5,8 @@ from frontend.terminal.opciones import (
     generador_matriz,
     modificar_elemento,
     mostrar_matriz,
-    resolver_gauss_jordan_menu
+    reducir_matriz_menu,
+    resolver_sistema_menu
 )
 
 _OPCIONES = (
@@ -14,8 +15,9 @@ _OPCIONES = (
     "3. Modificar elemento",
     "4. Consultar elemento",
     "5. Ver matriz completa",
-    "6. Resolver por Gauss-Jordan",
-    "7. Salir"
+    "6. Reducir la matriz por Gauss-Jordan",
+    "7. Resolver la matriz como sistema de ecuaciones",
+    "8. Salir"
 )
 
 
@@ -44,7 +46,7 @@ def ejecutar_menu():
         mostrar_menu(matriz)
         opcion = consola.pedir("\nSelecciona una opción: ").strip()
 
-        if opcion == "7":
+        if opcion == "8":
             break
 
         consola.limpiar_pantalla()
@@ -55,7 +57,8 @@ def ejecutar_menu():
             case "3": modificar_elemento(matriz)
             case "4": consultar_elemento(matriz)
             case "5": mostrar_matriz(matriz)
-            case "6": resolver_gauss_jordan_menu(matriz)
+            case "6": reducir_matriz_menu(matriz)
+            case "7": resolver_sistema_menu(matriz)
             case _: consola.error("Error: Selección inválida.")
 
         consola.pausar()
