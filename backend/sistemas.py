@@ -2,6 +2,7 @@
 
 from fractions import Fraction
 
+from backend.expresiones import crear_expresion, formatear_ecuacion
 from backend.gauss import aplicar_gauss
 from backend.gauss_jordan import aplicar_gauss_jordan
 from backend.matrices import formatear_fraccion, validar_matriz_rectangular
@@ -56,6 +57,31 @@ def clasificar_sistema(matriz_resuelta, pivotes, cantidad_variables):
         return SOLUCIONES_INFINITAS
 
     return SOLUCION_UNICA
+
+
+def ecuaciones_de_matriz(matriz_aumentada):
+    """Traduce cada fila de la matriz aumentada a su ecuacion equivalente.
+
+    Las filas nulas y las contradictorias tambien se traducen, porque son
+    parte del sistema resultante: 0 = 0 y 0 = 3 se leen igual que el resto.
+    """
+    es_valida, mensaje = validar_matriz_aumentada(matriz_aumentada)
+    if not es_valida:
+        raise ValueError(mensaje)
+
+    cantidad_variables = contar_variables(matriz_aumentada)
+    ecuaciones = []
+
+    for fila in matriz_aumentada:
+        # Conversión de la fila a ecuación: la última columna es el término
+        # independiente y el resto son los coeficientes de x1, x2, ...
+        izquierda = crear_expresion(
+            0,
+            {columna + 1: fila[columna] for columna in range(cantidad_variables)}
+        )
+        ecuaciones.append(formatear_ecuacion(izquierda, fila[cantidad_variables]))
+
+    return ecuaciones
 
 
 def obtener_soluciones(matriz_reducida, pivotes, cantidad_variables):
