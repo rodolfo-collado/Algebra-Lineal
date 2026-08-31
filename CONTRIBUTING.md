@@ -52,31 +52,66 @@ test: cubrir sistemas inconsistentes
 Mantén los commits razonablemente pequeños y descriptivos. Separa los cambios
 cuando tengan propósitos distintos.
 
-## Dependencias
+## Entorno de trabajo
 
-Las dependencias directas del proyecto viven en `requirements.txt`. Instálalas
-desde la raíz:
+El proyecto se gestiona con [uv](https://docs.astral.sh/uv/). Después de clonar,
+desde la raíz del repositorio:
 
 ```bash
-python -m pip install -r requirements.txt
+uv sync
 ```
 
-Lista ahí únicamente lo que el proyecto importa de forma directa, no dependencias
-transitivas.
+Eso crea `.venv/` con las versiones exactas de `uv.lock`. Para ejecutar cualquier
+cosa dentro de ese entorno usa `uv run`:
+
+```bash
+uv run python main.py
+```
+
+## Dependencias
+
+Las dependencias directas del proyecto se declaran en `pyproject.toml`. Lista ahí
+únicamente lo que el proyecto importa de forma directa, no dependencias
+transitivas. `uv.lock` guarda las versiones exactas resueltas a partir de esa
+declaración, y también se versiona.
+
+Cualquier cambio de dependencia se hace con uv, no editando los archivos a mano:
+
+```bash
+uv add <dependencia>
+uv remove <dependencia>
+```
+
+- `pyproject.toml` y `uv.lock` se actualizan y se commitean juntos. `uv add` y
+  `uv remove` ya modifican los dos.
+- Nunca edites `uv.lock` a mano. Si quedó desincronizado, regenéralo con `uv lock`.
+- No uses `uv pip install` ni `pip install` para las dependencias del proyecto:
+  no quedan declaradas y el lockfile deja de reflejar la realidad.
 
 ## Antes de abrir un PR
 
-Ejecuta las pruebas desde la raíz del repositorio:
+Desde la raíz del repositorio, ejecuta las mismas verificaciones que corre el CI:
 
 ```bash
-python -m unittest discover -v
+uv lock --check
+uv run python -m unittest discover -v
+uv run python -m compileall -q backend frontend tests main.py
 ```
 
 Comprueba también que la aplicación siga iniciando:
 
 ```bash
-python main.py
+uv run python main.py
 ```
+
+## Integración continua
+
+`.github/workflows/ci.yml` ejecuta esas mismas verificaciones en cada pull request
+hacia `develop` o `main`, y en cada push a esas ramas.
+
+**Un PR no se fusiona si el CI está en rojo.** Si un check falla, corrígelo en la
+misma rama `feature/*` y espera una ejecución verde. No desactives un check para
+poder mergear.
 
 ## Restricciones matemáticas
 
@@ -104,6 +139,15 @@ algoritmo por sí mismo.
 no participa en ningún cálculo ni sustituye ningún algoritmo.
 
 No agregues NumPy, SciPy, SymPy ni equivalentes a las dependencias del proyecto.
+
+`tests/test_restricciones_proyecto.py` comprueba esta regla automáticamente, tanto
+en local como en el CI: analiza con `ast` los imports de `backend/`, `frontend/`,
+`tests/` y `main.py`, y lee las dependencias declaradas en `pyproject.toml` con
+`tomllib`. Si aparece una librería prohibida, la prueba falla indicando cuál es.
+
+La prohibición se limita a librerías que sustituyan el trabajo matemático manual.
+Las dependencias de interfaz o infraestructura, como `colorama`, siguen siendo
+perfectamente válidas.
 
 ## Matrices y sistemas de ecuaciones
 
@@ -147,3 +191,16 @@ Las configuraciones de editores (`.idea/`) y de asistentes de IA (`CLAUDE.md`,
 `.claude/`, `AGENTS.md`, `.cursor/`, entre otros) están en `.gitignore` y no se
 versionan. La documentación compartida del proyecto vive en `README.md` y en este
 archivo.
+
+## Herramientas que podríamos añadir más adelante
+
+El proyecto todavía no usa linters ni formateadores, a propósito: por ahora las
+verificaciones son pruebas y compilación. Si en algún momento hace falta, serían
+candidatos razonables, en este orden:
+
+- un formateador y linter (por ejemplo Ruff) para unificar estilo;
+- cobertura de pruebas en el CI;
+- `pre-commit` para correr las verificaciones antes de cada commit.
+
+Ninguno es un requisito actual. Si se añade alguno, debe entrar como cambio propio
+y no colado dentro de otra tarea.
