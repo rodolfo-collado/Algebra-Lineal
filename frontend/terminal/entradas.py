@@ -1,19 +1,23 @@
-def pedir_dimensiones():
+from frontend.terminal import consola
 
+_NUMERO_INVALIDO = "Error: Ingrese un número válido."
+
+
+def pedir_dimensiones():
     while True:
         try:
-            filas = int(input("\nIngrese la cantidad de filas: "))
+            filas = int(consola.pedir("\nIngrese la cantidad de filas: "))
             if filas <= 0:
-                print("Error: Cantidad de filas negativa.")
+                consola.error("Error: La cantidad de filas debe ser mayor que 0.")
                 continue
 
-            columnas = int(input("Ingrese la cantidad de columnas: "))
+            columnas = int(consola.pedir("Ingrese la cantidad de columnas: "))
             if columnas <= 0:
-                print("Error: Cantidad de columnas negativa.")
+                consola.error("Error: La cantidad de columnas debe ser mayor que 0.")
                 continue
 
         except ValueError:
-            print("Error: Ingrese un numero valido.")
+            consola.error(_NUMERO_INVALIDO)
             continue
 
         return filas, columnas
@@ -22,36 +26,36 @@ def pedir_dimensiones():
 def pedir_indices(matriz):
     while True:
         try:
-            fila = int(input("\nIngrese el índice de la fila: "))
-            if fila <=0 or fila > len(matriz):
-                print("Error: Fila fuera de rango.")
+            fila = int(consola.pedir("\nIngrese el índice de la fila: "))
+            if fila <= 0 or fila > len(matriz):
+                consola.error("Error: Fila fuera de rango.")
                 continue
-            columna = int(input("Ingrese el índice de la columna: "))
+            columna = int(consola.pedir("Ingrese el índice de la columna: "))
             if columna <= 0 or columna > len(matriz[fila - 1]):
-                print("Error: Columna fuera de rango.")
+                consola.error("Error: Columna fuera de rango.")
                 continue
 
         except ValueError:
-            print("Error: Ingrese un número válido.")
+            consola.error(_NUMERO_INVALIDO)
             continue
         break
 
-    return fila,columna
+    return fila, columna
 
 
 def pedir_elemento_matriz(fila, columna):
     while True:
         try:
-            valor = int(input(f"Ingrese el elemento [{fila},{columna}]: "))
+            valor = int(consola.pedir(f"Ingrese el elemento [{fila},{columna}]: "))
             return valor
         except ValueError:
-            print("Error: Input inválido.\n")
+            consola.error(_NUMERO_INVALIDO)
 
 
 def pedir_nuevo_numero():
     while True:
         try:
-            numero = int(input("\nIngresa el nuevo número: "))
+            numero = int(consola.pedir("\nIngresa el nuevo número: "))
             return numero
         except ValueError:
-            print("Error: Número inválido.")
+            consola.error(_NUMERO_INVALIDO)

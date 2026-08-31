@@ -1,5 +1,7 @@
 from fractions import Fraction
 
+from frontend.terminal import consola
+
 
 def formatear_numero(numero):
     if isinstance(numero, Fraction):
@@ -50,7 +52,7 @@ def imprimir_paso_gauss_jordan(paso):
         linea_despues = matriz_despues[i] if i < len(matriz_despues) else ""
 
         if i == alto // 2:
-            texto_operacion = operacion
+            texto_operacion = consola.destacar_operacion(operacion)
         else:
             texto_operacion = " " * ancho_operacion
 
