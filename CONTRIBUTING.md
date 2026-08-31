@@ -52,6 +52,18 @@ test: cubrir sistemas inconsistentes
 Mantén los commits razonablemente pequeños y descriptivos. Separa los cambios
 cuando tengan propósitos distintos.
 
+## Dependencias
+
+Las dependencias directas del proyecto viven en `requirements.txt`. Instálalas
+desde la raíz:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Lista ahí únicamente lo que el proyecto importa de forma directa, no dependencias
+transitivas.
+
 ## Antes de abrir un PR
 
 Ejecuta las pruebas desde la raíz del repositorio:
@@ -87,6 +99,9 @@ y estructuras propias del lenguaje.
 `fractions.Fraction` sí está permitido: pertenece a la biblioteca estándar y
 únicamente representa números racionales con exactitud, no resuelve ningún
 algoritmo por sí mismo.
+
+`colorama` también está permitido, pero únicamente para dar color a la terminal:
+no participa en ningún cálculo ni sustituye ningún algoritmo.
 
 No agregues NumPy, SciPy, SymPy ni equivalentes a las dependencias del proyecto.
 
