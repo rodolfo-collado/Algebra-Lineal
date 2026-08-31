@@ -3,7 +3,7 @@
 import unittest
 from fractions import Fraction
 
-from logica_matrices import (
+from backend.logica_matrices import (
     aplicar_gauss_jordan,
     buscar_fila_pivote,
     convertir_matriz_a_fracciones,
