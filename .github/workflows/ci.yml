@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+# Una nueva ejecucion sobre el mismo ref cancela la anterior; otras ramas no se tocan.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificaciones:
+    name: Pruebas y verificaciones
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.7"
+          enable-cache: true
+
+      - name: Comprobar que uv.lock coincide con pyproject.toml
+        run: uv lock --check
+
+      # La version de Python sale de .python-version; uv la instala si falta.
+      - name: Preparar el entorno desde el lockfile
+        run: uv sync --locked
+
+      - name: Ejecutar las pruebas
+        run: uv run python -m unittest discover -v
+
+      - name: Verificar la compilacion
+        run: uv run python -m compileall -q backend frontend tests main.py

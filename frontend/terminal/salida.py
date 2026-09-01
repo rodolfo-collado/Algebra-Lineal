@@ -1,5 +1,7 @@
 from fractions import Fraction
 
+from frontend.terminal import consola
+
 
 def formatear_numero(numero):
     if isinstance(numero, Fraction):
@@ -37,7 +39,8 @@ def imprimir_matriz(matriz):
         print(linea)
 
 
-def imprimir_paso_gauss_jordan(paso):
+def imprimir_paso(paso):
+    """Muestra la matriz antes y despues de una operacion por filas."""
     matriz_antes = obtener_lineas_matriz(paso["antes"])
     matriz_despues = obtener_lineas_matriz(paso["despues"])
     operacion = f"  {paso['operacion']}  "
@@ -50,7 +53,7 @@ def imprimir_paso_gauss_jordan(paso):
         linea_despues = matriz_despues[i] if i < len(matriz_despues) else ""
 
         if i == alto // 2:
-            texto_operacion = operacion
+            texto_operacion = consola.destacar_operacion(operacion)
         else:
             texto_operacion = " " * ancho_operacion
 
