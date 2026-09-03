@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Calculadora de Álgebra Lineal</title>
-    <link rel="stylesheet" href="{% static 'calculadora/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'calculadora/styles.css' %}?v=2">
 </head>
 <body>
     <main class="page-shell">
@@ -29,6 +29,21 @@
                 {% endif %}
 
                 <fieldset>
+                    <legend>{{ form.tipo_entrada.label }}</legend>
+                    <div class="method-options entry-options">
+                        {% for radio in form.tipo_entrada %}
+                            <label class="method-option">
+                                {{ radio.tag }}
+                                <span>{{ radio.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.tipo_entrada.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </fieldset>
+
+                <fieldset>
                     <legend>{{ form.metodo.label }}</legend>
                     <div class="method-options">
                         {% for radio in form.metodo %}
@@ -43,17 +58,49 @@
                     {% endfor %}
                 </fieldset>
 
-                <div class="field-group">
-                    {{ form.sistema.label_tag }}
+                <fieldset id="system-fields" class="input-mode">
+                    <legend class="sr-only">Sistema de ecuaciones</legend>
+                    <div class="field-group">
+                        {{ form.sistema.label_tag }}
+                        <p class="field-help">
+                            Separa las ecuaciones con <code>;</code>. Usa variables
+                            <code>x1</code>, <code>x2</code>, ...
+                        </p>
+                        {{ form.sistema }}
+                        {% for error in form.sistema.errors %}
+                            <p class="field-error" role="alert">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+
+                <fieldset id="matrix-fields" class="input-mode" hidden disabled>
+                    <legend class="sr-only">Matriz aumentada</legend>
+                    <div class="dimensions-grid">
+                        <div class="dimension-field">
+                            {{ form.ecuaciones.label_tag }}
+                            {{ form.ecuaciones }}
+                            {% for error in form.ecuaciones.errors %}
+                                <p class="field-error" role="alert">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="dimension-field">
+                            {{ form.variables.label_tag }}
+                            {{ form.variables }}
+                            {% for error in form.variables.errors %}
+                                <p class="field-error" role="alert">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
                     <p class="field-help">
-                        Separa las ecuaciones con <code>;</code>. Usa variables
-                        <code>x1</code>, <code>x2</code>, ...
+                        La última columna corresponde a los términos independientes.
                     </p>
-                    {{ form.sistema }}
-                    {% for error in form.sistema.errors %}
-                        <p class="field-error" role="alert">{{ error }}</p>
-                    {% endfor %}
-                </div>
+                    <div id="matrix-grid-wrapper" class="matrix-grid-wrapper" hidden>
+                        <div id="matrix-grid" class="matrix-grid" role="grid" aria-label="Matriz aumentada"></div>
+                        <p id="matrix-grid-help" class="field-help" aria-live="polite">
+                            Completa todas las celdas con números, enteros o fracciones.
+                        </p>
+                    </div>
+                </fieldset>
 
                 <button class="primary-button" type="submit">Resolver</button>
             </form>
@@ -152,5 +199,7 @@
             </section>
         {% endif %}
     </main>
+    {{ matrix_values|json_script:"matrix-initial-values" }}
+    <script src="{% static 'calculadora/matriz.js' %}" defer></script>
 </body>
 </html>
