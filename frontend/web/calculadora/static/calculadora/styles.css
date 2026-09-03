@@ -214,8 +214,8 @@ p {
     grid-area: 1 / 1;
 }
 
-[data-theme="light"] .theme-icon-sun,
-[data-theme="dark"] .theme-icon-moon {
+[data-theme="light"] .theme-icon-moon,
+[data-theme="dark"] .theme-icon-sun {
     display: none;
 }
 

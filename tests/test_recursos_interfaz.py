@@ -1,5 +1,6 @@
 """Comprueba que la interfaz desktop no dependa de recursos de red."""
 
+import re
 import unittest
 from pathlib import Path
 
@@ -84,6 +85,32 @@ class PruebasRecursosLocales(unittest.TestCase):
                     texto_sin_namespaces(texto),
                     f"{ruta} contiene una URL absoluta; la interfaz debe ser offline.",
                 )
+
+
+class PruebasSelectorTema(unittest.TestCase):
+    def test_los_iconos_visibles_representan_el_tema_activo(self):
+        contenido = (
+            RAIZ
+            / "frontend"
+            / "web"
+            / "calculadora"
+            / "static"
+            / "calculadora"
+            / "styles.css"
+        ).read_text(encoding="utf-8")
+        selectores_ocultos = {
+            " ".join(selector.split())
+            for selectores, declaraciones in re.findall(
+                r"([^{}]+)\{([^{}]*)\}", contenido
+            )
+            if re.search(r"\bdisplay\s*:\s*none\s*;", declaraciones)
+            for selector in selectores.split(",")
+        }
+
+        self.assertIn('[data-theme="light"] .theme-icon-moon', selectores_ocultos)
+        self.assertNotIn('[data-theme="light"] .theme-icon-sun', selectores_ocultos)
+        self.assertIn('[data-theme="dark"] .theme-icon-sun', selectores_ocultos)
+        self.assertNotIn('[data-theme="dark"] .theme-icon-moon', selectores_ocultos)
 
 
 if __name__ == "__main__":
