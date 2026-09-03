@@ -40,14 +40,32 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         respuesta = self.client.get("/")
 
         self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, "Calculadora de sistemas")
+        self.assertContains(respuesta, "Álgebra Lineal")
+        self.assertContains(respuesta, "Sistemas de ecuaciones")
         self.assertContains(respuesta, "Gauss-Jordan")
+        self.assertContains(respuesta, 'id="theme-toggle"')
+        self.assertContains(respuesta, "static/calculadora/styles.css")
+        self.assertContains(respuesta, "static/calculadora/tema.js")
+        self.assertContains(respuesta, "static/calculadora/matriz.js")
 
     def test_muestra_los_dos_tipos_de_entrada(self):
         respuesta = self.client.get("/")
 
         self.assertContains(respuesta, "Sistema de ecuaciones")
         self.assertContains(respuesta, "Matriz aumentada")
+        self.assertContains(respuesta, 'name="tipo_entrada"')
+        self.assertContains(respuesta, 'name="metodo"')
+        self.assertContains(respuesta, 'type="radio"')
+
+    def test_la_pagina_principal_no_carga_recursos_remotos(self):
+        html = self.client.get("/").content.decode("utf-8").lower()
+
+        for host in (
+            "fonts.googleapis.com",
+            "cdn.jsdelivr.net",
+            "unpkg.com",
+        ):
+            self.assertNotIn(host, html)
 
     def test_procesa_una_solucion_unica(self):
         respuesta = self.client.post(
@@ -60,6 +78,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, SOLUCION_UNICA)
+        self.assertContains(respuesta, 'data-kind="unica"')
         self.assertContains(respuesta, "x1 = 2")
         self.assertContains(respuesta, "x2 = 1")
 
@@ -101,6 +120,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, SOLUCIONES_INFINITAS)
+        self.assertContains(respuesta, 'data-kind="infinitas"')
         self.assertContains(respuesta, "x2 es libre")
         self.assertContains(respuesta, "no tiene pivote")
 
@@ -129,6 +149,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, INCONSISTENTE)
+        self.assertContains(respuesta, 'data-kind="inconsistente"')
         self.assertContains(respuesta, "fila 2")
         self.assertContains(respuesta, "0 = 1")
         self.assertContains(respuesta, "no tiene solución")

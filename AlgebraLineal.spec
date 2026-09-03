@@ -16,6 +16,10 @@ datas = [
         str(PROJECT_ROOT / "frontend" / "web" / "calculadora" / "static"),
         "frontend/web/calculadora/static",
     ),
+    (
+        str(PROJECT_ROOT / "assets" / "algebra-lineal.ico"),
+        "assets",
+    ),
 ]
 
 hiddenimports = [
@@ -58,6 +62,7 @@ exe = EXE(
     upx=False,
     console=False,
     disable_windowed_traceback=True,
+    icon=str(PROJECT_ROOT / "assets" / "algebra-lineal.ico"),
 )
 coll = COLLECT(
     exe,

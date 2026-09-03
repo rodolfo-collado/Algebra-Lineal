@@ -105,6 +105,11 @@ class PruebasLauncherDesktop(unittest.TestCase):
         self.assertEqual(argumentos["kwargs"]["width"], desktop.WINDOW_WIDTH)
         self.assertEqual(argumentos["kwargs"]["height"], desktop.WINDOW_HEIGHT)
         self.assertEqual(argumentos["kwargs"]["min_size"], desktop.WINDOW_MIN_SIZE)
+        self.assertEqual(
+            argumentos["kwargs"]["background_color"],
+            desktop.WINDOW_BACKGROUND,
+        )
+        self.assertNotIn("icon", argumentos["kwargs"])
         self.assertTrue(argumentos["kwargs"]["resizable"])
         self.assertFalse(argumentos["kwargs"]["fullscreen"])
 
@@ -157,6 +162,13 @@ class PruebasLauncherDesktop(unittest.TestCase):
         self.assertEqual(servidor.cierres, 1)
         self.assertEqual(hilo.uniones, 1)
 
+    def test_resuelve_el_icono_local(self):
+        ruta = desktop.application_icon_path()
+
+        self.assertIsNotNone(ruta)
+        self.assertTrue(Path(ruta).is_file())
+        self.assertTrue(ruta.endswith("algebra-lineal.ico"))
+
 
 class PruebaSmokeWaitressDjango(unittest.TestCase):
     def test_waitress_django_y_backend_responden_por_http(self):
@@ -189,7 +201,9 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 timeout=3.0,
             ) as respuesta:
                 self.assertEqual(respuesta.status, 200)
-                self.assertIn("--accent", respuesta.read().decode("utf-8"))
+                css = respuesta.read().decode("utf-8")
+                self.assertIn("--color-primary", css)
+                self.assertIn("--color-bg", css)
 
             with cliente_http.open(
                 f"{url}static/calculadora/matriz.js",
@@ -197,6 +211,13 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             ) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 self.assertIn("renderMatrix", respuesta.read().decode("utf-8"))
+
+            with cliente_http.open(
+                f"{url}static/calculadora/tema.js",
+                timeout=3.0,
+            ) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("algebra-lineal-tema", respuesta.read().decode("utf-8"))
 
             csrf = re.search(
                 rb'name="csrfmiddlewaretoken" value="([^"]+)"',

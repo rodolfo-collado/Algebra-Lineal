@@ -13,6 +13,7 @@ import sys
 import threading
 import time
 import traceback
+from pathlib import Path
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
@@ -22,10 +23,12 @@ from urllib.request import Request, urlopen
 LOOPBACK_HOST = "127.0.0.1"
 DJANGO_SETTINGS_MODULE = "frontend.web.algebra_web.settings"
 DESKTOP_ENVIRONMENT = "ALGEBRA_DESKTOP"
-APP_TITLE = "Calculadora de Álgebra Lineal"
+APP_TITLE = "Álgebra Lineal"
 WINDOW_WIDTH = 1100
 WINDOW_HEIGHT = 760
 WINDOW_MIN_SIZE = (760, 560)
+WINDOW_BACKGROUND = "#EEF1F4"
+ICON_RELATIVE_PATH = Path("assets") / "algebra-lineal.ico"
 STARTUP_TIMEOUT_SECONDS = 10.0
 SHUTDOWN_TIMEOUT_SECONDS = 5.0
 WAITRESS_THREADS = 4
@@ -33,6 +36,24 @@ WAITRESS_THREADS = 4
 
 class DesktopStartupError(RuntimeError):
     """Indica que la aplicación no pudo preparar su entorno local."""
+
+
+def application_icon_path() -> str | None:
+    """Devuelve el icono local si existe junto al código o en la distribución."""
+    candidatos: list[Path] = []
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            candidatos.append(Path(meipass) / ICON_RELATIVE_PATH)
+        candidatos.append(
+            Path(sys.executable).resolve().parent / ICON_RELATIVE_PATH
+        )
+    candidatos.append(Path(__file__).resolve().parent / ICON_RELATIVE_PATH)
+
+    for ruta in candidatos:
+        if ruta.is_file():
+            return str(ruta)
+    return None
 
 
 def configure_desktop_environment() -> None:
@@ -270,7 +291,7 @@ def create_desktop_window(webview_module: Any, url: str) -> Any:
         fullscreen=False,
         confirm_close=False,
         text_select=True,
-        background_color="#F3F6FA",
+        background_color=WINDOW_BACKGROUND,
     )
     if window is None:
         raise DesktopStartupError("pywebview no pudo crear la ventana.")
@@ -326,6 +347,8 @@ def run_desktop() -> None:
             debug=desktop_debug_enabled(),
             http_server=False,
             private_mode=True,
+            # WinForms lee este icono aunque la documentación mencione GTK/QT.
+            icon=application_icon_path(),
         )
     except DesktopStartupError:
         raise

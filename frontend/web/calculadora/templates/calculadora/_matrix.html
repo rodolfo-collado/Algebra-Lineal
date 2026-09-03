@@ -1,11 +1,17 @@
-<table class="matrix-table" aria-label="{{ etiqueta|default:'Matriz' }}">
-    <tbody>
-        {% for fila in matriz %}
-            <tr>
-                {% for valor in fila %}
-                    <td class="{% if forloop.last %}constant{% endif %}">{{ valor }}</td>
+<div class="matrix">
+    <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
+    <div class="matrix-scroll">
+        <table class="matrix-table" aria-label="{{ etiqueta|default:'Matriz' }}">
+            <tbody>
+                {% for fila in matriz %}
+                    <tr>
+                        {% for valor in fila %}
+                            <td class="{% if forloop.last %}constant{% endif %}">{{ valor }}</td>
+                        {% endfor %}
+                    </tr>
                 {% endfor %}
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
+            </tbody>
+        </table>
+    </div>
+    <span class="matrix-fence matrix-fence-end" aria-hidden="true"></span>
+</div>

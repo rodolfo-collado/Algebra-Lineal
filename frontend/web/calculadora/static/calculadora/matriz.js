@@ -14,6 +14,20 @@
     const initialValuesElement = document.getElementById(
         "matrix-initial-values"
     );
+
+    if (
+        !systemFields ||
+        !matrixFields ||
+        !equationsInput ||
+        !variablesInput ||
+        !matrixWrapper ||
+        !matrixGrid ||
+        !matrixHelp ||
+        !initialValuesElement
+    ) {
+        return;
+    }
+
     const initialValues = JSON.parse(initialValuesElement.textContent);
 
     function dimensionValue(input) {
@@ -90,7 +104,9 @@
         matrixGrid.appendChild(
             createElement("span", "matrix-divider-header", "|")
         );
-        matrixGrid.appendChild(createElement("span", "matrix-header", "b"));
+        matrixGrid.appendChild(
+            createElement("span", "matrix-header matrix-header-b", "b")
+        );
 
         for (let row = 0; row < rows; row += 1) {
             matrixGrid.appendChild(
@@ -105,6 +121,15 @@
                 createElement("span", "matrix-divider-cell", "|"),
                 matrixGrid.children[matrixGrid.children.length - 1]
             );
+        }
+    }
+
+    function focusCell(row, column) {
+        const input = matrixGrid.querySelector(
+            `[data-cell="matriz_${row}_${column}"]`
+        );
+        if (input) {
+            input.focus();
         }
     }
 
@@ -130,6 +155,34 @@
     });
     equationsInput.addEventListener("input", renderMatrix);
     variablesInput.addEventListener("input", renderMatrix);
+    matrixGrid.addEventListener("keydown", (event) => {
+        const deltas = {
+            ArrowLeft: [0, -1],
+            ArrowRight: [0, 1],
+            ArrowUp: [-1, 0],
+            ArrowDown: [1, 0],
+        };
+        const delta = deltas[event.key];
+        if (!delta || event.target.dataset?.cell === undefined) {
+            return;
+        }
+
+        const match = /^matriz_(\d+)_(\d+)$/.exec(event.target.dataset.cell);
+        if (!match) {
+            return;
+        }
+
+        const rows = dimensionValue(equationsInput);
+        const columns = dimensionValue(variablesInput) + 1;
+        const row = Number(match[1]) + delta[0];
+        const column = Number(match[2]) + delta[1];
+        if (row < 0 || column < 0 || row >= rows || column >= columns) {
+            return;
+        }
+
+        event.preventDefault();
+        focusCell(row, column);
+    });
 
     setInputMode();
 })();
