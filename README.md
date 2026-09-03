@@ -4,7 +4,8 @@ Proyecto educativo en Python para implementar manualmente algoritmos de matrices
 y álgebra lineal. El objetivo no es resolver operaciones rápido, sino escribir el
 algoritmo paso a paso y entender cómo funciona por dentro.
 
-La aplicación se usa desde la terminal, mediante un menú interactivo.
+La aplicación se puede usar desde la terminal, mediante un menú interactivo, o
+desde una interfaz web local.
 
 ## Funcionalidades actuales
 
@@ -24,7 +25,7 @@ La aplicación se usa desde la terminal, mediante un menú interactivo.
   única, variables libres identificadas y variables pivote despejadas en función
   de ellas cuando hay infinitas, y la contradicción a la vista cuando no hay
   solución.
-- Resolver sistemas también desde una interfaz web sencilla construida con Django,
+- Resolver sistemas desde Django mediante texto o una matriz aumentada editable,
   sin reemplazar la interfaz de terminal.
 
 El menú principal es este:
@@ -226,11 +227,20 @@ Desde la raíz del repositorio, inicia el servidor de desarrollo:
 uv run python manage.py runserver
 ```
 
-Abre <http://127.0.0.1:8000/> en el navegador. La interfaz web permite elegir
-Gauss o Gauss-Jordan, escribir el sistema directamente y consultar la matriz
-inicial, los pasos, la clasificación y la solución. Django solo coordina la
-entrada y la presentación: `frontend/web/calculadora/servicios.py` delega el
-parser y los resolvers a `backend/`.
+Abre <http://127.0.0.1:8000/> en el navegador. La interfaz web permite elegir el
+tipo de entrada —sistema de ecuaciones o matriz aumentada— y el método Gauss o
+Gauss-Jordan. En el modo matricial indica las dimensiones y completa una
+cuadrícula con la última columna reservada para los términos independientes:
+
+```text
+       x1   x2   b
+F1    [ 1 ] [ 2 ] | [ 4 ]
+F2    [ 2 ] [-1 ] | [ 7 ]
+```
+
+Ambos modos muestran la matriz inicial, los pasos, la clasificación y la
+solución. Django solo coordina la entrada y la presentación: la capa de
+integración converge en una matriz aumentada y delega los cálculos a `backend/`.
 
 ## Pruebas
 
@@ -245,8 +255,9 @@ rectangulares, pivotes, escalonamiento, sustitución regresiva y clasificación 
 sistemas), las expresiones lineales y su formato, la traducción de una matriz a
 su sistema, el conjunto solución con variables libres, el parser de sistemas, la
 equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
-de Django y las restricciones académicas del proyecto. Sirven para detectar
-regresiones cuando el proyecto crezca.
+de Django —incluidas sus entradas textual y matricial— y las restricciones
+académicas del proyecto. Sirven para detectar regresiones cuando el proyecto
+crezca.
 
 Para comprobar que todo el código compila:
 
@@ -316,7 +327,7 @@ Algebra-Lineal/
 │   │   └── consola.py          # colores, limpieza de pantalla y pausas
 │   └── web/
 │       ├── algebra_web/        # configuración, rutas y entradas WSGI/ASGI
-│       └── calculadora/        # formulario, vistas, adaptador y templates
+│       └── calculadora/        # formulario, vistas, adaptador y recursos web
 └── tests/
     ├── test_matrices.py
     ├── test_operaciones_filas.py
@@ -369,15 +380,19 @@ frontend/web        →  backend
 Esa separación deja espacio para añadir más adelante otra interfaz bajo
 `frontend/` sin tocar la lógica matemática.
 
-La interfaz web sigue el mismo sentido de dependencia:
+La interfaz web sigue el mismo sentido de dependencia para ambos tipos de
+entrada:
 
 ```text
-views.py → servicios.py → parser_sistemas.py
-                    └──→ sistemas.py → gauss / gauss-jordan
+texto ───────────────→ parser_sistemas.py ─┐
+cuadrícula ──────────→ matriz aumentada ────┼→ servicios.py → sistemas.py
+                                            └──────────────→ gauss / gauss-jordan
 ```
 
+`forms.py` valida dimensiones y celdas con las utilidades existentes del parser;
 `servicios.py` adapta matrices, pasos y mensajes para los templates, pero no
-recalcula operaciones, clasificaciones ni soluciones.
+recalcula operaciones, clasificaciones ni soluciones. `matriz.js` solo genera la
+cuadrícula y cambia su visibilidad.
 
 ## Desarrollo
 

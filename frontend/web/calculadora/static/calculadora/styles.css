@@ -134,6 +134,10 @@ label[for="id_sistema"] {
     transition: border-color 150ms ease, background 150ms ease;
 }
 
+.entry-options {
+    margin-bottom: 1.1rem;
+}
+
 .method-option:has(input:checked) {
     border-color: var(--accent);
     background: var(--accent-soft);
@@ -145,6 +149,125 @@ label[for="id_sistema"] {
 
 .field-group {
     margin-bottom: 1.25rem;
+}
+
+.input-mode {
+    min-width: 0;
+    min-inline-size: 0;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    border: 0;
+}
+
+.input-mode[hidden] {
+    display: none;
+}
+
+.dimensions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.dimension-field label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.88rem;
+    font-weight: 750;
+}
+
+.dimension-field input {
+    width: 100%;
+    max-width: 12rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #c8d2e0;
+    border-radius: 9px;
+    color: var(--ink);
+    background: #fbfcfe;
+    font: inherit;
+}
+
+.matrix-grid-wrapper {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    padding: 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fbfcfe;
+}
+
+.matrix-grid-wrapper[hidden] {
+    display: none;
+}
+
+.matrix-grid {
+    display: grid;
+    width: max-content;
+    min-width: 100%;
+    align-items: center;
+    gap: 0.45rem 0.35rem;
+}
+
+.matrix-corner,
+.matrix-header,
+.matrix-row-label,
+.matrix-divider-header,
+.matrix-divider-cell {
+    color: var(--muted);
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 0.82rem;
+    font-weight: 750;
+    text-align: center;
+}
+
+.matrix-row-label {
+    justify-self: end;
+    padding-right: 0.25rem;
+}
+
+.matrix-divider-header,
+.matrix-divider-cell {
+    color: #58718f;
+    font-size: 1rem;
+}
+
+.matrix-input {
+    width: 4.25rem;
+    padding: 0.55rem 0.45rem;
+    border: 1px solid #c8d2e0;
+    border-radius: 8px;
+    color: var(--ink);
+    background: white;
+    font: 0.9rem "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    text-align: right;
+}
+
+.matrix-input:hover {
+    border-color: #aab8ca;
+}
+
+.matrix-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+    outline: 3px solid rgba(37, 99, 235, 0.22);
+    outline-offset: 1px;
+}
+
+.independent-input {
+    background: #f1f5fb;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .field-help {
@@ -361,6 +484,10 @@ textarea:focus {
     }
 
     .matrix-pair {
+        grid-template-columns: 1fr;
+    }
+
+    .dimensions-grid {
         grid-template-columns: 1fr;
     }
 }

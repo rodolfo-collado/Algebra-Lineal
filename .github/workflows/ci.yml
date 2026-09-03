@@ -45,5 +45,8 @@ jobs:
       - name: Ejecutar las pruebas
         run: uv run python -m unittest discover -v
 
+      - name: Comprobar configuración Django
+        run: uv run python manage.py check
+
       - name: Verificar la compilacion
         run: uv run python -m compileall -q backend frontend tests main.py manage.py

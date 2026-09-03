@@ -56,14 +56,24 @@ def adaptar_sustitucion(pasos):
     return adaptados
 
 
-def resolver_sistema_web(texto, metodo):
-    """Parsea y resuelve un sistema delegando todo cálculo al backend."""
+def resolver_entrada_web(
+    tipo_entrada, metodo, *, texto=None, matriz_aumentada=None
+):
+    """Converge cualquier entrada web en una matriz y delega al backend."""
+    if tipo_entrada == "sistema":
+        matriz_inicial = parsear_sistema(texto or "")
+    elif tipo_entrada == "matriz":
+        if matriz_aumentada is None:
+            raise ValueError("La matriz aumentada no está completa.")
+        matriz_inicial = matriz_aumentada
+    else:
+        raise ValueError("Selecciona un tipo de entrada válido.")
+
     try:
         nombre_metodo, resolver, clave_matriz, etiqueta_matriz = _RESOLVERS[metodo]
     except KeyError:
         raise ValueError("Selecciona un método de resolución válido.") from None
 
-    matriz_inicial = parsear_sistema(texto)
     resultado = resolver(matriz_inicial)
 
     return {
@@ -81,3 +91,8 @@ def resolver_sistema_web(texto, metodo):
             resultado.get("pasos_sustitucion", [])
         ),
     }
+
+
+def resolver_sistema_web(texto, metodo):
+    """Mantiene la entrada textual de P6 como una API pequeña y reutilizable."""
+    return resolver_entrada_web("sistema", metodo, texto=texto)
