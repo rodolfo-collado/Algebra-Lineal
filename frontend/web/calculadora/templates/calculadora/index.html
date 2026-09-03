@@ -1,0 +1,156 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Calculadora de Álgebra Lineal</title>
+    <link rel="stylesheet" href="{% static 'calculadora/styles.css' %}">
+</head>
+<body>
+    <main class="page-shell">
+        <header class="page-header">
+            <p class="eyebrow">ÁLGEBRA LINEAL</p>
+            <h1>Calculadora de sistemas</h1>
+            <p class="intro">
+                Resuelve sistemas con operaciones elementales exactas y revisa
+                cada paso del procedimiento.
+            </p>
+        </header>
+
+        <section class="card solver-card" aria-labelledby="solver-title">
+            <h2 id="solver-title">Nuevo sistema</h2>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert error" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <fieldset>
+                    <legend>{{ form.metodo.label }}</legend>
+                    <div class="method-options">
+                        {% for radio in form.metodo %}
+                            <label class="method-option">
+                                {{ radio.tag }}
+                                <span>{{ radio.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.metodo.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </fieldset>
+
+                <div class="field-group">
+                    {{ form.sistema.label_tag }}
+                    <p class="field-help">
+                        Separa las ecuaciones con <code>;</code>. Usa variables
+                        <code>x1</code>, <code>x2</code>, ...
+                    </p>
+                    {{ form.sistema }}
+                    {% for error in form.sistema.errors %}
+                        <p class="field-error" role="alert">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <button class="primary-button" type="submit">Resolver</button>
+            </form>
+        </section>
+
+        {% if resultado %}
+            <section class="results" aria-labelledby="results-title">
+                <div class="result-heading">
+                    <p class="eyebrow">MÉTODO SELECCIONADO</p>
+                    <h2 id="results-title">{{ resultado.metodo }}</h2>
+                </div>
+
+                <section class="card result-section" aria-labelledby="initial-title">
+                    <h3 id="initial-title">Sistema / matriz inicial</h3>
+                    {% include "calculadora/_matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                </section>
+
+                <section class="card result-section" aria-labelledby="steps-title">
+                    <h3 id="steps-title">Procedimiento paso a paso</h3>
+                    {% if resultado.pasos %}
+                        <div class="steps">
+                            {% for paso in resultado.pasos %}
+                                <article class="step">
+                                    <div class="step-heading">
+                                        <h4>Paso {{ paso.numero }}</h4>
+                                        <code>{{ paso.operacion }}</code>
+                                    </div>
+                                    <div class="matrix-pair">
+                                        <div>
+                                            <p class="matrix-label">Antes</p>
+                                            {% include "calculadora/_matrix.html" with matriz=paso.antes etiqueta="Matriz antes del paso" %}
+                                        </div>
+                                        <div>
+                                            <p class="matrix-label">Después</p>
+                                            {% include "calculadora/_matrix.html" with matriz=paso.despues etiqueta="Matriz después del paso" %}
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="muted">No fue necesario realizar operaciones por filas.</p>
+                    {% endif %}
+                </section>
+
+                <section class="card result-section final-result" aria-labelledby="final-title">
+                    <h3 id="final-title">Resultado final</h3>
+                    <p class="matrix-label">{{ resultado.etiqueta_matriz }}</p>
+                    {% include "calculadora/_matrix.html" with matriz=resultado.matriz_final etiqueta=resultado.etiqueta_matriz %}
+
+                    {% if resultado.mostrar_sistema_resultante %}
+                        <div class="subresult">
+                            <h4>Sistema resultante</h4>
+                            <ul class="equations">
+                                {% for ecuacion in resultado.ecuaciones_resultantes %}
+                                    <li><code>{{ ecuacion }}</code></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <div class="classification">
+                        <p class="matrix-label">Clasificación</p>
+                        <p class="classification-value">{{ resultado.clasificacion }}</p>
+                    </div>
+
+                    {% if resultado.sustitucion %}
+                        <div class="subresult">
+                            <h4>Sustitución regresiva</h4>
+                            <ul class="equations">
+                                {% for linea in resultado.sustitucion %}
+                                    <li><code>{{ linea }}</code></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <div class="subresult solution">
+                        <h4>Solución</h4>
+                        {% if resultado.justificacion %}
+                            <div class="explanation">
+                                {% for parrafo in resultado.justificacion %}
+                                    <p>{{ parrafo }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if resultado.solucion_general %}
+                            <ul class="equations solution-list">
+                                {% for linea in resultado.solucion_general %}
+                                    <li><code>{{ linea }}</code></li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </section>
+            </section>
+        {% endif %}
+    </main>
+</body>
+</html>
