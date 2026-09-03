@@ -95,7 +95,7 @@ Desde la raíz del repositorio, ejecuta las mismas verificaciones que corre el C
 ```bash
 uv lock --check
 uv run python -m unittest discover -v
-uv run python -m compileall -q backend frontend tests main.py
+uv run python -m compileall -q backend frontend tests main.py manage.py
 ```
 
 Comprueba también que la aplicación siga iniciando:

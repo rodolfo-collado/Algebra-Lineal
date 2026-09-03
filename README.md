@@ -24,6 +24,8 @@ La aplicación se usa desde la terminal, mediante un menú interactivo.
   única, variables libres identificadas y variables pivote despejadas en función
   de ellas cuando hay infinitas, y la contradicción a la vista cuando no hay
   solución.
+- Resolver sistemas también desde una interfaz web sencilla construida con Django,
+  sin reemplazar la interfaz de terminal.
 
 El menú principal es este:
 
@@ -171,8 +173,8 @@ Como esta igualdad es imposible, el sistema es inconsistente y no tiene solució
 
 La evidencia estructurada —fila contradictoria, filas redundantes, columnas sin
 pivote y valores como `Fraction`— se calcula en `backend/`. La terminal solo la
-presenta, de modo que una interfaz futura puede reutilizar la misma interpretación
-sin reconstruir conclusiones matemáticas.
+presenta, de modo que cualquier otra interfaz puede reutilizar la misma
+interpretación sin reconstruir conclusiones matemáticas.
 
 Gauss-Jordan sigue sirviendo para reducir **cualquier matriz rectangular**
 (`2 x 3`, `3 x 2`, `4 x 3`, etc.), sin exigir matrices cuadradas ni de la forma
@@ -186,9 +188,12 @@ esté orientado a resolver sistemas.
   para instalarlo en tu sistema.
 - Python 3.13. La versión está fijada en `.python-version`, y `uv` la descarga por
   ti si todavía no la tienes.
-- Una única dependencia externa, `colorama`, usada solo para dar color a la
-  terminal. Los cálculos y la interpretación de los sistemas siguen apoyándose
-  únicamente en la biblioteca estándar (`random`, `fractions` y `re`).
+- `colorama`, usada solo para dar color a la terminal.
+- `Django`, usado únicamente como capa de presentación web.
+
+Los cálculos y la interpretación de los sistemas siguen apoyándose en nuestra
+implementación del backend y en la biblioteca estándar (`random`, `fractions` y
+`re`).
 
 ## Instalación
 
@@ -213,6 +218,20 @@ uv run python main.py
 
 Para salir, elige la opción `9` del menú.
 
+### Interfaz web con Django
+
+Desde la raíz del repositorio, inicia el servidor de desarrollo:
+
+```bash
+uv run python manage.py runserver
+```
+
+Abre <http://127.0.0.1:8000/> en el navegador. La interfaz web permite elegir
+Gauss o Gauss-Jordan, escribir el sistema directamente y consultar la matriz
+inicial, los pasos, la clasificación y la solución. Django solo coordina la
+entrada y la presentación: `frontend/web/calculadora/servicios.py` delega el
+parser y los resolvers a `backend/`.
+
 ## Pruebas
 
 Desde la raíz del repositorio:
@@ -221,18 +240,18 @@ Desde la raíz del repositorio:
 uv run python -m unittest discover -v
 ```
 
-Actualmente son 336 pruebas. Las de `tests/` cubren las reglas matemáticas del
-backend (validaciones, matrices rectangulares, pivotes, escalonamiento,
-sustitución regresiva y clasificación de sistemas), las expresiones lineales y su
-formato, la traducción de una matriz a su sistema, el conjunto solución con
-variables libres, el parser de sistemas, la equivalencia entre Gauss y
-Gauss-Jordan, el flujo de la terminal y las restricciones académicas del proyecto.
-Sirven para detectar regresiones cuando el proyecto crezca.
+Las de `tests/` cubren las reglas matemáticas del backend (validaciones, matrices
+rectangulares, pivotes, escalonamiento, sustitución regresiva y clasificación de
+sistemas), las expresiones lineales y su formato, la traducción de una matriz a
+su sistema, el conjunto solución con variables libres, el parser de sistemas, la
+equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
+de Django y las restricciones académicas del proyecto. Sirven para detectar
+regresiones cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
 
 ```bash
-uv run python -m compileall -q backend frontend tests main.py
+uv run python -m compileall -q backend frontend tests main.py manage.py
 ```
 
 ## Restricciones matemáticas
@@ -271,6 +290,7 @@ El proyecto separa la lógica matemática de la interfaz:
 ```text
 Algebra-Lineal/
 ├── main.py                     # punto de entrada de la aplicación
+├── manage.py                   # punto de entrada de Django
 ├── pyproject.toml              # metadata y dependencias declaradas
 ├── uv.lock                     # versiones exactas resueltas por uv
 ├── .python-version             # versión de Python del proyecto
@@ -288,12 +308,15 @@ Algebra-Lineal/
 │   ├── parser_sistemas.py      # texto de ecuaciones → matriz aumentada
 │   └── sistemas.py             # clasificación, sistema resultante y solución
 ├── frontend/
-│   └── terminal/
-│       ├── menu.py             # bucle del menú y navegación
-│       ├── opciones.py         # qué hace cada opción del menú
-│       ├── entradas.py         # lectura y validación de datos del usuario
-│       ├── salida.py           # formateo e impresión de matrices y pasos
-│       └── consola.py          # colores, limpieza de pantalla y pausas
+│   ├── terminal/               # interfaz de línea de comandos
+│   │   ├── menu.py             # bucle del menú y navegación
+│   │   ├── opciones.py         # qué hace cada opción del menú
+│   │   ├── entradas.py         # lectura y validación de datos del usuario
+│   │   ├── salida.py           # formateo e impresión de matrices y pasos
+│   │   └── consola.py          # colores, limpieza de pantalla y pausas
+│   └── web/
+│       ├── algebra_web/        # configuración, rutas y entradas WSGI/ASGI
+│       └── calculadora/        # formulario, vistas, adaptador y templates
 └── tests/
     ├── test_matrices.py
     ├── test_operaciones_filas.py
@@ -307,6 +330,7 @@ Algebra-Lineal/
     ├── test_menu.py
     ├── test_salida.py
     ├── test_consola.py
+    ├── test_web.py
     └── test_restricciones_proyecto.py
 ```
 
@@ -338,11 +362,22 @@ ninguna interfaz. `frontend/terminal/` es quien consume el backend y concentra
 toda la interacción por consola. La dependencia va siempre en un sentido:
 
 ```text
-frontend  →  backend
+frontend/terminal  →  backend
+frontend/web        →  backend
 ```
 
 Esa separación deja espacio para añadir más adelante otra interfaz bajo
 `frontend/` sin tocar la lógica matemática.
+
+La interfaz web sigue el mismo sentido de dependencia:
+
+```text
+views.py → servicios.py → parser_sistemas.py
+                    └──→ sistemas.py → gauss / gauss-jordan
+```
+
+`servicios.py` adapta matrices, pasos y mensajes para los templates, pero no
+recalcula operaciones, clasificaciones ni soluciones.
 
 ## Desarrollo
 
