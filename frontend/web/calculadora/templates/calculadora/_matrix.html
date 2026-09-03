@@ -1,0 +1,11 @@
+<table class="matrix-table" aria-label="{{ etiqueta|default:'Matriz' }}">
+    <tbody>
+        {% for fila in matriz %}
+            <tr>
+                {% for valor in fila %}
+                    <td class="{% if forloop.last %}constant{% endif %}">{{ valor }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

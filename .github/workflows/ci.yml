@@ -46,4 +46,4 @@ jobs:
         run: uv run python -m unittest discover -v
 
       - name: Verificar la compilacion
-        run: uv run python -m compileall -q backend frontend tests main.py
+        run: uv run python -m compileall -q backend frontend tests main.py manage.py
