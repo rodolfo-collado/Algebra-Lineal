@@ -1,0 +1,32 @@
+<header class="app-header">
+    <a class="app-brand" href="{% url 'calculadora:inicio' %}" aria-label="Álgebra Lineal, inicio">
+        {% include "calculadora/_mark.html" %}
+        <span class="app-brand-text">
+            <span class="app-name">Álgebra Lineal</span>
+            <span class="app-tagline">Calculadora educativa</span>
+        </span>
+    </a>
+    <button
+        type="button"
+        class="theme-toggle"
+        id="theme-toggle"
+        aria-label="Cambiar a tema oscuro"
+        aria-pressed="false"
+    >
+        <span class="theme-toggle-icons" aria-hidden="true">
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" focusable="false">
+                <path
+                    fill="currentColor"
+                    d="M12.2 3.1a8.8 8.8 0 1 0 8.7 10.7 7 7 0 0 1-8.7-10.7z"
+                ></path>
+            </svg>
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" focusable="false">
+                <path
+                    fill="currentColor"
+                    d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zm0-4.2h.8v3.2H12V3zm0 14.8h.8V21H12v-3.2zM3 11.2h3.2v1.6H3v-1.6zm14.8 0H21v1.6h-3.2v-1.6zM6.1 5.5l2.3 2.3-1.1 1.1-2.3-2.3 1.1-1.1zm10.6 10.6 2.3 2.3-1.1 1.1-2.3-2.3 1.1-1.1zM5 17.4l2.3-2.3 1.1 1.1-2.3 2.3L5 17.4zm10.6-10.6 2.3-2.3 1.1 1.1-2.3 2.3-1.1-1.1z"
+                ></path>
+            </svg>
+        </span>
+        <span class="theme-toggle-text">Tema</span>
+    </button>
+</header>

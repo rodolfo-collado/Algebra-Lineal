@@ -5,10 +5,19 @@ from fractions import Fraction
 from backend.matrices import formatear_fraccion
 from backend.parser_sistemas import parsear_sistema
 from backend.sistemas import (
+    INCONSISTENTE,
+    SOLUCION_UNICA,
+    SOLUCIONES_INFINITAS,
     resolver_sistema_gauss,
     resolver_sistema_gauss_jordan,
 )
 
+
+_CLASIFICACION_CLAVE = {
+    SOLUCION_UNICA: "unica",
+    SOLUCIONES_INFINITAS: "infinitas",
+    INCONSISTENTE: "inconsistente",
+}
 
 _RESOLVERS = {
     "gauss": ("Gauss", resolver_sistema_gauss, "matriz_escalonada", "Matriz escalonada"),
@@ -85,6 +94,9 @@ def resolver_entrada_web(
         "mostrar_sistema_resultante": not resultado["solucion_directa"],
         "ecuaciones_resultantes": resultado["ecuaciones_resultantes"],
         "clasificacion": resultado["clasificacion"],
+        "clasificacion_clave": _CLASIFICACION_CLAVE.get(
+            resultado["clasificacion"], ""
+        ),
         "justificacion": resultado["justificacion"],
         "solucion_general": resultado["solucion_general"],
         "sustitucion": adaptar_sustitucion(

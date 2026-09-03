@@ -35,6 +35,7 @@ class SistemaForm(forms.Form):
         widget=forms.Textarea(
             attrs={
                 "rows": 6,
+                "class": "field-input field-input-code",
                 "placeholder": (
                     "x1+2x2-x3=4;\n"
                     "2x1-x2+3x3=7;\n"
@@ -49,6 +50,13 @@ class SistemaForm(forms.Form):
         label="Número de ecuaciones",
         required=False,
         min_value=1,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "field-input",
+                "min": "1",
+                "inputmode": "numeric",
+            }
+        ),
         error_messages={
             "invalid": "La cantidad de ecuaciones debe ser un número entero.",
             "min_value": "Debe haber al menos una ecuación.",
@@ -58,6 +66,13 @@ class SistemaForm(forms.Form):
         label="Número de variables",
         required=False,
         min_value=1,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "field-input",
+                "min": "1",
+                "inputmode": "numeric",
+            }
+        ),
         error_messages={
             "invalid": "La cantidad de variables debe ser un número entero.",
             "min_value": "Debe haber al menos una variable.",
