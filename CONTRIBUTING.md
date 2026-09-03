@@ -95,13 +95,26 @@ Desde la raíz del repositorio, ejecuta las mismas verificaciones que corre el C
 ```bash
 uv lock --check
 uv run python -m unittest discover -v
-uv run python -m compileall -q backend frontend tests main.py manage.py
+uv run python -m compileall -q backend frontend tests main.py manage.py desktop.py
 ```
 
 Comprueba también que la aplicación siga iniciando:
 
 ```bash
 uv run python main.py
+```
+
+La interfaz desktop durante desarrollo se puede iniciar con:
+
+```bash
+uv run python desktop.py
+```
+
+Para generar la distribución de Windows, usa la configuración versionada de
+PyInstaller desde la raíz del proyecto:
+
+```bash
+uv run pyinstaller --noconfirm --clean AlgebraLineal.spec
 ```
 
 ## Integración continua

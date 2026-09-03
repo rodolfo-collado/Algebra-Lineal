@@ -191,6 +191,9 @@ esté orientado a resolver sistemas.
   ti si todavía no la tienes.
 - `colorama`, usada solo para dar color a la terminal.
 - `Django`, usado únicamente como capa de presentación web.
+- `waitress`, usado como servidor WSGI local de la aplicación desktop.
+- `pywebview`, usado para mostrar Django en una ventana nativa.
+- `PyInstaller`, disponible como dependencia de desarrollo para generar Windows.
 
 Los cálculos y la interpretación de los sistemas siguen apoyándose en nuestra
 implementación del backend y en la biblioteca estándar (`random`, `fractions` y
@@ -213,13 +216,15 @@ trabajan con las mismas versiones.
 
 Desde la raíz del repositorio:
 
+### Terminal
+
 ```bash
 uv run python main.py
 ```
 
 Para salir, elige la opción `9` del menú.
 
-### Interfaz web con Django
+### Django en desarrollo
 
 Desde la raíz del repositorio, inicia el servidor de desarrollo:
 
@@ -242,6 +247,46 @@ Ambos modos muestran la matriz inicial, los pasos, la clasificación y la
 solución. Django solo coordina la entrada y la presentación: la capa de
 integración converge en una matriz aumentada y delega los cálculos a `backend/`.
 
+### Aplicación de escritorio durante desarrollo
+
+Desde Windows, el launcher inicia Django con Waitress en un puerto efímero de
+`127.0.0.1` y abre una ventana nativa con pywebview. No usa `runserver` ni abre
+un navegador externo:
+
+```bash
+uv run python desktop.py
+```
+
+La readiness se comprueba con un `HTTP GET /` antes de crear la ventana. Al
+cerrarla, el launcher llama a `server.close()` y espera el final del thread de
+Waitress.
+
+### Generar distribución de Windows
+
+La configuración reproducible está en `AlgebraLineal.spec`. Desde la raíz del
+repositorio ejecuta:
+
+```bash
+uv run pyinstaller --noconfirm --clean AlgebraLineal.spec
+```
+
+La distribución confiable es `onedir`: copia la carpeta completa
+`dist/AlgebraLineal/` y ejecuta `AlgebraLineal.exe` desde ella. El `.spec`
+incluye explícitamente los templates, CSS y JavaScript de Django, y configura
+la aplicación sin consola adicional (`windowed`). `dist/` y `build/` están
+ignorados por Git.
+
+En Windows, pywebview usa el backend WebView2. La distribución no descarga ese
+runtime silenciosamente: se espera que Windows 10/11 ya lo tenga instalado. Si
+no está disponible, instala manualmente Microsoft Edge WebView2 Runtime y
+vuelve a abrir `AlgebraLineal.exe`.
+
+### Usuario final
+
+El usuario solo necesita abrir `AlgebraLineal.exe` dentro de la carpeta
+`AlgebraLineal/`. No necesita Python, `uv`, una terminal, un navegador manual ni
+Internet para usar la calculadora.
+
 ## Pruebas
 
 Desde la raíz del repositorio:
@@ -262,7 +307,7 @@ crezca.
 Para comprobar que todo el código compila:
 
 ```bash
-uv run python -m compileall -q backend frontend tests main.py manage.py
+uv run python -m compileall -q backend frontend tests main.py manage.py desktop.py
 ```
 
 ## Restricciones matemáticas
@@ -302,6 +347,8 @@ El proyecto separa la lógica matemática de la interfaz:
 Algebra-Lineal/
 ├── main.py                     # punto de entrada de la aplicación
 ├── manage.py                   # punto de entrada de Django
+├── desktop.py                  # launcher Waitress + pywebview
+├── AlgebraLineal.spec          # configuración reproducible de PyInstaller
 ├── pyproject.toml              # metadata y dependencias declaradas
 ├── uv.lock                     # versiones exactas resueltas por uv
 ├── .python-version             # versión de Python del proyecto
@@ -393,6 +440,31 @@ cuadrícula ──────────→ matriz aumentada ────┼�
 `servicios.py` adapta matrices, pasos y mensajes para los templates, pero no
 recalcula operaciones, clasificaciones ni soluciones. `matriz.js` solo genera la
 cuadrícula y cambia su visibilidad.
+
+La arquitectura completa de las interfaces queda así:
+
+```text
+frontend/terminal
+        │
+        └──────────────→ backend
+
+frontend/web
+        │
+        └──────────────→ backend
+
+desktop.py
+        ↓
+     Waitress (127.0.0.1:<puerto efímero>)
+        ↓
+     Django WSGI
+        ↓
+frontend/web
+        ↓
+     backend
+```
+
+El launcher es infraestructura de ejecución y no contiene parser, operaciones
+de filas, Gauss, Gauss-Jordan ni interpretación matemática.
 
 ## Desarrollo
 

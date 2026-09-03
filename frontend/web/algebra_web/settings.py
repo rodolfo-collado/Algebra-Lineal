@@ -1,4 +1,4 @@
-"""Configuración mínima de Django para el entorno de desarrollo local."""
+"""Configuración mínima de Django para desarrollo y la aplicación desktop."""
 
 import os
 from pathlib import Path
@@ -9,7 +9,8 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY", "django-insecure-algebra-lineal-development"
 )
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+DESKTOP_MODE = os.environ.get("ALGEBRA_DESKTOP") == "1"
+DEBUG = False if DESKTOP_MODE else os.environ.get("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
 INSTALLED_APPS = [
