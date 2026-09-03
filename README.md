@@ -5,7 +5,11 @@ y álgebra lineal. El objetivo no es resolver operaciones rápido, sino escribir
 algoritmo paso a paso y entender cómo funciona por dentro.
 
 La aplicación se puede usar desde la terminal, mediante un menú interactivo, o
-desde una interfaz web local.
+desde una interfaz desktop local. Django sigue siendo la capa de presentación;
+la ventana nativa solo muestra esa interfaz, con identidad visual propia, tema
+claro/oscuro y funcionamiento completo sin Internet. La estructura de la
+interfaz está pensada para ir añadiendo más temas del curso como módulos, sin
+rediseñar la aplicación cada vez.
 
 ## Funcionalidades actuales
 
@@ -25,8 +29,10 @@ desde una interfaz web local.
   única, variables libres identificadas y variables pivote despejadas en función
   de ellas cuando hay infinitas, y la contradicción a la vista cuando no hay
   solución.
-- Resolver sistemas desde Django mediante texto o una matriz aumentada editable,
-  sin reemplazar la interfaz de terminal.
+- Resolver sistemas desde la interfaz desktop o Django mediante texto o una
+  matriz aumentada editable, sin reemplazar la interfaz de terminal.
+- Usar una interfaz visual propia, con tema claro u oscuro, matrices con
+  notación de corchetes y el procedimiento paso a paso como pieza central.
 
 El menú principal es este:
 
@@ -232,10 +238,12 @@ Desde la raíz del repositorio, inicia el servidor de desarrollo:
 uv run python manage.py runserver
 ```
 
-Abre <http://127.0.0.1:8000/> en el navegador. La interfaz web permite elegir el
+Abre <http://127.0.0.1:8000/> en el navegador. La interfaz permite elegir el
 tipo de entrada —sistema de ecuaciones o matriz aumentada— y el método Gauss o
-Gauss-Jordan. En el modo matricial indica las dimensiones y completa una
-cuadrícula con la última columna reservada para los términos independientes:
+Gauss-Jordan. El selector de tema recuerda la preferencia en el navegador; si
+no hay una elección previa, respeta el modo claro u oscuro del sistema. En el
+modo matricial indica las dimensiones y completa una cuadrícula con la última
+columna reservada para los términos independientes:
 
 ```text
        x1   x2   b
@@ -272,9 +280,9 @@ uv run pyinstaller --noconfirm --clean AlgebraLineal.spec
 
 La distribución confiable es `onedir`: copia la carpeta completa
 `dist/AlgebraLineal/` y ejecuta `AlgebraLineal.exe` desde ella. El `.spec`
-incluye explícitamente los templates, CSS y JavaScript de Django, y configura
-la aplicación sin consola adicional (`windowed`). `dist/` y `build/` están
-ignorados por Git.
+incluye explícitamente los templates, CSS, JavaScript e icono local de Django, y
+configura la aplicación sin consola adicional (`windowed`). `dist/` y `build/`
+están ignorados por Git.
 
 En Windows, pywebview usa el backend WebView2. La distribución no descarga ese
 runtime silenciosamente: se espera que Windows 10/11 ya lo tenga instalado. Si
@@ -285,7 +293,8 @@ vuelve a abrir `AlgebraLineal.exe`.
 
 El usuario solo necesita abrir `AlgebraLineal.exe` dentro de la carpeta
 `AlgebraLineal/`. No necesita Python, `uv`, una terminal, un navegador manual ni
-Internet para usar la calculadora.
+Internet para usar la calculadora: CSS, JavaScript, tipografías del sistema e
+icono van empaquetados con la distribución.
 
 ## Pruebas
 
@@ -300,9 +309,9 @@ rectangulares, pivotes, escalonamiento, sustitución regresiva y clasificación 
 sistemas), las expresiones lineales y su formato, la traducción de una matriz a
 su sistema, el conjunto solución con variables libres, el parser de sistemas, la
 equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
-de Django —incluidas sus entradas textual y matricial— y las restricciones
-académicas del proyecto. Sirven para detectar regresiones cuando el proyecto
-crezca.
+de Django —incluidas sus entradas textual y matricial—, la infraestructura
+desktop y que la interfaz no cargue fuentes ni scripts remotos. Sirven para
+detectar regresiones cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
 
@@ -354,6 +363,9 @@ Algebra-Lineal/
 ├── .python-version             # versión de Python del proyecto
 ├── README.md
 ├── CONTRIBUTING.md
+├── assets/                     # icono local de la aplicación
+├── docs/
+│   └── interfaz.md             # cómo reutilizar el sistema visual
 ├── .github/
 │   └── workflows/
 │       └── ci.yml              # integración continua
@@ -389,7 +401,12 @@ Algebra-Lineal/
     ├── test_salida.py
     ├── test_consola.py
     ├── test_web.py
+    ├── test_desktop.py
+    ├── test_recursos_interfaz.py
     └── test_restricciones_proyecto.py
+
+La guía breve de la interfaz —plantilla base, header, tokens y tema— está en
+[docs/interfaz.md](docs/interfaz.md).
 ```
 
 Dentro de `backend/` la dependencia también va en un solo sentido, donde `→`
@@ -439,7 +456,8 @@ cuadrícula ──────────→ matriz aumentada ────┼�
 `forms.py` valida dimensiones y celdas con las utilidades existentes del parser;
 `servicios.py` adapta matrices, pasos y mensajes para los templates, pero no
 recalcula operaciones, clasificaciones ni soluciones. `matriz.js` solo genera la
-cuadrícula y cambia su visibilidad.
+cuadrícula y cambia su visibilidad. `tema.js` guarda el tema claro u oscuro en
+el almacenamiento local del WebView.
 
 La arquitectura completa de las interfaces queda así:
 
