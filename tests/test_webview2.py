@@ -73,6 +73,35 @@ class PruebasWebView2(unittest.TestCase):
         self.assertIn("Falta WebView2", args[1])
         self.assertEqual(args[2], "Álgebra Lineal")
 
+    def test_inicio_windows_selecciona_edgechromium_y_cierra_waitress(self):
+        webview = MagicMock()
+        server, thread = object(), object()
+        with patch.object(desktop.sys, "platform", "win32"), \
+                patch.object(desktop, "webview2_available", return_value=True), \
+                patch.dict("sys.modules", webview=webview), \
+                patch.object(desktop, "load_wsgi_application"), \
+                patch.object(desktop, "start_waitress", return_value=(server, thread, "http://127.0.0.1:49173/", None)), \
+                patch.object(desktop, "wait_for_server"), \
+                patch.object(desktop, "stop_waitress") as cerrar:
+            desktop.run_desktop()
+        self.assertEqual(webview.start.call_args.kwargs["gui"], "edgechromium")
+        self.assertFalse(webview.start.call_args.kwargs["http_server"])
+        cerrar.assert_called_once_with(server, thread)
+
+    def test_fallo_de_webview_no_deja_el_servidor_abierto(self):
+        webview = MagicMock()
+        webview.start.side_effect = RuntimeError("fallo de ventana")
+        server, thread = object(), object()
+        with patch.object(desktop, "ensure_webview2_runtime"), \
+                patch.dict("sys.modules", webview=webview), \
+                patch.object(desktop, "load_wsgi_application"), \
+                patch.object(desktop, "start_waitress", return_value=(server, thread, "http://127.0.0.1:49173/", None)), \
+                patch.object(desktop, "wait_for_server"), \
+                patch.object(desktop, "stop_waitress") as cerrar:
+            with self.assertRaises(desktop.DesktopStartupError):
+                desktop.run_desktop()
+        cerrar.assert_called_once_with(server, thread)
+
 
 if __name__ == "__main__":
     unittest.main()

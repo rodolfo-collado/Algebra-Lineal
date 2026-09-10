@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <# Prueba real en una cuenta Windows sin una instalación previa de Álgebra Lineal.
    Instala, abre el acceso directo, resuelve por HTTP, cierra, reabre y desinstala.
    La revisión visual de pywebview se realiza además de esta prueba automatizada. #>
@@ -61,7 +61,7 @@ try {
     if ([BitConverter]::ToUInt16($bytes, $peOffset + 24 + 68) -ne 2) { throw 'El ejecutable no es windowed.' }
 
     for ($attempt = 1; $attempt -le 2; $attempt++) {
-        Start-Process -FilePath $startShortcut -WorkingDirectory $installDirectory -WindowStyle Hidden
+        Start-Process -FilePath $startShortcut -WorkingDirectory $installDirectory -WindowStyle Normal
         $deadline = [DateTime]::UtcNow.AddSeconds(15)
         do {
             $candidates = @(Get-Process AlgebraLineal -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $appPath })
@@ -69,7 +69,19 @@ try {
             Start-Sleep -Milliseconds 250
         } while ([DateTime]::UtcNow -lt $deadline)
         if (-not $process -or $process.HasExited) { throw 'El acceso directo no abrió la aplicación.' }
+        # Conserva el handle antes del cierre para poder consultar ExitCode
+        # aunque el proceso se haya obtenido mediante Get-Process.
+        $null = $process.Handle
         $url = Wait-AppUrl $process
+        # Django responde antes de que .NET/WebView2 termine de crear la ventana.
+        $deadline = [DateTime]::UtcNow.AddSeconds(30)
+        do {
+            $process.Refresh()
+            if ($process.HasExited) { throw 'La aplicación terminó antes de crear la ventana.' }
+            if ($process.MainWindowHandle -ne [IntPtr]::Zero) { break }
+            Start-Sleep -Milliseconds 250
+        } while ([DateTime]::UtcNow -lt $deadline)
+        if ($process.MainWindowHandle -eq [IntPtr]::Zero) { throw 'pywebview no creó la ventana nativa.' }
         foreach ($method in @('gauss', 'gauss_jordan')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri $url -SessionVariable webSession
             $csrf = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
