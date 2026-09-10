@@ -3,6 +3,12 @@ from fractions import Fraction
 from frontend.terminal import consola
 
 
+def imprimir_columnas_pivote(columnas):
+    """Presenta los índices de usuario que entrega la interpretación del sistema."""
+    nombres = ", ".join(f"C{columna}" for columna in columnas) or "Ninguna"
+    consola.info(f"\nColumnas pivote: {nombres}")
+
+
 def formatear_numero(numero):
     if isinstance(numero, Fraction):
         if numero.denominator == 1:

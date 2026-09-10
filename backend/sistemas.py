@@ -295,11 +295,15 @@ def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
     ecuaciones = ecuaciones_de_matriz(matriz_resuelta)
     contradiccion = fila_inconsistente(matriz_resuelta, cantidad_variables)
     redundantes = filas_nulas(matriz_resuelta, cantidad_variables)
+    # Los algoritmos ya limitaron los pivotes a los coeficientes; solo cambiamos
+    # sus índices internos a la numeración de usuario, compartida por las interfaces.
+    columnas_pivote = [columna + 1 for _, columna in pivotes]
 
     # Una contradicción anula el conjunto solución aunque falten pivotes: sin
     # solución no hay nada que declarar libre.
     if clasificacion == INCONSISTENTE:
         return {
+            "columnas_pivote": columnas_pivote,
             "clasificacion": clasificacion,
             "ecuaciones_resultantes": ecuaciones,
             "solucion_general": [],
@@ -322,6 +326,7 @@ def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
         soluciones = [expresion["constante"] for expresion in expresiones]
 
     return {
+        "columnas_pivote": columnas_pivote,
         "clasificacion": clasificacion,
         "ecuaciones_resultantes": ecuaciones,
         "solucion_general": formatear_solucion_general(expresiones, libres),
