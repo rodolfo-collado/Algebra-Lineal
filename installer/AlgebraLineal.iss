@@ -1,0 +1,106 @@
+; Compilar mediante scripts/build_windows.ps1. La versión viene de pyproject.toml.
+#ifndef AppVersion
+  #error Falta /DAppVersion. Usa scripts\build_windows.ps1.
+#endif
+#ifndef ProjectRoot
+  #define ProjectRoot ExtractFileDir(SourcePath)
+#endif
+#define AppName "Álgebra Lineal"
+#define AppExe "AlgebraLineal.exe"
+
+[Setup]
+AppId={{D0455B79-7F5E-4C78-9F3B-F47187E9A83A}
+AppName={#AppName}
+AppVersion={#AppVersion}
+AppPublisher=Proyecto Álgebra Lineal
+AppPublisherURL=https://github.com/rodolfo-collado/Algebra-Lineal
+DefaultDirName={localappdata}\Programs\AlgebraLineal
+DefaultGroupName={#AppName}
+DisableProgramGroupPage=yes
+PrivilegesRequired=lowest
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+MinVersion=10.0.17763
+OutputDir={#ProjectRoot}\dist\installer
+OutputBaseFilename=AlgebraLineal-Setup-{#AppVersion}
+SetupIconFile={#ProjectRoot}\assets\algebra-lineal.ico
+UninstallDisplayIcon={app}\{#AppExe}
+Compression=lzma2
+SolidCompression=yes
+WizardStyle=modern
+CloseApplications=yes
+RestartApplications=no
+
+[Languages]
+Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "Crear un acceso directo en el escritorio"; GroupDescription: "Accesos directos:"; Flags: unchecked
+
+[Files]
+; El bootstrapper se ejecuta desde una carpeta instalada, nunca desde el checkout.
+Source: "{#ProjectRoot}\build\prerequisites\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{app}\prerequisites"; Flags: ignoreversion; Check: NeedsWebView2; AfterInstall: InstallWebView2
+Source: "{#ProjectRoot}\dist\AlgebraLineal\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#AppExe}"; Description: "Abrir {#AppName}"; Flags: nowait postinstall skipifsilent; Check: WebView2Installed
+
+[Code]
+const
+  WebView2Key = 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+
+function RuntimeInRegistry(Root: Integer): Boolean;
+var
+  Version: String;
+  PackedVersion: Int64;
+begin
+  Result := False;
+  if RegQueryStringValue(Root, WebView2Key, 'pv', Version) then
+    if StrToVersion(Version, PackedVersion) then
+      Result := ComparePackedVersion(PackedVersion, PackVersionComponents(86, 0, 622, 0)) >= 0;
+end;
+
+function WebView2Installed: Boolean;
+begin
+  Result := RuntimeInRegistry(HKCU64) or RuntimeInRegistry(HKCU32) or RuntimeInRegistry(HKLM32);
+end;
+
+function NeedsWebView2: Boolean;
+begin
+  Result := not WebView2Installed;
+end;
+
+function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo,
+  MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+begin
+  Result := MemoDirInfo + NewLine + MemoGroupInfo + NewLine + MemoTasksInfo;
+  if NeedsWebView2 then
+    Result := Result + NewLine + NewLine +
+      'Se instalará Microsoft Edge WebView2 Runtime desde Microsoft. ' +
+      'Mantén la conexión a Internet durante la instalación.';
+end;
+
+procedure InstallWebView2;
+var
+  ExitCode: Integer;
+begin
+  if WebView2Installed then
+    Exit;
+  WizardForm.StatusLabel.Caption := 'Instalando Microsoft Edge WebView2 Runtime...';
+  if not Exec(ExpandConstant('{app}\prerequisites\MicrosoftEdgeWebview2Setup.exe'),
+    '/silent /install', ExpandConstant('{app}\prerequisites'), SW_HIDE,
+    ewWaitUntilTerminated, ExitCode) then
+    RaiseException('No se pudo iniciar la instalación de Microsoft Edge WebView2 Runtime. ' +
+      'Vuelve a ejecutar este instalador. Código: ' + IntToStr(ExitCode));
+  Log('WebView2: código de salida ' + IntToStr(ExitCode));
+  if (ExitCode <> 0) or not WebView2Installed then
+    RaiseException('No se pudo instalar Microsoft Edge WebView2 Runtime. ' +
+      'Comprueba tu conexión a Internet y vuelve a ejecutar este instalador. ' +
+      'Si el equipo no tiene Internet, instala primero el runtime Evergreen con el ' +
+      'instalador sin conexión de https://developer.microsoft.com/microsoft-edge/webview2/ ' +
+      'y vuelve a intentarlo. Código: ' + IntToStr(ExitCode));
+end;

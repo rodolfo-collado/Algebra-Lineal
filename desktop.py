@@ -32,10 +32,49 @@ ICON_RELATIVE_PATH = Path("assets") / "algebra-lineal.ico"
 STARTUP_TIMEOUT_SECONDS = 10.0
 SHUTDOWN_TIMEOUT_SECONDS = 5.0
 WAITRESS_THREADS = 4
+WEBVIEW2_REGISTRY_KEY = (
+    r"SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+)
+WEBVIEW2_DOWNLOAD_URL = "https://developer.microsoft.com/microsoft-edge/webview2/"
 
 
 class DesktopStartupError(RuntimeError):
     """Indica que la aplicación no pudo preparar su entorno local."""
+
+
+def webview2_available() -> bool:
+    """Consulta el runtime Evergreen por usuario y por equipo, sin importar GUI."""
+    import winreg
+
+    # Microsoft registra la instalación por equipo en la vista de 32 bits.
+    for hive, view in (
+        (winreg.HKEY_CURRENT_USER, winreg.KEY_WOW64_64KEY),
+        (winreg.HKEY_CURRENT_USER, winreg.KEY_WOW64_32KEY),
+        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY),
+    ):
+        try:
+            with winreg.OpenKey(
+                hive, WEBVIEW2_REGISTRY_KEY, 0, winreg.KEY_READ | view
+            ) as key:
+                value, _ = winreg.QueryValueEx(key, "pv")
+            version = tuple(int(part) for part in value.split("."))
+            if len(version) == 4 and version >= (86, 0, 622, 0):
+                return True
+        except (OSError, ValueError, AttributeError):
+            continue
+    return False
+
+
+def ensure_webview2_runtime() -> None:
+    """Evita iniciar el servidor o caer en MSHTML cuando falta WebView2."""
+    if sys.platform == "win32" and not webview2_available():
+        raise DesktopStartupError(
+            "Falta Microsoft Edge WebView2 Runtime o necesita actualizarse.\n"
+            "Vuelve a ejecutar el instalador de Álgebra Lineal con conexión a Internet "
+            "para instalarlo. También puedes descargar el runtime Evergreen desde:\n"
+            f"{WEBVIEW2_DOWNLOAD_URL}\n"
+            "Después, vuelve a abrir Álgebra Lineal."
+        )
 
 
 def application_icon_path() -> str | None:
@@ -329,6 +368,7 @@ def run_desktop() -> None:
     shutdown = None
 
     try:
+        ensure_webview2_runtime()
         application = load_wsgi_application()
         server, thread, url, errors = start_waitress(application)
         wait_for_server(
@@ -344,6 +384,7 @@ def run_desktop() -> None:
         window.events.closing += shutdown
         # start() bloquea en el thread principal hasta que el usuario cierra la ventana.
         webview.start(
+            gui="edgechromium" if sys.platform == "win32" else None,
             debug=desktop_debug_enabled(),
             http_server=False,
             private_mode=True,
