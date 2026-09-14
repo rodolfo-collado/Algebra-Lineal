@@ -1,22 +1,20 @@
 {% extends "calculadora/base.html" %}
+{% load static %}
 
-{% block title %}Sistemas de ecuaciones · Álgebra Lineal{% endblock %}
+{% block title %}{{ modulo_actual.nombre }} · Álgebra Lineal{% endblock %}
 
 {% block module_header %}
     <header class="module-hero">
-        <p class="module-kicker">Módulo actual</p>
-        <h1 class="module-title">Sistemas de ecuaciones</h1>
-        <p class="module-lead">
-            Resuelve sistemas mediante eliminación de Gauss o Gauss-Jordan
-            y revisa el procedimiento paso a paso.
-        </p>
+        <p class="module-kicker">{{ modulo_actual.categoria.nombre }}</p>
+        <h1 class="module-title">{{ modulo_actual.nombre }}</h1>
+        <p class="module-lead">{{ modulo_actual.descripcion }}</p>
     </header>
 {% endblock %}
 
 {% block content %}
     <section class="panel workspace" aria-labelledby="workspace-title">
         <h2 id="workspace-title" class="sr-only">Resolver un sistema</h2>
-        <form method="post" novalidate>
+        <form id="sistema-form" action="{% url modulo_actual.route_name %}" method="post" novalidate>
             {% csrf_token %}
             {% if form.non_field_errors %}
                 <div class="alert error" role="alert">
@@ -120,6 +118,7 @@
                         </p>
                     </div>
                 </fieldset>
+                <noscript><p class="field-help">Para editar la cuadrícula de una matriz, activa JavaScript. Puedes resolver y comparar métodos usando el sistema escrito como texto.</p></noscript>
             </section>
 
             <div class="workspace-actions">
@@ -137,7 +136,7 @@
 
             <section class="panel" aria-labelledby="initial-title">
                 <h3 id="initial-title" class="panel-title">Matriz inicial</h3>
-                {% include "calculadora/_matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
             </section>
 
             <section class="panel panel-steps" aria-labelledby="steps-title">
@@ -157,12 +156,12 @@
                                     <div class="matrix-pair">
                                         <div class="matrix-pair-item">
                                             <p class="matrix-label">Antes</p>
-                                            {% include "calculadora/_matrix.html" with matriz=paso.antes etiqueta="Matriz antes del paso" %}
+                                            {% include "calculadora/components/matrix.html" with matriz=paso.antes etiqueta="Matriz antes del paso" %}
                                         </div>
                                         <span class="matrix-pair-arrow" aria-hidden="true">→</span>
                                         <div class="matrix-pair-item">
                                             <p class="matrix-label">Después</p>
-                                            {% include "calculadora/_matrix.html" with matriz=paso.despues etiqueta="Matriz después del paso" %}
+                                            {% include "calculadora/components/matrix.html" with matriz=paso.despues etiqueta="Matriz después del paso" %}
                                         </div>
                                     </div>
                                 </article>
@@ -179,8 +178,8 @@
 
                 <div class="final-block">
                     <h4 class="final-label">{{ resultado.etiqueta_matriz }}</h4>
-                    {% include "calculadora/_matrix.html" with matriz=resultado.matriz_final etiqueta=resultado.etiqueta_matriz %}
-                    <p class="pivot-columns"><strong>Columnas pivote:</strong> {% for columna in resultado.columnas_pivote %}<span>C{{ columna }}</span>{% if not forloop.last %}, {% endif %}{% empty %}Ninguna{% endfor %}</p>
+                    {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_final etiqueta=resultado.etiqueta_matriz %}
+                    <p id="columnas-pivote" class="pivot-columns" tabindex="-1"><strong>Columnas pivote:</strong> {% for columna in resultado.columnas_pivote %}<span>C{{ columna }}</span>{% if not forloop.last %}, {% endif %}{% empty %}Ninguna{% endfor %}</p>
                 </div>
 
                 {% if resultado.mostrar_sistema_resultante %}
@@ -231,10 +230,12 @@
                     {% endif %}
                 </div>
             </section>
+            {% include "calculadora/components/connections.html" %}
         </section>
     {% endif %}
 {% endblock %}
 
 {% block extra_js %}
     {{ matrix_values|json_script:"matrix-initial-values" }}
+    <script src="{% static 'calculadora/matriz.js' %}" defer></script>
 {% endblock %}

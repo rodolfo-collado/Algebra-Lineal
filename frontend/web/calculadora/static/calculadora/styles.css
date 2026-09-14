@@ -220,9 +220,204 @@ p {
 }
 
 .app-content {
+    min-width: 0;
     width: min(100% - 1.5rem, 1040px);
     margin: 0 auto;
     padding: 1rem 0 2.4rem;
+}
+
+/* Estructura compartida: el contenido matemático conserva sus propios paneles. */
+.app-layout {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    max-width: 1440px;
+    margin-inline: auto;
+}
+
+.app-navigation {
+    align-self: start;
+    position: sticky;
+    top: calc(var(--header-height) + 1rem);
+    max-height: calc(100vh - var(--header-height) - 2rem);
+    overflow-y: auto;
+    padding: 1rem 0.75rem;
+}
+
+.app-navigation[hidden],
+.navigation-toggle[hidden] {
+    display: none;
+}
+
+.app-navigation ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.app-navigation a {
+    display: block;
+    padding: 0.65rem;
+    border-inline-start: 3px solid transparent;
+    border-radius: var(--radius-sm);
+}
+
+.app-navigation a:hover {
+    background: var(--color-surface);
+}
+
+.app-navigation [aria-current="page"] {
+    background: var(--color-primary-soft);
+    border-inline-start-color: var(--color-text);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+.navigation-category {
+    margin: 1.25rem 0 0.3rem;
+    padding-inline: 0.65rem;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: none;
+}
+
+.navigation-toggle {
+    min-height: 2.5rem;
+    padding: 0.4rem 0.65rem;
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    cursor: pointer;
+}
+
+a:focus-visible,
+button:focus-visible,
+[tabindex="-1"]:focus-visible {
+    outline: 3px solid var(--color-text);
+    outline-offset: 3px;
+}
+
+[id] {
+    scroll-margin-top: calc(var(--header-height) + 1.5rem);
+}
+
+.breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.55rem;
+    padding: 0;
+    margin: 0 0 1rem;
+    list-style: none;
+    color: var(--color-muted);
+    font-size: 0.82rem;
+}
+
+.breadcrumbs li + li::before {
+    content: "/";
+    margin-right: 0.55rem;
+}
+
+.breadcrumbs a,
+.connections a {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+.catalog-section {
+    margin-top: 1.5rem;
+}
+
+.catalog-section h2 {
+    font-size: 1.1rem;
+}
+
+.module-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: 0.9rem;
+}
+
+.module-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.module-status {
+    font-weight: 600;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+
+.upcoming .panel {
+    background: var(--color-surface-muted);
+    box-shadow: none;
+}
+
+.connections .btn,
+.module-card .btn {
+    white-space: normal;
+    max-width: 100%;
+    text-align: center;
+}
+
+.connections > p {
+    margin-block: 0.75rem 0;
+}
+
+.connections .btn {
+    margin-top: 0.75rem;
+    color: var(--color-text);
+    background: var(--color-primary-soft);
+    border: 1px solid var(--color-border);
+}
+
+.connections .btn:hover {
+    border-color: var(--color-text);
+}
+
+.results,
+.steps,
+.step,
+.results > .panel {
+    min-width: 0;
+}
+
+.step-operation,
+.equations {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+    .app-layout {
+        display: block;
+    }
+
+    .app-navigation {
+        position: static;
+        max-height: none;
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-surface);
+    }
+}
+
+@media (max-width: 420px) {
+    .app-header {
+        padding-inline: 0.6rem;
+        gap: 0.5rem;
+    }
+
+    .app-brand {
+        gap: 0.4rem;
+    }
 }
 
 .module-hero {
