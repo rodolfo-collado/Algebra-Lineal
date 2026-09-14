@@ -82,11 +82,14 @@ try {
             Start-Sleep -Milliseconds 250
         } while ([DateTime]::UtcNow -lt $deadline)
         if ($process.MainWindowHandle -eq [IntPtr]::Zero) { throw 'pywebview no creó la ventana nativa.' }
+        $homeResponse = Invoke-WebRequest -UseBasicParsing -Uri $url
+        if (-not $homeResponse.Content.Contains('href="/sistemas/"')) { throw 'Inicio no enlaza al módulo de sistemas.' }
+        $systemsUrl = $url + 'sistemas/'
         foreach ($method in @('gauss', 'gauss_jordan')) {
-            $response = Invoke-WebRequest -UseBasicParsing -Uri $url -SessionVariable webSession
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $systemsUrl -SessionVariable webSession
             $csrf = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
             if (-not $csrf) { throw 'Django no entregó un token CSRF.' }
-            $response = Invoke-WebRequest -UseBasicParsing -Uri $url -Method Post -WebSession $webSession -Headers @{ Referer = $url } -Body @{
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $systemsUrl -Method Post -WebSession $webSession -Headers @{ Referer = $systemsUrl } -Body @{
                 csrfmiddlewaretoken = $csrf
                 tipo_entrada = 'sistema'
                 metodo = $method
@@ -97,7 +100,7 @@ try {
                 if (-not $text.Contains($expected)) { throw "Falta '$expected' en $method ($url)." }
             }
         }
-        foreach ($asset in @('styles.css', 'matriz.js', 'tema.js', 'mark.svg')) {
+        foreach ($asset in @('styles.css', 'matriz.js', 'tema.js', 'navigation.js', 'mark.svg')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'static/calculadora/' + $asset)
             if ($response.StatusCode -ne 200) { throw "No se sirvió el recurso $asset" }
         }
