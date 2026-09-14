@@ -36,7 +36,7 @@ rediseñar la aplicación cada vez.
 - Usar una interfaz visual propia, con tema claro u oscuro, matrices con
   notación de corchetes y el procedimiento paso a paso como pieza central.
 
-El menú principal es este:
+El menú de la terminal es este:
 
 ```text
 1. Generar matriz
@@ -271,8 +271,9 @@ Desde la raíz del repositorio, inicia el servidor de desarrollo:
 uv run python manage.py runserver
 ```
 
-Abre <http://127.0.0.1:8000/> en el navegador. La interfaz permite elegir el
-tipo de entrada —sistema de ecuaciones o matriz aumentada— y el método Gauss o
+Abre <http://127.0.0.1:8000/> en el navegador. Inicio muestra el catálogo; entra
+a **Sistemas lineales → Sistemas de ecuaciones**, disponible en `/sistemas/`.
+El módulo permite elegir el tipo de entrada —sistema de ecuaciones o matriz aumentada— y el método Gauss o
 Gauss-Jordan. El selector de tema recuerda la preferencia en el navegador; si
 no hay una elección previa, respeta el modo claro u oscuro del sistema. En el
 modo matricial indica las dimensiones y completa una cuadrícula con la última
@@ -287,6 +288,56 @@ F2    [ 2 ] [-1 ] | [ 7 ]
 Ambos modos muestran la matriz inicial, los pasos, la clasificación y la
 solución. Django solo coordina la entrada y la presentación: la capa de
 integración converge en una matriz aumentada y delega los cálculos a `backend/`.
+
+Después de resolver, **Continúa explorando** permite comparar Gauss y
+Gauss-Jordan enviando la entrada actual del formulario: el texto permanece
+visible y la matriz conserva sus dimensiones, valores y fracciones. El método
+seleccionado refleja el ejecutado. **Revisar columnas pivote** lleva al bloque
+del resultado mediante un ancla, sin crear otro módulo.
+
+La navegación lateral agrupa módulos por categoría. Hasta 900 px se convierte
+en un menú desplegable que desplaza el contenido; Escape lo cierra y devuelve
+el foco al botón. Sin JavaScript la navegación permanece visible y se puede
+resolver y comparar desde texto; la cuadrícula editable requiere JavaScript.
+
+### Organización modular y nuevos módulos
+
+El recorrido web y desktop es **Inicio → categoría → módulo → operación/resultado**.
+Las categorías enlazan a secciones del Inicio, sin páginas vacías. Los contenidos
+de sistemas numéricos, vectores y matrices se anuncian como **Próximamente**,
+sin enlaces ni algoritmos nuevos.
+
+`frontend/web/calculadora/catalogo.py` es la fuente de metadata: las estructuras
+inmutables `Categoria` y `Modulo` definen identidad, descripción, categoría,
+estado, nombre de ruta Django, contenidos y relaciones por ID. No usan base de
+datos. Tarjetas, navegación y breadcrumbs derivan de este catálogo.
+
+Para agregar un módulo:
+
+1. Crea su vista y ruta con nombre en `calculadora/urls.py`, y su template en
+   `templates/calculadora/modules/<modulo>/`, extendiendo `calculadora/base.html`.
+2. Regístralo una sola vez en `MODULOS`, con ID único y categoría de `CATEGORIAS`.
+   Usa `disponible` y una ruta resoluble cuando funcione; `proximamente` no genera enlaces.
+3. Incluye `contexto_navegacion(modulo)` en la vista. El menú, las tarjetas y el
+   breadcrumb incorporan su metadata automáticamente. Las categorías sin módulos
+   disponibles se omiten del menú.
+4. Define relaciones con IDs existentes en `relacionados`; el helper
+   `relacionados_disponibles` excluye destinos aún no disponibles. Las conexiones
+   entre operaciones del mismo módulo viven aparte: `conexiones.py` declara la
+   comparación Gauss ↔ Gauss-Jordan, sin rutas artificiales para esos métodos.
+5. Añade pruebas de rutas, navegación y comportamiento. Mantén la matemática en
+   `backend/` y la presentación en los templates del módulo.
+
+```text
+templates/calculadora/
+├── base.html
+├── components/       # header, navegación, breadcrumbs, tarjetas y parciales
+├── pages/inicio.html
+└── modules/sistemas/index.html
+```
+
+P9 reorganiza la aplicación conservando la identidad visual existente. El
+rediseño visual completo corresponde a P10.
 
 #### Aplicación de escritorio durante desarrollo
 
@@ -511,6 +562,7 @@ Algebra-Lineal/
     ├── test_salida.py
     ├── test_consola.py
     ├── test_web.py
+    ├── test_navegacion.py
     ├── test_desktop.py
     ├── test_recursos_interfaz.py
     └── test_restricciones_proyecto.py
