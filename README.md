@@ -24,6 +24,8 @@ rediseñar la aplicación cada vez.
   matriz escalonada y la sustitución regresiva.
 - Resolver el sistema por **Gauss-Jordan**, mostrando la reducción completa y la
   matriz reducida.
+- Mostrar las columnas pivote en web, escritorio y terminal, numeradas desde 1,
+  sin incluir la columna de términos independientes.
 - Traducir la matriz resultante de vuelta a su sistema de ecuaciones, clasificarlo
   y mostrar el conjunto solución completo: valores exactos cuando la solución es
   única, variables libres identificadas y variables pivote despejadas en función
@@ -189,7 +191,38 @@ Gauss-Jordan sigue sirviendo para reducir **cualquier matriz rectangular**
 capacidad vive en `backend/gauss_jordan.py` y se puede reutilizar, aunque el menú
 esté orientado a resolver sistemas.
 
-## Requisitos
+## Para usuarios finales: instalar en Windows
+
+1. Descarga `AlgebraLineal-Setup-x.y.z.exe` de la distribución del proyecto.
+2. Ejecuta el instalador.
+3. Abre **Álgebra Lineal** desde el menú Inicio o el acceso directo opcional del escritorio.
+
+No necesitas Git, Python, uv, PyInstaller, terminal ni acceso al repositorio.
+La aplicación se instala para tu usuario en `%LOCALAPPDATA%\Programs\AlgebraLineal`,
+sin solicitar privilegios de administrador, y funciona sin una consola detrás.
+Para quitarla, usa **Configuración → Aplicaciones → Álgebra Lineal → Desinstalar**.
+
+Requiere Windows 10 1809 o posterior / Windows 11, compatible con aplicaciones x64.
+Si falta **Microsoft Edge WebView2 Runtime**, el instalador te avisa y ejecuta el
+bootstrapper oficial de Microsoft incluido en el paquete. Solo en ese caso
+necesitas Internet durante la instalación. Una vez instalado, la calculadora
+funciona sin Internet. En un equipo sin conexión, instala previamente WebView2
+con el instalador **Evergreen Standalone** de
+[Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/).
+
+Si Microsoft no puede instalar el runtime, la instalación muestra instrucciones
+para corregirlo y volver a intentarlo. El ejecutable también comprueba el runtime
+antes de iniciar y muestra un mensaje legible si falta. La desinstalación elimina
+los archivos y accesos directos de Álgebra Lineal; conserva WebView2, que puede ser
+utilizado por otras aplicaciones.
+
+Los instaladores se distribuyen manualmente por los mantenedores; CI no publica
+Releases. El paquete actual no está firmado digitalmente: Windows puede mostrar
+el editor como desconocido.
+
+## Para desarrolladores
+
+### Requisitos
 
 - [uv](https://docs.astral.sh/uv/) instalado. Consulta su documentación oficial
   para instalarlo en tu sistema.
@@ -205,12 +238,12 @@ Los cálculos y la interpretación de los sistemas siguen apoyándose en nuestra
 implementación del backend y en la biblioteca estándar (`random`, `fractions` y
 `re`).
 
-## Instalación
+### Preparar el entorno
 
 Desde la raíz del repositorio:
 
 ```bash
-uv sync
+uv sync --locked
 ```
 
 `pyproject.toml` declara qué necesita el proyecto y `uv.lock` fija las versiones
@@ -218,11 +251,11 @@ exactas que se resolvieron a partir de esa declaración. `uv sync` construye el
 entorno en `.venv/` usando ambos archivos, así que todos los colaboradores
 trabajan con las mismas versiones.
 
-## Ejecución
+### Ejecutar desde el código fuente
 
 Desde la raíz del repositorio:
 
-### Terminal
+#### Terminal
 
 ```bash
 uv run python main.py
@@ -230,7 +263,7 @@ uv run python main.py
 
 Para salir, elige la opción `9` del menú.
 
-### Django en desarrollo
+#### Django en desarrollo
 
 Desde la raíz del repositorio, inicia el servidor de desarrollo:
 
@@ -255,7 +288,7 @@ Ambos modos muestran la matriz inicial, los pasos, la clasificación y la
 solución. Django solo coordina la entrada y la presentación: la capa de
 integración converge en una matriz aumentada y delega los cálculos a `backend/`.
 
-### Aplicación de escritorio durante desarrollo
+#### Aplicación de escritorio durante desarrollo
 
 Desde Windows, el launcher inicia Django con Waitress en un puerto efímero de
 `127.0.0.1` y abre una ventana nativa con pywebview. No usa `runserver` ni abre
@@ -271,37 +304,112 @@ Waitress.
 
 ### Generar distribución de Windows
 
-La configuración reproducible está en `AlgebraLineal.spec`. Desde la raíz del
-repositorio ejecuta:
+La cadena de distribución mantiene el launcher y su configuración `onedir` y
+`windowed` en `AlgebraLineal.spec`:
 
-```bash
-uv run pyinstaller --noconfirm --clean AlgebraLineal.spec
+```text
+Código → PyInstaller → dist/AlgebraLineal/ → Inno Setup → instalador .exe
 ```
 
-La distribución confiable es `onedir`: copia la carpeta completa
-`dist/AlgebraLineal/` y ejecuta `AlgebraLineal.exe` desde ella. El `.spec`
-incluye explícitamente los templates, CSS, JavaScript e icono local de Django, y
-configura la aplicación sin consola adicional (`windowed`). `dist/` y `build/`
-están ignorados por Git.
+En una PC de desarrollo Windows con Python x64, instala **uv** e
+[Inno Setup 6.3 o posterior](https://jrsoftware.org/isdl.php). Inno Setup convierte
+la carpeta construida en un instalador con accesos directos y desinstalador.
+CI utiliza Inno Setup 6.7.3. PowerShell 5.1 o posterior es suficiente.
 
-En Windows, pywebview usa el backend WebView2. La distribución no descarga ese
-runtime silenciosamente: se espera que Windows 10/11 ya lo tenga instalado. Si
-no está disponible, instala manualmente Microsoft Edge WebView2 Runtime y
-vuelve a abrir `AlgebraLineal.exe`.
+Desde la raíz, un solo comando genera la distribución completa:
 
-### Usuario final
+```powershell
+.\scripts\build_windows.ps1
+```
 
-El usuario solo necesita abrir `AlgebraLineal.exe` dentro de la carpeta
-`AlgebraLineal/`. No necesita Python, `uv`, una terminal, un navegador manual ni
-Internet para usar la calculadora: CSS, JavaScript, tipografías del sistema e
-icono van empaquetados con la distribución.
+El script valida herramientas y Python x64, ejecuta `uv lock --check` y
+`uv sync --locked --group dev`, limpia los artefactos de esa fase, construye el
+`.spec`, verifica el ejecutable, prepara WebView2, compila Inno Setup y comprueba
+el instalador. Cada comando conserva su salida y un fallo detiene el proceso.
+La versión se lee de **`project.version` en `pyproject.toml`** y se pasa a Inno
+Setup; no se mantiene otra copia manual. Se admiten versiones numéricas de tres
+o cuatro componentes.
+
+También puedes construir por fases:
+
+```powershell
+# Solo PyInstaller (no requiere Inno Setup):
+.\scripts\build_windows.ps1 -Target App
+
+# Solo instalador, usando el build ya existente:
+.\scripts\build_windows.ps1 -Target Installer
+
+# Si ISCC.exe está en una ubicación personalizada:
+.\scripts\build_windows.ps1 -IsccPath 'C:\Herramientas\Inno Setup 6\ISCC.exe'
+```
+
+`-Target Installer` empaqueta la carpeta existente: si cambiaste el código,
+ejecuta primero `-Target App` o usa el comando completo. El equivalente directo
+para PyInstaller, después de sincronizar dependencias, sigue siendo:
+
+```powershell
+uv run --locked pyinstaller --noconfirm --clean AlgebraLineal.spec
+```
+
+La configuración del instalador vive en `installer/AlgebraLineal.iss`. El script
+invoca `ISCC.exe` con `/DAppVersion` y `/DProjectRoot`; para evitar omisiones de
+prerrequisitos se recomienda compilarla mediante `-Target Installer`.
+
+```text
+dist/
+├── AlgebraLineal/
+│   ├── AlgebraLineal.exe
+│   └── _internal/              # Python, dependencias, templates y recursos locales
+└── installer/
+    └── AlgebraLineal-Setup-0.1.0.exe
+```
+
+`build/` y `dist/` están ignorados por Git. El script descarga el bootstrapper
+desde Microsoft, comprueba su firma Authenticode y lo reutiliza en
+`build/prerequisites/`. Puedes borrar ese archivo para descargarlo de nuevo.
+Al instalar, se ejecuta desde `{app}\prerequisites`, solo si falta WebView2; la
+aplicación se ejecuta desde su carpeta instalada. La detección consulta las
+claves oficiales `pv` de HKCU y HKLM (vista de 32 bits para la instalación por
+equipo), exige un runtime compatible con pywebview y evita el fallback a MSHTML.
+Consulta la [distribución de WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution).
+
+El job de Windows de `.github/workflows/ci.yml` instala Inno Setup desde su
+distribución oficial firmada, construye ambos artefactos y ejecuta las pruebas.
+Conserva el instalador y el bootstrapper como artefactos de la ejecución durante
+14 días para revisión. El job Linux conserva sus verificaciones. Ninguno crea
+una Release.
+
+### Comprobar la distribución real
+
+En una cuenta Windows **sin una instalación previa de Álgebra Lineal**, ejecuta:
+
+```powershell
+.\scripts\test_windows_distribution.ps1 -InstallerPath .\dist\installer\AlgebraLineal-Setup-0.1.0.exe
+```
+
+La prueba instala en una carpeta nueva de `%LOCALAPPDATA%\Programs` fuera del
+repositorio. Comprueba ambos accesos directos y que el ejecutable sea `windowed`,
+abre desde Inicio, resuelve por Gauss y Gauss-Jordan a través del Django/Waitress
+empaquetado, solicita CSS/JS/icono, cierra la ventana y verifica que el proceso y
+el servidor terminan. Repite la apertura y luego desinstala comprobando que se
+eliminaron archivos, registro y accesos directos. Rechaza instalaciones previas
+para no modificarlas.
+
+Completa esa prueba con una revisión visual: instalar normalmente, abrir desde
+el acceso directo, resolver un sistema, verificar **Columnas pivote: C1, C3**,
+cambiar entre tema claro y oscuro, cerrar, reabrir y desinstalar. La prueba por
+HTTP no sustituye la inspección visual de pywebview. Para probar ausencia real
+de WebView2, utiliza una VM limpia; no desinstales el runtime compartido de tu PC.
 
 ## Pruebas
 
 Desde la raíz del repositorio:
 
 ```bash
+uv lock --check
+uv sync --locked
 uv run python -m unittest discover -v
+uv run python manage.py check
 ```
 
 Las de `tests/` cubren las reglas matemáticas del backend (validaciones, matrices
@@ -358,6 +466,8 @@ Algebra-Lineal/
 ├── manage.py                   # punto de entrada de Django
 ├── desktop.py                  # launcher Waitress + pywebview
 ├── AlgebraLineal.spec          # configuración reproducible de PyInstaller
+├── installer/                  # fuentes Inno Setup, sin binarios generados
+├── scripts/                    # build completo y prueba real de distribución
 ├── pyproject.toml              # metadata y dependencias declaradas
 ├── uv.lock                     # versiones exactas resueltas por uv
 ├── .python-version             # versión de Python del proyecto

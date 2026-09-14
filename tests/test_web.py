@@ -16,6 +16,7 @@ from backend.sistemas import (
     SOLUCION_UNICA,
     SOLUCIONES_INFINITAS,
 )
+from tests.test_columnas_pivote import CASOS
 
 
 def datos_matriz(matriz, metodo="gauss"):
@@ -36,6 +37,27 @@ def datos_matriz(matriz, metodo="gauss"):
 
 
 class PruebasCalculadoraWeb(SimpleTestCase):
+    def test_columnas_pivote_en_resultado_y_html(self):
+        from django.utils.html import strip_tags
+        from frontend.web.calculadora.servicios import resolver_sistema_web
+
+        for metodo in ("gauss", "gauss_jordan"):
+            for nombre, matriz, columnas, _ in CASOS:
+                with self.subTest(metodo=metodo, caso=nombre):
+                    respuesta = self.client.post("/", datos_matriz(matriz, metodo))
+                    self.assertEqual(respuesta.status_code, 200)
+                    texto = strip_tags(respuesta.content.decode("utf-8"))
+                    esperado = ", ".join(f"C{c}" for c in columnas) or "Ninguna"
+                    self.assertIn(f"Columnas pivote: {esperado}", texto)
+                    self.assertEqual(texto.count("Columnas pivote:"), 1)
+                    self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
+                    self.assertLess(texto.index("Columnas pivote:"), texto.index("Clasificación"))
+
+            resultado = resolver_sistema_web("x1 + 2x2 + x3 = 4; x3 = 2", metodo)
+            self.assertEqual(resultado["columnas_pivote"], [1, 3])
+            respuesta = self.client.post("/", {"metodo": metodo, "sistema": "x1 + 2x2 + x3 = 4; x3 = 2"})
+            self.assertIn("Columnas pivote: C1, C3", strip_tags(respuesta.content.decode("utf-8")))
+
     def test_get_renderiza_la_pagina_principal(self):
         respuesta = self.client.get("/")
 

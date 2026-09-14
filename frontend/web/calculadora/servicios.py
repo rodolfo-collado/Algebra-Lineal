@@ -90,6 +90,7 @@ def resolver_entrada_web(
         "matriz_inicial": formatear_matriz(matriz_inicial),
         "pasos": adaptar_pasos(resultado["pasos"]),
         "matriz_final": formatear_matriz(resultado[clave_matriz]),
+        "columnas_pivote": resultado["columnas_pivote"],
         "etiqueta_matriz": etiqueta_matriz,
         "mostrar_sistema_resultante": not resultado["solucion_directa"],
         "ecuaciones_resultantes": resultado["ecuaciones_resultantes"],

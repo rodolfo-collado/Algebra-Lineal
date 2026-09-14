@@ -16,6 +16,7 @@ from frontend.terminal.entradas import (
 )
 from frontend.terminal.salida import (
     formatear_numero,
+    imprimir_columnas_pivote,
     imprimir_matriz,
     imprimir_paso,
     obtener_lineas_matriz
@@ -174,6 +175,7 @@ def mostrar_sustitucion(pasos):
 
 def mostrar_interpretacion(resultado, pasos_sustitucion=None):
     """Presenta solo las secciones que aportan a la clasificación obtenida."""
+    imprimir_columnas_pivote(resultado["columnas_pivote"])
     if not resultado["solucion_directa"]:
         mostrar_seccion("Sistema resultante", resultado["ecuaciones_resultantes"])
 
