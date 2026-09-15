@@ -15,8 +15,15 @@ AppVersion={#AppVersion}
 AppPublisher=Proyecto Álgebra Lineal
 AppPublisherURL=https://github.com/rodolfo-collado/Algebra-Lineal
 DefaultDirName={localappdata}\Programs\AlgebraLineal
+; Instalación por usuario en una carpeta fija: no se pregunta la carpeta, pero el
+; resumen previo a instalar la muestra. /DIR sigue disponible para casos avanzados
+; y una instalación previa conserva su carpeta (UsePreviousAppDir).
+DisableDirPage=yes
+AlwaysShowDirOnReadyPage=yes
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
+; Flujo corto: tareas → resumen → instalación → final.
+DisableWelcomePage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -24,10 +31,12 @@ MinVersion=10.0.17763
 OutputDir={#ProjectRoot}\dist\installer
 OutputBaseFilename=AlgebraLineal-Setup-{#AppVersion}
 SetupIconFile={#ProjectRoot}\assets\algebra-lineal.ico
+UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\{#AppExe}
 Compression=lzma2
 SolidCompression=yes
-WizardStyle=modern
+; Apariencia moderna que sigue el tema claro/oscuro de Windows sin estilos externos.
+WizardStyle=modern dynamic windows11
 CloseApplications=yes
 RestartApplications=no
 
@@ -74,14 +83,21 @@ begin
   Result := not WebView2Installed;
 end;
 
+{ Como no se pregunta la carpeta, el resumen es el único lugar donde se informa.
+  El memo no ajusta líneas largas, así que cada dato ocupa una línea corta. }
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo,
   MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
 begin
-  Result := MemoDirInfo + NewLine + MemoGroupInfo + NewLine + MemoTasksInfo;
+  Result := MemoDirInfo + NewLine + NewLine +
+    'Accesos directos:' + NewLine + Space + 'Menú Inicio';
+  if WizardIsTaskSelected('desktopicon') then
+    Result := Result + NewLine + Space + 'Escritorio';
+  Result := Result + NewLine + NewLine + 'Microsoft Edge WebView2 Runtime:' + NewLine;
   if NeedsWebView2 then
-    Result := Result + NewLine + NewLine +
-      'Se instalará Microsoft Edge WebView2 Runtime desde Microsoft. ' +
-      'Mantén la conexión a Internet durante la instalación.';
+    Result := Result + Space + 'Se instalará como requisito desde Microsoft.' + NewLine +
+      Space + 'Mantén la conexión a Internet durante la instalación.'
+  else
+    Result := Result + Space + 'Ya está disponible en este equipo.';
 end;
 
 procedure InstallWebView2;
