@@ -156,8 +156,6 @@
                 <h2 id="results-title">{{ titulo_resultado }}</h2>
             </header>
 
-            {% include "calculadora/components/concept_guide.html" with guias=guias_contexto %}
-
             {% if configuracion.enfoque == "procedimiento" %}
                 {% include "calculadora/modules/sistemas/_procedimiento.html" %}
                 {% include "calculadora/modules/sistemas/_final.html" %}

@@ -374,8 +374,11 @@ class PruebasHerramientasSistemas(SimpleTestCase):
                 controles = Documento(self.client.get(ruta)).controles
                 metodos = [c for c in controles if c.get("name") == "metodo"]
                 self.assertEqual({c["type"] for c in metodos}, {"radio"})
-                respuesta = self.client.post(ruta, {"sistema": self.TEXTO, "metodo": "gauss"})
-                self.assertContains(respuesta, "Sustitución regresiva")
+                with patch("frontend.web.calculadora.views.resolver_entrada_web", wraps=resolver_entrada_web) as resolver:
+                    respuesta = self.client.post(ruta, {"sistema": self.TEXTO, "metodo": "gauss"})
+                self.assertEqual(resolver.call_args.args[1], "gauss")
+                self.assertContains(respuesta, "Matriz escalonada")
+                self.assertNotContains(respuesta, "Matriz reducida")
 
     def test_clasificacion_destaca_el_tipo_de_solucion(self):
         respuesta = self.client.post("/sistemas/clasificacion/", {"sistema": "x1+x2=2;2x1+2x2=5", "metodo": "gauss"})
@@ -450,11 +453,13 @@ class PruebasHerramientasSistemas(SimpleTestCase):
         self.assertContains(respuesta, "Sustitución regresiva")
         self.assertContains(respuesta, "x1 = 2")
 
-    def test_espacio_general_conserva_el_metodo_al_compartir_con_pivotes(self):
+    def test_clasificacion_conserva_el_metodo_al_resolver_el_sistema_completo(self):
         respuesta, metodo = self.compartir(
-            "/sistemas/", {"sistema": self.TEXTO, "metodo": "gauss"}, "/sistemas/columnas-pivote/",
+            "/sistemas/clasificacion/", {"sistema": self.TEXTO, "metodo": "gauss"}, "/sistemas/",
         )
         self.assertEqual(metodo, "gauss")
+        self.assertContains(respuesta, "Sustitución regresiva")
+        self.assertContains(respuesta, "x1 = 2")
         seleccionados = [c["value"] for c in Documento(respuesta).controles
                          if c.get("name") == "metodo" and "checked" in c]
         self.assertEqual(seleccionados, ["gauss"])
@@ -464,7 +469,7 @@ class PruebasHerramientasSistemas(SimpleTestCase):
         matriz = [["1/2", "1/2", "3/2"], ["1", "-1", "1"], ["2", "0", "4"]]
         for origen, destino in (
             ("/sistemas/gauss/", "/sistemas/gauss-jordan/"),
-            ("/sistemas/gauss-jordan/", "/sistemas/clasificacion/"),
+            ("/sistemas/columnas-pivote/", "/sistemas/"),
         ):
             with self.subTest(origen=origen):
                 respuesta, _ = self.compartir(origen, datos_matriz(matriz, "gauss"), destino)
@@ -493,7 +498,104 @@ class PruebasHerramientasSistemas(SimpleTestCase):
         self.assertContains(respuesta, "Herramientas relacionadas")
 
     def test_no_hay_recomendaciones_con_entrada_antes_de_resolver(self):
-        self.assertNotContains(self.client.get("/sistemas/"), "Continúa con este mismo sistema")
+        self.assertNotContains(self.client.get("/sistemas/gauss/"), "Continúa con este mismo sistema")
+
+    def test_el_espacio_general_no_recomienda_lo_que_ya_muestra(self):
+        """Resolver un sistema ya calcula método, clasificación y pivotes: no hay relacionadas."""
+        self.assertEqual(catalogo.SISTEMAS.relacionadas, ())
+        for respuesta in (
+            self.client.get("/sistemas/"),
+            self.client.post("/sistemas/", {"sistema": self.TEXTO, "metodo": "gauss"}),
+            self.client.post("/sistemas/", {"sistema": self.TEXTO, "metodo": "gauss_jordan"}),
+            self.client.post("/sistemas/", {"sistema": "x1+=1", "metodo": "gauss"}),
+        ):
+            self.assertNotContains(respuesta, "Herramientas relacionadas")
+            self.assertNotContains(respuesta, "Continúa con este mismo sistema")
+            self.assertNotContains(respuesta, 'class="related"')
+            self.assertNotContains(respuesta, "formaction=")
+
+    def test_cada_relacionada_aporta_algo_que_la_vista_actual_no_da(self):
+        """Una recomendación cambia el procedimiento o añade bloques; no se rellena por afinidad."""
+        for herramienta in catalogo.herramientas_de(catalogo.SISTEMAS_ECUACIONES):
+            actual = HERRAMIENTAS_SISTEMAS[herramienta.id]
+            for relacionada in catalogo.relacionadas_disponibles(herramienta):
+                destino = HERRAMIENTAS_SISTEMAS[relacionada.id]
+                with self.subTest(origen=herramienta.id, destino=relacionada.id):
+                    cambia_procedimiento = destino.metodo_fijo != actual.metodo_fijo
+                    aporta_bloques = bool(destino.bloques - actual.bloques)
+                    self.assertTrue(cambia_procedimiento or aporta_bloques)
+        self.assertEqual(catalogo.CLASIFICACION.relacionadas, ("sistemas",))
+        self.assertEqual(catalogo.COLUMNAS_PIVOTE.relacionadas, ("sistemas",))
+
+    def test_vistas_especializadas_muestran_solo_su_bloque(self):
+        clasificacion = self.client.post(
+            "/sistemas/clasificacion/", {"sistema": "x1+x2=2;2x1+2x2=4", "metodo": "gauss_jordan"},
+        )
+        self.assertContains(clasificacion, "Consistente de soluciones infinitas")
+        self.assertContains(clasificacion, "no tiene pivote, por lo que es libre")
+        self.assertContains(clasificacion, "Sistema resultante")
+        self.assertNotContains(clasificacion, "solution-list")
+        self.assertNotContains(clasificacion, "Sustitución regresiva")
+        self.assertContains(clasificacion, "Resolver el sistema completo")
+
+        pivotes = self.client.post("/sistemas/columnas-pivote/", {"sistema": self.TEXTO, "metodo": "gauss"})
+        self.assertContains(pivotes, "Columnas pivote: C1, C2")
+        self.assertContains(pivotes, "Procedimiento paso a paso")
+        for ausente in ('class="classification"', "Sistema resultante", "Sustitución regresiva", "solution-list"):
+            self.assertNotContains(pivotes, ausente)
+        self.assertContains(pivotes, "Resolver el sistema completo")
+
+        completo = self.client.post("/sistemas/", {"sistema": self.TEXTO, "metodo": "gauss"})
+        for presente in ('class="classification"', "Sustitución regresiva", "solution-list", "x1 = 2"):
+            self.assertContains(completo, presente)
+
+    def test_guias_plegadas_bajo_entender_este_resultado(self):
+        pagina = self.client.get("/sistemas/gauss/")
+        self.assertNotContains(pagina, "Entender este resultado")
+        self.assertNotContains(pagina, "concept-guide")
+
+        respuesta = self.client.post("/sistemas/gauss/", {"sistema": self.TEXTO, "metodo": "gauss"})
+        html = respuesta.content.decode("utf-8")
+        self.assertIn('<details class="insight" id="entender-resultado">', html)
+        self.assertContains(respuesta, "Entender este resultado")
+        self.assertContains(respuesta, "Gauss se detiene en forma escalonada")
+        self.assertContains(respuesta, "Hay tantas columnas pivote como variables")
+        # Todas las guías viven dentro del bloque plegado, después del resultado matemático.
+        inicio_insight = html.index('id="entender-resultado"')
+        self.assertLess(html.index("x1 = 2"), inicio_insight)
+        self.assertEqual(html.count('class="concept-guide"'), html.count('class="concept-guide"', inicio_insight))
+        self.assertEqual(html.count('class="concept-guide"'), 3)
+
+    def test_guias_se_conservan_plegadas_en_todas_las_vistas_y_clasificaciones(self):
+        casos = (
+            (self.TEXTO, "Hay tantas columnas pivote como variables"),
+            ("x1+x2=2;2x1+2x2=4", "Las variables libres parametrizan"),
+            ("x1+x2=2;2x1+2x2=5", "representa una contradicción"),
+        )
+        for herramienta in catalogo.herramientas_de(catalogo.SISTEMAS_ECUACIONES):
+            for sistema, explicacion in casos:
+                with self.subTest(herramienta=herramienta.id, sistema=sistema):
+                    respuesta = self.client.post(herramienta.ruta, {
+                        "sistema": sistema, "metodo": "gauss_jordan",
+                    })
+                    html = respuesta.content.decode("utf-8")
+                    apertura = '<details class="insight" id="entender-resultado">'
+                    self.assertContains(respuesta, apertura, count=1)
+                    contenido = html.split(apertura, 1)[1].split("</details>", 1)[0]
+                    self.assertIn(explicacion, contenido)
+                    self.assertEqual(contenido.count('class="concept-guide"'),
+                                     html.count('class="concept-guide"'))
+                    self.assertContains(respuesta, "Procedimiento paso a paso")
+
+    def test_sin_guias_ni_relacionadas_no_quedan_contenedores_vacios(self):
+        with patch("frontend.web.calculadora.views.guias_para_resultado", return_value=()):
+            respuesta = self.client.post("/sistemas/", {
+                "sistema": self.TEXTO, "metodo": "gauss",
+            })
+        for ausente in ("entender-resultado", "concept-guides", 'class="related"', "related-title"):
+            self.assertNotContains(respuesta, ausente)
+        for presente in ("Resultado final", "Procedimiento paso a paso", "x1 = 2"):
+            self.assertContains(respuesta, presente)
 
     def test_compartir_exige_csrf(self):
         from django.test import Client

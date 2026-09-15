@@ -38,8 +38,7 @@ def sistemas(request, herramienta="sistemas"):
         datos["metodo"] = configuracion.metodo_fijo
     form = SistemaForm(datos, initial={"metodo": configuracion.metodo_fijo or "gauss_jordan"})
     resultado = None
-    guias_contexto = ()
-    guias_resultado = ()
+    guias = ()
 
     if request.method == "POST" and form.is_valid():
         try:
@@ -54,8 +53,6 @@ def sistemas(request, herramienta="sistemas"):
                 clasificacion_clave=resultado["clasificacion_clave"],
                 columnas_pivote=resultado["columnas_pivote"],
             )
-            guias_contexto = guias[:1]
-            guias_resultado = guias[1:]
         except ValueError as error:
             if form.cleaned_data.get("tipo_entrada") == "matriz":
                 form.add_error(None, str(error))
@@ -73,8 +70,7 @@ def sistemas(request, herramienta="sistemas"):
             "titulo_resultado": configuracion.titulo_resultado
             or (resultado["metodo"] if resultado else None),
             "matrix_values": form.valores_matriz_ingresados(),
-            "guias_contexto": guias_contexto,
-            "guias_resultado": guias_resultado,
+            "guias": guias,
             "teclado_sistema": TECLADO_SISTEMA,
             "teclado_matriz": TECLADO_MATRIZ,
             "formulario_compartido": "sistema-form",

@@ -1,8 +1,16 @@
+{% comment %}Resultado final. Cada herramienta muestra solo los bloques que declara en `configuracion.bloques`; la matriz final y sus columnas pivote aparecen siempre.{% endcomment %}
 <section class="panel panel-final" aria-labelledby="final-title">
     <h3 id="final-title" class="panel-title">Resultado final</h3>
 
     {% if configuracion.enfoque == "clasificacion" %}
         {% include "calculadora/modules/sistemas/_clasificacion.html" %}
+        {% if resultado.justificacion %}
+            <div class="explanation">
+                {% for parrafo in resultado.justificacion %}
+                    <p>{{ parrafo }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
     {% endif %}
 
     <div class="final-block">
@@ -24,9 +32,7 @@
         </div>
     </div>
 
-    {% include "calculadora/components/concept_guide.html" with guias=guias_resultado %}
-
-    {% if resultado.mostrar_sistema_resultante %}
+    {% if "sistema-resultante" in configuracion.bloques and resultado.mostrar_sistema_resultante %}
         <div class="final-block">
             <h4 class="final-label">Sistema resultante</h4>
             <ul class="equations">
@@ -37,11 +43,11 @@
         </div>
     {% endif %}
 
-    {% if configuracion.enfoque != "clasificacion" %}
+    {% if "clasificacion" in configuracion.bloques and configuracion.enfoque != "clasificacion" %}
         {% include "calculadora/modules/sistemas/_clasificacion.html" %}
     {% endif %}
 
-    {% if resultado.sustitucion %}
+    {% if "sustitucion" in configuracion.bloques and resultado.sustitucion %}
         <div class="final-block">
             <h4 class="final-label">Sustitución regresiva</h4>
             <ul class="equations">
@@ -52,21 +58,36 @@
         </div>
     {% endif %}
 
-    <div class="final-block solution">
-        <h4 class="final-label">Solución</h4>
-        {% if resultado.justificacion %}
-            <div class="explanation">
-                {% for parrafo in resultado.justificacion %}
-                    <p>{{ parrafo }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
-        {% if resultado.solucion_general %}
-            <ul class="equations solution-list">
-                {% for linea in resultado.solucion_general %}
-                    <li><code>{{ linea }}</code></li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    </div>
+    {% if "solucion" in configuracion.bloques %}
+        <div class="final-block solution">
+            <h4 class="final-label">Solución</h4>
+            {% if resultado.justificacion %}
+                <div class="explanation">
+                    {% for parrafo in resultado.justificacion %}
+                        <p>{{ parrafo }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if resultado.solucion_general %}
+                <ul class="equations solution-list">
+                    {% for linea in resultado.solucion_general %}
+                        <li><code>{{ linea }}</code></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if guias %}
+        {# Contenido educativo en segundo plano: no compite con el resultado. #}
+        <details class="insight" id="entender-resultado">
+            <summary class="insight-summary">
+                <svg class="insight-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Entender este resultado
+            </summary>
+            {% include "calculadora/components/concept_guide.html" %}
+        </details>
+    {% endif %}
 </section>
