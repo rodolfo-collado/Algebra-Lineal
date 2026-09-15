@@ -2,88 +2,75 @@
 
 {% block title %}Inicio · Álgebra Lineal{% endblock %}
 
-{% block module_header %}
-    <header class="home-hero">
-        <div class="home-hero-copy">
-            <p class="module-kicker">Calculadora educativa</p>
-            <h1 class="module-title">Álgebra Lineal</h1>
-            <p class="module-lead">Aprende resolviendo, paso a paso. Explora los temas disponibles y sigue el procedimiento con claridad matemática.</p>
-        </div>
-        <div class="home-hero-visual" aria-hidden="true">
-            <svg class="home-matrix-art" viewBox="0 0 88 88" focusable="false">
-                <rect x="8" y="10" width="72" height="68" rx="12" fill="var(--color-brand)" opacity="0.12"/>
-                <path fill="none" stroke="var(--color-brand)" stroke-width="3" d="M22 18v52M66 18v52"/>
-                <rect x="28" y="26" width="10" height="10" rx="2" fill="var(--color-brand)"/>
-                <rect x="42" y="26" width="10" height="10" rx="2" fill="var(--color-brand)" opacity="0.55"/>
-                <rect x="28" y="40" width="10" height="10" rx="2" fill="var(--color-brand)" opacity="0.55"/>
-                <rect x="42" y="40" width="10" height="10" rx="2" fill="var(--color-brand)"/>
-                <rect x="28" y="54" width="10" height="10" rx="2" fill="var(--color-brand)" opacity="0.35"/>
-                <rect x="42" y="54" width="10" height="10" rx="2" fill="var(--color-brand)" opacity="0.35"/>
-                <rect x="56" y="20" width="2.5" height="48" rx="1" fill="var(--color-accent)" opacity="0.8"/>
-                <rect x="62" y="26" width="10" height="10" rx="2" fill="var(--color-accent)" opacity="0.75"/>
-                <rect x="62" y="40" width="10" height="10" rx="2" fill="var(--color-accent)" opacity="0.55"/>
-                <rect x="62" y="54" width="10" height="10" rx="2" fill="var(--color-accent)" opacity="0.4"/>
-            </svg>
-        </div>
-    </header>
-{% endblock %}
-
 {% block content %}
-    <nav class="area-strip" aria-label="Explora por área">
-        {% for categoria in categorias %}
-            <a class="area-chip"
-               href="#{{ categoria.id }}"
-               style="--cat-accent: var(--color-cat-{% if categoria.id == 'sistemas-lineales' %}sistemas{% else %}{{ categoria.id }}{% endif %})">
-                <span class="cat-dot" aria-hidden="true"></span>
-                {{ categoria.nombre }}
-            </a>
-        {% endfor %}
-        {% if proximos_por_categoria %}
-            <a class="area-chip" href="#proximamente">
-                <span class="cat-dot" aria-hidden="true"></span>
-                Próximamente
-            </a>
+    <header class="home-hero">
+        <p class="tool-kicker">Calculadora educativa</p>
+        <h1 class="home-title">Álgebra Lineal</h1>
+        <p class="home-lead">Aprende resolviendo, paso a paso. Explora los temas disponibles y sigue el procedimiento con claridad matemática.</p>
+        {% include "calculadora/components/search.html" with search_id="buscador-inicio" search_target="catalogo-inicio" search_large=True search_placeholder="¿Qué quieres resolver? Por ejemplo: Gauss, pivote, matriz" %}
+        {% if herramientas_disponibles and resultados_busqueda is None %}
+            <nav class="quick-access" aria-label="Acceso rápido">
+                <span class="quick-access-label">Acceso rápido</span>
+                {% for herramienta in herramientas_disponibles %}
+                    <a class="chip" href="{{ herramienta.ruta }}">{{ herramienta.nombre }}</a>
+                {% endfor %}
+            </nav>
         {% endif %}
-    </nav>
+    </header>
 
-    {% if grupos_modulos %}
-        <p class="module-kicker">Continúa aprendiendo</p>
-        {% for categoria, modulos in grupos_modulos %}
-            <section class="catalog-section" aria-labelledby="{{ categoria.id }}">
-                <h2 id="{{ categoria.id }}">
-                    <span class="module-card-icon" aria-hidden="true" style="--cat-accent: var(--color-cat-{% if categoria.id == 'sistemas-lineales' %}sistemas{% else %}{{ categoria.id }}{% endif %})">
-                        {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}
-                    </span>
-                    {{ categoria.nombre }}
-                </h2>
-                <div class="module-cards">
-                    {% for modulo in modulos %}
-                        {% include "calculadora/components/module_card.html" %}
+    {% if resultados_busqueda is not None %}
+        <section class="home-section search-results" aria-labelledby="resultados-title">
+            <div class="home-section-heading">
+                <h2 id="resultados-title">Resultados para «{{ consulta }}»</h2>
+                <a class="text-link" href="{% url 'calculadora:inicio' %}">Ver todas las herramientas</a>
+            </div>
+            {% if resultados_busqueda %}
+                <p class="muted">{{ resultados_busqueda|length }} herramienta{{ resultados_busqueda|length|pluralize }} coincide{{ resultados_busqueda|length|pluralize:"n" }} con tu búsqueda.</p>
+                <ul id="catalogo-inicio" class="tool-list">
+                    {% for herramienta in resultados_busqueda %}
+                        <li class="tool-item" data-indice="{{ herramienta.indice }}">
+                            {% include "calculadora/components/tool_link.html" with mostrar_categoria=True mostrar_estado=True %}
+                        </li>
                     {% endfor %}
-                </div>
-            </section>
-        {% endfor %}
-    {% endif %}
-
-    {% if proximos_por_categoria %}
-        <section class="catalog-section upcoming" aria-labelledby="proximamente">
-            <h2 id="proximamente">Próximamente</h2>
-            <p class="muted">Estos contenidos aún no están disponibles.</p>
-            {% for categoria, modulos in proximos_por_categoria %}
-                <div class="catalog-subsection">
-                    <h3 id="{{ categoria.id }}" class="catalog-subsection-title">
-                        <span class="module-card-icon" aria-hidden="true" style="--cat-accent: var(--color-cat-{% if categoria.id == 'sistemas-lineales' %}sistemas{% else %}{{ categoria.id }}{% endif %})">
-                            {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}
-                        </span>
-                        {{ categoria.nombre }}
-                    </h3>
-                    <div class="module-cards">
-                        {% for modulo in modulos %}
-                            {% include "calculadora/components/module_card.html" %}
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endfor %}
+                </ul>
+            {% else %}
+                <p class="empty-state">No se encontraron herramientas para «{{ consulta }}». Prueba con «Gauss», «pivote» o «matriz», o explora las áreas desde el menú.</p>
+                <ul id="catalogo-inicio" class="tool-list" hidden></ul>
+            {% endif %}
         </section>
+    {% else %}
+        <div id="catalogo-inicio" class="catalog">
+            {% for area, categorias in arbol_navegacion %}
+                <section class="home-area" id="{{ area.id }}" data-grupo aria-labelledby="area-{{ area.id }}">
+                    <div class="home-section-heading">
+                        <h2 id="area-{{ area.id }}">{{ area.nombre }}</h2>
+                    </div>
+                    <p class="muted home-area-description">{{ area.descripcion }}</p>
+                    {% for categoria, herramientas in categorias %}
+                        <section class="home-category{% if not categoria.disponible %} home-category-upcoming{% endif %}" id="{{ categoria.id }}" data-grupo aria-labelledby="categoria-{{ categoria.id }}">
+                            <header class="home-category-heading">
+                                <span class="category-icon" aria-hidden="true">
+                                    {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}
+                                </span>
+                                <div>
+                                    <h3 id="categoria-{{ categoria.id }}">
+                                        {{ categoria.nombre }}
+                                        {% if not categoria.disponible %}<span class="badge">Próximamente</span>{% endif %}
+                                    </h3>
+                                    <p class="muted">{{ categoria.descripcion }}</p>
+                                </div>
+                            </header>
+                            <ul class="tool-list">
+                                {% for herramienta in herramientas %}
+                                    <li class="tool-item" data-indice="{{ herramienta.indice }}">
+                                        {% include "calculadora/components/tool_link.html" with mostrar_estado=categoria.disponible %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </section>
+                    {% endfor %}
+                </section>
+            {% endfor %}
+        </div>
     {% endif %}
 {% endblock %}

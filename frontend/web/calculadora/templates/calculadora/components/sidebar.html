@@ -1,0 +1,47 @@
+<aside id="navegacion-principal" class="app-sidebar" aria-label="Navegación principal">
+    <div class="sidebar-top">
+        {% include "calculadora/components/search.html" with search_id="buscador-lateral" search_target="arbol-herramientas" %}
+        <button type="button" id="sidebar-close" class="sidebar-close" hidden>Cerrar</button>
+    </div>
+    <nav id="arbol-herramientas" class="sidebar-nav" aria-label="Herramientas">
+        <a class="nav-link nav-link-home" href="{% url 'calculadora:inicio' %}"{% if not herramienta_actual %} aria-current="page"{% endif %}>
+            <svg class="nav-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M4 11.2 12 4l8 7.2V20h-5.5v-5.2h-5V20H4z"/>
+            </svg>
+            <span>Inicio</span>
+        </a>
+        {% for area, categorias in arbol_navegacion %}
+            <section class="nav-area" data-grupo aria-labelledby="nav-area-{{ area.id }}">
+                <h2 id="nav-area-{{ area.id }}" class="nav-area-title">{{ area.nombre }}</h2>
+                {% for categoria, herramientas in categorias %}
+                    <details class="nav-category" data-grupo data-categoria="{{ categoria.id }}"{% if categoria == categoria_actual %} open{% endif %}>
+                        <summary class="nav-category-summary">
+                            <span class="nav-category-icon" aria-hidden="true">
+                                {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}
+                            </span>
+                            <span class="nav-category-name">{{ categoria.nombre }}</span>
+                            {% if not categoria.disponible %}<span class="nav-badge">Próximamente</span>{% endif %}
+                            <svg class="nav-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                                <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </summary>
+                        <ul class="nav-tools">
+                            {% for herramienta in herramientas %}
+                                <li class="nav-tool" data-indice="{{ herramienta.indice }}">
+                                    {% if herramienta.disponible %}
+                                        <a class="nav-link" href="{{ herramienta.ruta }}"{% if herramienta == herramienta_actual %} aria-current="page"{% endif %}>{{ herramienta.nombre }}</a>
+                                    {% else %}
+                                        <span class="nav-link nav-link-upcoming">
+                                            <span>{{ herramienta.nombre }}</span>
+                                            <span class="nav-badge">Próximamente</span>
+                                        </span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                {% endfor %}
+            </section>
+        {% endfor %}
+    </nav>
+</aside>

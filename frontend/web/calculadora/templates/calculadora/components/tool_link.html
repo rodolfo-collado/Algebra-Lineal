@@ -1,0 +1,18 @@
+{% comment %}Entrada de una herramienta en listados: enlace real si está disponible, texto si no. La etiqueta «Próximamente» se repite en la herramienta solo cuando su categoría no la muestra ya.{% endcomment %}
+{% if herramienta.disponible %}
+    <a class="tool-link" href="{{ herramienta.ruta }}">
+        <span class="tool-link-name">{{ herramienta.nombre }}</span>
+        {% if mostrar_categoria %}
+            <span class="tool-link-context">{{ herramienta.area.nombre }} · {{ herramienta.categoria.nombre }}</span>
+        {% endif %}
+        <span class="tool-link-description">{{ herramienta.descripcion }}</span>
+    </a>
+{% else %}
+    <div class="tool-link tool-link-upcoming">
+        <span class="tool-link-name">{{ herramienta.nombre }}{% if mostrar_estado %} <span class="badge">Próximamente</span>{% endif %}</span>
+        {% if mostrar_categoria %}
+            <span class="tool-link-context">{{ herramienta.area.nombre }} · {{ herramienta.categoria.nombre }}</span>
+        {% endif %}
+        <span class="tool-link-description">{{ herramienta.descripcion }}</span>
+    </div>
+{% endif %}

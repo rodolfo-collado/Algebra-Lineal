@@ -1,9 +1,15 @@
-{% if modulo_actual %}
+{% if migas %}
     <nav class="breadcrumbs" aria-label="Ruta de navegación">
         <ol>
-            <li><a href="{% url 'calculadora:inicio' %}">Inicio</a></li>
-            <li><a href="{% url 'calculadora:inicio' %}#{{ modulo_actual.categoria.id }}">{{ modulo_actual.categoria.nombre }}</a></li>
-            <li><span aria-current="page">{{ modulo_actual.nombre }}</span></li>
+            {% for miga in migas %}
+                <li>
+                    {% if miga.actual %}
+                        <span aria-current="page">{{ miga.nombre }}</span>
+                    {% else %}
+                        <a href="{{ miga.url }}">{{ miga.nombre }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
         </ol>
     </nav>
 {% endif %}

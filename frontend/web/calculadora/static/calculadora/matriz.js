@@ -155,6 +155,26 @@
     });
     equationsInput.addEventListener("input", renderMatrix);
     variablesInput.addEventListener("input", renderMatrix);
+
+    // Controles de estructura (+/- ecuación, +/- variable): cambian las dimensiones,
+    // no insertan símbolos. El campo numérico sigue siendo el valor que se envía.
+    document.querySelectorAll(".stepper[data-estructura]").forEach((stepper) => {
+        const dimensionInput = stepper.querySelector("input");
+        if (!dimensionInput) {
+            return;
+        }
+        stepper.querySelectorAll("button[data-paso]").forEach((button) => {
+            button.hidden = false;
+            button.addEventListener("click", () => {
+                const siguiente = Math.max(
+                    1,
+                    dimensionValue(dimensionInput) + Number(button.dataset.paso)
+                );
+                dimensionInput.value = String(siguiente);
+                dimensionInput.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+        });
+    });
     matrixGrid.addEventListener("keydown", (event) => {
         const deltas = {
             ArrowLeft: [0, -1],
