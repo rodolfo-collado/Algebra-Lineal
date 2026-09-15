@@ -35,6 +35,9 @@ rediseñar la aplicación cada vez.
   matriz aumentada editable, sin reemplazar la interfaz de terminal.
 - Usar una interfaz visual propia, con tema claro u oscuro, matrices con
   notación de corchetes y el procedimiento paso a paso como pieza central.
+- Convertir números enteros entre decimal y binario, octal o hexadecimal desde
+  la interfaz web y desktop, mostrando las divisiones sucesivas o la expansión
+  posicional (combinación lineal) que justifica el resultado.
 
 El menú de la terminal es este:
 
@@ -191,6 +194,34 @@ Gauss-Jordan sigue sirviendo para reducir **cualquier matriz rectangular**
 capacidad vive en `backend/gauss_jordan.py` y se puede reutilizar, aunque el menú
 esté orientado a resolver sistemas.
 
+## Sistemas numéricos
+
+La herramienta **Conversión de bases** (`/bases/conversion/`) convierte enteros
+no negativos en dos direcciones, y el usuario elige la otra base en cada caso:
+
+- **Decimal → binario, octal o hexadecimal**, por divisiones sucesivas: se
+  divide el número entre la base, se guarda el residuo y se repite con el
+  cociente hasta llegar a cero; el resultado se lee tomando los residuos del
+  último al primero. `13₁₀ → 1101₂`.
+- **Binario, octal o hexadecimal → decimal**, por expansión posicional: cada
+  dígito se multiplica por la potencia de la base que corresponde a su posición
+  y se suman los aportes. `1011₂ = 1·2³ + 0·2² + 1·2¹ + 1·2⁰ = 8 + 0 + 2 + 1 =
+  11₁₀`.
+
+En hexadecimal los residuos y dígitos `10`–`15` se escriben `A`–`F`; la entrada
+acepta minúsculas y el resultado se normaliza a mayúsculas. El procedimiento
+muestra esa sustitución (`10 → A`, `A = 10`) y siempre queda visible junto al
+resultado. Los dígitos inválidos para la base elegida, la entrada vacía y los
+números negativos se rechazan con un mensaje claro; no se admiten fracciones ni
+otras bases.
+
+El núcleo vive en `backend/sistemas_numericos/` y devuelve los pasos como datos
+(dividendo, cociente, residuo y símbolo; o dígito, valor, posición, potencia y
+aporte), sin HTML. No usa `bin`, `oct`, `hex` ni `int(texto, base)`: la
+conversión se construye a mano, y `tests/test_sistemas_numericos.py` lo
+comprueba con `ast`. El teclado en pantalla solo ofrece los dígitos válidos para
+la base de entrada (`0 1`, `0`–`7`, `0`–`9` o `0`–`F`).
+
 ## Para usuarios finales: instalar en Windows
 
 1. Descarga `AlgebraLineal-Setup-x.y.z.exe` de la distribución del proyecto.
@@ -332,9 +363,9 @@ teclado y los botones de estructura requieren JavaScript.
 
 El recorrido web y desktop es **Inicio → área → categoría → herramienta →
 resultado**, y el breadcrumb lo reproduce con enlaces reales (las áreas y
-categorías llevan a su sección del Inicio). Vectores, matrices, sistemas
-numéricos y límites se anuncian como **Próximamente**, sin enlaces ni
-algoritmos nuevos.
+categorías llevan a su sección del Inicio). Vectores, matrices y límites se
+anuncian como **Próximamente**, sin enlaces ni algoritmos nuevos; sistemas
+numéricos ya ofrece la conversión de bases.
 
 `frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
 inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,
@@ -534,8 +565,10 @@ su sistema, el conjunto solución con variables libres, el parser de sistemas, l
 equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
 de Django —incluidas sus entradas textual y matricial—, la infraestructura
 desktop, el registro de herramientas, la navegación, el buscador, los
-breadcrumbs, el teclado matemático y que la interfaz no cargue fuentes ni
-scripts remotos. Sirven para detectar regresiones cuando el proyecto crezca.
+breadcrumbs, el teclado matemático, la conversión de bases —resultados,
+pasos del procedimiento, mensajes de error y su integración web— y que la
+interfaz no cargue fuentes ni scripts remotos. Sirven para detectar regresiones
+cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
 
@@ -602,7 +635,11 @@ Algebra-Lineal/
 │   ├── gauss.py                # escalonamiento hacia abajo
 │   ├── gauss_jordan.py         # reducción completa y rango
 │   ├── parser_sistemas.py      # texto de ecuaciones → matriz aumentada
-│   └── sistemas.py             # clasificación, sistema resultante y solución
+│   ├── sistemas.py             # clasificación, sistema resultante y solución
+│   └── sistemas_numericos/     # conversión de bases con pasos estructurados
+│       ├── digitos.py          # equivalencia A–F y potencias enteras
+│       ├── validacion.py       # bases y dígitos válidos, mensajes de error
+│       └── conversion.py       # divisiones sucesivas y expansión posicional
 ├── frontend/
 │   ├── terminal/               # interfaz de línea de comandos
 │   │   ├── menu.py             # bucle del menú y navegación
