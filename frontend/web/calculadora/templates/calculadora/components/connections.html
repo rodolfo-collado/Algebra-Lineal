@@ -1,14 +1,27 @@
 <section class="panel connections" aria-labelledby="connections-title">
-    <h3 id="connections-title">Continúa explorando</h3>
-    {% if comparacion %}
-        <p>{{ comparacion.descripcion }}</p>
-        <button class="btn" type="submit" form="sistema-form"
-                name="metodo_alternativo" value="{{ comparacion.metodo }}">
-            {{ comparacion.titulo }}
-        </button>
-    {% endif %}
-    <p><a href="#columnas-pivote">Revisar columnas pivote</a></p>
-    {% for modulo in modulos_relacionados %}
-        <p><a href="{% url modulo.route_name %}">{{ modulo.nombre }}</a> · {{ modulo.descripcion }}</p>
-    {% endfor %}
+    <h3 id="connections-title" class="panel-title">Continúa explorando</h3>
+    <div class="connection-cards">
+        {% if comparacion %}
+            <article class="connection-card">
+                <h4>{% if comparacion.metodo == "gauss_jordan" %}Gauss-Jordan{% else %}Gauss{% endif %}</h4>
+                <p>{{ comparacion.descripcion }}</p>
+                <button class="btn" type="submit" form="sistema-form"
+                        name="metodo_alternativo" value="{{ comparacion.metodo }}">
+                    {{ comparacion.titulo }}
+                </button>
+            </article>
+        {% endif %}
+        <article class="connection-card">
+            <h4>Columnas pivote</h4>
+            <p>Revisa dónde aparecen los pivotes del resultado.</p>
+            <a href="#columnas-pivote">Revisar columnas pivote</a>
+        </article>
+        {% for modulo in modulos_relacionados %}
+            <article class="connection-card">
+                <h4>{{ modulo.nombre }}</h4>
+                <p>{{ modulo.descripcion }}</p>
+                <a class="connection-action" href="{% url modulo.route_name %}">Abrir módulo</a>
+            </article>
+        {% endfor %}
+    </div>
 </section>
