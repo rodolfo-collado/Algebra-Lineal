@@ -629,6 +629,8 @@ Algebra-Lineal/
     ├── test_web.py
     ├── test_navegacion.py
     ├── test_teclado.py
+    ├── test_sistemas_numericos.py
+    ├── test_conversion_bases_web.py
     ├── test_identidad_visual.py
     ├── test_desktop.py
     ├── test_recursos_interfaz.py

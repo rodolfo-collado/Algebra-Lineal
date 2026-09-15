@@ -121,5 +121,6 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
    `columnas_pivote` para resaltar columnas.
 5. No copies el `<head>`, el header, la sidebar ni el selector de tema.
 
-Hoy solo existen las herramientas de sistemas de ecuaciones. No agregues
-enlaces a pantallas que todavía no existen.
+Hoy están disponibles las herramientas de sistemas de ecuaciones y la
+conversión de bases (sistemas numéricos). No agregues enlaces a pantallas
+que todavía no existen.
