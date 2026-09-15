@@ -54,6 +54,24 @@ class PruebasGuiasEducativas(unittest.TestCase):
         self.assertIn(GUIA_INCONSISTENTE, guias)
         self.assertTrue(all(guia.contenido for guia in guias))
 
+    def test_columnas_pivote_no_afirma_libres_sin_consistencia(self):
+        """Evita afirmar variables libres de forma incondicional (p. ej. inconsistente)."""
+        self.assertIn("En un sistema consistente", GUIA_COLUMNAS_PIVOTE.contenido)
+        afirmacion_incondicional = (
+            "Las columnas sin pivote corresponden a variables libres."
+        )
+        self.assertNotIn(afirmacion_incondicional, GUIA_COLUMNAS_PIVOTE.contenido)
+
+        guias = guias_para_resultado(
+            metodo="gauss",
+            clasificacion_clave="inconsistente",
+            columnas_pivote=(1,),
+        )
+        self.assertIn(GUIA_COLUMNAS_PIVOTE, guias)
+        self.assertIn(GUIA_INCONSISTENTE, guias)
+        for guia in guias:
+            self.assertNotIn(afirmacion_incondicional, guia.contenido)
+
 
 class PruebasIdentidadVisual(SimpleTestCase):
     def test_tokens_y_hojas_locales(self):

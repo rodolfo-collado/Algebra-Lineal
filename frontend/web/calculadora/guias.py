@@ -40,7 +40,7 @@ GUIA_COLUMNAS_PIVOTE = GuiaConcepto(
     titulo="¿Por qué importa?",
     contenido=(
         "Una columna pivote indica una variable determinada por el sistema. "
-        "Las columnas sin pivote corresponden a variables libres."
+        "En un sistema consistente, las columnas sin pivote corresponden a variables libres."
     ),
     tipo="por-que",
 )
