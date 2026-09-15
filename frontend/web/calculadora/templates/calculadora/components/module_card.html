@@ -1,0 +1,12 @@
+<article class="panel module-card">
+    <h3>{{ modulo.nombre }}</h3>
+    <p class="muted">{{ modulo.descripcion }}</p>
+    {% if modulo.contenidos %}
+        <ul>{% for contenido in modulo.contenidos %}<li>{{ contenido }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if modulo.estado == "disponible" %}
+        <a class="btn btn-primary" href="{% url modulo.route_name %}">Abrir {{ modulo.nombre }}</a>
+    {% else %}
+        <p class="module-status">Próximamente · No disponible</p>
+    {% endif %}
+</article>

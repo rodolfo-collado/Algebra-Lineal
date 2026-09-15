@@ -1,0 +1,11 @@
+<nav id="navegacion-principal" class="app-navigation" aria-label="Navegación principal">
+    <a href="{% url 'calculadora:inicio' %}"{% if not modulo_actual %} aria-current="page"{% endif %}>Inicio</a>
+    {% for categoria, modulos in grupos_modulos %}
+        <h2 class="navigation-category">{{ categoria.nombre }}</h2>
+        <ul>
+            {% for modulo in modulos %}
+                <li><a href="{% url modulo.route_name %}"{% if modulo.id == modulo_actual.id %} aria-current="page"{% endif %}>{{ modulo.nombre }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</nav>

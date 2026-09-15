@@ -1,0 +1,9 @@
+{% if modulo_actual %}
+    <nav class="breadcrumbs" aria-label="Ruta de navegación">
+        <ol>
+            <li><a href="{% url 'calculadora:inicio' %}">Inicio</a></li>
+            <li><a href="{% url 'calculadora:inicio' %}#{{ modulo_actual.categoria.id }}">{{ modulo_actual.categoria.nombre }}</a></li>
+            <li><span aria-current="page">{{ modulo_actual.nombre }}</span></li>
+        </ol>
+    </nav>
+{% endif %}

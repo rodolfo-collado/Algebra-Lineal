@@ -1,0 +1,34 @@
+{% extends "calculadora/base.html" %}
+
+{% block title %}Inicio · Álgebra Lineal{% endblock %}
+
+{% block module_header %}
+    <header class="module-hero">
+        <h1 class="module-title">Inicio</h1>
+        <p class="module-lead">Explora los temas disponibles y aprende con procedimientos paso a paso.</p>
+    </header>
+{% endblock %}
+
+{% block content %}
+    {% for categoria, modulos in grupos_modulos %}
+        <section class="catalog-section" aria-labelledby="{{ categoria.id }}">
+            <h2 id="{{ categoria.id }}">{{ categoria.nombre }}</h2>
+            <div class="module-cards">
+                {% for modulo in modulos %}
+                    {% include "calculadora/components/module_card.html" %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endfor %}
+    {% if proximos_modulos %}
+        <section class="catalog-section upcoming" aria-labelledby="proximamente">
+            <h2 id="proximamente">Próximamente</h2>
+            <p class="muted">Estos contenidos aún no están disponibles.</p>
+            <div class="module-cards">
+                {% for modulo in proximos_modulos %}
+                    {% include "calculadora/components/module_card.html" %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}

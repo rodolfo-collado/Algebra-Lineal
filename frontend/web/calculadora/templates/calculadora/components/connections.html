@@ -1,0 +1,14 @@
+<section class="panel connections" aria-labelledby="connections-title">
+    <h3 id="connections-title">Continúa explorando</h3>
+    {% if comparacion %}
+        <p>{{ comparacion.descripcion }}</p>
+        <button class="btn" type="submit" form="sistema-form"
+                name="metodo_alternativo" value="{{ comparacion.metodo }}">
+            {{ comparacion.titulo }}
+        </button>
+    {% endif %}
+    <p><a href="#columnas-pivote">Revisar columnas pivote</a></p>
+    {% for modulo in modulos_relacionados %}
+        <p><a href="{% url modulo.route_name %}">{{ modulo.nombre }}</a> · {{ modulo.descripcion }}</p>
+    {% endfor %}
+</section>
