@@ -32,7 +32,9 @@ TEMPLATES = [
         "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
-            "context_processors": [],
+            "context_processors": [
+                "frontend.web.calculadora.context_processors.navegacion",
+            ],
         },
     },
 ]
