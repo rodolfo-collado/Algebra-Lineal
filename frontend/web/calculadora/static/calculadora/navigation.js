@@ -60,7 +60,9 @@
     function abrirCajon() {
         drawerOpen = true;
         aplicar();
-        const primero = sidebar.querySelector("input, a, button, summary");
+        // El foco va al primer enlace y no al buscador: en móvil evitaría que el
+        // teclado virtual tape el menú recién abierto.
+        const primero = sidebar.querySelector(".nav-link");
         if (primero) primero.focus();
     }
 
