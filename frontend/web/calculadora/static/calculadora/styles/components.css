@@ -663,6 +663,62 @@ a.tool-link .tool-link-name {
     border-color: var(--color-brand);
 }
 
+/* —— «Entender este resultado»: guías plegadas para no competir con el resultado —— */
+
+.insight {
+    margin-top: 1.15rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.insight-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.55rem;
+    margin-inline: -0.55rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-muted);
+    font-size: 0.88rem;
+    font-weight: 700;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--motion-fast), color var(--motion-fast);
+}
+
+.insight-summary::-webkit-details-marker {
+    display: none;
+}
+
+.insight-summary:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+}
+
+.insight-chevron {
+    width: 0.85rem;
+    height: 0.85rem;
+    flex: none;
+    transition: transform var(--motion-fast);
+}
+
+.insight[open] > .insight-summary {
+    color: var(--color-text);
+}
+
+.insight[open] > .insight-summary .insight-chevron {
+    transform: rotate(90deg);
+}
+
+.insight .concept-guides {
+    margin: 0.6rem 0 0;
+}
+
+.insight .concept-guide {
+    padding: 0.65rem 0.8rem;
+}
+
 /* —— Guía de concepto —— */
 
 .concept-guides {

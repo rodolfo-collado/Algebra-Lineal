@@ -161,8 +161,10 @@ SISTEMAS = Herramienta(
     route_name="calculadora:sistemas",
     palabras_clave=("resolver sistema", "matriz aumentada", "gauss", "gauss-jordan",
                     "procedimiento paso a paso"),
-    relacionadas=("gauss", "gauss-jordan", "clasificacion", "columnas-pivote"),
-    invitacion="Resolver eligiendo el método",
+    # Ya calcula y muestra todo lo que ofrecen las demás herramientas de la
+    # categoría: recomendarlas no aportaría nada.
+    relacionadas=(),
+    invitacion="Resolver el sistema completo",
 )
 GAUSS = _herramienta_sistemas(
     "gauss", "Método de Gauss",
@@ -170,7 +172,7 @@ GAUSS = _herramienta_sistemas(
     "sustitución regresiva.",
     palabras_clave=("eliminación gaussiana", "escalonar", "forma escalonada",
                     "sustitución regresiva", "resolver sistema"),
-    relacionadas=("gauss-jordan", "columnas-pivote", "clasificacion"),
+    relacionadas=("gauss-jordan",),
     invitacion="Ver el procedimiento con Gauss",
 )
 GAUSS_JORDAN = _herramienta_sistemas(
@@ -178,7 +180,7 @@ GAUSS_JORDAN = _herramienta_sistemas(
     "Reduce por completo la matriz aumentada hasta la forma escalonada reducida.",
     palabras_clave=("gauss jordan", "reducción completa", "forma escalonada reducida",
                     "matriz reducida", "resolver sistema"),
-    relacionadas=("gauss", "columnas-pivote", "clasificacion"),
+    relacionadas=("gauss",),
     invitacion="Ver el procedimiento con Gauss-Jordan",
 )
 CLASIFICACION = _herramienta_sistemas(
@@ -187,7 +189,7 @@ CLASIFICACION = _herramienta_sistemas(
     "soluciones infinitas o inconsistente.",
     palabras_clave=("tipo de solución", "consistente", "inconsistente",
                     "solución única", "soluciones infinitas", "variables libres"),
-    relacionadas=("gauss", "gauss-jordan", "columnas-pivote"),
+    relacionadas=("sistemas",),
     invitacion="Analizar el tipo de solución",
 )
 COLUMNAS_PIVOTE = _herramienta_sistemas(
@@ -195,7 +197,7 @@ COLUMNAS_PIVOTE = _herramienta_sistemas(
     "Identifica las columnas pivote de la matriz y las variables que quedan "
     "determinadas por el sistema.",
     palabras_clave=("pivote", "pivotes", "variables pivote", "variables libres"),
-    relacionadas=("clasificacion", "gauss-jordan", "gauss"),
+    relacionadas=("sistemas",),
     invitacion="Identificar las columnas pivote",
 )
 
