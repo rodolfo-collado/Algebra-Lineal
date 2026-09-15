@@ -174,3 +174,47 @@ class SistemaForm(forms.Form):
             ]
             for fila in range(ecuaciones)
         ]
+
+
+class ConversionBasesForm(forms.Form):
+    """Una sola herramienta: desde decimal o hacia decimal, con la otra base elegida."""
+
+    MODOS = (
+        ("desde_decimal", "Desde decimal"),
+        ("hacia_decimal", "Hacia decimal"),
+    )
+    BASES = (
+        (2, "Binario"),
+        (8, "Octal"),
+        (16, "Hexadecimal"),
+    )
+
+    modo = forms.ChoiceField(
+        label="Dirección",
+        choices=MODOS,
+        initial="desde_decimal",
+        widget=forms.RadioSelect,
+    )
+    base = forms.TypedChoiceField(
+        label="Otra base",
+        choices=BASES,
+        coerce=int,
+        initial=2,
+        widget=forms.RadioSelect,
+    )
+    numero = forms.CharField(
+        label="Número",
+        required=False,
+        strip=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "field-input field-input-code",
+                "autocomplete": "off",
+                "spellcheck": "false",
+                "inputmode": "text",
+            }
+        ),
+    )
+
+    def clean_numero(self):
+        return self.cleaned_data.get("numero", "")

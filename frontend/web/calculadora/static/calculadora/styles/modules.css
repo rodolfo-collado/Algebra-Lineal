@@ -601,8 +601,113 @@ textarea:focus {
     margin-top: 0.85rem;
 }
 
+.choice-row-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Conversión de bases */
+.base-keyboard[hidden] {
+    display: none;
+}
+
+.base-equality {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.55rem 0.75rem;
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.base-equals {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.base-numeral {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}
+
+.base-numeral-result {
+    color: var(--color-brand);
+}
+
+.procedure-lead,
+.procedure-note {
+    margin: 0 0 0.85rem;
+    color: var(--color-muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.procedure-note {
+    margin-top: 0.85rem;
+    margin-bottom: 0;
+}
+
+.table-wrap {
+    overflow-x: auto;
+    margin: 0.35rem 0;
+}
+
+.procedure-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.procedure-table th,
+.procedure-table td {
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.procedure-table th {
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.procedure-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.math-inline {
+    font-variant-numeric: tabular-nums;
+}
+
+.math-inline sup {
+    font-size: 0.72em;
+    line-height: 0;
+}
+
+.expansion-line {
+    margin: 0.45rem 0;
+    font-size: 1.02rem;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+.hex-map {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.85rem;
+    margin: 0 0 0.85rem;
+    padding: 0;
+    list-style: none;
+    color: var(--color-muted);
+    font-size: 0.92rem;
+}
+
 @media (max-width: 760px) {
     .choice-row,
+    .choice-row-3,
     .matrix-pair {
         grid-template-columns: 1fr;
     }
@@ -614,6 +719,10 @@ textarea:focus {
 
     .workspace-actions .btn-primary {
         width: 100%;
+    }
+
+    .base-equality {
+        font-size: 1.15rem;
     }
 }
 

@@ -1,0 +1,73 @@
+{% comment %}Procedimiento a partir de datos estructurados del núcleo (no HTML generado en el backend).{% endcomment %}
+
+{% if resultado.modo == "desde_decimal" %}
+    <p class="procedure-lead">
+        Divisiones sucesivas entre
+        {% if resultado.base_salida == 2 %}2{% elif resultado.base_salida == 8 %}8{% else %}16{% endif %}
+        y lectura de residuos de abajo hacia arriba.
+    </p>
+
+    {% if resultado.pasos_division %}
+        <div class="table-wrap">
+            <table class="procedure-table">
+                <caption class="sr-only">Divisiones sucesivas</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">División</th>
+                        <th scope="col">Cociente</th>
+                        <th scope="col">Residuo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paso in resultado.pasos_division %}
+                        <tr>
+                            <td>
+                                <span class="math-inline">{{ paso.dividendo }} ÷ {{ paso.base }}</span>
+                            </td>
+                            <td>{{ paso.cociente }}</td>
+                            <td>
+                                {% if paso.residuo >= 10 %}
+                                    <span class="math-inline">{{ paso.residuo }} → {{ paso.simbolo_residuo }}</span>
+                                {% else %}
+                                    {{ paso.simbolo_residuo }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="procedure-note">{{ resultado.lectura_residuos }}</p>
+    {% else %}
+        <p class="procedure-note">{{ resultado.lectura_residuos }}</p>
+    {% endif %}
+
+{% else %}
+    <p class="procedure-lead">
+        Expansión posicional: cada dígito se multiplica por la potencia de la base según su posición.
+    </p>
+
+    {% if resultado.sustituciones_hex %}
+        <ul class="hex-map">
+            {% for paso in resultado.sustituciones_hex %}
+                <li><span class="math-inline">{{ paso.digito }} = {{ paso.valor }}</span></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p class="expansion-line" aria-label="Combinación lineal">
+        <span class="base-numeral">{{ resultado.origen }}</span>
+        <span aria-hidden="true"> = </span>
+        {% for paso in resultado.pasos_expansion %}
+            <span class="math-inline">{{ paso.valor }}·{% if resultado.base_entrada == 2 %}2{% elif resultado.base_entrada == 8 %}8{% else %}16{% endif %}<sup>{{ paso.posicion }}</sup></span>{% if not forloop.last %} + {% endif %}
+        {% endfor %}
+    </p>
+
+    <p class="expansion-line">
+        <span aria-hidden="true">= </span>{{ resultado.suma_parcial }}
+    </p>
+
+    <p class="expansion-line">
+        <span aria-hidden="true">= </span><span class="base-numeral base-numeral-result">{{ resultado.destino }}</span>
+    </p>
+{% endif %}

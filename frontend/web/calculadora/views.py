@@ -5,11 +5,12 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_http_methods
 
 from . import catalogo
-from .forms import SistemaForm
+from .forms import ConversionBasesForm, SistemaForm
 from .guias import guias_para_resultado
 from .herramientas_sistemas import HERRAMIENTAS as HERRAMIENTAS_SISTEMAS
 from .servicios import resolver_entrada_web
-from .teclados import TECLADO_MATRIZ, TECLADO_SISTEMA
+from .servicios_bases import convertir_entrada
+from .teclados import TECLADO_MATRIZ, TECLADO_SISTEMA, TECLADOS_BASE
 
 
 @require_GET
@@ -77,5 +78,44 @@ def sistemas(request, herramienta="sistemas"):
             # Las herramientas de esta categoría comparten el formulario: tras
             # resolver, una relacionada puede recibir la misma entrada.
             "ids_comparten_entrada": tuple(HERRAMIENTAS_SISTEMAS),
+        },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def conversion_bases(request):
+    """Conversión decimal ↔ binario/octal/hexadecimal con procedimiento visible."""
+    actual = catalogo.herramienta_por_ruta(request.resolver_match)
+    if actual is None or actual.id != "conversion-bases":
+        raise Http404("No existe esa herramienta.")
+
+    form = ConversionBasesForm(request.POST or None)
+    resultado = None
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            resultado = convertir_entrada(
+                modo=form.cleaned_data["modo"],
+                base=form.cleaned_data["base"],
+                numero=form.cleaned_data["numero"],
+            )
+        except ValueError as error:
+            form.add_error("numero", str(error))
+
+    modo = form["modo"].value() if form.is_bound else form.initial.get("modo", "desde_decimal")
+    base = form["base"].value() if form.is_bound else form.initial.get("base", 2)
+    try:
+        base_entrada = 10 if modo == "desde_decimal" else int(base)
+    except (TypeError, ValueError):
+        base_entrada = 10
+
+    return render(
+        request,
+        "calculadora/modules/bases/index.html",
+        {
+            "form": form,
+            "resultado": resultado,
+            "teclados_base": TECLADOS_BASE,
+            "base_entrada_activa": base_entrada,
         },
     )

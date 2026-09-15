@@ -201,6 +201,24 @@ COLUMNAS_PIVOTE = _herramienta_sistemas(
     invitacion="Identificar las columnas pivote",
 )
 
+CONVERSION_BASES = Herramienta(
+    id="conversion-bases",
+    nombre="Conversión de bases",
+    categoria=BASES_NUMERICAS,
+    descripcion=(
+        "Convierte números entre decimal y binario, octal o hexadecimal, "
+        "con el procedimiento de divisiones sucesivas o expansión posicional."
+    ),
+    estado="disponible",
+    route_name="calculadora:conversion-bases",
+    palabras_clave=(
+        "binario", "decimal", "octal", "hexadecimal", "bases", "conversión",
+        "sistemas numéricos", "conversión de bases", "base",
+    ),
+    relacionadas=(),
+    invitacion="Convertir entre bases numéricas",
+)
+
 HERRAMIENTAS = (
     SISTEMAS,
     GAUSS,
@@ -219,9 +237,7 @@ HERRAMIENTAS = (
     Herramienta("ecuaciones-matriciales", "Ecuaciones matriciales", MATRICES,
                 "Resuelve ecuaciones cuyas incógnitas son matrices.",
                 palabras_clave=("matriz", "ecuación matricial")),
-    Herramienta("conversion-bases", "Conversión entre bases", BASES_NUMERICAS,
-                "Convierte números entre binario, octal, decimal y hexadecimal.",
-                palabras_clave=("binario", "octal", "decimal", "hexadecimal", "base")),
+    CONVERSION_BASES,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",
                 palabras_clave=("límite", "función", "tiende a")),
