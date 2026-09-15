@@ -27,6 +27,11 @@ EXTENSIONES = {".html", ".css", ".js", ".svg"}
 
 ASSETS_LOCALES = (
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "styles.css",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "styles" / "tokens.css",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "styles" / "base.css",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "styles" / "shell.css",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "styles" / "components.css",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "styles" / "modules.css",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "matriz.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "tema.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "mark.svg",
@@ -89,15 +94,17 @@ class PruebasRecursosLocales(unittest.TestCase):
 
 class PruebasSelectorTema(unittest.TestCase):
     def test_los_iconos_visibles_representan_el_tema_activo(self):
-        contenido = (
+        raiz = (
             RAIZ
             / "frontend"
             / "web"
             / "calculadora"
             / "static"
             / "calculadora"
-            / "styles.css"
-        ).read_text(encoding="utf-8")
+        )
+        contenido = (raiz / "styles.css").read_text(encoding="utf-8")
+        for parcial in sorted((raiz / "styles").glob("*.css")):
+            contenido += "\n" + parcial.read_text(encoding="utf-8")
         selectores_ocultos = {
             " ".join(selector.split())
             for selectores, declaraciones in re.findall(

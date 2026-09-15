@@ -100,6 +100,7 @@ class PruebasNavegacion(SimpleTestCase):
         respuesta = self.client.get(reverse("calculadora:inicio"))
         self.assertContains(respuesta, "Inicio · Álgebra Lineal")
         self.assertContains(respuesta, "Explora los temas disponibles")
+        self.assertContains(respuesta, "Aprende resolviendo")
         self.assertNotContains(respuesta, 'name="sistema"')
         self.assertNotContains(respuesta, "calculadora/matriz.js")
         self.assertNotContains(respuesta, 'aria-label="Ruta de navegación"')
@@ -120,7 +121,19 @@ class PruebasNavegacion(SimpleTestCase):
                 self.assertContains(respuesta, modulo.nombre)
         self.assertContains(respuesta, "Próximamente · No disponible", count=3)
         destinos = {attrs["href"] for _, attrs in Documento(respuesta).enlaces}
-        self.assertEqual(destinos, {"/", "/sistemas/", "#contenido"})
+        self.assertEqual(
+            destinos,
+            {
+                "/",
+                "/sistemas/",
+                "#contenido",
+                "#fundamentos",
+                "#vectores",
+                "#matrices",
+                "#sistemas-lineales",
+                "#proximamente",
+            },
+        )
 
     def test_sistemas_tiene_url_propia(self):
         self.assertEqual(reverse("calculadora:sistemas"), "/sistemas/")
@@ -238,8 +251,11 @@ class PruebasComparacion(SimpleTestCase):
         respuesta = self.client.post("/sistemas/", {"sistema": "x1+x3=4;x3=2", "metodo": "gauss"})
         self.assertContains(respuesta, 'id="columnas-pivote"', count=1)
         self.assertContains(respuesta, '<a href="#columnas-pivote">Revisar columnas pivote</a>', html=True)
-        self.assertContains(respuesta, "<span>C1</span>", html=True)
-        self.assertContains(respuesta, "<span>C3</span>", html=True)
+        self.assertContains(respuesta, "C1")
+        self.assertContains(respuesta, "C3")
+        self.assertContains(respuesta, 'class="pivot-chip"')
+        self.assertContains(respuesta, "Guía de concepto")
+        self.assertContains(respuesta, "Gauss se detiene en forma escalonada")
 
     def test_metodo_alternativo_invalido_no_ejecuta_resolucion(self):
         for metodo in ("", "inexistente"):
