@@ -183,6 +183,7 @@ html[data-menu="oculto"] .app-layout {
     position: sticky;
     top: var(--header-height);
     align-self: start;
+    min-height: calc(100vh - var(--header-height));
     max-height: calc(100vh - var(--header-height));
     overflow-y: auto;
     border-right: 1px solid var(--color-border);
@@ -435,6 +436,7 @@ html[data-menu="oculto"] .app-layout {
     /* Sin JavaScript la navegación queda visible en flujo, antes del contenido. */
     .app-sidebar {
         position: static;
+        min-height: 0;
         max-height: none;
         border-right: 0;
         border-bottom: 1px solid var(--color-border);

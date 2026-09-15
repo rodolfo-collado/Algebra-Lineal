@@ -312,6 +312,11 @@ textarea:focus {
     min-width: 0;
 }
 
+/* El bloque recibe el foco al llegar por #resultado; el contorno no aporta sobre toda la sección. */
+.results:focus {
+    outline: none;
+}
+
 .results-heading h2 {
     margin: 0;
     font-family: var(--font-display);
