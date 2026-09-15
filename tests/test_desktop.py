@@ -254,6 +254,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 ("navigation.js", "navegacion-principal"),
                 ("buscador.js", "data-buscador"),
                 ("teclado.js", "data-insercion"),
+                ("conversion.js", "data-conversion-bases"),
             ):
                 with cliente_http.open(
                     f"{url}static/calculadora/{recurso}",
@@ -294,6 +295,32 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             self.assertIn("Consistente de solución única", resultado)
             self.assertIn("x1 = 2", resultado)
             self.assertIn("x2 = 1", resultado)
+
+            # La conversión de bases viaja por la misma pila Waitress + Django.
+            url_bases = f"{url}bases/conversion/"
+            with cliente_http.open(url_bases, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("Conversión de bases", respuesta.read().decode("utf-8"))
+            solicitud = Request(
+                url_bases,
+                data=urlencode(
+                    {
+                        "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
+                        "modo": "desde_decimal",
+                        "base": "2",
+                        "numero": "13",
+                    }
+                ).encode("ascii"),
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": url_bases,
+                },
+            )
+            with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                conversion = respuesta.read().decode("utf-8")
+            self.assertIn("13₁₀", conversion)
+            self.assertIn("1101₂", conversion)
         finally:
             desktop.stop_waitress(servidor, hilo)
             self.assertFalse(hilo.is_alive())
