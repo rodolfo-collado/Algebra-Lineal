@@ -162,6 +162,19 @@ class PruebasLauncherDesktop(unittest.TestCase):
         self.assertEqual(servidor.cierres, 1)
         self.assertEqual(hilo.uniones, 1)
 
+    def test_el_spec_incluye_los_modulos_que_django_carga_por_nombre(self):
+        """PyInstaller no ve los módulos referenciados solo como cadenas en settings."""
+        ruta_settings = RAIZ / "frontend" / "web" / "algebra_web" / "settings.py"
+        plantillas = runpy.run_path(str(ruta_settings))["TEMPLATES"]
+        spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
+        ocultos = re.findall(r'"(frontend\.[\w.]+)"', spec.split("hiddenimports")[1].split("]")[0])
+        for opciones in (plantilla["OPTIONS"] for plantilla in plantillas):
+            for procesador in opciones.get("context_processors", ()):
+                modulo = procesador.rsplit(".", 1)[0]
+                with self.subTest(modulo=modulo):
+                    self.assertIn(modulo, ocultos)
+        self.assertIn("frontend.web.calculadora.views", ocultos)
+
     def test_resuelve_el_icono_local(self):
         ruta = desktop.application_icon_path()
 
