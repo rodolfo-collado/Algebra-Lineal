@@ -194,12 +194,16 @@ esté orientado a resolver sistemas.
 ## Para usuarios finales: instalar en Windows
 
 1. Descarga `AlgebraLineal-Setup-x.y.z.exe` de la distribución del proyecto.
-2. Ejecuta el instalador.
+2. Ejecuta el instalador: decide si quieres un acceso directo en el escritorio y
+   pulsa **Instalar**.
 3. Abre **Álgebra Lineal** desde el menú Inicio o el acceso directo opcional del escritorio.
 
 No necesitas Git, Python, uv, PyInstaller, terminal ni acceso al repositorio.
-La aplicación se instala para tu usuario en `%LOCALAPPDATA%\Programs\AlgebraLineal`,
-sin solicitar privilegios de administrador, y funciona sin una consola detrás.
+El instalador no pide elegir una carpeta: la aplicación se instala para tu usuario
+en `%LOCALAPPDATA%\Programs\AlgebraLineal`, sin solicitar privilegios de
+administrador, y la pantalla **Listo para Instalar** muestra esa ubicación antes
+de continuar. El asistente sigue el tema claro u oscuro de Windows y la aplicación
+funciona sin una consola detrás.
 Para quitarla, usa **Configuración → Aplicaciones → Álgebra Lineal → Desinstalar**.
 
 Requiere Windows 10 1809 o posterior / Windows 11, compatible con aplicaciones x64.
@@ -405,6 +409,21 @@ uv run --locked pyinstaller --noconfirm --clean AlgebraLineal.spec
 La configuración del instalador vive en `installer/AlgebraLineal.iss`. El script
 invoca `ISCC.exe` con `/DAppVersion` y `/DProjectRoot`; para evitar omisiones de
 prerrequisitos se recomienda compilarla mediante `-Target Installer`.
+
+El asistente usa `WizardStyle=modern dynamic windows11`, un estilo integrado en
+Inno Setup que sigue el tema claro u oscuro de Windows sin archivos de estilo
+externos. La página de carpeta está desactivada (`DisableDirPage=yes`): la
+instalación por usuario va siempre a `%LOCALAPPDATA%\Programs\AlgebraLineal` y
+la página **Listo para Instalar** muestra esa ubicación, los accesos directos y
+el estado de WebView2 (`AlwaysShowDirOnReadyPage=yes` + `UpdateReadyMemo`). Al
+instalar una versión sobre otra existente se reutiliza la carpeta y la entrada de
+**Aplicaciones instaladas** de la instalación previa. Para instalaciones avanzadas
+o automatizadas sigue funcionando el parámetro estándar de Inno Setup, con o sin
+`/VERYSILENT`:
+
+```powershell
+.\dist\installer\AlgebraLineal-Setup-0.1.0.exe /DIR="C:\Otra\Ruta"
+```
 
 ```text
 dist/
