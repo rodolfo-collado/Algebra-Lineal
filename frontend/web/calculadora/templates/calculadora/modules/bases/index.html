@@ -65,8 +65,9 @@
                 <h3 id="number-title" class="section-title">Número</h3>
                 <div id="number-fields" class="field-group">
                     <label for="{{ form.numero.id_for_label }}">
-                        <span data-number-label-desde>Número decimal</span>
-                        <span data-number-label-hacia hidden>Número en la base elegida</span>
+                        {% for base, nombre in nombres_base.items %}
+                            <span data-number-label-base="{{ base }}" {% if base != base_entrada_activa %}hidden{% endif %}>Número {{ nombre }}</span>
+                        {% endfor %}
                     </label>
                     <p class="field-help" data-number-help>
                         Escribe solo dígitos válidos para la base de entrada. El teclado de abajo se adapta a esa base.
@@ -96,7 +97,7 @@
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">Conversión</p>
-                <h2 id="results-title">Resultado</h2>
+                <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
 
             <section class="panel panel-final" aria-labelledby="equality-title">

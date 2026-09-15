@@ -606,6 +606,12 @@ textarea:focus {
 }
 
 /* Conversión de bases */
+/* Un solo número por línea: no hereda la altura del área de texto de sistemas. */
+.field-input-numeral {
+    font: 1.15rem/1.4 var(--font-math);
+    letter-spacing: 0.04em;
+}
+
 .base-keyboard[hidden] {
     display: none;
 }

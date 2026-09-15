@@ -26,6 +26,7 @@ def convertir_entrada(*, modo: str, base: int, numero: str) -> dict:
         destino = notacion(conversion.resultado, base)
         return {
             "modo": modo,
+            "titulo": f"Decimal → {NOMBRES_BASE[base]}",
             "origen": origen,
             "destino": destino,
             "igualdad": f"{origen} = {destino}",
@@ -52,6 +53,7 @@ def convertir_entrada(*, modo: str, base: int, numero: str) -> dict:
         destino = notacion(str(conversion.resultado), 10)
         return {
             "modo": modo,
+            "titulo": f"{NOMBRES_BASE[base].capitalize()} → decimal",
             "origen": origen,
             "destino": destino,
             "igualdad": f"{origen} = {destino}",

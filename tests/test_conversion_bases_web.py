@@ -69,6 +69,27 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertIn('data-insercion="A"', html)
         self.assertIn('data-insercion="F"', html)
         self.assertIn('data-teclado="base-16"', html)
+        # La etiqueta del número también sigue a la base de entrada.
+        self.assertRegex(html, r'<span data-number-label-base="10"\s*>Número decimal</span>')
+        self.assertRegex(html, r'data-number-label-base="2"[^>]*hidden[^>]*>Número binario<')
+        self.assertRegex(html, r'data-number-label-base="16"[^>]*hidden[^>]*>Número hexadecimal<')
+
+    def test_cambio_de_base_actualiza_teclado_y_etiqueta_sin_javascript(self):
+        html = self.client.post(self.ruta, {
+            "modo": "hacia_decimal",
+            "base": "16",
+            "numero": "",
+        }).content.decode("utf-8")
+        self.assertRegex(html, r'<div class="base-keyboard" data-teclado-base="16"\s*>')
+        self.assertRegex(html, r'data-teclado-base="10"[^>]*hidden')
+        self.assertRegex(html, r'<span data-number-label-base="16"\s*>Número hexadecimal</span>')
+        self.assertRegex(html, r'data-number-label-base="10"[^>]*hidden')
+
+    def test_el_campo_del_numero_es_de_una_linea(self):
+        html = self.client.get(self.ruta).content.decode("utf-8")
+        self.assertIn('class="field-input field-input-numeral"', html)
+        self.assertNotIn("field-input-code", html)
+        self.assertNotIn("<textarea", html)
 
     def test_post_decimal_a_binario(self):
         respuesta = self.client.post(self.ruta, {
@@ -79,6 +100,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "1101₂")
         self.assertContains(respuesta, "13₁₀")
+        self.assertContains(respuesta, "Decimal → binario")
         self.assertContains(respuesta, "Procedimiento")
         self.assertContains(respuesta, "13 ÷ 2")
         self.assertContains(respuesta, "residuos se leen")
@@ -114,6 +136,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         })
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "1A₁₆")
+        self.assertContains(respuesta, "Hexadecimal → decimal")
         self.assertContains(respuesta, "A = 10")
         self.assertContains(respuesta, "26₁₀")
 

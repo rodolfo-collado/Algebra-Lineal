@@ -208,7 +208,7 @@ class ConversionBasesForm(forms.Form):
         strip=False,
         widget=forms.TextInput(
             attrs={
-                "class": "field-input field-input-code",
+                "class": "field-input field-input-numeral",
                 "autocomplete": "off",
                 "spellcheck": "false",
                 "inputmode": "text",

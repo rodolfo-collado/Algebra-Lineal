@@ -4,6 +4,8 @@ from django.http import Http404
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_http_methods
 
+from backend.sistemas_numericos import NOMBRES_BASE
+
 from . import catalogo
 from .forms import ConversionBasesForm, SistemaForm
 from .guias import guias_para_resultado
@@ -116,6 +118,8 @@ def conversion_bases(request):
             "form": form,
             "resultado": resultado,
             "teclados_base": TECLADOS_BASE,
+            # La etiqueta del número y el teclado siguen a la base de entrada.
+            "nombres_base": NOMBRES_BASE,
             "base_entrada_activa": base_entrada,
         },
     )
