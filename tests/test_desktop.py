@@ -237,6 +237,22 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertEqual(respuesta.status, 200)
                 self.assertIn("algebra-lineal-tema", respuesta.read().decode("utf-8"))
 
+            for recurso, marca in (
+                ("navigation.js", "navegacion-principal"),
+                ("buscador.js", "data-buscador"),
+                ("teclado.js", "data-insercion"),
+            ):
+                with cliente_http.open(
+                    f"{url}static/calculadora/{recurso}",
+                    timeout=3.0,
+                ) as respuesta:
+                    self.assertEqual(respuesta.status, 200)
+                    self.assertIn(marca, respuesta.read().decode("utf-8"))
+
+            with cliente_http.open(f"{url}sistemas/gauss/", timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("Método de Gauss", respuesta.read().decode("utf-8"))
+
             csrf = re.search(
                 rb'name="csrfmiddlewaretoken" value="([^"]+)"',
                 html.encode("utf-8"),
