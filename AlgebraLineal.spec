@@ -27,6 +27,8 @@ hiddenimports = [
     "frontend.web.algebra_web.urls",
     "frontend.web.algebra_web.wsgi",
     "frontend.web.calculadora.apps",
+    # Django lo carga por nombre desde settings; el análisis estático no lo ve.
+    "frontend.web.calculadora.context_processors",
     "frontend.web.calculadora.forms",
     "frontend.web.calculadora.servicios",
     "frontend.web.calculadora.urls",

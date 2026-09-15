@@ -275,12 +275,25 @@ Desde la raíz del repositorio, inicia el servidor de desarrollo:
 uv run python manage.py runserver
 ```
 
-Abre <http://127.0.0.1:8000/> en el navegador. Inicio muestra el catálogo; entra
-a **Sistemas lineales → Sistemas de ecuaciones**, disponible en `/sistemas/`.
-El módulo permite elegir el tipo de entrada —sistema de ecuaciones o matriz aumentada— y el método Gauss o
-Gauss-Jordan. El selector de tema recuerda la preferencia en el navegador; si
-no hay una elección previa, respeta el modo claro u oscuro del sistema. En el
-modo matricial indica las dimensiones y completa una cuadrícula con la última
+Abre <http://127.0.0.1:8000/> en el navegador. Inicio permite buscar una
+herramienta o explorar el catálogo por área y categoría; la barra lateral
+repite ese árbol en todas las páginas. Dentro de **Álgebra Lineal → Sistemas de
+ecuaciones** hay cinco herramientas que comparten la misma vista y la misma
+matemática:
+
+| Herramienta | Ruta | Qué cambia |
+| --- | --- | --- |
+| Resolver un sistema | `/sistemas/` | Método a elegir; muestra todo el procedimiento |
+| Método de Gauss | `/sistemas/gauss/` | Método fijo en Gauss |
+| Gauss-Jordan | `/sistemas/gauss-jordan/` | Método fijo en Gauss-Jordan |
+| Clasificación de sistemas | `/sistemas/clasificacion/` | Destaca la clasificación antes del procedimiento |
+| Columnas pivote | `/sistemas/columnas-pivote/` | Destaca y resalta las columnas pivote |
+
+Todas permiten elegir el tipo de entrada —sistema de ecuaciones o matriz
+aumentada— y validan igual. El selector de tema recuerda la preferencia en el
+navegador; si no hay una elección previa, respeta el modo claro u oscuro del
+sistema. En el modo matricial indica las dimensiones (o usa los botones
+**+/−** de ecuaciones y variables) y completa una cuadrícula con la última
 columna reservada para los términos independientes:
 
 ```text
@@ -293,56 +306,87 @@ Ambos modos muestran la matriz inicial, los pasos, la clasificación y la
 solución. Django solo coordina la entrada y la presentación: la capa de
 integración converge en una matriz aumentada y delega los cálculos a `backend/`.
 
-Después de resolver, **Continúa explorando** permite comparar Gauss y
-Gauss-Jordan enviando la entrada actual del formulario: el texto permanece
-visible y la matriz conserva sus dimensiones, valores y fracciones. El método
-seleccionado refleja el ejecutado. **Revisar columnas pivote** lleva al bloque
-del resultado mediante un ancla, sin crear otro módulo.
+El **teclado matemático** que acompaña a cada campo muestra notación
+matemática (`x₁`, `−`, `a⁄b`) e inserta la sintaxis que entiende el parser
+(`x1`, `-`, `/`), de modo que nadie necesita conocer esa sintaxis para escribir
+un sistema. Solo aparece con JavaScript y solo contiene teclas con una
+inserción real.
 
-La navegación lateral agrupa módulos por categoría. Hasta 900 px se convierte
-en un menú desplegable que desplaza el contenido; Escape lo cierra y devuelve
-el foco al botón. Sin JavaScript la navegación permanece visible y se puede
-resolver y comparar desde texto; la cuadrícula editable requiere JavaScript.
+Después de resolver, **Continúa con este mismo sistema** envía la entrada
+actual a otra herramienta de la categoría (ver el procedimiento con
+Gauss-Jordan, identificar las columnas pivote, analizar el tipo de solución):
+el texto permanece visible y la matriz conserva sus dimensiones, valores y
+fracciones; Gauss y Gauss-Jordan imponen su método aunque llegue otro.
 
-### Organización modular y nuevos módulos
+La barra lateral agrupa las herramientas por área y categoría con secciones
+expandibles; la categoría activa llega abierta y las que el usuario abre se
+recuerdan. El botón **Menú** la oculta en escritorio para ganar espacio y, hasta
+880 px, la abre como un cajón sobre el contenido; Escape o el fondo lo cierran
+y devuelven el foco al botón. El buscador filtra las herramientas al instante y,
+sin JavaScript, envía la consulta a Inicio (`/?q=gauss`), que responde con los
+mismos resultados. Sin JavaScript la navegación permanece visible y se puede
+resolver y compartir la entrada desde texto; la cuadrícula editable, el
+teclado y los botones de estructura requieren JavaScript.
 
-El recorrido web y desktop es **Inicio → categoría → módulo → operación/resultado**.
-Las categorías enlazan a secciones del Inicio, sin páginas vacías. Los contenidos
-de sistemas numéricos, vectores y matrices se anuncian como **Próximamente**,
-sin enlaces ni algoritmos nuevos.
+### Organización modular y nuevas herramientas
 
-`frontend/web/calculadora/catalogo.py` es la fuente de metadata: las estructuras
-inmutables `Categoria` y `Modulo` definen identidad, descripción, categoría,
-estado, nombre de ruta Django, contenidos y relaciones por ID. No usan base de
-datos. Tarjetas, navegación y breadcrumbs derivan de este catálogo.
+El recorrido web y desktop es **Inicio → área → categoría → herramienta →
+resultado**, y el breadcrumb lo reproduce con enlaces reales (las áreas y
+categorías llevan a su sección del Inicio). Vectores, matrices, sistemas
+numéricos y límites se anuncian como **Próximamente**, sin enlaces ni
+algoritmos nuevos.
 
-Para agregar un módulo:
+`frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
+inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,
+estado, nombre de ruta Django, palabras clave, relaciones por ID y la frase
+con la que se sugiere una herramienta desde otra. No usan base de datos. La
+barra lateral, el buscador (`buscar_herramientas`, sin acentos ni mayúsculas),
+el Inicio, los breadcrumbs y las herramientas relacionadas derivan de ahí:
+`context_processors.navegacion` identifica la herramienta activa a partir de la
+ruta resuelta, así que las vistas no arman la navegación a mano.
+
+Para agregar una herramienta:
 
 1. Crea su vista y ruta con nombre en `calculadora/urls.py`, y su template en
-   `templates/calculadora/modules/<modulo>/`, extendiendo `calculadora/base.html`.
-2. Regístralo una sola vez en `MODULOS`, con ID único y categoría de `CATEGORIAS`.
-   Usa `disponible` y una ruta resoluble cuando funcione; `proximamente` no genera enlaces.
-3. Incluye `contexto_navegacion(modulo)` en la vista. El menú, las tarjetas y el
-   breadcrumb incorporan su metadata automáticamente. Las categorías sin módulos
-   disponibles se omiten del menú.
-4. Define relaciones con IDs existentes en `relacionados`; el helper
-   `relacionados_disponibles` excluye destinos aún no disponibles. Las conexiones
-   entre operaciones del mismo módulo viven aparte: `conexiones.py` declara la
-   comparación Gauss ↔ Gauss-Jordan, sin rutas artificiales para esos métodos.
-5. Añade pruebas de rutas, navegación y comportamiento. Mantén la matemática en
-   `backend/` y la presentación en los templates del módulo.
+   `templates/calculadora/modules/<modulo>/`, extendiendo
+   `calculadora/layouts/herramienta.html` y rellenando solo los bloques que
+   necesite: `tool_context`, `tool_input`, `tool_result`, `tool_explanation` y
+   `tool_related`.
+2. Regístrala una sola vez en `HERRAMIENTAS`, con ID único y una categoría de
+   `CATEGORIAS`. Usa `disponible` y una ruta resoluble cuando funcione;
+   `proximamente` no genera enlaces. Una ruta no registrada responde 404.
+3. Declara `palabras_clave` con sinónimos que un estudiante escribiría; el
+   nombre, la categoría y el área ya forman parte del índice de búsqueda.
+4. Define relaciones con IDs existentes en `relacionadas` y una `invitacion`
+   breve; `relacionadas_disponibles` excluye destinos aún no disponibles.
+   Si varias herramientas comparten un formulario, la vista puede indicar
+   `formulario_compartido` e `ids_comparten_entrada` para que la relacionada
+   reciba la misma entrada mediante `formaction`.
+5. Si la herramienta necesita símbolos, declara un `TecladoContextual` en
+   `teclados.py` con solo las teclas que usa e inclúyelo con
+   `components/math_keyboard.html` dentro del contenedor de sus campos. Los
+   controles que cambian la estructura (más filas, menos columnas) van aparte,
+   nunca dentro del teclado.
+6. Añade pruebas de rutas, navegación, búsqueda y comportamiento. Mantén la
+   matemática en `backend/` y la presentación en los templates del módulo.
+
+Las cinco herramientas de sistemas siguen ese patrón con una sola vista:
+`herramientas_sistemas.py` describe, por ID, la acción principal, el método
+fijo o elegible y qué parte del resultado se destaca.
 
 ```text
 templates/calculadora/
-├── base.html
-├── components/       # header, navegación, breadcrumbs, tarjetas y parciales
+├── base.html                 # header, sidebar, breadcrumbs y contenido
+├── layouts/herramienta.html  # estructura común de una herramienta
+├── components/               # sidebar, buscador, breadcrumbs, relacionadas, teclado, matrices, guías
 ├── pages/inicio.html
-└── modules/sistemas/index.html
+└── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ```
 
-P10 renueva la identidad visual (tokens, Inicio, navegación, sistemas y guía
-educativa) conservando el comportamiento matemático. Los detalles para
-desarrolladores están en [docs/interfaz.md](docs/interfaz.md).
+P10 renovó la identidad visual y P10.1 añadió la navegación escalable, el
+registro central, el buscador, la estructura común de herramienta y el teclado
+matemático contextual, conservando el comportamiento matemático. Los detalles
+para desarrolladores están en [docs/interfaz.md](docs/interfaz.md).
 
 #### Aplicación de escritorio durante desarrollo
 
@@ -489,8 +533,9 @@ sistemas), las expresiones lineales y su formato, la traducción de una matriz a
 su sistema, el conjunto solución con variables libres, el parser de sistemas, la
 equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
 de Django —incluidas sus entradas textual y matricial—, la infraestructura
-desktop y que la interfaz no cargue fuentes ni scripts remotos. Sirven para
-detectar regresiones cuando el proyecto crezca.
+desktop, el registro de herramientas, la navegación, el buscador, los
+breadcrumbs, el teclado matemático y que la interfaz no cargue fuentes ni
+scripts remotos. Sirven para detectar regresiones cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
 
@@ -567,7 +612,7 @@ Algebra-Lineal/
 │   │   └── consola.py          # colores, limpieza de pantalla y pausas
 │   └── web/
 │       ├── algebra_web/        # configuración, rutas y entradas WSGI/ASGI
-│       └── calculadora/        # formulario, vistas, adaptador y recursos web
+│       └── calculadora/        # registro de herramientas, vistas, teclados, templates y recursos
 └── tests/
     ├── test_matrices.py
     ├── test_operaciones_filas.py
@@ -583,6 +628,7 @@ Algebra-Lineal/
     ├── test_consola.py
     ├── test_web.py
     ├── test_navegacion.py
+    ├── test_teclado.py
     ├── test_identidad_visual.py
     ├── test_desktop.py
     ├── test_recursos_interfaz.py
@@ -639,8 +685,10 @@ cuadrícula ──────────→ matriz aumentada ────┼�
 `forms.py` valida dimensiones y celdas con las utilidades existentes del parser;
 `servicios.py` adapta matrices, pasos y mensajes para los templates, pero no
 recalcula operaciones, clasificaciones ni soluciones. `matriz.js` solo genera la
-cuadrícula y cambia su visibilidad. `tema.js` guarda el tema claro u oscuro en
-el almacenamiento local del WebView.
+cuadrícula, cambia su visibilidad y atiende los botones de estructura;
+`teclado.js` inserta en el campo activo lo que declara cada tecla; `buscador.js`
+filtra el registro ya renderizado; `navigation.js` controla la barra lateral; y
+`tema.js` guarda el tema claro u oscuro en el almacenamiento local del WebView.
 
 La arquitectura completa de las interfaces queda así:
 

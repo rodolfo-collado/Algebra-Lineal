@@ -1,16 +1,19 @@
 <header class="app-header">
-    <a class="app-brand" href="{% url 'calculadora:inicio' %}" aria-label="Álgebra Lineal, inicio">
-        {% include "calculadora/components/mark.html" %}
-        <span class="app-brand-text">
-            <span class="app-name">Álgebra Lineal</span>
-            <span class="app-tagline">Aprende resolviendo</span>
-        </span>
-    </a>
-    <div class="header-actions">
+    <div class="header-start">
         <button type="button" id="navigation-toggle" class="navigation-toggle"
                 aria-expanded="false" aria-controls="navegacion-principal" hidden>
-            Menú
+            <span class="navigation-toggle-icon" aria-hidden="true"></span>
+            <span class="navigation-toggle-text">Menú</span>
         </button>
+        <a class="app-brand" href="{% url 'calculadora:inicio' %}" aria-label="Álgebra Lineal, inicio">
+            {% include "calculadora/components/mark.html" %}
+            <span class="app-brand-text">
+                <span class="app-name">Álgebra Lineal</span>
+                <span class="app-tagline">Aprende resolviendo</span>
+            </span>
+        </a>
+    </div>
+    <div class="header-actions">
         <button
             type="button"
             class="theme-toggle"

@@ -100,7 +100,7 @@ try {
                 if (-not $text.Contains($expected)) { throw "Falta '$expected' en $method ($url)." }
             }
         }
-        foreach ($asset in @('styles.css', 'matriz.js', 'tema.js', 'navigation.js', 'mark.svg')) {
+        foreach ($asset in @('styles.css', 'matriz.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'mark.svg')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'static/calculadora/' + $asset)
             if ($response.StatusCode -ne 200) { throw "No se sirvió el recurso $asset" }
         }

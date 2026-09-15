@@ -1,0 +1,19 @@
+{% extends "calculadora/base.html" %}
+{% comment %}Estructura común de una herramienta: contexto, entrada, resultado, explicación y relacionadas. Cada bloque es opcional; una herramienta rellena solo los que necesita.{% endcomment %}
+
+{% block title %}{{ herramienta_actual.nombre }} · Álgebra Lineal{% endblock %}
+
+{% block content %}
+    <article class="tool">
+        <header class="tool-header">
+            <p class="tool-kicker">{% block tool_kicker %}{{ categoria_actual.area.nombre }} · {{ categoria_actual.nombre }}{% endblock %}</p>
+            <h1 class="tool-title">{% block tool_title %}{{ herramienta_actual.nombre }}{% endblock %}</h1>
+            <p class="tool-lead">{% block tool_lead %}{{ herramienta_actual.descripcion }}{% endblock %}</p>
+            {% block tool_context %}{% endblock %}
+        </header>
+        {% block tool_input %}{% endblock %}
+        {% block tool_result %}{% endblock %}
+        {% block tool_explanation %}{% endblock %}
+        {% block tool_related %}{% include "calculadora/components/related_tools.html" %}{% endblock %}
+    </article>
+{% endblock %}

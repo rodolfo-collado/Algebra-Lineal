@@ -6,7 +6,7 @@
                 {% for fila in matriz %}
                     <tr>
                         {% for valor in fila %}
-                            <td class="{% if forloop.last %}constant{% endif %}">{{ valor }}</td>
+                            <td class="{% if forloop.last %}constant{% endif %}{% if columnas_pivote and forloop.counter in columnas_pivote %} pivot{% endif %}">{{ valor }}</td>
                         {% endfor %}
                     </tr>
                 {% endfor %}

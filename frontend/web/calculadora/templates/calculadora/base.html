@@ -8,13 +8,18 @@
     <link rel="icon" href="{% static 'calculadora/mark.svg' %}" type="image/svg+xml">
     <script>
         (function () {
-            var key = "algebra-lineal-tema";
-            var stored = localStorage.getItem(key);
+            var root = document.documentElement;
+            var stored = localStorage.getItem("algebra-lineal-tema");
             var theme = stored === "light" || stored === "dark"
                 ? stored
                 : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-            document.documentElement.setAttribute("data-theme", theme);
-            document.documentElement.style.colorScheme = theme;
+            root.setAttribute("data-theme", theme);
+            root.style.colorScheme = theme;
+            // Estado del menú lateral en escritorio, antes de pintar para evitar saltos.
+            if (localStorage.getItem("algebra-lineal-menu") === "oculto") {
+                root.setAttribute("data-menu", "oculto");
+            }
+            root.classList.add("js");
         })();
     </script>
     <link rel="stylesheet" href="{% static 'calculadora/styles.css' %}">
@@ -24,15 +29,16 @@
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
     {% include "calculadora/components/header.html" %}
     <div class="app-layout">
-        {% include "calculadora/components/navigation.html" %}
+        {% include "calculadora/components/sidebar.html" %}
+        <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
         <main id="contenido" class="app-content" tabindex="-1">
             {% include "calculadora/components/breadcrumbs.html" %}
-            {% block module_header %}{% endblock %}
             {% block content %}{% endblock %}
         </main>
     </div>
     <script src="{% static 'calculadora/tema.js' %}" defer></script>
     <script src="{% static 'calculadora/navigation.js' %}" defer></script>
+    <script src="{% static 'calculadora/buscador.js' %}" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

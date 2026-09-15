@@ -11,14 +11,11 @@ body {
 
 body {
     margin: 0;
-    background:
-        radial-gradient(ellipse 80% 50% at 100% -10%, var(--color-bg-accent), transparent 55%),
-        radial-gradient(ellipse 60% 40% at -5% 30%, var(--color-pattern), transparent 50%),
-        var(--color-bg);
-    background-attachment: fixed;
+    background: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-ui);
     line-height: 1.5;
+    overflow-x: hidden;
 }
 
 code,
@@ -32,7 +29,8 @@ code,
 .matrix-divider-cell,
 .step-operation code,
 .equations code,
-.pivot-chip {
+.pivot-chip,
+.math-key {
     font-family: var(--font-math);
 }
 
@@ -47,6 +45,11 @@ h3,
 h4,
 p {
     margin-top: 0;
+}
+
+button {
+    font: inherit;
+    color: inherit;
 }
 
 .sr-only {
@@ -80,11 +83,26 @@ p {
     color: var(--color-muted);
 }
 
+.text-link {
+    color: var(--color-brand-strong);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+[data-theme="dark"] .text-link {
+    color: var(--color-brand);
+}
+
+/* Foco visible y consistente para todo control interactivo. */
 a:focus-visible,
 button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
 [tabindex="-1"]:focus-visible {
-    outline: 3px solid var(--color-text);
-    outline-offset: 3px;
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
 [id] {

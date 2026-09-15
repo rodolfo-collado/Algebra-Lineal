@@ -10,4 +10,5 @@ app_name = "calculadora"
 urlpatterns = [
     path("", views.inicio, name="inicio"),
     path("sistemas/", views.sistemas, name="sistemas"),
+    path("sistemas/<slug:herramienta>/", views.sistemas, name="sistemas-herramienta"),
 ]

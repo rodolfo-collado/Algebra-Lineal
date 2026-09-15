@@ -90,6 +90,7 @@ class PruebasIdentidadVisual(SimpleTestCase):
             "--color-brand",
             "--color-accent",
             "--color-surface-raised",
+            "--color-primary",
             "--font-ui",
             "--font-math",
         ):
@@ -98,14 +99,38 @@ class PruebasIdentidadVisual(SimpleTestCase):
 
     def test_inicio_eleva_identidad_y_areas(self):
         respuesta = self.client.get(reverse("calculadora:inicio"))
-        self.assertContains(respuesta, "Continúa aprendiendo")
-        self.assertContains(respuesta, 'aria-label="Explora por área"')
+        self.assertContains(respuesta, "Calculadora educativa")
+        self.assertContains(respuesta, 'aria-label="Acceso rápido"')
         self.assertContains(respuesta, "home-hero")
-        self.assertContains(respuesta, "module-card")
-        self.assertContains(respuesta, 'data-categoria="sistemas-lineales"')
+        self.assertContains(respuesta, 'role="search"')
+        self.assertContains(respuesta, "tool-link")
+        self.assertContains(respuesta, 'data-categoria="sistemas-ecuaciones"')
         ids = DocumentoIds(respuesta).ids
-        for fragmento in ("fundamentos", "vectores", "matrices", "sistemas-lineales", "proximamente"):
+        for fragmento in (
+            "algebra-lineal", "sistemas-numericos", "calculo",
+            "sistemas-ecuaciones", "vectores", "matrices", "bases-numericas", "limites",
+        ):
             self.assertIn(fragmento, ids)
+
+    def test_interfaz_en_espanol_sin_spanglish(self):
+        for ruta in ("/", "/sistemas/gauss/"):
+            html = self.client.get(ruta).content.decode("utf-8")
+            with self.subTest(ruta=ruta):
+                for termino in ("Search tools", "Steps", "Related tools", "Coming soon", "Home"):
+                    self.assertNotIn(f">{termino}<", html)
+                self.assertIn("Buscar herramientas", html)
+        self.assertIn("Procedimiento paso a paso", self.client.post(
+            "/sistemas/gauss/", {"sistema": "x1=1", "metodo": "gauss"},
+        ).content.decode("utf-8"))
+
+    def test_tokens_cubren_ambos_temas_para_los_componentes_nuevos(self):
+        tokens = (STYLES / "tokens.css").read_text(encoding="utf-8")
+        claro, oscuro = tokens.split('[data-theme="dark"]')
+        for variable in ("--color-pivot", "--color-backdrop", "--color-brand-soft", "--color-focus"):
+            with self.subTest(variable=variable):
+                self.assertIn(variable, claro)
+                self.assertIn(variable, oscuro)
+        self.assertIn("--nav-width", claro)
 
     def test_sistemas_renderiza_guia_y_sin_cdn(self):
         respuesta = self.client.post(

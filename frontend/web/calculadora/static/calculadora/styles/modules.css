@@ -1,4 +1,4 @@
-/* Módulo de sistemas: formulario, pasos, resultado. */
+/* Módulo de sistemas: formulario, pasos y resultado. */
 
 .workspace {
     padding-bottom: 1rem;
@@ -167,13 +167,6 @@ label[for="id_sistema"],
     display: none;
 }
 
-.dimensions-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem;
-    margin-bottom: 0.7rem;
-}
-
 .field-input,
 .dimension-field input,
 textarea {
@@ -186,10 +179,6 @@ textarea {
     background: var(--color-surface-muted);
     font: inherit;
     transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
-}
-
-.dimension-field input {
-    max-width: 12rem;
 }
 
 textarea,
@@ -304,6 +293,12 @@ textarea:hover {
     border-color: var(--color-border-strong);
 }
 
+.matrix-input:focus,
+.field-input:focus,
+textarea:focus {
+    border-color: var(--color-brand);
+}
+
 .workspace-actions {
     display: flex;
     justify-content: flex-end;
@@ -317,11 +312,21 @@ textarea:hover {
     min-width: 0;
 }
 
+/* El bloque recibe el foco al llegar por #resultado; el contorno no aporta sobre toda la sección. */
+.results:focus {
+    outline: none;
+}
+
 .results-heading h2 {
     margin: 0;
     font-family: var(--font-display);
     font-size: 1.2rem;
     letter-spacing: -0.02em;
+}
+
+.pivot-legend {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
 }
 
 .results > .panel,
@@ -596,17 +601,8 @@ textarea:hover {
     margin-top: 0.85rem;
 }
 
-.module-hero-sistemas {
-    display: grid;
-    gap: 0.35rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.85rem;
-    border-bottom: 1px solid var(--color-border);
-}
-
 @media (max-width: 760px) {
     .choice-row,
-    .dimensions-grid,
     .matrix-pair {
         grid-template-columns: 1fr;
     }
@@ -627,7 +623,7 @@ textarea:hover {
         padding-bottom: 1.2rem;
     }
 
-    .module-lead,
+    .tool-lead,
     .choice-hint {
         display: none;
     }

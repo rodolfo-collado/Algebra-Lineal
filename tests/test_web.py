@@ -50,8 +50,10 @@ class PruebasCalculadoraWeb(SimpleTestCase):
                     esperado = ", ".join(f"C{c}" for c in columnas) or "Ninguna"
                     self.assertIn(f"Columnas pivote: {esperado}", texto)
                     self.assertEqual(texto.count("Columnas pivote:"), 1)
-                    self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
-                    self.assertLess(texto.index("Columnas pivote:"), texto.index("Clasificación"))
+                    # La sidebar ya nombra «Clasificación de sistemas»; el orden se mide dentro del resultado.
+                    inicio_resultado = texto.index("Resultado final")
+                    self.assertLess(inicio_resultado, texto.index("Columnas pivote:"))
+                    self.assertLess(texto.index("Columnas pivote:"), texto.index("Clasificación", inicio_resultado))
 
             resultado = resolver_sistema_web("x1 + 2x2 + x3 = 4; x3 = 2", metodo)
             self.assertEqual(resultado["columnas_pivote"], [1, 3])

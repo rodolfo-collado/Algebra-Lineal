@@ -1,0 +1,22 @@
+{% comment %}Teclado matemático contextual. Solo funciona con JavaScript, por eso nace oculto: sin él no debe aparentar que funciona.{% endcomment %}
+{% if teclado %}
+    <div class="math-keyboard" data-teclado="{{ teclado.id }}" data-teclado-para="{{ campos_id }}"
+         role="group" aria-label="{{ teclado.titulo }}" hidden>
+        <p class="math-keyboard-title" aria-hidden="true">{{ teclado.titulo }}</p>
+        <div class="math-keyboard-groups">
+            {% for grupo in teclado.grupos %}
+                <div class="math-keyboard-group" role="group" aria-label="{{ grupo.nombre }}">
+                    <span class="math-keyboard-group-name" aria-hidden="true">{{ grupo.nombre }}</span>
+                    <div class="math-keys">
+                        {% for tecla in grupo.teclas %}
+                            <button type="button" class="math-key" data-insercion="{{ tecla.insercion }}"
+                                    data-retroceso="{{ tecla.retroceso }}" aria-label="{{ tecla.nombre }}"
+                                    title="{{ tecla.nombre }}">{{ tecla.etiqueta }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <p class="math-keyboard-help">{{ teclado.ayuda }}</p>
+    </div>
+{% endif %}
