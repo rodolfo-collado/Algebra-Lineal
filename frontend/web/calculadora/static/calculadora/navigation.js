@@ -78,8 +78,8 @@
             return;
         }
         const ocultar = !desktopOculto();
-        root.toggleAttribute("data-menu", ocultar);
         if (ocultar) root.setAttribute("data-menu", "oculto");
+        else root.removeAttribute("data-menu");
         guardar(STORAGE_MENU, ocultar ? "oculto" : "visible");
         aplicar();
     });

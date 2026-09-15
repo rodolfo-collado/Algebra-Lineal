@@ -1,7 +1,7 @@
 {# Buscador de herramientas: envía a Inicio (?q=) y, con JavaScript, filtra la lista indicada al instante. #}
 <form class="search{% if search_large %} search-large{% endif %}" role="search" method="get"
       action="{% url 'calculadora:inicio' %}"
-      data-buscador="{{ search_target }}" data-buscador-id="{{ search_id }}">
+      data-buscador="{{ search_target }}">
     <label class="{% if search_large %}search-label{% else %}sr-only{% endif %}" for="{{ search_id }}">Buscar herramientas</label>
     <div class="search-field">
         <div class="search-box">

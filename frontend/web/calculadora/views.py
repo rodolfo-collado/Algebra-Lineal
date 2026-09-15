@@ -24,6 +24,7 @@ def inicio(request):
 
 @require_http_methods(["GET", "POST"])
 def sistemas(request, herramienta="sistemas"):
+    """Una vista para todas las herramientas de sistemas; `herramienta` llega desde la URL."""
     # El registro decide qué herramientas existen: una ruta no registrada es 404.
     actual = catalogo.herramienta_por_ruta(request.resolver_match)
     if actual is None or actual.id not in HERRAMIENTAS_SISTEMAS:
