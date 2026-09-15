@@ -209,8 +209,19 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             ) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 css = respuesta.read().decode("utf-8")
-                self.assertIn("--color-primary", css)
-                self.assertIn("--color-bg", css)
+                self.assertIn("@import", css)
+                self.assertIn("styles/tokens.css", css)
+                self.assertIn("styles/base.css", css)
+
+            with cliente_http.open(
+                f"{url}static/calculadora/styles/tokens.css",
+                timeout=3.0,
+            ) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                tokens = respuesta.read().decode("utf-8")
+                self.assertIn("--color-primary", tokens)
+                self.assertIn("--color-brand", tokens)
+                self.assertIn("--color-bg", tokens)
 
             with cliente_http.open(
                 f"{url}static/calculadora/matriz.js",

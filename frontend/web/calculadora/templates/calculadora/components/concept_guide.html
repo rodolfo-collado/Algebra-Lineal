@@ -1,0 +1,13 @@
+{% if guias %}
+<aside class="concept-guides" aria-label="Guía de concepto">
+    {% for guia in guias %}
+        <article class="concept-guide" data-tipo="{{ guia.tipo }}" id="guia-{{ guia.id }}">
+            {% include "calculadora/components/guide_mark.html" %}
+            <div>
+                <h4 class="concept-guide-title">{{ guia.titulo }}</h4>
+                <p class="concept-guide-body">{{ guia.contenido }}</p>
+            </div>
+        </article>
+    {% endfor %}
+</aside>
+{% endif %}

@@ -1,10 +1,29 @@
 <nav id="navegacion-principal" class="app-navigation" aria-label="Navegación principal">
-    <a href="{% url 'calculadora:inicio' %}"{% if not modulo_actual %} aria-current="page"{% endif %}>Inicio</a>
+    <a class="nav-link" href="{% url 'calculadora:inicio' %}"{% if not modulo_actual %} aria-current="page"{% endif %}>
+        <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+                <path fill="currentColor" d="M4 11.2 12 4l8 7.2V20h-5.5v-5.2h-5V20H4z"/>
+            </svg>
+        </span>
+        <span>Inicio</span>
+    </a>
     {% for categoria, modulos in grupos_modulos %}
-        <h2 class="navigation-category">{{ categoria.nombre }}</h2>
+        <h2 class="navigation-category" style="--cat-accent: var(--color-cat-{% if categoria.id == 'sistemas-lineales' %}sistemas{% else %}{{ categoria.id }}{% endif %})">
+            <span class="cat-dot" aria-hidden="true"></span>
+            {{ categoria.nombre }}
+        </h2>
         <ul>
             {% for modulo in modulos %}
-                <li><a href="{% url modulo.route_name %}"{% if modulo.id == modulo_actual.id %} aria-current="page"{% endif %}>{{ modulo.nombre }}</a></li>
+                <li>
+                    <a class="nav-link"
+                       href="{% url modulo.route_name %}"
+                       {% if modulo.id == modulo_actual.id %}aria-current="page"{% endif %}>
+                        <span class="nav-icon" aria-hidden="true">
+                            {% include "calculadora/components/category_icon.html" with categoria_id=modulo.categoria.id %}
+                        </span>
+                        <span>{{ modulo.nombre }}</span>
+                    </a>
+                </li>
             {% endfor %}
         </ul>
     {% endfor %}

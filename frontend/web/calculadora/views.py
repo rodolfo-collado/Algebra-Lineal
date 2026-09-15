@@ -3,16 +3,34 @@
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_http_methods
 
-from .catalogo import MODULOS, SISTEMAS, contexto_navegacion
+from .catalogo import CATEGORIAS, MODULOS, SISTEMAS, contexto_navegacion, grupos_disponibles
 from .conexiones import COMPARACIONES
 from .forms import SistemaForm
+from .guias import guias_para_resultado
 from .servicios import resolver_entrada_web
 
 
 @require_GET
 def inicio(request):
+    grupos = grupos_disponibles()
+    ids_disponibles = {categoria.id for categoria, _ in grupos}
+    proximos_por_categoria = tuple(
+        (categoria, modulos)
+        for categoria in CATEGORIAS
+        if categoria.id not in ids_disponibles
+        and (
+            modulos := tuple(
+                modulo
+                for modulo in MODULOS
+                if modulo.categoria == categoria and modulo.estado == "proximamente"
+            )
+        )
+    )
     return render(request, "calculadora/pages/inicio.html", {
         **contexto_navegacion(),
+        "categorias": CATEGORIAS,
+        "grupos_modulos": grupos,
+        "proximos_por_categoria": proximos_por_categoria,
         "proximos_modulos": tuple(m for m in MODULOS if m.estado == "proximamente"),
     })
 
@@ -25,6 +43,8 @@ def sistemas(request):
         datos["metodo"] = datos.get("metodo_alternativo")
     form = SistemaForm(datos)
     resultado = None
+    guias_contexto = ()
+    guias_resultado = ()
 
     if request.method == "POST" and form.is_valid():
         try:
@@ -34,6 +54,13 @@ def sistemas(request):
                 texto=form.cleaned_data.get("sistema"),
                 matriz_aumentada=form.cleaned_data.get("matriz_aumentada"),
             )
+            guias = guias_para_resultado(
+                metodo=form.cleaned_data["metodo"],
+                clasificacion_clave=resultado["clasificacion_clave"],
+                columnas_pivote=resultado["columnas_pivote"],
+            )
+            guias_contexto = guias[:1]
+            guias_resultado = guias[1:]
         except ValueError as error:
             if form.cleaned_data.get("tipo_entrada") == "matriz":
                 form.add_error(None, str(error))
@@ -50,5 +77,7 @@ def sistemas(request):
             "matrix_values": form.valores_matriz_ingresados(),
             "comparacion": COMPARACIONES.get(form.cleaned_data["metodo"])
             if resultado else None,
+            "guias_contexto": guias_contexto,
+            "guias_resultado": guias_resultado,
         },
     )

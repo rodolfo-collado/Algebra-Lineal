@@ -1,12 +1,26 @@
-<article class="panel module-card">
-    <h3>{{ modulo.nombre }}</h3>
+<article class="panel module-card" data-categoria="{{ modulo.categoria.id }}">
+    <div class="module-card-top">
+        <div>
+            <p class="module-card-category">{{ modulo.categoria.nombre }}</p>
+            <h3>{{ modulo.nombre }}</h3>
+        </div>
+        <span class="module-card-icon" aria-hidden="true">
+            {% include "calculadora/components/category_icon.html" with categoria_id=modulo.categoria.id %}
+        </span>
+    </div>
     <p class="muted">{{ modulo.descripcion }}</p>
     {% if modulo.contenidos %}
-        <ul>{% for contenido in modulo.contenidos %}<li>{{ contenido }}</li>{% endfor %}</ul>
+        <ul class="module-card-contents">
+            {% for contenido in modulo.contenidos %}
+                <li>{{ contenido }}</li>
+            {% endfor %}
+        </ul>
     {% endif %}
-    {% if modulo.estado == "disponible" %}
-        <a class="btn btn-primary" href="{% url modulo.route_name %}">Abrir {{ modulo.nombre }}</a>
-    {% else %}
-        <p class="module-status">Próximamente · No disponible</p>
-    {% endif %}
+    <div class="module-card-action">
+        {% if modulo.estado == "disponible" %}
+            <a class="btn btn-primary" href="{% url modulo.route_name %}">Abrir <span class="sr-only">{{ modulo.nombre }}</span></a>
+        {% else %}
+            <p class="module-status">Próximamente · No disponible</p>
+        {% endif %}
+    </div>
 </article>

@@ -3,32 +3,87 @@
 {% block title %}Inicio · Álgebra Lineal{% endblock %}
 
 {% block module_header %}
-    <header class="module-hero">
-        <h1 class="module-title">Inicio</h1>
-        <p class="module-lead">Explora los temas disponibles y aprende con procedimientos paso a paso.</p>
+    <header class="home-hero">
+        <div class="home-hero-copy">
+            <p class="module-kicker">Calculadora educativa</p>
+            <h1 class="module-title">Álgebra Lineal</h1>
+            <p class="module-lead">Aprende resolviendo, paso a paso. Explora los temas disponibles y sigue el procedimiento con claridad matemática.</p>
+        </div>
+        <div class="home-hero-visual" aria-hidden="true">
+            <svg class="home-matrix-art" viewBox="0 0 88 88" focusable="false">
+                <rect x="8" y="10" width="72" height="68" rx="12" fill="var(--color-brand)" opacity="0.12"/>
+                <path fill="none" stroke="var(--color-brand)" stroke-width="3" d="M22 18v52M66 18v52"/>
+                <rect x="28" y="26" width="10" height="10" rx="2" fill="var(--color-brand)"/>
+                <rect x="42" y="26" width="10" height="10" rx="2" fill="var(--color-brand)" opacity="0.55"/>
+                <rect x="28" y="40" width="10" height="10" rx="2" fill="var(--color-brand)" opacity="0.55"/>
+                <rect x="42" y="40" width="10" height="10" rx="2" fill="var(--color-brand)"/>
+                <rect x="28" y="54" width="10" height="10" rx="2" fill="var(--color-brand)" opacity="0.35"/>
+                <rect x="42" y="54" width="10" height="10" rx="2" fill="var(--color-brand)" opacity="0.35"/>
+                <rect x="56" y="20" width="2.5" height="48" rx="1" fill="var(--color-accent)" opacity="0.8"/>
+                <rect x="62" y="26" width="10" height="10" rx="2" fill="var(--color-accent)" opacity="0.75"/>
+                <rect x="62" y="40" width="10" height="10" rx="2" fill="var(--color-accent)" opacity="0.55"/>
+                <rect x="62" y="54" width="10" height="10" rx="2" fill="var(--color-accent)" opacity="0.4"/>
+            </svg>
+        </div>
     </header>
 {% endblock %}
 
 {% block content %}
-    {% for categoria, modulos in grupos_modulos %}
-        <section class="catalog-section" aria-labelledby="{{ categoria.id }}">
-            <h2 id="{{ categoria.id }}">{{ categoria.nombre }}</h2>
-            <div class="module-cards">
-                {% for modulo in modulos %}
-                    {% include "calculadora/components/module_card.html" %}
-                {% endfor %}
-            </div>
-        </section>
-    {% endfor %}
-    {% if proximos_modulos %}
+    <nav class="area-strip" aria-label="Explora por área">
+        {% for categoria in categorias %}
+            <a class="area-chip"
+               href="#{{ categoria.id }}"
+               style="--cat-accent: var(--color-cat-{% if categoria.id == 'sistemas-lineales' %}sistemas{% else %}{{ categoria.id }}{% endif %})">
+                <span class="cat-dot" aria-hidden="true"></span>
+                {{ categoria.nombre }}
+            </a>
+        {% endfor %}
+        {% if proximos_por_categoria %}
+            <a class="area-chip" href="#proximamente">
+                <span class="cat-dot" aria-hidden="true"></span>
+                Próximamente
+            </a>
+        {% endif %}
+    </nav>
+
+    {% if grupos_modulos %}
+        <p class="module-kicker">Continúa aprendiendo</p>
+        {% for categoria, modulos in grupos_modulos %}
+            <section class="catalog-section" aria-labelledby="{{ categoria.id }}">
+                <h2 id="{{ categoria.id }}">
+                    <span class="module-card-icon" aria-hidden="true" style="--cat-accent: var(--color-cat-{% if categoria.id == 'sistemas-lineales' %}sistemas{% else %}{{ categoria.id }}{% endif %})">
+                        {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}
+                    </span>
+                    {{ categoria.nombre }}
+                </h2>
+                <div class="module-cards">
+                    {% for modulo in modulos %}
+                        {% include "calculadora/components/module_card.html" %}
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    {% endif %}
+
+    {% if proximos_por_categoria %}
         <section class="catalog-section upcoming" aria-labelledby="proximamente">
             <h2 id="proximamente">Próximamente</h2>
             <p class="muted">Estos contenidos aún no están disponibles.</p>
-            <div class="module-cards">
-                {% for modulo in proximos_modulos %}
-                    {% include "calculadora/components/module_card.html" %}
-                {% endfor %}
-            </div>
+            {% for categoria, modulos in proximos_por_categoria %}
+                <div class="catalog-subsection">
+                    <h3 id="{{ categoria.id }}" class="catalog-subsection-title">
+                        <span class="module-card-icon" aria-hidden="true" style="--cat-accent: var(--color-cat-{% if categoria.id == 'sistemas-lineales' %}sistemas{% else %}{{ categoria.id }}{% endif %})">
+                            {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}
+                        </span>
+                        {{ categoria.nombre }}
+                    </h3>
+                    <div class="module-cards">
+                        {% for modulo in modulos %}
+                            {% include "calculadora/components/module_card.html" %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
         </section>
     {% endif %}
 {% endblock %}
