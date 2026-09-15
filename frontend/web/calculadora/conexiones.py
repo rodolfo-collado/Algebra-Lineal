@@ -12,11 +12,13 @@ class Comparacion:
 
 COMPARACIONES = {
     "gauss": Comparacion(
-        "gauss_jordan", "Ver el mismo sistema con Gauss-Jordan",
-        "Compara el procedimiento usando reducción completa.",
+        "gauss_jordan",
+        "Comparar procedimiento",
+        "Resuelve este mismo sistema con reducción completa.",
     ),
     "gauss_jordan": Comparacion(
-        "gauss", "Ver el mismo sistema con Gauss",
-        "Compara el procedimiento usando eliminación y sustitución.",
+        "gauss",
+        "Comparar procedimiento",
+        "Resuelve este mismo sistema con eliminación y sustitución.",
     ),
 }

@@ -4,7 +4,7 @@
 {% block title %}{{ modulo_actual.nombre }} · Álgebra Lineal{% endblock %}
 
 {% block module_header %}
-    <header class="module-hero">
+    <header class="module-hero module-hero-sistemas">
         <p class="module-kicker">{{ modulo_actual.categoria.nombre }}</p>
         <h1 class="module-title">{{ modulo_actual.nombre }}</h1>
         <p class="module-lead">{{ modulo_actual.descripcion }}</p>
@@ -31,6 +31,7 @@
                         {% for radio in form.tipo_entrada %}
                             <label class="choice">
                                 {{ radio.tag }}
+                                <span class="choice-indicator" aria-hidden="true"></span>
                                 <span class="choice-copy">
                                     <span class="choice-title">{{ radio.choice_label }}</span>
                                     {% if radio.data.value == "sistema" %}
@@ -53,6 +54,7 @@
                         {% for radio in form.metodo %}
                             <label class="choice">
                                 {{ radio.tag }}
+                                <span class="choice-indicator" aria-hidden="true"></span>
                                 <span class="choice-copy">
                                     <span class="choice-title">{{ radio.choice_label }}</span>
                                     {% if radio.data.value == "gauss" %}
@@ -134,6 +136,8 @@
                 <h2 id="results-title">{{ resultado.metodo }}</h2>
             </header>
 
+            {% include "calculadora/components/concept_guide.html" with guias=guias_contexto %}
+
             <section class="panel" aria-labelledby="initial-title">
                 <h3 id="initial-title" class="panel-title">Matriz inicial</h3>
                 {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
@@ -145,9 +149,9 @@
                     <ol class="steps">
                         {% for paso in resultado.pasos %}
                             <li class="step">
+                                <span class="step-badge" aria-hidden="true">{{ paso.numero }}</span>
                                 <article>
                                     <header class="step-kicker">
-                                        <span class="step-badge" aria-hidden="true">{{ paso.numero }}</span>
                                         <h4>Paso {{ paso.numero }}</h4>
                                     </header>
                                     <p class="step-operation">
@@ -179,8 +183,20 @@
                 <div class="final-block">
                     <h4 class="final-label">{{ resultado.etiqueta_matriz }}</h4>
                     {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_final etiqueta=resultado.etiqueta_matriz %}
-                    <p id="columnas-pivote" class="pivot-columns" tabindex="-1"><strong>Columnas pivote:</strong> {% for columna in resultado.columnas_pivote %}<span>C{{ columna }}</span>{% if not forloop.last %}, {% endif %}{% empty %}Ninguna{% endfor %}</p>
+                    <div id="columnas-pivote" class="pivot-block" tabindex="-1">
+                        <h4 class="final-label" aria-hidden="true">Columnas pivote</h4>
+                        <p class="sr-only">Columnas pivote: {% for columna in resultado.columnas_pivote %}C{{ columna }}{% if not forloop.last %}, {% endif %}{% empty %}Ninguna{% endfor %}</p>
+                        <ul class="pivot-chips" aria-hidden="true">
+                            {% for columna in resultado.columnas_pivote %}
+                                <li><span class="pivot-chip">C{{ columna }}</span></li>
+                            {% empty %}
+                                <li><span class="pivot-chip pivot-chip-empty">Ninguna</span></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
+
+                {% include "calculadora/components/concept_guide.html" with guias=guias_resultado %}
 
                 {% if resultado.mostrar_sistema_resultante %}
                     <div class="final-block">
