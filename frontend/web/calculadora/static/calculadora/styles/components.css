@@ -693,7 +693,7 @@ a.tool-link .tool-link-name {
 }
 
 .concept-guide[data-tipo="por-que"] {
-    --guide-accent: var(--color-brand);
+    --guide-accent: var(--color-brand-strong);
     background: var(--color-brand-soft);
 }
 
