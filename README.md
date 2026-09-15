@@ -340,8 +340,9 @@ templates/calculadora/
 └── modules/sistemas/index.html
 ```
 
-P9 reorganiza la aplicación conservando la identidad visual existente. El
-rediseño visual completo corresponde a P10.
+P10 renueva la identidad visual (tokens, Inicio, navegación, sistemas y guía
+educativa) conservando el comportamiento matemático. Los detalles para
+desarrolladores están en [docs/interfaz.md](docs/interfaz.md).
 
 #### Aplicación de escritorio durante desarrollo
 
@@ -582,12 +583,13 @@ Algebra-Lineal/
     ├── test_consola.py
     ├── test_web.py
     ├── test_navegacion.py
+    ├── test_identidad_visual.py
     ├── test_desktop.py
     ├── test_recursos_interfaz.py
     └── test_restricciones_proyecto.py
 
-La guía breve de la interfaz —plantilla base, header, tokens y tema— está en
-[docs/interfaz.md](docs/interfaz.md).
+La guía breve de la interfaz —sistema visual, guía educativa, tokens y tema—
+está en [docs/interfaz.md](docs/interfaz.md).
 ```
 
 Dentro de `backend/` la dependencia también va en un solo sentido, donde `→`
