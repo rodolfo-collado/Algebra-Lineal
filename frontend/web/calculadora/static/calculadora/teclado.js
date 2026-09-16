@@ -41,5 +41,8 @@
         });
 
         teclado.hidden = false;
+        // El desplegable que lo envuelve también nace oculto; sigue plegado hasta que el usuario lo abra.
+        const desplegable = teclado.closest("details.disclosure");
+        if (desplegable) desplegable.hidden = false;
     });
 })();
