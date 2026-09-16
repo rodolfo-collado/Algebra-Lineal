@@ -376,9 +376,25 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 with cliente_http.open(solicitud, timeout=3.0) as respuesta:
                     tablas = Contenido(respuesta.read().decode("utf-8")).tablas
                 self.assertEqual(tablas["Matriz resultado"], esperado)
+            # P13B: AB y Ax con método comparado, por la misma pila.
+            from tests.test_multiplicacion_matrices_web import datos_matriz_vector, datos_producto
+
+            for datos, esperado, procedimientos in (
+                (datos_producto(a=[[1, 2, 3], [4, 5, 6]], b=[[7, 8], [9, 10], [11, 12]], metodo="comparar"), [["58", "64"], ["139", "154"]], ("Fila por columna", "Por columnas")),
+                (datos_matriz_vector(metodo="comparar"), [["3"], ["6"]], ("Regla fila-vector", "Combinación lineal de columnas")),
+            ):
+                datos["csrfmiddlewaretoken"] = csrf.group(1).decode("ascii")
+                solicitud = Request(url_matrices, data=urlencode(datos).encode("ascii"), headers={"Referer": url_matrices})
+                with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                    html = respuesta.read().decode("utf-8")
+                self.assertEqual(Contenido(html).tablas["Matriz resultado"], esperado)
+                for procedimiento in procedimientos:
+                    self.assertIn(f"Procedimiento: {procedimiento}", html)
             with cliente_http.open(f"{url}static/calculadora/matrices.js", timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
-                self.assertIn("matrix-entry-template", respuesta.read().decode("utf-8"))
+                contenido = respuesta.read().decode("utf-8")
+                self.assertIn("matrix-entry-template", contenido)
+                self.assertIn("opcion.metodos", contenido)
         finally:
             desktop.stop_waitress(servidor, hilo)
             self.assertFalse(hilo.is_alive())

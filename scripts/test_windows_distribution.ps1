@@ -126,6 +126,27 @@ try {
             if (($cells -join ',') -ne ($expectedMatrices[$operation] -join ',')) { throw "Resultado incorrecto de matrices: $operation" }
             if (-not $response.Content.Contains('id="procedure-title"')) { throw "Falta procedimiento de matrices: $operation" }
         }
+        # P13B: AB (2x3 por 3x2) y Ax (2x3 por x de 3) comparando los dos métodos.
+        $productBodies = @(
+            @{ operacion = 'producto'; filas = '2'; columnas = '3'; columnas_b = '2'; metodo = 'comparar'
+               celda_A_0_0 = '1'; celda_A_0_1 = '2'; celda_A_0_2 = '3'; celda_A_1_0 = '4'; celda_A_1_1 = '5'; celda_A_1_2 = '6'
+               celda_B_0_0 = '7'; celda_B_0_1 = '8'; celda_B_1_0 = '9'; celda_B_1_1 = '10'; celda_B_2_0 = '11'; celda_B_2_1 = '12' },
+            @{ operacion = 'matriz_vector'; filas = '2'; columnas = '3'; metodo = 'comparar'
+               celda_A_0_0 = '1'; celda_A_0_1 = '2'; celda_A_0_2 = '-1'; celda_A_1_0 = '0'; celda_A_1_1 = '-5'; celda_A_1_2 = '3'
+               celda_x_0_0 = '4'; celda_x_1_0 = '3'; celda_x_2_0 = '7' }
+        )
+        $expectedProducts = @{ producto = @('58', '64', '139', '154'); matriz_vector = @('3', '6') }
+        foreach ($productBody in $productBodies) {
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -SessionVariable productSession
+            $productBody.csrfmiddlewaretoken = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -Method Post -WebSession $productSession -Headers @{ Referer = $matricesUrl } -Body $productBody
+            $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Matriz resultado"[^>]*>(.*?)</table>').Groups[1].Value
+            $cells = @([regex]::Matches($resultTable, '<td[^>]*>\s*([^<]+?)\s*</td>') | ForEach-Object { $_.Groups[1].Value.Trim() })
+            if (($cells -join ',') -ne ($expectedProducts[$productBody.operacion] -join ',')) { throw "Resultado incorrecto de matrices: $($productBody.operacion)" }
+            foreach ($marker in @('id="procedure-title"', 'id="procedure-title-2"')) {
+                if (-not $response.Content.Contains($marker)) { throw "Falta un procedimiento comparado de matrices: $($productBody.operacion)" }
+            }
+        }
         foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'mark.svg')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'static/calculadora/' + $asset)
             if ($response.StatusCode -ne 200) { throw "No se sirvió el recurso $asset" }
@@ -136,7 +157,7 @@ try {
         $listener = @(Get-NetTCPConnection -State Listen -OwningProcess $process.Id -ErrorAction SilentlyContinue)
         if ($listener.Count) { throw 'El servidor sigue escuchando después del cierre.' }
         $process = $null
-        Write-Host "Apertura ${attempt}: acceso directo, Django/Waitress, ambos métodos, P13A, recursos y cierre OK."
+        Write-Host "Apertura ${attempt}: acceso directo, Django/Waitress, ambos métodos, P13A, P13B, recursos y cierre OK."
     }
 } finally {
     if ($process -and -not $process.HasExited) {
