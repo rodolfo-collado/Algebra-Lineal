@@ -84,11 +84,21 @@ def resolver_entrada_web(
         raise ValueError("Selecciona un tipo de entrada válido.")
 
     try:
-        nombre_metodo, resolver, clave_matriz, etiqueta_matriz = _RESOLVERS[metodo]
+        _, resolver, _, _ = _RESOLVERS[metodo]
     except KeyError:
         raise ValueError("Selecciona un método de resolución válido.") from None
 
-    resultado = resolver(matriz_inicial)
+    return presentar_resolucion(resolver(matriz_inicial), metodo, matriz_inicial)
+
+
+def presentar_resolucion(resultado, metodo, matriz_inicial):
+    """Adapta a la plantilla un sistema ya resuelto por Gauss o Gauss-Jordan.
+
+    Lo comparten Resolver un sistema y Resolver Ax = b: el segundo resuelve
+    [A | b] con los mismos motores y muestra el procedimiento con las mismas
+    plantillas, sin volver a calcular nada.
+    """
+    nombre_metodo, _, clave_matriz, etiqueta_matriz = _RESOLVERS[metodo]
 
     return {
         "metodo": nombre_metodo,

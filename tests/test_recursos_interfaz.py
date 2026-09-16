@@ -40,6 +40,7 @@ ASSETS_LOCALES = (
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "conversion.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "vectores.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "matrices.js",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "ecuaciones.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "mark.svg",
     RAIZ / "assets" / "algebra-lineal.ico",
     RAIZ / "assets" / "algebra-lineal.svg",

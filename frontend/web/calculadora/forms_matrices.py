@@ -47,7 +47,76 @@ def etiqueta_celda(nombre, vector, i, j):
     return f"Matriz {nombre}, fila {i + 1}, columna {j + 1}"
 
 
-class MatricesForm(forms.Form):
+class FormularioCeldas(forms.Form):
+    """Base de las herramientas que capturan matrices o vectores columna como celdas `celda_<nombre>_<i>_<j>`.
+
+    Los campos se generan según la estructura vigente (filas, columnas) y el
+    contrato HTTP es estricto: el servidor reconstruye el conjunto exacto de
+    celdas que espera y rechaza celdas de más, de menos, campos desconocidos o
+    repetidos. La aritmética la resuelve el parser común del proyecto.
+    """
+
+    def __init__(self, *args, ajustar=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ajustar = ajustar
+        self.nombres_celdas = []
+        self.matrices = []
+
+    def _valor_seguro(self, nombre):
+        # Solo la representación usa valores seguros de respaldo. La validación
+        # mantiene el POST original y rechaza estructuras, operaciones o métodos inválidos.
+        campo = self.fields[nombre]
+        valor = self.data.get(nombre) if self.is_bound else self.initial.get(nombre, campo.initial)
+        try:
+            limpio = campo.clean(valor)
+        except forms.ValidationError:
+            return campo.initial
+        return campo.initial if limpio in (None, "") else limpio
+
+    def generar_celdas(self, nombre, alto, ancho, vector=False):
+        """Crea los campos de una matriz alto×ancho (o de un vector columna) y la describe para la plantilla."""
+        filas = []
+        for i in range(alto):
+            fila = []
+            for j in range(ancho):
+                clave = f"celda_{nombre}_{i}_{j}"
+                self.nombres_celdas.append(clave)
+                self.fields[clave] = campo_numero(etiqueta_celda(nombre, vector, i, j))
+                fila.append(self[clave])
+            filas.append(fila)
+        entrada = {"nombre": nombre, "filas": filas, "vector": vector}
+        self.matrices.append(entrada)
+        return entrada
+
+    def rechazar_campos_repetidos(self):
+        if hasattr(self.data, "getlist") and any(len(self.data.getlist(k)) != 1 for k in self.data):
+            self.add_error(None, "Envía un único valor por campo; hay campos repetidos.")
+
+    def celdas_coinciden(self):
+        """Exactamente las celdas esperadas y ningún campo ajeno al formulario."""
+        esperados = set(self.nombres_celdas)
+        recibidos = {k for k in self.data if k.startswith("celda_")}
+        permitidos = set(self.fields) | {"csrfmiddlewaretoken", "ajustar"}
+        return recibidos == esperados and not (set(self.data) - permitidos)
+
+    def convertir_numeros(self, datos, nombres):
+        """Reemplaza el texto de cada campo por su valor exacto, o asocia el error a la celda."""
+        for nombre in nombres:
+            texto = datos.get(nombre, "")
+            if not texto:
+                self.add_error(nombre, f"Completa {self.fields[nombre].label.lower()}.")
+            else:
+                try:
+                    datos[nombre] = convertir_a_numero(texto)
+                except ValueError as error:
+                    self.add_error(nombre, str(error))
+
+    @staticmethod
+    def leer_matriz(datos, nombre, alto, ancho):
+        return [[datos[f"celda_{nombre}_{i}_{j}"] for j in range(ancho)] for i in range(alto)]
+
+
+class MatricesForm(FormularioCeldas):
     operacion = forms.ChoiceField(
         label="Operación", choices=OPERACIONES, initial=OPERACION_PREDETERMINADA,
         widget=forms.RadioSelect,
@@ -66,9 +135,8 @@ class MatricesForm(forms.Form):
         error_messages={"invalid_choice": "Selecciona un método válido."},
     )
 
-    def __init__(self, *args, ajustar=False, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ajustar = ajustar
         estructura = {"operacion": self._valor_seguro("operacion")}
         self.configuracion = CONFIGURACION[estructura["operacion"]]
         etiquetas = dict(self.configuracion["dimensiones"])
@@ -83,34 +151,10 @@ class MatricesForm(forms.Form):
         estructura["metodo"] = metodo.initial if metodo.disabled else self._valor_seguro("metodo")
         self.estructura = estructura
 
-        self.nombres_celdas = []
-        self.matrices = []
         if self.configuracion["escalar"]:
             self.fields["escalar"] = campo_numero("Escalar k")
         for nombre in self.configuracion["matrices"]:
-            alto, ancho = self.forma(nombre)
-            vector = es_vector(self.configuracion, nombre)
-            filas = []
-            for i in range(alto):
-                fila = []
-                for j in range(ancho):
-                    clave = f"celda_{nombre}_{i}_{j}"
-                    self.nombres_celdas.append(clave)
-                    self.fields[clave] = campo_numero(etiqueta_celda(nombre, vector, i, j))
-                    fila.append(self[clave])
-                filas.append(fila)
-            self.matrices.append({"nombre": nombre, "filas": filas, "vector": vector})
-
-    def _valor_seguro(self, nombre):
-        # Solo la representación usa valores seguros de respaldo. La validación
-        # mantiene el POST original y rechaza estructuras, operaciones o métodos inválidos.
-        campo = self.fields[nombre]
-        valor = self.data.get(nombre) if self.is_bound else self.initial.get(nombre, campo.initial)
-        try:
-            limpio = campo.clean(valor)
-        except forms.ValidationError:
-            return campo.initial
-        return campo.initial if limpio in (None, "") else limpio
+            self.generar_celdas(nombre, *self.forma(nombre), vector=es_vector(self.configuracion, nombre))
 
     def forma(self, nombre):
         """(filas, columnas) de una matriz de entrada según la estructura vigente."""
@@ -126,8 +170,7 @@ class MatricesForm(forms.Form):
 
     def clean(self):
         datos = super().clean()
-        if hasattr(self.data, "getlist") and any(len(self.data.getlist(k)) != 1 for k in self.data):
-            self.add_error(None, "Envía un único valor por campo; hay campos repetidos.")
+        self.rechazar_campos_repetidos()
         if self.errors or self.ajustar:
             return datos
 
@@ -150,25 +193,14 @@ class MatricesForm(forms.Form):
         if self.errors:
             return datos
 
-        esperados = set(self.nombres_celdas)
-        recibidos = {k for k in self.data if k.startswith("celda_")}
-        permitidos = set(self.fields) | {"csrfmiddlewaretoken", "ajustar"}
-        if recibidos != esperados or set(self.data) - permitidos:
+        if not self.celdas_coinciden():
             self.add_error(None, "Las celdas recibidas no coinciden con las matrices, filas y columnas indicadas. Pulsa Aplicar para ajustar la estructura.")
             return datos
 
         numericos = [*self.nombres_celdas]
         if self.configuracion["escalar"]:
             numericos.append("escalar")
-        for nombre in numericos:
-            texto = datos.get(nombre, "")
-            if not texto:
-                self.add_error(nombre, f"Completa {self.fields[nombre].label.lower()}.")
-            else:
-                try:
-                    datos[nombre] = convertir_a_numero(texto)
-                except ValueError as error:
-                    self.add_error(nombre, str(error))
+        self.convertir_numeros(datos, numericos)
         if self.errors:
             return datos
 
@@ -178,8 +210,7 @@ class MatricesForm(forms.Form):
             "matrices": {},
         }
         for nombre in self.configuracion["matrices"]:
-            alto, ancho = self.forma(nombre)
-            valores = [[datos[f"celda_{nombre}_{i}_{j}"] for j in range(ancho)] for i in range(alto)]
+            valores = self.leer_matriz(datos, nombre, *self.forma(nombre))
             if es_vector(self.configuracion, nombre):
                 # El vector se entrega como lista de componentes, no como matriz n×1.
                 entrada["vector"] = [fila[0] for fila in valores]

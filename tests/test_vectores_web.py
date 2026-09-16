@@ -103,14 +103,19 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         self.assertRegex(html, r'<section class="home-category" id="vectores"')
 
         # Desde P13B, Operaciones con matrices también responde a «vector» (Ax) y a
-        # «combinación lineal» (Ax como combinación de columnas); vectores sigue primero.
-        compartidas = ("escalar", "vector", "combinación lineal")
+        # «combinación lineal» (Ax como combinación de columnas), y desde P14 Resolver
+        # Ax = b responde a «vector» (vector b) y a «combinación lineal»; vectores sigue primero.
+        compartidas = {
+            "escalar": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES),
+            "vector": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES),
+            "combinación lineal": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES),
+        }
         for consulta in ("vector", "vectores", "suma de vectores", "escalar", "combinación lineal", "span", "dimension"):
             with self.subTest(consulta=consulta):
-                esperadas = (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES) if consulta in compartidas else (catalogo.OPERACIONES_VECTORES,)
+                esperadas = compartidas.get(consulta, (catalogo.OPERACIONES_VECTORES,))
                 self.assertEqual(catalogo.buscar_herramientas(consulta), esperadas)
                 respuesta = self.client.get("/", {"q": consulta})
-                self.assertContains(respuesta, "2 herramientas coinciden" if consulta in compartidas else "1 herramienta coincide")
+                self.assertContains(respuesta, f"{len(esperadas)} herramientas coinciden" if len(esperadas) > 1 else "1 herramienta coincide")
                 self.assertContains(respuesta, f'href="{RUTA}"')
         # «matriz» sigue sin mezclar vectores con las herramientas de matrices y sistemas.
         self.assertNotIn(catalogo.OPERACIONES_VECTORES, catalogo.buscar_herramientas("matriz"))

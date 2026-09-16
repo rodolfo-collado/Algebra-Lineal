@@ -97,9 +97,11 @@ class Contenido(HTMLParser):
 
 
 class PruebasCatalogoMatrices(SimpleTestCase):
-    def test_una_herramienta_disponible_y_ruta(self):
+    def test_operaciones_es_la_primera_herramienta_de_matrices(self):
+        # Desde P14 la categoría tiene dos herramientas; Operaciones con matrices sigue igual.
         self.assertTrue(catalogo.MATRICES.disponible)
-        self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES), (catalogo.OPERACIONES_MATRICES,))
+        self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES)[0], catalogo.OPERACIONES_MATRICES)
+        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 2)
         self.assertEqual(reverse("calculadora:operaciones-matrices"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_MATRICES)
 
@@ -109,7 +111,6 @@ class PruebasCatalogoMatrices(SimpleTestCase):
         for region in ("Herramientas", "Acceso rápido"):
             self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en(region)])
         self.assertContains(respuesta, '<section class="home-category" id="matrices"')
-        self.assertNotContains(respuesta, "Ecuaciones matriciales")
 
     def test_busqueda_por_sinonimos_y_operaciones(self):
         for palabra in ("matriz", "matrices", "suma", "resta", "escalar", "traspuesta", "transpuesta", "filas", "columnas"):

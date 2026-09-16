@@ -395,6 +395,31 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 contenido = respuesta.read().decode("utf-8")
                 self.assertIn("matrix-entry-template", contenido)
                 self.assertIn("opcion.metodos", contenido)
+            # P14: Ax = b con x desconocido, por la misma pila; una fracción y un caso rectangular.
+            from tests.test_ecuaciones_matriciales_web import datos_ecuacion
+
+            url_ecuaciones = f"{url}matrices/ecuaciones/"
+            with cliente_http.open(url_ecuaciones, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                pagina = respuesta.read().decode("utf-8")
+            self.assertIn("Resolver Ax = b", pagina)
+            self.assertIn('aria-label="Vector incógnita x, no editable"', pagina)
+            for datos, x, textos in (
+                (datos_ecuacion(a=[[2, 0], [0, 3]], b=[1, 1], metodo="comparar"), [["1/2"], ["1/3"]],
+                 ("Ax = b tiene solución única.", "b = (1/2)a₁ + (1/3)a₂", 'id="procedure-title-2"')),
+                (datos_ecuacion(a=[[1, 0], [0, 1], [1, 1]], b=[2, 3, 5]), [["2"], ["3"]],
+                 ("A (3×2) · x (2) = b (3)", "x1 = 2", "x2 = 3")),
+            ):
+                datos["csrfmiddlewaretoken"] = csrf.group(1).decode("ascii")
+                solicitud = Request(url_ecuaciones, data=urlencode(datos).encode("ascii"), headers={"Referer": url_ecuaciones})
+                with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                    html = respuesta.read().decode("utf-8")
+                self.assertEqual(Contenido(html).tablas["Vector solución x"], x)
+                for texto in textos:
+                    self.assertIn(texto, html)
+            with cliente_http.open(f"{url}static/calculadora/ecuaciones.js", timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("data-ecuacion", respuesta.read().decode("utf-8"))
         finally:
             desktop.stop_waitress(servidor, hilo)
             self.assertFalse(hilo.is_alive())

@@ -118,7 +118,8 @@ def _exigir_vector(vector, nombre):
         raise ValueError(mensaje)
 
 
-def _contar(cantidad, singular):
+def contar(cantidad, singular):
+    """«1 fila», «3 columnas»: cuenta con plural para los mensajes de dimensiones."""
     return f"{cantidad} {singular}{'' if cantidad == 1 else 's'}"
 
 
@@ -182,7 +183,7 @@ def producto_punto(u, v):
     if len(u) != len(v):
         raise ValueError(
             "El producto punto necesita dos vectores de la misma dimensión: "
-            f"u tiene {_contar(len(u), 'componente')} y v tiene {_contar(len(v), 'componente')}."
+            f"u tiene {contar(len(u), 'componente')} y v tiene {contar(len(v), 'componente')}."
         )
 
     resultado = Fraction(0)
@@ -201,8 +202,8 @@ def multiplicar_matrices(a, b):
     (_, columnas_a), (filas_b, _) = dimensiones(a), dimensiones(b)
     if columnas_a != filas_b:
         raise ValueError(
-            f"No se puede calcular AB: A tiene {_contar(columnas_a, 'columna')} y B tiene "
-            f"{_contar(filas_b, 'fila')}. Para multiplicar matrices, esos valores deben coincidir."
+            f"No se puede calcular AB: A tiene {contar(columnas_a, 'columna')} y B tiene "
+            f"{contar(filas_b, 'fila')}. Para multiplicar matrices, esos valores deben coincidir."
         )
     # Las columnas de B son las filas de su traspuesta.
     columnas_b = trasponer_matriz(b)
@@ -219,8 +220,8 @@ def multiplicar_matriz_vector(a, x):
     _exigir_vector(x, "x")
     if len(x) != columnas_a:
         raise ValueError(
-            f"No se puede calcular Ax: A tiene {_contar(columnas_a, 'columna')} y x tiene "
-            f"{_contar(len(x), 'componente')}. Para multiplicar, esos valores deben coincidir."
+            f"No se puede calcular Ax: A tiene {contar(columnas_a, 'columna')} y x tiene "
+            f"{contar(len(x), 'componente')}. Para multiplicar, esos valores deben coincidir."
         )
     return [fila[0] for fila in multiplicar_matrices(a, vector_columna(x))]
 

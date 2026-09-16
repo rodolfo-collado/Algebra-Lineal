@@ -96,6 +96,11 @@ class PruebasInstalacionPorUsuario(unittest.TestCase):
         self.assertIn("operacion = 'producto'", prueba)
         self.assertIn("operacion = 'matriz_vector'", prueba)
         self.assertIn('id="procedure-title-2"', prueba)
+        # P14: Ax = b con solución fraccionaria y un caso rectangular, más su recurso local.
+        self.assertIn("matrices/ecuaciones/", prueba)
+        self.assertIn("ecuaciones.js", prueba)
+        self.assertIn("Ax = b tiene solución única.", prueba)
+        self.assertIn("b = (1/2)a₁ + (1/3)a₂", prueba)
 
 
 class PruebasFlujoDelAsistente(unittest.TestCase):

@@ -173,6 +173,74 @@
 }
 
 .results[hidden] { display: none; }
+
+/* Resolver Ax = b: la ecuación se edita en una sola fila «A · x = b» que se
+   desplaza localmente con A ancha; x se muestra como vector de incógnitas, no
+   como celdas editables. */
+.equation-entry {
+    align-items: center;
+    gap: 0.6rem 0.9rem;
+    margin-block: 0.9rem 0.6rem;
+    padding: 0.7rem 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+}
+
+.equation-entry .matrix-entry {
+    flex: none;
+}
+
+/* La etiqueta de x imita la leyenda de las cuadrículas vecinas para alinear las tres piezas. */
+.unknown-vector .muted {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: var(--color-text);
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+/* Cada x₁ ocupa la altura de una celda editable, así x queda a la par de A y b. */
+.unknown-vector .matrix-table td {
+    padding: 0.25rem 0.55rem;
+    color: var(--color-aug-strong);
+    font-family: var(--font-math);
+    font-size: 1rem;
+    font-style: italic;
+    font-weight: 600;
+    line-height: 2.35rem;
+    text-align: center;
+}
+
+.unknown-vector .matrix-fence {
+    border-style: dashed;
+}
+
+.equation-verdict {
+    margin-top: 0;
+}
+
+/* Las líneas x1 = …, x2 = … y el vector x comparten fila cuando cabe. */
+.solution-pair {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.6rem 2rem;
+    margin-top: 0.85rem;
+}
+
+.solution-pair .solution-list {
+    margin-top: 0;
+}
+
+.solution-pair .matrix-equation {
+    padding-block: 0;
+}
+
+.interpretation {
+    margin: 0 0 0.5rem;
+    line-height: 1.5;
+}
 [data-aplicar][hidden] { display: none; }
 
 .workspace-section + .workspace-section {
@@ -1199,6 +1267,25 @@ textarea:focus {
 
     .vector-name {
         min-width: 2.2rem;
+    }
+
+    /* En pantallas estrechas «A · x = b» de 2×2 cabe completa; con más columnas se desplaza. */
+    .equation-entry {
+        gap: 0.4rem 0.5rem;
+        padding: 0.6rem 0.35rem;
+    }
+
+    .equation-entry .matrix-input {
+        width: 3rem;
+        padding-inline: 0.3rem;
+    }
+
+    .equation-entry .matrix-entry-table td {
+        padding: 0.2rem;
+    }
+
+    .unknown-vector .matrix-table td {
+        padding-inline: 0.4rem;
     }
 
     .segmented {

@@ -43,14 +43,13 @@ def seccion_resultado(respuesta):
 
 class PruebasNavegacionUnificada(SimpleTestCase):
     def test_la_navegacion_no_lista_las_pseudo_herramientas(self):
-        for ruta in ("/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/bases/conversion/"):
+        rutas = ("/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/bases/conversion/")
+        for ruta in ("/", *rutas):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
                 documento = Documento(respuesta)
                 enlaces = {a["href"] for a in documento.enlaces_en("Herramientas")}
-                self.assertEqual(
-                    enlaces, {"/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/bases/conversion/"},
-                )
+                self.assertEqual(enlaces, {"/", *rutas})
                 html = respuesta.content.decode("utf-8")
                 for antigua in RUTAS_ANTIGUAS:
                     self.assertNotIn(f"/sistemas/{antigua}/", html)
@@ -67,7 +66,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         self.assertContains(inicio, 'href="/sistemas/"')
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "chip"],
-            ["/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/bases/conversion/"],
+            ["/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/bases/conversion/"],
         )
         for consulta in ("gauss", "clasificación", "columnas pivote"):
             with self.subTest(consulta=consulta):
