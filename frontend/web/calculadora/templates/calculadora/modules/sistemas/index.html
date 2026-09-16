@@ -17,22 +17,17 @@
 
                 <fieldset class="choice-fieldset">
                     <legend>{{ form.tipo_entrada.label }}</legend>
-                    <div class="choice-row">
+                    <div class="segmented">
                         {% for radio in form.tipo_entrada %}
-                            <label class="choice">
-                                {{ radio.tag }}
-                                <span class="choice-indicator" aria-hidden="true"></span>
-                                <span class="choice-copy">
-                                    <span class="choice-title">{{ radio.choice_label }}</span>
-                                    {% if radio.data.value == "sistema" %}
-                                        <span class="choice-hint">Ecuaciones escritas como texto</span>
-                                    {% elif radio.data.value == "matriz" %}
-                                        <span class="choice-hint">Coeficientes en la cuadrícula [A | b]</span>
-                                    {% endif %}
-                                </span>
-                            </label>
+                            <label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
                         {% endfor %}
                     </div>
+                    {% comment %}Una explicación por opción; matriz.js muestra la de la opción elegida.{% endcomment %}
+                    {% for radio in form.tipo_entrada %}
+                        <p class="field-help option-help" data-input-hint="{{ radio.data.value }}" {% if not radio.data.selected %}hidden{% endif %}>
+                            {% if radio.data.value == "sistema" %}Escribe las ecuaciones directamente.{% else %}Ingresa los coeficientes en la matriz [A | b].{% endif %}
+                        </p>
+                    {% endfor %}
                     {% for error in form.tipo_entrada.errors %}
                         <p class="field-error">{{ error }}</p>
                     {% endfor %}
@@ -168,6 +163,12 @@
                 {% endfor %}
                 <section class="panel panel-final" aria-labelledby="final-title">
                     <h3 id="final-title" class="panel-title">Resultado final</h3>
+                    {% if "pivotes" in mostrar %}
+                        {% comment %}Los dos métodos comparten las columnas pivote: se toman del primer resultado.{% endcomment %}
+                        <div class="final-block">
+                            {% include "calculadora/modules/sistemas/_pivotes.html" %}
+                        </div>
+                    {% endif %}
                     {% if "clasificacion" in mostrar %}
                         {% include "calculadora/modules/sistemas/_clasificacion.html" %}
                     {% endif %}

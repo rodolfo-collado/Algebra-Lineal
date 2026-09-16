@@ -115,7 +115,7 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
    árbol y en Inicio sin enlaces.
 2. Crea la vista y la ruta con nombre, y una plantilla que extienda
    `calculadora/layouts/herramienta.html`.
-3. Reutiliza `.panel`, `.choice`, `.btn`, `.matrix`, `.concept-guide`, el
+3. Reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`, `.concept-guide`, el
    teclado contextual y los tokens de `static/calculadora/styles/`.
 4. Si muestra matrices, incluye `calculadora/components/matrix.html`; acepta
    `columnas_pivote` para resaltar columnas.

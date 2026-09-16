@@ -2,6 +2,7 @@
 
 import os
 import re
+from pathlib import Path
 from unittest.mock import patch
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
@@ -132,7 +133,28 @@ class PruebasFormularioResolver(SimpleTestCase):
             self.assertIn(f"<span>{etiqueta}</span>", html)
         # Los métodos y los bloques no son tarjetas grandes: van en píldoras compactas.
         self.assertEqual(html.count('<label class="option">'), len(METODOS) + len(BLOQUES))
-        self.assertEqual(html.count('<label class="choice">'), 2)
+        self.assertNotIn('class="choice"', html)
+
+    def test_tipo_de_entrada_es_un_selector_segmentado(self):
+        pagina = self.client.get("/sistemas/")
+        html = pagina.content.decode("utf-8")
+        documento = Documento(pagina)
+        tipos = [c for c in documento.controles if c.get("name") == "tipo_entrada"]
+        self.assertEqual([(c["type"], c["value"]) for c in tipos], [("radio", "sistema"), ("radio", "matriz")])
+        self.assertEqual([c["value"] for c in tipos if "checked" in c], ["sistema"])
+        self.assertEqual(html.count('<label class="segment">'), 2)
+        self.assertIn("<span>Sistema de ecuaciones</span>", html)
+        self.assertIn("<span>Matriz aumentada</span>", html)
+        # Una explicación por opción; solo la de la opción elegida queda visible sin JavaScript.
+        self.assertRegex(html, r'data-input-hint="sistema"\s*>\s*Escribe las ecuaciones directamente\.')
+        self.assertRegex(html, r'data-input-hint="matriz"\s+hidden>\s*Ingresa los coeficientes en la matriz \[A \| b\]\.')
+        self.assertIn('[data-input-hint]', (Path(__file__).resolve().parents[1]
+                       / "frontend/web/calculadora/static/calculadora/matriz.js").read_text(encoding="utf-8"))
+
+        matriz = self.client.post("/sistemas/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss"))
+        html = matriz.content.decode("utf-8")
+        self.assertRegex(html, r'data-input-hint="matriz"\s*>\s*Ingresa los coeficientes')
+        self.assertRegex(html, r'data-input-hint="sistema"\s+hidden>')
         self.assertContains(pagina, ">Resolver</button>")
         self.assertContains(pagina, "La matriz final y la solución se muestran siempre.")
         self.assertNotContains(pagina, "tool-note")
@@ -182,12 +204,15 @@ class PruebasMetodos(SimpleTestCase):
         self.assertEqual(texto.count("Procedimiento paso a paso"), 2)
         self.assertEqual(texto.count("Matriz inicial"), 1)
         self.assertLess(texto.index("Matriz escalonada"), texto.index("Matriz reducida"))
-        self.assertEqual(texto.count("Columnas pivote:"), 2)
         self.assertEqual(texto.count("Sustitución regresiva"), 1)
-        # Clasificación y solución coinciden en los dos métodos: aparecen una sola vez, al final.
+        # Pivotes, clasificación y solución son comunes: aparecen una sola vez, al final.
+        self.assertEqual(texto.count("Columnas pivote:"), 1)
+        self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count('class="classification"'), 1)
         self.assertEqual(texto.count("Solución x1 = 2 x2 = 1"), 1)
         self.assertLess(texto.index("Matriz reducida"), texto.index("Resultado final"))
+        # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
+        self.assertEqual(html.count(' pivot"'), 8)
         self.assertEqual(html.count('<section class="panel panel-method"'), 2)
         # Las guías de los dos métodos quedan plegadas después del resultado.
         self.assertContains(respuesta, "Gauss se detiene en forma escalonada")
@@ -203,12 +228,31 @@ class PruebasMetodos(SimpleTestCase):
                 datos.update({"mostrar_definido": "1", "mostrar": TODOS})
                 texto = seccion_resultado(self.client.post("/sistemas/", datos))
                 esperado = ", ".join(f"C{c}" for c in columnas) or "Ninguna"
-                self.assertEqual(texto.count(f"Columnas pivote: {esperado}"), 2)
+                self.assertEqual(texto.count(f"Columnas pivote: {esperado}"), 1)
                 self.assertEqual(texto.count(clasificacion), 1)
                 for metodo in ("gauss", "gauss_jordan"):
                     resultado = resolver_entrada_web("matriz", metodo, matriz_aumentada=matriz)
                     for linea in resultado["solucion_general"]:
                         self.assertIn(linea, texto)
+
+    def test_comparar_no_repite_las_columnas_pivote(self):
+        """Regresión: el análisis de pivotes es común y no se muestra por método."""
+        con, _ = self.resolver("comparar", mostrar=["pivotes"])
+        html = con.content.decode("utf-8")
+        texto = seccion_resultado(con)
+        self.assertEqual(texto.count("Columnas pivote:"), 1)
+        self.assertEqual(html.count('class="pivot-block"'), 1)
+        self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
+        self.assertLess(texto.index("Columnas pivote:"), texto.index("Solución"))
+        self.assertEqual(html.count(' pivot"'), 8)
+
+        sin, _ = self.resolver("comparar", mostrar=["procedimiento", "clasificacion"])
+        html = sin.content.decode("utf-8")
+        texto = seccion_resultado(sin)
+        self.assertNotIn("Columnas pivote", texto)
+        self.assertNotIn('class="pivot-block"', html)
+        self.assertNotIn(' pivot"', html)
+        self.assertIn("Resultado final Clasificación Consistente de solución única Solución x1 = 2 x2 = 1", texto)
 
     def test_la_misma_entrada_da_los_mismos_resultados_que_antes(self):
         """Sin la sección Mostrar (clientes antiguos) se muestra todo, como hasta ahora."""

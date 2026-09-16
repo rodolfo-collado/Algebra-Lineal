@@ -48,109 +48,52 @@ label[for="id_sistema"],
     font-weight: 700;
 }
 
-.choice-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
-}
-
-.choice {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    min-height: 3.2rem;
-    padding: 0.75rem 0.85rem;
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-md);
+/* Selector segmentado: dos opciones siempre visibles, con radios reales dentro. */
+.segmented {
+    display: inline-flex;
+    max-width: 100%;
+    padding: 0.2rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
     background: var(--color-surface-muted);
-    cursor: pointer;
-    transition:
-        border-color var(--motion),
-        background var(--motion),
-        box-shadow var(--motion);
 }
 
-.choice input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-    opacity: 1;
-}
-
-.choice-indicator {
-    display: grid;
-    place-items: center;
-    width: 1.15rem;
-    height: 1.15rem;
-    flex: none;
-    margin-top: 0.12rem;
-    border: 2px solid var(--color-border-strong);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-raised);
-    transition: border-color var(--motion-fast), background var(--motion-fast);
-}
-
-.choice-indicator::after {
-    content: "";
-    width: 0.45rem;
-    height: 0.45rem;
-    border-radius: var(--radius-pill);
-    background: transparent;
-    transition: background var(--motion-fast);
-}
-
-.choice-copy {
-    display: grid;
-    gap: 0.12rem;
+.segment {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     min-width: 0;
+    padding: 0.42rem 0.95rem 0.42rem 0.75rem;
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
-.choice-title {
-    font-size: 0.92rem;
-    font-weight: 650;
-    line-height: 1.25;
+.segment input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--color-brand);
+    cursor: pointer;
 }
 
-.choice-hint {
-    color: var(--color-muted);
-    font-size: 0.78rem;
-    line-height: 1.3;
-}
-
-.choice:hover {
-    border-color: var(--color-border-strong);
+.segment:hover {
     background: var(--color-surface);
 }
 
-.choice:has(input:checked) {
-    border-color: var(--color-brand);
-    background: var(--color-brand-soft);
-    box-shadow:
-        inset 3px 0 0 var(--color-brand),
-        var(--shadow-sm);
+/* El estado elegido se distingue por el radio marcado, el relieve y el peso, no solo por el color. */
+.segment:has(input:checked) {
+    background: var(--color-surface-raised);
+    color: var(--color-brand);
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
 }
 
-.choice:has(input:checked) .choice-title {
-    font-weight: 750;
-}
-
-.choice:has(input:checked) .choice-indicator {
-    border-color: var(--color-brand);
-    background: var(--color-brand);
-}
-
-.choice:has(input:checked) .choice-indicator::after {
-    background: var(--color-brand-text);
-}
-
-.choice:has(input:focus-visible) {
+.segment:has(input:focus-visible) {
     outline: 3px solid var(--color-focus);
     outline-offset: 2px;
 }
@@ -862,9 +805,17 @@ textarea:focus {
 }
 
 @media (max-width: 760px) {
-    .choice-row,
     .matrix-pair {
         grid-template-columns: 1fr;
+    }
+
+    .segmented {
+        display: flex;
+    }
+
+    .segment {
+        flex: 1;
+        justify-content: center;
     }
 
     .base-selectors {
@@ -896,8 +847,7 @@ textarea:focus {
         padding-bottom: 1.2rem;
     }
 
-    .tool-lead,
-    .choice-hint {
+    .tool-lead {
         display: none;
     }
 }

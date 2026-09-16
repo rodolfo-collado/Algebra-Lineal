@@ -1,22 +1,11 @@
-{% comment %}Bloques propios de un método: la matriz final siempre (con sus pivotes si se piden), el sistema resultante y la sustitución regresiva según lo elegido en Mostrar.{% endcomment %}
+{% comment %}Bloques propios de un método: la matriz final siempre (resaltando sus pivotes si se piden), el sistema resultante y la sustitución regresiva según lo elegido en Mostrar. Las columnas pivote como análisis van aquí solo con un método; al comparar se muestran una vez en el resultado común.{% endcomment %}
 <div class="final-block">
     <h4 class="final-label">{{ resultado.etiqueta_matriz }}</h4>
     {% if "pivotes" in mostrar %}
         {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_final etiqueta=resultado.etiqueta_matriz columnas_pivote=resultado.columnas_pivote %}
-        <div class="pivot-block">
-            <h4 class="final-label" aria-hidden="true">Columnas pivote</h4>
-            <p class="sr-only">Columnas pivote: {% for columna in resultado.columnas_pivote %}C{{ columna }}{% if not forloop.last %}, {% endif %}{% empty %}Ninguna{% endfor %}</p>
-            <ul class="pivot-chips" aria-hidden="true">
-                {% for columna in resultado.columnas_pivote %}
-                    <li><span class="pivot-chip">C{{ columna }}</span></li>
-                {% empty %}
-                    <li><span class="pivot-chip pivot-chip-empty">Ninguna</span></li>
-                {% endfor %}
-            </ul>
-            {% if resultado.columnas_pivote %}
-                <p class="pivot-legend muted">Las columnas resaltadas en la matriz contienen un pivote.</p>
-            {% endif %}
-        </div>
+        {% if not comparando %}
+            {% include "calculadora/modules/sistemas/_pivotes.html" %}
+        {% endif %}
     {% else %}
         {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_final etiqueta=resultado.etiqueta_matriz %}
     {% endif %}
