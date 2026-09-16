@@ -1,0 +1,9 @@
+<td>
+    <label class="sr-only" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+    {% if campo %}
+        {{ campo }}
+        {{ campo.errors }}
+    {% else %}
+        <input type="text" class="matrix-input" autocomplete="off" spellcheck="false" inputmode="text">
+    {% endif %}
+</td>

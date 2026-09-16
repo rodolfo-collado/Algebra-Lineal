@@ -1,0 +1,89 @@
+{% comment %}Combinación lineal: la conclusión (sí/no y con qué coeficientes) primero; después el planteamiento, el sistema equivalente y Gauss-Jordan reutilizado de Resolver un sistema, en el lenguaje de coeficientes c1, c2, ….{% endcomment %}
+<section class="panel panel-final" aria-labelledby="combination-result-title">
+    <h3 id="combination-result-title" class="panel-title">Resultado</h3>
+    <div class="classification combination-verdict" data-kind="{{ resultado.clasificacion_clave }}">
+        <span class="classification-icon" aria-hidden="true"></span>
+        <div>
+            <p class="classification-value">{{ resultado.conclusion }}</p>
+            <p class="muted combination-detail">{{ resultado.detalle }}</p>
+        </div>
+    </div>
+
+    {% if resultado.coeficientes %}
+        <div class="final-block solution">
+            <h4 class="final-label">Coeficientes</h4>
+            <ul class="equations solution-list coefficient-list">
+                {% for incognita, valor in resultado.coeficientes %}
+                    <li><code>{{ incognita }} = {{ valor }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% elif resultado.clasificacion_clave == "infinitas" %}
+        <div class="final-block solution">
+            <h4 class="final-label">Solución general</h4>
+            <ul class="equations solution-list coefficient-list">
+                {% for linea in resultado.solucion_general %}
+                    <li><code>{{ linea }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if resultado.igualdad %}
+        <div class="final-block">
+            <h4 class="final-label">{{ resultado.objetivo.nombre }} como combinación lineal</h4>
+            {% if resultado.ejemplo %}<p class="muted combination-example">{{ resultado.ejemplo }}</p>{% endif %}
+            <p class="combination-equality"><code>{{ resultado.igualdad }}</code></p>
+        </div>
+    {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="combination-procedure-title">
+    <h3 id="combination-procedure-title" class="panel-title">Procedimiento</h3>
+
+    <div class="procedure-stage">
+        <h4 class="stage-title">1 · Planteamiento</h4>
+        <p class="procedure-lead">Buscamos {{ resultado.incognitas }} tales que:</p>
+        <p class="combination-equality"><code>{{ resultado.planteamiento }}</code></p>
+    </div>
+
+    <div class="procedure-stage">
+        <h4 class="stage-title">2 · Sistema equivalente</h4>
+        <p class="procedure-lead">Igualando componente a componente se obtiene una ecuación por cada una de las {{ resultado.dimension }} componentes:</p>
+        <ol class="equations">
+            {% for ecuacion in resultado.ecuaciones %}
+                <li><code>{{ ecuacion }}</code></li>
+            {% endfor %}
+        </ol>
+        <p class="procedure-lead">Cada vector generador es una columna y {{ resultado.objetivo.nombre }} es la columna aumentada:</p>
+        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_aumentada etiqueta="Matriz aumentada de la combinación lineal" columnas_pivote=None %}
+    </div>
+
+    <div class="procedure-stage">
+        <h4 class="stage-title">3 · Gauss-Jordan</h4>
+        {% include "calculadora/modules/sistemas/_pasos.html" %}
+        <div class="final-block">
+            <h4 class="final-label">Matriz reducida</h4>
+            {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_reducida etiqueta="Matriz reducida" columnas_pivote=resultado.columnas_pivote %}
+        </div>
+    </div>
+
+    <div class="procedure-stage">
+        <h4 class="stage-title">4 · Lectura del resultado</h4>
+        <p class="procedure-lead">El sistema es <strong>{{ resultado.clasificacion|lower }}</strong>.</p>
+        {% if resultado.justificacion %}
+            <div class="explanation">
+                {% for parrafo in resultado.justificacion %}
+                    {% if parrafo %}<p>{{ parrafo }}</p>{% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if resultado.solucion_general %}
+            <ul class="equations solution-list coefficient-list">
+                {% for linea in resultado.solucion_general %}
+                    <li><code>{{ linea }}</code></li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</section>

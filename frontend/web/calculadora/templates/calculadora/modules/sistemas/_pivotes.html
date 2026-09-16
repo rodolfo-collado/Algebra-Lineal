@@ -1,0 +1,15 @@
+{% comment %}Columnas pivote del sistema: un análisis común a los dos métodos, así que en Comparar ambos se muestra una sola vez.{% endcomment %}
+<div class="pivot-block">
+    <h4 class="final-label" aria-hidden="true">Columnas pivote</h4>
+    <p class="sr-only">Columnas pivote: {% for columna in resultado.columnas_pivote %}C{{ columna }}{% if not forloop.last %}, {% endif %}{% empty %}Ninguna{% endfor %}</p>
+    <ul class="pivot-chips" aria-hidden="true">
+        {% for columna in resultado.columnas_pivote %}
+            <li><span class="pivot-chip">C{{ columna }}</span></li>
+        {% empty %}
+            <li><span class="pivot-chip pivot-chip-empty">Ninguna</span></li>
+        {% endfor %}
+    </ul>
+    {% if resultado.columnas_pivote %}
+        <p class="pivot-legend muted">Las columnas resaltadas en la matriz contienen un pivote.</p>
+    {% endif %}
+</div>

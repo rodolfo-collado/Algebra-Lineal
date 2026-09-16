@@ -1,0 +1,429 @@
+"""Pruebas de la infraestructura local de la aplicación desktop."""
+
+from __future__ import annotations
+
+import os
+import re
+import runpy
+import unittest
+from http.cookiejar import CookieJar
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+from urllib.parse import urlencode
+from urllib.request import HTTPCookieProcessor, Request, build_opener
+
+import desktop
+
+
+RAIZ = Path(__file__).resolve().parents[1]
+
+
+class PruebasLauncherDesktop(unittest.TestCase):
+    def test_construye_url_de_loopback(self):
+        self.assertEqual(
+            desktop.build_local_url(desktop.LOOPBACK_HOST, 49173),
+            "http://127.0.0.1:49173/",
+        )
+
+    def test_rechaza_host_externo(self):
+        with self.assertRaises(ValueError):
+            desktop.build_local_url("0.0.0.0", 49173)
+
+    def test_rechaza_url_de_readiness_externa(self):
+        with self.assertRaises(ValueError):
+            desktop.wait_for_server("http://example.com:80/", timeout=0.1)
+
+    def test_configura_entorno_desktop(self):
+        with patch.dict(os.environ, {}, clear=True):
+            desktop.configure_desktop_environment()
+
+            self.assertEqual(
+                os.environ["DJANGO_SETTINGS_MODULE"],
+                desktop.DJANGO_SETTINGS_MODULE,
+            )
+            self.assertEqual(os.environ[desktop.DESKTOP_ENVIRONMENT], "1")
+            self.assertEqual(os.environ["DJANGO_DEBUG"], "0")
+
+    def test_carga_la_aplicacion_wsgi_configurada(self):
+        aplicacion = object()
+        aplicacion_con_estaticos = object()
+        with patch.dict(os.environ, {}, clear=True):
+            with patch(
+                "django.contrib.staticfiles.handlers.StaticFilesHandler",
+                return_value=aplicacion_con_estaticos,
+            ) as envolver_estaticos:
+                with patch.object(
+                    desktop.importlib,
+                    "import_module",
+                    return_value=SimpleNamespace(application=aplicacion),
+                ) as importar:
+                    resultado = desktop.load_wsgi_application()
+
+        self.assertIs(resultado, aplicacion_con_estaticos)
+        importar.assert_called_once_with("frontend.web.algebra_web.wsgi")
+        envolver_estaticos.assert_called_once_with(aplicacion)
+
+    def test_settings_distingue_desarrollo_de_desktop(self):
+        ruta_settings = RAIZ / "frontend" / "web" / "algebra_web" / "settings.py"
+
+        with patch.dict(
+            os.environ,
+            {"ALGEBRA_DESKTOP": "1", "DJANGO_DEBUG": "1"},
+            clear=False,
+        ):
+            desktop_settings = runpy.run_path(str(ruta_settings))
+
+        with patch.dict(
+            os.environ,
+            {"ALGEBRA_DESKTOP": "0", "DJANGO_DEBUG": "1"},
+            clear=False,
+        ):
+            development_settings = runpy.run_path(str(ruta_settings))
+
+        self.assertTrue(desktop_settings["DESKTOP_MODE"])
+        self.assertFalse(desktop_settings["DEBUG"])
+        self.assertFalse(development_settings["DESKTOP_MODE"])
+        self.assertTrue(development_settings["DEBUG"])
+
+    def test_crea_ventana_con_configuracion_de_escritorio(self):
+        ventana = object()
+        argumentos = {}
+
+        def crear_ventana(*args, **kwargs):
+            argumentos["args"] = args
+            argumentos["kwargs"] = kwargs
+            return ventana
+
+        webview = SimpleNamespace(create_window=crear_ventana)
+
+        resultado = desktop.create_desktop_window(webview, "http://127.0.0.1:49173/")
+
+        self.assertIs(resultado, ventana)
+        self.assertEqual(argumentos["args"], (desktop.APP_TITLE,))
+        self.assertEqual(argumentos["kwargs"]["url"], "http://127.0.0.1:49173/")
+        self.assertEqual(argumentos["kwargs"]["width"], desktop.WINDOW_WIDTH)
+        self.assertEqual(argumentos["kwargs"]["height"], desktop.WINDOW_HEIGHT)
+        self.assertEqual(argumentos["kwargs"]["min_size"], desktop.WINDOW_MIN_SIZE)
+        self.assertEqual(
+            argumentos["kwargs"]["background_color"],
+            desktop.WINDOW_BACKGROUND,
+        )
+        self.assertNotIn("icon", argumentos["kwargs"])
+        self.assertTrue(argumentos["kwargs"]["resizable"])
+        self.assertFalse(argumentos["kwargs"]["fullscreen"])
+
+    def test_main_reporta_un_error_de_inicio_controlado(self):
+        error = desktop.DesktopStartupError("fallo controlado")
+
+        with patch.object(desktop, "run_desktop", side_effect=error):
+            with patch.object(desktop, "report_startup_error") as reportar:
+                self.assertEqual(desktop.main(), 1)
+
+        reportar.assert_called_once_with(error)
+
+    def test_waitress_usa_loopback_y_puerto_efectivo(self):
+        def aplicacion(environ, start_response):
+            start_response("200 OK", [("Content-Type", "text/plain")])
+            return [b"ok"]
+
+        servidor, puerto = desktop.create_local_server(aplicacion)
+        try:
+            self.assertEqual(servidor.effective_host, desktop.LOOPBACK_HOST)
+            self.assertEqual(servidor.socket.getsockname()[0], desktop.LOOPBACK_HOST)
+            self.assertGreater(puerto, 0)
+            self.assertEqual(servidor.socket.getsockname()[1], puerto)
+        finally:
+            servidor.close()
+
+    def test_el_callback_de_cierre_es_idempotente(self):
+        class ThreadFalso:
+            def __init__(self):
+                self.uniones = 0
+
+            def join(self, timeout):
+                self.uniones += 1
+
+            def is_alive(self):
+                return False
+
+        servidor = SimpleNamespace(cierres=0)
+
+        def cerrar_servidor():
+            servidor.cierres += 1
+
+        servidor.close = cerrar_servidor
+        hilo = ThreadFalso()
+        shutdown = desktop.make_shutdown_callback(servidor, hilo)
+
+        shutdown()
+        shutdown()
+
+        self.assertEqual(servidor.cierres, 1)
+        self.assertEqual(hilo.uniones, 1)
+
+    def test_el_spec_incluye_los_modulos_que_django_carga_por_nombre(self):
+        """PyInstaller no ve los módulos referenciados solo como cadenas en settings."""
+        ruta_settings = RAIZ / "frontend" / "web" / "algebra_web" / "settings.py"
+        plantillas = runpy.run_path(str(ruta_settings))["TEMPLATES"]
+        spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
+        ocultos = re.findall(r'"(frontend\.[\w.]+)"', spec.split("hiddenimports")[1].split("]")[0])
+        for opciones in (plantilla["OPTIONS"] for plantilla in plantillas):
+            for procesador in opciones.get("context_processors", ()):
+                modulo = procesador.rsplit(".", 1)[0]
+                with self.subTest(modulo=modulo):
+                    self.assertIn(modulo, ocultos)
+        self.assertIn("frontend.web.calculadora.views", ocultos)
+
+    def test_resuelve_el_icono_local(self):
+        ruta = desktop.application_icon_path()
+
+        self.assertIsNotNone(ruta)
+        self.assertTrue(Path(ruta).is_file())
+        self.assertTrue(ruta.endswith("algebra-lineal.ico"))
+
+
+class PruebaSmokeWaitressDjango(unittest.TestCase):
+    def test_waitress_django_y_backend_responden_por_http(self):
+        os.environ.setdefault(
+            "DJANGO_SETTINGS_MODULE",
+            "frontend.web.algebra_web.settings",
+        )
+        import django
+
+        django.setup()
+
+        application = desktop.load_wsgi_application()
+        servidor, hilo, url, errores = desktop.start_waitress(application)
+        cliente_http = build_opener(HTTPCookieProcessor(CookieJar()))
+        try:
+            desktop.wait_for_server(
+                url,
+                timeout=3.0,
+                server_thread=hilo,
+                errors=errores,
+                opener=cliente_http.open,
+            )
+
+            with cliente_http.open(url, timeout=3.0) as respuesta:
+                html = respuesta.read().decode("utf-8")
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("Inicio · Álgebra Lineal", html)
+                self.assertIn('href="/sistemas/"', html)
+
+            url_sistemas = f"{url}sistemas/"
+            with cliente_http.open(url_sistemas, timeout=3.0) as respuesta:
+                html = respuesta.read().decode("utf-8")
+                self.assertEqual(respuesta.status, 200)
+
+            with cliente_http.open(
+                f"{url}static/calculadora/styles.css",
+                timeout=3.0,
+            ) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                css = respuesta.read().decode("utf-8")
+                self.assertIn("@import", css)
+                self.assertIn("styles/tokens.css", css)
+                self.assertIn("styles/base.css", css)
+
+            with cliente_http.open(
+                f"{url}static/calculadora/styles/tokens.css",
+                timeout=3.0,
+            ) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                tokens = respuesta.read().decode("utf-8")
+                self.assertIn("--color-primary", tokens)
+                self.assertIn("--color-brand", tokens)
+                self.assertIn("--color-bg", tokens)
+
+            with cliente_http.open(
+                f"{url}static/calculadora/matriz.js",
+                timeout=3.0,
+            ) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("renderMatrix", respuesta.read().decode("utf-8"))
+
+            with cliente_http.open(
+                f"{url}static/calculadora/tema.js",
+                timeout=3.0,
+            ) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("algebra-lineal-tema", respuesta.read().decode("utf-8"))
+
+            for recurso, marca in (
+                ("navigation.js", "navegacion-principal"),
+                ("buscador.js", "data-buscador"),
+                ("teclado.js", "data-insercion"),
+                ("conversion.js", "data-conversion-bases"),
+                ("vectores.js", "data-vectores"),
+            ):
+                with cliente_http.open(
+                    f"{url}static/calculadora/{recurso}",
+                    timeout=3.0,
+                ) as respuesta:
+                    self.assertEqual(respuesta.status, 200)
+                    self.assertIn(marca, respuesta.read().decode("utf-8"))
+
+            # La ruta antigua de Gauss sigue abriendo Resolver un sistema con Gauss elegido.
+            with cliente_http.open(f"{url}sistemas/gauss/", timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertEqual(respuesta.url, f"{url}sistemas/?metodo=gauss")
+                self.assertIn("Resolver un sistema", respuesta.read().decode("utf-8"))
+
+            csrf = re.search(
+                rb'name="csrfmiddlewaretoken" value="([^"]+)"',
+                html.encode("utf-8"),
+            )
+            self.assertIsNotNone(csrf)
+
+            datos = urlencode(
+                {
+                    "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
+                    "metodo": "gauss_jordan",
+                    "sistema": "x1+x2=3;x1-x2=1",
+                }
+            ).encode("ascii")
+            solicitud = Request(
+                url_sistemas,
+                data=datos,
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": url_sistemas,
+                },
+            )
+            with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                resultado = respuesta.read().decode("utf-8")
+                self.assertEqual(respuesta.status, 200)
+
+            self.assertIn("Consistente de solución única", resultado)
+            self.assertIn("x1 = 2", resultado)
+            self.assertIn("x2 = 1", resultado)
+
+            # La conversión de bases viaja por la misma pila Waitress + Django.
+            url_bases = f"{url}bases/conversion/"
+            with cliente_http.open(url_bases, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("Conversión de bases", respuesta.read().decode("utf-8"))
+            solicitud = Request(
+                url_bases,
+                data=urlencode(
+                    {
+                        "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
+                        "numero": "13",
+                        "base_origen": "10",
+                        "base_destino": "2",
+                    }
+                ).encode("ascii"),
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": url_bases,
+                },
+            )
+            with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                conversion = respuesta.read().decode("utf-8")
+            self.assertIn("13₁₀", conversion)
+            self.assertIn("1101₂", conversion)
+
+            # Operaciones con vectores: la combinación lineal reutiliza Gauss-Jordan por la misma pila.
+            url_vectores = f"{url}vectores/operaciones/"
+            with cliente_http.open(url_vectores, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("Operaciones con vectores", respuesta.read().decode("utf-8"))
+            solicitud = Request(
+                url_vectores,
+                data=urlencode(
+                    {
+                        "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
+                        "operacion": "combinacion",
+                        "dimension": "2",
+                        "vectores": "2",
+                        "v1_0": "1", "v1_1": "0", "v2_0": "0", "v2_1": "1",
+                        "b_0": "3", "b_1": "4",
+                    }
+                ).encode("ascii"),
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": url_vectores,
+                },
+            )
+            with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                combinacion = respuesta.read().decode("utf-8")
+            self.assertIn("b es combinación lineal de v1 y v2", combinacion)
+            self.assertIn("c1 = 3", combinacion)
+            self.assertIn("(3, 4) = 3(1, 0) + 4(0, 1)", combinacion)
+
+            # P13A viaja por la pila desktop real, con CSRF y recursos locales.
+            from tests.test_matrices_web import Contenido, datos_matrices
+
+            url_matrices = f"{url}matrices/operaciones/"
+            with cliente_http.open(url_matrices, timeout=3.0) as respuesta:
+                self.assertIn("Operaciones con matrices", respuesta.read().decode("utf-8"))
+            for operacion, esperado in (
+                ("suma", [["2", "4", "6"], ["8", "10", "12"]]),
+                ("resta", [["0", "0", "0"], ["0", "0", "0"]]),
+                ("escalar", [["1/2", "1", "3/2"], ["2", "5/2", "3"]]),
+                ("traspuesta", [["1", "4"], ["2", "5"], ["3", "6"]]),
+            ):
+                a = [[1, 2, 3], [4, 5, 6]]
+                datos = datos_matrices(
+                    operacion, a=a, b=a if operacion in ("suma", "resta") else None,
+                    escalar="1/2" if operacion == "escalar" else None,
+                    csrfmiddlewaretoken=csrf.group(1).decode("ascii"),
+                )
+                solicitud = Request(url_matrices, data=urlencode(datos).encode("ascii"), headers={"Referer": url_matrices})
+                with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                    tablas = Contenido(respuesta.read().decode("utf-8")).tablas
+                self.assertEqual(tablas["Matriz resultado"], esperado)
+            # P13B: AB y Ax con método comparado, por la misma pila.
+            from tests.test_multiplicacion_matrices_web import datos_matriz_vector, datos_producto
+
+            for datos, esperado, procedimientos in (
+                (datos_producto(a=[[1, 2, 3], [4, 5, 6]], b=[[7, 8], [9, 10], [11, 12]], metodo="comparar"), [["58", "64"], ["139", "154"]], ("Fila por columna", "Por columnas")),
+                (datos_matriz_vector(metodo="comparar"), [["3"], ["6"]], ("Regla fila-vector", "Combinación lineal de columnas")),
+            ):
+                datos["csrfmiddlewaretoken"] = csrf.group(1).decode("ascii")
+                solicitud = Request(url_matrices, data=urlencode(datos).encode("ascii"), headers={"Referer": url_matrices})
+                with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                    html = respuesta.read().decode("utf-8")
+                self.assertEqual(Contenido(html).tablas["Matriz resultado"], esperado)
+                for procedimiento in procedimientos:
+                    self.assertIn(f"Procedimiento: {procedimiento}", html)
+            with cliente_http.open(f"{url}static/calculadora/matrices.js", timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                contenido = respuesta.read().decode("utf-8")
+                self.assertIn("matrix-entry-template", contenido)
+                self.assertIn("opcion.metodos", contenido)
+            # P14: Ax = b con x desconocido, por la misma pila; una fracción y un caso rectangular.
+            from tests.test_ecuaciones_matriciales_web import datos_ecuacion
+
+            url_ecuaciones = f"{url}matrices/ecuaciones/"
+            with cliente_http.open(url_ecuaciones, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                pagina = respuesta.read().decode("utf-8")
+            self.assertIn("Resolver Ax = b", pagina)
+            self.assertIn('aria-label="Vector incógnita x, no editable"', pagina)
+            for datos, x, textos in (
+                (datos_ecuacion(a=[[2, 0], [0, 3]], b=[1, 1], metodo="comparar"), [["1/2"], ["1/3"]],
+                 ("Ax = b tiene solución única.", "b = (1/2)a₁ + (1/3)a₂", 'id="procedure-title-2"')),
+                (datos_ecuacion(a=[[1, 0], [0, 1], [1, 1]], b=[2, 3, 5]), [["2"], ["3"]],
+                 ("A (3×2) · x (2) = b (3)", "x1 = 2", "x2 = 3")),
+            ):
+                datos["csrfmiddlewaretoken"] = csrf.group(1).decode("ascii")
+                solicitud = Request(url_ecuaciones, data=urlencode(datos).encode("ascii"), headers={"Referer": url_ecuaciones})
+                with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                    html = respuesta.read().decode("utf-8")
+                self.assertEqual(Contenido(html).tablas["Vector solución x"], x)
+                for texto in textos:
+                    self.assertIn(texto, html)
+            with cliente_http.open(f"{url}static/calculadora/ecuaciones.js", timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("data-ecuacion", respuesta.read().decode("utf-8"))
+        finally:
+            desktop.stop_waitress(servidor, hilo)
+            self.assertFalse(hilo.is_alive())
+
+
+if __name__ == "__main__":
+    unittest.main()

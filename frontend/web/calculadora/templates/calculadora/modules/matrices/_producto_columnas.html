@@ -1,0 +1,45 @@
+{% comment %}Por columnas (AB) o combinación lineal de columnas (Ax): las columnas de A y, por cada columna del resultado, la combinación con sus coeficientes, los vectores escalados y la columna obtenida.{% endcomment %}
+<div class="procedure-stage">
+    <h4 class="stage-title">{{ metodo.titulo }}</h4>
+    <p>{{ metodo.descripcion }}</p>
+    <p class="matrix-formula">{{ metodo.formula }}</p>
+    <p class="procedure-lead">Columnas de A:</p>
+    <div class="matrix-equation" tabindex="0" role="region" aria-label="Columnas de A">
+        {% for columna in metodo.columnas_a %}
+            <div class="matrix-operand">
+                <span class="muted">{{ columna.nombre }}</span>
+                {% include "calculadora/components/matriz.html" with matriz=columna.matriz etiqueta=columna.etiqueta only %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+<div class="procedure-stage">
+    <h4 class="stage-title">{% if resultado.operacion == "matriz_vector" %}Combinación lineal{% else %}Columna por columna{% endif %}</h4>
+    {% for grupo in metodo.grupos %}
+        <details class="procedure-group"{% if resultado.abierto %} open{% endif %}>
+            <summary class="procedure-summary"><span class="procedure-summary-title">{{ grupo.titulo }}</span> <span class="procedure-summary-detail">{{ grupo.resumen }}</span></summary>
+            <p class="procedure-line">{{ grupo.simbolica }}</p>
+            <div class="matrix-equation" tabindex="0" role="region" aria-label="Desarrollo de {{ grupo.nombre }}">
+                <span class="matrix-expression">{{ grupo.nombre }} =</span>
+                {% for termino in grupo.terminos %}
+                    {% if termino.signo or termino.factor %}<span class="matrix-expression">{{ termino.signo }}{% if termino.signo and termino.factor %} {% endif %}{{ termino.factor }}</span>{% endif %}
+                    {% include "calculadora/components/matriz.html" with matriz=termino.matriz etiqueta=termino.etiqueta only %}
+                {% endfor %}
+                <span class="matrix-expression">=</span>
+                {% for escalada in grupo.escaladas %}
+                    {% if not forloop.first %}<span class="matrix-expression">+</span>{% endif %}
+                    {% include "calculadora/components/matriz.html" with matriz=escalada.matriz etiqueta=escalada.etiqueta only %}
+                {% endfor %}
+                <span class="matrix-expression">=</span>
+                {% include "calculadora/components/matriz.html" with matriz=grupo.resultado etiqueta=grupo.etiqueta_resultado only %}
+            </div>
+        </details>
+    {% endfor %}
+    {% if metodo.ensamble %}
+        <p class="procedure-lead">Las columnas obtenidas, en orden, forman el resultado:</p>
+        <div class="matrix-equation" tabindex="0" role="region" aria-label="Ensamble de las columnas">
+            <span class="matrix-expression">{{ metodo.ensamble }}</span>
+            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado ensamblado" only %}
+        </div>
+    {% endif %}
+</div>

@@ -1,0 +1,15 @@
+{% if migas %}
+    <nav class="breadcrumbs" aria-label="Ruta de navegación">
+        <ol>
+            {% for miga in migas %}
+                <li>
+                    {% if miga.actual %}
+                        <span aria-current="page">{{ miga.nombre }}</span>
+                    {% else %}
+                        <a href="{{ miga.url }}">{{ miga.nombre }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+{% endif %}

@@ -1,0 +1,115 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static %}
+
+{% block tool_input %}
+    <section class="panel workspace" aria-labelledby="workspace-title" data-vectores>
+        <h2 id="workspace-title" class="sr-only">Entrada</h2>
+        <form id="vectores-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="alert error" role="alert">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <section class="workspace-section" aria-labelledby="operation-title">
+                <h3 id="operation-title" class="section-title">Operación</h3>
+                <fieldset class="choice-fieldset">
+                    <legend class="sr-only">{{ form.operacion.label }}</legend>
+                    <div class="option-list">
+                        {% for radio in form.operacion %}
+                            <label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+                        {% endfor %}
+                    </div>
+                    {% comment %}Una explicación por operación; vectores.js muestra la de la elegida.{% endcomment %}
+                    {% for clave, ayuda in ayudas_operacion.items %}
+                        <p class="field-help option-help" data-operacion-hint="{{ clave }}" {% if clave != estructura.operacion %}hidden{% endif %}>{{ ayuda }}</p>
+                    {% endfor %}
+                    {% for error in form.operacion.errors %}
+                        <p class="field-error" role="alert">{{ error }}</p>
+                    {% endfor %}
+                </fieldset>
+            </section>
+
+            <section id="vector-fields" class="workspace-section" aria-labelledby="vectors-title">
+                <h3 id="vectors-title" class="section-title">Vectores</h3>
+
+                <div class="structure-controls vector-structure" role="group" aria-label="Estructura de los vectores">
+                    <div class="dimension-field">
+                        <label for="{{ form.dimension.id_for_label }}">Dimensión <span class="muted">(componentes por vector)</span></label>
+                        <div class="stepper" data-estructura="dimension">
+                            <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar una componente" hidden>−</button>
+                            {{ form.dimension }}
+                            <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una componente" hidden>+</button>
+                        </div>
+                        {% for error in form.dimension.errors %}
+                            <p class="field-error" role="alert">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    <div class="dimension-field" data-solo-operacion="combinacion" {% if estructura.operacion != "combinacion" %}hidden{% endif %}>
+                        <label for="{{ form.vectores.id_for_label }}">Vectores generadores</label>
+                        <div class="stepper" data-estructura="vectores">
+                            <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar un vector" hidden>−</button>
+                            {{ form.vectores }}
+                            <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar un vector" hidden>+</button>
+                        </div>
+                        {% for error in form.vectores.errors %}
+                            <p class="field-error" role="alert">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div id="vector-list" class="vector-list" data-dimension="{{ estructura.dimension }}" data-vectores="{{ estructura.vectores }}">
+                    {% if estructura.operacion == "escalar" %}
+                        <div class="vector-row vector-row-scalar" data-escalar role="group" aria-label="Escalar k">
+                            <span class="vector-name" aria-hidden="true">k =</span>
+                            <div class="vector-inputs">{{ form.escalar }}</div>
+                        </div>
+                    {% endif %}
+                    {% for fila in estructura.filas %}
+                        {% include "calculadora/modules/vectores/_fila.html" %}
+                    {% endfor %}
+                </div>
+                {% for error in form.escalar.errors %}
+                    <p class="field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+                <p class="field-help vector-help" data-operacion-hint-fields="combinacion" {% if estructura.operacion != "combinacion" %}hidden{% endif %}>
+                    ¿Es <strong>b</strong> combinación lineal de los vectores v1, v2, …? Cada vector es una columna del sistema; b es la columna aumentada.
+                </p>
+                <p class="field-help vector-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos.</p>
+
+                {% include "calculadora/components/math_keyboard.html" with teclado=teclado_vector campos_id="vector-fields" %}
+                <noscript>
+                    <p class="field-help">Sin JavaScript, cambia la operación o la dimensión y pulsa <strong>Aplicar</strong> para redibujar los vectores antes de calcular.</p>
+                    <button class="btn btn-secondary" type="submit" name="ajustar" value="1">Aplicar</button>
+                </noscript>
+            </section>
+
+            <div class="workspace-actions">
+                <button class="btn btn-primary" type="submit" data-boton-calcular>{{ texto_boton }}</button>
+            </div>
+        </form>
+    </section>
+{% endblock %}
+
+{% block tool_result %}
+    {% if resultado %}
+        <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+            <header class="results-heading">
+                <p class="section-kicker">{{ resultado.etiqueta }}</p>
+                <h2 id="results-title">{{ resultado.titulo }}</h2>
+            </header>
+            {% if resultado.operacion == "combinacion" %}
+                {% include "calculadora/modules/vectores/_combinacion.html" %}
+            {% else %}
+                {% include "calculadora/modules/vectores/_operacion.html" %}
+            {% endif %}
+        </section>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ valores_vectores|json_script:"vector-initial-values" }}
+    <script src="{% static 'calculadora/vectores.js' %}" defer></script>
+    <script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}

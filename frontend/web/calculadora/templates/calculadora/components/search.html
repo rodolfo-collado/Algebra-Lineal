@@ -1,0 +1,20 @@
+{# Buscador de herramientas: envía a Inicio (?q=) y, con JavaScript, filtra la lista indicada al instante. #}
+<form class="search{% if search_large %} search-large{% endif %}" role="search" method="get"
+      action="{% url 'calculadora:inicio' %}"
+      data-buscador="{{ search_target }}">
+    <label class="{% if search_large %}search-label{% else %}sr-only{% endif %}" for="{{ search_id }}">Buscar herramientas</label>
+    <div class="search-field">
+        <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M15 15l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input id="{{ search_id }}" class="search-input" type="search" name="q"
+                   value="{{ consulta|default:'' }}" autocomplete="off" spellcheck="false"
+                   placeholder="{{ search_placeholder|default:'Gauss, pivote, matriz…' }}"
+                   aria-describedby="{{ search_id }}-estado">
+        </div>
+        <button class="search-submit" type="submit">Buscar</button>
+    </div>
+    <p id="{{ search_id }}-estado" class="search-status" aria-live="polite"></p>
+</form>

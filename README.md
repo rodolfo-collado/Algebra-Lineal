@@ -1,350 +1,158 @@
+<p align="center">
+  <img src="assets/algebra-lineal.svg" alt="Marca de Álgebra Lineal: matriz aumentada" width="80">
+</p>
+
 # Álgebra Lineal
 
-Proyecto educativo en Python para implementar manualmente algoritmos de matrices
-y álgebra lineal. El objetivo no es resolver operaciones rápido, sino escribir el
-algoritmo paso a paso y entender cómo funciona por dentro.
+**Aprende resolviendo.** Una calculadora educativa que muestra el camino hasta
+el resultado y ayuda a conectar sistemas, matrices y vectores.
 
-La aplicación se usa desde la terminal, mediante un menú interactivo.
+[![CI](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Amain)
+[![Última release](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgithub.com%2Frodolfo-collado%2FAlgebra-Lineal%2Freleases.atom&query=concat%28substring-after%28%28%2F%2F%2A%5Blocal-name%28%29%3D%27entry%27%5D%2F%2A%5Blocal-name%28%29%3D%27link%27%5D%2F%40href%29%5B1%5D%2C%27%2Ftag%2F%27%29%2Csubstring%28%27pendiente%27%2C1%2C9%2Anot%28%2F%2F%2A%5Blocal-name%28%29%3D%27entry%27%5D%29%29%29&label=release&color=blue)](https://github.com/rodolfo-collado/Algebra-Lineal/releases)
+![Python >= 3.13](https://img.shields.io/badge/Python-%E2%89%A5%203.13-3776AB?logo=python&logoColor=white)
+![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4)
 
-## Funcionalidades actuales
+[Instalación](#instalación-en-windows) · [Capacidades](#capacidades) ·
+[Documentación](docs/README.md) · [Contribuir](CONTRIBUTING.md)
 
-- Generar una matriz con valores aleatorios a partir de sus dimensiones.
-- Crear una matriz ingresando cada elemento manualmente.
-- Crear un sistema de ecuaciones, escribiéndolo directamente como texto o
-  ingresando sus coeficientes uno por uno.
-- Modificar un elemento en una posición dada.
-- Consultar un elemento en una posición dada.
-- Mostrar la matriz completa con las columnas alineadas.
-- Resolver el sistema por **Gauss**, mostrando la eliminación hacia abajo, la
-  matriz escalonada y la sustitución regresiva.
-- Resolver el sistema por **Gauss-Jordan**, mostrando la reducción completa y la
-  matriz reducida.
-- Traducir la matriz resultante de vuelta a su sistema de ecuaciones, clasificarlo
-  y mostrar el conjunto solución completo: valores exactos cuando la solución es
-  única, variables libres identificadas y variables pivote despejadas en función
-  de ellas cuando hay infinitas, y la contradicción a la vista cuando no hay
-  solución.
+## Entender el procedimiento
 
-El menú principal es este:
+El resultado es solo una parte del ejercicio. Álgebra Lineal permite seguir
+las operaciones, comparar métodos y ver por qué un sistema tiene solución
+única, infinitas soluciones o ninguna.
 
-```text
-1. Generar matriz
-2. Crear matriz
-3. Crear sistema de ecuaciones
-4. Modificar elemento
-5. Consultar elemento
-6. Ver matriz
-7. Resolver por Gauss
-8. Resolver por Gauss-Jordan
-9. Salir
-```
+- **Procedimientos visibles:** operaciones por filas, sustitución regresiva,
+  productos y conversiones acompañados por su desarrollo.
+- **Aritmética exacta:** los racionales se conservan como fracciones, sin
+  redondear los pasos intermedios.
+- **Algoritmos manuales:** el cálculo se implementa con Python estándar,
+  sin delegar el álgebra a NumPy, SciPy o SymPy.
+- **Conceptos conectados:** un producto `Ax` se puede leer como combinación
+  de columnas; resolver `Ax = b` conecta esa lectura con un sistema lineal.
+- **Trabajo local:** una vez instalado, funciona sin Internet, con todos
+  los recursos de la interfaz incluidos.
 
-Los cálculos usan `fractions.Fraction`, así que los resultados son exactos y se
-muestran como fracciones cuando no son enteros.
+La arquitectura separa cálculo y presentación para incorporar nuevas
+herramientas educativas sin rehacer los algoritmos ni la navegación.
 
-La interfaz de terminal usa colores, limpia la pantalla entre secciones y espera
-una confirmación antes de volver al menú, para que los resultados se puedan leer
-con calma.
+## Capacidades
 
-## Sistemas de ecuaciones
+### Sistemas de ecuaciones
 
-La opción `Crear sistema de ecuaciones` abre un submenú:
+- Entrada como ecuaciones escritas o matriz aumentada editable.
+- Gauss, Gauss-Jordan o comparación de ambos procedimientos.
+- Clasificación, columnas pivote y variables libres.
+- Solución exacta, solución general o evidencia de la contradicción.
 
-```text
-1. Ingresar sistema directamente
-2. Ingresar coeficientes manualmente
-3. Volver
-```
+Los dos métodos comparten la interpretación del resultado; puedes comparar
+cómo llegan a ella.
 
-En el ingreso directo se escribe el sistema completo, separando las ecuaciones
-con `;`:
+### Vectores
 
-```text
-x1 - 3x2 - 5x3 = 0; x2 + x3 = 3
-```
+- Suma, resta y multiplicación por escalar.
+- Comprobación de combinación lineal y sus coeficientes.
+- Dimensión variable, con desarrollo componente a componente.
 
-que produce esta matriz aumentada:
+El backend admite dimensión arbitraria; la interfaz limita el tamaño de la
+entrada para mantenerla legible.
 
-```text
-[  1  -3  -5   0 ]
-[  0   1   1   3 ]
-```
+### Matrices
 
-Las variables son `x1`, `x2`, `x3`, … con índice desde 1. Se admiten espacios
-libres, coeficientes implícitos (`x1` vale `1x1` y `-x2` vale `-1x2`), variables
-ausentes (valen cero), enteros, fracciones (`1/2x1`) y decimales (`0.5x1`). El
-lado derecho del `=` debe ser un número.
+- Suma, resta, producto por escalar y traspuesta.
+- Producto `AB` y producto matriz-vector `Ax`.
+- Procedimiento por filas o como combinación lineal de columnas.
+- Resolución de `Ax = b`, también con matrices rectangulares.
 
-El ingreso manual pide la cantidad de variables y de ecuaciones, y luego cada
-coeficiente y cada término independiente. Ambas formas producen exactamente la
-misma matriz aumentada, así que son intercambiables.
+En `Ax`, x es conocido; en `Ax = b`, la herramienta busca x y explica la
+relación entre la ecuación matricial, el sistema y la matriz aumentada.
 
-Volver al menú, o escribir un sistema con un formato inválido, deja intacta la
-matriz activa: solo un sistema creado correctamente la reemplaza.
+### Sistemas numéricos
 
-## Resolver un sistema
+- Conversión de enteros no negativos entre binario, octal, decimal y hexadecimal.
+- Divisiones sucesivas y expansión posicional con pasos visibles.
+- Conversión entre bases no decimales mostrando el paso intermedio por decimal.
 
-Una matriz solo se interpreta como sistema de ecuaciones cuando se elige uno de
-los dos métodos de resolución. En ese caso la **última columna** se toma
-explícitamente como los términos independientes; el significado nunca se deduce
-de las dimensiones. Por eso una matriz `3 x 3` puede ser una matriz cualquiera o
-el sistema de 3 ecuaciones y 2 variables, según la opción que se use. Da igual si
-la matriz se creó con `Crear matriz` o con `Crear sistema de ecuaciones`.
+Los formatos de entrada, límites de interfaz y ejemplos completos están en
+la [guía de funcionalidades](docs/funcionalidades.md).
 
-La diferencia entre los dos métodos está en el procedimiento:
+## Formas de usar el proyecto
 
-- **Gauss** solo elimina hacia abajo y deja la matriz escalonada. Cuando la
-  solución es única muestra además la sustitución regresiva paso a paso.
-- **Gauss-Jordan** continúa eliminando hacia arriba hasta la forma reducida.
+| Interfaz | Uso |
+| --- | --- |
+| Escritorio Windows | Todas las herramientas visuales en una ventana local. |
+| Django en desarrollo | La misma interfaz visual desde el navegador local. |
+| Terminal | Menú de matrices y resolución de sistemas por Gauss y Gauss-Jordan. |
 
-Para el mismo sistema los dos llegan siempre a la misma clasificación y a la
-misma solución final.
+La interfaz visual incluye tema claro/oscuro, búsqueda de herramientas y
+teclado matemático contextual. La terminal conserva su propio flujo de uso.
 
-La clasificación del sistema es una de estas tres:
+## Instalación en Windows
 
-```text
-Consistente de solución única
-Consistente de soluciones infinitas
-Inconsistente
-```
+Las distribuciones estables se publicarán en **[GitHub Releases](https://github.com/rodolfo-collado/Algebra-Lineal/releases)**.
+El enlace a la **[última versión estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest)**
+está preparado; si todavía no hay publicaciones, espera la primera release.
+El badge de release se actualizará automáticamente cuando exista una.
 
-## Interpretación del resultado
+Cuando haya una versión publicada:
 
-La salida se adapta a la clasificación obtenida. La matriz, la clasificación y
-la solución siempre se muestran; el **sistema resultante** se conserva cuando
-ayuda a interpretar una forma escalonada, una variable libre o una
-contradicción. Si la matriz ya permite leer directamente `x1 = C1`, `x2 = C2`,
-etc., no se repiten esas mismas ecuaciones antes de la solución.
+1. Descarga `AlgebraLineal-Setup-<version>.exe` de sus assets.
+2. Ejecuta el instalador y elige si deseas un acceso directo en el escritorio.
+3. Abre **Álgebra Lineal** desde el menú Inicio o el acceso directo.
 
-Por ejemplo, una solución única leída directamente se presenta de forma breve:
+**No necesitas tener Python instalado.** El instalador incluye el runtime y
+las dependencias de la aplicación. Se instala para tu usuario y no requiere
+privilegios de administrador.
 
-```text
-Consistente de solución única
+Se admite Windows 10 1809 o posterior / Windows 11, compatible con aplicaciones
+x64. Si falta WebView2, su instalación requiere Internet; después la calculadora
+funciona offline. El paquete no está firmado digitalmente.
 
-x1 = 3
-x2 = 2/3
-```
+Consulta [Instalación Windows](docs/instalacion-windows.md) para requisitos,
+instalación sin conexión y desinstalación, y [Releases](docs/releases.md) para
+verificar el SHA-256 del archivo descargado.
 
-En Gauss, el sistema resultante sí se mantiene cuando permite seguir la
-sustitución regresiva. Las filas nulas (`0 = 0`) no cambian por sí solas la
-clasificación: si todas las variables tienen pivote, la solución sigue siendo
-única.
+Los artifacts de Actions son builds temporales para revisión. La distribución
+estable para usuarios se descarga desde Releases.
 
-La **solución** es la interpretación final del conjunto solución. Si falta algún
-pivote, las variables de esas columnas quedan libres y las demás se despejan en
-función de ellas:
+## Desarrollo rápido
 
-```text
-Sistema resultante
-
-x1 - 5x3 = 1
-x2 + x3 = 4
-
-Clasificación
-
-Consistente de soluciones infinitas
-
-Solución
-
-La variable x3 no tiene pivote, por lo que es libre.
-
-x1 = 1 + 5x3
-x2 = 4 - x3
-x3 es libre
-```
-
-El despeje es simbólico y sigue hasta que ninguna variable pivote dependa de otra
-variable pivote. Para `x1 + x2 + x3 = 5` junto a `x2 + x3 = 2`, la solución es
-`x1 = 3`, no `x1 = 5 - x2 - x3`. Todo se calcula con fracciones exactas, y las
-variables se listan de `x1` a `xn` aunque algunas sean libres.
-
-Cuando existe una fila contradictoria, se muestra su posición y su contenido
-exacto. Por ejemplo:
-
-```text
-0 = 5
-
-En la fila 3 se obtiene [0 0 0 | 5], que equivale a 0 = 5.
-
-Como esta igualdad es imposible, el sistema es inconsistente y no tiene solución.
-```
-
-La evidencia estructurada —fila contradictoria, filas redundantes, columnas sin
-pivote y valores como `Fraction`— se calcula en `backend/`. La terminal solo la
-presenta, de modo que una interfaz futura puede reutilizar la misma interpretación
-sin reconstruir conclusiones matemáticas.
-
-Gauss-Jordan sigue sirviendo para reducir **cualquier matriz rectangular**
-(`2 x 3`, `3 x 2`, `4 x 3`, etc.), sin exigir matrices cuadradas ni de la forma
-`n x (n+1)`, y sin suponer que toda fila o toda columna acabe con pivote. Esa
-capacidad vive en `backend/gauss_jordan.py` y se puede reutilizar, aunque el menú
-esté orientado a resolver sistemas.
-
-## Requisitos
-
-- [uv](https://docs.astral.sh/uv/) instalado. Consulta su documentación oficial
-  para instalarlo en tu sistema.
-- Python 3.13. La versión está fijada en `.python-version`, y `uv` la descarga por
-  ti si todavía no la tienes.
-- Una única dependencia externa, `colorama`, usada solo para dar color a la
-  terminal. Los cálculos y la interpretación de los sistemas siguen apoyándose
-  únicamente en la biblioteca estándar (`random`, `fractions` y `re`).
-
-## Instalación
-
-Desde la raíz del repositorio:
+Necesitas Git y [uv](https://docs.astral.sh/uv/), la herramienta que prepara
+el entorno Python y sus dependencias desde el archivo de versiones bloqueadas.
 
 ```bash
-uv sync
+git clone https://github.com/rodolfo-collado/Algebra-Lineal.git
+cd Algebra-Lineal
+uv sync --locked
+uv run python manage.py runserver
 ```
 
-`pyproject.toml` declara qué necesita el proyecto y `uv.lock` fija las versiones
-exactas que se resolvieron a partir de esa declaración. `uv sync` construye el
-entorno en `.venv/` usando ambos archivos, así que todos los colaboradores
-trabajan con las mismas versiones.
+Abre <http://127.0.0.1:8000/>. El proyecto requiere Python >= 3.13 y `uv` puede
+instalar la versión de referencia indicada en `.python-version`.
 
-## Ejecución
+Para contribuir, crea tu rama a partir de `develop` siguiendo
+[CONTRIBUTING.md](CONTRIBUTING.md). Los comandos de terminal, escritorio,
+build y verificación se explican en las guías correspondientes.
 
-Desde la raíz del repositorio:
+## Documentación
 
-```bash
-uv run python main.py
-```
+Empieza por el [índice de documentación](docs/README.md) o elige una guía:
 
-Para salir, elige la opción `9` del menú.
+| Guía | Qué encontrarás |
+| --- | --- |
+| [Funcionalidades](docs/funcionalidades.md) | Entradas, ejemplos, métodos y lectura de resultados. |
+| [Algoritmos](docs/algoritmos.md) | Cálculo manual, exactitud y conexiones conceptuales. |
+| [Arquitectura](docs/arquitectura.md) | Backend, interfaces y distribución. |
+| [Interfaz](docs/interfaz.md) | Identidad visual, componentes, navegación y accesibilidad. |
+| [Instalación Windows](docs/instalacion-windows.md) | Uso del instalador y construcción del paquete. |
+| [Desarrollo](docs/desarrollo.md) | Entorno local y extensión del catálogo. |
+| [Pruebas](docs/pruebas.md) | Suite, verificaciones y smoke del instalador. |
+| [Releases](docs/releases.md) | Versionado, promoción a main y entrega automatizada. |
 
-## Pruebas
+## Contribuir
 
-Desde la raíz del repositorio:
+Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para el flujo de ramas, las
+convenciones de commits y las reglas de implementación matemática.
 
-```bash
-uv run python -m unittest discover -v
-```
-
-Actualmente son 336 pruebas. Las de `tests/` cubren las reglas matemáticas del
-backend (validaciones, matrices rectangulares, pivotes, escalonamiento,
-sustitución regresiva y clasificación de sistemas), las expresiones lineales y su
-formato, la traducción de una matriz a su sistema, el conjunto solución con
-variables libres, el parser de sistemas, la equivalencia entre Gauss y
-Gauss-Jordan, el flujo de la terminal y las restricciones académicas del proyecto.
-Sirven para detectar regresiones cuando el proyecto crezca.
-
-Para comprobar que todo el código compila:
-
-```bash
-uv run python -m compileall -q backend frontend tests main.py
-```
-
-## Restricciones matemáticas
-
-Este es un proyecto educativo: **los algoritmos de álgebra lineal deben
-implementarse manualmente**.
-
-Está prohibido utilizar:
-
-- NumPy;
-- SciPy;
-- SymPy para resolver operaciones de álgebra lineal;
-- funciones de librerías externas que calculen directamente Gauss, Gauss-Jordan,
-  rango, determinantes, sistemas de ecuaciones u operaciones equivalentes;
-- cualquier librería que sustituya el desarrollo manual del algoritmo.
-
-La implementación debe construirse con herramientas estándar de Python: listas,
-listas anidadas, `if` / `else`, `for`, `while`, funciones, operaciones aritméticas
-y estructuras propias del lenguaje.
-
-`fractions.Fraction` sí está permitido: pertenece a la biblioteca estándar y
-únicamente representa números racionales con exactitud, no resuelve ningún
-algoritmo por sí mismo.
-
-`colorama` también está permitido, pero únicamente para dar color a la terminal:
-no participa en ningún cálculo ni sustituye ningún algoritmo.
-
-`tests/test_restricciones_proyecto.py` comprueba esta regla de forma automática:
-analiza los imports del código con `ast` y revisa las dependencias declaradas en
-`pyproject.toml`, así que la prohibición ya no depende de una revisión manual.
-
-## Estructura actual
-
-El proyecto separa la lógica matemática de la interfaz:
-
-```text
-Algebra-Lineal/
-├── main.py                     # punto de entrada de la aplicación
-├── pyproject.toml              # metadata y dependencias declaradas
-├── uv.lock                     # versiones exactas resueltas por uv
-├── .python-version             # versión de Python del proyecto
-├── README.md
-├── CONTRIBUTING.md
-├── .github/
-│   └── workflows/
-│       └── ci.yml              # integración continua
-├── backend/
-│   ├── matrices.py             # utilidades generales y validaciones
-│   ├── operaciones_filas.py    # operaciones elementales y registro de pasos
-│   ├── expresiones.py          # expresiones lineales exactas y su formato
-│   ├── gauss.py                # escalonamiento hacia abajo
-│   ├── gauss_jordan.py         # reducción completa y rango
-│   ├── parser_sistemas.py      # texto de ecuaciones → matriz aumentada
-│   └── sistemas.py             # clasificación, sistema resultante y solución
-├── frontend/
-│   └── terminal/
-│       ├── menu.py             # bucle del menú y navegación
-│       ├── opciones.py         # qué hace cada opción del menú
-│       ├── entradas.py         # lectura y validación de datos del usuario
-│       ├── salida.py           # formateo e impresión de matrices y pasos
-│       └── consola.py          # colores, limpieza de pantalla y pausas
-└── tests/
-    ├── test_matrices.py
-    ├── test_operaciones_filas.py
-    ├── test_expresiones.py
-    ├── test_gauss.py
-    ├── test_gauss_jordan.py
-    ├── test_parser_sistemas.py
-    ├── test_sistemas.py
-    ├── test_entradas.py
-    ├── test_opciones.py
-    ├── test_menu.py
-    ├── test_salida.py
-    ├── test_consola.py
-    └── test_restricciones_proyecto.py
-```
-
-Dentro de `backend/` la dependencia también va en un solo sentido, donde `→`
-significa «depende de»:
-
-```text
-sistemas  →  gauss_jordan  →  gauss  →  operaciones_filas  →  matrices
-sistemas  →  expresiones   →  matrices
-```
-
-Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
-eliminación hacia arriba, así que la diferencia entre los dos métodos está en un
-único bloque de código.
-
-`expresiones.py` representa a mano una expresión lineal como una constante más un
-coeficiente por variable, y es lo que permite despejar sin manipular texto: primero
-se calcula la expresión con `Fraction` y solo al final se escribe. `sistemas.py`
-usa esa misma pieza para traducir matrices a ecuaciones y para construir el
-conjunto solución, de modo que Gauss y Gauss-Jordan comparten la interpretación
-entera.
-
-`parser_sistemas.py` queda fuera de esa cadena porque no depende de ningún otro
-módulo del proyecto: recibe texto y devuelve una matriz, o lanza `ValueError`. Eso
-permitirá reutilizarlo tal cual desde otra interfaz.
-
-`backend/` contiene lógica pura: no usa `input()` ni `print()` y no depende de
-ninguna interfaz. `frontend/terminal/` es quien consume el backend y concentra
-toda la interacción por consola. La dependencia va siempre en un sentido:
-
-```text
-frontend  →  backend
-```
-
-Esa separación deja espacio para añadir más adelante otra interfaz bajo
-`frontend/` sin tocar la lógica matemática.
-
-## Desarrollo
-
-El flujo de ramas, las convenciones de commits y las reglas para contribuir están
-en [CONTRIBUTING.md](CONTRIBUTING.md).
+Las propuestas y correcciones se integran mediante PR a `develop`. Las versiones
+estables llegan a `main` mediante un PR separado y se publican desde un tag
+validado. Así, documentación, pruebas y distribución acompañan al código.

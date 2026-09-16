@@ -1,0 +1,844 @@
+/* Componentes reutilizables: encabezado de herramienta, paneles, botones, buscador,
+   inicio, relacionadas, teclado matemático, controles de estructura, guías y matrices. */
+
+/* —— Encabezado de herramienta —— */
+
+.tool-kicker,
+.section-kicker,
+.matrix-label,
+.final-label {
+    margin: 0 0 0.3rem;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tool-header {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tool-title,
+.home-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.45rem;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+}
+
+.tool-lead,
+.home-lead {
+    max-width: 40rem;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 0.93rem;
+}
+
+.tool-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.6rem;
+    margin: 0.35rem 0 0;
+    font-size: 0.88rem;
+}
+
+.tool-note-label {
+    padding: 0.1rem 0.5rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+[data-theme="dark"] .tool-note-label {
+    color: var(--color-brand);
+}
+
+/* —— Paneles y botones —— */
+
+.panel {
+    padding: 1rem 1.1rem 1.15rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 2.5rem;
+    padding: 0.55rem 1.1rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background var(--motion),
+        box-shadow var(--motion),
+        border-color var(--motion);
+}
+
+.btn-primary {
+    min-width: 8.5rem;
+    color: var(--color-brand-text);
+    background: var(--color-brand);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+    background: var(--color-brand-strong);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+    color: var(--color-text);
+    background: var(--color-surface-raised);
+    border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.badge {
+    display: inline-block;
+    vertical-align: middle;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    color: var(--color-muted);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.chip:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.field-error,
+.alert {
+    color: var(--color-danger);
+    font-size: 0.87rem;
+}
+
+.field-error {
+    margin: 0.45rem 0 0;
+}
+
+.alert {
+    margin-bottom: 1rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--color-danger-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-danger-soft);
+}
+
+/* —— Buscador —— */
+
+.search {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.search-label {
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.search-field {
+    display: flex;
+    align-items: center;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.search-icon {
+    position: absolute;
+    top: 50%;
+    left: 0.65rem;
+    width: 1rem;
+    height: 1rem;
+    color: var(--color-muted);
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.6rem 0.45rem 2.2rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 0.88rem;
+    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.search-input::-webkit-search-cancel-button {
+    cursor: pointer;
+}
+
+.search-input:hover {
+    border-color: var(--color-border-strong);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px var(--color-focus);
+}
+
+/* Enviar sigue disponible por teclado (Enter) y para quien no tiene JavaScript. */
+.search-submit {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.search-status {
+    min-height: 1.1rem;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 0.76rem;
+}
+
+.search-status:empty {
+    display: none;
+}
+
+.search-large .search-input {
+    min-height: 2.9rem;
+    padding-left: 2.5rem;
+    font-size: 1rem;
+}
+
+.search-large .search-icon {
+    left: 0.85rem;
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.search-large .search-submit {
+    position: static;
+    width: auto;
+    height: auto;
+    min-height: 2.9rem;
+    margin-left: 0.5rem;
+    padding: 0.5rem 1rem;
+    overflow: visible;
+    clip: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-raised);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.search-large .search-submit:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.search-large .search-status {
+    font-size: 0.85rem;
+}
+
+/* —— Inicio —— */
+
+.home-hero {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.35rem 1.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-sm);
+}
+
+.home-hero .home-title {
+    font-size: clamp(1.5rem, 2.6vw, 1.95rem);
+}
+
+.home-hero .search {
+    max-width: 44rem;
+    margin-top: 0.6rem;
+}
+
+.quick-access {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.35rem;
+}
+
+.quick-access-label {
+    margin-right: 0.2rem;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.home-section {
+    margin-bottom: 1.5rem;
+}
+
+.home-section-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.home-section-heading h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+}
+
+.home-area {
+    margin-top: 1.6rem;
+}
+
+.home-area[hidden],
+.home-category[hidden],
+.tool-item[hidden] {
+    display: none;
+}
+
+.home-area-description {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+}
+
+.home-category {
+    margin-top: 0.85rem;
+    padding: 0.95rem 1.05rem 1.05rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+}
+
+.home-category-upcoming {
+    background: var(--color-surface);
+}
+
+.home-category-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin-bottom: 0.7rem;
+}
+
+.home-category-heading h3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.15rem;
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+}
+
+.home-category-heading p {
+    margin: 0;
+    font-size: 0.86rem;
+}
+
+.category-icon {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    flex: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+}
+
+[data-theme="dark"] .category-icon {
+    color: var(--color-brand);
+}
+
+.category-icon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.tool-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tool-link {
+    display: grid;
+    gap: 0.2rem;
+    height: 100%;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+a.tool-link:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.tool-link-name {
+    font-size: 0.93rem;
+    font-weight: 700;
+}
+
+a.tool-link .tool-link-name {
+    color: var(--color-brand-strong);
+}
+
+[data-theme="dark"] a.tool-link .tool-link-name {
+    color: var(--color-brand);
+}
+
+.tool-link-context {
+    color: var(--color-muted);
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+.tool-link-description {
+    color: var(--color-muted);
+    font-size: 0.83rem;
+    line-height: 1.4;
+}
+
+.tool-link-upcoming {
+    border-style: dashed;
+    background: transparent;
+}
+
+.empty-state {
+    padding: 0.9rem 1rem;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-muted);
+}
+
+/* —— Herramientas relacionadas —— */
+
+.related {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.related-title {
+    margin: 0 0 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.related-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.related-link {
+    display: grid;
+    gap: 0.1rem;
+    max-width: 22rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.related-link:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.related-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.related-hint {
+    color: var(--color-muted);
+    font-size: 0.78rem;
+}
+
+/* —— Teclado matemático contextual —— */
+
+.math-keyboard {
+    margin-top: 0.7rem;
+    padding: 0.65rem 0.75rem 0.55rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.math-keyboard[hidden] {
+    display: none;
+}
+
+.math-keyboard-title {
+    margin: 0 0 0.45rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.math-keyboard-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.1rem;
+}
+
+.math-keyboard-group {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.math-keyboard-group-name {
+    color: var(--color-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.math-keys {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.math-key {
+    min-width: 2.5rem;
+    min-height: 2.35rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.math-key:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.math-keyboard-help {
+    margin: 0.5rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.76rem;
+}
+
+/* —— Controles de estructura (dimensiones), separados del teclado —— */
+
+.structure-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 0.7rem;
+}
+
+.stepper {
+    display: inline-flex;
+    align-items: stretch;
+    max-width: 100%;
+}
+
+.stepper .field-input {
+    width: 5rem;
+    max-width: 5rem;
+    text-align: center;
+    border-radius: 0;
+    /* Los botones +/- sustituyen a las flechas nativas del campo numérico. */
+    appearance: textfield;
+}
+
+.stepper .field-input::-webkit-inner-spin-button,
+.stepper .field-input::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+}
+
+.stepper .field-input:first-child {
+    border-radius: var(--radius-sm);
+}
+
+.stepper-btn {
+    width: 2.5rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--motion-fast), border-color var(--motion-fast);
+}
+
+.stepper-btn[hidden] {
+    display: none;
+}
+
+.stepper-btn:first-child {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    border-right: 0;
+}
+
+.stepper-btn:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    border-left: 0;
+}
+
+.stepper-btn:hover {
+    background: var(--color-brand-soft);
+    border-color: var(--color-brand);
+}
+
+/* —— «Entender este resultado»: guías plegadas para no competir con el resultado —— */
+
+.insight {
+    margin-top: 1.15rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.insight-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.55rem;
+    margin-inline: -0.55rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-muted);
+    font-size: 0.88rem;
+    font-weight: 700;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--motion-fast), color var(--motion-fast);
+}
+
+.insight-summary::-webkit-details-marker {
+    display: none;
+}
+
+.insight-summary:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+}
+
+.insight-chevron {
+    width: 0.85rem;
+    height: 0.85rem;
+    flex: none;
+    transition: transform var(--motion-fast);
+}
+
+.insight[open] > .insight-summary {
+    color: var(--color-text);
+}
+
+.insight[open] > .insight-summary .insight-chevron {
+    transform: rotate(90deg);
+}
+
+.insight .concept-guides {
+    margin: 0.6rem 0 0;
+}
+
+.insight .concept-guide {
+    padding: 0.65rem 0.8rem;
+}
+
+/* —— Guía de concepto —— */
+
+.concept-guides {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0.9rem 0;
+}
+
+.concept-guide {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    border-inline-start: 3px solid var(--guide-accent, var(--color-brand));
+}
+
+.concept-guide[data-tipo="observa"] {
+    --guide-accent: var(--color-accent);
+    background: var(--color-accent-soft);
+}
+
+.concept-guide[data-tipo="pista"] {
+    --guide-accent: var(--color-warning);
+    background: var(--color-warning-soft);
+}
+
+.concept-guide[data-tipo="por-que"] {
+    --guide-accent: var(--color-brand-strong);
+    background: var(--color-brand-soft);
+}
+
+.concept-guide-mark {
+    width: 1.7rem;
+    height: 1.7rem;
+    margin-top: 0.1rem;
+    color: var(--guide-accent, var(--color-brand));
+}
+
+.concept-guide-title {
+    margin: 0 0 0.2rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--guide-accent, var(--color-brand));
+}
+
+.concept-guide-body {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+/* —— Matrices —— */
+
+.matrix {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: stretch;
+}
+
+.matrix-fence {
+    flex: 0 0 0.45rem;
+    margin-block: 0.15rem;
+    border: 2.5px solid var(--color-text);
+    opacity: 0.78;
+}
+
+.matrix-fence-start {
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+}
+
+.matrix-fence-end {
+    border-left: 0;
+    border-radius: 0 10px 10px 0;
+}
+
+.matrix-scroll {
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.matrix-table {
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.matrix-table td {
+    min-width: 2.7rem;
+    padding: 0.4rem 0.72rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.matrix-table td.pivot {
+    background: var(--color-pivot);
+    font-weight: 700;
+}
+
+.matrix-table td.constant {
+    border-left: 2.5px solid var(--color-aug-strong);
+    background: var(--color-aug);
+    padding-left: 0.9rem;
+    font-weight: 600;
+}
+
+@media (max-width: 760px) {
+    .structure-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .search-large .search-field {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-large .search-submit {
+        margin: 0.45rem 0 0;
+    }
+}

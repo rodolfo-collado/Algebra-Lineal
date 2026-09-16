@@ -1,0 +1,121 @@
+/* Base tipográfica, reset ligero y utilidades. */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    line-height: 1.5;
+    overflow-x: hidden;
+}
+
+code,
+.matrix-table,
+.matrix-input,
+.field-input-code,
+.matrix-header,
+.matrix-row-label,
+.matrix-corner,
+.matrix-divider-header,
+.matrix-divider-cell,
+.step-operation code,
+.equations code,
+.pivot-chip,
+.math-key {
+    font-family: var(--font-math);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+    margin-top: 0;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.skip-link {
+    position: absolute;
+    left: 0.8rem;
+    top: -3rem;
+    z-index: 40;
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--color-brand);
+    color: var(--color-brand-text);
+    font-weight: 600;
+}
+
+.skip-link:focus {
+    top: 0.8rem;
+}
+
+.muted {
+    color: var(--color-muted);
+}
+
+.text-link {
+    color: var(--color-brand-strong);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+[data-theme="dark"] .text-link {
+    color: var(--color-brand);
+}
+
+/* Foco visible y consistente para todo control interactivo. */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex="-1"]:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+[id] {
+    scroll-margin-top: calc(var(--header-height) + 1.5rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

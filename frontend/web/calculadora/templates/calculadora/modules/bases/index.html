@@ -1,0 +1,92 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static %}
+
+{% block tool_input %}
+    <section class="panel workspace" aria-labelledby="workspace-title" data-conversion-bases>
+        <h2 id="workspace-title" class="sr-only">Entrada</h2>
+        <form id="conversion-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="alert error" role="alert">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div id="number-fields" class="field-group">
+                <label for="{{ form.numero.id_for_label }}">
+                    {% for base, nombre, teclado in bases_entrada %}
+                        <span data-number-label-base="{{ base }}" {% if base != base_entrada_activa %}hidden{% endif %}>Número {{ nombre }}</span>
+                    {% endfor %}
+                </label>
+                <p class="field-help">Escribe solo dígitos válidos en la base de origen; el teclado de abajo se adapta a ella.</p>
+                {{ form.numero }}
+                {% comment %}Aviso en vivo al cambiar de base o escribir; el servidor vuelve a validar al convertir.{% endcomment %}
+                <p class="field-error" data-validacion-cliente role="alert" hidden></p>
+                {% for error in form.numero.errors %}
+                    <p class="field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="base-selectors" role="group" aria-label="Bases de la conversión">
+                <div class="base-selector">
+                    <label for="{{ form.base_origen.id_for_label }}">{{ form.base_origen.label }}</label>
+                    {{ form.base_origen }}
+                    {% for error in form.base_origen.errors %}
+                        <p class="field-error" role="alert">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <button type="button" class="base-swap" data-intercambiar-bases
+                        aria-label="Intercambiar base de origen y base de destino" title="Intercambiar bases" hidden>
+                    <span aria-hidden="true">⇄</span>
+                </button>
+                <div class="base-selector">
+                    <label for="{{ form.base_destino.id_for_label }}">{{ form.base_destino.label }}</label>
+                    {{ form.base_destino }}
+                    {% for error in form.base_destino.errors %}
+                        <p class="field-error" role="alert">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% for base, nombre, teclado in bases_entrada %}
+                <div class="base-keyboard" data-teclado-base="{{ base }}" data-nombre-base="{{ nombre }}" {% if base != base_entrada_activa %}hidden{% endif %}>
+                    {% include "calculadora/components/math_keyboard.html" with teclado=teclado campos_id="number-fields" %}
+                </div>
+            {% endfor %}
+
+            <div class="workspace-actions">
+                <button class="btn btn-primary" type="submit">Convertir</button>
+            </div>
+        </form>
+    </section>
+{% endblock %}
+
+{% block tool_result %}
+    {% if resultado %}
+        <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+            <header class="results-heading">
+                <p class="section-kicker">Conversión</p>
+                <h2 id="results-title">{{ resultado.titulo }}</h2>
+            </header>
+
+            <section class="panel panel-final" aria-labelledby="equality-title">
+                <h3 id="equality-title" class="panel-title">Resultado</h3>
+                <p class="base-equality" aria-label="{{ resultado.igualdad }}">
+                    <span class="base-numeral">{{ resultado.origen }}</span>
+                    <span class="base-equals" aria-hidden="true">=</span>
+                    <span class="base-numeral base-numeral-result">{{ resultado.destino }}</span>
+                </p>
+            </section>
+
+            <section class="panel" aria-labelledby="procedure-title">
+                <h3 id="procedure-title" class="panel-title">Procedimiento</h3>
+                {% include "calculadora/modules/bases/_procedimiento.html" %}
+            </section>
+        </section>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'calculadora/teclado.js' %}" defer></script>
+    <script src="{% static 'calculadora/conversion.js' %}" defer></script>
+{% endblock %}

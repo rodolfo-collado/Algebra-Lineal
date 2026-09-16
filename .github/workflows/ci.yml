@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_call:
   push:
     branches:
       - develop
@@ -15,7 +16,7 @@ permissions:
 
 # Una nueva ejecucion sobre el mismo ref cancela la anterior; otras ramas no se tocan.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -43,7 +44,64 @@ jobs:
         run: uv sync --locked
 
       - name: Ejecutar las pruebas
-        run: uv run python -m unittest discover -v
+        run: uv run --locked python -m unittest discover -v
+
+      - name: Comprobar configuración Django
+        run: uv run --locked python manage.py check
 
       - name: Verificar la compilacion
-        run: uv run python -m compileall -q backend frontend tests main.py
+        run: uv run --locked python -m compileall -q backend frontend tests main.py manage.py desktop.py
+
+  windows:
+    name: Distribución de Windows
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.7"
+          enable-cache: true
+
+      - name: Instalar Inno Setup 6.7.3
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $directory = Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6'
+          New-Item -ItemType Directory -Path build\tools -Force | Out-Null
+          $installer = Join-Path $PWD 'build\tools\innosetup.exe'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe' -OutFile $installer
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Pyrsys B.V.(?:,|$)') {
+            throw 'La firma del instalador de Inno Setup no es válida.'
+          }
+          $process = Start-Process $installer -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', ('/DIR="' + $directory + '"'), '/TASKS=') -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Inno Setup falló: $($process.ExitCode)" }
+
+      - name: Construir aplicación e instalador
+        shell: pwsh
+        run: .\scripts\build_windows.ps1
+
+      - name: Ejecutar las pruebas en Windows
+        run: uv run --locked python -m unittest discover -v
+
+      - name: Probar instalación, dos aperturas y desinstalación
+        shell: pwsh
+        run: |
+          $installers = @(Get-ChildItem dist/installer/AlgebraLineal-Setup-*.exe)
+          if ($installers.Count -ne 1) { throw 'Se esperaba exactamente un instalador.' }
+          .\scripts\test_windows_distribution.ps1 -InstallerPath $installers[0].FullName
+
+      - name: Conservar instalador para revisión
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: algebra-lineal-windows
+          path: dist/installer/AlgebraLineal-Setup-*.exe
+          if-no-files-found: error
+          retention-days: 14

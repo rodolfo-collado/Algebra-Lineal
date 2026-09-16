@@ -14,7 +14,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 LIBRERIAS_PROHIBIDAS = frozenset({"numpy", "scipy", "sympy"})
 
 # Codigo ejecutable del repositorio, sin contar el entorno virtual.
-RUTAS_REVISADAS = ("backend", "frontend", "tests", "main.py")
+RUTAS_REVISADAS = ("backend", "frontend", "tests", "main.py", "desktop.py")
 
 
 def archivos_python():
@@ -98,6 +98,7 @@ class PruebasImportsProhibidos(unittest.TestCase):
         revisados = {archivo.relative_to(RAIZ).as_posix() for archivo in archivos_python()}
 
         self.assertIn("main.py", revisados)
+        self.assertIn("desktop.py", revisados)
         self.assertIn("backend/expresiones.py", revisados)
         self.assertIn("backend/gauss.py", revisados)
         self.assertIn("backend/gauss_jordan.py", revisados)

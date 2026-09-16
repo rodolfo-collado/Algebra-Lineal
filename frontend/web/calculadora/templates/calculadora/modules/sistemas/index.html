@@ -1,0 +1,201 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static %}
+
+{% block tool_input %}
+    <section class="panel workspace" aria-labelledby="workspace-title">
+        <h2 id="workspace-title" class="sr-only">Entrada</h2>
+        <form id="sistema-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="alert error" role="alert">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <section class="workspace-section" aria-labelledby="config-title">
+                <h3 id="config-title" class="section-title">Configuración de entrada</h3>
+
+                <fieldset class="choice-fieldset">
+                    <legend>{{ form.tipo_entrada.label }}</legend>
+                    <div class="segmented">
+                        {% for radio in form.tipo_entrada %}
+                            <label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+                        {% endfor %}
+                    </div>
+                    {% comment %}Una explicación por opción; matriz.js muestra la de la opción elegida.{% endcomment %}
+                    {% for radio in form.tipo_entrada %}
+                        <p class="field-help option-help" data-input-hint="{{ radio.data.value }}" {% if not radio.data.selected %}hidden{% endif %}>
+                            {% if radio.data.value == "sistema" %}Escribe las ecuaciones directamente.{% else %}Ingresa los coeficientes en la matriz [A | b].{% endif %}
+                        </p>
+                    {% endfor %}
+                    {% for error in form.tipo_entrada.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </fieldset>
+
+                <fieldset class="choice-fieldset">
+                    <legend>{{ form.metodo.label }}</legend>
+                    <div class="option-list">
+                        {% for radio in form.metodo %}
+                            <label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+                        {% endfor %}
+                    </div>
+                    <p class="field-help option-help">
+                        Gauss se detiene en la forma escalonada y resuelve por sustitución regresiva; Gauss-Jordan
+                        continúa hasta la forma escalonada reducida. Comparar ambos muestra los dos procedimientos.
+                    </p>
+                    {% for error in form.metodo.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </fieldset>
+
+                <fieldset class="choice-fieldset">
+                    <legend>{{ form.mostrar.label }}</legend>
+                    <input type="hidden" name="mostrar_definido" value="1">
+                    <div class="option-list">
+                        {% for casilla in form.mostrar %}
+                            <label class="option">{{ casilla.tag }}<span>{{ casilla.choice_label }}</span></label>
+                        {% endfor %}
+                    </div>
+                    <p class="field-help option-help">La matriz final y la solución se muestran siempre.</p>
+                    {% for error in form.mostrar.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </fieldset>
+            </section>
+
+            <section class="workspace-section" aria-labelledby="data-title">
+                <h3 id="data-title" class="section-title">Datos</h3>
+
+                <fieldset id="system-fields" class="input-mode">
+                    <legend class="sr-only">Sistema de ecuaciones</legend>
+                    <div class="field-group">
+                        {{ form.sistema.label_tag }}
+                        <p class="field-help">
+                            Escribe una ecuación por línea o sepáralas con <code>;</code>.
+                            Las variables son <code>x1</code>, <code>x2</code>, …; se admiten fracciones como <code>1/2</code>.
+                        </p>
+                        {{ form.sistema }}
+                        {% for error in form.sistema.errors %}
+                            <p class="field-error" role="alert">{{ error }}</p>
+                        {% endfor %}
+                        {% include "calculadora/components/math_keyboard.html" with teclado=teclado_sistema campos_id="system-fields" %}
+                    </div>
+                </fieldset>
+
+                <fieldset id="matrix-fields" class="input-mode" hidden disabled>
+                    <legend class="sr-only">Matriz aumentada</legend>
+                    <div class="structure-controls" role="group" aria-label="Estructura de la matriz">
+                        <div class="dimension-field">
+                            {{ form.ecuaciones.label_tag }}
+                            <div class="stepper" data-estructura="ecuaciones">
+                                <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar una ecuación" hidden>−</button>
+                                {{ form.ecuaciones }}
+                                <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una ecuación" hidden>+</button>
+                            </div>
+                            {% for error in form.ecuaciones.errors %}
+                                <p class="field-error" role="alert">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="dimension-field">
+                            {{ form.variables.label_tag }}
+                            <div class="stepper" data-estructura="variables">
+                                <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar una variable" hidden>−</button>
+                                {{ form.variables }}
+                                <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una variable" hidden>+</button>
+                            </div>
+                            {% for error in form.variables.errors %}
+                                <p class="field-error" role="alert">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p class="field-help">
+                        La última columna corresponde a los términos independientes.
+                    </p>
+                    <div id="matrix-grid-wrapper" class="matrix-grid-wrapper" hidden>
+                        <div class="matrix-grid-frame">
+                            <div id="matrix-grid" class="matrix-grid" role="grid" aria-label="Matriz aumentada"></div>
+                        </div>
+                        <p id="matrix-grid-help" class="field-help" aria-live="polite">
+                            Completa todas las celdas con números, enteros o fracciones.
+                        </p>
+                    </div>
+                    {% include "calculadora/components/math_keyboard.html" with teclado=teclado_matriz campos_id="matrix-fields" %}
+                </fieldset>
+                <noscript><p class="field-help">Para editar la cuadrícula de una matriz, activa JavaScript. Puedes resolver y comparar métodos usando el sistema escrito como texto.</p></noscript>
+            </section>
+
+            <div class="workspace-actions">
+                <button class="btn btn-primary" type="submit">Resolver</button>
+            </div>
+        </form>
+    </section>
+{% endblock %}
+
+{% block tool_result %}
+    {% if resultados %}
+        <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+            <header class="results-heading">
+                <p class="section-kicker">{% if comparando %}Comparación de métodos{% elif "procedimiento" in mostrar %}Procedimiento y resultado{% else %}Resultado{% endif %}</p>
+                <h2 id="results-title">{{ titulo_resultado }}</h2>
+            </header>
+
+            {% if "procedimiento" in mostrar %}
+                <section class="panel" aria-labelledby="initial-title">
+                    <h3 id="initial-title" class="panel-title">Matriz inicial</h3>
+                    {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                </section>
+            {% endif %}
+
+            {% if comparando %}
+                {% comment %}Un panel por método con su procedimiento y sus bloques; lo que coincide (clasificación y solución) va una sola vez al final.{% endcomment %}
+                {% for resultado in resultados %}
+                    <section class="panel panel-method" aria-labelledby="method-title-{{ forloop.counter }}">
+                        <h3 id="method-title-{{ forloop.counter }}" class="panel-title">{{ resultado.metodo }}</h3>
+                        {% if "procedimiento" in mostrar %}
+                            <div class="final-block">
+                                <h4 class="final-label">Procedimiento paso a paso</h4>
+                                {% include "calculadora/modules/sistemas/_pasos.html" %}
+                            </div>
+                        {% endif %}
+                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" %}
+                    </section>
+                {% endfor %}
+                <section class="panel panel-final" aria-labelledby="final-title">
+                    <h3 id="final-title" class="panel-title">Resultado final</h3>
+                    {% if "pivotes" in mostrar %}
+                        {% comment %}Los dos métodos comparten las columnas pivote: se toman del primer resultado.{% endcomment %}
+                        <div class="final-block">
+                            {% include "calculadora/modules/sistemas/_pivotes.html" %}
+                        </div>
+                    {% endif %}
+                    {% if "clasificacion" in mostrar %}
+                        {% include "calculadora/modules/sistemas/_clasificacion.html" %}
+                    {% endif %}
+                    {% include "calculadora/modules/sistemas/_solucion.html" %}
+                </section>
+            {% else %}
+                {% if "procedimiento" in mostrar %}
+                    <section class="panel panel-steps" aria-labelledby="steps-title">
+                        <h3 id="steps-title" class="panel-title">Procedimiento paso a paso</h3>
+                        {% include "calculadora/modules/sistemas/_pasos.html" %}
+                    </section>
+                {% endif %}
+                <section class="panel panel-final" aria-labelledby="final-title">
+                    <h3 id="final-title" class="panel-title">Resultado final</h3>
+                    {% include "calculadora/modules/sistemas/_bloques_metodo.html" %}
+                    {% if "clasificacion" in mostrar %}
+                        {% include "calculadora/modules/sistemas/_clasificacion.html" %}
+                    {% endif %}
+                    {% include "calculadora/modules/sistemas/_solucion.html" %}
+                </section>
+            {% endif %}
+        </section>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ matrix_values|json_script:"matrix-initial-values" }}
+    <script src="{% static 'calculadora/matriz.js' %}" defer></script>
+    <script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}

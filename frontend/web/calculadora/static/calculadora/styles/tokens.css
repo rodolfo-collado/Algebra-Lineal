@@ -1,0 +1,125 @@
+/* Tokens semánticos: verde esmeralda como acento, azul profundo para la columna aumentada. */
+
+:root,
+[data-theme="light"] {
+    color-scheme: light;
+
+    --color-bg: #eef3f0;
+    --color-bg-accent: #e2ece6;
+    --color-surface: #f6f9f7;
+    --color-surface-raised: #ffffff;
+    --color-surface-muted: #edf3ef;
+    --color-text: #17221c;
+    --color-muted: #5b6b62;
+    --color-border: #cdd9d2;
+    --color-border-strong: #a3b4aa;
+
+    --color-brand: #1b7a4e;
+    --color-brand-strong: #145f3c;
+    --color-brand-soft: #dcefe4;
+    --color-brand-text: #f3fbf6;
+
+    --color-accent: #1a5f8a;
+    --color-accent-soft: #dceaf3;
+
+    --color-success: #1f6b4a;
+    --color-success-soft: #dcefe6;
+    --color-success-border: #9fcbb4;
+
+    --color-warning: #8a5a12;
+    --color-warning-soft: #f5ead6;
+    --color-warning-border: #d4b888;
+
+    --color-danger: #8b2e2e;
+    --color-danger-soft: #f6e8e8;
+    --color-danger-border: #dfb4b4;
+
+    --color-aug: #e3eef4;
+    --color-aug-strong: #1a5f8a;
+    --color-pivot: rgb(27 122 78 / 0.14);
+    --color-mark-cell: #f3fbf6;
+    --color-mark-bar: #8fcbae;
+    --color-mark-aug: #c5dde8;
+
+    --color-focus: rgb(27 122 78 / 0.35);
+    --color-shadow: rgb(23 34 28 / 0.08);
+    --color-shadow-strong: rgb(23 34 28 / 0.16);
+    --color-backdrop: rgb(23 34 28 / 0.45);
+
+    /* Compatibilidad con tokens previos */
+    --color-primary: var(--color-brand);
+    --color-primary-hover: var(--color-brand-strong);
+    --color-primary-text: var(--color-brand-text);
+    --color-primary-soft: var(--color-brand-soft);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+
+    --shadow-sm: 0 1px 2px var(--color-shadow);
+    --shadow-md: 0 8px 24px var(--color-shadow);
+    --shadow-lg: 0 16px 40px var(--color-shadow-strong);
+
+    --space-1: 0.35rem;
+    --space-2: 0.7rem;
+    --space-3: 1rem;
+    --space-4: 1.35rem;
+    --space-5: 1.75rem;
+
+    --font-ui: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-display: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    --font-math: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+
+    --header-height: 3rem;
+    --nav-width: 17rem;
+    --content-max: 1040px;
+    --motion: 160ms ease;
+    --motion-fast: 120ms ease;
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --color-bg: #101714;
+    --color-bg-accent: #16201b;
+    --color-surface: #182220;
+    --color-surface-raised: #1f2b27;
+    --color-surface-muted: #141d19;
+    --color-text: #e6efe9;
+    --color-muted: #9aaba2;
+    --color-border: #2b3a33;
+    --color-border-strong: #3d4f47;
+
+    --color-brand: #4cc38a;
+    --color-brand-strong: #6ad3a0;
+    --color-brand-soft: #1b3527;
+    --color-brand-text: #08170f;
+
+    --color-accent: #6aa8cc;
+    --color-accent-soft: #1d303a;
+
+    --color-success: #6fbf95;
+    --color-success-soft: #1d3228;
+    --color-success-border: #3a5f4a;
+
+    --color-warning: #d4a85a;
+    --color-warning-soft: #322818;
+    --color-warning-border: #5c4a28;
+
+    --color-danger: #e08a8a;
+    --color-danger-soft: #3a2424;
+    --color-danger-border: #6a3b3b;
+
+    --color-aug: #1e3038;
+    --color-aug-strong: #8fbfda;
+    --color-pivot: rgb(76 195 138 / 0.18);
+    --color-mark-cell: #182220;
+    --color-mark-bar: #4fa07a;
+    --color-mark-aug: #2a4454;
+
+    --color-focus: rgb(106 211 160 / 0.45);
+    --color-shadow: rgb(0 0 0 / 0.32);
+    --color-shadow-strong: rgb(0 0 0 / 0.45);
+    --color-backdrop: rgb(0 0 0 / 0.55);
+}

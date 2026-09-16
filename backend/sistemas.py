@@ -3,6 +3,7 @@
 from fractions import Fraction
 
 from backend.expresiones import (
+    NOMBRE_VARIABLE,
     crear_expresion,
     expresion_de_variable,
     formatear_ecuacion,
@@ -97,11 +98,12 @@ def clasificar_sistema(matriz_resuelta, pivotes, cantidad_variables):
     return SOLUCION_UNICA
 
 
-def ecuaciones_de_matriz(matriz_aumentada):
+def ecuaciones_de_matriz(matriz_aumentada, nombre_variable=NOMBRE_VARIABLE):
     """Traduce cada fila de la matriz aumentada a su ecuacion equivalente.
 
     Las filas nulas y las contradictorias tambien se traducen, porque son
     parte del sistema resultante: 0 = 0 y 0 = 3 se leen igual que el resto.
+    `nombre_variable` es la letra de las incognitas (x1, x2, ... o c1, c2, ...).
     """
     es_valida, mensaje = validar_matriz_aumentada(matriz_aumentada)
     if not es_valida:
@@ -117,7 +119,9 @@ def ecuaciones_de_matriz(matriz_aumentada):
             0,
             {columna + 1: fila[columna] for columna in range(cantidad_variables)}
         )
-        ecuaciones.append(formatear_ecuacion(izquierda, fila[cantidad_variables]))
+        ecuaciones.append(
+            formatear_ecuacion(izquierda, fila[cantidad_variables], nombre_variable)
+        )
 
     return ecuaciones
 
@@ -168,8 +172,8 @@ def formatear_fila_aumentada(fila, cantidad_variables=None):
     return f"[{coeficientes} | {termino}]"
 
 
-def enumerar_variables(indices):
-    nombres = [f"x{indice}" for indice in indices]
+def enumerar_variables(indices, nombre_variable=NOMBRE_VARIABLE):
+    nombres = [f"{nombre_variable}{indice}" for indice in indices]
     if len(nombres) == 1:
         return nombres[0]
 
@@ -183,7 +187,8 @@ def agregar_parrafo(lineas, texto):
 
 
 def construir_justificacion(
-    clasificacion, contradiccion, redundantes, libres, cantidad_variables
+    clasificacion, contradiccion, redundantes, libres, cantidad_variables,
+    nombre_variable=NOMBRE_VARIABLE
 ):
     """Construye una explicación breve desde evidencia estructurada."""
     lineas = []
@@ -219,7 +224,7 @@ def construir_justificacion(
             "por lo que esa ecuación no agrega una nueva condición."
         )
 
-    nombres = enumerar_variables(libres)
+    nombres = enumerar_variables(libres, nombre_variable)
     if len(libres) == 1:
         texto_libres = (
             f"La variable {nombres} no tiene pivote, por lo que es libre."
@@ -269,37 +274,47 @@ def solucion_general(matriz_resuelta, pivotes, cantidad_variables):
     return [expresiones[variable] for variable in range(1, cantidad_variables + 1)]
 
 
-def formatear_solucion_general(expresiones, libres):
+def formatear_solucion_general(expresiones, libres, nombre_variable=NOMBRE_VARIABLE):
     """Una linea por variable, en orden, marcando cuales quedaron libres."""
     sin_pivote = set(libres)
     lineas = []
 
     for variable, expresion in enumerate(expresiones, start=1):
         if variable in sin_pivote:
-            lineas.append(f"x{variable} es libre")
+            lineas.append(f"{nombre_variable}{variable} es libre")
         else:
-            lineas.append(f"x{variable} = {formatear_expresion(expresion)}")
+            lineas.append(
+                f"{nombre_variable}{variable} = "
+                f"{formatear_expresion(expresion, nombre_variable)}"
+            )
 
     return lineas
 
 
-def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
+def interpretar_resultado(
+    matriz_resuelta, pivotes, cantidad_variables, nombre_variable=NOMBRE_VARIABLE
+):
     """Lee una matriz ya resuelta: ecuaciones, clasificacion y solucion.
 
     La comparten Gauss y Gauss-Jordan. Cada uno le pasa su propia matriz, de
     modo que el sistema resultante puede diferir aunque la solucion coincida.
+    `nombre_variable` solo cambia la letra con que se escriben las incognitas.
     """
     clasificacion = clasificar_sistema(
         matriz_resuelta, pivotes, cantidad_variables
     )
-    ecuaciones = ecuaciones_de_matriz(matriz_resuelta)
+    ecuaciones = ecuaciones_de_matriz(matriz_resuelta, nombre_variable)
     contradiccion = fila_inconsistente(matriz_resuelta, cantidad_variables)
     redundantes = filas_nulas(matriz_resuelta, cantidad_variables)
+    # Los algoritmos ya limitaron los pivotes a los coeficientes; solo cambiamos
+    # sus índices internos a la numeración de usuario, compartida por las interfaces.
+    columnas_pivote = [columna + 1 for _, columna in pivotes]
 
     # Una contradicción anula el conjunto solución aunque falten pivotes: sin
     # solución no hay nada que declarar libre.
     if clasificacion == INCONSISTENTE:
         return {
+            "columnas_pivote": columnas_pivote,
             "clasificacion": clasificacion,
             "ecuaciones_resultantes": ecuaciones,
             "solucion_general": [],
@@ -309,7 +324,8 @@ def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
             "variables_libres": [],
             "solucion_directa": False,
             "justificacion": construir_justificacion(
-                clasificacion, contradiccion, redundantes, [], cantidad_variables
+                clasificacion, contradiccion, redundantes, [], cantidad_variables,
+                nombre_variable
             )
         }
 
@@ -322,9 +338,15 @@ def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
         soluciones = [expresion["constante"] for expresion in expresiones]
 
     return {
+        "columnas_pivote": columnas_pivote,
         "clasificacion": clasificacion,
         "ecuaciones_resultantes": ecuaciones,
-        "solucion_general": formatear_solucion_general(expresiones, libres),
+        "solucion_general": formatear_solucion_general(
+            expresiones, libres, nombre_variable
+        ),
+        # Las expresiones exactas, por si otra capa necesita evaluarlas (p. ej.
+        # una combinación concreta con las variables libres en cero).
+        "expresiones_solucion": expresiones,
         "soluciones": soluciones,
         "fila_inconsistente": None,
         "filas_nulas": redundantes,
@@ -336,7 +358,8 @@ def interpretar_resultado(matriz_resuelta, pivotes, cantidad_variables):
             )
         ),
         "justificacion": construir_justificacion(
-            clasificacion, None, redundantes, libres, cantidad_variables
+            clasificacion, None, redundantes, libres, cantidad_variables,
+            nombre_variable
         )
     }
 
@@ -404,7 +427,7 @@ def sustitucion_regresiva(matriz_escalonada, pivotes, cantidad_variables=None):
     return soluciones, pasos
 
 
-def resolver_sistema_gauss(matriz_aumentada):
+def resolver_sistema_gauss(matriz_aumentada, nombre_variable=NOMBRE_VARIABLE):
     """Escalona el sistema y despeja las variables por sustitucion regresiva.
 
     Toma la ultima columna como terminos independientes. Devuelve la matriz
@@ -421,7 +444,7 @@ def resolver_sistema_gauss(matriz_aumentada):
         matriz_aumentada, cantidad_variables
     )
     interpretacion = interpretar_resultado(
-        matriz_escalonada, pivotes, cantidad_variables
+        matriz_escalonada, pivotes, cantidad_variables, nombre_variable
     )
 
     # La sustitución numérica paso a paso solo se muestra con solución única;
@@ -440,7 +463,7 @@ def resolver_sistema_gauss(matriz_aumentada):
     }
 
 
-def resolver_sistema_gauss_jordan(matriz_aumentada):
+def resolver_sistema_gauss_jordan(matriz_aumentada, nombre_variable=NOMBRE_VARIABLE):
     """Reduce el sistema y lee el resultado de la forma reducida.
 
     Toma la ultima columna como terminos independientes. Devuelve la matriz
@@ -459,5 +482,7 @@ def resolver_sistema_gauss_jordan(matriz_aumentada):
     return {
         "matriz_reducida": matriz_reducida,
         "pasos": pasos,
-        **interpretar_resultado(matriz_reducida, pivotes, cantidad_variables)
+        **interpretar_resultado(
+            matriz_reducida, pivotes, cantidad_variables, nombre_variable
+        )
     }
