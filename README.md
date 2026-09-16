@@ -8,7 +8,7 @@
 el resultado y ayuda a conectar sistemas, matrices y vectores.
 
 [![CI](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Amain)
-[![Última release](https://img.shields.io/github/v/release/rodolfo-collado/Algebra-Lineal?label=release)](https://github.com/rodolfo-collado/Algebra-Lineal/releases)
+[![Última release](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgithub.com%2Frodolfo-collado%2FAlgebra-Lineal%2Freleases.atom&query=concat%28substring-after%28%28%2F%2F%2A%5Blocal-name%28%29%3D%27entry%27%5D%2F%2A%5Blocal-name%28%29%3D%27link%27%5D%2F%40href%29%5B1%5D%2C%27%2Ftag%2F%27%29%2Csubstring%28%27pendiente%27%2C1%2C9%2Anot%28%2F%2F%2A%5Blocal-name%28%29%3D%27entry%27%5D%29%29%29&label=release&color=blue)](https://github.com/rodolfo-collado/Algebra-Lineal/releases)
 ![Python >= 3.13](https://img.shields.io/badge/Python-%E2%89%A5%203.13-3776AB?logo=python&logoColor=white)
 ![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4)
 

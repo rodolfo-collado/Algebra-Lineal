@@ -124,6 +124,12 @@ por separado. El instalador ya contiene el prerrequisito según el proceso de bu
 El artifact de CI es temporal y sirve para revisión; la release es una entrega
 estable asociada a un tag de `main`.
 
+El badge de la portada consulta automáticamente el feed público
+`releases.atom` de GitHub mediante un [badge XML de Shields](https://shields.io/badges/dynamic-xml-badge).
+Extrae el tag de la primera publicación y muestra «pendiente» si el feed está
+vacío. Así no requiere editar el README al publicar la primera versión ni
+presenta una versión preparada como si ya estuviera disponible.
+
 Se usa [GitHub CLI](https://cli.github.com/manual/gh_release_create), disponible
 en el runner, con `--verify-tag` y `--generate-notes`. Se crea primero un borrador
 con ambos assets y luego se publica. GitHub genera las notas desde el historial
