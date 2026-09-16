@@ -135,6 +135,14 @@ class PruebasDominioYPasos(unittest.TestCase):
             resultado = resolver_operacion_matrices(operacion, [[2, F(1, 2)]], [[3, 2]], F(1, 3))
             self.assertTrue(all(isinstance(x, F) for fila in resultado["resultado"] for x in fila))
 
+    def test_no_exige_matriz_cuadrada(self):
+        a = [[1, 2, 3], [4, 5, 6]]
+        self.assertNotEqual(*dimensiones(a))
+        self.assertEqual(dimensiones(sumar_matrices(a, a)), (2, 3))
+        self.assertEqual(dimensiones(restar_matrices(a, a)), (2, 3))
+        self.assertEqual(dimensiones(multiplicar_escalar_matriz(2, a)), (2, 3))
+        self.assertEqual(dimensiones(trasponer_matriz(a)), (3, 2))
+
     def test_no_hay_limites_de_interfaz_en_backend(self):
         for m, n in ((1, 14), (13, 1), (12, 15)):
             a = [[1] * n for _ in range(m)]

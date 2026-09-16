@@ -615,11 +615,13 @@ En una cuenta Windows **sin una instalación previa de Álgebra Lineal**, ejecut
 
 La prueba instala en una carpeta nueva de `%LOCALAPPDATA%\Programs` fuera del
 repositorio. Comprueba ambos accesos directos y que el ejecutable sea `windowed`,
-abre desde Inicio, resuelve por Gauss y Gauss-Jordan a través del Django/Waitress
-empaquetado, solicita CSS/JS/icono, cierra la ventana y verifica que el proceso y
-el servidor terminan. Repite la apertura y luego desinstala comprobando que se
-eliminaron archivos, registro y accesos directos. Rechaza instalaciones previas
-para no modificarlas.
+abre desde Inicio, resuelve por Gauss y Gauss-Jordan y las cuatro operaciones
+de P13A a través del Django/Waitress empaquetado, solicita CSS/JS (incluido
+`matrices.js`) e icono, cierra la ventana y verifica que el proceso y el
+servidor terminan. Repite la apertura y luego desinstala comprobando que se
+eliminaron archivos, registro y accesos directos. Si esta máquina ya tiene
+Álgebra Lineal instalada, el script se detiene a propósito: necesita una
+cuenta o entorno limpio para no modificar esa instalación.
 
 Completa esa prueba con una revisión visual: instalar normalmente, abrir desde
 el acceso directo, resolver un sistema, verificar **Columnas pivote: C1, C3**,
@@ -651,8 +653,11 @@ bases —resultados, pasos del procedimiento, mensajes de error y su integració
 web—, las operaciones con vectores —suma, resta, escalar, combinación lineal
 con solución única, infinitas o inconsistente, dimensión arbitraria, fracciones
 exactas, la reutilización del motor de sistemas, la estructura dinámica del
-formulario y los POST manipulados— y que la interfaz no cargue fuentes ni
-scripts remotos. Sirven para detectar regresiones cuando el proyecto crezca.
+formulario y los POST manipulados—, las operaciones con matrices —suma, resta,
+escalar y traspuesta en rectangulares, fracciones exactas, procedimiento por
+entrada, catálogo, selector, estructura dinámica, errores asociados a celdas
+y POST manipulados— y que la interfaz no cargue fuentes ni scripts remotos.
+Sirven para detectar regresiones cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
 
