@@ -1,6 +1,13 @@
 # Interfaz visual
 
+[Índice de documentación](README.md) · [Portada](../README.md)
+
 La aplicación desktop y Django en desarrollo comparten la misma interfaz.
+
+Esta guía conserva las decisiones de UI/UX. Los ejemplos de uso están en
+[Funcionalidades](funcionalidades.md) y la organización del código en
+[Arquitectura](arquitectura.md). Las rutas abreviadas de componentes y recursos
+se entienden dentro de `frontend/web/calculadora/`.
 
 No hace falta un framework frontend: las herramientas nuevas reutilizan
 plantillas Django, CSS propio y JavaScript mínimo, todos locales.
@@ -58,11 +65,23 @@ la herramienta activa y calcula las relacionadas.
   es accesible con teclado. `navigation.js` recuerda las categorías abiertas,
   oculta la barra en escritorio (`algebra-lineal-menu`) y la convierte en cajón
   hasta 880 px, con `inert` sobre el contenido mientras está abierto.
+  Escape o el fondo cierran el cajón y devuelven el foco al botón Menú.
 - El buscador (`components/search.html`) es un formulario `GET` a Inicio.
   `buscador.js` filtra al instante los elementos con `data-indice` de la lista
   indicada en `data-buscador`; los contenedores con `data-grupo` se ocultan
   cuando no tienen coincidencias. El índice lo calcula `Herramienta.indice`,
   el mismo que usa `buscar_herramientas` en Python.
+
+El recorrido es Inicio → área → categoría → herramienta → resultado. Los
+breadcrumbs de área y categoría enlazan a su sección del Inicio. Límites sigue
+marcado como «Próximamente», sin enlace a una pantalla inexistente.
+
+Sin JavaScript la navegación permanece visible y el buscador usa su envío GET.
+En sistemas se puede resolver desde texto; la cuadrícula dinámica y el teclado
+requieren JavaScript. Vectores, matrices y Ax = b ofrecen además Aplicar en el
+servidor para preparar sus estructuras sin JavaScript. Las antiguas pantallas de
+métodos de sistemas redirigen a una sola herramienta con opciones de formulario;
+ya no se presentan como herramientas distintas que comparten el mismo sistema.
 
 ## Estructura de una herramienta
 
@@ -118,7 +137,7 @@ el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructur
 sin calcular. El teclado contextual es el de la cuadrícula de matrices
 (`TECLADO_MATRIZ`: `−` y `a⁄b`), incluido con `campos_id="vector-fields"`.
 
-### Matrices (P13A y P13B)
+## Matrices
 
 Una sola herramienta `/matrices/operaciones/` selecciona suma, resta, escalar,
 traspuesta, multiplicación de matrices (`AB`) o matriz por vector (`Ax`).
@@ -176,9 +195,9 @@ muestra una sola vez aunque se comparen los métodos. Las plantillas
 fila o por columna, abiertos cuando el resultado tiene pocas entradas
 (`ENTRADAS_DESPLEGADAS`). Las igualdades largas se parten en líneas en la fuente
 de interfaz, donde los subíndices se leen mejor; las expresiones con matrices
-se desplazan localmente. P13B no resuelve ecuaciones matriciales.
+se desplazan localmente. Resolver una ecuación matricial tiene su propio formulario.
 
-### Resolver Ax = b (P14)
+## Resolver Ax = b
 
 `/matrices/ecuaciones/` es la segunda herramienta de Matrices y un formulario
 aparte, `EcuacionMatricialForm` (`forms_ecuaciones.py`): x es la incógnita,
@@ -222,18 +241,14 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
 
 ## Cómo añadir una herramienta
 
-1. Regístrala en `catalogo.HERRAMIENTAS` con categoría, descripción, palabras
-   clave, relaciones e invitación. Con `estado="proximamente"` aparece en el
-   árbol y en Inicio sin enlaces.
-2. Crea la vista y la ruta con nombre, y una plantilla que extienda
-   `calculadora/layouts/herramienta.html`.
-3. Reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`, `.concept-guide`, el
-   teclado contextual y los tokens de `static/calculadora/styles/`.
-4. Si muestra matrices, incluye `calculadora/components/matriz.html`; usa
-   `matrix.html` para matrices aumentadas de sistemas. Ambos admiten `columnas_pivote`.
-5. No copies el `<head>`, el header, la sidebar ni el selector de tema.
+Sigue el flujo de [Desarrollo](desarrollo.md#añadir-una-herramienta).
+En presentación, reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`,
+`.concept-guide`, el teclado contextual y los tokens compartidos. Si muestra
+matrices, usa `components/matriz.html`; para sistemas aumentados, `matrix.html`.
+Ambos admiten `columnas_pivote`. No copies el `<head>`, header, sidebar o selector
+de tema: extiende el layout común.
 
 Hoy están disponibles las herramientas de sistemas de ecuaciones, las
 operaciones con vectores (incluida la combinación lineal), las operaciones con
-matrices (incluidos `AB` y `Ax`) y la conversión de bases (sistemas numéricos).
+matrices (incluidos `AB` y `Ax`), Resolver Ax = b y la conversión de bases.
 No agregues enlaces a pantallas que todavía no existen.
