@@ -165,6 +165,39 @@ def _por_columnas(calculo, opcion):
     }
 
 
+def _procedimiento_por_entrada(calculo, opcion, matrices):
+    """Suma, resta, escalar y traspuesta: el desarrollo de cada entrada (P13A)."""
+    operacion = calculo["operacion"]
+    desarrollo = []
+    for fila in calculo["pasos"]:
+        desarrollo.append([
+            (f"a[{paso['origen'][0]}, {paso['origen'][1]}]" if operacion == "traspuesta"
+             else f" {opcion['simbolo']} ".join(_operando(n) for n in paso["operandos"]))
+            for paso in fila
+        ])
+    return {
+        "desarrollo": desarrollo,
+        "traslados": [", ".join(fila) for fila in formatear_matriz(matrices["A"])]
+                     if operacion == "traspuesta" else [],
+    }
+
+
+def _procedimientos_producto(calculo, opcion, metodo):
+    """AB y Ax: el resultado se calculó una vez; cada método es una lectura del mismo producto."""
+    bloques = {"fila_columna": _fila_por_columna, "columnas": _por_columnas}
+    metodos = [bloques[clave](calculo, opcion) for clave in metodos_a_mostrar(metodo)]
+    (m, n), (_, p) = calculo["dimensiones_entrada"], calculo["dimensiones_b"]
+    presentacion = {
+        "metodos": metodos, "comparando": len(metodos) > 1,
+        "abierto": m * p <= ENTRADAS_DESPLEGADAS,
+        "forma": opcion["forma_texto"].format(m=m, n=n, p=p),
+    }
+    if calculo["operacion"] == "matriz_vector":
+        # Ax es un vector: se anuncia por componentes, aunque se dibuje como columna.
+        presentacion["dimensiones_resultado"] = f"{m} componente{'' if m == 1 else 's'}"
+    return presentacion
+
+
 def operar_matrices(entrada):
     operacion = entrada["operacion"]
     matrices = entrada["matrices"]
@@ -184,30 +217,10 @@ def operar_matrices(entrada):
         "matriz": formatear_matriz(calculo["resultado"]),
         "dimensiones_entrada": "×".join(map(str, calculo["dimensiones_entrada"])),
         "dimensiones_resultado": "×".join(map(str, calculo["dimensiones_resultado"])),
-        "traslados": [", ".join(fila) for fila in formatear_matriz(matrices["A"])]
-                     if operacion == "traspuesta" else [],
-        "metodo": entrada.get("metodo"), "comparando": False, "metodos": [], "desarrollo": [],
+        "metodo": entrada.get("metodo"), "metodos": [], "comparando": False, "desarrollo": [], "traslados": [],
     }
     if opcion["metodos"]:
-        # El resultado se calculó una vez; cada método es una lectura del mismo producto.
-        bloques = {"fila_columna": _fila_por_columna, "columnas": _por_columnas}
-        entradas_resultado = len(calculo["resultado"]) * len(calculo["resultado"][0])
-        resultado["metodos"] = [bloques[clave](calculo, opcion) for clave in metodos_a_mostrar(entrada["metodo"])]
-        resultado["comparando"] = len(resultado["metodos"]) > 1
-        resultado["abierto"] = entradas_resultado <= ENTRADAS_DESPLEGADAS
-        (m, n), (_, p) = calculo["dimensiones_entrada"], calculo["dimensiones_b"]
-        resultado["forma"] = opcion["forma_texto"].format(m=m, n=n, p=p)
-        if operacion == "matriz_vector":
-            # Ax es un vector: se anuncia por componentes, aunque se dibuje como columna.
-            resultado["dimensiones_resultado"] = f"{m} componente{'' if m == 1 else 's'}"
-        return resultado
-
-    desarrollo = []
-    for fila in calculo["pasos"]:
-        desarrollo.append([
-            (f"a[{paso['origen'][0]}, {paso['origen'][1]}]" if operacion == "traspuesta"
-             else f" {opcion['simbolo']} ".join(_operando(n) for n in paso["operandos"]))
-            for paso in fila
-        ])
-    resultado["desarrollo"] = desarrollo
+        resultado.update(_procedimientos_producto(calculo, opcion, entrada["metodo"]))
+    else:
+        resultado.update(_procedimiento_por_entrada(calculo, opcion, matrices))
     return resultado
