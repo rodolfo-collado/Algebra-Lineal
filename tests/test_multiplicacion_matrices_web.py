@@ -362,12 +362,36 @@ class PruebasRechazoProducto(SimpleTestCase):
         self.rechazar(datos_producto(celda_B_0_0=""), "Completa matriz b, fila 1, columna 1.")
         self.rechazar(datos_producto(celda_B_1_1="1/0"), "no es un número válido")
 
-    def test_controles_deshabilitados_no_alteran_las_otras_operaciones(self):
-        # columnas_b y metodo existen siempre pero, deshabilitados, Django ignora su valor.
-        respuesta = self.client.post(RUTA, datos_matrices(columnas_b="9", metodo="comparar"))
-        self.assertContains(respuesta, 'id="resultado"')
-        self.assertEqual(Contenido(respuesta.content.decode()).tablas["Matriz resultado"], [["6", "8"], ["10", "12"]])
-        self.assertNotContains(respuesta, "Comparación de métodos")
+    def test_controles_deshabilitados_en_el_calculo_se_rechazan(self):
+        # columnas_b y metodo existen siempre, pero deshabilitados no viajan desde el navegador:
+        # si llegan en el envío de cálculo de otra operación, el POST fue manipulado.
+        mensaje = "Se recibieron campos que no corresponden a la operación seleccionada"
+        self.rechazar(datos_matrices(columnas_b="9"), f"{mensaje}: columnas de B.")
+        self.rechazar(datos_matrices("resta", metodo="comparar"), f"{mensaje}: método.")
+        self.rechazar(datos_matrices("escalar", escalar="2", columnas_b="3", metodo="columnas"), f"{mensaje}: columnas de B, método.")
+        self.rechazar(datos_matrices("traspuesta", columnas_b="3", metodo="fila_columna"), f"{mensaje}: columnas de B, método.")
+        for datos in (datos_matrices(columnas_b=""), datos_matrices("resta", metodo="")):
+            self.rechazar(datos, mensaje)
+
+    def test_aplicar_tolera_los_controles_de_la_estructura_anterior(self):
+        # Sin JavaScript, al cambiar de operación el navegador aún envía los controles previos:
+        # de AB a suma llegan columnas_b y metodo; de Ax a traspuesta llega metodo. Aplicar redibuja.
+        respuesta = self.client.post(RUTA, datos_producto(metodo="comparar") | {"operacion": "suma", "ajustar": "1"})
+        self.assertNotContains(respuesta, 'role="alert"')
+        doc = Contenido(respuesta.content.decode())
+        self.assertEqual(set(doc.tablas), {"Matriz A", "Matriz B"})
+        self.assertEqual(doc.campos["celda_B_1_1"]["value"], "8")
+        self.assertIn("disabled", doc.campos["columnas_b"])
+        self.assertContains(respuesta, 'data-metodos hidden')
+        respuesta = self.client.post(RUTA, datos_matriz_vector(metodo="comparar") | {"operacion": "traspuesta", "ajustar": "1"})
+        self.assertNotContains(respuesta, 'role="alert"')
+        doc = Contenido(respuesta.content.decode())
+        self.assertEqual(set(doc.tablas), {"Matriz A"})
+        self.assertEqual(doc.campos["celda_A_1_2"]["value"], "3")
+        self.assertContains(respuesta, 'data-metodos hidden')
+        # El envío de cálculo que sigue, ya sin esos controles, funciona.
+        respuesta = self.client.post(RUTA, datos_matrices("traspuesta", a=[[1, 2, -1], [0, -5, 3]]))
+        self.assertEqual(Contenido(respuesta.content.decode()).tablas["Matriz resultado"], [["1", "0"], ["2", "-5"], ["-1", "3"]])
 
     def test_html_se_escapa_en_x_y_en_b(self):
         ataque = '<img src=x onerror="alert(1)">'

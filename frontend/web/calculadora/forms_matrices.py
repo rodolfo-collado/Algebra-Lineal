@@ -131,6 +131,17 @@ class MatricesForm(forms.Form):
         if self.errors or self.ajustar:
             return datos
 
+        # Un control deshabilitado no viaja desde el navegador; si llega en el envío
+        # de cálculo, el POST fue manipulado. Aplicar sí lo tolera: al cambiar de
+        # operación aún puede enviarse la estructura anterior.
+        ajenos = [
+            _minuscula_inicial(self.fields[nombre].label) for nombre in ("columnas_b", "metodo")
+            if self.fields[nombre].disabled and nombre in self.data
+        ]
+        if ajenos:
+            self.add_error(None, f"Se recibieron campos que no corresponden a la operación seleccionada: {', '.join(ajenos)}. Pulsa Aplicar para ajustar la estructura.")
+            return datos
+
         columnas_b = self.fields["columnas_b"]
         if not columnas_b.disabled and datos.get("columnas_b") is None:
             self.add_error("columnas_b", columnas_b.error_messages["required"])

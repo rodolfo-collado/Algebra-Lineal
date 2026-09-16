@@ -138,9 +138,12 @@ Genera campos Django `celda_A_i_j` / `celda_B_i_j` / `celda_x_i_0` con labels
 valida el conjunto exacto de campos y rechaza duplicados. Usa el parser existente
 para convertir números a valores exactos. Los campos `columnas_b` y `metodo`
 existen siempre, pero quedan **deshabilitados y ocultos** cuando la operación no
-los usa: así no viajan en el POST, Django ignora cualquier valor que llegue y el
-botón Aplicar sin JavaScript puede habilitarlos con su valor inicial al cambiar
-de operación; cuando la operación los necesita, `clean()` exige que lleguen. El
+los usa: así no viajan en el POST y el botón Aplicar sin JavaScript puede
+habilitarlos con su valor inicial al cambiar de operación. En el envío de
+cálculo el contrato es estricto: si llegan y la operación no los usa, el POST se
+rechaza («campos que no corresponden a la operación seleccionada»); solo Aplicar
+los tolera, porque al cambiar de operación el navegador aún envía la estructura
+anterior. Cuando la operación los necesita, `clean()` exige que lleguen. El
 botón Aplicar valida las dimensiones y conserva las entradas al regenerar, sin
 calcular. La edición dinámica utiliza plantillas HTML inertes que incluyen los
 mismos componentes del servidor; `matrices.js` reetiqueta las dimensiones y los
