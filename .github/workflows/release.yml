@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+# Serializar entregas; una nueva ejecución nunca interrumpe una publicación.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  validar:
+    name: Validar versión y origen del tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      commit: ${{ steps.tag.outputs.commit }}
+    steps:
+      - name: Clonar el tag y su historia
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Actualizar main y validar sin modificar la versión
+        id: tag
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          python3 scripts/validate_release.py
+
+  comprobar:
+    name: Validar y construir la distribución
+    needs: validar
+    permissions:
+      contents: read
+    # Reutiliza suite Ubuntu/Windows, lock, Django, compileall, build y smoke.
+    uses: ./.github/workflows/ci.yml
+
+  publicar:
+    name: Publicar instalador y checksum
+    needs: [validar, comprobar]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+      VERSION: ${{ needs.validar.outputs.version }}
+      COMMIT: ${{ needs.validar.outputs.commit }}
+    steps:
+      # Este job no ejecuta código del checkout ni el instalador.
+      - name: Descargar únicamente el artifact de esta ejecución
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: algebra-lineal-windows
+          path: release-assets
+
+      - name: Verificar de nuevo main, tag y ausencia de release
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq '.object.sha')
+          current_tag=$(gh api "repos/$GH_REPO/commits/$TAG" --jq '.sha')
+          if [[ "$COMMIT" != "$current_main" || "$COMMIT" != "$current_tag" ]]; then
+            echo 'main o el tag cambió desde la validación; no se publicará.' >&2
+            exit 1
+          fi
+          # La consulta incluye borradores. Un error de API también detiene el job.
+          releases=$(gh api "repos/$GH_REPO/releases" --paginate --jq '.[].tag_name')
+          if grep -Fxq -- "$TAG" <<< "$releases"; then
+            echo "Ya existe una release para $TAG; no se sobrescribe." >&2
+            exit 1
+          fi
+
+      - name: Generar SHA-256 y publicar con notas de GitHub
+        shell: bash
+        working-directory: release-assets
+        run: |
+          set -euo pipefail
+          installer="AlgebraLineal-Setup-$VERSION.exe"
+          test -f "$installer"
+          test "$(find . -type f | wc -l)" -eq 1
+          sha256sum "$installer" > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          # El borrador evita exponer una entrega incompleta si falla la carga.
+          gh release create "$TAG" "$installer" SHA256SUMS.txt \
+            --verify-tag --draft --title "Álgebra Lineal $TAG" --generate-notes
+          gh release edit "$TAG" --draft=false --latest
