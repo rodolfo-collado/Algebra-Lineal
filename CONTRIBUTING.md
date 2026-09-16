@@ -29,7 +29,9 @@ git checkout -b feature/nombre-descriptivo
 - No es obligatorio esperar la aprobación de otro colaborador.
 - Si el PR está limpio, sin conflictos y las verificaciones pasan, el propio
   colaborador puede hacer merge.
-- Después del merge, elimina la rama feature local y remota.
+- Después del merge, comprueba que la rama esté completamente integrada antes
+  de limpiarla. Usa `git branch -d` para la local; la remota se elimina solo
+  como una acción explícita de mantenimiento.
 
 ## Commits
 
@@ -54,19 +56,8 @@ cuando tengan propósitos distintos.
 
 ## Entorno de trabajo
 
-El proyecto se gestiona con [uv](https://docs.astral.sh/uv/). Después de clonar,
-desde la raíz del repositorio:
-
-```bash
-uv sync
-```
-
-Eso crea `.venv/` con las versiones exactas de `uv.lock`. Para ejecutar cualquier
-cosa dentro de ese entorno usa `uv run`:
-
-```bash
-uv run python main.py
-```
+Consulta [Desarrollo](docs/desarrollo.md) para preparar el entorno con
+`uv sync --locked`, ejecutar terminal/Django/escritorio y añadir herramientas.
 
 ## Dependencias
 
@@ -90,37 +81,17 @@ uv remove <dependencia>
 
 ## Antes de abrir un PR
 
-Desde la raíz del repositorio, ejecuta las mismas verificaciones que corre el CI:
-
-```bash
-uv lock --check
-uv run python -m unittest discover -v
-uv run python -m compileall -q backend frontend tests main.py manage.py desktop.py
-```
-
-Comprueba también que la aplicación siga iniciando:
-
-```bash
-uv run python main.py
-```
-
-La interfaz desktop durante desarrollo se puede iniciar con:
-
-```bash
-uv run python desktop.py
-```
-
-Para generar la distribución de Windows, usa la configuración versionada de
-PyInstaller desde la raíz del proyecto:
-
-```bash
-uv run pyinstaller --noconfirm --clean AlgebraLineal.spec
-```
+Ejecuta las [verificaciones de Pruebas](docs/pruebas.md): lockfile, suite,
+Django, compilación y `git diff --check`. Si cambias packaging, realiza también
+el [build y smoke Windows](docs/instalacion-windows.md).
 
 ## Integración continua
 
 `.github/workflows/ci.yml` ejecuta esas mismas verificaciones en cada pull request
-hacia `develop` o `main`, y en cada push a esas ramas.
+hacia `develop` o `main`, y en cada push a esas ramas. Incluye suite en
+Ubuntu y Windows, build del instalador y smoke real de instalación/desinstalación.
+El workflow de release reutiliza estas comprobaciones antes de publicar; consulta
+[Releases](docs/releases.md) para versión, tags y promoción estable.
 
 **Un PR no se fusiona si el CI está en rojo.** Si un check falla, corrígelo en la
 misma rama `feature/*` y espera una ejecución verde. No desactives un check para
@@ -270,8 +241,8 @@ No agregues docstrings largos solo por decorar.
 
 Las configuraciones de editores (`.idea/`) y de asistentes de IA (`CLAUDE.md`,
 `.claude/`, `AGENTS.md`, `.cursor/`, entre otros) están en `.gitignore` y no se
-versionan. La documentación compartida del proyecto vive en `README.md` y en este
-archivo.
+versionan. La documentación compartida vive en `README.md`, este archivo y
+[docs/](docs/README.md).
 
 ## Herramientas que podríamos añadir más adelante
 
