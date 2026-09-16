@@ -147,7 +147,34 @@ try {
                 if (-not $response.Content.Contains($marker)) { throw "Falta un procedimiento comparado de matrices: $($productBody.operacion)" }
             }
         }
-        foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'mark.svg')) {
+        # P14: Ax = b con x desconocido. Solución fraccionaria comparando métodos y un caso rectangular 3x2.
+        $equationsUrl = $url + 'matrices/ecuaciones/'
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $equationsUrl
+        if (-not $response.Content.Contains('aria-label="Vector incógnita x, no editable"')) { throw 'Resolver Ax = b no muestra el vector incógnita.' }
+        $equationBodies = @(
+            @{ filas = '2'; columnas = '2'; metodo = 'comparar'
+               celda_A_0_0 = '2'; celda_A_0_1 = '0'; celda_A_1_0 = '0'; celda_A_1_1 = '3'; celda_b_0_0 = '1'; celda_b_1_0 = '1' },
+            @{ filas = '3'; columnas = '2'; metodo = 'gauss_jordan'
+               celda_A_0_0 = '1'; celda_A_0_1 = '0'; celda_A_1_0 = '0'; celda_A_1_1 = '1'; celda_A_2_0 = '1'; celda_A_2_1 = '1'
+               celda_b_0_0 = '2'; celda_b_1_0 = '3'; celda_b_2_0 = '5' }
+        )
+        $expectedEquations = @(
+            @{ x = @('1/2', '1/3'); markers = @('Ax = b tiene solución única.', 'b = (1/2)a₁ + (1/3)a₂', 'id="procedure-title"', 'id="procedure-title-2"') },
+            @{ x = @('2', '3'); markers = @('Ax = b tiene solución única.', 'A (3×2) · x (2) = b (3)', 'x1 = 2', 'x2 = 3', 'id="procedure-title"') }
+        )
+        for ($case = 0; $case -lt $equationBodies.Count; $case++) {
+            $equationBody = $equationBodies[$case]
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $equationsUrl -SessionVariable equationSession
+            $equationBody.csrfmiddlewaretoken = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $equationsUrl -Method Post -WebSession $equationSession -Headers @{ Referer = $equationsUrl } -Body $equationBody
+            $solutionTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Vector solución x"[^>]*>(.*?)</table>').Groups[1].Value
+            $cells = @([regex]::Matches($solutionTable, '<td[^>]*>\s*([^<]+?)\s*</td>') | ForEach-Object { $_.Groups[1].Value.Trim() })
+            if (($cells -join ',') -ne ($expectedEquations[$case].x -join ',')) { throw "Resultado incorrecto de Ax = b (caso $($case + 1))." }
+            foreach ($marker in $expectedEquations[$case].markers) {
+                if (-not $response.Content.Contains($marker)) { throw "Falta '$marker' en Ax = b (caso $($case + 1))." }
+            }
+        }
+        foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'ecuaciones.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'mark.svg')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'static/calculadora/' + $asset)
             if ($response.StatusCode -ne 200) { throw "No se sirvió el recurso $asset" }
         }
@@ -157,7 +184,7 @@ try {
         $listener = @(Get-NetTCPConnection -State Listen -OwningProcess $process.Id -ErrorAction SilentlyContinue)
         if ($listener.Count) { throw 'El servidor sigue escuchando después del cierre.' }
         $process = $null
-        Write-Host "Apertura ${attempt}: acceso directo, Django/Waitress, ambos métodos, P13A, P13B, recursos y cierre OK."
+        Write-Host "Apertura ${attempt}: acceso directo, Django/Waitress, ambos métodos, P13A, P13B, P14, recursos y cierre OK."
     }
 } finally {
     if ($process -and -not $process.HasExited) {
