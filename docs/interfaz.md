@@ -76,10 +76,10 @@ herramientas relacionadas. Cada bloque es opcional:
 {% block tool_result %}…{% endblock %}
 ```
 
-`components/related_tools.html` muestra las relacionadas de forma discreta.
-Cuando la vista indica `formulario_compartido` e `ids_comparten_entrada` y ya
-hay un resultado, cada relacionada se convierte en un botón `formaction` que
-envía la misma entrada a la otra herramienta.
+`components/related_tools.html` muestra las relacionadas como enlaces
+discretos y no aparece cuando la herramienta no declara ninguna. Las
+relaciones se reservan para módulos realmente distintos: las variantes de un
+mismo problema (método, bloques del resultado) son opciones del formulario.
 
 ## Teclado matemático contextual
 

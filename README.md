@@ -316,19 +316,23 @@ uv run python manage.py runserver
 Abre <http://127.0.0.1:8000/> en el navegador. Inicio permite buscar una
 herramienta o explorar el catálogo por área y categoría; la barra lateral
 repite ese árbol en todas las páginas. Dentro de **Álgebra Lineal → Sistemas de
-ecuaciones** hay cinco herramientas que comparten la misma vista y la misma
-matemática:
+ecuaciones** hay una sola herramienta, **Resolver un sistema** (`/sistemas/`),
+que se configura en el propio formulario:
 
-| Herramienta | Ruta | Qué cambia |
+| Opción | Valores | Predeterminado |
 | --- | --- | --- |
-| Resolver un sistema | `/sistemas/` | Método a elegir; muestra todo el procedimiento |
-| Método de Gauss | `/sistemas/gauss/` | Método fijo en Gauss |
-| Gauss-Jordan | `/sistemas/gauss-jordan/` | Método fijo en Gauss-Jordan |
-| Clasificación de sistemas | `/sistemas/clasificacion/` | Destaca la clasificación antes del procedimiento |
-| Columnas pivote | `/sistemas/columnas-pivote/` | Destaca y resalta las columnas pivote |
+| Método | Gauss, Gauss-Jordan o Comparar ambos | Gauss-Jordan |
+| Mostrar | Procedimiento, Clasificación, Columnas pivote, Sistema resultante | Todos activos |
 
-Todas permiten elegir el tipo de entrada —sistema de ecuaciones o matriz
-aumentada— y validan igual. El selector de tema recuerda la preferencia en el
+La matriz final y la solución se muestran siempre. **Comparar ambos** resuelve
+la misma entrada con los dos métodos y presenta un procedimiento por método;
+como la clasificación y la solución coinciden, aparecen una sola vez al final.
+Las rutas de la versión anterior (`/sistemas/gauss/`, `/sistemas/gauss-jordan/`,
+`/sistemas/clasificacion/` y `/sistemas/columnas-pivote/`) redirigen a
+`/sistemas/`, las dos primeras con el método ya seleccionado.
+
+Se puede elegir el tipo de entrada —sistema de ecuaciones o matriz aumentada— y
+ambos validan igual. El selector de tema recuerda la preferencia en el
 navegador; si no hay una elección previa, respeta el modo claro u oscuro del
 sistema. En el modo matricial indica las dimensiones (o usa los botones
 **+/−** de ecuaciones y variables) y completa una cuadrícula con la última
@@ -340,9 +344,9 @@ F1    [ 1 ] [ 2 ] | [ 4 ]
 F2    [ 2 ] [-1 ] | [ 7 ]
 ```
 
-Ambos modos muestran la matriz inicial, los pasos, la clasificación y la
-solución. Django solo coordina la entrada y la presentación: la capa de
-integración converge en una matriz aumentada y delega los cálculos a `backend/`.
+Ambas entradas producen el mismo resultado. Django solo coordina la entrada y
+la presentación: la capa de integración converge en una matriz aumentada y
+delega los cálculos a `backend/`.
 
 El **teclado matemático** que acompaña a cada campo muestra notación
 matemática (`x₁`, `−`, `a⁄b`) e inserta la sintaxis que entiende el parser
@@ -396,10 +400,10 @@ Para agregar una herramienta:
 3. Declara `palabras_clave` con sinónimos que un estudiante escribiría; el
    nombre, la categoría y el área ya forman parte del índice de búsqueda.
 4. Define relaciones con IDs existentes en `relacionadas` y una `invitacion`
-   breve; `relacionadas_disponibles` excluye destinos aún no disponibles.
-   Si varias herramientas comparten un formulario, la vista puede indicar
-   `formulario_compartido` e `ids_comparten_entrada` para que la relacionada
-   reciba la misma entrada mediante `formaction`.
+   breve; `relacionadas_disponibles` excluye destinos aún no disponibles. Las
+   relaciones se reservan para módulos realmente distintos: las variantes de
+   una misma herramienta (método, bloques del resultado) son opciones de su
+   formulario, no herramientas aparte.
 5. Si la herramienta necesita símbolos, declara un `TecladoContextual` en
    `teclados.py` con solo las teclas que usa e inclúyelo con
    `components/math_keyboard.html` dentro del contenedor de sus campos. Los
@@ -408,9 +412,9 @@ Para agregar una herramienta:
 6. Añade pruebas de rutas, navegación, búsqueda y comportamiento. Mantén la
    matemática en `backend/` y la presentación en los templates del módulo.
 
-Las cinco herramientas de sistemas siguen ese patrón con una sola vista:
-`herramientas_sistemas.py` describe, por ID, la acción principal, el método
-fijo o elegible y qué parte del resultado se destaca.
+Resolver un sistema sigue ese patrón con una sola vista: `opciones_sistemas.py`
+declara los métodos, los bloques del resultado, sus valores predeterminados y
+las rutas antiguas que redirigen a la herramienta.
 
 ```text
 templates/calculadora/
@@ -572,9 +576,10 @@ su sistema, el conjunto solución con variables libres, el parser de sistemas, l
 equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
 de Django —incluidas sus entradas textual y matricial—, la infraestructura
 desktop, el registro de herramientas, la navegación, el buscador, los
-breadcrumbs, el teclado matemático, la conversión de bases —resultados,
-pasos del procedimiento, mensajes de error y su integración web— y que la
-interfaz no cargue fuentes ni scripts remotos. Sirven para detectar regresiones
+breadcrumbs, el teclado matemático, las opciones de Resolver un sistema
+—método, comparación, bloques del resultado y rutas antiguas—, la conversión de
+bases —resultados, pasos del procedimiento, mensajes de error y su integración
+web— y que la interfaz no cargue fuentes ni scripts remotos. Sirven para detectar regresiones
 cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
@@ -673,6 +678,7 @@ Algebra-Lineal/
     ├── test_web.py
     ├── test_navegacion.py
     ├── test_teclado.py
+    ├── test_resolver_sistema.py
     ├── test_sistemas_numericos.py
     ├── test_conversion_bases_web.py
     ├── test_identidad_visual.py
