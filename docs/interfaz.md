@@ -43,9 +43,10 @@ static/calculadora/
 └── styles/
     ├── tokens.css          # colores, tipografía, radios, sombras, medidas del shell
     ├── base.css            # reset ligero, foco visible y utilidades
-    ├── shell.css           # header, sidebar, cajón móvil, breadcrumbs, layout
-    ├── components.css      # herramienta, paneles, botones, buscador, inicio,
-    │                       # relacionadas, teclado, controles de estructura, guías, matrices
+    ├── shell.css           # header, cajón de navegación, breadcrumbs, layout
+    ├── components.css      # herramienta, paneles, botones, buscador, inicio por temas,
+    │                       # relacionadas, explorar, desplegables, teclado, controles de
+    │                       # estructura, guías, matrices
     └── modules.css         # formularios y resultados de sistemas, bases, vectores y matrices
 ```
 
@@ -53,41 +54,71 @@ Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-rais
 `--color-pivot`, …) en lugar de hexadecimales sueltos. Cada token existe en el
 bloque claro y en `[data-theme="dark"]`.
 
+## Principio: primero el problema, después las herramientas, al final las opciones
+
+La interfaz reduce la carga cognitiva con divulgación progresiva: el Inicio
+solo presenta temas, el menú aparece cuando se pide y, dentro de una
+calculadora, el usuario elige el método, escribe el problema y resuelve. El
+teclado, las opciones del resultado y las conexiones educativas se despliegan
+solo cuando hacen falta. Al añadir módulos (Cálculo, Estadística, …) esta
+jerarquía crece por áreas y temas, no con más tarjetas en el Inicio.
+
 ## Shell y navegación
 
-`templates/calculadora/base.html` monta el header, la barra lateral
-(`components/sidebar.html`), el fondo del cajón móvil y el contenido con sus
-breadcrumbs (`components/breadcrumbs.html`). Todo sale del registro central
-`catalogo.py` a través de `context_processors.navegacion`, que también marca
-la herramienta activa y calcula las relacionadas.
+`templates/calculadora/base.html` monta el header (`☰ Menú`, marca y selector
+de tema), el cajón de navegación (`components/sidebar.html`), su fondo y el
+contenido con sus breadcrumbs (`components/breadcrumbs.html`). Todo sale del
+registro central `catalogo.py` a través de `context_processors.navegacion`,
+que también marca la herramienta activa y calcula las relacionadas.
 
-- La sidebar usa `details`/`summary` por categoría: funciona sin JavaScript y
-  es accesible con teclado. `navigation.js` recuerda las categorías abiertas,
-  oculta la barra en escritorio (`algebra-lineal-menu`) y la convierte en cajón
-  hasta 880 px, con `inert` sobre el contenido mientras está abierto.
-  Escape o el fondo cierran el cajón y devuelven el foco al botón Menú.
+- El cajón es un menú bajo demanda en cualquier tamaño de pantalla: nace
+  cerrado, el botón Menú lo abre y lo cierra (`aria-expanded`), y también se
+  cierra con Escape, con un clic en el fondo o con el botón Cerrar del propio
+  cajón en pantallas estrechas. Mientras está abierto, el contenido queda
+  `inert`; al cerrarse, el foco vuelve al botón Menú. No se guarda ninguna
+  preferencia de apertura: un overlay abierto al cargar taparía el contenido.
+- Dentro, `details`/`summary` por categoría: funciona sin JavaScript y es
+  accesible con teclado. `navigation.js` recuerda las categorías abiertas
+  (`algebra-lineal-menu-secciones`) y abre los desplegables que contienen el
+  destino de un ancla (`/#bases-numericas`) al llegar por la URL.
+- El contenido ocupa una sola columna (`--content-max`): matrices grandes,
+  procedimientos y comparaciones disponen de todo el ancho.
 - El buscador (`components/search.html`) es un formulario `GET` a Inicio.
   `buscador.js` filtra al instante los elementos con `data-indice` de la lista
   indicada en `data-buscador`; los contenedores con `data-grupo` se ocultan
-  cuando no tienen coincidencias. El índice lo calcula `Herramienta.indice`,
-  el mismo que usa `buscar_herramientas` en Python.
+  cuando no tienen coincidencias y los `details` con coincidencias se abren.
+  El índice lo calcula `Herramienta.indice`, el mismo que usa
+  `buscar_herramientas` en Python. Solo hay un buscador principal, el del
+  Inicio; el del cajón filtra el árbol y solo se ve con el menú abierto.
 
-El recorrido es Inicio → área → categoría → herramienta → resultado. Los
-breadcrumbs de área y categoría enlazan a su sección del Inicio. Límites sigue
-marcado como «Próximamente», sin enlace a una pantalla inexistente.
+### Inicio por temas
 
-Sin JavaScript la navegación permanece visible y el buscador usa su envío GET.
-En sistemas se puede resolver desde texto; la cuadrícula dinámica y el teclado
-requieren JavaScript. Vectores, matrices y Ax = b ofrecen además Aplicar en el
-servidor para preparar sus estructuras sin JavaScript. Las antiguas pantallas de
-métodos de sistemas redirigen a una sola herramienta con opciones de formulario;
-ya no se presentan como herramientas distintas que comparten el mismo sistema.
+`pages/inicio.html` es un punto de entrada: nombre, «Aprende resolviendo»,
+la pregunta «¿Qué quieres resolver?» con el buscador y los temas de la primera
+área como tarjetas (`pages/_area.html`). Cada tema es un `details` que
+despliega sus herramientas (`components/tool_link.html`); las demás áreas
+esperan bajo «Ver más temas». No hay accesos rápidos ni tarjetas de
+herramienta sueltas: cada herramienta se descubre dentro de su tema, y el
+menú y la búsqueda son los otros dos caminos. Con `?q=` el Inicio muestra los
+resultados en lugar de los temas.
+
+El recorrido es Inicio → tema → herramienta → resultado. Los breadcrumbs de
+área y categoría enlazan a su ancla del Inicio, que se abre sola. Límites
+sigue marcado como «Próximamente», sin enlace a una pantalla inexistente.
+
+Sin JavaScript la navegación permanece visible en flujo, antes del contenido,
+y el buscador usa su envío GET. En sistemas se puede resolver desde texto; la
+cuadrícula dinámica y el teclado requieren JavaScript. Vectores, matrices y
+Ax = b ofrecen además Aplicar en el servidor para preparar sus estructuras sin
+JavaScript. Las antiguas pantallas de métodos de sistemas redirigen a una sola
+herramienta con opciones de formulario; ya no se presentan como herramientas
+distintas que comparten el mismo sistema.
 
 ## Estructura de una herramienta
 
 `layouts/herramienta.html` define el orden común: contexto (área, categoría,
-título, descripción), entrada, acción principal, resultado, explicación y
-herramientas relacionadas. Cada bloque es opcional:
+título, descripción), entrada, acción principal, resultado, explicación,
+herramientas relacionadas y «También puedes explorar». Cada bloque es opcional:
 
 ```django
 {% extends "calculadora/layouts/herramienta.html" %}
@@ -100,6 +131,41 @@ discretos y no aparece cuando la herramienta no declara ninguna. Las
 relaciones se reservan para módulos realmente distintos: las variantes de un
 mismo problema (método, bloques del resultado) son opciones del formulario.
 
+`components/explore.html` («También puedes explorar») aparece solo cuando la
+vista entrega `exploraciones`, es decir, después de resolver y con contexto.
+Son enlaces a rutas que ya existen; ningún destino se inventa.
+
+### Desplegables
+
+Las opciones avanzadas viven en `details.disclosure` con un `summary` real
+(icono, título y chevrón): funcionan sin JavaScript, se abren con Enter o
+Espacio y anuncian su estado. Los controles plegados siguen formando parte
+del formulario, así que sus valores viajan igual en el envío.
+
+### Divulgación progresiva en Resolver un sistema
+
+La jerarquía del formulario es: Método y Tipo de entrada como selectores
+segmentados (`.segmented`, radios reales, una sola selección) con una pista
+de una línea para la opción elegida (`data-method-hint`, `data-input-hint`;
+`matriz.js` cambia la visible), el problema (texto o cuadrícula), el teclado
+plegado, «Opciones de resultado» plegadas y Resolver. Las opciones conservan
+sus casillas y predeterminados (todo activo) y se despliegan solas cuando lo
+elegido difiere de lo predeterminado (`opciones_abiertas`).
+
+El resultado es el centro: el panel «Resultado final» va primero con la
+clasificación, la solución, el enlace «Ver procedimiento» (`#procedimiento`),
+la matriz final con sus pivotes, el sistema resultante y las guías plegadas
+(«Entender este resultado»); después vienen el procedimiento paso a paso (con
+la matriz inicial) o, al comparar, un panel por método. Nada de lo que se
+mostraba deja de mostrarse: solo cambia el orden.
+
+`exploraciones.py` construye «También puedes explorar» tras resolver: el
+mismo sistema con el otro método o comparando, los bloques que se dejaron sin
+mostrar y Resolver Ax = b. Los enlaces a la propia herramienta llevan la
+entrada por GET (`sistema` o las celdas `matriz_i_j` con `ecuaciones` y
+`variables`, más `metodo` y `mostrar`); `SistemaForm.inicial_desde` solo
+prepara el formulario, nunca resuelve por GET, e ignora valores inválidos.
+
 ## Teclado matemático contextual
 
 `teclados.py` declara `Tecla(etiqueta, insercion, nombre, retroceso)` agrupadas
@@ -111,9 +177,12 @@ necesita:
 ```
 
 `teclado.js` inserta `insercion` en el campo activo del contenedor
-`campos_id`. El teclado nace con `hidden` y solo se muestra cuando el script
-existe: sin JavaScript no aparenta funcionar. No registres teclas sin una
-operación real detrás.
+`campos_id`. El teclado va plegado bajo un desplegable «Teclado matemático»
+(el título del teclado); tanto el desplegable como el teclado nacen con
+`hidden` y solo se muestran cuando el script existe: sin JavaScript no
+aparenta funcionar. Al expandirse conserva variables, operaciones, nueva
+ecuación y la inserción en la posición del cursor. No registres teclas sin
+una operación real detrás.
 
 Los controles que cambian la estructura de una entrada (agregar o quitar
 ecuaciones y variables; componentes y vectores) son botones aparte, con
@@ -243,7 +312,8 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
 
 Sigue el flujo de [Desarrollo](desarrollo.md#añadir-una-herramienta).
 En presentación, reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`,
-`.concept-guide`, el teclado contextual y los tokens compartidos. Si muestra
+`.disclosure`, `.concept-guide`, `components/explore.html`, el teclado
+contextual y los tokens compartidos. Si muestra
 matrices, usa `components/matriz.html`; para sistemas aumentados, `matrix.html`.
 Ambos admiten `columnas_pivote`. No copies el `<head>`, header, sidebar o selector
 de tema: extiende el layout común.
