@@ -4,16 +4,15 @@ from django import forms
 
 from backend.parser_sistemas import construir_matriz_aumentada, convertir_a_numero
 
+from .opciones_sistemas import BLOQUES, BLOQUES_PREDETERMINADOS, METODO_PREDETERMINADO, METODOS
+
 
 class SistemaForm(forms.Form):
     TIPOS_ENTRADA = (
         ("sistema", "Sistema de ecuaciones"),
         ("matriz", "Matriz aumentada"),
     )
-    METODOS = (
-        ("gauss", "Gauss"),
-        ("gauss_jordan", "Gauss-Jordan"),
-    )
+    METODOS = METODOS
 
     tipo_entrada = forms.ChoiceField(
         label="Tipo de entrada",
@@ -25,9 +24,19 @@ class SistemaForm(forms.Form):
     metodo = forms.ChoiceField(
         label="Método",
         choices=METODOS,
-        initial="gauss_jordan",
+        initial=METODO_PREDETERMINADO,
         widget=forms.RadioSelect,
     )
+    mostrar = forms.MultipleChoiceField(
+        label="Mostrar",
+        choices=BLOQUES,
+        initial=list(BLOQUES_PREDETERMINADOS),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    # Un navegador omite las casillas desmarcadas: este marcador distingue
+    # «no quiero ningún bloque» de un envío que no incluye la sección Mostrar.
+    mostrar_definido = forms.BooleanField(required=False, widget=forms.HiddenInput)
     sistema = forms.CharField(
         label="Sistema de ecuaciones",
         required=False,
@@ -78,6 +87,13 @@ class SistemaForm(forms.Form):
             "min_value": "Debe haber al menos una variable.",
         },
     )
+
+    def clean_mostrar(self):
+        seleccion = self.cleaned_data.get("mostrar") or []
+        if not seleccion and not self.data.get("mostrar_definido"):
+            # Clientes que no envían la sección (rutas antiguas, scripts): lo de siempre.
+            return list(BLOQUES_PREDETERMINADOS)
+        return seleccion
 
     def clean(self):
         datos = super().clean()
@@ -174,3 +190,54 @@ class SistemaForm(forms.Form):
             ]
             for fila in range(ecuaciones)
         ]
+
+
+class ConversionBasesForm(forms.Form):
+    """Un número, su base de origen y la base de destino; las bases deben diferir."""
+
+    BASES = (
+        (2, "Binario"),
+        (8, "Octal"),
+        (10, "Decimal"),
+        (16, "Hexadecimal"),
+    )
+
+    numero = forms.CharField(
+        label="Número",
+        required=False,
+        strip=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "field-input field-input-numeral",
+                "autocomplete": "off",
+                "spellcheck": "false",
+                "inputmode": "text",
+            }
+        ),
+    )
+    base_origen = forms.TypedChoiceField(
+        label="Base de origen",
+        choices=BASES,
+        coerce=int,
+        initial=10,
+        widget=forms.Select(attrs={"class": "field-select"}),
+    )
+    base_destino = forms.TypedChoiceField(
+        label="Base de destino",
+        choices=BASES,
+        coerce=int,
+        initial=2,
+        widget=forms.Select(attrs={"class": "field-select"}),
+    )
+
+    def clean_numero(self):
+        return self.cleaned_data.get("numero", "")
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("base_origen") and datos.get("base_origen") == datos.get("base_destino"):
+            self.add_error(
+                "base_destino",
+                "La base de origen y la base de destino deben ser distintas.",
+            )
+        return datos

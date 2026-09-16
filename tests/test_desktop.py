@@ -254,6 +254,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 ("navigation.js", "navegacion-principal"),
                 ("buscador.js", "data-buscador"),
                 ("teclado.js", "data-insercion"),
+                ("conversion.js", "data-conversion-bases"),
             ):
                 with cliente_http.open(
                     f"{url}static/calculadora/{recurso}",
@@ -262,9 +263,11 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                     self.assertEqual(respuesta.status, 200)
                     self.assertIn(marca, respuesta.read().decode("utf-8"))
 
+            # La ruta antigua de Gauss sigue abriendo Resolver un sistema con Gauss elegido.
             with cliente_http.open(f"{url}sistemas/gauss/", timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
-                self.assertIn("Método de Gauss", respuesta.read().decode("utf-8"))
+                self.assertEqual(respuesta.url, f"{url}sistemas/?metodo=gauss")
+                self.assertIn("Resolver un sistema", respuesta.read().decode("utf-8"))
 
             csrf = re.search(
                 rb'name="csrfmiddlewaretoken" value="([^"]+)"',
@@ -294,6 +297,32 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             self.assertIn("Consistente de solución única", resultado)
             self.assertIn("x1 = 2", resultado)
             self.assertIn("x2 = 1", resultado)
+
+            # La conversión de bases viaja por la misma pila Waitress + Django.
+            url_bases = f"{url}bases/conversion/"
+            with cliente_http.open(url_bases, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("Conversión de bases", respuesta.read().decode("utf-8"))
+            solicitud = Request(
+                url_bases,
+                data=urlencode(
+                    {
+                        "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
+                        "numero": "13",
+                        "base_origen": "10",
+                        "base_destino": "2",
+                    }
+                ).encode("ascii"),
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": url_bases,
+                },
+            )
+            with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                conversion = respuesta.read().decode("utf-8")
+            self.assertIn("13₁₀", conversion)
+            self.assertIn("1101₂", conversion)
         finally:
             desktop.stop_waitress(servidor, hilo)
             self.assertFalse(hilo.is_alive())

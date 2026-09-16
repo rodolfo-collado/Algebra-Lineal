@@ -76,10 +76,10 @@ herramientas relacionadas. Cada bloque es opcional:
 {% block tool_result %}…{% endblock %}
 ```
 
-`components/related_tools.html` muestra las relacionadas de forma discreta.
-Cuando la vista indica `formulario_compartido` e `ids_comparten_entrada` y ya
-hay un resultado, cada relacionada se convierte en un botón `formaction` que
-envía la misma entrada a la otra herramienta.
+`components/related_tools.html` muestra las relacionadas como enlaces
+discretos y no aparece cuando la herramienta no declara ninguna. Las
+relaciones se reservan para módulos realmente distintos: las variantes de un
+mismo problema (método, bloques del resultado) son opciones del formulario.
 
 ## Teclado matemático contextual
 
@@ -115,11 +115,12 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
    árbol y en Inicio sin enlaces.
 2. Crea la vista y la ruta con nombre, y una plantilla que extienda
    `calculadora/layouts/herramienta.html`.
-3. Reutiliza `.panel`, `.choice`, `.btn`, `.matrix`, `.concept-guide`, el
+3. Reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`, `.concept-guide`, el
    teclado contextual y los tokens de `static/calculadora/styles/`.
 4. Si muestra matrices, incluye `calculadora/components/matrix.html`; acepta
    `columnas_pivote` para resaltar columnas.
 5. No copies el `<head>`, el header, la sidebar ni el selector de tema.
 
-Hoy solo existen las herramientas de sistemas de ecuaciones. No agregues
-enlaces a pantallas que todavía no existen.
+Hoy están disponibles las herramientas de sistemas de ecuaciones y la
+conversión de bases (sistemas numéricos). No agregues enlaces a pantallas
+que todavía no existen.

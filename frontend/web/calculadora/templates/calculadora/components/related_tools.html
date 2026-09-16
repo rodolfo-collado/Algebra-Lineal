@@ -1,24 +1,14 @@
-{% comment %}Recomendaciones discretas desde el registro central. Tras resolver, las herramientas que comparten el formulario reciben la misma entrada mediante formaction.{% endcomment %}
+{% comment %}Recomendaciones discretas desde el registro central; solo aparecen cuando la herramienta declara relaciones con destinos disponibles.{% endcomment %}
 {% if herramientas_relacionadas %}
     <section class="related" aria-labelledby="related-title">
-        <h2 id="related-title" class="related-title">
-            {% if resultado %}Continúa con este mismo sistema{% else %}Herramientas relacionadas{% endif %}
-        </h2>
+        <h2 id="related-title" class="related-title">Herramientas relacionadas</h2>
         <ul class="related-list">
             {% for relacionada in herramientas_relacionadas %}
                 <li class="related-item">
-                    {% if resultado and formulario_compartido and relacionada.id in ids_comparten_entrada %}
-                        <button class="related-action" type="submit" form="{{ formulario_compartido }}"
-                                formaction="{{ relacionada.ruta }}#resultado">
-                            <span class="related-name">{{ relacionada.nombre }}</span>
-                            <span class="related-hint">{{ relacionada.invitacion }}</span>
-                        </button>
-                    {% else %}
-                        <a class="related-link" href="{{ relacionada.ruta }}">
-                            <span class="related-name">{{ relacionada.nombre }}</span>
-                            <span class="related-hint">{{ relacionada.descripcion }}</span>
-                        </a>
-                    {% endif %}
+                    <a class="related-link" href="{{ relacionada.ruta }}">
+                        <span class="related-name">{{ relacionada.nombre }}</span>
+                        <span class="related-hint">{{ relacionada.descripcion }}</span>
+                    </a>
                 </li>
             {% endfor %}
         </ul>

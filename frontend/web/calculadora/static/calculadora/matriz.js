@@ -143,6 +143,9 @@
         matrixFields.hidden = !isMatrix;
         systemFields.disabled = isMatrix;
         matrixFields.disabled = !isMatrix;
+        document.querySelectorAll("[data-input-hint]").forEach((hint) => {
+            hint.hidden = hint.dataset.inputHint !== (isMatrix ? "matriz" : "sistema");
+        });
         if (isMatrix) {
             renderMatrix();
         } else {

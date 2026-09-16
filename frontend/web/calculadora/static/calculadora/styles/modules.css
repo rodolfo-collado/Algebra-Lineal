@@ -48,109 +48,52 @@ label[for="id_sistema"],
     font-weight: 700;
 }
 
-.choice-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
-}
-
-.choice {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    min-height: 3.2rem;
-    padding: 0.75rem 0.85rem;
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-md);
+/* Selector segmentado: dos opciones siempre visibles, con radios reales dentro. */
+.segmented {
+    display: inline-flex;
+    max-width: 100%;
+    padding: 0.2rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
     background: var(--color-surface-muted);
-    cursor: pointer;
-    transition:
-        border-color var(--motion),
-        background var(--motion),
-        box-shadow var(--motion);
 }
 
-.choice input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-    opacity: 1;
-}
-
-.choice-indicator {
-    display: grid;
-    place-items: center;
-    width: 1.15rem;
-    height: 1.15rem;
-    flex: none;
-    margin-top: 0.12rem;
-    border: 2px solid var(--color-border-strong);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-raised);
-    transition: border-color var(--motion-fast), background var(--motion-fast);
-}
-
-.choice-indicator::after {
-    content: "";
-    width: 0.45rem;
-    height: 0.45rem;
-    border-radius: var(--radius-pill);
-    background: transparent;
-    transition: background var(--motion-fast);
-}
-
-.choice-copy {
-    display: grid;
-    gap: 0.12rem;
+.segment {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     min-width: 0;
+    padding: 0.42rem 0.95rem 0.42rem 0.75rem;
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
-.choice-title {
-    font-size: 0.92rem;
-    font-weight: 650;
-    line-height: 1.25;
+.segment input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--color-brand);
+    cursor: pointer;
 }
 
-.choice-hint {
-    color: var(--color-muted);
-    font-size: 0.78rem;
-    line-height: 1.3;
-}
-
-.choice:hover {
-    border-color: var(--color-border-strong);
+.segment:hover {
     background: var(--color-surface);
 }
 
-.choice:has(input:checked) {
-    border-color: var(--color-brand);
-    background: var(--color-brand-soft);
-    box-shadow:
-        inset 3px 0 0 var(--color-brand),
-        var(--shadow-sm);
+/* El estado elegido se distingue por el radio marcado, el relieve y el peso, no solo por el color. */
+.segment:has(input:checked) {
+    background: var(--color-surface-raised);
+    color: var(--color-brand);
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
 }
 
-.choice:has(input:checked) .choice-title {
-    font-weight: 750;
-}
-
-.choice:has(input:checked) .choice-indicator {
-    border-color: var(--color-brand);
-    background: var(--color-brand);
-}
-
-.choice:has(input:checked) .choice-indicator::after {
-    background: var(--color-brand-text);
-}
-
-.choice:has(input:focus-visible) {
+.segment:has(input:focus-visible) {
     outline: 3px solid var(--color-focus);
     outline-offset: 2px;
 }
@@ -601,10 +544,287 @@ textarea:focus {
     margin-top: 0.85rem;
 }
 
+/* Opciones compactas: radios y casillas nativas dentro de una píldora. */
+.option-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.42rem 0.85rem 0.42rem 0.7rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.option input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--color-brand);
+    cursor: pointer;
+}
+
+.option:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface);
+}
+
+.option:has(input:checked) {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+    font-weight: 700;
+}
+
+.option:has(input:focus-visible) {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.option-help {
+    margin: 0.55rem 0 0;
+}
+
+/* Conversión de bases */
+/* Un solo número por línea: no hereda la altura del área de texto de sistemas. */
+.field-input-numeral {
+    font: 1.15rem/1.4 var(--font-math);
+    letter-spacing: 0.04em;
+}
+
+.field-select {
+    width: 100%;
+    padding: 0.58rem 2.2rem 0.58rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    background:
+        linear-gradient(45deg, transparent 50%, var(--color-muted) 50%) calc(100% - 1.05rem) 55% / 0.4rem 0.4rem no-repeat,
+        linear-gradient(135deg, var(--color-muted) 50%, transparent 50%) calc(100% - 0.65rem) 55% / 0.4rem 0.4rem no-repeat,
+        var(--color-surface-muted);
+    font: inherit;
+    font-weight: 600;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.field-select:hover {
+    border-color: var(--color-border-strong);
+}
+
+.field-select:focus {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+    border-color: var(--color-brand);
+}
+
+.field-select option:disabled {
+    color: var(--color-muted);
+}
+
+.base-selectors {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.base-selector {
+    min-width: 0;
+}
+
+.base-selector label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+/* Botón de intercambio: solo funciona con JavaScript, por eso nace oculto. */
+.base-swap {
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    margin-bottom: 0.05rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    color: var(--color-brand);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.base-swap:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.base-swap:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.base-swap[hidden] {
+    display: none;
+}
+
+.base-keyboard {
+    margin-top: 1rem;
+}
+
+.base-keyboard[hidden] {
+    display: none;
+}
+
+.procedure-stage + .procedure-stage {
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.stage-title {
+    margin: 0 0 0.6rem;
+    color: var(--color-text);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.stage-chain {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.base-equality {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.55rem 0.75rem;
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.base-equals {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.base-numeral {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}
+
+.base-numeral-result {
+    color: var(--color-brand);
+}
+
+.procedure-lead,
+.procedure-note {
+    margin: 0 0 0.85rem;
+    color: var(--color-muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.procedure-note {
+    margin-top: 0.85rem;
+    margin-bottom: 0;
+}
+
+.table-wrap {
+    overflow-x: auto;
+    margin: 0.35rem 0;
+}
+
+.procedure-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.procedure-table th,
+.procedure-table td {
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.procedure-table th {
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.procedure-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.math-inline {
+    font-variant-numeric: tabular-nums;
+}
+
+.math-inline sup {
+    font-size: 0.72em;
+    line-height: 0;
+}
+
+.expansion-line {
+    margin: 0.45rem 0;
+    font-size: 1.02rem;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+.hex-map {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.85rem;
+    margin: 0 0 0.85rem;
+    padding: 0;
+    list-style: none;
+    color: var(--color-muted);
+    font-size: 0.92rem;
+}
+
 @media (max-width: 760px) {
-    .choice-row,
     .matrix-pair {
         grid-template-columns: 1fr;
+    }
+
+    .segmented {
+        display: flex;
+    }
+
+    .segment {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .base-selectors {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .base-swap {
+        justify-self: center;
+        margin: 0;
     }
 
     .matrix-pair-arrow {
@@ -615,6 +835,10 @@ textarea:focus {
     .workspace-actions .btn-primary {
         width: 100%;
     }
+
+    .base-equality {
+        font-size: 1.15rem;
+    }
 }
 
 @media (max-height: 640px) {
@@ -623,8 +847,7 @@ textarea:focus {
         padding-bottom: 1.2rem;
     }
 
-    .tool-lead,
-    .choice-hint {
+    .tool-lead {
         display: none;
     }
 }

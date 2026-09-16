@@ -1,18 +1,6 @@
 {% extends "calculadora/layouts/herramienta.html" %}
 {% load static %}
 
-{% block tool_context %}
-    {% if metodo_fijo_nombre %}
-        <p class="tool-note">
-            <span class="tool-note-label">Método</span>
-            <strong>{{ metodo_fijo_nombre }}</strong>
-            <span class="muted">
-                {% if configuracion.metodo_fijo == "gauss" %}Eliminación hacia abajo y sustitución regresiva.{% else %}Reducción completa hasta la forma escalonada reducida.{% endif %}
-            </span>
-        </p>
-    {% endif %}
-{% endblock %}
-
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title">
         <h2 id="workspace-title" class="sr-only">Entrada</h2>
@@ -29,53 +17,51 @@
 
                 <fieldset class="choice-fieldset">
                     <legend>{{ form.tipo_entrada.label }}</legend>
-                    <div class="choice-row">
+                    <div class="segmented">
                         {% for radio in form.tipo_entrada %}
-                            <label class="choice">
-                                {{ radio.tag }}
-                                <span class="choice-indicator" aria-hidden="true"></span>
-                                <span class="choice-copy">
-                                    <span class="choice-title">{{ radio.choice_label }}</span>
-                                    {% if radio.data.value == "sistema" %}
-                                        <span class="choice-hint">Ecuaciones escritas como texto</span>
-                                    {% elif radio.data.value == "matriz" %}
-                                        <span class="choice-hint">Coeficientes en la cuadrícula [A | b]</span>
-                                    {% endif %}
-                                </span>
-                            </label>
+                            <label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
                         {% endfor %}
                     </div>
+                    {% comment %}Una explicación por opción; matriz.js muestra la de la opción elegida.{% endcomment %}
+                    {% for radio in form.tipo_entrada %}
+                        <p class="field-help option-help" data-input-hint="{{ radio.data.value }}" {% if not radio.data.selected %}hidden{% endif %}>
+                            {% if radio.data.value == "sistema" %}Escribe las ecuaciones directamente.{% else %}Ingresa los coeficientes en la matriz [A | b].{% endif %}
+                        </p>
+                    {% endfor %}
                     {% for error in form.tipo_entrada.errors %}
                         <p class="field-error">{{ error }}</p>
                     {% endfor %}
                 </fieldset>
 
-                {% if configuracion.metodo_fijo %}
-                    <input type="hidden" name="metodo" value="{{ configuracion.metodo_fijo }}">
-                {% else %}
-                    <fieldset class="choice-fieldset">
-                        <legend>{{ form.metodo.label }}</legend>
-                        <div class="choice-row">
-                            {% for radio in form.metodo %}
-                                <label class="choice">
-                                    {{ radio.tag }}
-                                    <span class="choice-indicator" aria-hidden="true"></span>
-                                    <span class="choice-copy">
-                                        <span class="choice-title">{{ radio.choice_label }}</span>
-                                        {% if radio.data.value == "gauss" %}
-                                            <span class="choice-hint">Eliminación hacia abajo</span>
-                                        {% elif radio.data.value == "gauss_jordan" %}
-                                            <span class="choice-hint">Reducción completa</span>
-                                        {% endif %}
-                                    </span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                        {% for error in form.metodo.errors %}
-                            <p class="field-error">{{ error }}</p>
+                <fieldset class="choice-fieldset">
+                    <legend>{{ form.metodo.label }}</legend>
+                    <div class="option-list">
+                        {% for radio in form.metodo %}
+                            <label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
                         {% endfor %}
-                    </fieldset>
-                {% endif %}
+                    </div>
+                    <p class="field-help option-help">
+                        Gauss se detiene en la forma escalonada y resuelve por sustitución regresiva; Gauss-Jordan
+                        continúa hasta la forma escalonada reducida. Comparar ambos muestra los dos procedimientos.
+                    </p>
+                    {% for error in form.metodo.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </fieldset>
+
+                <fieldset class="choice-fieldset">
+                    <legend>{{ form.mostrar.label }}</legend>
+                    <input type="hidden" name="mostrar_definido" value="1">
+                    <div class="option-list">
+                        {% for casilla in form.mostrar %}
+                            <label class="option">{{ casilla.tag }}<span>{{ casilla.choice_label }}</span></label>
+                        {% endfor %}
+                    </div>
+                    <p class="field-help option-help">La matriz final y la solución se muestran siempre.</p>
+                    {% for error in form.mostrar.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </fieldset>
             </section>
 
             <section class="workspace-section" aria-labelledby="data-title">
@@ -140,28 +126,69 @@
             </section>
 
             <div class="workspace-actions">
-                <button class="btn btn-primary" type="submit">{{ configuracion.accion }}</button>
+                <button class="btn btn-primary" type="submit">Resolver</button>
             </div>
         </form>
     </section>
 {% endblock %}
 
 {% block tool_result %}
-    {% if resultado %}
+    {% if resultados %}
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
-                <p class="section-kicker">
-                    {% if configuracion.enfoque == "procedimiento" %}Procedimiento y resultado{% else %}Resuelto con {{ resultado.metodo }}{% endif %}
-                </p>
+                <p class="section-kicker">{% if comparando %}Comparación de métodos{% elif "procedimiento" in mostrar %}Procedimiento y resultado{% else %}Resultado{% endif %}</p>
                 <h2 id="results-title">{{ titulo_resultado }}</h2>
             </header>
 
-            {% if configuracion.enfoque == "procedimiento" %}
-                {% include "calculadora/modules/sistemas/_procedimiento.html" %}
-                {% include "calculadora/modules/sistemas/_final.html" %}
+            {% if "procedimiento" in mostrar %}
+                <section class="panel" aria-labelledby="initial-title">
+                    <h3 id="initial-title" class="panel-title">Matriz inicial</h3>
+                    {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                </section>
+            {% endif %}
+
+            {% if comparando %}
+                {% comment %}Un panel por método con su procedimiento y sus bloques; lo que coincide (clasificación y solución) va una sola vez al final.{% endcomment %}
+                {% for resultado in resultados %}
+                    <section class="panel panel-method" aria-labelledby="method-title-{{ forloop.counter }}">
+                        <h3 id="method-title-{{ forloop.counter }}" class="panel-title">{{ resultado.metodo }}</h3>
+                        {% if "procedimiento" in mostrar %}
+                            <div class="final-block">
+                                <h4 class="final-label">Procedimiento paso a paso</h4>
+                                {% include "calculadora/modules/sistemas/_pasos.html" %}
+                            </div>
+                        {% endif %}
+                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" %}
+                    </section>
+                {% endfor %}
+                <section class="panel panel-final" aria-labelledby="final-title">
+                    <h3 id="final-title" class="panel-title">Resultado final</h3>
+                    {% if "pivotes" in mostrar %}
+                        {% comment %}Los dos métodos comparten las columnas pivote: se toman del primer resultado.{% endcomment %}
+                        <div class="final-block">
+                            {% include "calculadora/modules/sistemas/_pivotes.html" %}
+                        </div>
+                    {% endif %}
+                    {% if "clasificacion" in mostrar %}
+                        {% include "calculadora/modules/sistemas/_clasificacion.html" %}
+                    {% endif %}
+                    {% include "calculadora/modules/sistemas/_solucion.html" %}
+                </section>
             {% else %}
-                {% include "calculadora/modules/sistemas/_final.html" %}
-                {% include "calculadora/modules/sistemas/_procedimiento.html" %}
+                {% if "procedimiento" in mostrar %}
+                    <section class="panel panel-steps" aria-labelledby="steps-title">
+                        <h3 id="steps-title" class="panel-title">Procedimiento paso a paso</h3>
+                        {% include "calculadora/modules/sistemas/_pasos.html" %}
+                    </section>
+                {% endif %}
+                <section class="panel panel-final" aria-labelledby="final-title">
+                    <h3 id="final-title" class="panel-title">Resultado final</h3>
+                    {% include "calculadora/modules/sistemas/_bloques_metodo.html" %}
+                    {% if "clasificacion" in mostrar %}
+                        {% include "calculadora/modules/sistemas/_clasificacion.html" %}
+                    {% endif %}
+                    {% include "calculadora/modules/sistemas/_solucion.html" %}
+                </section>
             {% endif %}
         </section>
     {% endif %}

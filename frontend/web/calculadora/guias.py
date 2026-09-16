@@ -75,8 +75,10 @@ GUIA_INFINITAS = GuiaConcepto(
 )
 
 _METODO = {
-    "gauss": GUIA_METODO_GAUSS,
-    "gauss_jordan": GUIA_METODO_GAUSS_JORDAN,
+    "gauss": (GUIA_METODO_GAUSS,),
+    "gauss_jordan": (GUIA_METODO_GAUSS_JORDAN,),
+    # Al comparar, las dos guías de método acompañan a los dos procedimientos.
+    "comparar": (GUIA_METODO_GAUSS, GUIA_METODO_GAUSS_JORDAN),
 }
 
 _CLASIFICACION = {
@@ -93,9 +95,7 @@ def guias_para_resultado(
     columnas_pivote: tuple[int, ...] | list[int] | None = None,
 ) -> tuple[GuiaConcepto, ...]:
     """Selecciona guías estáticas según el resultado ya calculado."""
-    seleccion: list[GuiaConcepto] = []
-    if metodo in _METODO:
-        seleccion.append(_METODO[metodo])
+    seleccion: list[GuiaConcepto] = list(_METODO.get(metodo, ()))
     if columnas_pivote:
         seleccion.append(GUIA_COLUMNAS_PIVOTE)
     if clasificacion_clave in _CLASIFICACION:

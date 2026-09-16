@@ -113,14 +113,14 @@ class PruebasIdentidadVisual(SimpleTestCase):
             self.assertIn(fragmento, ids)
 
     def test_interfaz_en_espanol_sin_spanglish(self):
-        for ruta in ("/", "/sistemas/gauss/"):
+        for ruta in ("/", "/sistemas/", "/bases/conversion/"):
             html = self.client.get(ruta).content.decode("utf-8")
             with self.subTest(ruta=ruta):
                 for termino in ("Search tools", "Steps", "Related tools", "Coming soon", "Home"):
                     self.assertNotIn(f">{termino}<", html)
                 self.assertIn("Buscar herramientas", html)
         self.assertIn("Procedimiento paso a paso", self.client.post(
-            "/sistemas/gauss/", {"sistema": "x1=1", "metodo": "gauss"},
+            "/sistemas/", {"sistema": "x1=1", "metodo": "gauss"},
         ).content.decode("utf-8"))
 
     def test_tokens_cubren_ambos_temas_para_los_componentes_nuevos(self):

@@ -94,7 +94,10 @@ class PruebasTeclas(unittest.TestCase):
         self.assertEqual([str(valor) for valor in matriz[1]], ["1", "-1/2", "1"])
 
     def test_registro_de_teclados_sin_teclas_vacias_ni_duplicadas(self):
-        self.assertEqual(set(TECLADOS), {"sistema", "matriz"})
+        self.assertEqual(
+            set(TECLADOS),
+            {"sistema", "matriz", "base-2", "base-8", "base-10", "base-16"},
+        )
         for teclado in TECLADOS.values():
             with self.subTest(teclado=teclado.id):
                 self.assertIsInstance(teclado, TecladoContextual)
@@ -107,6 +110,15 @@ class PruebasTeclas(unittest.TestCase):
         # El teclado de la cuadrícula solo lleva lo que cabe en una celda numérica.
         self.assertEqual([t.insercion for t in TECLADO_MATRIZ.teclas], ["-", "/"])
         self.assertFalse(hasattr(teclados, "TECLADO_LIMITES"))
+        # Conversión de bases: solo dígitos válidos según la base de entrada.
+        self.assertEqual([t.insercion for t in teclados.TECLADO_BINARIO.teclas], list("01"))
+        self.assertEqual([t.insercion for t in teclados.TECLADO_OCTAL.teclas], list("01234567"))
+        self.assertEqual(
+            [t.insercion for t in teclados.TECLADO_HEXADECIMAL.teclas],
+            list("0123456789ABCDEF"),
+        )
+        self.assertNotIn("A", [t.insercion for t in teclados.TECLADO_BINARIO.teclas])
+        self.assertNotIn("8", [t.insercion for t in teclados.TECLADO_OCTAL.teclas])
 
 
 class PruebasTecladoEnPantalla(SimpleTestCase):

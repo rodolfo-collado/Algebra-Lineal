@@ -497,8 +497,7 @@ a.tool-link .tool-link-name {
     list-style: none;
 }
 
-.related-link,
-.related-action {
+.related-link {
     display: grid;
     gap: 0.1rem;
     max-width: 22rem;
@@ -513,8 +512,7 @@ a.tool-link .tool-link-name {
     transition: border-color var(--motion-fast), background var(--motion-fast);
 }
 
-.related-link:hover,
-.related-action:hover {
+.related-link:hover {
     border-color: var(--color-brand);
     background: var(--color-brand-soft);
 }

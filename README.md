@@ -35,6 +35,9 @@ rediseñar la aplicación cada vez.
   matriz aumentada editable, sin reemplazar la interfaz de terminal.
 - Usar una interfaz visual propia, con tema claro u oscuro, matrices con
   notación de corchetes y el procedimiento paso a paso como pieza central.
+- Convertir números enteros entre decimal y binario, octal o hexadecimal desde
+  la interfaz web y desktop, mostrando las divisiones sucesivas o la expansión
+  posicional (combinación lineal) que justifica el resultado.
 
 El menú de la terminal es este:
 
@@ -191,6 +194,41 @@ Gauss-Jordan sigue sirviendo para reducir **cualquier matriz rectangular**
 capacidad vive en `backend/gauss_jordan.py` y se puede reutilizar, aunque el menú
 esté orientado a resolver sistemas.
 
+## Sistemas numéricos
+
+La herramienta **Conversión de bases** (`/bases/conversion/`) convierte enteros
+no negativos entre binario, octal, decimal y hexadecimal: se escribe el número y
+se eligen la base de origen y la de destino (distintas; un botón las
+intercambia). Solo hay dos algoritmos, y cualquier par de bases se resuelve con
+ellos:
+
+- **Decimal → binario, octal o hexadecimal**, por divisiones sucesivas: se
+  divide el número entre la base, se guarda el residuo y se repite con el
+  cociente hasta llegar a cero; el resultado se lee tomando los residuos del
+  último al primero. `13₁₀ → 1101₂`.
+- **Binario, octal o hexadecimal → decimal**, por expansión posicional: cada
+  dígito se multiplica por la potencia de la base que corresponde a su posición
+  y se suman los aportes. `1011₂ = 1·2³ + 0·2² + 1·2¹ + 1·2⁰ = 8 + 0 + 2 + 1 =
+  11₁₀`.
+- **Entre dos bases no decimales**, encadenando los dos: primero la expansión
+  hacia decimal y después las divisiones hacia la base destino, con el valor
+  intermedio a la vista. `1010₂ = 10₁₀ = A₁₆`.
+
+En hexadecimal los residuos y dígitos `10`–`15` se escriben `A`–`F`; la entrada
+acepta minúsculas y el resultado se normaliza a mayúsculas. El procedimiento
+muestra esa sustitución (`10 → A`, `A = 10`) y siempre queda visible junto al
+resultado. Los dígitos inválidos para la base elegida, la entrada vacía y los
+números negativos se rechazan con un mensaje claro; no se admiten fracciones ni
+otras bases.
+
+El núcleo vive en `backend/sistemas_numericos/` y devuelve los pasos como datos
+(dividendo, cociente, residuo y símbolo; o dígito, valor, posición, potencia y
+aporte), sin HTML. No usa `bin`, `oct`, `hex` ni `int(texto, base)`: la
+conversión se construye a mano, y `tests/test_sistemas_numericos.py` lo
+comprueba con `ast`. El teclado en pantalla solo ofrece los dígitos válidos para
+la base de origen (`0 1`, `0`–`7`, `0`–`9` o `0`–`F`) y, al cambiarla, la
+entrada se revisa al instante; el servidor vuelve a validar al convertir.
+
 ## Para usuarios finales: instalar en Windows
 
 1. Descarga `AlgebraLineal-Setup-x.y.z.exe` de la distribución del proyecto.
@@ -278,19 +316,23 @@ uv run python manage.py runserver
 Abre <http://127.0.0.1:8000/> en el navegador. Inicio permite buscar una
 herramienta o explorar el catálogo por área y categoría; la barra lateral
 repite ese árbol en todas las páginas. Dentro de **Álgebra Lineal → Sistemas de
-ecuaciones** hay cinco herramientas que comparten la misma vista y la misma
-matemática:
+ecuaciones** hay una sola herramienta, **Resolver un sistema** (`/sistemas/`),
+que se configura en el propio formulario:
 
-| Herramienta | Ruta | Qué cambia |
+| Opción | Valores | Predeterminado |
 | --- | --- | --- |
-| Resolver un sistema | `/sistemas/` | Método a elegir; muestra todo el procedimiento |
-| Método de Gauss | `/sistemas/gauss/` | Método fijo en Gauss |
-| Gauss-Jordan | `/sistemas/gauss-jordan/` | Método fijo en Gauss-Jordan |
-| Clasificación de sistemas | `/sistemas/clasificacion/` | Destaca la clasificación antes del procedimiento |
-| Columnas pivote | `/sistemas/columnas-pivote/` | Destaca y resalta las columnas pivote |
+| Método | Gauss, Gauss-Jordan o Comparar ambos | Gauss-Jordan |
+| Mostrar | Procedimiento, Clasificación, Columnas pivote, Sistema resultante | Todos activos |
 
-Todas permiten elegir el tipo de entrada —sistema de ecuaciones o matriz
-aumentada— y validan igual. El selector de tema recuerda la preferencia en el
+La matriz final y la solución se muestran siempre. **Comparar ambos** resuelve
+la misma entrada con los dos métodos y presenta un procedimiento por método;
+como la clasificación y la solución coinciden, aparecen una sola vez al final.
+Las rutas de la versión anterior (`/sistemas/gauss/`, `/sistemas/gauss-jordan/`,
+`/sistemas/clasificacion/` y `/sistemas/columnas-pivote/`) redirigen a
+`/sistemas/`, las dos primeras con el método ya seleccionado.
+
+Se puede elegir el tipo de entrada —sistema de ecuaciones o matriz aumentada— y
+ambos validan igual. El selector de tema recuerda la preferencia en el
 navegador; si no hay una elección previa, respeta el modo claro u oscuro del
 sistema. En el modo matricial indica las dimensiones (o usa los botones
 **+/−** de ecuaciones y variables) y completa una cuadrícula con la última
@@ -302,9 +344,9 @@ F1    [ 1 ] [ 2 ] | [ 4 ]
 F2    [ 2 ] [-1 ] | [ 7 ]
 ```
 
-Ambos modos muestran la matriz inicial, los pasos, la clasificación y la
-solución. Django solo coordina la entrada y la presentación: la capa de
-integración converge en una matriz aumentada y delega los cálculos a `backend/`.
+Ambas entradas producen el mismo resultado. Django solo coordina la entrada y
+la presentación: la capa de integración converge en una matriz aumentada y
+delega los cálculos a `backend/`.
 
 El **teclado matemático** que acompaña a cada campo muestra notación
 matemática (`x₁`, `−`, `a⁄b`) e inserta la sintaxis que entiende el parser
@@ -332,9 +374,9 @@ teclado y los botones de estructura requieren JavaScript.
 
 El recorrido web y desktop es **Inicio → área → categoría → herramienta →
 resultado**, y el breadcrumb lo reproduce con enlaces reales (las áreas y
-categorías llevan a su sección del Inicio). Vectores, matrices, sistemas
-numéricos y límites se anuncian como **Próximamente**, sin enlaces ni
-algoritmos nuevos.
+categorías llevan a su sección del Inicio). Vectores, matrices y límites se
+anuncian como **Próximamente**, sin enlaces ni algoritmos nuevos; sistemas
+numéricos ya ofrece la conversión de bases.
 
 `frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
 inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,
@@ -358,10 +400,10 @@ Para agregar una herramienta:
 3. Declara `palabras_clave` con sinónimos que un estudiante escribiría; el
    nombre, la categoría y el área ya forman parte del índice de búsqueda.
 4. Define relaciones con IDs existentes en `relacionadas` y una `invitacion`
-   breve; `relacionadas_disponibles` excluye destinos aún no disponibles.
-   Si varias herramientas comparten un formulario, la vista puede indicar
-   `formulario_compartido` e `ids_comparten_entrada` para que la relacionada
-   reciba la misma entrada mediante `formaction`.
+   breve; `relacionadas_disponibles` excluye destinos aún no disponibles. Las
+   relaciones se reservan para módulos realmente distintos: las variantes de
+   una misma herramienta (método, bloques del resultado) son opciones de su
+   formulario, no herramientas aparte.
 5. Si la herramienta necesita símbolos, declara un `TecladoContextual` en
    `teclados.py` con solo las teclas que usa e inclúyelo con
    `components/math_keyboard.html` dentro del contenedor de sus campos. Los
@@ -370,9 +412,9 @@ Para agregar una herramienta:
 6. Añade pruebas de rutas, navegación, búsqueda y comportamiento. Mantén la
    matemática en `backend/` y la presentación en los templates del módulo.
 
-Las cinco herramientas de sistemas siguen ese patrón con una sola vista:
-`herramientas_sistemas.py` describe, por ID, la acción principal, el método
-fijo o elegible y qué parte del resultado se destaca.
+Resolver un sistema sigue ese patrón con una sola vista: `opciones_sistemas.py`
+declara los métodos, los bloques del resultado, sus valores predeterminados y
+las rutas antiguas que redirigen a la herramienta.
 
 ```text
 templates/calculadora/
@@ -534,8 +576,11 @@ su sistema, el conjunto solución con variables libres, el parser de sistemas, l
 equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
 de Django —incluidas sus entradas textual y matricial—, la infraestructura
 desktop, el registro de herramientas, la navegación, el buscador, los
-breadcrumbs, el teclado matemático y que la interfaz no cargue fuentes ni
-scripts remotos. Sirven para detectar regresiones cuando el proyecto crezca.
+breadcrumbs, el teclado matemático, las opciones de Resolver un sistema
+—método, comparación, bloques del resultado y rutas antiguas—, la conversión de
+bases —resultados, pasos del procedimiento, mensajes de error y su integración
+web— y que la interfaz no cargue fuentes ni scripts remotos. Sirven para detectar regresiones
+cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
 
@@ -602,7 +647,11 @@ Algebra-Lineal/
 │   ├── gauss.py                # escalonamiento hacia abajo
 │   ├── gauss_jordan.py         # reducción completa y rango
 │   ├── parser_sistemas.py      # texto de ecuaciones → matriz aumentada
-│   └── sistemas.py             # clasificación, sistema resultante y solución
+│   ├── sistemas.py             # clasificación, sistema resultante y solución
+│   └── sistemas_numericos/     # conversión de bases con pasos estructurados
+│       ├── digitos.py          # equivalencia A–F y potencias enteras
+│       ├── validacion.py       # bases y dígitos válidos, mensajes de error
+│       └── conversion.py       # divisiones sucesivas y expansión posicional
 ├── frontend/
 │   ├── terminal/               # interfaz de línea de comandos
 │   │   ├── menu.py             # bucle del menú y navegación
@@ -629,6 +678,9 @@ Algebra-Lineal/
     ├── test_web.py
     ├── test_navegacion.py
     ├── test_teclado.py
+    ├── test_resolver_sistema.py
+    ├── test_sistemas_numericos.py
+    ├── test_conversion_bases_web.py
     ├── test_identidad_visual.py
     ├── test_desktop.py
     ├── test_recursos_interfaz.py

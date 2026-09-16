@@ -133,80 +133,51 @@ LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.")
 CATEGORIAS = (SISTEMAS_ECUACIONES, VECTORES, MATRICES, BASES_NUMERICAS, LIMITES)
 
 
-def _herramienta_sistemas(id_, nombre, descripcion, *, palabras_clave, relacionadas, invitacion):
-    return Herramienta(
-        id=id_,
-        nombre=nombre,
-        categoria=SISTEMAS_ECUACIONES,
-        descripcion=descripcion,
-        estado="disponible",
-        route_name="calculadora:sistemas-herramienta",
-        ruta_kwargs=(("herramienta", id_),),
-        palabras_clave=palabras_clave,
-        relacionadas=relacionadas,
-        invitacion=invitacion,
-    )
-
-
-# Espacio general de la categoría: conserva /sistemas/ con el método a elegir.
+# Única herramienta de la categoría: método a elegir (o comparar los dos) y
+# clasificación, columnas pivote y sistema resultante como bloques opcionales.
 SISTEMAS = Herramienta(
     id="sistemas",
     nombre="Resolver un sistema",
     categoria=SISTEMAS_ECUACIONES,
     descripcion=(
-        "Elige entre Gauss y Gauss-Jordan y sigue el procedimiento completo, "
-        "con la clasificación y las columnas pivote del resultado."
+        "Resuelve por Gauss o Gauss-Jordan, o compara los dos, con el procedimiento "
+        "paso a paso, la clasificación, las columnas pivote y el sistema resultante."
     ),
     estado="disponible",
     route_name="calculadora:sistemas",
-    palabras_clave=("resolver sistema", "matriz aumentada", "gauss", "gauss-jordan",
-                    "procedimiento paso a paso"),
-    # Ya calcula y muestra todo lo que ofrecen las demás herramientas de la
-    # categoría: recomendarlas no aportaría nada.
+    palabras_clave=(
+        "resolver sistema", "matriz aumentada", "gauss", "gauss-jordan", "gauss jordan",
+        "eliminación gaussiana", "escalonar", "forma escalonada", "forma escalonada reducida",
+        "sustitución regresiva", "procedimiento paso a paso", "clasificación",
+        "tipo de solución", "consistente", "inconsistente", "solución única",
+        "soluciones infinitas", "variables libres", "pivote", "pivotes", "columnas pivote",
+        "variables pivote",
+    ),
+    # No hay otra herramienta disponible que aporte algo sobre el mismo sistema.
     relacionadas=(),
     invitacion="Resolver el sistema completo",
 )
-GAUSS = _herramienta_sistemas(
-    "gauss", "Método de Gauss",
-    "Escalona la matriz aumentada eliminando hacia abajo y resuelve por "
-    "sustitución regresiva.",
-    palabras_clave=("eliminación gaussiana", "escalonar", "forma escalonada",
-                    "sustitución regresiva", "resolver sistema"),
-    relacionadas=("gauss-jordan",),
-    invitacion="Ver el procedimiento con Gauss",
-)
-GAUSS_JORDAN = _herramienta_sistemas(
-    "gauss-jordan", "Gauss-Jordan",
-    "Reduce por completo la matriz aumentada hasta la forma escalonada reducida.",
-    palabras_clave=("gauss jordan", "reducción completa", "forma escalonada reducida",
-                    "matriz reducida", "resolver sistema"),
-    relacionadas=("gauss",),
-    invitacion="Ver el procedimiento con Gauss-Jordan",
-)
-CLASIFICACION = _herramienta_sistemas(
-    "clasificacion", "Clasificación de sistemas",
-    "Determina si un sistema es consistente de solución única, consistente de "
-    "soluciones infinitas o inconsistente.",
-    palabras_clave=("tipo de solución", "consistente", "inconsistente",
-                    "solución única", "soluciones infinitas", "variables libres"),
-    relacionadas=("sistemas",),
-    invitacion="Analizar el tipo de solución",
-)
-COLUMNAS_PIVOTE = _herramienta_sistemas(
-    "columnas-pivote", "Columnas pivote",
-    "Identifica las columnas pivote de la matriz y las variables que quedan "
-    "determinadas por el sistema.",
-    palabras_clave=("pivote", "pivotes", "variables pivote", "variables libres"),
-    relacionadas=("sistemas",),
-    invitacion="Identificar las columnas pivote",
+
+CONVERSION_BASES = Herramienta(
+    id="conversion-bases",
+    nombre="Conversión de bases",
+    categoria=BASES_NUMERICAS,
+    descripcion=(
+        "Convierte números entre decimal y binario, octal o hexadecimal, "
+        "con el procedimiento de divisiones sucesivas o expansión posicional."
+    ),
+    estado="disponible",
+    route_name="calculadora:conversion-bases",
+    palabras_clave=(
+        "binario", "decimal", "octal", "hexadecimal", "bases", "conversión",
+        "sistemas numéricos", "conversión de bases", "base",
+    ),
+    relacionadas=(),
+    invitacion="Convertir entre bases numéricas",
 )
 
 HERRAMIENTAS = (
     SISTEMAS,
-    GAUSS,
-    GAUSS_JORDAN,
-    CLASIFICACION,
-    COLUMNAS_PIVOTE,
     Herramienta("operaciones-vectores", "Operaciones con vectores", VECTORES,
                 "Suma, resta y producto de un vector por un escalar.",
                 palabras_clave=("vector", "suma de vectores", "escalar")),
@@ -219,9 +190,7 @@ HERRAMIENTAS = (
     Herramienta("ecuaciones-matriciales", "Ecuaciones matriciales", MATRICES,
                 "Resuelve ecuaciones cuyas incógnitas son matrices.",
                 palabras_clave=("matriz", "ecuación matricial")),
-    Herramienta("conversion-bases", "Conversión entre bases", BASES_NUMERICAS,
-                "Convierte números entre binario, octal, decimal y hexadecimal.",
-                palabras_clave=("binario", "octal", "decimal", "hexadecimal", "base")),
+    CONVERSION_BASES,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",
                 palabras_clave=("límite", "función", "tiende a")),

@@ -81,4 +81,41 @@ TECLADO_MATRIZ = TecladoContextual(
     ayuda="Inserta en la celda donde está el cursor.",
 )
 
-TECLADOS = {teclado.id: teclado for teclado in (TECLADO_SISTEMA, TECLADO_MATRIZ)}
+
+def _teclado_digitos(id_teclado: str, titulo: str, simbolos: str) -> TecladoContextual:
+    """Teclado de solo dígitos válidos para la base de entrada."""
+    return TecladoContextual(
+        id=id_teclado,
+        titulo=titulo,
+        grupos=(
+            GrupoTeclas("Dígitos", tuple(
+                Tecla(simbolo, simbolo, f"Dígito {simbolo}") for simbolo in simbolos
+            )),
+        ),
+        ayuda="Inserta en el campo del número. También puedes escribir con el teclado físico.",
+    )
+
+
+TECLADO_BINARIO = _teclado_digitos("base-2", "Teclado binario", "01")
+TECLADO_OCTAL = _teclado_digitos("base-8", "Teclado octal", "01234567")
+TECLADO_DECIMAL = _teclado_digitos("base-10", "Teclado decimal", "0123456789")
+TECLADO_HEXADECIMAL = _teclado_digitos("base-16", "Teclado hexadecimal", "0123456789ABCDEF")
+
+TECLADOS_BASE = {
+    2: TECLADO_BINARIO,
+    8: TECLADO_OCTAL,
+    10: TECLADO_DECIMAL,
+    16: TECLADO_HEXADECIMAL,
+}
+
+TECLADOS = {
+    teclado.id: teclado
+    for teclado in (
+        TECLADO_SISTEMA,
+        TECLADO_MATRIZ,
+        TECLADO_BINARIO,
+        TECLADO_OCTAL,
+        TECLADO_DECIMAL,
+        TECLADO_HEXADECIMAL,
+    )
+}
