@@ -30,6 +30,11 @@ _RESOLVERS = {
 }
 
 
+def clave_clasificacion(clasificacion):
+    """Clave corta (unica, infinitas, inconsistente) que usan plantillas y CSS."""
+    return _CLASIFICACION_CLAVE.get(clasificacion, "")
+
+
 def formatear_matriz(matriz):
     """Convierte los valores exactos del backend a celdas legibles en HTML."""
     return [
@@ -95,9 +100,7 @@ def resolver_entrada_web(
         "mostrar_sistema_resultante": not resultado["solucion_directa"],
         "ecuaciones_resultantes": resultado["ecuaciones_resultantes"],
         "clasificacion": resultado["clasificacion"],
-        "clasificacion_clave": _CLASIFICACION_CLAVE.get(
-            resultado["clasificacion"], ""
-        ),
+        "clasificacion_clave": clave_clasificacion(resultado["clasificacion"]),
         "justificacion": resultado["justificacion"],
         "solucion_general": resultado["solucion_general"],
         "sustitucion": adaptar_sustitucion(

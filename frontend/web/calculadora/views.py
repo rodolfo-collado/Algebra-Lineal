@@ -10,7 +10,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 from backend.sistemas_numericos import NOMBRES_BASE
 
 from . import catalogo
-from .forms import ConversionBasesForm, SistemaForm
+from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .guias import guias_para_resultado
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
@@ -20,8 +20,10 @@ from .opciones_sistemas import (
     metodos_a_resolver,
     titulo_resultado,
 )
+from .opciones_vectores import AYUDAS, texto_boton
 from .servicios import resolver_entrada_web
 from .servicios_bases import convertir_entrada
+from .servicios_vectores import operar_vectores
 from .teclados import TECLADO_MATRIZ, TECLADO_SISTEMA, TECLADOS_BASE
 
 
@@ -102,6 +104,43 @@ def sistemas_ruta_antigua(request, herramienta):
     if parametros:
         destino = f"{destino}?{urlencode(parametros)}"
     return HttpResponsePermanentRedirect(destino)
+
+
+@require_http_methods(["GET", "POST"])
+def operaciones_vectores(request):
+    """Operaciones con vectores: suma, resta, escalar y combinación lineal en un solo flujo."""
+    actual = catalogo.herramienta_por_ruta(request.resolver_match)
+    if actual is None or actual.id != "operaciones-vectores":
+        raise Http404("No existe esa herramienta.")
+
+    resultado = None
+    if request.method == "POST" and "ajustar" not in request.POST:
+        form = VectoresForm(request.POST)
+        if form.is_valid():
+            try:
+                resultado = operar_vectores(form.cleaned_data["entrada"])
+            except ValueError as error:
+                form.add_error(None, str(error))
+    elif request.method == "POST":
+        # «Aplicar» sin JavaScript: se redibuja la estructura con lo escrito, sin calcular.
+        form = VectoresForm(initial=VectoresForm.iniciales_desde(request.POST))
+    else:
+        form = VectoresForm()
+
+    estructura = form.estructura()
+    return render(
+        request,
+        "calculadora/modules/vectores/index.html",
+        {
+            "form": form,
+            "resultado": resultado,
+            "estructura": estructura,
+            "ayudas_operacion": AYUDAS,
+            "texto_boton": texto_boton(estructura["operacion"]),
+            "valores_vectores": form.valores_ingresados(),
+            "teclado_vector": TECLADO_MATRIZ,
+        },
+    )
 
 
 @require_http_methods(["GET", "POST"])

@@ -12,5 +12,6 @@ urlpatterns = [
     path("sistemas/", views.sistemas, name="sistemas"),
     # Compatibilidad con las rutas de P10.1 (/sistemas/gauss/, …): redirigen a /sistemas/.
     path("sistemas/<slug:herramienta>/", views.sistemas_ruta_antigua, name="sistemas-antigua"),
+    path("vectores/operaciones/", views.operaciones_vectores, name="operaciones-vectores"),
     path("bases/conversion/", views.conversion_bases, name="conversion-bases"),
 ]
