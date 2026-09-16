@@ -1,0 +1,115 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
+    <h2 id="workspace-title" class="sr-only">Entrada</h2>
+    <form id="ecuacion-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+        {% csrf_token %}
+        {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
+        <section class="workspace-section" id="equation-fields" aria-labelledby="equation-title">
+            <h3 class="section-title" id="equation-title">Ecuación matricial</h3>
+            <p class="field-help">A y b son conocidos; x es el vector incógnita que se busca. Elige solo las dimensiones de A: b tiene tantas componentes como filas tiene A, y x tantas como columnas.</p>
+            <div class="structure-controls structure-controls-matrices" role="group" aria-label="Dimensiones de A">
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.filas quitar="Quitar una fila de A" agregar="Agregar una fila de A" %}
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.columnas quitar="Quitar una columna de A" agregar="Agregar una columna de A" %}
+            </div>
+            <p class="field-help" data-equation-shape aria-live="polite">{{ form.forma_texto }}. De {{ form.filas.field.min_value }} a {{ form.filas.field.max_value }} filas y columnas.</p>
+            <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
+            <noscript><p class="field-help">Cambia las filas o columnas de A y pulsa <strong>Aplicar</strong> antes de resolver. Se conservan las celdas que siguen en la estructura.</p></noscript>
+            <div class="matrix-equation equation-entry" data-equation-entry>
+                {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.0.nombre filas=form.matrices.0.filas vector=False only %}
+                <span class="matrix-expression" aria-hidden="true">·</span>
+                <div class="matrix-operand unknown-vector" data-unknown>
+                    <span class="muted">Incógnita x</span>
+                    {% include "calculadora/components/matriz.html" with matriz=form.incognitas etiqueta="Vector incógnita x, no editable" only %}
+                    <p class="sr-only" data-unknown-help>x tiene {{ form.estructura.columnas }} componente{{ form.estructura.columnas|pluralize }} desconocida{{ form.estructura.columnas|pluralize }}; se determinan al resolver.</p>
+                </div>
+                <span class="matrix-expression" aria-hidden="true">=</span>
+                {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.1.nombre filas=form.matrices.1.filas vector=True only %}
+            </div>
+            <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. A puede ser rectangular: más ecuaciones que incógnitas o más incógnitas que ecuaciones.</p>
+            {% include "calculadora/components/math_keyboard.html" with teclado=teclado_matriz campos_id="equation-fields" %}
+        </section>
+        <section class="workspace-section">
+            <fieldset class="choice-fieldset">
+                <legend>{{ form.metodo.label }}</legend>
+                <div class="option-list">
+                    {% for radio in form.metodo %}<label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                {{ form.metodo.errors }}
+                <p class="field-help option-help">{{ ayuda_metodos }}</p>
+            </fieldset>
+        </section>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit">Resolver</button></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+    <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        <div class="panel panel-final">
+            <p class="section-kicker">Ecuación matricial · {{ resultado.titulo_metodo }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
+            <h2 id="results-title" class="panel-title">Resultado</h2>
+            <div class="classification equation-verdict" data-kind="{{ resultado.clasificacion_clave }}">
+                <span class="classification-icon" aria-hidden="true"></span>
+                <div>
+                    <p class="classification-value">{{ resultado.enunciado }}</p>
+                    <p class="muted combination-detail">El sistema equivalente es {{ resultado.clasificacion|lower }}.</p>
+                </div>
+            </div>
+            <div class="final-block solution">
+                <h4 class="final-label">{% if resultado.clasificacion_clave == "unica" %}Solución{% elif resultado.clasificacion_clave == "infinitas" %}Conjunto solución{% else %}Contradicción{% endif %}</h4>
+                {% if resultado.justificacion %}
+                    <div class="explanation">
+                        {% for parrafo in resultado.justificacion %}{% if parrafo %}<p>{{ parrafo }}</p>{% endif %}{% endfor %}
+                    </div>
+                {% endif %}
+                {% if resultado.solucion_general %}
+                    <div class="solution-pair">
+                        <ul class="equations solution-list">
+                            {% for linea in resultado.solucion_general %}<li><code>{{ linea }}</code></li>{% endfor %}
+                        </ul>
+                        {% if resultado.x %}
+                            <div class="matrix-equation" tabindex="0" role="region" aria-label="Vector solución x">
+                                <span class="matrix-expression">x =</span>
+                                {% include "calculadora/components/matriz.html" with matriz=resultado.x etiqueta="Vector solución x" only %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            {% if resultado.comprobacion %}
+                <div class="final-block">
+                    <h4 class="final-label">Comprobación</h4>
+                    <p class="procedure-lead">Al sustituir x, el producto Ax {% if resultado.comprobacion.coincide %}reproduce{% else %}no reproduce{% endif %} b.</p>
+                    <div class="matrix-equation" tabindex="0" role="region" aria-label="Comprobación: A por x igual a b">
+                        <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.a etiqueta="Matriz A de la comprobación" only %}</div>
+                        <span class="matrix-expression">·</span>
+                        <div class="matrix-operand"><span class="muted">x</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.x etiqueta="Vector x sustituido" only %}</div>
+                        <span class="matrix-expression">=</span>
+                        <div class="matrix-operand"><span class="muted">Ax</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.producto etiqueta="Producto Ax" only %}</div>
+                        <span class="matrix-expression">=</span>
+                        <div class="matrix-operand"><span class="muted">b</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.b etiqueta="Vector b de la comprobación" only %}</div>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="final-block">
+                <h4 class="final-label">Interpretación como combinación lineal</h4>
+                <p class="interpretation">{{ resultado.interpretacion.texto }}</p>
+                {% if resultado.interpretacion.igualdad %}<p class="combination-equality"><code>{{ resultado.interpretacion.igualdad }}</code></p>{% endif %}
+            </div>
+        </div>
+        {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
+        {% include "calculadora/modules/ecuaciones/_metodos.html" %}
+    </section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
+<template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
+<script src="{% static 'calculadora/ecuaciones.js' %}" defer></script>
+<script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}

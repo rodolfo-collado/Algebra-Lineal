@@ -168,9 +168,13 @@ class PruebasBuscador(SimpleTestCase):
 
     def test_busca_por_nombre_palabras_clave_categoria_y_area(self):
         # Lo que antes eran herramientas aparte sigue encontrándose: ahora lleva a Resolver un sistema.
-        for consulta in ("Gauss", "pivote", "clasificacion", "inconsistente", "gauss jordan", "escalonada"):
+        for consulta in ("Gauss", "pivote", "clasificacion", "gauss jordan", "escalonada"):
             with self.subTest(consulta=consulta):
                 self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.SISTEMAS,))
+        # «inconsistente» también describe Ax = b (P14); Resolver un sistema conserva el primer lugar.
+        self.assertEqual(
+            catalogo.buscar_herramientas("inconsistente"), (catalogo.SISTEMAS, catalogo.ECUACIONES_MATRICIALES),
+        )
         self.assertEqual(
             set(catalogo.buscar_herramientas("sistemas de ecuaciones")),
             set(catalogo.herramientas_de(catalogo.SISTEMAS_ECUACIONES)),

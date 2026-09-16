@@ -11,8 +11,11 @@ from backend.sistemas_numericos import NOMBRES_BASE
 
 from . import catalogo
 from .forms import ConversionBasesForm, SistemaForm, VectoresForm
+from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_matrices import MatricesForm
+from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
+from .servicios_ecuaciones import resolver_ecuacion_web
 from .servicios_matrices import operar_matrices
 from .guias import guias_para_resultado
 from .opciones_sistemas import (
@@ -162,6 +165,28 @@ def operaciones_matrices(request):
     return render(request, "calculadora/modules/matrices/index.html", {
         "form": form, "resultado": resultado, "opciones_matrices": OPCIONES_MATRICES,
         "teclado_matriz": TECLADO_MATRIZ,
+    })
+
+
+@require_http_methods(["GET", "POST"])
+def ecuaciones_matriciales(request):
+    """Resolver Ax = b: A y b conocidos; x se determina con los motores de Resolver un sistema."""
+    ajustar = request.method == "POST" and "ajustar" in request.POST
+    form = EcuacionMatricialForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
+    resultado = None
+    if request.method == "POST" and form.is_valid():
+        if ajustar:
+            # «Aplicar» sin JavaScript: se redibujan A, x y b con las dimensiones nuevas, sin resolver.
+            form = EcuacionMatricialForm(initial=form.iniciales())
+        else:
+            try:
+                resultado = resolver_ecuacion_web(form.cleaned_data["entrada"])
+            except ValueError as error:
+                form.add_error(None, str(error))
+    return render(request, "calculadora/modules/ecuaciones/index.html", {
+        "form": form, "resultado": resultado, "ayuda_metodos": AYUDA_METODOS_ECUACION,
+        # El procedimiento reutiliza los bloques de Resolver un sistema, todos visibles.
+        "mostrar": frozenset(BLOQUES_PREDETERMINADOS), "teclado_matriz": TECLADO_MATRIZ,
     })
 
 

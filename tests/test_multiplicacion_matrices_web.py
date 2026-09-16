@@ -52,11 +52,12 @@ def lineas(html):
 
 
 class PruebasCatalogoP13B(SimpleTestCase):
-    def test_sigue_siendo_una_sola_herramienta_de_matrices(self):
-        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 1)
+    def test_los_productos_no_son_herramientas_aparte(self):
+        # AB y Ax son operaciones dentro de Operaciones con matrices; la segunda herramienta
+        # de la categoría (P14) resuelve Ax = b con x desconocido, no un producto.
         documento = Documento(self.client.get(RUTA))
         enlaces = [a["href"] for a in documento.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, [RUTA])
+        self.assertEqual(enlaces, [RUTA, "/matrices/ecuaciones/"])
         self.assertNotIn("Multiplicación de matrices", [a.get("title") for a in documento.enlaces_en("Herramientas")])
 
     def test_busqueda_encuentra_los_productos(self):

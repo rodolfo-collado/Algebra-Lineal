@@ -50,6 +50,18 @@ def _columna_texto(vector):
     return formatear_matriz(vector_columna(list(vector)))
 
 
+def combinacion_columnas(coeficientes, nombre="a"):
+    """«2a₁ − a₂ + (1/2)a₃»: combinación lineal de las columnas de A con coeficientes exactos.
+
+    La comparten Ax por columnas (P13B) y la lectura de Ax = b como combinación
+    lineal (P14): la misma escritura para la misma igualdad.
+    """
+    return "".join(
+        _termino(Fraction(coeficiente), f"{nombre}{subindice(k)}", k == 1)
+        for k, coeficiente in enumerate(coeficientes, start=1)
+    )
+
+
 # Nombres con los que cada operación describe el mismo producto.
 def _nombre_entrada(operacion, i, j):
     return f"(Ax){subindice(i)}" if operacion == "matriz_vector" else f"c{subindice(i, j)}"
@@ -127,10 +139,7 @@ def _por_columnas(calculo, opcion):
         simbolica = " + ".join(
             f"{_coeficiente_simbolico(operacion, k, j)}a{subindice(k)}" for k in range(1, len(columna["coeficientes"]) + 1)
         )
-        numerica = "".join(
-            _termino(coeficiente, f"a{subindice(k)}", k == 1)
-            for k, coeficiente in enumerate(columna["coeficientes"], start=1)
-        )
+        numerica = combinacion_columnas(columna["coeficientes"])
         terminos = []
         for k, coeficiente in enumerate(columna["coeficientes"], start=1):
             signo, factor = _coeficiente(coeficiente, k == 1)

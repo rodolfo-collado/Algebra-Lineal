@@ -123,7 +123,7 @@ VECTORES = Categoria(
 )
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones con matrices rectangulares, incluidos los productos AB y Ax.",
+    "Operaciones con matrices rectangulares, los productos AB y Ax, y la ecuación matricial Ax = b.",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -198,9 +198,9 @@ CONVERSION_BASES = Herramienta(
     invitacion="Convertir entre bases numéricas",
 )
 
-# Única herramienta de la categoría: la operación (suma, resta, escalar,
-# traspuesta, AB o Ax) y, en los productos, el método del procedimiento se
-# eligen dentro, igual que el método en Resolver un sistema.
+# La operación (suma, resta, escalar, traspuesta, AB o Ax) y, en los productos,
+# el método del procedimiento se eligen dentro, igual que el método en Resolver
+# un sistema. En Ax el vector x es conocido y solo se calcula el producto.
 OPERACIONES_MATRICES = Herramienta(
     id="operaciones-matrices", nombre="Operaciones con matrices", categoria=MATRICES,
     descripcion=(
@@ -216,10 +216,28 @@ OPERACIONES_MATRICES = Herramienta(
     invitacion="Operar con matrices",
 )
 
+# Segunda herramienta de Matrices: aquí x es la incógnita. Ax = b es un sistema
+# escrito de otra manera, así que se resuelve con los motores de Resolver un
+# sistema (Gauss, Gauss-Jordan o ambos) sobre la matriz aumentada [A | b].
+ECUACIONES_MATRICIALES = Herramienta(
+    id="ecuaciones-matriciales", nombre="Resolver Ax = b", categoria=MATRICES,
+    descripcion=(
+        "Resuelve la ecuación matricial Ax = b con A y b conocidos: la escribe como ecuación vectorial, "
+        "sistema y matriz aumentada [A | b], y determina si tiene solución única, infinitas o ninguna."
+    ),
+    estado="disponible", route_name="calculadora:ecuaciones-matriciales",
+    palabras_clave=("ecuación matricial", "ecuaciones matriciales", "ax=b", "ax = b", "resolver ax=b",
+                    "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
+                    "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
+                    "inconsistente"),
+    invitacion="Resolver una ecuación matricial",
+)
+
 HERRAMIENTAS = (
     SISTEMAS,
     OPERACIONES_VECTORES,
     OPERACIONES_MATRICES,
+    ECUACIONES_MATRICIALES,
     CONVERSION_BASES,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",

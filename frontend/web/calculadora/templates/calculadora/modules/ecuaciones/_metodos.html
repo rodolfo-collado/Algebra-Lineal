@@ -1,0 +1,12 @@
+{% comment %}Eliminación sobre [A | b] con las plantillas de Resolver un sistema: un panel por método elegido (o los dos al comparar) con las operaciones por filas, la matriz final con sus pivotes, las columnas pivote, el sistema resultante y la sustitución regresiva. El resultado ya se mostró una sola vez arriba; cada método muestra las columnas pivote de su propia matriz final.{% endcomment %}
+{% for metodo in resultado.metodos %}
+    <section class="panel{% if resultado.comparando %} panel-method{% endif %}" aria-labelledby="procedure-title{% if not forloop.first %}-{{ forloop.counter }}{% endif %}">
+        <h3 id="procedure-title{% if not forloop.first %}-{{ forloop.counter }}{% endif %}" class="panel-title">Eliminación por {{ metodo.metodo }}</h3>
+        <div class="final-block">
+            <h4 class="final-label">Operaciones por filas</h4>
+            {% include "calculadora/modules/sistemas/_pasos.html" with resultado=metodo %}
+        </div>
+        {% include "calculadora/modules/sistemas/_bloques_metodo.html" with resultado=metodo mostrar=mostrar comparando=False %}
+        <p class="procedure-note">De esta matriz se lee la clasificación del sistema —{{ resultado.clasificacion|lower }}— y el conjunto solución mostrado en el resultado.</p>
+    </section>
+{% endfor %}
