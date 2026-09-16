@@ -12,6 +12,9 @@ y se resuelve con el Gauss-Jordan del proyecto.
 
 from fractions import Fraction
 
+# La validación de un vector vive junto al producto punto, en backend.matrices,
+# porque las filas y columnas de una matriz también son vectores.
+from backend.matrices import validar_vector
 from backend.sistemas import (
     INCONSISTENTE,
     SOLUCION_UNICA,
@@ -21,22 +24,6 @@ from backend.sistemas import (
 
 # Los escalares buscados en una combinacion lineal se llaman c1, c2, ..., ck.
 NOMBRE_COEFICIENTE = "c"
-
-
-def validar_vector(vector, nombre=None):
-    """Devuelve (es_valido, mensaje). Un vector necesita al menos una componente."""
-    sujeto = f"El vector {nombre}" if nombre else "El vector"
-    if not isinstance(vector, (list, tuple)):
-        return False, f"{sujeto} debe ser una lista de componentes."
-
-    if len(vector) == 0:
-        return False, f"{sujeto} no tiene componentes."
-
-    for componente in vector:
-        if isinstance(componente, bool) or not isinstance(componente, (int, Fraction)):
-            return False, f"{sujeto} tiene una componente que no es un número."
-
-    return True, ""
 
 
 def dimension(vector):

@@ -1,4 +1,9 @@
-"""Utilidades generales sobre matrices, independientes de cualquier algoritmo."""
+"""Utilidades generales sobre matrices, independientes de cualquier algoritmo.
+
+Las filas y las columnas son vectores (listas de números exactos), así que aquí
+viven también la validación de un vector y el producto punto: la primitiva con
+la que se construyen los productos AB y Ax.
+"""
 
 import random
 from fractions import Fraction
@@ -91,6 +96,32 @@ def _exigir_matriz(matriz):
         raise ValueError(mensaje)
 
 
+def validar_vector(vector, nombre=None):
+    """Devuelve (es_valido, mensaje). Un vector necesita al menos una componente."""
+    sujeto = f"El vector {nombre}" if nombre else "El vector"
+    if not isinstance(vector, (list, tuple)):
+        return False, f"{sujeto} debe ser una lista de componentes."
+
+    if len(vector) == 0:
+        return False, f"{sujeto} no tiene componentes."
+
+    for componente in vector:
+        if isinstance(componente, bool) or not isinstance(componente, (int, Fraction)):
+            return False, f"{sujeto} tiene una componente que no es un número."
+
+    return True, ""
+
+
+def _exigir_vector(vector, nombre):
+    valido, mensaje = validar_vector(vector, nombre)
+    if not valido:
+        raise ValueError(mensaje)
+
+
+def _contar(cantidad, singular):
+    return f"{cantidad} {singular}{'' if cantidad == 1 else 's'}"
+
+
 def dimensiones(matriz):
     """Dimensiones (filas, columnas) de una matriz válida."""
     _exigir_matriz(matriz)
@@ -134,12 +165,129 @@ def trasponer_matriz(matriz):
     return [[Fraction(matriz[i][j]) for i in range(filas)] for j in range(columnas)]
 
 
-def resolver_operacion_matrices(operacion, a, b=None, escalar=None):
-    """Resultado y evidencia por entrada, como datos exactos sin presentación.
+def vector_columna(vector):
+    """Escribe un vector de n componentes como matriz n×1."""
+    _exigir_vector(vector, "x")
+    return [[Fraction(componente)] for componente in vector]
+
+
+def producto_punto(u, v):
+    """u · v = u₁v₁ + u₂v₂ + … + uₙvₙ, con la misma dimensión y aritmética exacta.
+
+    Cada entrada de un producto de matrices es el producto punto de una fila
+    de A con una columna de B; esta es la única suma de productos del módulo.
+    """
+    _exigir_vector(u, "u")
+    _exigir_vector(v, "v")
+    if len(u) != len(v):
+        raise ValueError(
+            "El producto punto necesita dos vectores de la misma dimensión: "
+            f"u tiene {_contar(len(u), 'componente')} y v tiene {_contar(len(v), 'componente')}."
+        )
+
+    resultado = Fraction(0)
+    for componente_u, componente_v in zip(u, v):
+        resultado += Fraction(componente_u) * Fraction(componente_v)
+
+    return resultado
+
+
+def multiplicar_matrices(a, b):
+    """C = AB con cᵢⱼ = filaᵢ(A) · columnaⱼ(B); A m×n y B n×p dan C m×p.
+
+    No exige matrices cuadradas ni del mismo tamaño: solo que las columnas de A
+    coincidan con las filas de B. No modifica las entradas.
+    """
+    (_, columnas_a), (filas_b, _) = dimensiones(a), dimensiones(b)
+    if columnas_a != filas_b:
+        raise ValueError(
+            f"No se puede calcular AB: A tiene {_contar(columnas_a, 'columna')} y B tiene "
+            f"{_contar(filas_b, 'fila')}. Para multiplicar matrices, esos valores deben coincidir."
+        )
+    # Las columnas de B son las filas de su traspuesta.
+    columnas_b = trasponer_matriz(b)
+    return [[producto_punto(fila, columna) for columna in columnas_b] for fila in a]
+
+
+def multiplicar_matriz_vector(a, x):
+    """Ax: A m×n por un vector x de n componentes; devuelve las m componentes de Ax.
+
+    Es el mismo producto AB con B = [x] escrito como columna n×1: no hay un
+    segundo motor. Cambian la validación y la forma de explicarlo.
+    """
+    _, columnas_a = dimensiones(a)
+    _exigir_vector(x, "x")
+    if len(x) != columnas_a:
+        raise ValueError(
+            f"No se puede calcular Ax: A tiene {_contar(columnas_a, 'columna')} y x tiene "
+            f"{_contar(len(x), 'componente')}. Para multiplicar, esos valores deben coincidir."
+        )
+    return [fila[0] for fila in multiplicar_matrices(a, vector_columna(x))]
+
+
+def _pasos_producto(a, b, resultado):
+    """Los productos aᵢₖbₖⱼ se calculan una vez y se agrupan de dos maneras.
+
+    `pasos[i][j]` explica cada entrada como fila por columna; `columnas[j]`
+    explica cada columna del resultado como combinación lineal de las columnas
+    de A con los coeficientes de la columna j de B. Son las mismas cantidades,
+    así que ambos procedimientos conducen exactamente al mismo resultado.
+    """
+    filas_a, comunes = dimensiones(a)
+    columnas_de_a = trasponer_matriz(a)
+    columnas_de_b = trasponer_matriz(b)
+    productos = [
+        [[Fraction(a[i][k]) * Fraction(b[k][j]) for k in range(comunes)] for j in range(len(columnas_de_b))]
+        for i in range(filas_a)
+    ]
+    pasos = [
+        [
+            {
+                "posicion": (i + 1, j + 1),
+                "fila": tuple(Fraction(valor) for valor in a[i]),
+                "columna": tuple(columnas_de_b[j]),
+                "productos": tuple(productos[i][j]),
+                "resultado": resultado[i][j],
+            }
+            for j in range(len(columnas_de_b))
+        ]
+        for i in range(filas_a)
+    ]
+    columnas = [
+        {
+            "posicion": j + 1,
+            "coeficientes": tuple(columnas_de_b[j]),
+            "escaladas": tuple(tuple(productos[i][j][k] for i in range(filas_a)) for k in range(comunes)),
+            "resultado": tuple(resultado[i][j] for i in range(filas_a)),
+        }
+        for j in range(len(columnas_de_b))
+    ]
+    return {
+        "pasos": pasos, "columnas": columnas,
+        "columnas_a": tuple(tuple(columna) for columna in columnas_de_a),
+    }
+
+
+def resolver_operacion_matrices(operacion, a, b=None, escalar=None, vector=None):
+    """Resultado y evidencia estructurada, como datos exactos sin presentación.
 
     Los índices de los pasos empiezan en 1. En la traspuesta se conserva la
-    posición de origen para explicar cómo cada fila pasa a ser una columna.
+    posición de origen para explicar cómo cada fila pasa a ser una columna. En
+    AB y Ax se entregan las dos lecturas equivalentes del mismo producto.
     """
+    if operacion in ("producto", "matriz_vector"):
+        if operacion == "producto":
+            resultado = multiplicar_matrices(a, b)
+        else:
+            resultado = vector_columna(multiplicar_matriz_vector(a, vector))
+            b = vector_columna(vector)
+        return {
+            "operacion": operacion, "resultado": resultado, **_pasos_producto(a, b, resultado),
+            "dimensiones_entrada": dimensiones(a),
+            "dimensiones_b": dimensiones(b),
+            "dimensiones_resultado": dimensiones(resultado),
+        }
+
     if operacion == "suma":
         resultado = sumar_matrices(a, b)
     elif operacion == "resta":

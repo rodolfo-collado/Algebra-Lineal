@@ -92,6 +92,10 @@ class PruebasInstalacionPorUsuario(unittest.TestCase):
         self.assertIn("cuenta limpia", prueba)
         self.assertIn("matrices/operaciones/", prueba)
         self.assertIn("matrices.js", prueba)
+        # P13B viaja en el mismo smoke: AB y Ax comparando los dos procedimientos.
+        self.assertIn("operacion = 'producto'", prueba)
+        self.assertIn("operacion = 'matriz_vector'", prueba)
+        self.assertIn('id="procedure-title-2"', prueba)
 
 
 class PruebasFlujoDelAsistente(unittest.TestCase):

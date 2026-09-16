@@ -81,6 +81,97 @@
     overflow-wrap: anywhere;
 }
 
+/* Tres dimensiones en AB (m, n, p); el control que la operación no usa se oculta. */
+.structure-controls-matrices {
+    grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+}
+
+.dimension-field[hidden],
+.choice-fieldset[hidden] {
+    display: none;
+}
+
+/* Procedimientos de AB y Ax: grupos plegables por fila o por columna, abiertos
+   cuando el resultado es pequeño; las igualdades largas se parten en líneas. */
+.procedure-group {
+    margin-top: 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+}
+
+.procedure-group + .procedure-group {
+    margin-top: 0.6rem;
+}
+
+.procedure-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.6rem;
+    align-items: baseline;
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    list-style: none;
+}
+
+.procedure-summary::-webkit-details-marker {
+    display: none;
+}
+
+.procedure-summary::before {
+    content: "▸";
+    flex: none;
+    color: var(--color-brand);
+    font-size: 0.85rem;
+}
+
+.procedure-group[open] > .procedure-summary::before {
+    content: "▾";
+}
+
+.procedure-summary:hover {
+    background: var(--color-surface);
+}
+
+.procedure-summary-title {
+    font-weight: 700;
+}
+
+.procedure-summary-detail {
+    min-width: 0;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.procedure-group > :not(summary) {
+    margin-inline: 0.8rem;
+}
+
+.procedure-group > :last-child {
+    margin-bottom: 0.8rem;
+}
+
+/* Los subíndices (a₂₁b₁₃) se leen mejor en la fuente de interfaz que en la monoespaciada. */
+.procedure-line,
+.procedure-lines li {
+    font-family: var(--font-ui);
+    font-size: 0.98rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.6;
+}
+
+.procedure-line {
+    margin: 0.2rem 0 0.5rem;
+    font-weight: 600;
+}
+
+.procedure-lines {
+    gap: 0.55rem;
+    padding-top: 0.2rem;
+}
+
 .results[hidden] { display: none; }
 [data-aplicar][hidden] { display: none; }
 

@@ -118,34 +118,65 @@ el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructur
 sin calcular. El teclado contextual es el de la cuadrícula de matrices
 (`TECLADO_MATRIZ`: `−` y `a⁄b`), incluido con `campos_id="vector-fields"`.
 
-### Matrices (P13A)
+### Matrices (P13A y P13B)
 
-Una sola herramienta `/matrices/operaciones/` selecciona suma, resta, escalar o
-traspuesta. `opciones_matrices.CONFIGURACION` define las matrices necesarias,
-la presencia del escalar y la ayuda; el formulario y JavaScript comparten esos
-datos mediante `json_script`. Las dimensiones independientes van de 1 a 10
-por razones de interfaz. A y B siempre comparten esa estructura en suma/resta.
+Una sola herramienta `/matrices/operaciones/` selecciona suma, resta, escalar,
+traspuesta, multiplicación de matrices (`AB`) o matriz por vector (`Ax`).
+`opciones_matrices.CONFIGURACION` define, por operación, las entradas
+necesarias, la forma de cada una como `(campo de filas, campo de columnas)`
+—`None` en las columnas señala un vector columna—, los campos de estructura
+con su etiqueta, el texto de la forma (`A: {m}×{n} · B: {n}×{p} → AB: {m}×{p}`),
+los métodos del procedimiento con sus etiquetas, la presencia del escalar y la
+ayuda; el formulario y JavaScript comparten esos datos mediante `json_script`.
+Las dimensiones van de 1 a 10 por razones de interfaz. A y B comparten
+estructura en suma/resta; en `AB` las filas de B son las columnas de A y solo
+se pide `columnas_b`; en `Ax` la dimensión de x es la de las columnas de A.
 
 `MatricesForm` vive en `forms_matrices.py` para no ampliar el formulario común.
-Genera campos Django `celda_A_i_j` / `celda_B_i_j` con labels y errores asociados,
+Genera campos Django `celda_A_i_j` / `celda_B_i_j` / `celda_x_i_0` con labels
+(«Matriz A, fila 1, columna 2», «Vector x, componente 3») y errores asociados,
 valida el conjunto exacto de campos y rechaza duplicados. Usa el parser existente
-para convertir números a valores exactos. El botón Aplicar valida las dimensiones
-y conserva las entradas al regenerar, sin calcular. La edición dinámica utiliza
-plantillas HTML inertes que incluyen los mismos componentes del servidor;
-no mantiene matrices ocultas dentro del formulario. El teclado se reutiliza con
-`campos_id="matrix-fields"`. Tab y flechas permiten recorrer las celdas.
+para convertir números a valores exactos. Los campos `columnas_b` y `metodo`
+existen siempre, pero quedan **deshabilitados y ocultos** cuando la operación no
+los usa: así no viajan en el POST y el botón Aplicar sin JavaScript puede
+habilitarlos con su valor inicial al cambiar de operación. En el envío de
+cálculo el contrato es estricto: si llegan y la operación no los usa, el POST se
+rechaza («campos que no corresponden a la operación seleccionada»); solo Aplicar
+los tolera, porque al cambiar de operación el navegador aún envía la estructura
+anterior. Cuando la operación los necesita, `clean()` exige que lleguen. El
+botón Aplicar valida las dimensiones y conserva las entradas al regenerar, sin
+calcular. La edición dinámica utiliza plantillas HTML inertes que incluyen los
+mismos componentes del servidor; `matrices.js` reetiqueta las dimensiones y los
+métodos, muestra u oculta los controles y genera la cuadrícula de cada entrada
+con su forma. No mantiene matrices ocultas dentro del formulario. El teclado se
+reutiliza con `campos_id="matrix-fields"`. Tab y flechas permiten recorrer las
+celdas.
 
-`components/matriz_entrada.html` y `matriz_celda.html` representan la cuadrícula;
+`components/matriz_entrada.html` y `matriz_celda.html` representan la cuadrícula
+(con `vector` cambia la leyenda y las etiquetas a «Vector x»);
 `components/matriz.html` muestra valores o expresiones con corchetes, sin columna
-aumentada por defecto. Acepta `matriz`, `etiqueta`, `aumentada` y `columnas_pivote`.
-`matrix.html` es el adaptador de sistemas con `aumentada=True`. Cada cuadrícula y
-expresión ancha tiene scroll local accesible con teclado. Los estilos usan los
-tokens comunes de ambos temas.
+aumentada por defecto, y con una sola columna dibuja un vector columna. Acepta
+`matriz`, `etiqueta`, `aumentada` y `columnas_pivote`. `matrix.html` es el
+adaptador de sistemas con `aumentada=True`. Cada cuadrícula y expresión ancha
+tiene scroll local accesible con teclado. Los estilos usan los tokens comunes
+de ambos temas.
 
 El backend entrega resultado y pasos por posición con operandos exactos; en la
-traspuesta, también identifica la posición de origen. La capa de presentación
-solo formatea esos datos. Resultado precede a Procedimiento. La base se puede
-reutilizar en P13B/P14; P13A no implementa productos entre matrices ni por vectores.
+traspuesta, también identifica la posición de origen; en `AB` y `Ax`, los
+productos `aᵢₖbₖⱼ` calculados una vez, agrupados por entrada (`pasos`) y por
+columna (`columnas`, con coeficientes, columnas escaladas y columna obtenida).
+La capa de presentación solo formatea esos datos: `servicios_matrices.py`
+escribe las igualdades (`c₂₃ = fila₂(A) · columna₃(B) = … = 9/2`, `Ab₁ = 2a₁ −
+a₂ + 3a₃`) y decide qué bloques mostrar según el método elegido
+(`fila_columna`, `columnas` o `comparar`, con identificadores compartidos entre
+`AB` y `Ax` y etiquetas distintas). Resultado precede a Procedimiento y se
+muestra una sola vez aunque se comparen los métodos. Las plantillas
+`_expresion.html`, `_producto.html`, `_producto_fila_columna.html` y
+`_producto_columnas.html` agrupan el procedimiento con `details`/`summary` por
+fila o por columna, abiertos cuando el resultado tiene pocas entradas
+(`ENTRADAS_DESPLEGADAS`). Las igualdades largas se parten en líneas en la fuente
+de interfaz, donde los subíndices se leen mejor; las expresiones con matrices
+se desplazan localmente. P13B no resuelve ecuaciones matriciales.
 
 ## Guía educativa
 
@@ -168,6 +199,6 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
 5. No copies el `<head>`, el header, la sidebar ni el selector de tema.
 
 Hoy están disponibles las herramientas de sistemas de ecuaciones, las
-operaciones con vectores (incluida la combinación lineal), operaciones básicas
-con matrices y la conversión de bases (sistemas numéricos). No agregues enlaces a pantallas que todavía no
-existen.
+operaciones con vectores (incluida la combinación lineal), las operaciones con
+matrices (incluidos `AB` y `Ax`) y la conversión de bases (sistemas numéricos).
+No agregues enlaces a pantallas que todavía no existen.

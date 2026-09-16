@@ -1,9 +1,10 @@
-<fieldset class="matrix-entry" data-matriz="{{ nombre }}">
-    <legend>Matriz <span data-nombre-matriz>{{ nombre }}</span></legend>
+{% comment %}Cuadrícula editable de una matriz o, con `vector`, de un vector columna (n×1). matrices.js genera este mismo marcado al cambiar la estructura.{% endcomment %}
+<fieldset class="matrix-entry" data-matriz="{{ nombre }}"{% if vector %} data-vector{% endif %}>
+    <legend><span data-tipo-matriz>{% if vector %}Vector{% else %}Matriz{% endif %}</span> <span data-nombre-matriz>{{ nombre }}</span></legend>
     <div class="matrix">
         <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
-        <div class="matrix-scroll" tabindex="0" role="region" aria-label="Entradas de la matriz {{ nombre }}">
-            <table class="matrix-table matrix-entry-table" aria-label="Matriz {{ nombre }}">
+        <div class="matrix-scroll" tabindex="0" role="region" aria-label="{% if vector %}Componentes del vector{% else %}Entradas de la matriz{% endif %} {{ nombre }}">
+            <table class="matrix-table matrix-entry-table" aria-label="{% if vector %}Vector{% else %}Matriz{% endif %} {{ nombre }}">
                 <tbody>
                     {% for fila in filas %}
                         <tr>{% for campo in fila %}{% include "calculadora/components/matriz_celda.html" %}{% endfor %}</tr>

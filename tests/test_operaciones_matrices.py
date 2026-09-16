@@ -162,7 +162,8 @@ class PruebasDominioYPasos(unittest.TestCase):
         self.assertEqual(r["dimensiones_resultado"], (3, 2))
         self.assertEqual(r["pasos"][2][1], {"posicion": (3, 2), "origen": (2, 3), "operandos": (F(6),), "resultado": F(6)})
 
-    def test_operaciones_fuera_de_p13a_se_rechazan(self):
-        for operacion in ("producto", "matriz_vector", "ecuacion", "", None):
+    def test_operaciones_desconocidas_se_rechazan(self):
+        # producto y matriz_vector pasaron a ser válidas en P13B; las ecuaciones matriciales siguen fuera.
+        for operacion in ("ecuacion", "inversa", "", None):
             with self.subTest(operacion=operacion), self.assertRaisesRegex(ValueError, "operación"):
                 resolver_operacion_matrices(operacion, [[1]], [[1]])
