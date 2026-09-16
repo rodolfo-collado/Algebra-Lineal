@@ -255,6 +255,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 ("buscador.js", "data-buscador"),
                 ("teclado.js", "data-insercion"),
                 ("conversion.js", "data-conversion-bases"),
+                ("vectores.js", "data-vectores"),
             ):
                 with cliente_http.open(
                     f"{url}static/calculadora/{recurso}",
@@ -323,6 +324,35 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 conversion = respuesta.read().decode("utf-8")
             self.assertIn("13₁₀", conversion)
             self.assertIn("1101₂", conversion)
+
+            # Operaciones con vectores: la combinación lineal reutiliza Gauss-Jordan por la misma pila.
+            url_vectores = f"{url}vectores/operaciones/"
+            with cliente_http.open(url_vectores, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("Operaciones con vectores", respuesta.read().decode("utf-8"))
+            solicitud = Request(
+                url_vectores,
+                data=urlencode(
+                    {
+                        "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
+                        "operacion": "combinacion",
+                        "dimension": "2",
+                        "vectores": "2",
+                        "v1_0": "1", "v1_1": "0", "v2_0": "0", "v2_1": "1",
+                        "b_0": "3", "b_1": "4",
+                    }
+                ).encode("ascii"),
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": url_vectores,
+                },
+            )
+            with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                combinacion = respuesta.read().decode("utf-8")
+            self.assertIn("b es combinación lineal de v1 y v2", combinacion)
+            self.assertIn("c1 = 3", combinacion)
+            self.assertIn("(3, 4) = 3(1, 0) + 4(0, 1)", combinacion)
         finally:
             desktop.stop_waitress(servidor, hilo)
             self.assertFalse(hilo.is_alive())

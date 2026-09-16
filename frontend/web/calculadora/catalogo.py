@@ -158,6 +158,28 @@ SISTEMAS = Herramienta(
     invitacion="Resolver el sistema completo",
 )
 
+# Única herramienta de la categoría: la operación (suma, resta, escalar o
+# combinación lineal) se elige dentro, igual que el método en Resolver un sistema.
+OPERACIONES_VECTORES = Herramienta(
+    id="operaciones-vectores",
+    nombre="Operaciones con vectores",
+    categoria=VECTORES,
+    descripcion=(
+        "Suma, resta y multiplica por un escalar vectores de cualquier dimensión, "
+        "y comprueba si un vector es combinación lineal de otros con el procedimiento."
+    ),
+    estado="disponible",
+    route_name="calculadora:operaciones-vectores",
+    palabras_clave=(
+        "vector", "vectores", "suma de vectores", "resta de vectores", "escalar",
+        "multiplicación por escalar", "producto por escalar", "combinación lineal",
+        "combinacion lineal", "coeficientes", "ecuación vectorial", "span", "generado",
+        "conjunto generado", "dimensión", "componentes", "rn",
+    ),
+    relacionadas=(),
+    invitacion="Operar con vectores",
+)
+
 CONVERSION_BASES = Herramienta(
     id="conversion-bases",
     nombre="Conversión de bases",
@@ -178,12 +200,7 @@ CONVERSION_BASES = Herramienta(
 
 HERRAMIENTAS = (
     SISTEMAS,
-    Herramienta("operaciones-vectores", "Operaciones con vectores", VECTORES,
-                "Suma, resta y producto de un vector por un escalar.",
-                palabras_clave=("vector", "suma de vectores", "escalar")),
-    Herramienta("combinacion-lineal", "Combinación lineal", VECTORES,
-                "Expresa un vector como combinación lineal de otros.",
-                palabras_clave=("vector", "combinación", "ecuación vectorial")),
+    OPERACIONES_VECTORES,
     Herramienta("operaciones-matrices", "Operaciones con matrices", MATRICES,
                 "Suma, resta y multiplicación de matrices.",
                 palabras_clave=("matriz", "suma de matrices", "producto de matrices")),

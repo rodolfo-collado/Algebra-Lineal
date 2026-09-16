@@ -39,7 +39,7 @@ static/calculadora/
     ├── shell.css           # header, sidebar, cajón móvil, breadcrumbs, layout
     ├── components.css      # herramienta, paneles, botones, buscador, inicio,
     │                       # relacionadas, teclado, controles de estructura, guías, matrices
-    └── modules.css         # formulario y resultados de sistemas
+    └── modules.css         # formulario y resultados de sistemas, bases y vectores
 ```
 
 Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-raised`,
@@ -97,9 +97,26 @@ existe: sin JavaScript no aparenta funcionar. No registres teclas sin una
 operación real detrás.
 
 Los controles que cambian la estructura de una entrada (agregar o quitar
-ecuaciones y variables) son botones aparte, con `aria-label`, dentro de un
-grupo «Estructura de la matriz»; `matriz.js` los atiende. No los mezcles con
+ecuaciones y variables; componentes y vectores) son botones aparte, con
+`aria-label`, dentro de un grupo «Estructura de la matriz» o «Estructura de
+los vectores»; `matriz.js` y `vectores.js` los atienden. No los mezcles con
 el teclado ni con la acción principal.
+
+## Vectores
+
+`components/vector.html` escribe un vector en horizontal, `(1, 2, 3)`, como
+texto corriente con paréntesis propios: se parte en varias líneas si hace
+falta y nunca provoca scroll horizontal. Acepta `nombre` («u =») y
+`destacado` para el resultado.
+
+La entrada de Operaciones con vectores es una fila por vector,
+`u = ( [ ] [ ] [ ] )`, con una celda `nombre_i` por componente
+(`modules/vectores/_fila.html`). La dimensión `n` y la cantidad de vectores
+generadores son campos numéricos con botones +/−; `vectores.js` redibuja las
+filas con el mismo marcado del parcial y conserva lo escrito. Sin JavaScript,
+el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructura
+sin calcular. El teclado contextual es el de la cuadrícula de matrices
+(`TECLADO_MATRIZ`: `−` y `a⁄b`), incluido con `campos_id="vector-fields"`.
 
 ## Guía educativa
 
@@ -121,6 +138,7 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
    `columnas_pivote` para resaltar columnas.
 5. No copies el `<head>`, el header, la sidebar ni el selector de tema.
 
-Hoy están disponibles las herramientas de sistemas de ecuaciones y la
-conversión de bases (sistemas numéricos). No agregues enlaces a pantallas
-que todavía no existen.
+Hoy están disponibles las herramientas de sistemas de ecuaciones, las
+operaciones con vectores (incluida la combinación lineal) y la conversión de
+bases (sistemas numéricos). No agregues enlaces a pantallas que todavía no
+existen.

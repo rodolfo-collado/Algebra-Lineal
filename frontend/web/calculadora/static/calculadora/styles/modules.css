@@ -1,4 +1,4 @@
-/* Módulo de sistemas: formulario, pasos y resultado. */
+/* Módulos: formulario, pasos y resultado de sistemas, conversión de bases y vectores. */
 
 .workspace {
     padding-bottom: 1rem;
@@ -804,9 +804,230 @@ textarea:focus {
     font-size: 0.92rem;
 }
 
+/* Vectores */
+/* Entrada: una fila por vector, «u = ( [ ] [ ] [ ] )». Con n grande las celdas
+   se desplazan dentro de la fila; la página no gana scroll horizontal. */
+.vector-structure {
+    margin-bottom: 0.9rem;
+}
+
+.vector-structure .dimension-field[hidden] {
+    display: none;
+}
+
+.vector-structure .muted {
+    font-weight: 500;
+}
+
+.vector-list {
+    display: grid;
+    gap: 0.55rem;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+}
+
+.vector-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.vector-row-target {
+    margin-top: 0.35rem;
+    padding-top: 0.7rem;
+    border-top: 1px dashed var(--color-border-strong);
+}
+
+.vector-row-scalar {
+    padding-bottom: 0.25rem;
+}
+
+.vector-name {
+    min-width: 2.6rem;
+    color: var(--color-text);
+    font: 600 1rem/1 var(--font-math);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.vector-row-target .vector-name {
+    color: var(--color-aug-strong);
+}
+
+.vector-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+    padding: 0.2rem 0.15rem;
+    overflow-x: auto;
+}
+
+.vector-inputs .matrix-input {
+    flex: none;
+}
+
+.vector-fence {
+    flex: none;
+    color: var(--color-text);
+    font-size: 1.55rem;
+    font-weight: 300;
+    line-height: 1;
+    opacity: 0.72;
+}
+
+.vector-sep {
+    flex: none;
+    color: var(--color-muted);
+    font-weight: 700;
+}
+
+.vector-help {
+    margin-top: 0.6rem;
+}
+
+.vector-help[hidden] {
+    display: none;
+}
+
+/* Resultado: el vector escrito en horizontal, con paréntesis propios; las
+   componentes pueden partirse en varias líneas. */
+.vector {
+    max-width: 100%;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.vector .vector-name {
+    min-width: 0;
+    margin-right: 0.15rem;
+    font-size: inherit;
+}
+
+.vector .vector-fence {
+    font-size: 1.15em;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.vector-component {
+    white-space: nowrap;
+}
+
+.vector .vector-sep {
+    color: var(--color-muted);
+}
+
+.vector-result {
+    color: var(--color-brand);
+    font-weight: 700;
+}
+
+.vector-result .vector-fence {
+    color: var(--color-brand);
+}
+
+.vector-equality {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.6rem;
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.vector-expression {
+    font-family: var(--font-math);
+}
+
+.vector-equals {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.vector-inputs-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 1.02rem;
+}
+
+.vector-steps {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 1.02rem;
+    line-height: 1.6;
+}
+
+.vector-steps li,
+.combination-equality {
+    overflow-wrap: anywhere;
+}
+
+.vector-steps code,
+.combination-equality code {
+    color: var(--color-text);
+}
+
+.combination-verdict {
+    margin-top: 0;
+}
+
+.combination-detail,
+.combination-example {
+    margin: 0.2rem 0 0;
+    font-size: 0.9rem;
+}
+
+.combination-equality {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.coefficient-list {
+    margin-top: 0;
+}
+
+.solution .coefficient-list {
+    margin-top: 0.85rem;
+}
+
 @media (max-width: 760px) {
     .matrix-pair {
         grid-template-columns: 1fr;
+    }
+
+    .vector-equality {
+        font-size: 1.1rem;
+    }
+
+    /* En pantallas estrechas caben tres componentes sin desplazar la fila. */
+    .vector-list {
+        padding: 0.65rem 0.5rem;
+    }
+
+    .vector-inputs .matrix-input {
+        width: 3.4rem;
+        padding-inline: 0.3rem;
+    }
+
+    .vector-name {
+        min-width: 2.2rem;
     }
 
     .segmented {

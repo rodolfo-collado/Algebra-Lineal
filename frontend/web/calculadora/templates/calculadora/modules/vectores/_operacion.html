@@ -1,0 +1,32 @@
+{% comment %}Suma, resta o escalar: el resultado primero y el desarrollo componente a componente después.{% endcomment %}
+<section class="panel panel-final" aria-labelledby="vector-result-title">
+    <h3 id="vector-result-title" class="panel-title">Resultado</h3>
+    <p class="vector-equality">
+        <span class="vector-expression">{{ resultado.expresion }}</span>
+        <span class="vector-equals" aria-hidden="true">=</span>
+        {% include "calculadora/components/vector.html" with componentes=resultado.resultado destacado=True nombre="" %}
+    </p>
+</section>
+
+<section class="panel" aria-labelledby="vector-procedure-title">
+    <h3 id="vector-procedure-title" class="panel-title">Procedimiento</h3>
+    <div class="procedure-stage">
+        <h4 class="stage-title">Vectores de entrada</h4>
+        <ul class="vector-inputs-list">
+            {% if resultado.escalar %}
+                <li><span class="vector"><span class="vector-name">k =</span> <span class="vector-component">{{ resultado.escalar }}</span></span></li>
+            {% endif %}
+            {% for entrada in resultado.entradas %}
+                <li>{% include "calculadora/components/vector.html" with componentes=entrada.componentes nombre=entrada.nombre destacado=False %}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="procedure-stage">
+        <h4 class="stage-title">Componente a componente</h4>
+        <ol class="vector-steps" aria-label="Desarrollo">
+            <li><code>{{ resultado.expresion }}</code></li>
+            <li><code>= {{ resultado.desarrollo }}</code></li>
+            <li><code>= {{ resultado.resultado_texto }}</code></li>
+        </ol>
+    </div>
+</section>

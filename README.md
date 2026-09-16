@@ -38,6 +38,9 @@ rediseñar la aplicación cada vez.
 - Convertir números enteros entre decimal y binario, octal o hexadecimal desde
   la interfaz web y desktop, mostrando las divisiones sucesivas o la expansión
   posicional (combinación lineal) que justifica el resultado.
+- Sumar y restar vectores, multiplicarlos por un escalar y comprobar si un
+  vector es combinación lineal de otros, en cualquier dimensión `n`, con
+  aritmética exacta y el procedimiento a la vista.
 
 El menú de la terminal es este:
 
@@ -193,6 +196,42 @@ Gauss-Jordan sigue sirviendo para reducir **cualquier matriz rectangular**
 `n x (n+1)`, y sin suponer que toda fila o toda columna acabe con pivote. Esa
 capacidad vive en `backend/gauss_jordan.py` y se puede reutilizar, aunque el menú
 esté orientado a resolver sistemas.
+
+## Vectores
+
+La herramienta **Operaciones con vectores** (`/vectores/operaciones/`) es la
+única de la categoría Vectores: la operación se elige dentro, igual que el
+método en Resolver un sistema. La dimensión `n` no está fijada —el profesor
+no la conoce de antemano—, así que cada vector se escribe como una fila de
+celdas, `u = ( [ ] [ ] [ ] )`, y los botones **+/−** agregan o quitan
+componentes (de 1 a 10). No hay campos `x`, `y`, `z` ni sintaxis de listas.
+
+- **Suma** y **resta** operan componente a componente y exigen la misma
+  dimensión: `(1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)`.
+- **Multiplicación por escalar** multiplica cada componente por `k`:
+  `3(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)`.
+- **Combinación lineal** pregunta si `b` es combinación lineal de `v1 … vk`
+  (de 1 a 6 vectores, con **+/− vector**). No hay un segundo algoritmo de
+  eliminación: `c1·v1 + … + ck·vk = b` se escribe como la matriz aumentada
+  `[v1 v2 … vk | b]` —cada generador es una columna y `b` la columna
+  aumentada— y se resuelve con el Gauss-Jordan de `backend/sistemas.py`. La
+  clasificación del sistema decide la respuesta:
+  - solución única: **sí**, y se muestran `c1, c2, …` y la igualdad
+    `(3, 4) = 3(1, 0) + 4(0, 1)`;
+  - soluciones infinitas: **sí**, con la solución general en función de los
+    coeficientes libres y una combinación concreta (libres en cero);
+  - inconsistente: **no**, porque el sistema asociado no tiene solución.
+
+El procedimiento habla el lenguaje del ejercicio —coeficientes `c1, c2, …`,
+no variables `x1, x2, …`—: planteamiento, sistema equivalente, matriz
+aumentada, operaciones por filas, matriz reducida y lectura del resultado.
+Todo se calcula con `fractions.Fraction`: `(1/2, 2/3) + (1/2, 1/3) = (1, 1)`.
+
+El núcleo vive en `backend/vectores.py` (listas, ciclos y `Fraction`, sin
+librerías externas). El formulario reconstruye la estructura esperada
+(dimensión y cantidad de vectores) y la compara con lo recibido, así que un
+POST con celdas de más, de menos o con otros nombres se rechaza; las
+dimensiones incompatibles se detectan antes de intentar resolver.
 
 ## Sistemas numéricos
 
@@ -374,9 +413,9 @@ teclado y los botones de estructura requieren JavaScript.
 
 El recorrido web y desktop es **Inicio → área → categoría → herramienta →
 resultado**, y el breadcrumb lo reproduce con enlaces reales (las áreas y
-categorías llevan a su sección del Inicio). Vectores, matrices y límites se
-anuncian como **Próximamente**, sin enlaces ni algoritmos nuevos; sistemas
-numéricos ya ofrece la conversión de bases.
+categorías llevan a su sección del Inicio). Matrices y límites se anuncian
+como **Próximamente**, sin enlaces ni algoritmos nuevos; vectores ofrece
+Operaciones con vectores y sistemas numéricos, la conversión de bases.
 
 `frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
 inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,
@@ -414,15 +453,21 @@ Para agregar una herramienta:
 
 Resolver un sistema sigue ese patrón con una sola vista: `opciones_sistemas.py`
 declara los métodos, los bloques del resultado, sus valores predeterminados y
-las rutas antiguas que redirigen a la herramienta.
+las rutas antiguas que redirigen a la herramienta. Operaciones con vectores
+hace lo mismo con `opciones_vectores.py` (operaciones, límites de dimensión y
+de vectores, nombres de los vectores por operación) y `servicios_vectores.py`
+(presentación: vectores como `(1, 2, 3)`, desarrollo componente a componente,
+planteamiento y conclusión de la combinación lineal).
 
 ```text
 templates/calculadora/
 ├── base.html                 # header, sidebar, breadcrumbs y contenido
 ├── layouts/herramienta.html  # estructura común de una herramienta
-├── components/               # sidebar, buscador, breadcrumbs, relacionadas, teclado, matrices, guías
+├── components/               # sidebar, buscador, breadcrumbs, relacionadas, teclado, matrices, vectores, guías
 ├── pages/inicio.html
-└── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
+├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
+├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal
+└── modules/bases/            # index.html y procedimiento de la conversión
 ```
 
 P10 renovó la identidad visual y P10.1 añadió la navegación escalable, el
@@ -579,8 +624,11 @@ desktop, el registro de herramientas, la navegación, el buscador, los
 breadcrumbs, el teclado matemático, las opciones de Resolver un sistema
 —método, comparación, bloques del resultado y rutas antiguas—, la conversión de
 bases —resultados, pasos del procedimiento, mensajes de error y su integración
-web— y que la interfaz no cargue fuentes ni scripts remotos. Sirven para detectar regresiones
-cuando el proyecto crezca.
+web—, las operaciones con vectores —suma, resta, escalar, combinación lineal
+con solución única, infinitas o inconsistente, dimensión arbitraria, fracciones
+exactas, la reutilización del motor de sistemas, la estructura dinámica del
+formulario y los POST manipulados— y que la interfaz no cargue fuentes ni
+scripts remotos. Sirven para detectar regresiones cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
 
@@ -648,6 +696,7 @@ Algebra-Lineal/
 │   ├── gauss_jordan.py         # reducción completa y rango
 │   ├── parser_sistemas.py      # texto de ecuaciones → matriz aumentada
 │   ├── sistemas.py             # clasificación, sistema resultante y solución
+│   ├── vectores.py             # suma, resta, escalar y combinación lineal sobre sistemas
 │   └── sistemas_numericos/     # conversión de bases con pasos estructurados
 │       ├── digitos.py          # equivalencia A–F y potencias enteras
 │       ├── validacion.py       # bases y dígitos válidos, mensajes de error
@@ -681,6 +730,8 @@ Algebra-Lineal/
     ├── test_resolver_sistema.py
     ├── test_sistemas_numericos.py
     ├── test_conversion_bases_web.py
+    ├── test_vectores.py
+    ├── test_vectores_web.py
     ├── test_identidad_visual.py
     ├── test_desktop.py
     ├── test_recursos_interfaz.py
@@ -694,9 +745,15 @@ Dentro de `backend/` la dependencia también va en un solo sentido, donde `→`
 significa «depende de»:
 
 ```text
+vectores  →  sistemas
 sistemas  →  gauss_jordan  →  gauss  →  operaciones_filas  →  matrices
 sistemas  →  expresiones   →  matrices
 ```
+
+`vectores.py` no escalona nada por su cuenta: escribe la combinación lineal
+como matriz aumentada y llama a `resolver_sistema_gauss_jordan`, pidiéndole
+que nombre las incógnitas `c1, c2, …`. Gauss y Gauss-Jordan siguen escribiendo
+`x1, x2, …` por defecto.
 
 Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
 eliminación hacia arriba, así que la diferencia entre los dos métodos está en un

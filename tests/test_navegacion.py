@@ -135,7 +135,8 @@ class PruebasCatalogo(SimpleTestCase):
         herramientas = tuple(h for _, grupos in arbol for _, hs in grupos for h in hs)
         self.assertEqual(herramientas, catalogo.HERRAMIENTAS)
         self.assertTrue(catalogo.SISTEMAS_ECUACIONES.disponible)
-        self.assertFalse(catalogo.VECTORES.disponible)
+        self.assertTrue(catalogo.VECTORES.disponible)
+        self.assertFalse(catalogo.MATRICES.disponible)
         self.assertFalse(catalogo.CALCULO.disponible)
 
     def test_herramienta_por_ruta(self):
