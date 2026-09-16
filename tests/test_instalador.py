@@ -223,11 +223,11 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
 
     def test_ci_compila_con_la_version_de_inno_setup_documentada(self):
         ci = WORKFLOW_CI.read_text(encoding="utf-8")
-        readme = (RAIZ / "README.md").read_text(encoding="utf-8")
+        documentacion = (RAIZ / "docs" / "instalacion-windows.md").read_text(encoding="utf-8")
 
         version = re.search(r"innosetup-(\d+\.\d+\.\d+)\.exe", ci)
         self.assertIsNotNone(version)
-        self.assertIn(f"Inno Setup {version.group(1)}", readme)
+        self.assertIn(f"Inno Setup {version.group(1)}", documentacion)
 
 
 if __name__ == "__main__":
