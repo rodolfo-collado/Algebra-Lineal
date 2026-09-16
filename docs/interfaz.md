@@ -178,6 +178,41 @@ fila o por columna, abiertos cuando el resultado tiene pocas entradas
 de interfaz, donde los subíndices se leen mejor; las expresiones con matrices
 se desplazan localmente. P13B no resuelve ecuaciones matriciales.
 
+### Resolver Ax = b (P14)
+
+`/matrices/ecuaciones/` es la segunda herramienta de Matrices y un formulario
+aparte, `EcuacionMatricialForm` (`forms_ecuaciones.py`): x es la incógnita,
+así que no es una operación más de `MatricesForm`. Ambos heredan de
+`FormularioCeldas` (`forms_matrices.py`), que genera las celdas
+`celda_<nombre>_<i>_<j>` con sus labels, rechaza campos repetidos, compara el
+conjunto exacto de celdas recibidas con el esperado y convierte los números
+con el parser común. Solo se piden las filas y columnas de A: b se genera con
+m componentes (`celda_b_i_0`) y x se muestra con
+`components/matriz.html` como columna `x₁ … xₙ` sin celdas, con un texto
+`sr-only` que explica cuántas componentes desconocidas tiene. La fila de
+entrada «A · x = b» (`.equation-entry`) se desplaza localmente cuando A es
+ancha; en pantallas estrechas las celdas se compactan para que 2×2 quepa
+entero. `ecuaciones.js` regenera A, b y x con las mismas plantillas inertes
+de matrices y actualiza `A (m×n) · x (n) = b (m)`; sin JavaScript, Aplicar
+redibuja la misma estructura. El método (`opciones_ecuaciones.py`) reutiliza
+`METODOS`, el predeterminado y `metodos_a_resolver` de `opciones_sistemas.py`.
+
+`servicios_ecuaciones.py` no calcula: llama a
+`backend.ecuaciones_matriciales.resolver_ecuacion_matricial` por cada método
+y formatea el enunciado (`Ax = b tiene solución única.`), el vector x, la
+comprobación `A · x = Ax = b`, la interpretación como combinación lineal
+(`b = 3a₁ + 2a₂`, escrita con `combinacion_columnas` de
+`servicios_matrices.py`) y la cadena de equivalencias. La eliminación se
+presenta con `servicios.presentar_resolucion`, la misma adaptación de
+Resolver un sistema, y las plantillas `modules/ecuaciones/_metodos.html`
+incluyen `modules/sistemas/_pasos.html` y `_bloques_metodo.html` con todos
+los bloques visibles (`mostrar`) y las columnas pivote de cada método. El
+resultado (`.classification` con `data-kind`, solución, comprobación e
+interpretación) precede a `_equivalencias.html` (ecuación matricial, ecuación
+vectorial con las columnas de A, sistema equivalente y `[A | b]` con
+`matrix.html`) y a los paneles de eliminación; al comparar, el resultado se
+muestra una vez y hay un panel por método.
+
 ## Guía educativa
 
 `frontend/web/calculadora/guias.py` define mensajes estáticos (`GuiaConcepto`)

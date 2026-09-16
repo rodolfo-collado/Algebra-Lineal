@@ -41,6 +41,10 @@ rediseñar la aplicación cada vez.
   compatibilidad de dimensiones a la vista y el procedimiento explicado de dos
   maneras equivalentes: fila por columna (regla fila-vector) o por columnas
   (combinación lineal de las columnas de A), o ambas para compararlas.
+- Resolver la ecuación matricial `Ax = b` con A y b conocidos y x desconocido,
+  incluso con A rectangular: se escribe como ecuación vectorial, sistema
+  equivalente y matriz aumentada `[A | b]`, se resuelve con Gauss, Gauss-Jordan
+  o ambos, y se interpreta si b es combinación lineal de las columnas de A.
 - Convertir números enteros entre decimal y binario, octal o hexadecimal desde
   la interfaz web y desktop, mostrando las divisiones sucesivas o la expansión
   posicional (combinación lineal) que justifica el resultado.
@@ -420,8 +424,9 @@ teclado y los botones de estructura requieren JavaScript.
 El recorrido web y desktop es **Inicio → área → categoría → herramienta →
 resultado**, y el breadcrumb lo reproduce con enlaces reales (las áreas y
 categorías llevan a su sección del Inicio). Matrices ofrece **Operaciones con
-matrices**, vectores ofrece Operaciones con vectores y sistemas numéricos,
-la conversión de bases. Límites continúa como **Próximamente**.
+matrices** y **Resolver Ax = b**, vectores ofrece Operaciones con vectores y
+sistemas numéricos, la conversión de bases. Límites continúa como
+**Próximamente**.
 
 `frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
 inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,
@@ -508,8 +513,49 @@ se captura y se muestra como matriz `n×1`); `matrix.html` mantiene la
 representación aumentada de sistemas. Las igualdades y matrices anchas se
 desplazan dentro de sus contenedores.
 
-Resolver ecuaciones matriciales `Ax = b` (buscar x) queda fuera: en `Ax` el
-vector x es conocido y solo se calcula el producto.
+En `Ax` el vector x es conocido y solo se calcula el producto. Buscar x es
+otra herramienta: **Resolver Ax = b** (`/matrices/ecuaciones/`), la segunda
+de la categoría Matrices. Allí A (m×n) y b son conocidos, x es la incógnita y
+la interfaz muestra `A (m×n) · x (n) = b (m)`: se eligen solo las dimensiones
+de A, b toma m componentes, x se dibuja como vector de incógnitas `x₁ … xₙ` sin
+celdas editables y A no necesita ser cuadrada (`2×3`, `3×2`, …). La
+herramienta enseña que estas formas son la misma ecuación:
+
+```text
+Ax = b  ↔  x₁a₁ + x₂a₂ + … + xₙaₙ = b  ↔  sistema lineal  ↔  [A | b]
+```
+
+No hay un segundo solucionador: `backend/ecuaciones_matriciales.py` valida la
+ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
+`resolver_sistema_gauss` o `resolver_sistema_gauss_jordan` de
+`backend/sistemas.py`, cuyo resultado se amplía con la lectura de `Ax = b`.
+Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
+`matrices.py`. El método se elige como en Resolver un sistema (Gauss,
+Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
+sola vez y los dos procedimientos). El resultado va antes del procedimiento:
+
+- solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
+  `x2 = 2`, el vector columna x y la comprobación `A · x = b` calculada con
+  `multiplicar_matriz_vector`; b es combinación lineal de las columnas de A de
+  una única manera (`b = 3a₁ + 2a₂`);
+- soluciones infinitas: la solución general de sistemas (`x1 = 2 - x3`,
+  `x3 es libre`); b es combinación lineal de las columnas de A de infinitas
+  maneras;
+- inconsistente: la contradicción que ya detecta sistemas (`[0 0 | 1]`, es
+  decir, `0 = 1`); b no pertenece al conjunto generado por las columnas de A.
+
+La interpretación como combinación lineal se deriva solo de la clasificación
+del sistema. El procedimiento muestra la cadena de equivalencias —ecuación
+matricial, ecuación vectorial con las columnas de A, sistema equivalente
+(`ecuaciones_de_matriz`, con `n` incógnitas) y matriz aumentada— y después la
+eliminación con los mismos bloques de Resolver un sistema: operaciones por
+filas, matriz escalonada o reducida con sus pivotes, columnas pivote, sistema
+resultante y sustitución regresiva. `EcuacionMatricialForm`
+(`forms_ecuaciones.py`) comparte con `MatricesForm` la base `FormularioCeldas`
+—celdas, parser y comprobaciones del POST— y exige que b tenga exactamente
+una componente por fila de A; x nunca viaja en el POST. Con JavaScript los
+controles +/− regeneran A, x y b; sin JavaScript, **Aplicar** redibuja la
+misma estructura.
 
 ```text
 templates/calculadora/
@@ -520,6 +566,7 @@ templates/calculadora/
 ├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal
 ├── modules/matrices/         # entrada rectangular, resultado y procedimientos (P13A y P13B)
+├── modules/ecuaciones/       # Ax = b: entrada A · x = b, equivalencias y eliminación reutilizada (P14)
 └── modules/bases/            # index.html y procedimiento de la conversión
 ```
 
@@ -645,10 +692,11 @@ En una cuenta Windows **sin una instalación previa de Álgebra Lineal**, ejecut
 La prueba instala en una carpeta nueva de `%LOCALAPPDATA%\Programs` fuera del
 repositorio. Comprueba ambos accesos directos y que el ejecutable sea `windowed`,
 abre desde Inicio, resuelve por Gauss y Gauss-Jordan, las cuatro operaciones
-de P13A y los productos `AB` y `Ax` comparando métodos a través del
-Django/Waitress empaquetado, solicita CSS/JS (incluido
-`matrices.js`) e icono, cierra la ventana y verifica que el proceso y el
-servidor terminan. Repite la apertura y luego desinstala comprobando que se
+de P13A, los productos `AB` y `Ax` comparando métodos y la ecuación
+`Ax = b` de P14 (solución fraccionaria comparando métodos y un caso
+rectangular 3×2) a través del Django/Waitress empaquetado, solicita CSS/JS
+(incluidos `matrices.js` y `ecuaciones.js`) e icono, cierra la ventana y
+verifica que el proceso y el servidor terminan. Repite la apertura y luego desinstala comprobando que se
 eliminaron archivos, registro y accesos directos. Si esta máquina ya tiene
 Álgebra Lineal instalada, el script se detiene a propósito: necesita una
 cuenta o entorno limpio para no modificar esa instalación.
@@ -690,8 +738,13 @@ y POST manipulados—, los productos `AB` y `Ax` —producto punto, dimensiones
 compatibles e incompatibles, rectangulares, fracciones, equivalencia exacta
 entre fila por columna y por columnas (también contra la combinación lineal de
 `backend/vectores.py`), tercera dimensión, vector x, selector de método,
-comparación con un solo resultado y POST manipulados— y que la interfaz no
-cargue fuentes ni scripts remotos.
+comparación con un solo resultado y POST manipulados—, la ecuación matricial
+`Ax = b` —matriz aumentada `[A | b]`, casos cuadrados y rectangulares con
+solución única, infinitas o inconsistente, fracciones, equivalencia exacta con
+Resolver un sistema y entre Gauss y Gauss-Jordan, comprobación `A · x = b`,
+interpretación como combinación lineal, b derivado de las filas y x de las
+columnas, flujo Aplicar sin JavaScript y POST manipulados— y que la interfaz
+no cargue fuentes ni scripts remotos.
 Sirven para detectar regresiones cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
@@ -761,6 +814,7 @@ Algebra-Lineal/
 │   ├── parser_sistemas.py      # texto de ecuaciones → matriz aumentada
 │   ├── sistemas.py             # clasificación, sistema resultante y solución
 │   ├── vectores.py             # suma, resta, escalar y combinación lineal sobre sistemas
+│   ├── ecuaciones_matriciales.py # Ax = b como [A | b] sobre los motores de sistemas
 │   └── sistemas_numericos/     # conversión de bases con pasos estructurados
 │       ├── digitos.py          # equivalencia A–F y potencias enteras
 │       ├── validacion.py       # bases y dígitos válidos, mensajes de error
@@ -781,6 +835,8 @@ Algebra-Lineal/
     ├── test_matrices_web.py
     ├── test_multiplicacion_matrices.py
     ├── test_multiplicacion_matrices_web.py
+    ├── test_ecuaciones_matriciales.py
+    ├── test_ecuaciones_matriciales_web.py
     ├── test_operaciones_filas.py
     ├── test_expresiones.py
     ├── test_gauss.py
@@ -813,8 +869,10 @@ Dentro de `backend/` la dependencia también va en un solo sentido, donde `→`
 significa «depende de»:
 
 ```text
-vectores  →  sistemas
-vectores  →  matrices
+vectores                →  sistemas
+vectores                →  matrices
+ecuaciones_matriciales  →  sistemas
+ecuaciones_matriciales  →  matrices
 sistemas  →  gauss_jordan  →  gauss  →  operaciones_filas  →  matrices
 sistemas  →  expresiones   →  matrices
 ```
@@ -827,6 +885,9 @@ junto al producto punto, porque las filas y columnas de una matriz también son
 vectores; `vectores.py` la importa de ahí. Los productos `AB` y `Ax` no
 dependen de `vectores.py`: la explicación por columnas es la misma combinación
 lineal, y las pruebas comprueban que coincide con `combinar` de ese módulo.
+`ecuaciones_matriciales.py` tampoco escalona: escribe `Ax = b` como `[A | b]`
+y llama al motor de sistemas elegido; al vivir por encima de `sistemas.py` y
+de `matrices.py`, `matrices.py` no necesita importar `sistemas.py`.
 
 Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
 eliminación hacia arriba, así que la diferencia entre los dos métodos está en un
