@@ -1,0 +1,12 @@
+{% comment %}AB y Ax: un panel por método elegido (o los dos al comparar). El resultado ya se mostró una sola vez arriba; aquí van la expresión matricial y las dos lecturas del mismo producto.{% endcomment %}
+{% for metodo in resultado.metodos %}
+    <section class="panel{% if resultado.comparando %} panel-method{% endif %}" aria-labelledby="procedure-title{% if not forloop.first %}-{{ forloop.counter }}{% endif %}">
+        <h3 id="procedure-title{% if not forloop.first %}-{{ forloop.counter }}{% endif %}" class="panel-title">Procedimiento{% if resultado.comparando %}: {{ metodo.titulo }}{% endif %}</h3>
+        {% if forloop.first %}{% include "calculadora/modules/matrices/_expresion.html" %}{% endif %}
+        {% if metodo.clave == "fila_columna" %}
+            {% include "calculadora/modules/matrices/_producto_fila_columna.html" %}
+        {% else %}
+            {% include "calculadora/modules/matrices/_producto_columnas.html" %}
+        {% endif %}
+    </section>
+{% endfor %}

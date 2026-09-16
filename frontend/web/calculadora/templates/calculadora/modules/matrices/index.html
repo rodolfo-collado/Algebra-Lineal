@@ -16,14 +16,24 @@
                 {{ form.operacion.errors }}
                 <p class="field-help" data-operation-help>{{ form.configuracion.ayuda }}</p>
             </fieldset>
+            {% comment %}Solo AB y Ax tienen método; en el resto el campo queda deshabilitado (no viaja) y oculto.{% endcomment %}
+            <fieldset class="choice-fieldset" data-metodos{% if form.metodo.field.disabled %} hidden{% endif %}>
+                <legend>{{ form.metodo.label }} del procedimiento</legend>
+                <div class="option-list">
+                    {% for radio in form.metodo %}<label class="option">{{ radio.tag }}<span data-etiqueta-metodo="{{ radio.data.value }}">{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                {{ form.metodo.errors }}
+                <p class="field-help" data-metodos-ayuda>{{ form.configuracion.ayuda_metodos }}</p>
+            </fieldset>
         </section>
         <section class="workspace-section" id="matrix-fields" aria-labelledby="matrices-title">
             <h3 class="section-title" id="matrices-title">Matrices de entrada</h3>
-            <div class="structure-controls" role="group" aria-label="Estructura de las matrices">
+            <div class="structure-controls structure-controls-matrices" role="group" aria-label="Estructura de las matrices">
                 {% include "calculadora/modules/matrices/_dimension.html" with campo=form.filas quitar="Quitar una fila" agregar="Agregar una fila" %}
                 {% include "calculadora/modules/matrices/_dimension.html" with campo=form.columnas quitar="Quitar una columna" agregar="Agregar una columna" %}
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.columnas_b quitar="Quitar una columna de B" agregar="Agregar una columna de B" %}
             </div>
-            <p class="field-help" data-matrix-shape aria-live="polite">{{ form.estructura.filas }}×{{ form.estructura.columnas }} en cada matriz de entrada. De {{ form.filas.field.min_value }} a {{ form.filas.field.max_value }} filas y columnas.</p>
+            <p class="field-help" data-matrix-shape aria-live="polite">{{ form.forma_texto }} De {{ form.filas.field.min_value }} a {{ form.filas.field.max_value }} filas y columnas.</p>
             <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
             <noscript><p class="field-help">Cambia la operación, filas o columnas y pulsa <strong>Aplicar</strong> antes de calcular. Se conservan las celdas que siguen en la estructura.</p></noscript>
             <div data-matrix-scalar>
@@ -32,7 +42,7 @@
                 {% endif %}
             </div>
             <div class="matrix-entry-list" data-matrix-list>
-                {% for matriz in form.matrices %}{% include "calculadora/components/matriz_entrada.html" with nombre=matriz.nombre filas=matriz.filas only %}{% endfor %}
+                {% for matriz in form.matrices %}{% include "calculadora/components/matriz_entrada.html" with nombre=matriz.nombre filas=matriz.filas vector=matriz.vector only %}{% endfor %}
             </div>
             <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. Las matrices pueden ser rectangulares.</p>
             {% include "calculadora/components/math_keyboard.html" with teclado=teclado_matriz campos_id="matrix-fields" %}
@@ -46,14 +56,19 @@
 {% if resultado %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
         <div class="panel panel-final">
-            <p class="section-kicker">{{ resultado.etiqueta }} · {{ resultado.dimensiones_resultado }}</p>
+            <p class="section-kicker">{{ resultado.etiqueta }} · {{ resultado.dimensiones_resultado }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
             <h2 id="results-title" class="panel-title">Resultado</h2>
             <div class="matrix-equation">
                 <span class="matrix-expression">{{ resultado.expresion }} =</span>
                 {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Matriz resultado" only %}
             </div>
+            {% if resultado.metodos %}<p class="field-help">{{ resultado.forma }} {{ resultado.ayuda }}</p>{% endif %}
         </div>
-        {% include "calculadora/modules/matrices/_procedimiento.html" %}
+        {% if resultado.metodos %}
+            {% include "calculadora/modules/matrices/_producto.html" %}
+        {% else %}
+            {% include "calculadora/modules/matrices/_procedimiento.html" %}
+        {% endif %}
     </section>
 {% endif %}
 {% endblock %}

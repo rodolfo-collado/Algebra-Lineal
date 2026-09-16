@@ -123,7 +123,7 @@ VECTORES = Categoria(
 )
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones básicas con matrices rectangulares.",
+    "Operaciones con matrices rectangulares, incluidos los productos AB y Ax.",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -198,12 +198,21 @@ CONVERSION_BASES = Herramienta(
     invitacion="Convertir entre bases numéricas",
 )
 
+# Única herramienta de la categoría: la operación (suma, resta, escalar,
+# traspuesta, AB o Ax) y, en los productos, el método del procedimiento se
+# eligen dentro, igual que el método en Resolver un sistema.
 OPERACIONES_MATRICES = Herramienta(
     id="operaciones-matrices", nombre="Operaciones con matrices", categoria=MATRICES,
-    descripcion="Suma, resta, multiplica por un escalar y traspón matrices rectangulares con procedimiento y fracciones exactas.",
+    descripcion=(
+        "Suma, resta, multiplica por un escalar, entre matrices (AB) o por un vector (Ax) "
+        "y traspón matrices rectangulares, con procedimiento y fracciones exactas."
+    ),
     estado="disponible", route_name="calculadora:operaciones-matrices",
     palabras_clave=("matriz", "matrices", "suma", "resta", "escalar", "traspuesta",
-                    "transpuesta", "filas", "columnas", "rectangular", "fracciones"),
+                    "transpuesta", "filas", "columnas", "rectangular", "fracciones",
+                    "multiplicación de matrices", "producto de matrices", "matriz por matriz",
+                    "ax", "matriz por vector", "fila por columna", "regla fila-vector",
+                    "producto punto", "combinación lineal"),
     invitacion="Operar con matrices",
 )
 

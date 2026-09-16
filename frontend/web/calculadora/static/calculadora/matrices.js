@@ -6,13 +6,22 @@
     const opciones = JSON.parse(document.getElementById("matrix-options").textContent);
     const lista = root.querySelector("[data-matrix-list]");
     const escalar = root.querySelector("[data-matrix-scalar]");
-    const filas = root.querySelector('[name="filas"]');
-    const columnas = root.querySelector('[name="columnas"]');
+    const metodos = root.querySelector("[data-metodos]");
+    const dimensiones = {};
+    root.querySelectorAll("[data-dimension]").forEach(campo => { dimensiones[campo.dataset.dimension] = campo; });
     const matrizTemplate = document.getElementById("matrix-entry-template");
     const celdaTemplate = document.getElementById("matrix-cell-template");
     const escalarTemplate = document.getElementById("matrix-scalar-template");
     const memoria = new Map();
     let valorEscalar = "";
+
+    function entrada(nombre) {
+        return dimensiones[nombre].querySelector("input");
+    }
+
+    function opcionActual() {
+        return opciones[root.querySelector('[name="operacion"]:checked').value];
+    }
 
     function guardar() {
         lista.querySelectorAll("input").forEach(input => memoria.set(input.name, input.value));
@@ -30,14 +39,25 @@
         if (resultado) resultado.hidden = true;
     }
 
-    function crearMatriz(nombre, m, n) {
+    // (filas, columnas, es vector) de una entrada según la operación: en AB las
+    // filas de B son las columnas de A; el vector x es una columna de n componentes.
+    function forma(opcion, nombre) {
+        const [campoFilas, campoColumnas] = opcion.formas[nombre];
+        const filas = Number(entrada(campoFilas).value);
+        return [filas, campoColumnas ? Number(entrada(campoColumnas).value) : 1, !campoColumnas];
+    }
+
+    function crearMatriz(nombre, m, n, vector) {
         // Las plantillas inertes comparten el marcado con la versión del servidor.
         const fragmento = matrizTemplate.content.cloneNode(true);
         const matriz = fragmento.querySelector("fieldset");
+        const tipo = vector ? "Vector" : "Matriz";
         matriz.dataset.matriz = nombre;
+        matriz.toggleAttribute("data-vector", vector);
+        matriz.querySelector("[data-tipo-matriz]").textContent = tipo;
         matriz.querySelector("[data-nombre-matriz]").textContent = nombre;
-        matriz.querySelector("table").setAttribute("aria-label", `Matriz ${nombre}`);
-        matriz.querySelector(".matrix-scroll").setAttribute("aria-label", `Entradas de la matriz ${nombre}`);
+        matriz.querySelector("table").setAttribute("aria-label", `${tipo} ${nombre}`);
+        matriz.querySelector(".matrix-scroll").setAttribute("aria-label", vector ? `Componentes del vector ${nombre}` : `Entradas de la matriz ${nombre}`);
         const cuerpo = matriz.querySelector("tbody");
         for (let i = 0; i < m; i += 1) {
             const fila = document.createElement("tr");
@@ -49,7 +69,7 @@
                 input.value = memoria.get(input.name) ?? "";
                 const label = celda.querySelector("label");
                 label.htmlFor = input.id;
-                label.textContent = `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
+                label.textContent = vector ? `Vector ${nombre}, componente ${i + 1}` : `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
                 fila.append(celda);
             }
             cuerpo.append(fila);
@@ -67,27 +87,53 @@
         });
     }
 
+    // Los controles que la operación no usa se deshabilitan (no viajan en el
+    // POST) y se ocultan; las etiquetas cambian: «Filas» en suma, «Filas de A» en AB.
+    function actualizarEstructura(opcion) {
+        const etiquetas = new Map(opcion.dimensiones);
+        Object.entries(dimensiones).forEach(([nombre, campo]) => {
+            const activo = etiquetas.has(nombre);
+            campo.hidden = !activo;
+            entrada(nombre).disabled = !activo;
+            if (activo) campo.querySelector("label").textContent = etiquetas.get(nombre);
+        });
+        const conMetodo = opcion.metodos.length > 0;
+        metodos.hidden = !conMetodo;
+        metodos.querySelectorAll("input").forEach(radio => { radio.disabled = !conMetodo; });
+        opcion.metodos.forEach(([valor, etiqueta]) => {
+            const span = metodos.querySelector(`[data-etiqueta-metodo="${valor}"]`);
+            if (span) span.textContent = etiqueta;
+        });
+        metodos.querySelector("[data-metodos-ayuda]").textContent = opcion.ayuda_metodos;
+    }
+
+    function textoForma(opcion) {
+        const valores = { m: entrada("filas").value, n: entrada("columnas").value, p: entrada("columnas_b").value };
+        return opcion.forma_texto.replace(/\{([mnp])\}/g, (_, clave) => valores[clave]);
+    }
+
     function render() {
         ocultarResultado();
+        const opcion = opcionActual();
+        actualizarEstructura(opcion);
         // No se corrigen silenciosamente dimensiones inválidas: el servidor
         // muestra el error. Mientras se escribe, se conserva la cuadrícula.
-        if (!dimensionValida(filas) || !dimensionValida(columnas)) return;
+        if (!opcion.dimensiones.every(([nombre]) => dimensionValida(entrada(nombre)))) return;
         guardar();
-        const operacion = root.querySelector('[name="operacion"]:checked').value;
-        const opcion = opciones[operacion];
-        lista.replaceChildren(...opcion.matrices.map(nombre => crearMatriz(nombre, Number(filas.value), Number(columnas.value))));
+        lista.replaceChildren(...opcion.matrices.map(nombre => crearMatriz(nombre, ...forma(opcion, nombre))));
         escalar.replaceChildren();
         if (opcion.escalar) {
             escalar.append(escalarTemplate.content.cloneNode(true));
             escalar.querySelector("input").value = valorEscalar;
         }
         root.querySelector("[data-operation-help]").textContent = opcion.ayuda;
-        root.querySelector("[data-matrix-shape]").textContent = `${filas.value}×${columnas.value} en cada matriz de entrada. De ${filas.min} a ${filas.max} filas y columnas.`;
+        const filas = entrada("filas");
+        root.querySelector("[data-matrix-shape]").textContent = `${textoForma(opcion)} De ${filas.min} a ${filas.max} filas y columnas.`;
         actualizarBotones();
     }
 
     root.querySelectorAll('[name="operacion"]').forEach(radio => radio.addEventListener("change", render));
-    [filas, columnas].forEach(input => input.addEventListener("input", render));
+    Object.keys(dimensiones).forEach(nombre => entrada(nombre).addEventListener("input", render));
     root.querySelectorAll(".stepper [data-paso]").forEach(button => {
         button.hidden = false;
         button.addEventListener("click", () => {

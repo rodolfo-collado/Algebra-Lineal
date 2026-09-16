@@ -1,0 +1,22 @@
+{% comment %}Fila por columna (AB) o regla fila-vector (Ax): la sustitución en forma de matriz y, agrupada por fila, la igualdad completa de cada entrada.{% endcomment %}
+<div class="procedure-stage">
+    <h4 class="stage-title">{{ metodo.titulo }}</h4>
+    <p>{{ metodo.descripcion }}</p>
+    <p class="matrix-formula">{{ metodo.formula }}</p>
+    <div class="matrix-equation" tabindex="0" role="region" aria-label="Desarrollo por entradas">
+        {% include "calculadora/components/matriz.html" with matriz=metodo.desarrollo etiqueta="Desarrollo por entradas" only %}
+        <span class="matrix-expression">=</span>
+        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado del desarrollo" only %}
+    </div>
+</div>
+<div class="procedure-stage">
+    <h4 class="stage-title">Entrada por entrada</h4>
+    {% for grupo in metodo.grupos %}
+        <details class="procedure-group"{% if resultado.abierto %} open{% endif %}>
+            <summary class="procedure-summary"><span class="procedure-summary-title">{{ grupo.titulo }}</span> <span class="procedure-summary-detail">{{ grupo.resumen }}</span></summary>
+            <ol class="equations procedure-lines">
+                {% for linea in grupo.lineas %}<li>{{ linea }}</li>{% endfor %}
+            </ol>
+        </details>
+    {% endfor %}
+</div>

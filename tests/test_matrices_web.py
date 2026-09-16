@@ -18,7 +18,7 @@ from django.urls import resolve, reverse
 from backend.matrices import resolver_operacion_matrices
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.forms_matrices import MatricesForm
-from frontend.web.calculadora.opciones_matrices import CONFIGURACION, DIMENSION_MAXIMA
+from frontend.web.calculadora.opciones_matrices import CONFIGURACION, DIMENSION_MAXIMA, es_vector
 from frontend.web.calculadora.servicios_matrices import operar_matrices
 from tests.test_navegacion import Documento
 
@@ -124,9 +124,10 @@ class PruebasCatalogoMatrices(SimpleTestCase):
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
         self.assertTrue(doc.categorias["matrices"])
 
-    def test_solo_cuatro_operaciones(self):
+    def test_seis_operaciones_en_una_sola_herramienta(self):
+        # P13B añadió AB y Ax a la misma herramienta, sin otra entrada en la sidebar.
         form = MatricesForm()
-        self.assertEqual(set(dict(form.fields["operacion"].choices)), {"suma", "resta", "escalar", "traspuesta"})
+        self.assertEqual(set(dict(form.fields["operacion"].choices)), {"suma", "resta", "escalar", "traspuesta", "producto", "matriz_vector"})
 
 
 class PruebasFormularioMatrices(SimpleTestCase):
@@ -138,12 +139,17 @@ class PruebasFormularioMatrices(SimpleTestCase):
         self.assertEqual({"Matriz A", "Matriz B"}, set(doc.tablas))
 
     def test_campos_de_cada_operacion_sin_javascript(self):
+        # Cada entrada toma su forma de la estructura: A es 2×3; B comparte forma en suma/resta,
+        # es 3×2 en AB (columnas_b nace en 2 al cambiar de operación) y x es un vector de 3.
         for op, opcion in CONFIGURACION.items():
             respuesta = self.client.post(RUTA, {"operacion": op, "filas": "2", "columnas": "3", "ajustar": "1"})
             doc = Contenido(respuesta.content.decode())
-            self.assertEqual(set(doc.tablas), {f"Matriz {n}" for n in opcion["matrices"]})
+            esperadas = {("Vector " if es_vector(opcion, n) else "Matriz ") + n for n in opcion["matrices"]}
+            self.assertEqual(set(doc.tablas), esperadas)
             self.assertEqual("escalar" in doc.campos, opcion["escalar"])
-            self.assertEqual(len([k for k in doc.campos if k.startswith("celda_")]), len(opcion["matrices"]) * 6)
+            medidas = {"filas": 2, "columnas": 3, "columnas_b": 2, None: 1}
+            celdas = sum(medidas[alto] * medidas[ancho] for alto, ancho in (opcion["formas"][n] for n in opcion["matrices"]))
+            self.assertEqual(len([k for k in doc.campos if k.startswith("celda_")]), celdas)
             self.assertNotContains(respuesta, 'id="resultado"')
 
     def test_aplicar_conserva_celdas_al_cambiar_dimensiones(self):
@@ -159,7 +165,7 @@ class PruebasFormularioMatrices(SimpleTestCase):
         self.assertNotContains(respuesta, 'role="alert"')
 
     def test_aplicar_valida_dimensiones_y_operacion(self):
-        for campo, valor in (("filas", "0"), ("columnas", "11"), ("operacion", "producto")):
+        for campo, valor in (("filas", "0"), ("columnas", "11"), ("operacion", "inversa")):
             r = self.client.post(RUTA, datos_matrices(**{campo: valor, "ajustar": "1"}))
             self.assertContains(r, 'role="alert"')
             self.assertNotContains(r, 'id="resultado"')
@@ -270,7 +276,7 @@ class PruebasRechazoMatrices(SimpleTestCase):
                     self.rechazar(datos_matrices(**{campo: valor}))
 
     def test_operacion_invalida(self):
-        for op in ("", "producto", "matriz_vector", "<script>"):
+        for op in ("", "inversa", "determinante", "<script>"):
             self.rechazar(datos_matrices(operacion=op))
 
     def test_filas_y_columnas_incompletas(self):
