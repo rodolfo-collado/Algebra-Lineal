@@ -263,9 +263,11 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                     self.assertEqual(respuesta.status, 200)
                     self.assertIn(marca, respuesta.read().decode("utf-8"))
 
+            # La ruta antigua de Gauss sigue abriendo Resolver un sistema con Gauss elegido.
             with cliente_http.open(f"{url}sistemas/gauss/", timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
-                self.assertIn("Método de Gauss", respuesta.read().decode("utf-8"))
+                self.assertEqual(respuesta.url, f"{url}sistemas/?metodo=gauss")
+                self.assertIn("Resolver un sistema", respuesta.read().decode("utf-8"))
 
             csrf = re.search(
                 rb'name="csrfmiddlewaretoken" value="([^"]+)"',

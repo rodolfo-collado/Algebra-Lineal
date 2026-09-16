@@ -10,6 +10,7 @@ app_name = "calculadora"
 urlpatterns = [
     path("", views.inicio, name="inicio"),
     path("sistemas/", views.sistemas, name="sistemas"),
-    path("sistemas/<slug:herramienta>/", views.sistemas, name="sistemas-herramienta"),
+    # Compatibilidad con las rutas de P10.1 (/sistemas/gauss/, …): redirigen a /sistemas/.
+    path("sistemas/<slug:herramienta>/", views.sistemas_ruta_antigua, name="sistemas-antigua"),
     path("bases/conversion/", views.conversion_bases, name="conversion-bases"),
 ]
