@@ -1016,6 +1016,20 @@ textarea:focus {
         font-size: 1.1rem;
     }
 
+    /* En pantallas estrechas caben tres componentes sin desplazar la fila. */
+    .vector-list {
+        padding: 0.65rem 0.5rem;
+    }
+
+    .vector-inputs .matrix-input {
+        width: 3.4rem;
+        padding-inline: 0.3rem;
+    }
+
+    .vector-name {
+        min-width: 2.2rem;
+    }
+
     .segmented {
         display: flex;
     }
