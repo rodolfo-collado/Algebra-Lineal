@@ -1,0 +1,18 @@
+{% comment %}Matriz genérica de valores o expresiones. Aumentada y pivotes son opcionales.{% endcomment %}
+<div class="matrix">
+    <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
+    <div class="matrix-scroll" tabindex="0" role="region" aria-label="{{ etiqueta|default:'Matriz' }}">
+        <table class="matrix-table" aria-label="{{ etiqueta|default:'Matriz' }}">
+            <tbody>
+                {% for fila in matriz %}
+                    <tr>
+                        {% for valor in fila %}
+                            <td class="{% if aumentada and forloop.last %}constant{% endif %}{% if columnas_pivote and forloop.counter in columnas_pivote %} pivot{% endif %}">{{ valor }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <span class="matrix-fence matrix-fence-end" aria-hidden="true"></span>
+</div>

@@ -104,9 +104,10 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
 
         for consulta in ("vector", "vectores", "suma de vectores", "escalar", "combinación lineal", "span", "dimension"):
             with self.subTest(consulta=consulta):
-                self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.OPERACIONES_VECTORES,))
+                esperadas = (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES) if consulta == "escalar" else (catalogo.OPERACIONES_VECTORES,)
+                self.assertEqual(catalogo.buscar_herramientas(consulta), esperadas)
                 respuesta = self.client.get("/", {"q": consulta})
-                self.assertContains(respuesta, "1 herramienta coincide")
+                self.assertContains(respuesta, "2 herramientas coinciden" if consulta == "escalar" else "1 herramienta coincide")
                 self.assertContains(respuesta, f'href="{RUTA}"')
         # «matriz» sigue sin mezclar vectores con las herramientas de matrices y sistemas.
         self.assertNotIn(catalogo.OPERACIONES_VECTORES, catalogo.buscar_herramientas("matriz"))

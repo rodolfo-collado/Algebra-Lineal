@@ -353,6 +353,32 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             self.assertIn("b es combinación lineal de v1 y v2", combinacion)
             self.assertIn("c1 = 3", combinacion)
             self.assertIn("(3, 4) = 3(1, 0) + 4(0, 1)", combinacion)
+
+            # P13A viaja por la pila desktop real, con CSRF y recursos locales.
+            from tests.test_matrices_web import Contenido, datos_matrices
+
+            url_matrices = f"{url}matrices/operaciones/"
+            with cliente_http.open(url_matrices, timeout=3.0) as respuesta:
+                self.assertIn("Operaciones con matrices", respuesta.read().decode("utf-8"))
+            for operacion, esperado in (
+                ("suma", [["2", "4", "6"], ["8", "10", "12"]]),
+                ("resta", [["0", "0", "0"], ["0", "0", "0"]]),
+                ("escalar", [["1/2", "1", "3/2"], ["2", "5/2", "3"]]),
+                ("traspuesta", [["1", "4"], ["2", "5"], ["3", "6"]]),
+            ):
+                a = [[1, 2, 3], [4, 5, 6]]
+                datos = datos_matrices(
+                    operacion, a=a, b=a if operacion in ("suma", "resta") else None,
+                    escalar="1/2" if operacion == "escalar" else None,
+                    csrfmiddlewaretoken=csrf.group(1).decode("ascii"),
+                )
+                solicitud = Request(url_matrices, data=urlencode(datos).encode("ascii"), headers={"Referer": url_matrices})
+                with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                    tablas = Contenido(respuesta.read().decode("utf-8")).tablas
+                self.assertEqual(tablas["Matriz resultado"], esperado)
+            with cliente_http.open(f"{url}static/calculadora/matrices.js", timeout=3.0) as respuesta:
+                self.assertEqual(respuesta.status, 200)
+                self.assertIn("matrix-entry-template", respuesta.read().decode("utf-8"))
         finally:
             desktop.stop_waitress(servidor, hilo)
             self.assertFalse(hilo.is_alive())

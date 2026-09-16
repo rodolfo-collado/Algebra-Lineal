@@ -39,7 +39,7 @@ static/calculadora/
     ├── shell.css           # header, sidebar, cajón móvil, breadcrumbs, layout
     ├── components.css      # herramienta, paneles, botones, buscador, inicio,
     │                       # relacionadas, teclado, controles de estructura, guías, matrices
-    └── modules.css         # formulario y resultados de sistemas, bases y vectores
+    └── modules.css         # formularios y resultados de sistemas, bases, vectores y matrices
 ```
 
 Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-raised`,
@@ -118,6 +118,35 @@ el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructur
 sin calcular. El teclado contextual es el de la cuadrícula de matrices
 (`TECLADO_MATRIZ`: `−` y `a⁄b`), incluido con `campos_id="vector-fields"`.
 
+### Matrices (P13A)
+
+Una sola herramienta `/matrices/operaciones/` selecciona suma, resta, escalar o
+traspuesta. `opciones_matrices.CONFIGURACION` define las matrices necesarias,
+la presencia del escalar y la ayuda; el formulario y JavaScript comparten esos
+datos mediante `json_script`. Las dimensiones independientes van de 1 a 10
+por razones de interfaz. A y B siempre comparten esa estructura en suma/resta.
+
+`MatricesForm` vive en `forms_matrices.py` para no ampliar el formulario común.
+Genera campos Django `celda_A_i_j` / `celda_B_i_j` con labels y errores asociados,
+valida el conjunto exacto de campos y rechaza duplicados. Usa el parser existente
+para convertir números a valores exactos. El botón Aplicar valida las dimensiones
+y conserva las entradas al regenerar, sin calcular. La edición dinámica utiliza
+plantillas HTML inertes que incluyen los mismos componentes del servidor;
+no mantiene matrices ocultas dentro del formulario. El teclado se reutiliza con
+`campos_id="matrix-fields"`. Tab y flechas permiten recorrer las celdas.
+
+`components/matriz_entrada.html` y `matriz_celda.html` representan la cuadrícula;
+`components/matriz.html` muestra valores o expresiones con corchetes, sin columna
+aumentada por defecto. Acepta `matriz`, `etiqueta`, `aumentada` y `columnas_pivote`.
+`matrix.html` es el adaptador de sistemas con `aumentada=True`. Cada cuadrícula y
+expresión ancha tiene scroll local accesible con teclado. Los estilos usan los
+tokens comunes de ambos temas.
+
+El backend entrega resultado y pasos por posición con operandos exactos; en la
+traspuesta, también identifica la posición de origen. La capa de presentación
+solo formatea esos datos. Resultado precede a Procedimiento. La base se puede
+reutilizar en P13B/P14; P13A no implementa productos entre matrices ni por vectores.
+
 ## Guía educativa
 
 `frontend/web/calculadora/guias.py` define mensajes estáticos (`GuiaConcepto`)
@@ -134,11 +163,11 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
    `calculadora/layouts/herramienta.html`.
 3. Reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`, `.concept-guide`, el
    teclado contextual y los tokens de `static/calculadora/styles/`.
-4. Si muestra matrices, incluye `calculadora/components/matrix.html`; acepta
-   `columnas_pivote` para resaltar columnas.
+4. Si muestra matrices, incluye `calculadora/components/matriz.html`; usa
+   `matrix.html` para matrices aumentadas de sistemas. Ambos admiten `columnas_pivote`.
 5. No copies el `<head>`, el header, la sidebar ni el selector de tema.
 
 Hoy están disponibles las herramientas de sistemas de ecuaciones, las
-operaciones con vectores (incluida la combinación lineal) y la conversión de
-bases (sistemas numéricos). No agregues enlaces a pantallas que todavía no
+operaciones con vectores (incluida la combinación lineal), operaciones básicas
+con matrices y la conversión de bases (sistemas numéricos). No agregues enlaces a pantallas que todavía no
 existen.

@@ -113,7 +113,7 @@ class PruebasCatalogo(SimpleTestCase):
             self.assertNotIn(herramienta.id, herramienta.relacionadas)
 
     def test_relaciones_filtran_herramientas_no_disponibles(self):
-        herramienta = replace(catalogo.SISTEMAS, relacionadas=("conversion-bases", "operaciones-matrices"))
+        herramienta = replace(catalogo.SISTEMAS, relacionadas=("conversion-bases", "limites-funciones"))
         self.assertEqual(catalogo.relacionadas_disponibles(herramienta), (catalogo.CONVERSION_BASES,))
 
     def test_sistemas_de_ecuaciones_tiene_una_sola_herramienta(self):
@@ -136,7 +136,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual(herramientas, catalogo.HERRAMIENTAS)
         self.assertTrue(catalogo.SISTEMAS_ECUACIONES.disponible)
         self.assertTrue(catalogo.VECTORES.disponible)
-        self.assertFalse(catalogo.MATRICES.disponible)
+        self.assertTrue(catalogo.MATRICES.disponible)
         self.assertFalse(catalogo.CALCULO.disponible)
 
     def test_herramienta_por_ruta(self):
@@ -203,9 +203,10 @@ class PruebasBuscador(SimpleTestCase):
 
         respuesta = self.client.get("/", {"q": "matriz"})
         self.assertContains(respuesta, "Operaciones con matrices")
-        self.assertContains(respuesta, "Próximamente")
+        self.assertNotContains(respuesta, "tool-link-upcoming")
         destinos = {attrs["href"] for attrs in Documento(respuesta).enlaces_en(None)}
         self.assertNotIn("/matrices/", destinos)
+        self.assertIn("/matrices/operaciones/", destinos)
 
         respuesta = self.client.get("/", {"q": "zzz"})
         self.assertContains(respuesta, "No se encontraron herramientas para «zzz»")

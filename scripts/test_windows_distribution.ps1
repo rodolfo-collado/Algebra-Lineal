@@ -100,7 +100,33 @@ try {
                 if (-not $text.Contains($expected)) { throw "Falta '$expected' en $method ($url)." }
             }
         }
-        foreach ($asset in @('styles.css', 'matriz.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'mark.svg')) {
+        # Operaciones básicas con matrices: rectangular, fracciones y las cuatro variantes.
+        $matricesUrl = $url + 'matrices/operaciones/'
+        $expectedMatrices = @{
+            suma = @('2', '4', '6', '8', '10', '12')
+            resta = @('0', '0', '0', '0', '0', '0')
+            escalar = @('1/2', '1', '3/2', '2', '5/2', '3')
+            traspuesta = @('1', '4', '2', '5', '3', '6')
+        }
+        foreach ($operation in @('suma', 'resta', 'escalar', 'traspuesta')) {
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -SessionVariable matrixSession
+            $matrixCsrf = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
+            $matrixBody = @{ csrfmiddlewaretoken = $matrixCsrf; operacion = $operation; filas = '2'; columnas = '3' }
+            for ($row = 0; $row -lt 2; $row++) {
+                for ($column = 0; $column -lt 3; $column++) {
+                    $value = [string](1 + 3 * $row + $column)
+                    $matrixBody["celda_A_${row}_${column}"] = $value
+                    if ($operation -in @('suma', 'resta')) { $matrixBody["celda_B_${row}_${column}"] = $value }
+                }
+            }
+            if ($operation -eq 'escalar') { $matrixBody.escalar = '1/2' }
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -Method Post -WebSession $matrixSession -Headers @{ Referer = $matricesUrl } -Body $matrixBody
+            $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Matriz resultado"[^>]*>(.*?)</table>').Groups[1].Value
+            $cells = @([regex]::Matches($resultTable, '<td[^>]*>\s*([^<]+?)\s*</td>') | ForEach-Object { $_.Groups[1].Value.Trim() })
+            if (($cells -join ',') -ne ($expectedMatrices[$operation] -join ',')) { throw "Resultado incorrecto de matrices: $operation" }
+            if (-not $response.Content.Contains('id="procedure-title"')) { throw "Falta procedimiento de matrices: $operation" }
+        }
+        foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'mark.svg')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'static/calculadora/' + $asset)
             if ($response.StatusCode -ne 200) { throw "No se sirvió el recurso $asset" }
         }
@@ -110,7 +136,7 @@ try {
         $listener = @(Get-NetTCPConnection -State Listen -OwningProcess $process.Id -ErrorAction SilentlyContinue)
         if ($listener.Count) { throw 'El servidor sigue escuchando después del cierre.' }
         $process = $null
-        Write-Host "Apertura ${attempt}: acceso directo, Django/Waitress, ambos métodos, recursos y cierre OK."
+        Write-Host "Apertura ${attempt}: acceso directo, Django/Waitress, ambos métodos, P13A, recursos y cierre OK."
     }
 } finally {
     if ($process -and -not $process.HasExited) {

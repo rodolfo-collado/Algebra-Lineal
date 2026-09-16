@@ -35,6 +35,8 @@ rediseñar la aplicación cada vez.
   matriz aumentada editable, sin reemplazar la interfaz de terminal.
 - Usar una interfaz visual propia, con tema claro u oscuro, matrices con
   notación de corchetes y el procedimiento paso a paso como pieza central.
+- Sumar, restar, multiplicar por un escalar y trasponer matrices rectangulares
+  con fracciones exactas y desarrollo de cada entrada desde web y escritorio.
 - Convertir números enteros entre decimal y binario, octal o hexadecimal desde
   la interfaz web y desktop, mostrando las divisiones sucesivas o la expansión
   posicional (combinación lineal) que justifica el resultado.
@@ -413,9 +415,9 @@ teclado y los botones de estructura requieren JavaScript.
 
 El recorrido web y desktop es **Inicio → área → categoría → herramienta →
 resultado**, y el breadcrumb lo reproduce con enlaces reales (las áreas y
-categorías llevan a su sección del Inicio). Matrices y límites se anuncian
-como **Próximamente**, sin enlaces ni algoritmos nuevos; vectores ofrece
-Operaciones con vectores y sistemas numéricos, la conversión de bases.
+categorías llevan a su sección del Inicio). Matrices ofrece **Operaciones con
+matrices**, vectores ofrece Operaciones con vectores y sistemas numéricos,
+la conversión de bases. Límites continúa como **Próximamente**.
 
 `frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
 inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,
@@ -459,6 +461,27 @@ de vectores, nombres de los vectores por operación) y `servicios_vectores.py`
 (presentación: vectores como `(1, 2, 3)`, desarrollo componente a componente,
 planteamiento y conclusión de la combinación lineal).
 
+**Operaciones con matrices** (`/matrices/operaciones/`) reúne suma, resta,
+producto por escalar y traspuesta en un solo formulario. Filas y columnas se
+eligen independientemente, de 1 a 10 por legibilidad; el backend no impone ese
+límite ni exige matrices cuadradas. Para suma/resta, A y B comparten dimensiones.
+Con JavaScript los controles +/− regeneran las celdas y conservan los valores;
+sin JavaScript, **Aplicar** prepara la estructura antes de calcular. El teclado
+contextual existente permite negativos y fracciones.
+
+`backend/matrices.py` contiene las cuatro operaciones y los pasos estructurados
+con `Fraction`. `forms_matrices.py` valida dimensiones, campos y números con el
+parser común; `opciones_matrices.py` centraliza la configuración y
+`servicios_matrices.py` adapta los datos a presentación. El resultado aparece
+antes del procedimiento: expresión matricial, regla por entrada y desarrollo;
+la traspuesta explica el intercambio de filas/columnas y de dimensiones.
+Los componentes de entrada y `components/matriz.html` se pueden reutilizar;
+`matrix.html` mantiene la representación aumentada de sistemas. Las igualdades
+y matrices anchas se desplazan dentro de sus contenedores.
+
+La multiplicación matriz×matriz y matriz×vector se reserva para P13B; las
+ecuaciones matriciales y otros contenidos posteriores quedan fuera de P13A.
+
 ```text
 templates/calculadora/
 ├── base.html                 # header, sidebar, breadcrumbs y contenido
@@ -467,6 +490,7 @@ templates/calculadora/
 ├── pages/inicio.html
 ├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal
+├── modules/matrices/         # entrada rectangular, resultado y procedimiento de P13A
 └── modules/bases/            # index.html y procedimiento de la conversión
 ```
 
@@ -591,11 +615,13 @@ En una cuenta Windows **sin una instalación previa de Álgebra Lineal**, ejecut
 
 La prueba instala en una carpeta nueva de `%LOCALAPPDATA%\Programs` fuera del
 repositorio. Comprueba ambos accesos directos y que el ejecutable sea `windowed`,
-abre desde Inicio, resuelve por Gauss y Gauss-Jordan a través del Django/Waitress
-empaquetado, solicita CSS/JS/icono, cierra la ventana y verifica que el proceso y
-el servidor terminan. Repite la apertura y luego desinstala comprobando que se
-eliminaron archivos, registro y accesos directos. Rechaza instalaciones previas
-para no modificarlas.
+abre desde Inicio, resuelve por Gauss y Gauss-Jordan y las cuatro operaciones
+de P13A a través del Django/Waitress empaquetado, solicita CSS/JS (incluido
+`matrices.js`) e icono, cierra la ventana y verifica que el proceso y el
+servidor terminan. Repite la apertura y luego desinstala comprobando que se
+eliminaron archivos, registro y accesos directos. Si esta máquina ya tiene
+Álgebra Lineal instalada, el script se detiene a propósito: necesita una
+cuenta o entorno limpio para no modificar esa instalación.
 
 Completa esa prueba con una revisión visual: instalar normalmente, abrir desde
 el acceso directo, resolver un sistema, verificar **Columnas pivote: C1, C3**,
@@ -627,8 +653,11 @@ bases —resultados, pasos del procedimiento, mensajes de error y su integració
 web—, las operaciones con vectores —suma, resta, escalar, combinación lineal
 con solución única, infinitas o inconsistente, dimensión arbitraria, fracciones
 exactas, la reutilización del motor de sistemas, la estructura dinámica del
-formulario y los POST manipulados— y que la interfaz no cargue fuentes ni
-scripts remotos. Sirven para detectar regresiones cuando el proyecto crezca.
+formulario y los POST manipulados—, las operaciones con matrices —suma, resta,
+escalar y traspuesta en rectangulares, fracciones exactas, procedimiento por
+entrada, catálogo, selector, estructura dinámica, errores asociados a celdas
+y POST manipulados— y que la interfaz no cargue fuentes ni scripts remotos.
+Sirven para detectar regresiones cuando el proyecto crezca.
 
 Para comprobar que todo el código compila:
 
@@ -689,7 +718,7 @@ Algebra-Lineal/
 │   └── workflows/
 │       └── ci.yml              # integración continua
 ├── backend/
-│   ├── matrices.py             # utilidades generales y validaciones
+│   ├── matrices.py             # utilidades, validación y operaciones básicas exactas (P13A)
 │   ├── operaciones_filas.py    # operaciones elementales y registro de pasos
 │   ├── expresiones.py          # expresiones lineales exactas y su formato
 │   ├── gauss.py                # escalonamiento hacia abajo
@@ -713,6 +742,8 @@ Algebra-Lineal/
 │       └── calculadora/        # registro de herramientas, vistas, teclados, templates y recursos
 └── tests/
     ├── test_matrices.py
+    ├── test_operaciones_matrices.py
+    ├── test_matrices_web.py
     ├── test_operaciones_filas.py
     ├── test_expresiones.py
     ├── test_gauss.py

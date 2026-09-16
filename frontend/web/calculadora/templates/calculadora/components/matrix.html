@@ -1,17 +1,2 @@
-<div class="matrix">
-    <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
-    <div class="matrix-scroll">
-        <table class="matrix-table" aria-label="{{ etiqueta|default:'Matriz' }}">
-            <tbody>
-                {% for fila in matriz %}
-                    <tr>
-                        {% for valor in fila %}
-                            <td class="{% if forloop.last %}constant{% endif %}{% if columnas_pivote and forloop.counter in columnas_pivote %} pivot{% endif %}">{{ valor }}</td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <span class="matrix-fence matrix-fence-end" aria-hidden="true"></span>
-</div>
+{% comment %}Compatibilidad: los sistemas usan matrices aumentadas.{% endcomment %}
+{% include "calculadora/components/matriz.html" with matriz=matriz etiqueta=etiqueta aumentada=True columnas_pivote=columnas_pivote only %}

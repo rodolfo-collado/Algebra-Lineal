@@ -89,6 +89,9 @@ class PruebasInstalacionPorUsuario(unittest.TestCase):
 
         self.assertIn(f"Uninstall\\{APP_ID}_is1", prueba)
         self.assertIn("/DIR=", prueba)
+        self.assertIn("cuenta limpia", prueba)
+        self.assertIn("matrices/operaciones/", prueba)
+        self.assertIn("matrices.js", prueba)
 
 
 class PruebasFlujoDelAsistente(unittest.TestCase):

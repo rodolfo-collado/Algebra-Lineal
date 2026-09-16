@@ -123,7 +123,7 @@ VECTORES = Categoria(
 )
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones entre matrices y ecuaciones matriciales.",
+    "Operaciones básicas con matrices rectangulares.",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -198,15 +198,19 @@ CONVERSION_BASES = Herramienta(
     invitacion="Convertir entre bases numéricas",
 )
 
+OPERACIONES_MATRICES = Herramienta(
+    id="operaciones-matrices", nombre="Operaciones con matrices", categoria=MATRICES,
+    descripcion="Suma, resta, multiplica por un escalar y traspón matrices rectangulares con procedimiento y fracciones exactas.",
+    estado="disponible", route_name="calculadora:operaciones-matrices",
+    palabras_clave=("matriz", "matrices", "suma", "resta", "escalar", "traspuesta",
+                    "transpuesta", "filas", "columnas", "rectangular", "fracciones"),
+    invitacion="Operar con matrices",
+)
+
 HERRAMIENTAS = (
     SISTEMAS,
     OPERACIONES_VECTORES,
-    Herramienta("operaciones-matrices", "Operaciones con matrices", MATRICES,
-                "Suma, resta y multiplicación de matrices.",
-                palabras_clave=("matriz", "suma de matrices", "producto de matrices")),
-    Herramienta("ecuaciones-matriciales", "Ecuaciones matriciales", MATRICES,
-                "Resuelve ecuaciones cuyas incógnitas son matrices.",
-                palabras_clave=("matriz", "ecuación matricial")),
+    OPERACIONES_MATRICES,
     CONVERSION_BASES,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",

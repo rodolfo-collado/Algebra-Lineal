@@ -1,0 +1,68 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-labelledby="workspace-title" data-matrices>
+    <h2 id="workspace-title" class="sr-only">Entrada</h2>
+    <form id="matrices-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+        {% csrf_token %}
+        {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
+        <section class="workspace-section">
+            <fieldset class="choice-fieldset">
+                <legend>Operación</legend>
+                <div class="option-list">
+                    {% for radio in form.operacion %}<label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                {{ form.operacion.errors }}
+                <p class="field-help" data-operation-help>{{ form.configuracion.ayuda }}</p>
+            </fieldset>
+        </section>
+        <section class="workspace-section" id="matrix-fields" aria-labelledby="matrices-title">
+            <h3 class="section-title" id="matrices-title">Matrices de entrada</h3>
+            <div class="structure-controls" role="group" aria-label="Estructura de las matrices">
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.filas quitar="Quitar una fila" agregar="Agregar una fila" %}
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.columnas quitar="Quitar una columna" agregar="Agregar una columna" %}
+            </div>
+            <p class="field-help" data-matrix-shape aria-live="polite">{{ form.estructura.filas }}×{{ form.estructura.columnas }} en cada matriz de entrada. De {{ form.filas.field.min_value }} a {{ form.filas.field.max_value }} filas y columnas.</p>
+            <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
+            <noscript><p class="field-help">Cambia la operación, filas o columnas y pulsa <strong>Aplicar</strong> antes de calcular. Se conservan las celdas que siguen en la estructura.</p></noscript>
+            <div data-matrix-scalar>
+                {% if form.escalar %}
+                    <div class="matrix-scalar"><label for="{{ form.escalar.id_for_label }}">Escalar k</label>{{ form.escalar }}{{ form.escalar.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="matrix-entry-list" data-matrix-list>
+                {% for matriz in form.matrices %}{% include "calculadora/components/matriz_entrada.html" with nombre=matriz.nombre filas=matriz.filas only %}{% endfor %}
+            </div>
+            <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. Las matrices pueden ser rectangulares.</p>
+            {% include "calculadora/components/math_keyboard.html" with teclado=teclado_matriz campos_id="matrix-fields" %}
+        </section>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular</button></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+    <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        <div class="panel panel-final">
+            <p class="section-kicker">{{ resultado.etiqueta }} · {{ resultado.dimensiones_resultado }}</p>
+            <h2 id="results-title" class="panel-title">Resultado</h2>
+            <div class="matrix-equation">
+                <span class="matrix-expression">{{ resultado.expresion }} =</span>
+                {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Matriz resultado" only %}
+            </div>
+        </div>
+        {% include "calculadora/modules/matrices/_procedimiento.html" %}
+    </section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ opciones_matrices|json_script:"matrix-options" }}
+<template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
+<template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
+<template id="matrix-scalar-template"><div class="matrix-scalar"><label for="id_escalar">Escalar k</label><input type="text" name="escalar" id="id_escalar" class="matrix-input" autocomplete="off" spellcheck="false" inputmode="text"></div></template>
+<script src="{% static 'calculadora/matrices.js' %}" defer></script>
+<script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}
