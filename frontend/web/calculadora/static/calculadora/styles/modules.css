@@ -1,8 +1,88 @@
-/* Módulos: formulario, pasos y resultado de sistemas, conversión de bases y vectores. */
+/* Módulos: formulario, pasos y resultado de sistemas, bases, vectores y matrices. */
 
 .workspace {
     padding-bottom: 1rem;
 }
+
+/* Matrices: el scroll pertenece a cada cuadrícula o igualdad, nunca a la página. */
+.matrix-entry-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1rem 2rem;
+    margin-block: 1rem;
+    min-width: 0;
+}
+
+.matrix-entry {
+    margin: 0;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.matrix-entry-table td {
+    /* Contiene también el label accesible absoluto dentro del scroll local. */
+    position: relative;
+    padding: 0.25rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+.matrix-entry-table .errorlist {
+    max-width: 9rem;
+    white-space: normal;
+}
+
+[data-matrices] .errorlist {
+    margin: 0.4rem 0 0;
+    padding-left: 1rem;
+    color: var(--color-danger);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}
+
+[data-matrices] [aria-invalid="true"] { border-color: var(--color-danger); }
+
+.matrix-scalar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 1rem;
+}
+
+.matrix-equation {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    padding-block: 0.4rem;
+}
+
+.matrix-equation > * {
+    flex-shrink: 0;
+}
+
+.matrix-operand {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.matrix-expression,
+.matrix-formula {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.matrix-transfers {
+    padding-left: 1.4rem;
+    overflow-wrap: anywhere;
+}
+
+.results[hidden] { display: none; }
+[data-aplicar][hidden] { display: none; }
 
 .workspace-section + .workspace-section {
     margin-top: 1.1rem;

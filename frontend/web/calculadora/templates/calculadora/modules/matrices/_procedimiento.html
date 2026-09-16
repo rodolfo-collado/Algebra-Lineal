@@ -1,0 +1,38 @@
+<section class="panel" aria-labelledby="procedure-title">
+    <h3 id="procedure-title" class="panel-title">Procedimiento</h3>
+    <div class="procedure-stage">
+        <h4 class="stage-title">Expresión matricial: {{ resultado.expresion }}</h4>
+        <div class="matrix-equation" tabindex="0" role="region" aria-label="Expresión matricial completa">
+            {% if resultado.factor %}<span class="matrix-expression">{{ resultado.factor }} ·</span>{% endif %}
+            {% for entrada in resultado.entradas %}
+                {% if not forloop.first %}<span class="matrix-expression">{{ resultado.simbolo }}</span>{% endif %}
+                <div class="matrix-operand">
+                    <span class="muted">{{ entrada.nombre }}{% if resultado.operacion == "traspuesta" %} (antes de trasponer){% endif %}</span>
+                    {% include "calculadora/components/matriz.html" with matriz=entrada.matriz etiqueta=entrada.nombre only %}
+                </div>
+            {% endfor %}
+            <span class="matrix-expression">{% if resultado.operacion == "traspuesta" %}→{% else %}={% endif %}</span>
+            <div class="matrix-operand">
+                <span class="muted">{% if resultado.operacion == "traspuesta" %}Aᵀ{% else %}Resultado{% endif %}</span>
+                {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado de la expresión" only %}
+            </div>
+        </div>
+    </div>
+    <div class="procedure-stage">
+        <h4 class="stage-title">{% if resultado.operacion == "traspuesta" %}De filas a columnas{% else %}Entrada por entrada{% endif %}</h4>
+        <p>{{ resultado.ayuda }}</p>
+        <p class="matrix-formula">{{ resultado.formula }}</p>
+        {% if resultado.operacion == "traspuesta" %}
+            <p><strong>{{ resultado.dimensiones_entrada }} → {{ resultado.dimensiones_resultado }}</strong></p>
+            <ol class="matrix-transfers">
+                {% for fila in resultado.traslados %}<li>Fila {{ forloop.counter }} de A → columna {{ forloop.counter }} de Aᵀ: <code>{{ fila }}</code>.</li>{% endfor %}
+            </ol>
+            <p class="field-help">a[i, j] identifica la entrada de A en la fila i, columna j.</p>
+        {% endif %}
+        <div class="matrix-equation" tabindex="0" role="region" aria-label="Desarrollo por entradas">
+            {% include "calculadora/components/matriz.html" with matriz=resultado.desarrollo etiqueta="Desarrollo por entradas" only %}
+            <span class="matrix-expression">=</span>
+            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado del desarrollo" only %}
+        </div>
+    </div>
+</section>

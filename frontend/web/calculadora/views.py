@@ -11,6 +11,9 @@ from backend.sistemas_numericos import NOMBRES_BASE
 
 from . import catalogo
 from .forms import ConversionBasesForm, SistemaForm, VectoresForm
+from .forms_matrices import MatricesForm
+from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
+from .servicios_matrices import operar_matrices
 from .guias import guias_para_resultado
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
@@ -141,6 +144,25 @@ def operaciones_vectores(request):
             "teclado_vector": TECLADO_MATRIZ,
         },
     )
+
+
+@require_http_methods(["GET", "POST"])
+def operaciones_matrices(request):
+    ajustar = request.method == "POST" and "ajustar" in request.POST
+    form = MatricesForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
+    resultado = None
+    if request.method == "POST" and form.is_valid():
+        if ajustar:
+            form = MatricesForm(initial=form.iniciales())
+        else:
+            try:
+                resultado = operar_matrices(form.cleaned_data["entrada"])
+            except ValueError as error:
+                form.add_error(None, str(error))
+    return render(request, "calculadora/modules/matrices/index.html", {
+        "form": form, "resultado": resultado, "opciones_matrices": OPCIONES_MATRICES,
+        "teclado_matriz": TECLADO_MATRIZ,
+    })
 
 
 @require_http_methods(["GET", "POST"])
