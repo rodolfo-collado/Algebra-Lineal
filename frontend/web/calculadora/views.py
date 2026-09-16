@@ -86,7 +86,7 @@ def sistemas(request, herramienta="sistemas"):
 
 @require_http_methods(["GET", "POST"])
 def conversion_bases(request):
-    """Conversión decimal ↔ binario/octal/hexadecimal con procedimiento visible."""
+    """Conversión entre binario, octal, decimal y hexadecimal con procedimiento visible."""
     actual = catalogo.herramienta_por_ruta(request.resolver_match)
     if actual is None or actual.id != "conversion-bases":
         raise Http404("No existe esa herramienta.")
@@ -97,18 +97,20 @@ def conversion_bases(request):
     if request.method == "POST" and form.is_valid():
         try:
             resultado = convertir_entrada(
-                modo=form.cleaned_data["modo"],
-                base=form.cleaned_data["base"],
                 numero=form.cleaned_data["numero"],
+                base_origen=form.cleaned_data["base_origen"],
+                base_destino=form.cleaned_data["base_destino"],
             )
         except ValueError as error:
             form.add_error("numero", str(error))
 
-    modo = form["modo"].value() if form.is_bound else form.initial.get("modo", "desde_decimal")
-    base = form["base"].value() if form.is_bound else form.initial.get("base", 2)
+    # El teclado y la etiqueta del número siguen a la base de origen, también sin JavaScript.
+    base_origen = form["base_origen"].value() if form.is_bound else form.initial.get("base_origen", 10)
     try:
-        base_entrada = 10 if modo == "desde_decimal" else int(base)
+        base_entrada = int(base_origen)
     except (TypeError, ValueError):
+        base_entrada = 10
+    if base_entrada not in TECLADOS_BASE:
         base_entrada = 10
 
     return render(
@@ -117,9 +119,9 @@ def conversion_bases(request):
         {
             "form": form,
             "resultado": resultado,
-            "teclados_base": TECLADOS_BASE,
-            # La etiqueta del número y el teclado siguen a la base de entrada.
-            "nombres_base": NOMBRES_BASE,
+            "bases_entrada": tuple(
+                (base, NOMBRES_BASE[base], teclado) for base, teclado in TECLADOS_BASE.items()
+            ),
             "base_entrada_activa": base_entrada,
         },
     )

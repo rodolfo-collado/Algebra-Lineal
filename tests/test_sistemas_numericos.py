@@ -6,6 +6,7 @@ from pathlib import Path
 
 from backend.sistemas_numericos import (
     base_a_decimal,
+    convertir,
     decimal_a_base,
     digito_a_valor,
     normalizar_numero,
@@ -137,6 +138,68 @@ class PruebasBaseADecimal(unittest.TestCase):
     def test_ceros_iniciales_no_cambian_el_valor(self):
         self.assertEqual(base_a_decimal("001011", 2).resultado, 11)
         self.assertEqual(base_a_decimal("00", 8).resultado, 0)
+
+
+class PruebasConversionEntreBases(unittest.TestCase):
+    """`convertir` compone los dos algoritmos: no hay uno por cada par de bases."""
+
+    def test_todos_los_pares_de_bases_distintas(self):
+        # 26₁₀ = 11010₂ = 32₈ = 1A₁₆
+        escrituras = {2: "11010", 8: "32", 10: "26", 16: "1A"}
+        for origen, texto in escrituras.items():
+            for destino, esperado in escrituras.items():
+                if origen == destino:
+                    continue
+                with self.subTest(origen=origen, destino=destino):
+                    conversion = convertir(texto, origen, destino)
+                    self.assertEqual(conversion.resultado, esperado)
+                    self.assertEqual(conversion.valor_decimal, 26)
+
+    def test_una_etapa_cuando_interviene_decimal(self):
+        desde = convertir("13", 10, 2)
+        self.assertIsNone(desde.hacia_decimal)
+        self.assertEqual(desde.desde_decimal.resultado, "1101")
+        self.assertEqual([type(etapa).__name__ for etapa in desde.etapas], ["ConversionDesdeDecimal"])
+
+        hacia = convertir("1011", 2, 10)
+        self.assertIsNone(hacia.desde_decimal)
+        self.assertEqual(hacia.hacia_decimal.resultado, 11)
+        self.assertEqual(hacia.resultado, "11")
+        self.assertEqual([type(etapa).__name__ for etapa in hacia.etapas], ["ConversionHaciaDecimal"])
+
+    def test_dos_etapas_cuando_ninguna_base_es_decimal(self):
+        conversion = convertir("1010", 2, 16)
+        self.assertEqual(conversion.valor_decimal, 10)
+        self.assertEqual(conversion.resultado, "A")
+        self.assertEqual(
+            [type(etapa).__name__ for etapa in conversion.etapas],
+            ["ConversionHaciaDecimal", "ConversionDesdeDecimal"],
+        )
+        # Etapa 1: expansión posicional 1·2³ + 0·2² + 1·2¹ + 0·2⁰ = 10.
+        self.assertEqual([p.contribucion for p in conversion.hacia_decimal.pasos], [8, 0, 2, 0])
+        # Etapa 2: 10 ÷ 16 = 0, residuo 10 → A.
+        self.assertEqual(
+            [(p.dividendo, p.cociente, p.residuo, p.simbolo_residuo) for p in conversion.desde_decimal.pasos],
+            [(10, 0, 10, "A")],
+        )
+
+    def test_origen_y_destino_deben_ser_distintos(self):
+        for base in (2, 8, 10, 16):
+            with self.subTest(base=base):
+                with self.assertRaisesRegex(ValueError, "deben ser distintas"):
+                    convertir("1", base, base)
+
+    def test_reutiliza_la_validacion_existente(self):
+        with self.assertRaisesRegex(ValueError, "dígito 2.*binario"):
+            convertir("102", 2, 16)
+        with self.assertRaisesRegex(ValueError, "Ingresa un número"):
+            convertir("   ", 8, 2)
+        with self.assertRaisesRegex(ValueError, "no negativos"):
+            convertir("-1", 10, 16)
+        with self.assertRaisesRegex(ValueError, "base debe ser"):
+            convertir("1", 3, 10)
+        self.assertEqual(convertir("  ff ", 16, 2).resultado, "11111111")
+        self.assertEqual(convertir("0", 8, 16).resultado, "0")
 
 
 class PruebasValidacion(unittest.TestCase):

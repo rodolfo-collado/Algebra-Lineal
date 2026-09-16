@@ -4,48 +4,110 @@
     const root = document.querySelector("[data-conversion-bases]");
     if (!root) return;
 
-    const modos = root.querySelectorAll('input[name="modo"]');
-    const bases = root.querySelectorAll('input[name="base"]');
+    const origen = root.querySelector('select[name="base_origen"]');
+    const destino = root.querySelector('select[name="base_destino"]');
+    const campo = root.querySelector('input[name="numero"]');
+    const intercambiar = root.querySelector("[data-intercambiar-bases]");
+    const aviso = root.querySelector("[data-validacion-cliente]");
     const teclados = root.querySelectorAll("[data-teclado-base]");
     const etiquetasNumero = root.querySelectorAll("[data-number-label-base]");
-    const legendDesde = root.querySelector("[data-base-legend-desde]");
-    const legendHacia = root.querySelector("[data-base-legend-hacia]");
+    if (!origen || !destino || !campo) return;
 
-    function modoActivo() {
-        const marcado = root.querySelector('input[name="modo"]:checked');
-        return marcado ? marcado.value : "desde_decimal";
+    let origenAnterior = origen.value;
+    let destinoAnterior = destino.value;
+
+    function bloqueActivo() {
+        return Array.from(teclados).find((bloque) => bloque.dataset.tecladoBase === origen.value) || null;
     }
 
-    function baseActiva() {
-        const marcado = root.querySelector('input[name="base"]:checked');
-        return marcado ? Number(marcado.value) : 2;
+    // Los dígitos válidos salen de las teclas del teclado activo: una sola fuente de verdad.
+    function digitosValidos() {
+        const bloque = bloqueActivo();
+        if (!bloque) return null;
+        return new Set(Array.from(bloque.querySelectorAll("button[data-insercion]"), (tecla) => tecla.dataset.insercion));
     }
 
-    // Desde decimal se escribe en base 10; hacia decimal, en la base elegida.
-    function baseEntrada() {
-        return modoActivo() === "desde_decimal" ? 10 : baseActiva();
+    function mensajeInvalido(texto) {
+        const bloque = bloqueActivo();
+        const validos = digitosValidos();
+        if (!bloque || !validos) return "";
+        const limpio = texto.trim();
+        if (!limpio) return "";
+        if (limpio[0] === "+" || limpio[0] === "-") {
+            return "Este módulo convierte solo números enteros no negativos.";
+        }
+        if (/\s/.test(limpio)) return "El número no debe contener espacios en medio.";
+        for (const caracter of limpio) {
+            const simbolo = caracter.toUpperCase();
+            if (validos.has(simbolo)) continue;
+            if (origen.value === "16") return `${simbolo} no es un dígito hexadecimal válido.`;
+            return `El dígito ${caracter} no es válido en un número ${bloque.dataset.nombreBase}.`;
+        }
+        return "";
+    }
+
+    function validar() {
+        if (!aviso) return;
+        const mensaje = mensajeInvalido(campo.value);
+        aviso.textContent = mensaje;
+        aviso.hidden = !mensaje;
+        if (mensaje) {
+            campo.setAttribute("aria-invalid", "true");
+        } else {
+            campo.removeAttribute("aria-invalid");
+        }
+    }
+
+    // Una base no puede ser origen y destino a la vez: se apaga en el otro selector.
+    function sincronizarOpciones() {
+        Array.from(destino.options).forEach((opcion) => { opcion.disabled = opcion.value === origen.value; });
+        Array.from(origen.options).forEach((opcion) => { opcion.disabled = opcion.value === destino.value; });
     }
 
     function actualizar() {
-        const desde = modoActivo() === "desde_decimal";
-        if (legendDesde) legendDesde.hidden = !desde;
-        if (legendHacia) legendHacia.hidden = desde;
-
-        const activa = baseEntrada();
-        etiquetasNumero.forEach((etiqueta) => {
-            etiqueta.hidden = Number(etiqueta.dataset.numberLabelBase) !== activa;
-        });
         teclados.forEach((bloque) => {
-            const corresponde = Number(bloque.dataset.tecladoBase) === activa;
+            const corresponde = bloque.dataset.tecladoBase === origen.value;
             bloque.hidden = !corresponde;
             // El teclado interno nace hidden hasta que teclado.js lo revela;
             // al cambiar de base hay que volver a mostrar el contenedor activo.
             const teclado = bloque.querySelector(".math-keyboard");
             if (teclado && corresponde) teclado.hidden = false;
         });
+        etiquetasNumero.forEach((etiqueta) => {
+            etiqueta.hidden = etiqueta.dataset.numberLabelBase !== origen.value;
+        });
+        sincronizarOpciones();
+        validar();
     }
 
-    modos.forEach((input) => input.addEventListener("change", actualizar));
-    bases.forEach((input) => input.addEventListener("change", actualizar));
+    origen.addEventListener("change", () => {
+        // Elegir como origen la base de destino equivale a intercambiarlas.
+        if (origen.value === destino.value) destino.value = origenAnterior;
+        origenAnterior = origen.value;
+        destinoAnterior = destino.value;
+        actualizar();
+    });
+
+    destino.addEventListener("change", () => {
+        if (destino.value === origen.value) origen.value = destinoAnterior;
+        origenAnterior = origen.value;
+        destinoAnterior = destino.value;
+        actualizar();
+    });
+
+    if (intercambiar) {
+        intercambiar.hidden = false;
+        intercambiar.addEventListener("click", () => {
+            const valorOrigen = origen.value;
+            origen.value = destino.value;
+            destino.value = valorOrigen;
+            origenAnterior = origen.value;
+            destinoAnterior = destino.value;
+            actualizar();
+            campo.focus();
+        });
+    }
+
+    campo.addEventListener("input", validar);
     actualizar();
 })();

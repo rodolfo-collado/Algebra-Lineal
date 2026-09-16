@@ -45,6 +45,28 @@ class ConversionHaciaDecimal:
     pasos: tuple[PasoExpansion, ...]
 
 
+@dataclass(frozen=True)
+class Conversion:
+    """Conversión entre dos bases cualesquiera, compuesta por una o dos etapas.
+
+    ``hacia_decimal`` existe cuando la base de origen no es decimal y
+    ``desde_decimal`` cuando la de destino no lo es; entre ambas queda el
+    valor decimal intermedio.
+    """
+
+    texto_original: str
+    base_origen: int
+    base_destino: int
+    valor_decimal: int
+    resultado: str
+    hacia_decimal: ConversionHaciaDecimal | None
+    desde_decimal: ConversionDesdeDecimal | None
+
+    @property
+    def etapas(self) -> tuple[ConversionHaciaDecimal | ConversionDesdeDecimal, ...]:
+        return tuple(etapa for etapa in (self.hacia_decimal, self.desde_decimal) if etapa)
+
+
 def decimal_a_base(valor: int, base_destino: int) -> ConversionDesdeDecimal:
     """Convierte un entero decimal no negativo a otra base por divisiones sucesivas.
 
@@ -162,3 +184,43 @@ def parsear_decimal(texto: str) -> int:
     for digito in significativo:
         total = total * 10 + digito_a_valor(digito)
     return total
+
+
+def convertir(texto: str, base_origen: int, base_destino: int) -> Conversion:
+    """Convierte entre dos bases distintas pasando por decimal.
+
+    No hay un algoritmo por cada par de bases: cualquier conversión se
+    resuelve con los dos ya existentes. Si la base de origen no es decimal,
+    la expansión posicional obtiene el valor decimal; si la de destino no es
+    decimal, las divisiones sucesivas lo escriben en esa base.
+
+    Ejemplo: 1010₂ → 10₁₀ (expansión) → A₁₆ (divisiones).
+    """
+    validar_base(base_origen)
+    validar_base(base_destino)
+    if base_origen == base_destino:
+        raise ValueError("La base de origen y la base de destino deben ser distintas.")
+
+    hacia_decimal = None
+    if base_origen == 10:
+        valor_decimal = parsear_decimal(texto)
+    else:
+        hacia_decimal = base_a_decimal(texto, base_origen)
+        valor_decimal = hacia_decimal.resultado
+
+    desde_decimal = None
+    if base_destino == 10:
+        resultado = str(valor_decimal)
+    else:
+        desde_decimal = decimal_a_base(valor_decimal, base_destino)
+        resultado = desde_decimal.resultado
+
+    return Conversion(
+        texto_original=texto.strip(),
+        base_origen=base_origen,
+        base_destino=base_destino,
+        valor_decimal=valor_decimal,
+        resultado=resultado,
+        hacia_decimal=hacia_decimal,
+        desde_decimal=desde_decimal,
+    )

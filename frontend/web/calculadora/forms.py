@@ -177,31 +177,15 @@ class SistemaForm(forms.Form):
 
 
 class ConversionBasesForm(forms.Form):
-    """Una sola herramienta: desde decimal o hacia decimal, con la otra base elegida."""
+    """Un número, su base de origen y la base de destino; las bases deben diferir."""
 
-    MODOS = (
-        ("desde_decimal", "Desde decimal"),
-        ("hacia_decimal", "Hacia decimal"),
-    )
     BASES = (
         (2, "Binario"),
         (8, "Octal"),
+        (10, "Decimal"),
         (16, "Hexadecimal"),
     )
 
-    modo = forms.ChoiceField(
-        label="Dirección",
-        choices=MODOS,
-        initial="desde_decimal",
-        widget=forms.RadioSelect,
-    )
-    base = forms.TypedChoiceField(
-        label="Otra base",
-        choices=BASES,
-        coerce=int,
-        initial=2,
-        widget=forms.RadioSelect,
-    )
     numero = forms.CharField(
         label="Número",
         required=False,
@@ -215,6 +199,29 @@ class ConversionBasesForm(forms.Form):
             }
         ),
     )
+    base_origen = forms.TypedChoiceField(
+        label="Base de origen",
+        choices=BASES,
+        coerce=int,
+        initial=10,
+        widget=forms.Select(attrs={"class": "field-select"}),
+    )
+    base_destino = forms.TypedChoiceField(
+        label="Base de destino",
+        choices=BASES,
+        coerce=int,
+        initial=2,
+        widget=forms.Select(attrs={"class": "field-select"}),
+    )
 
     def clean_numero(self):
         return self.cleaned_data.get("numero", "")
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("base_origen") and datos.get("base_origen") == datos.get("base_destino"):
+            self.add_error(
+                "base_destino",
+                "La base de origen y la base de destino deben ser distintas.",
+            )
+        return datos

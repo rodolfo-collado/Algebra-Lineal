@@ -12,78 +12,47 @@
                 </div>
             {% endif %}
 
-            <section class="workspace-section" aria-labelledby="direction-title">
-                <h3 id="direction-title" class="section-title">¿Qué quieres convertir?</h3>
-
-                <fieldset class="choice-fieldset">
-                    <legend>{{ form.modo.label }}</legend>
-                    <div class="choice-row">
-                        {% for radio in form.modo %}
-                            <label class="choice">
-                                {{ radio.tag }}
-                                <span class="choice-indicator" aria-hidden="true"></span>
-                                <span class="choice-copy">
-                                    <span class="choice-title">{{ radio.choice_label }}</span>
-                                    {% if radio.data.value == "desde_decimal" %}
-                                        <span class="choice-hint">Decimal → binario, octal o hexadecimal</span>
-                                    {% else %}
-                                        <span class="choice-hint">Binario, octal o hexadecimal → decimal</span>
-                                    {% endif %}
-                                </span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                    {% for error in form.modo.errors %}
-                        <p class="field-error">{{ error }}</p>
+            <div id="number-fields" class="field-group">
+                <label for="{{ form.numero.id_for_label }}">
+                    {% for base, nombre, teclado in bases_entrada %}
+                        <span data-number-label-base="{{ base }}" {% if base != base_entrada_activa %}hidden{% endif %}>Número {{ nombre }}</span>
                     {% endfor %}
-                </fieldset>
+                </label>
+                <p class="field-help">Escribe solo dígitos válidos en la base de origen; el teclado de abajo se adapta a ella.</p>
+                {{ form.numero }}
+                {% comment %}Aviso en vivo al cambiar de base o escribir; el servidor vuelve a validar al convertir.{% endcomment %}
+                <p class="field-error" data-validacion-cliente role="alert" hidden></p>
+                {% for error in form.numero.errors %}
+                    <p class="field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
 
-                <fieldset class="choice-fieldset">
-                    <legend>
-                        <span data-base-legend-desde>Base destino</span>
-                        <span data-base-legend-hacia hidden>Base de origen</span>
-                    </legend>
-                    <div class="choice-row choice-row-3">
-                        {% for radio in form.base %}
-                            <label class="choice">
-                                {{ radio.tag }}
-                                <span class="choice-indicator" aria-hidden="true"></span>
-                                <span class="choice-copy">
-                                    <span class="choice-title">{{ radio.choice_label }}</span>
-                                    <span class="choice-hint">base {{ radio.data.value }}</span>
-                                </span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                    {% for error in form.base.errors %}
-                        <p class="field-error">{{ error }}</p>
-                    {% endfor %}
-                </fieldset>
-            </section>
-
-            <section class="workspace-section" aria-labelledby="number-title">
-                <h3 id="number-title" class="section-title">Número</h3>
-                <div id="number-fields" class="field-group">
-                    <label for="{{ form.numero.id_for_label }}">
-                        {% for base, nombre in nombres_base.items %}
-                            <span data-number-label-base="{{ base }}" {% if base != base_entrada_activa %}hidden{% endif %}>Número {{ nombre }}</span>
-                        {% endfor %}
-                    </label>
-                    <p class="field-help" data-number-help>
-                        Escribe solo dígitos válidos para la base de entrada. El teclado de abajo se adapta a esa base.
-                    </p>
-                    {{ form.numero }}
-                    {% for error in form.numero.errors %}
+            <div class="base-selectors" role="group" aria-label="Bases de la conversión">
+                <div class="base-selector">
+                    <label for="{{ form.base_origen.id_for_label }}">{{ form.base_origen.label }}</label>
+                    {{ form.base_origen }}
+                    {% for error in form.base_origen.errors %}
                         <p class="field-error" role="alert">{{ error }}</p>
                     {% endfor %}
-
-                    {% for base, teclado in teclados_base.items %}
-                        <div class="base-keyboard" data-teclado-base="{{ base }}" {% if base != base_entrada_activa %}hidden{% endif %}>
-                            {% include "calculadora/components/math_keyboard.html" with teclado=teclado campos_id="number-fields" %}
-                        </div>
+                </div>
+                <button type="button" class="base-swap" data-intercambiar-bases
+                        aria-label="Intercambiar base de origen y base de destino" title="Intercambiar bases" hidden>
+                    <span aria-hidden="true">⇄</span>
+                </button>
+                <div class="base-selector">
+                    <label for="{{ form.base_destino.id_for_label }}">{{ form.base_destino.label }}</label>
+                    {{ form.base_destino }}
+                    {% for error in form.base_destino.errors %}
+                        <p class="field-error" role="alert">{{ error }}</p>
                     {% endfor %}
                 </div>
-            </section>
+            </div>
+
+            {% for base, nombre, teclado in bases_entrada %}
+                <div class="base-keyboard" data-teclado-base="{{ base }}" data-nombre-base="{{ nombre }}" {% if base != base_entrada_activa %}hidden{% endif %}>
+                    {% include "calculadora/components/math_keyboard.html" with teclado=teclado campos_id="number-fields" %}
+                </div>
+            {% endfor %}
 
             <div class="workspace-actions">
                 <button class="btn btn-primary" type="submit">Convertir</button>

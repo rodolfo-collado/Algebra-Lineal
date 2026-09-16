@@ -6,11 +6,13 @@ paso a paso para poder mostrarla en el procedimiento académico.
 """
 
 from .conversion import (
+    Conversion,
     ConversionDesdeDecimal,
     ConversionHaciaDecimal,
     PasoDivision,
     PasoExpansion,
     base_a_decimal,
+    convertir,
     decimal_a_base,
     parsear_decimal,
 )
@@ -28,11 +30,13 @@ __all__ = [
     "BASES_SOPORTADAS",
     "NOMBRES_BASE",
     "SUBINDICES_BASE",
+    "Conversion",
     "ConversionDesdeDecimal",
     "ConversionHaciaDecimal",
     "PasoDivision",
     "PasoExpansion",
     "base_a_decimal",
+    "convertir",
     "decimal_a_base",
     "digito_a_valor",
     "normalizar_numero",

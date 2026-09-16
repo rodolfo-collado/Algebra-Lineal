@@ -197,7 +197,10 @@ esté orientado a resolver sistemas.
 ## Sistemas numéricos
 
 La herramienta **Conversión de bases** (`/bases/conversion/`) convierte enteros
-no negativos en dos direcciones, y el usuario elige la otra base en cada caso:
+no negativos entre binario, octal, decimal y hexadecimal: se escribe el número y
+se eligen la base de origen y la de destino (distintas; un botón las
+intercambia). Solo hay dos algoritmos, y cualquier par de bases se resuelve con
+ellos:
 
 - **Decimal → binario, octal o hexadecimal**, por divisiones sucesivas: se
   divide el número entre la base, se guarda el residuo y se repite con el
@@ -207,6 +210,9 @@ no negativos en dos direcciones, y el usuario elige la otra base en cada caso:
   dígito se multiplica por la potencia de la base que corresponde a su posición
   y se suman los aportes. `1011₂ = 1·2³ + 0·2² + 1·2¹ + 1·2⁰ = 8 + 0 + 2 + 1 =
   11₁₀`.
+- **Entre dos bases no decimales**, encadenando los dos: primero la expansión
+  hacia decimal y después las divisiones hacia la base destino, con el valor
+  intermedio a la vista. `1010₂ = 10₁₀ = A₁₆`.
 
 En hexadecimal los residuos y dígitos `10`–`15` se escriben `A`–`F`; la entrada
 acepta minúsculas y el resultado se normaliza a mayúsculas. El procedimiento
@@ -220,7 +226,8 @@ El núcleo vive en `backend/sistemas_numericos/` y devuelve los pasos como datos
 aporte), sin HTML. No usa `bin`, `oct`, `hex` ni `int(texto, base)`: la
 conversión se construye a mano, y `tests/test_sistemas_numericos.py` lo
 comprueba con `ast`. El teclado en pantalla solo ofrece los dígitos válidos para
-la base de entrada (`0 1`, `0`–`7`, `0`–`9` o `0`–`F`).
+la base de origen (`0 1`, `0`–`7`, `0`–`9` o `0`–`F`) y, al cambiarla, la
+entrada se revisa al instante; el servidor vuelve a validar al convertir.
 
 ## Para usuarios finales: instalar en Windows
 

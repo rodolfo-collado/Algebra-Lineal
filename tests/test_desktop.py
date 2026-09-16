@@ -306,9 +306,9 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 data=urlencode(
                     {
                         "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
-                        "modo": "desde_decimal",
-                        "base": "2",
                         "numero": "13",
+                        "base_origen": "10",
+                        "base_destino": "2",
                     }
                 ).encode("ascii"),
                 headers={

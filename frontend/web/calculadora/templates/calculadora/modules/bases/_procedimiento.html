@@ -1,73 +1,83 @@
-{% comment %}Procedimiento a partir de datos estructurados del núcleo (no HTML generado en el backend).{% endcomment %}
+{% comment %}Procedimiento a partir de datos estructurados del núcleo (no HTML generado en el backend). Una etapa si interviene decimal; dos, encadenadas por el decimal intermedio, si ninguna base es decimal.{% endcomment %}
 
-{% if resultado.modo == "desde_decimal" %}
+{% if resultado.intermedio %}
     <p class="procedure-lead">
-        Divisiones sucesivas entre
-        {% if resultado.base_salida == 2 %}2{% elif resultado.base_salida == 8 %}8{% else %}16{% endif %}
-        y lectura de residuos de abajo hacia arriba.
+        Ninguna de las dos bases es decimal, así que la conversión pasa por decimal:
+        primero la expansión posicional y después las divisiones sucesivas.
     </p>
-
-    {% if resultado.pasos_division %}
-        <div class="table-wrap">
-            <table class="procedure-table">
-                <caption class="sr-only">Divisiones sucesivas</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">División</th>
-                        <th scope="col">Cociente</th>
-                        <th scope="col">Residuo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for paso in resultado.pasos_division %}
-                        <tr>
-                            <td>
-                                <span class="math-inline">{{ paso.dividendo }} ÷ {{ paso.base }}</span>
-                            </td>
-                            <td>{{ paso.cociente }}</td>
-                            <td>
-                                {% if paso.residuo >= 10 %}
-                                    <span class="math-inline">{{ paso.residuo }} → {{ paso.simbolo_residuo }}</span>
-                                {% else %}
-                                    {{ paso.simbolo_residuo }}
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <p class="procedure-note">{{ resultado.lectura_residuos }}</p>
-    {% else %}
-        <p class="procedure-note">{{ resultado.lectura_residuos }}</p>
-    {% endif %}
-
-{% else %}
-    <p class="procedure-lead">
-        Expansión posicional: cada dígito se multiplica por la potencia de la base según su posición.
-    </p>
-
-    {% if resultado.sustituciones_hex %}
-        <ul class="hex-map">
-            {% for paso in resultado.sustituciones_hex %}
-                <li><span class="math-inline">{{ paso.digito }} = {{ paso.valor }}</span></li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-
-    <p class="expansion-line" aria-label="Combinación lineal">
+    <p class="expansion-line stage-chain" aria-label="Cadena de conversión">
         <span class="base-numeral">{{ resultado.origen }}</span>
         <span aria-hidden="true"> = </span>
-        {% for paso in resultado.pasos_expansion %}
-            <span class="math-inline">{{ paso.valor }}·{% if resultado.base_entrada == 2 %}2{% elif resultado.base_entrada == 8 %}8{% else %}16{% endif %}<sup>{{ paso.posicion }}</sup></span>{% if not forloop.last %} + {% endif %}
-        {% endfor %}
-    </p>
-
-    <p class="expansion-line">
-        <span aria-hidden="true">= </span>{{ resultado.suma_parcial }}
-    </p>
-
-    <p class="expansion-line">
-        <span aria-hidden="true">= </span><span class="base-numeral base-numeral-result">{{ resultado.destino }}</span>
+        <span class="base-numeral">{{ resultado.intermedio }}</span>
+        <span aria-hidden="true"> = </span>
+        <span class="base-numeral base-numeral-result">{{ resultado.destino }}</span>
     </p>
 {% endif %}
+
+{% for etapa in resultado.etapas %}
+    <div class="procedure-stage">
+        {% if resultado.intermedio %}
+            <h4 class="stage-title">Etapa {{ forloop.counter }} · {{ etapa.titulo }}</h4>
+        {% endif %}
+
+        {% if etapa.tipo == "division" %}
+            <p class="procedure-lead">
+                Divisiones sucesivas entre {{ etapa.base_salida }} y lectura de residuos de abajo hacia arriba.
+            </p>
+            {% if etapa.pasos %}
+                <div class="table-wrap">
+                    <table class="procedure-table">
+                        <caption class="sr-only">Divisiones sucesivas de {{ etapa.origen }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">División</th>
+                                <th scope="col">Cociente</th>
+                                <th scope="col">Residuo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for paso in etapa.pasos %}
+                                <tr>
+                                    <td><span class="math-inline">{{ paso.dividendo }} ÷ {{ paso.base }}</span></td>
+                                    <td>{{ paso.cociente }}</td>
+                                    <td>
+                                        {% if paso.residuo >= 10 %}
+                                            <span class="math-inline">{{ paso.residuo }} → {{ paso.simbolo_residuo }}</span>
+                                        {% else %}
+                                            {{ paso.simbolo_residuo }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            <p class="procedure-note">{{ etapa.lectura_residuos }}</p>
+        {% else %}
+            <p class="procedure-lead">
+                Expansión posicional: cada dígito se multiplica por la potencia de la base según su posición.
+            </p>
+            {% if etapa.sustituciones_hex %}
+                <ul class="hex-map">
+                    {% for paso in etapa.sustituciones_hex %}
+                        <li><span class="math-inline">{{ paso.digito }} = {{ paso.valor }}</span></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <p class="expansion-line" aria-label="Combinación lineal">
+                <span class="base-numeral">{{ etapa.origen }}</span>
+                <span aria-hidden="true"> = </span>
+                {% for paso in etapa.pasos %}
+                    <span class="math-inline">{{ paso.valor }}·{{ etapa.base_entrada }}<sup>{{ paso.posicion }}</sup></span>{% if not forloop.last %} + {% endif %}
+                {% endfor %}
+            </p>
+            <p class="expansion-line">
+                <span aria-hidden="true">= </span>{{ etapa.suma_parcial }}
+            </p>
+            <p class="expansion-line">
+                <span aria-hidden="true">= </span><span class="base-numeral base-numeral-result">{{ etapa.destino }}</span>
+            </p>
+        {% endif %}
+    </div>
+{% endfor %}
