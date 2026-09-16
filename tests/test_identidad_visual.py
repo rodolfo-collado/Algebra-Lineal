@@ -99,8 +99,8 @@ class PruebasIdentidadVisual(SimpleTestCase):
 
     def test_inicio_eleva_identidad_y_areas(self):
         respuesta = self.client.get(reverse("calculadora:inicio"))
-        self.assertContains(respuesta, "Calculadora educativa")
-        self.assertContains(respuesta, 'aria-label="Acceso rápido"')
+        self.assertContains(respuesta, "Aprende resolviendo")
+        self.assertContains(respuesta, "Ver más temas")
         self.assertContains(respuesta, "home-hero")
         self.assertContains(respuesta, 'role="search"')
         self.assertContains(respuesta, "tool-link")

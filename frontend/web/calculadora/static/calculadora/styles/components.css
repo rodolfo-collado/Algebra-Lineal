@@ -129,24 +129,6 @@
     white-space: nowrap;
 }
 
-.chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2rem;
-    padding: 0.3rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-raised);
-    font-size: 0.82rem;
-    font-weight: 600;
-    transition: border-color var(--motion-fast), background var(--motion-fast);
-}
-
-.chip:hover {
-    border-color: var(--color-brand);
-    background: var(--color-brand-soft);
-}
-
 .field-error,
 .alert {
     color: var(--color-danger);
@@ -286,41 +268,38 @@
     font-size: 0.85rem;
 }
 
-/* —— Inicio —— */
+/* —— Inicio: punto de entrada, un buscador y los temas —— */
 
 .home-hero {
     display: grid;
-    gap: 0.5rem;
+    justify-items: center;
+    gap: 0.35rem;
     margin-bottom: 1.5rem;
-    padding: 1.25rem 1.35rem 1.35rem;
+    padding: 1.6rem 1.35rem 1.5rem;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface-raised);
     box-shadow: var(--shadow-sm);
+    text-align: center;
 }
 
 .home-hero .home-title {
-    font-size: clamp(1.5rem, 2.6vw, 1.95rem);
+    font-size: clamp(1.6rem, 2.8vw, 2.1rem);
+}
+
+.home-hero .home-lead {
+    font-size: 1rem;
 }
 
 .home-hero .search {
-    max-width: 44rem;
-    margin-top: 0.6rem;
+    width: min(100%, 40rem);
+    margin-top: 0.9rem;
+    text-align: left;
 }
 
-.quick-access {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-    margin-top: 0.35rem;
-}
-
-.quick-access-label {
-    margin-right: 0.2rem;
-    color: var(--color-muted);
-    font-size: 0.78rem;
-    font-weight: 700;
+.home-hero .search-label {
+    font-size: 1.05rem;
+    text-align: center;
 }
 
 .home-section {
@@ -342,56 +321,79 @@
     letter-spacing: -0.02em;
 }
 
-.home-area {
-    margin-top: 1.6rem;
+.home-area + .home-area,
+.home-more .home-area {
+    margin-top: 1.4rem;
 }
 
 .home-area[hidden],
-.home-category[hidden],
+.topic[hidden],
+.home-more[hidden],
 .tool-item[hidden] {
     display: none;
 }
 
-.home-area-description {
-    margin: 0 0 0.75rem;
-    font-size: 0.9rem;
+.home-area-title {
+    margin: 0 0 0.6rem;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
-.home-category {
-    margin-top: 0.85rem;
-    padding: 0.95rem 1.05rem 1.05rem;
+/* Temas: una tarjeta por categoría; al abrirla aparecen sus herramientas. */
+.topic-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    align-items: start;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.topic {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface-raised);
+    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
-.home-category-upcoming {
+.topic:hover,
+.topic[open] {
+    border-color: var(--color-brand);
+}
+
+.topic[open] {
+    box-shadow: var(--shadow-sm);
+}
+
+.topic-upcoming {
     background: var(--color-surface);
 }
 
-.home-category-heading {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    margin-bottom: 0.7rem;
-}
-
-.home-category-heading h3 {
-    display: flex;
-    flex-wrap: wrap;
+.topic-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "icon name chevron"
+        "icon description chevron";
     align-items: center;
-    gap: 0.45rem;
-    margin: 0 0 0.15rem;
-    font-size: 1rem;
-    letter-spacing: -0.01em;
+    column-gap: 0.7rem;
+    row-gap: 0.15rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: var(--radius-lg);
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
 }
 
-.home-category-heading p {
-    margin: 0;
-    font-size: 0.86rem;
+.topic-summary::-webkit-details-marker {
+    display: none;
 }
 
-.category-icon {
+.topic-summary .category-icon {
     display: grid;
     place-items: center;
     width: 2rem;

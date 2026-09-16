@@ -64,10 +64,12 @@ class PruebasNavegacionUnificada(SimpleTestCase):
     def test_inicio_y_busqueda_llevan_a_resolver_un_sistema(self):
         inicio = self.client.get("/")
         self.assertContains(inicio, 'href="/sistemas/"')
+        # Cada tema del Inicio despliega sus herramientas; ya no hay chips de acceso rápido.
         self.assertEqual(
-            [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "chip"],
+            [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
             ["/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/bases/conversion/"],
         )
+        self.assertNotContains(inicio, "Acceso rápido")
         for consulta in ("gauss", "clasificación", "columnas pivote"):
             with self.subTest(consulta=consulta):
                 respuesta = self.client.get("/", {"q": consulta})
