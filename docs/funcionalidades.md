@@ -206,9 +206,10 @@ dimensiones incompatibles se detectan antes de intentar resolver.
 ## Sistemas numéricos
 
 La herramienta **Conversión de bases** (`/bases/conversion/`) convierte enteros
-no negativos entre binario, octal, decimal y hexadecimal: se escribe el número y
-se eligen la base de origen y la de destino (distintas; un botón las
-intercambia). Solo hay dos algoritmos, y cualquier par de bases se resuelve con
+no negativos entre binario, octal, decimal y hexadecimal: se escribe el número,
+se elige una única base de origen y, bajo **Convertir a**, se marcan una, varias
+o todas las demás bases (la de origen no se ofrece como destino y hace falta al
+menos una). Solo hay dos algoritmos, y cualquier par de bases se resuelve con
 ellos:
 
 - **Decimal → binario, octal o hexadecimal**, por divisiones sucesivas: se
@@ -221,7 +222,15 @@ ellos:
   11₁₀`.
 - **Entre dos bases no decimales**, encadenando los dos: primero la expansión
   hacia decimal y después las divisiones hacia la base destino, con el valor
-  intermedio a la vista. `1010₂ = 10₁₀ = A₁₆`.
+  intermedio a la vista. `1010₂ → 10₁₀ → A₁₆`.
+
+Con varios destinos el procedimiento no se repite: cada etapa aparece una sola
+vez y solo se calcula lo pedido. Si el origen no es decimal, la expansión
+posicional es la etapa compartida y de su valor salen las divisiones de cada
+base marcada; si se marcó decimal, su resultado es ese valor intermedio y no
+genera una segunda etapa. Si el origen ya es decimal, no hay etapa intermedia.
+`17₈ → 15₁₀ → 1111₂ y F₁₆`: una expansión, dos divisiones y tres resultados
+(`1111₂`, `15₁₀`, `F₁₆`) si se marcaron las tres bases.
 
 En hexadecimal los residuos y dígitos `10`–`15` se escriben `A`–`F`; la entrada
 acepta minúsculas y el resultado se normaliza a mayúsculas. El procedimiento
@@ -232,11 +241,14 @@ otras bases.
 
 El núcleo vive en `backend/sistemas_numericos/` y devuelve los pasos como datos
 (dividendo, cociente, residuo y símbolo; o dígito, valor, posición, potencia y
-aporte), sin HTML. No usa `bin`, `oct`, `hex` ni `int(texto, base)`: la
-conversión se construye a mano, y `tests/test_sistemas_numericos.py` lo
-comprueba con `ast`. El teclado en pantalla solo ofrece los dígitos válidos para
-la base de origen (`0 1`, `0`–`7`, `0`–`9` o `0`–`F`) y, al cambiarla, la
-entrada se revisa al instante; el servidor vuelve a validar al convertir.
+aporte), sin HTML. `convertir_a_varias_bases` obtiene el decimal una vez y lo
+reparte entre los destinos; `convertir` es su caso de un solo destino. No usa
+`bin`, `oct`, `hex` ni `int(texto, base)`: la conversión se construye a mano, y
+`tests/test_sistemas_numericos.py` lo comprueba con `ast`. El teclado en
+pantalla solo ofrece los dígitos válidos para la base de origen (`0 1`, `0`–`7`,
+`0`–`9` o `0`–`F`) y, al cambiarla, la entrada se revisa al instante y la
+casilla de esa base desaparece de «Convertir a»; el servidor vuelve a validar al
+convertir (destinos válidos, sin repetir, sin la base de origen y al menos uno).
 
 ## Sistemas en la interfaz visual
 
