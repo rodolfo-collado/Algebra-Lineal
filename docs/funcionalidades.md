@@ -247,8 +247,10 @@ reparte entre los destinos; `convertir` es su caso de un solo destino. No usa
 `tests/test_sistemas_numericos.py` lo comprueba con `ast`. El teclado en
 pantalla solo ofrece los dígitos válidos para la base de origen (`0 1`, `0`–`7`,
 `0`–`9` o `0`–`F`) y, al cambiarla, la entrada se revisa al instante y la
-casilla de esa base desaparece de «Convertir a»; el servidor vuelve a validar al
-convertir (destinos válidos, sin repetir, sin la base de origen y al menos uno).
+casilla de esa base desaparece de «Convertir a» (sin JavaScript se ven las
+cuatro casillas); el servidor vuelve a validar al convertir: destinos válidos,
+sin repetir, sin la base de origen, al menos uno, y un número de hasta 128
+caracteres.
 
 ## Sistemas en la interfaz visual
 
