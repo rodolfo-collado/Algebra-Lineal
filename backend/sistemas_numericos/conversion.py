@@ -1,5 +1,6 @@
 """Algoritmos de conversión: divisiones sucesivas y expansión posicional."""
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from .digitos import digito_a_valor, potencia_entera, simbolo_de_valor
@@ -65,6 +66,36 @@ class Conversion:
     @property
     def etapas(self) -> tuple[ConversionHaciaDecimal | ConversionDesdeDecimal, ...]:
         return tuple(etapa for etapa in (self.hacia_decimal, self.desde_decimal) if etapa)
+
+
+@dataclass(frozen=True)
+class ResultadoDestino:
+    """Escritura del valor en una base pedida; con sus divisiones si no es decimal."""
+
+    base_destino: int
+    resultado: str
+    desde_decimal: ConversionDesdeDecimal | None
+
+
+@dataclass(frozen=True)
+class ConversionMultiple:
+    """Un número llevado a una o varias bases con el decimal obtenido una sola vez.
+
+    ``hacia_decimal`` es la etapa compartida (expansión posicional) y solo
+    existe cuando la base de origen no es decimal. ``destinos`` conserva el
+    orden pedido; cada uno trae divisiones sucesivas salvo el decimal, cuya
+    escritura es el propio valor intermedio.
+    """
+
+    texto_original: str
+    base_origen: int
+    valor_decimal: int
+    hacia_decimal: ConversionHaciaDecimal | None
+    destinos: tuple[ResultadoDestino, ...]
+
+    @property
+    def bases_destino(self) -> tuple[int, ...]:
+        return tuple(destino.base_destino for destino in self.destinos)
 
 
 def decimal_a_base(valor: int, base_destino: int) -> ConversionDesdeDecimal:
@@ -186,19 +217,29 @@ def parsear_decimal(texto: str) -> int:
     return total
 
 
-def convertir(texto: str, base_origen: int, base_destino: int) -> Conversion:
-    """Convierte entre dos bases distintas pasando por decimal.
+def convertir_a_varias_bases(
+    texto: str, base_origen: int, bases_destino: Iterable[int]
+) -> ConversionMultiple:
+    """Convierte un número a una o varias bases pasando por decimal una sola vez.
 
     No hay un algoritmo por cada par de bases: cualquier conversión se
     resuelve con los dos ya existentes. Si la base de origen no es decimal,
-    la expansión posicional obtiene el valor decimal; si la de destino no es
-    decimal, las divisiones sucesivas lo escriben en esa base.
+    una única expansión posicional obtiene el valor decimal; desde ese mismo
+    valor, las divisiones sucesivas escriben cada base pedida. Si decimal está
+    entre los destinos, su escritura es el valor intermedio: no se convierte
+    dos veces. Solo se calculan los destinos solicitados.
 
-    Ejemplo: 1010₂ → 10₁₀ (expansión) → A₁₆ (divisiones).
+    Ejemplo: 17₈ → 15₁₀ (expansión, una vez) → 1111₂ y F₁₆ (divisiones por destino).
     """
     validar_base(base_origen)
-    validar_base(base_destino)
-    if base_origen == base_destino:
+    destinos = tuple(bases_destino)
+    if not destinos:
+        raise ValueError("Elige al menos una base de destino.")
+    for base in destinos:
+        validar_base(base)
+    if len(set(destinos)) != len(destinos):
+        raise ValueError("Las bases de destino no deben repetirse.")
+    if base_origen in destinos:
         raise ValueError("La base de origen y la base de destino deben ser distintas.")
 
     hacia_decimal = None
@@ -208,19 +249,41 @@ def convertir(texto: str, base_origen: int, base_destino: int) -> Conversion:
         hacia_decimal = base_a_decimal(texto, base_origen)
         valor_decimal = hacia_decimal.resultado
 
-    desde_decimal = None
-    if base_destino == 10:
-        resultado = str(valor_decimal)
-    else:
-        desde_decimal = decimal_a_base(valor_decimal, base_destino)
-        resultado = desde_decimal.resultado
+    resultados: list[ResultadoDestino] = []
+    for base in destinos:
+        if base == 10:
+            resultados.append(ResultadoDestino(base, str(valor_decimal), None))
+        else:
+            desde_decimal = decimal_a_base(valor_decimal, base)
+            resultados.append(ResultadoDestino(base, desde_decimal.resultado, desde_decimal))
 
-    return Conversion(
+    return ConversionMultiple(
         texto_original=texto.strip(),
         base_origen=base_origen,
-        base_destino=base_destino,
         valor_decimal=valor_decimal,
-        resultado=resultado,
         hacia_decimal=hacia_decimal,
-        desde_decimal=desde_decimal,
+        destinos=tuple(resultados),
+    )
+
+
+def convertir(texto: str, base_origen: int, base_destino: int) -> Conversion:
+    """Convierte entre dos bases distintas pasando por decimal.
+
+    Es el caso de un solo destino de ``convertir_a_varias_bases``: si la base
+    de origen no es decimal, la expansión posicional obtiene el valor decimal;
+    si la de destino no es decimal, las divisiones sucesivas lo escriben en
+    esa base.
+
+    Ejemplo: 1010₂ → 10₁₀ (expansión) → A₁₆ (divisiones).
+    """
+    conversion = convertir_a_varias_bases(texto, base_origen, (base_destino,))
+    (destino,) = conversion.destinos
+    return Conversion(
+        texto_original=conversion.texto_original,
+        base_origen=base_origen,
+        base_destino=base_destino,
+        valor_decimal=conversion.valor_decimal,
+        resultado=destino.resultado,
+        hacia_decimal=conversion.hacia_decimal,
+        desde_decimal=destino.desde_decimal,
     )
