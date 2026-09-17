@@ -240,20 +240,25 @@ entrada se revisa al instante; el servidor vuelve a validar al convertir.
 
 ## Sistemas en la interfaz visual
 
-Inicio permite buscar una
-herramienta o explorar el catálogo por área y categoría; la barra lateral
-repite ese árbol en todas las páginas. Dentro de **Álgebra Lineal → Sistemas de
-ecuaciones** hay una sola herramienta, **Resolver un sistema** (`/sistemas/`),
-que se configura en el propio formulario:
+Inicio permite buscar una herramienta o entrar en un tema (Sistemas de
+ecuaciones, Vectores, Matrices; las demás áreas bajo «Ver más temas»); el
+menú ☰ abre el mismo árbol en cualquier página. Dentro de **Álgebra Lineal →
+Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
+(`/sistemas/`), que se configura en el propio formulario:
 
 | Opción | Valores | Predeterminado |
 | --- | --- | --- |
 | Método | Gauss, Gauss-Jordan o Comparar ambos | Gauss-Jordan |
 | Mostrar | Procedimiento, Clasificación, Columnas pivote, Sistema resultante | Todos activos |
 
-La matriz final y la solución se muestran siempre. **Comparar ambos** resuelve
+La matriz final y la solución se muestran siempre. Las casillas de Mostrar
+esperan plegadas bajo «Opciones de resultado». Tras resolver, el resultado va
+primero (clasificación, solución, matriz final) y el procedimiento después;
+«También puedes explorar» ofrece el mismo sistema con el otro método o
+comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve
 la misma entrada con los dos métodos y presenta un procedimiento por método;
-como la clasificación y la solución coinciden, aparecen una sola vez al final.
+como la clasificación y la solución coinciden, aparecen una sola vez, antes
+de los procedimientos.
 Las rutas de la versión anterior (`/sistemas/gauss/`, `/sistemas/gauss-jordan/`,
 `/sistemas/clasificacion/` y `/sistemas/columnas-pivote/`) redirigen a
 `/sistemas/`, las dos primeras con el método ya seleccionado.
@@ -278,8 +283,8 @@ delega los cálculos a `backend/`.
 El **teclado matemático** que acompaña a cada campo muestra notación
 matemática (`x₁`, `−`, `a⁄b`) e inserta la sintaxis que entiende el parser
 (`x1`, `-`, `/`), de modo que nadie necesita conocer esa sintaxis para escribir
-un sistema. Solo aparece con JavaScript y solo contiene teclas con una
-inserción real.
+un sistema. Va plegado bajo «Teclado matemático», solo aparece con JavaScript
+y solo contiene teclas con una inserción real.
 
 ## Operaciones matriciales y Ax = b
 

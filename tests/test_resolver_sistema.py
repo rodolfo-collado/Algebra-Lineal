@@ -64,10 +64,12 @@ class PruebasNavegacionUnificada(SimpleTestCase):
     def test_inicio_y_busqueda_llevan_a_resolver_un_sistema(self):
         inicio = self.client.get("/")
         self.assertContains(inicio, 'href="/sistemas/"')
+        # Cada tema del Inicio despliega sus herramientas; ya no hay chips de acceso rápido.
         self.assertEqual(
-            [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "chip"],
+            [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
             ["/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/bases/conversion/"],
         )
+        self.assertNotContains(inicio, "Acceso rápido")
         for consulta in ("gauss", "clasificación", "columnas pivote"):
             with self.subTest(consulta=consulta):
                 respuesta = self.client.get("/", {"q": consulta})
@@ -132,8 +134,9 @@ class PruebasFormularioResolver(SimpleTestCase):
         html = pagina.content.decode("utf-8")
         for etiqueta in ("Gauss", "Gauss-Jordan", "Comparar ambos", "Procedimiento", "Clasificación", "Columnas pivote", "Sistema resultante"):
             self.assertIn(f"<span>{etiqueta}</span>", html)
-        # Los métodos y los bloques no son tarjetas grandes: van en píldoras compactas.
-        self.assertEqual(html.count('<label class="option">'), len(METODOS) + len(BLOQUES))
+        # El método es un selector segmentado y los bloques van en píldoras compactas, no en tarjetas.
+        self.assertEqual(html.count('<label class="option">'), len(BLOQUES))
+        self.assertEqual(html.count('<label class="segment">'), len(METODOS) + 2)
         self.assertNotIn('class="choice"', html)
 
     def test_tipo_de_entrada_es_un_selector_segmentado(self):
@@ -143,7 +146,8 @@ class PruebasFormularioResolver(SimpleTestCase):
         tipos = [c for c in documento.controles if c.get("name") == "tipo_entrada"]
         self.assertEqual([(c["type"], c["value"]) for c in tipos], [("radio", "sistema"), ("radio", "matriz")])
         self.assertEqual([c["value"] for c in tipos if "checked" in c], ["sistema"])
-        self.assertEqual(html.count('<label class="segment">'), 2)
+        # Dos segmentos para la entrada más los del método, que comparte el mismo patrón compacto.
+        self.assertEqual(html.count('<label class="segment">'), 2 + len(METODOS))
         self.assertIn("<span>Sistema de ecuaciones</span>", html)
         self.assertIn("<span>Matriz aumentada</span>", html)
         # Una explicación por opción; solo la de la opción elegida queda visible sin JavaScript.
@@ -206,12 +210,12 @@ class PruebasMetodos(SimpleTestCase):
         self.assertEqual(texto.count("Matriz inicial"), 1)
         self.assertLess(texto.index("Matriz escalonada"), texto.index("Matriz reducida"))
         self.assertEqual(texto.count("Sustitución regresiva"), 1)
-        # Pivotes, clasificación y solución son comunes: aparecen una sola vez, al final.
+        # Pivotes, clasificación y solución son comunes: aparecen una sola vez, antes de los procedimientos.
         self.assertEqual(texto.count("Columnas pivote:"), 1)
         self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count('class="classification"'), 1)
         self.assertEqual(texto.count("Solución x1 = 2 x2 = 1"), 1)
-        self.assertLess(texto.index("Matriz reducida"), texto.index("Resultado final"))
+        self.assertLess(texto.index("Resultado final"), texto.index("Matriz escalonada"))
         # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
         self.assertEqual(html.count(' pivot"'), 8)
         self.assertEqual(html.count('<section class="panel panel-method"'), 2)
@@ -243,8 +247,8 @@ class PruebasMetodos(SimpleTestCase):
         texto = seccion_resultado(con)
         self.assertEqual(texto.count("Columnas pivote:"), 1)
         self.assertEqual(html.count('class="pivot-block"'), 1)
-        self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
-        self.assertLess(texto.index("Columnas pivote:"), texto.index("Solución"))
+        self.assertLess(texto.index("Resultado final"), texto.index("Solución"))
+        self.assertLess(texto.index("Solución"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count(' pivot"'), 8)
 
         sin, _ = self.resolver("comparar", mostrar=["procedimiento", "clasificacion"])
@@ -282,8 +286,8 @@ class PruebasBloquesDelResultado(SimpleTestCase):
     def test_la_solucion_final_siempre_se_muestra(self):
         respuesta = self.resolver([])
         texto = seccion_resultado(respuesta)
-        self.assertIn("Resultado Gauss Resultado final Matriz escalonada", texto)
-        self.assertIn("Solución x1 = 2 x2 = 1", texto)
+        # La solución encabeza el resultado; la matriz final la acompaña después.
+        self.assertIn("Resultado Gauss Resultado final Solución x1 = 2 x2 = 1 Matriz escalonada", texto)
         for ausente in ("Matriz inicial", "Procedimiento paso a paso", "Columnas pivote", "Sistema resultante",
                         "Sustitución regresiva", "Clasificación", "Consistente"):
             self.assertNotIn(ausente, texto)

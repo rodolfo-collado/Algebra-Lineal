@@ -274,7 +274,8 @@ fieldset {
     margin: 0 0 1rem;
 }
 
-.choice-fieldset:last-child {
+.choice-fieldset:last-child,
+.disclosure-body.choice-fieldset {
     margin-bottom: 0;
 }
 
@@ -287,9 +288,27 @@ label[for="id_sistema"],
     font-weight: 700;
 }
 
-/* Selector segmentado: dos opciones siempre visibles, con radios reales dentro. */
+/* Método y tipo de entrada comparten una fila compacta; en pantallas estrechas se apilan. */
+.choice-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.75rem;
+}
+
+.choice-row .choice-fieldset {
+    flex: 1 1 auto;
+    margin: 0;
+}
+
+.choice-row .option-help {
+    margin-top: 0.45rem;
+}
+
+/* Selector segmentado: pocas opciones siempre visibles, con radios reales dentro;
+   con más de dos, las opciones envuelven en vez de desbordar. */
 .segmented {
     display: inline-flex;
+    flex-wrap: wrap;
     max-width: 100%;
     padding: 0.2rem;
     border: 1px solid var(--color-border);
@@ -506,6 +525,22 @@ textarea:focus {
     letter-spacing: -0.02em;
 }
 
+/* El resultado encabeza la sección: la clasificación va pegada al título del panel. */
+.panel-title + .classification {
+    margin-top: 0;
+}
+
+.results-actions {
+    margin: 0.9rem 0 0;
+}
+
+/* Tras «Ver procedimiento», la matriz final y sus bloques empiezan como sección aparte. */
+.results-actions + .final-block {
+    margin-top: 1.15rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
 .pivot-legend {
     margin: 0.5rem 0 0;
     font-size: 0.8rem;
@@ -680,7 +715,7 @@ textarea:focus {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    margin-top: 1.15rem;
+    margin: 1.15rem 0 0.9rem;
     padding: 0.9rem 0.95rem;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -1292,9 +1327,11 @@ textarea:focus {
         display: flex;
     }
 
+    /* Cada segmento toma el ancho de su texto; si no caben, pasan a otra fila. */
     .segment {
-        flex: 1;
+        flex: 1 1 auto;
         justify-content: center;
+        white-space: nowrap;
     }
 
     .base-selectors {

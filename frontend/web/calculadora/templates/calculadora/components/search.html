@@ -2,7 +2,7 @@
 <form class="search{% if search_large %} search-large{% endif %}" role="search" method="get"
       action="{% url 'calculadora:inicio' %}"
       data-buscador="{{ search_target }}">
-    <label class="{% if search_large %}search-label{% else %}sr-only{% endif %}" for="{{ search_id }}">Buscar herramientas</label>
+    <label class="{% if search_large %}search-label{% else %}sr-only{% endif %}" for="{{ search_id }}">{{ search_label|default:"Buscar herramientas" }}</label>
     <div class="search-field">
         <div class="search-box">
             <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">

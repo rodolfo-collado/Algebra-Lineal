@@ -1,0 +1,16 @@
+{% comment %}«También puedes explorar»: conexiones educativas que una herramienta ofrece después de resolver. Solo enlaza a rutas que ya existen; aparece únicamente cuando la vista entrega exploraciones.{% endcomment %}
+{% if exploraciones %}
+    <section class="explore" aria-labelledby="explore-title">
+        <h2 id="explore-title" class="explore-title">También puedes explorar</h2>
+        <ul class="explore-list">
+            {% for exploracion in exploraciones %}
+                <li>
+                    <a class="explore-link" href="{{ exploracion.url }}">
+                        <span class="explore-arrow" aria-hidden="true">→</span>
+                        <span>{{ exploracion.texto }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% endif %}

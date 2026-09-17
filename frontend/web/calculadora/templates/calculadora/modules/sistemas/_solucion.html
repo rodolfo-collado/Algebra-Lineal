@@ -1,4 +1,4 @@
-{% comment %}La solución final siempre se muestra; las guías, plegadas, van después del resultado matemático.{% endcomment %}
+{% comment %}La solución final siempre se muestra y encabeza el resultado, junto a la clasificación.{% endcomment %}
 <div class="final-block solution">
     <h4 class="final-label">Solución</h4>
     {% if resultado.justificacion %}
@@ -16,16 +16,3 @@
         </ul>
     {% endif %}
 </div>
-
-{% if guias %}
-    {# Contenido educativo en segundo plano: no compite con el resultado. #}
-    <details class="insight" id="entender-resultado">
-        <summary class="insight-summary">
-            <svg class="insight-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Entender este resultado
-        </summary>
-        {% include "calculadora/components/concept_guide.html" %}
-    </details>
-{% endif %}

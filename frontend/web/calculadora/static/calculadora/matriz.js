@@ -156,6 +156,18 @@
     tipoEntrada.forEach((input) => {
         input.addEventListener("change", setInputMode);
     });
+
+    // La pista del método sigue a la opción elegida; sin JavaScript queda la del servidor.
+    function setMethodHint() {
+        const selected = document.querySelector('input[name="metodo"]:checked');
+        document.querySelectorAll("[data-method-hint]").forEach((hint) => {
+            hint.hidden = hint.dataset.methodHint !== selected?.value;
+        });
+    }
+    document.querySelectorAll('input[name="metodo"]').forEach((input) => {
+        input.addEventListener("change", setMethodHint);
+    });
+    setMethodHint();
     equationsInput.addEventListener("input", renderMatrix);
     variablesInput.addEventListener("input", renderMatrix);
 
