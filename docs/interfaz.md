@@ -63,6 +63,17 @@ teclado, las opciones del resultado y las conexiones educativas se despliegan
 solo cuando hacen falta. Al añadir módulos (Cálculo, Estadística, …) esta
 jerarquía crece por áreas y temas, no con más tarjetas en el Inicio.
 
+## Principio: solo la información que pide cada acción
+
+La cantidad de información mostrada depende de la acción del usuario, no de
+toda la información que el sistema sea capaz de producir. Los cálculos y
+explicaciones comunes se presentan una sola vez y se reutilizan cuando varias
+salidas dependen de ellos. Conversión de bases es la referencia: al pedir
+varias bases, el resultado lista solo las escrituras marcadas y el
+procedimiento muestra la expansión hacia decimal una vez, con una rama de
+divisiones por cada destino que la necesita. La reducción elimina repetición,
+no evidencia ni procedimiento educativo.
+
 ## Shell y navegación
 
 `templates/calculadora/base.html` monta el header (`☰ Menú`, marca y selector
@@ -300,6 +311,32 @@ interpretación) precede a `_equivalencias.html` (ecuación matricial, ecuación
 vectorial con las columnas de A, sistema equivalente y `[A | b]` con
 `matrix.html`) y a los paneles de eliminación; al comparar, el resultado se
 muestra una vez y hay un panel por método.
+
+## Conversión de bases
+
+`/bases/conversion/` (`ConversionBasesForm`, `servicios_bases.py`,
+`modules/bases/`) pide el número, una única base de origen (`<select>`) y las
+bases de destino bajo **Convertir a**: un `fieldset` con `legend` y una casilla
+real por base, descrito por su ayuda y sus errores (`aria-describedby`).
+`conversion.js` oculta y desactiva la casilla de la base de origen al cargar y
+al cambiar el origen, conserva las demás marcas y avisa en vivo si no queda
+ningún destino; sin JavaScript se ven las cuatro casillas y el servidor rechaza
+origen = destino, cero destinos, destinos repetidos, bases inexistentes, campos
+ajenos o repetidos y números de más de `LONGITUD_MAXIMA` caracteres, siempre
+con un mensaje comprensible. No hay botón de intercambio ni botones por par de
+bases.
+
+El resultado (`.base-results`) escribe el origen una sola vez y, debajo, una
+escritura por destino con el nombre de su base, en el orden de las casillas.
+El procedimiento (`_procedimiento.html`) aplica el
+[principio de no repetición](#principio-solo-la-información-que-pide-cada-acción):
+si el origen no es decimal, la ruta `origen → decimal intermedio → ramas`
+(`.stage-route`) y la Etapa 1 (expansión posicional) aparecen una vez y cada
+destino no decimal añade solo su etapa de divisiones; el destino decimal, si se
+pidió, es ese valor intermedio y no genera una etapa propia. Con origen decimal
+no hay etapa intermedia. Los datos llegan del servicio (`resultados`, `etapas`,
+`intermedio`, `ramas`, `decimal_pedido`); la plantilla no calcula ni repite.
+El teclado contextual sigue a la base de origen, como en el resto de módulos.
 
 ## Guía educativa
 

@@ -20,8 +20,9 @@ de Django —incluidas sus entradas textual y matricial—, la infraestructura
 desktop, el registro de herramientas, la navegación, el buscador, los
 breadcrumbs, el teclado matemático, las opciones de Resolver un sistema
 —método, comparación, bloques del resultado y rutas antiguas—, la conversión de
-bases —resultados, pasos del procedimiento, mensajes de error y su integración
-web—, las operaciones con vectores —suma, resta, escalar, combinación lineal
+bases —resultados, pasos del procedimiento, mensajes de error, conversiones a
+varias bases con el decimal calculado una sola vez y su integración web—, las
+operaciones con vectores —suma, resta, escalar, combinación lineal
 con solución única, infinitas o inconsistente, dimensión arbitraria, fracciones
 exactas, la reutilización del motor de sistemas, la estructura dinámica del
 formulario y los POST manipulados—, las operaciones con matrices —suma, resta,

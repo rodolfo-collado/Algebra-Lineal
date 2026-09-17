@@ -907,11 +907,12 @@ textarea:focus {
     color: var(--color-muted);
 }
 
+/* Origen a la izquierda y las casillas «Convertir a» a la derecha; en pantallas estrechas se apilan. */
 .base-selectors {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: end;
-    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    align-items: start;
+    gap: 0.75rem 1.25rem;
     margin-top: 1rem;
 }
 
@@ -926,34 +927,8 @@ textarea:focus {
     font-weight: 700;
 }
 
-/* Botón de intercambio: solo funciona con JavaScript, por eso nace oculto. */
-.base-swap {
-    display: grid;
-    place-items: center;
-    width: 2.6rem;
-    height: 2.6rem;
-    margin-bottom: 0.05rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-muted);
-    color: var(--color-brand);
-    font-size: 1.25rem;
-    line-height: 1;
-    cursor: pointer;
-    transition: border-color var(--motion-fast), background var(--motion-fast);
-}
-
-.base-swap:hover {
-    border-color: var(--color-brand);
-    background: var(--color-brand-soft);
-}
-
-.base-swap:focus-visible {
-    outline: 3px solid var(--color-focus);
-    outline-offset: 2px;
-}
-
-.base-swap[hidden] {
+/* La casilla de la base de origen no se ofrece como destino. */
+.base-targets .option[hidden] {
     display: none;
 }
 
@@ -983,15 +958,74 @@ textarea:focus {
     font-weight: 600;
 }
 
-.base-equality {
+/* Ruta de la conversión: origen → decimal intermedio (una vez) → una rama por destino. */
+.stage-route {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.55rem 0.75rem;
+    align-items: center;
+    gap: 0.5rem 0.65rem;
+    margin: 0 0 1rem;
+    font-weight: 600;
+}
+
+.stage-route-arrow {
+    color: var(--color-muted);
+}
+
+.stage-route-node {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.stage-route-note {
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.stage-route-branches {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
     margin: 0;
+    padding: 0 0 0 0.75rem;
+    border-left: 2px solid var(--color-border);
+    list-style: none;
+}
+
+/* Resultado: el origen una sola vez y, debajo, una escritura por destino pedido. */
+.base-results {
+    display: grid;
+    gap: 0.4rem;
     font-size: 1.35rem;
     font-weight: 700;
     letter-spacing: 0.01em;
+}
+
+.base-results-origin {
+    margin: 0;
+}
+
+.base-results-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0 0 0 0.5rem;
+    list-style: none;
+}
+
+.base-result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.6rem;
+}
+
+.base-result-name {
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
 }
 
 .base-equals {
@@ -1002,6 +1036,8 @@ textarea:focus {
 .base-numeral {
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
+    /* Un número largo se parte antes que provocar desplazamiento horizontal. */
+    overflow-wrap: anywhere;
 }
 
 .base-numeral-result {
@@ -1338,11 +1374,6 @@ textarea:focus {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .base-swap {
-        justify-self: center;
-        margin: 0;
-    }
-
     .matrix-pair-arrow {
         justify-self: center;
         transform: rotate(90deg);
@@ -1352,7 +1383,7 @@ textarea:focus {
         width: 100%;
     }
 
-    .base-equality {
+    .base-results {
         font-size: 1.15rem;
     }
 }

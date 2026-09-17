@@ -35,17 +35,22 @@
                         <p class="field-error" role="alert">{{ error }}</p>
                     {% endfor %}
                 </div>
-                <button type="button" class="base-swap" data-intercambiar-bases
-                        aria-label="Intercambiar base de origen y base de destino" title="Intercambiar bases" hidden>
-                    <span aria-hidden="true">⇄</span>
-                </button>
-                <div class="base-selector">
-                    <label for="{{ form.base_destino.id_for_label }}">{{ form.base_destino.label }}</label>
-                    {{ form.base_destino }}
-                    {% for error in form.base_destino.errors %}
-                        <p class="field-error" role="alert">{{ error }}</p>
-                    {% endfor %}
-                </div>
+                {% comment %}Casillas reales: una, varias o todas las demás bases. conversion.js oculta y desactiva la casilla de la base de origen; sin JavaScript se ven las cuatro y el servidor rechaza origen = destino.{% endcomment %}
+                <fieldset class="choice-fieldset base-targets" data-destinos aria-describedby="destinos-ayuda destinos-aviso destinos-errores">
+                    <legend>{{ form.bases_destino.label }}</legend>
+                    <div class="option-list">
+                        {% for casilla in form.bases_destino %}
+                            <label class="option" data-destino-base="{{ casilla.data.value }}">{{ casilla.tag }}<span>{{ casilla.choice_label }}</span></label>
+                        {% endfor %}
+                    </div>
+                    <p id="destinos-ayuda" class="field-help option-help">Marca una, varias o todas las demás bases.</p>
+                    <p id="destinos-aviso" class="field-error" data-validacion-destinos role="alert" hidden></p>
+                    <div id="destinos-errores">
+                        {% for error in form.bases_destino.errors %}
+                            <p class="field-error" role="alert">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                </fieldset>
             </div>
 
             {% for base, nombre, teclado in bases_entrada %}
@@ -69,13 +74,23 @@
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
 
-            <section class="panel panel-final" aria-labelledby="equality-title">
-                <h3 id="equality-title" class="panel-title">Resultado</h3>
-                <p class="base-equality" aria-label="{{ resultado.igualdad }}">
-                    <span class="base-numeral">{{ resultado.origen }}</span>
-                    <span class="base-equals" aria-hidden="true">=</span>
-                    <span class="base-numeral base-numeral-result">{{ resultado.destino }}</span>
-                </p>
+            <section class="panel panel-final" aria-labelledby="results-final-title">
+                <h3 id="results-final-title" class="panel-title">Resultado</h3>
+                {% comment %}El número de origen una sola vez y, debajo, solo las escrituras pedidas en el orden de las casillas: se lee como una cadena de igualdades.{% endcomment %}
+                <div class="base-results">
+                    <p class="base-results-origin">
+                        <span class="sr-only">Número de origen: </span><span class="base-numeral">{{ resultado.origen }}</span>
+                    </p>
+                    <ul class="base-results-list">
+                        {% for escritura in resultado.resultados %}
+                            <li class="base-result">
+                                <span class="base-equals" aria-hidden="true">=</span>
+                                <span class="base-numeral base-numeral-result">{{ escritura.destino }}</span>
+                                <span class="base-result-name">{{ escritura.nombre|capfirst }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </section>
 
             <section class="panel" aria-labelledby="procedure-title">

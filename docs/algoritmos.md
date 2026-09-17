@@ -117,6 +117,11 @@ destino y expansión posicional hacia decimal. Entre bases no decimales se
 encadenan ambos. `digitos.py` convierte símbolos A–F y calcula potencias;
 `validacion.py` comprueba bases y dígitos; `conversion.py` devuelve pasos con
 dividendo, cociente y residuo, o dígito, posición, potencia y aporte.
+`convertir_a_varias_bases` es la abstracción multidestino sobre esas mismas
+funciones: valida el origen y los destinos (sin repetidos, sin la base de
+origen, al menos uno), lleva el número a decimal una sola vez y reutiliza ese
+valor en una división sucesiva por cada destino no decimal; el destino decimal,
+si se pidió, es el propio valor intermedio. `convertir` es su caso de un destino.
 No se usan `bin`, `oct`, `hex` ni `int(texto, base)` para resolver la conversión.
 Las pruebas AST comprueban esta restricción y los ejemplos se conservan en
 [Sistemas numéricos](funcionalidades.md#sistemas-numéricos).
