@@ -105,12 +105,12 @@ class PruebasCatalogoMatrices(SimpleTestCase):
         self.assertEqual(reverse("calculadora:operaciones-matrices"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_MATRICES)
 
-    def test_inicio_sidebar_y_acceso_rapido(self):
+    def test_inicio_sidebar_y_tema(self):
         respuesta = self.client.get("/")
         documento = Documento(respuesta)
-        for region in ("Herramientas", "Acceso rápido"):
-            self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en(region)])
-        self.assertContains(respuesta, '<section class="home-category" id="matrices"')
+        self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en("Herramientas")])
+        self.assertContains(respuesta, '<details class="topic" id="matrices"')
+        self.assertIn(RUTA, [a["href"] for _, a in documento.enlaces if a.get("class") == "tool-link"])
 
     def test_busqueda_por_sinonimos_y_operaciones(self):
         for palabra in ("matriz", "matrices", "suma", "resta", "escalar", "traspuesta", "transpuesta", "filas", "columnas"):

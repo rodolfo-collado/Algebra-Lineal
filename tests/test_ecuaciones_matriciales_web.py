@@ -72,11 +72,11 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
         self.assertEqual(catalogo.OPERACIONES_MATRICES.ruta, RUTA_OPERACIONES)
         self.assertIn("ax", catalogo.OPERACIONES_MATRICES.palabras_clave)
 
-    def test_inicio_sidebar_acceso_rapido_y_breadcrumbs(self):
+    def test_inicio_sidebar_tema_y_breadcrumbs(self):
         inicio = self.client.get("/")
         documento = Documento(inicio)
-        for region in ("Herramientas", "Acceso rápido"):
-            self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en(region)])
+        self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en("Herramientas")])
+        self.assertIn(RUTA, [a["href"] for _, a in documento.enlaces if a.get("class") == "tool-link"])
         self.assertContains(inicio, "Resolver Ax = b")
         self.assertContains(inicio, "la ecuación matricial Ax = b")
         respuesta = self.client.get(RUTA)

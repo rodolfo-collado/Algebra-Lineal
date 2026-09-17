@@ -1,5 +1,6 @@
 /* Componentes reutilizables: encabezado de herramienta, paneles, botones, buscador,
-   inicio, relacionadas, teclado matemático, controles de estructura, guías y matrices. */
+   inicio por temas, relacionadas, explorar, desplegables, teclado matemático,
+   controles de estructura, guías y matrices. */
 
 /* —— Encabezado de herramienta —— */
 
@@ -127,24 +128,6 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
     white-space: nowrap;
-}
-
-.chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2rem;
-    padding: 0.3rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-raised);
-    font-size: 0.82rem;
-    font-weight: 600;
-    transition: border-color var(--motion-fast), background var(--motion-fast);
-}
-
-.chip:hover {
-    border-color: var(--color-brand);
-    background: var(--color-brand-soft);
 }
 
 .field-error,
@@ -286,41 +269,38 @@
     font-size: 0.85rem;
 }
 
-/* —— Inicio —— */
+/* —— Inicio: punto de entrada, un buscador y los temas —— */
 
 .home-hero {
     display: grid;
-    gap: 0.5rem;
+    justify-items: center;
+    gap: 0.35rem;
     margin-bottom: 1.5rem;
-    padding: 1.25rem 1.35rem 1.35rem;
+    padding: 1.6rem 1.35rem 1.5rem;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface-raised);
     box-shadow: var(--shadow-sm);
+    text-align: center;
 }
 
 .home-hero .home-title {
-    font-size: clamp(1.5rem, 2.6vw, 1.95rem);
+    font-size: clamp(1.6rem, 2.8vw, 2.1rem);
+}
+
+.home-hero .home-lead {
+    font-size: 1rem;
 }
 
 .home-hero .search {
-    max-width: 44rem;
-    margin-top: 0.6rem;
+    width: min(100%, 40rem);
+    margin-top: 0.9rem;
+    text-align: left;
 }
 
-.quick-access {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-    margin-top: 0.35rem;
-}
-
-.quick-access-label {
-    margin-right: 0.2rem;
-    color: var(--color-muted);
-    font-size: 0.78rem;
-    font-weight: 700;
+.home-hero .search-label {
+    font-size: 1.05rem;
+    text-align: center;
 }
 
 .home-section {
@@ -342,53 +322,164 @@
     letter-spacing: -0.02em;
 }
 
-.home-area {
-    margin-top: 1.6rem;
+.home-area + .home-area,
+.home-more .home-area {
+    margin-top: 1.4rem;
 }
 
 .home-area[hidden],
-.home-category[hidden],
+.topic[hidden],
+.home-more[hidden],
 .tool-item[hidden] {
     display: none;
 }
 
-.home-area-description {
-    margin: 0 0 0.75rem;
-    font-size: 0.9rem;
+.home-area-title {
+    margin: 0 0 0.6rem;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
-.home-category {
-    margin-top: 0.85rem;
-    padding: 0.95rem 1.05rem 1.05rem;
+/* Temas: una tarjeta por categoría; al abrirla aparecen sus herramientas. */
+.topic-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    align-items: start;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.topic {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface-raised);
+    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
-.home-category-upcoming {
+.topic:hover,
+.topic[open] {
+    border-color: var(--color-brand);
+}
+
+.topic[open] {
+    box-shadow: var(--shadow-sm);
+}
+
+.topic-upcoming {
     background: var(--color-surface);
 }
 
-.home-category-heading {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    margin-bottom: 0.7rem;
+.topic-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "icon name chevron"
+        "icon description chevron";
+    align-items: center;
+    column-gap: 0.7rem;
+    row-gap: 0.15rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: var(--radius-lg);
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
 }
 
-.home-category-heading h3 {
+.topic-summary::-webkit-details-marker {
+    display: none;
+}
+
+.topic-summary .category-icon {
+    grid-area: icon;
+    align-self: start;
+}
+
+.topic-name {
+    grid-area: name;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.45rem;
-    margin: 0 0 0.15rem;
+    margin: 0;
     font-size: 1rem;
     letter-spacing: -0.01em;
 }
 
-.home-category-heading p {
-    margin: 0;
-    font-size: 0.86rem;
+.topic-description {
+    grid-area: description;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.topic-chevron {
+    grid-area: chevron;
+    width: 1rem;
+    height: 1rem;
+    color: var(--color-muted);
+    transition: transform var(--motion-fast);
+}
+
+.topic[open] > .topic-summary .topic-chevron {
+    transform: rotate(90deg);
+}
+
+.topic > .tool-list {
+    padding: 0 0.95rem 0.95rem;
+}
+
+/* «Ver más temas»: las demás áreas esperan plegadas para no alargar el Inicio. */
+.home-more {
+    margin-top: 1.25rem;
+}
+
+.home-more-summary {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.4rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
+    font-size: 0.88rem;
+    font-weight: 700;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.home-more-summary::-webkit-details-marker {
+    display: none;
+}
+
+.home-more-summary:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.home-more-chevron {
+    width: 0.9rem;
+    height: 0.9rem;
+    flex: none;
+    color: var(--color-brand);
+    transition: transform var(--motion-fast);
+}
+
+.home-more[open] > .home-more-summary .home-more-chevron {
+    transform: rotate(90deg);
+}
+
+.home-more-hint {
+    color: var(--color-muted);
+    font-weight: 500;
 }
 
 .category-icon {
@@ -527,24 +618,122 @@ a.tool-link .tool-link-name {
     font-size: 0.78rem;
 }
 
-/* —— Teclado matemático contextual —— */
+/* —— También puedes explorar: conexiones educativas con herramientas existentes —— */
 
-.math-keyboard {
-    margin-top: 0.7rem;
-    padding: 0.65rem 0.75rem 0.55rem;
+.explore {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.explore-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.explore-list {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.explore-link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.35rem 0.4rem;
+    margin-inline: -0.4rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-brand-strong);
+    font-size: 0.92rem;
+    font-weight: 600;
+    transition: background var(--motion-fast);
+}
+
+[data-theme="dark"] .explore-link {
+    color: var(--color-brand);
+}
+
+.explore-link:hover {
+    background: var(--color-brand-soft);
+}
+
+.explore-arrow {
+    flex: none;
+    font-weight: 700;
+}
+
+/* —— Desplegables: teclado y opciones avanzadas aparecen solo cuando se piden —— */
+
+.disclosure {
+    margin-top: 0.8rem;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface);
 }
 
-.math-keyboard[hidden] {
+.disclosure[hidden] {
     display: none;
 }
 
-.math-keyboard-title {
-    margin: 0 0 0.45rem;
-    font-size: 0.8rem;
+.disclosure-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.5rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
     font-weight: 700;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--motion-fast);
+}
+
+.disclosure-summary::-webkit-details-marker {
+    display: none;
+}
+
+.disclosure-summary:hover {
+    background: var(--color-surface-muted);
+}
+
+.disclosure-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: none;
+    color: var(--color-brand);
+}
+
+.disclosure-chevron {
+    width: 0.9rem;
+    height: 0.9rem;
+    flex: none;
+    margin-left: auto;
+    color: var(--color-muted);
+    transition: transform var(--motion-fast);
+}
+
+.disclosure[open] > .disclosure-summary .disclosure-chevron {
+    transform: rotate(90deg);
+}
+
+.disclosure-body {
+    padding: 0.15rem 0.8rem 0.85rem;
+}
+
+/* —— Teclado matemático contextual —— */
+
+.math-keyboard {
+    padding: 0.15rem 0.8rem 0.7rem;
+}
+
+.math-keyboard[hidden] {
+    display: none;
 }
 
 .math-keyboard-groups {

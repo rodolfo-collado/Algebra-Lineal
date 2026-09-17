@@ -1,9 +1,9 @@
-/* Shell: header, sidebar jerárquica, cajón móvil, breadcrumbs y área de contenido. */
+/* Shell: header, cajón de navegación bajo demanda, breadcrumbs y área de contenido. */
 
 .app-header {
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: 30;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -157,17 +157,11 @@
     display: none;
 }
 
-/* —— Layout —— */
+/* —— Layout: una sola columna; el contenido matemático usa todo el ancho —— */
 
 .app-layout {
-    display: grid;
-    grid-template-columns: var(--nav-width) minmax(0, 1fr);
     max-width: 1440px;
     margin-inline: auto;
-}
-
-html[data-menu="oculto"] .app-layout {
-    grid-template-columns: minmax(0, 1fr);
 }
 
 .app-content {
@@ -177,17 +171,31 @@ html[data-menu="oculto"] .app-layout {
     padding: 1.1rem 0 2.5rem;
 }
 
-/* —— Sidebar —— */
+/* —— Cajón de navegación —— */
 
+/* Sin JavaScript la navegación queda visible en flujo, antes del contenido. */
 .app-sidebar {
-    position: sticky;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+/* Con JavaScript es un cajón sobre el contenido: cerrado no ocupa espacio. */
+.js .app-sidebar {
+    position: fixed;
     top: var(--header-height);
-    align-self: start;
-    min-height: calc(100vh - var(--header-height));
-    max-height: calc(100vh - var(--header-height));
+    bottom: 0;
+    left: 0;
+    z-index: 28;
+    display: none;
+    width: min(var(--nav-width), 90vw);
     overflow-y: auto;
     border-right: 1px solid var(--color-border);
-    background: var(--color-surface);
+    border-bottom: 0;
+    box-shadow: var(--shadow-lg);
+}
+
+.js[data-drawer] .app-sidebar {
+    display: block;
 }
 
 .app-sidebar[hidden] {
@@ -425,39 +433,15 @@ html[data-menu="oculto"] .app-layout {
     font-weight: 600;
 }
 
-/* —— Pantallas estrechas: la sidebar es un cajón sobre el contenido —— */
+/* En pantallas anchas basta el botón Menú del header para cerrar el cajón. */
+@media (min-width: 881px) {
+    .sidebar-close {
+        display: none;
+    }
+}
 
+/* En pantallas estrechas el cajón cubre casi todo: la página no se desplaza detrás. */
 @media (max-width: 880px) {
-    .app-layout,
-    html[data-menu="oculto"] .app-layout {
-        display: block;
-    }
-
-    /* Sin JavaScript la navegación queda visible en flujo, antes del contenido. */
-    .app-sidebar {
-        position: static;
-        min-height: 0;
-        max-height: none;
-        border-right: 0;
-        border-bottom: 1px solid var(--color-border);
-    }
-
-    .js .app-sidebar {
-        position: fixed;
-        top: var(--header-height);
-        bottom: 0;
-        left: 0;
-        z-index: 30;
-        width: min(21rem, 90vw);
-        max-height: none;
-        /* Con align-self: start el cajón no se estiraría hasta el borde inferior. */
-        align-self: stretch;
-        overflow-y: auto;
-        border-right: 1px solid var(--color-border);
-        border-bottom: 0;
-        box-shadow: var(--shadow-lg);
-    }
-
     html[data-drawer] {
         overflow: hidden;
     }

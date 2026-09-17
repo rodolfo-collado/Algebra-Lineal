@@ -10,6 +10,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 from backend.sistemas_numericos import NOMBRES_BASE
 
 from . import catalogo
+from .exploraciones import exploraciones_sistema
 from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_matrices import MatricesForm
@@ -21,7 +22,6 @@ from .guias import guias_para_resultado
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
     METODO_PREDETERMINADO,
-    METODOS,
     RUTAS_ANTIGUAS,
     metodos_a_resolver,
     titulo_resultado,
@@ -46,15 +46,15 @@ def inicio(request):
 @require_http_methods(["GET", "POST"])
 def sistemas(request):
     """Resolver un sistema: método a elegir (o comparar los dos) y bloques del resultado."""
-    inicial = {"metodo": METODO_PREDETERMINADO}
-    # Las rutas antiguas llegan como /sistemas/?metodo=gauss: el método viene preseleccionado.
-    if request.GET.get("metodo") in dict(METODOS):
-        inicial["metodo"] = request.GET["metodo"]
+    # Las rutas antiguas (/sistemas/?metodo=gauss) y los enlaces de «También puedes
+    # explorar» llegan por GET con el método, la entrada y los bloques ya preparados.
+    inicial = {"metodo": METODO_PREDETERMINADO, **SistemaForm.inicial_desde(request.GET)}
 
     form = SistemaForm(request.POST or None, initial=inicial)
     resultados = []
     mostrar = frozenset(BLOQUES_PREDETERMINADOS)
     guias = ()
+    exploraciones = ()
 
     if request.method == "POST" and form.is_valid():
         metodo = form.cleaned_data["metodo"]
@@ -76,12 +76,19 @@ def sistemas(request):
                 clasificacion_clave=resultados[0]["clasificacion_clave"],
                 columnas_pivote=resultados[0]["columnas_pivote"] if "pivotes" in mostrar else None,
             )
+            exploraciones = exploraciones_sistema(form.pares_de_entrada(), metodo, mostrar)
         except ValueError as error:
             resultados = []
             if form.cleaned_data.get("tipo_entrada") == "matriz":
                 form.add_error(None, str(error))
             else:
                 form.add_error("sistema", str(error))
+
+    matrix_values = form.valores_matriz_ingresados()
+    if not matrix_values and "ecuaciones" in inicial and "variables" in inicial:
+        matrix_values = SistemaForm.valores_matriz_desde(
+            request.GET, inicial["ecuaciones"], inicial["variables"]
+        )
 
     return render(
         request,
@@ -93,8 +100,11 @@ def sistemas(request):
             "comparando": len(resultados) > 1,
             "mostrar": mostrar,
             "titulo_resultado": titulo_resultado(form.cleaned_data["metodo"]) if resultados else None,
-            "matrix_values": form.valores_matriz_ingresados(),
+            "matrix_values": matrix_values,
+            # Las opciones se despliegan solas cuando difieren de lo predeterminado.
+            "opciones_abiertas": set(form.bloques_elegidos()) != set(BLOQUES_PREDETERMINADOS),
             "guias": guias,
+            "exploraciones": exploraciones,
             "teclado_sistema": TECLADO_SISTEMA,
             "teclado_matriz": TECLADO_MATRIZ,
         },

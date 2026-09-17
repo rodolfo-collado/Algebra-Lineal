@@ -1,7 +1,6 @@
 (() => {
     "use strict";
 
-    const STORAGE_MENU = "algebra-lineal-menu";
     const STORAGE_SECCIONES = "algebra-lineal-menu-secciones";
     const root = document.documentElement;
     const button = document.getElementById("navigation-toggle");
@@ -9,10 +8,27 @@
     const backdrop = document.getElementById("sidebar-backdrop");
     const closeButton = document.getElementById("sidebar-close");
     const main = document.getElementById("contenido");
+
+    // Un destino (#categoria) dentro de un desplegable cerrado se abre al llegar por la URL,
+    // por ejemplo desde los breadcrumbs; sin esto el ancla apuntaría a contenido plegado.
+    function revelarDestino() {
+        const id = decodeURIComponent(window.location.hash.slice(1));
+        if (!id) return;
+        let destino = document.getElementById(id);
+        while (destino) {
+            if (destino.tagName === "DETAILS") destino.open = true;
+            destino = destino.parentElement;
+        }
+    }
+
+    window.addEventListener("hashchange", revelarDestino);
+    revelarDestino();
+
     if (!button || !sidebar) return;
 
-    const compact = window.matchMedia("(max-width: 880px)");
-    let drawerOpen = false;
+    // La navegación es un cajón sobre el contenido en cualquier tamaño de pantalla:
+    // nace cerrado y un solo botón lo abre y lo cierra.
+    let abierto = false;
 
     function leer(clave) {
         try {
@@ -30,35 +46,16 @@
         }
     }
 
-    function desktopOculto() {
-        return root.getAttribute("data-menu") === "oculto";
-    }
-
-    // En escritorio la sidebar es una columna que se puede ocultar; en pantallas
-    // estrechas es un cajón sobre el contenido. Un solo botón controla ambos.
     function aplicar() {
-        button.hidden = false;
-        if (compact.matches) {
-            root.toggleAttribute("data-drawer", drawerOpen);
-            sidebar.hidden = !drawerOpen;
-            if (backdrop) backdrop.hidden = !drawerOpen;
-            if (closeButton) closeButton.hidden = false;
-            if (main) main.inert = drawerOpen;
-            button.setAttribute("aria-expanded", String(drawerOpen));
-            return;
-        }
-
-        drawerOpen = false;
-        root.removeAttribute("data-drawer");
-        if (backdrop) backdrop.hidden = true;
-        if (closeButton) closeButton.hidden = true;
-        if (main) main.inert = false;
-        sidebar.hidden = desktopOculto();
-        button.setAttribute("aria-expanded", String(!desktopOculto()));
+        root.toggleAttribute("data-drawer", abierto);
+        sidebar.hidden = !abierto;
+        if (backdrop) backdrop.hidden = !abierto;
+        if (main) main.inert = abierto;
+        button.setAttribute("aria-expanded", String(abierto));
     }
 
-    function abrirCajon() {
-        drawerOpen = true;
+    function abrir() {
+        abierto = true;
         aplicar();
         // El foco va al primer enlace y no al buscador: en móvil evitaría que el
         // teclado virtual tape el menú recién abierto.
@@ -66,32 +63,26 @@
         if (primero) primero.focus();
     }
 
-    function cerrarCajon() {
-        if (!drawerOpen) return;
-        drawerOpen = false;
+    function cerrar() {
+        if (!abierto) return;
+        abierto = false;
         aplicar();
         button.focus();
     }
 
+    button.hidden = false;
     button.addEventListener("click", () => {
-        if (compact.matches) {
-            if (drawerOpen) cerrarCajon();
-            else abrirCajon();
-            return;
-        }
-        const ocultar = !desktopOculto();
-        if (ocultar) root.setAttribute("data-menu", "oculto");
-        else root.removeAttribute("data-menu");
-        guardar(STORAGE_MENU, ocultar ? "oculto" : "visible");
-        aplicar();
+        if (abierto) cerrar();
+        else abrir();
     });
-
-    if (closeButton) closeButton.addEventListener("click", cerrarCajon);
-    if (backdrop) backdrop.addEventListener("click", cerrarCajon);
+    if (closeButton) {
+        closeButton.hidden = false;
+        closeButton.addEventListener("click", cerrar);
+    }
+    if (backdrop) backdrop.addEventListener("click", cerrar);
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && compact.matches && drawerOpen) cerrarCajon();
+        if (event.key === "Escape" && abierto) cerrar();
     });
-    compact.addEventListener("change", aplicar);
 
     // Las categorías abiertas por el usuario se recuerdan; la categoría activa
     // siempre llega abierta desde el servidor.

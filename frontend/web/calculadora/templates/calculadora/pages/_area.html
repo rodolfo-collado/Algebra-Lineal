@@ -1,0 +1,29 @@
+{% comment %}Un área del Inicio: sus categorías como temas plegados. Las herramientas se descubren al abrir el tema, así el Inicio no crece con cada módulo nuevo.{% endcomment %}
+<section class="home-area" id="{{ area.id }}" data-grupo aria-labelledby="area-{{ area.id }}">
+    <h2 id="area-{{ area.id }}" class="home-area-title">{{ area.nombre }}</h2>
+    <ul class="topic-list">
+        {% for categoria, herramientas in categorias %}
+            <li class="topic-item">
+                <details class="topic{% if not categoria.disponible %} topic-upcoming{% endif %}" id="{{ categoria.id }}" data-grupo>
+                    <summary class="topic-summary">
+                        <span class="category-icon" aria-hidden="true">
+                            {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}
+                        </span>
+                        <h3 class="topic-name">{{ categoria.nombre }}{% if not categoria.disponible %} <span class="badge">Próximamente</span>{% endif %}</h3>
+                        <span class="topic-description">{{ categoria.descripcion }}</span>
+                        <svg class="topic-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                            <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </summary>
+                    <ul class="tool-list">
+                        {% for herramienta in herramientas %}
+                            <li class="tool-item" data-indice="{{ herramienta.indice }}">
+                                {% include "calculadora/components/tool_link.html" with mostrar_estado=categoria.disponible %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            </li>
+        {% endfor %}
+    </ul>
+</section>

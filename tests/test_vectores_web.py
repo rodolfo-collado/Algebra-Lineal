@@ -94,13 +94,13 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         self.assertContains(inicio, f'href="{RUTA}"')
         documento = Documento(inicio)
         self.assertIn(RUTA, [a.get("href") for a in documento.enlaces_en("Herramientas")])
-        self.assertIn(RUTA, [a.get("href") for a in documento.enlaces_en("Acceso rápido")])
+        self.assertIn(RUTA, [a.get("href") for _, a in documento.enlaces if a.get("class") == "tool-link"])
         # La categoría ya no se anuncia como próxima.
         html = inicio.content.decode("utf-8")
-        seccion = html[html.index('id="vectores"'):html.index("</section>", html.index('id="vectores"'))]
+        seccion = html[html.index('id="vectores"'):html.index("</details>", html.index('id="vectores"'))]
         self.assertNotIn("Próximamente", seccion)
-        self.assertNotIn("home-category-upcoming", seccion)
-        self.assertRegex(html, r'<section class="home-category" id="vectores"')
+        self.assertNotIn("topic-upcoming", seccion)
+        self.assertRegex(html, r'<details class="topic" id="vectores"')
 
         # Desde P13B, Operaciones con matrices también responde a «vector» (Ax) y a
         # «combinación lineal» (Ax como combinación de columnas), y desde P14 Resolver

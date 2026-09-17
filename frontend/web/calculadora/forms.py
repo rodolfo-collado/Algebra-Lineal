@@ -197,13 +197,63 @@ class SistemaForm(forms.Form):
         if ecuaciones is None or variables is None:
             return []
 
+        return self.valores_matriz_desde(self.data, ecuaciones, variables)
+
+    @staticmethod
+    def valores_matriz_desde(datos, ecuaciones, variables):
+        """Las celdas matriz_i_j de un envío o de una consulta, como filas de texto."""
         return [
-            [
-                self.data.get(f"matriz_{fila}_{columna}", "")
-                for columna in range(variables + 1)
-            ]
+            [datos.get(f"matriz_{fila}_{columna}", "") for columna in range(variables + 1)]
             for fila in range(ecuaciones)
         ]
+
+    @classmethod
+    def inicial_desde(cls, consulta):
+        """Valores iniciales que llegan por GET (rutas antiguas y «También puedes explorar»).
+
+        Solo preparan el formulario con el método, la entrada y los bloques; nada
+        se resuelve hasta que el usuario pulsa Resolver. Se ignora lo que no sea válido.
+        """
+        inicial = {}
+        if consulta.get("metodo") in dict(METODOS):
+            inicial["metodo"] = consulta["metodo"]
+        if consulta.get("tipo_entrada") in dict(cls.TIPOS_ENTRADA):
+            inicial["tipo_entrada"] = consulta["tipo_entrada"]
+        if consulta.get("sistema", "").strip():
+            inicial["sistema"] = consulta["sistema"]
+        for campo in ("ecuaciones", "variables"):
+            valor = consulta.get(campo, "")
+            if valor.isdigit() and int(valor) >= 1:
+                inicial[campo] = int(valor)
+        if consulta.get("mostrar_definido"):
+            elegidos = consulta.getlist("mostrar")
+            inicial["mostrar"] = [clave for clave, _ in BLOQUES if clave in elegidos]
+        return inicial
+
+    def pares_de_entrada(self):
+        """La entrada validada como pares de consulta, para volver a proponerla por GET."""
+        datos = self.cleaned_data
+        if datos.get("tipo_entrada") != "matriz":
+            return [("tipo_entrada", "sistema"), ("sistema", datos.get("sistema", ""))]
+
+        pares = [
+            ("tipo_entrada", "matriz"),
+            ("ecuaciones", datos["ecuaciones"]),
+            ("variables", datos["variables"]),
+        ]
+        for fila, valores in enumerate(self.valores_matriz_ingresados()):
+            for columna, valor in enumerate(valores):
+                pares.append((f"matriz_{fila}_{columna}", valor))
+        return pares
+
+    def bloques_elegidos(self):
+        """Los bloques marcados ahora (enviados o iniciales), sin depender de la validación."""
+        if not self.is_bound:
+            return list(self.initial.get("mostrar", BLOQUES_PREDETERMINADOS))
+        if not self.data.get("mostrar_definido"):
+            return list(BLOQUES_PREDETERMINADOS)
+        elegidos = self.data.getlist("mostrar")
+        return [clave for clave, _ in BLOQUES if clave in elegidos]
 
 
 class ConversionBasesForm(forms.Form):

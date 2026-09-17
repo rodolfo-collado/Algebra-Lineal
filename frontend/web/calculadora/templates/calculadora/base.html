@@ -15,10 +15,7 @@
                 : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
             root.setAttribute("data-theme", theme);
             root.style.colorScheme = theme;
-            // Estado del menú lateral en escritorio, antes de pintar para evitar saltos.
-            if (localStorage.getItem("algebra-lineal-menu") === "oculto") {
-                root.setAttribute("data-menu", "oculto");
-            }
+            // Con JavaScript la navegación es un cajón cerrado; la clase evita que asome antes de tiempo.
             root.classList.add("js");
         })();
     </script>

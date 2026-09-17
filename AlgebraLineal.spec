@@ -41,6 +41,7 @@ hiddenimports = [
     "frontend.web.calculadora.opciones_ecuaciones",
     "frontend.web.calculadora.opciones_sistemas",
     "frontend.web.calculadora.opciones_vectores",
+    "frontend.web.calculadora.exploraciones",
     "frontend.web.calculadora.urls",
     "frontend.web.calculadora.views",
     "frontend.web.calculadora.teclados",

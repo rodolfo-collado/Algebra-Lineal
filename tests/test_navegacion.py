@@ -236,7 +236,7 @@ class PruebasNavegacion(SimpleTestCase):
     def test_inicio_es_general_sin_formulario_matematico(self):
         respuesta = self.client.get(reverse("calculadora:inicio"))
         self.assertContains(respuesta, "Inicio · Álgebra Lineal")
-        self.assertContains(respuesta, "Explora los temas disponibles")
+        self.assertContains(respuesta, "¿Qué quieres resolver?")
         self.assertContains(respuesta, "Aprende resolviendo")
         self.assertNotContains(respuesta, 'name="sistema"')
         self.assertNotContains(respuesta, "calculadora/matriz.js")
@@ -254,7 +254,8 @@ class PruebasNavegacion(SimpleTestCase):
                     self.assertContains(respuesta, f'href="{herramienta.ruta}"')
         for elemento in (*catalogo.AREAS, *catalogo.CATEGORIAS):
             self.assertIn(elemento.id, documento.ids)
-        self.assertContains(respuesta, 'aria-label="Acceso rápido"')
+        # Sin caminos duplicados: las herramientas se descubren dentro de su tema.
+        self.assertNotContains(respuesta, "Acceso rápido")
 
     def test_proximamente_sin_enlaces_falsos(self):
         respuesta = self.client.get("/")
