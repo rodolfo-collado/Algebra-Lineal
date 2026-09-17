@@ -238,7 +238,16 @@ class PruebasConversionMultidestino(unittest.TestCase):
         self.assertEqual([d.resultado for d in conversion.destinos], ["1111", "F"])
 
     def test_decimal_entre_los_destinos_reutiliza_el_intermedio_sin_segunda_etapa(self):
-        conversion = convertir_a_varias_bases("17", 8, (2, 10, 16))
+        with (
+            patch.object(conversion_modulo, "base_a_decimal", wraps=base_a_decimal) as hacia,
+            patch.object(conversion_modulo, "parsear_decimal", wraps=parsear_decimal) as parseo,
+            patch.object(conversion_modulo, "decimal_a_base", wraps=decimal_a_base) as desde,
+        ):
+            conversion = convertir_a_varias_bases("17", 8, (2, 10, 16))
+        # Pedir decimal no añade ninguna llamada: ni una segunda expansión ni un parseo.
+        self.assertEqual(hacia.call_count, 1)
+        self.assertEqual(parseo.call_count, 0)
+        self.assertEqual(desde.call_args_list, [call(15, 2), call(15, 16)])
         decimal = conversion.destinos[1]
         self.assertEqual(decimal.base_destino, 10)
         self.assertEqual(decimal.resultado, "15")
@@ -251,9 +260,16 @@ class PruebasConversionMultidestino(unittest.TestCase):
         self.assertEqual(solo_decimal.hacia_decimal.resultado, 11)
 
     def test_origen_decimal_no_crea_una_etapa_hacia_decimal(self):
-        with patch.object(conversion_modulo, "base_a_decimal", wraps=base_a_decimal) as hacia:
+        with (
+            patch.object(conversion_modulo, "base_a_decimal", wraps=base_a_decimal) as hacia,
+            patch.object(conversion_modulo, "parsear_decimal", wraps=parsear_decimal) as parseo,
+            patch.object(conversion_modulo, "decimal_a_base", wraps=decimal_a_base) as desde,
+        ):
             conversion = convertir_a_varias_bases("13", 10, (2, 8, 16))
+        # El decimal se lee una sola vez con `parsear_decimal` y alimenta las tres divisiones.
         self.assertEqual(hacia.call_count, 0)
+        self.assertEqual(parseo.call_args_list, [call("13")])
+        self.assertEqual(desde.call_args_list, [call(13, 2), call(13, 8), call(13, 16)])
         self.assertIsNone(conversion.hacia_decimal)
         self.assertEqual(conversion.valor_decimal, 13)
         self.assertEqual([d.resultado for d in conversion.destinos], ["1101", "15", "D"])
@@ -286,6 +302,36 @@ class PruebasConversionMultidestino(unittest.TestCase):
             convertir_a_varias_bases("102", 2, (2,))
         with self.assertRaisesRegex(ValueError, "dígito 2.*binario"):
             convertir_a_varias_bases("102", 2, (8, 16))
+
+    def test_casos_de_referencia_de_p16(self):
+        # Un solo destino: el mismo motor que `convertir`.
+        individuales = (
+            ("13", 10, 2, "1101"), ("13", 10, 8, "15"), ("26", 10, 16, "1A"),
+            ("1010", 2, 10, "10"), ("1010", 2, 16, "A"), ("725", 8, 10, "469"), ("FF", 16, 10, "255"),
+        )
+        for texto, origen, destino, esperado in individuales:
+            with self.subTest(texto=texto, origen=origen, destino=destino):
+                self.assertEqual(convertir_a_varias_bases(texto, origen, (destino,)).destinos[0].resultado, esperado)
+                self.assertEqual(convertir(texto, origen, destino).resultado, esperado)
+        # Uno, dos y tres destinos; ceros iniciales, cero y hexadecimal en minúsculas.
+        multiples = (
+            ("13", 10, (2, 8, 16), ["1101", "15", "D"]),
+            ("1010", 2, (8, 10, 16), ["12", "10", "A"]),
+            ("725", 8, (2, 10), ["111010101", "469"]),
+            ("ff", 16, (2, 8, 10), ["11111111", "377", "255"]),
+            ("0017", 8, (2,), ["1111"]),
+            ("0", 16, (2, 8, 10), ["0", "0", "0"]),
+        )
+        for texto, origen, destinos, esperados in multiples:
+            with self.subTest(texto=texto, origen=origen, destinos=destinos):
+                conversion = convertir_a_varias_bases(texto, origen, destinos)
+                self.assertEqual([d.resultado for d in conversion.destinos], esperados)
+                self.assertEqual(conversion.bases_destino, destinos)
+        cero = convertir_a_varias_bases("0", 16, (2, 8, 10))
+        self.assertEqual(cero.valor_decimal, 0)
+        self.assertTrue(all(d.desde_decimal.pasos == () for d in cero.destinos if d.desde_decimal))
+        with self.assertRaisesRegex(ValueError, "dígito 9.*octal"):
+            convertir_a_varias_bases("729", 8, (2, 10, 16))
 
     def test_convertir_es_el_caso_de_un_solo_destino(self):
         for texto, origen, destino in (("1010", 2, 16), ("13", 10, 2), ("1011", 2, 10)):

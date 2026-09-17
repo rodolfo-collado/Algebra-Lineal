@@ -85,21 +85,22 @@ def convertir_entrada(*, numero: str, base_origen: int, bases_destino: Iterable[
     decimal = notacion(str(conversion.valor_decimal), 10)
     origen = compartida["origen"] if compartida else decimal
 
-    resultados = []
-    for destino in conversion.destinos:
-        escritura = notacion(destino.resultado, destino.base_destino)
-        resultados.append({
+    # El origen va aparte y una sola vez; cada resultado solo aporta su escritura y su base.
+    resultados = tuple(
+        {
             "base": destino.base_destino,
-            "destino": escritura,
-            "igualdad": f"{origen} = {escritura}",
-        })
+            "nombre": NOMBRES_BASE[destino.base_destino],
+            "destino": notacion(destino.resultado, destino.base_destino),
+        }
+        for destino in conversion.destinos
+    )
 
     return {
         "titulo": titulo_conversion(base_origen, conversion.bases_destino),
         "origen": origen,
         "base_origen": base_origen,
         "bases_destino": conversion.bases_destino,
-        "resultados": tuple(resultados),
+        "resultados": resultados,
         "etapas": ((compartida,) if compartida else ()) + divisiones,
         # Solo cuando la expansión alimenta divisiones: el decimal por el que pasa todo
         # y las escrituras que salen de él (una rama por destino no decimal).

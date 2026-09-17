@@ -35,22 +35,21 @@
                         <p class="field-error" role="alert">{{ error }}</p>
                     {% endfor %}
                 </div>
-                {% comment %}Casillas reales: una, varias o todas las demás bases. La casilla de la base de origen se oculta y desactiva (también sin JavaScript, según la base activa); el servidor vuelve a comprobarlo al convertir.{% endcomment %}
-                <fieldset class="choice-fieldset base-targets" data-destinos>
+                {% comment %}Casillas reales: una, varias o todas las demás bases. conversion.js oculta y desactiva la casilla de la base de origen; sin JavaScript se ven las cuatro y el servidor rechaza origen = destino.{% endcomment %}
+                <fieldset class="choice-fieldset base-targets" data-destinos aria-describedby="destinos-ayuda destinos-aviso destinos-errores">
                     <legend>{{ form.bases_destino.label }}</legend>
                     <div class="option-list">
                         {% for casilla in form.bases_destino %}
-                            <label class="option" data-destino-base="{{ casilla.data.value }}"{% if casilla.data.value == base_entrada_activa %} hidden{% endif %}>
-                                <input type="checkbox" name="bases_destino" value="{{ casilla.data.value }}" id="{{ casilla.id_for_label }}"{% if casilla.data.value == base_entrada_activa %} disabled{% elif casilla.data.selected %} checked{% endif %}>
-                                <span>{{ casilla.choice_label }}</span>
-                            </label>
+                            <label class="option" data-destino-base="{{ casilla.data.value }}">{{ casilla.tag }}<span>{{ casilla.choice_label }}</span></label>
                         {% endfor %}
                     </div>
-                    <p class="field-help option-help">Marca una, varias o todas las demás bases.</p>
-                    <p class="field-error" data-validacion-destinos role="alert" hidden></p>
-                    {% for error in form.bases_destino.errors %}
-                        <p class="field-error" role="alert">{{ error }}</p>
-                    {% endfor %}
+                    <p id="destinos-ayuda" class="field-help option-help">Marca una, varias o todas las demás bases.</p>
+                    <p id="destinos-aviso" class="field-error" data-validacion-destinos role="alert" hidden></p>
+                    <div id="destinos-errores">
+                        {% for error in form.bases_destino.errors %}
+                            <p class="field-error" role="alert">{{ error }}</p>
+                        {% endfor %}
+                    </div>
                 </fieldset>
             </div>
 
@@ -75,18 +74,23 @@
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
 
-            <section class="panel panel-final" aria-labelledby="equality-title">
-                <h3 id="equality-title" class="panel-title">Resultado</h3>
-                {% comment %}Solo las escrituras pedidas, una igualdad por destino y en el orden de las casillas.{% endcomment %}
-                <ul class="base-equalities">
-                    {% for escritura in resultado.resultados %}
-                        <li class="base-equality" aria-label="{{ escritura.igualdad }}">
-                            <span class="base-numeral">{{ resultado.origen }}</span>
-                            <span class="base-equals" aria-hidden="true">=</span>
-                            <span class="base-numeral base-numeral-result">{{ escritura.destino }}</span>
-                        </li>
-                    {% endfor %}
-                </ul>
+            <section class="panel panel-final" aria-labelledby="results-final-title">
+                <h3 id="results-final-title" class="panel-title">Resultado</h3>
+                {% comment %}El número de origen una sola vez y, debajo, solo las escrituras pedidas en el orden de las casillas: se lee como una cadena de igualdades.{% endcomment %}
+                <div class="base-results">
+                    <p class="base-results-origin">
+                        <span class="sr-only">Número de origen: </span><span class="base-numeral">{{ resultado.origen }}</span>
+                    </p>
+                    <ul class="base-results-list">
+                        {% for escritura in resultado.resultados %}
+                            <li class="base-result">
+                                <span class="base-equals" aria-hidden="true">=</span>
+                                <span class="base-numeral base-numeral-result">{{ escritura.destino }}</span>
+                                <span class="base-result-name">{{ escritura.nombre|capfirst }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </section>
 
             <section class="panel" aria-labelledby="procedure-title">

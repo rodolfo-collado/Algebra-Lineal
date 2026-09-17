@@ -260,8 +260,11 @@ class ConversionBasesForm(forms.Form):
     """Un número, su base de origen y las bases a las que convertirlo.
 
     Los destinos son casillas: una, varias o todas las demás bases, nunca la de
-    origen y al menos una. El orden de los destinos es siempre el de las casillas,
-    aunque un POST manipulado los envíe desordenados o repetidos.
+    origen y al menos una. El contrato HTTP es estricto: `bases_destino` es el
+    único campo que viaja repetido (una vez por casilla marcada); un valor
+    duplicado dentro de esa lista, cualquier otro campo repetido o un campo ajeno
+    al formulario se rechazan. El orden de los destinos es siempre el de las
+    casillas, aunque un POST manipulado los envíe desordenados.
     """
 
     BASES = (
@@ -270,11 +273,19 @@ class ConversionBasesForm(forms.Form):
         (10, "Decimal"),
         (16, "Hexadecimal"),
     )
+    CAMPOS_PERMITIDOS = frozenset({"csrfmiddlewaretoken", "numero", "base_origen", "bases_destino"})
+    # Tope generoso para un ejercicio (128 dígitos binarios o hexadecimales): evita que
+    # una entrada enorme cueste segundos de cálculo o desborde la conversión a texto.
+    LONGITUD_MAXIMA = 128
 
     numero = forms.CharField(
         label="Número",
         required=False,
         strip=False,
+        max_length=LONGITUD_MAXIMA,
+        error_messages={
+            "max_length": f"El número no puede tener más de {LONGITUD_MAXIMA} caracteres.",
+        },
         widget=forms.TextInput(
             attrs={
                 "class": "field-input field-input-numeral",
@@ -304,11 +315,23 @@ class ConversionBasesForm(forms.Form):
         return self.cleaned_data.get("numero", "")
 
     def clean_bases_destino(self):
-        elegidas = set(self.cleaned_data.get("bases_destino") or ())
+        elegidas = self.cleaned_data.get("bases_destino") or []
+        if len(set(elegidas)) != len(elegidas):
+            raise forms.ValidationError("Las bases de destino no deben repetirse.")
         return [base for base, _ in self.BASES if base in elegidas]
+
+    def rechazar_envio_manipulado(self):
+        """Ningún campo ajeno y un solo valor por campo, salvo las casillas de destino."""
+        if not hasattr(self.data, "getlist"):
+            return
+        if set(self.data) - self.CAMPOS_PERMITIDOS:
+            self.add_error(None, "El envío incluye campos que no forman parte del formulario.")
+        if any(len(self.data.getlist(nombre)) > 1 for nombre in self.data if nombre != "bases_destino"):
+            self.add_error(None, "Envía un único valor por campo; hay campos repetidos.")
 
     def clean(self):
         datos = super().clean()
+        self.rechazar_envio_manipulado()
         destinos = datos.get("bases_destino")
         if destinos is None:
             return datos

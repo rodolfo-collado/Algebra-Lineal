@@ -1,6 +1,7 @@
 """Integración web de Conversión de bases (P11) y de las conversiones multidestino (P16)."""
 
 import os
+import re
 from pathlib import Path
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
@@ -14,15 +15,26 @@ from django.urls import resolve, reverse
 from django.utils.html import strip_tags
 
 from frontend.web.calculadora import catalogo
+from frontend.web.calculadora.forms import ConversionBasesForm
 from frontend.web.calculadora.servicios_bases import convertir_entrada, enumerar, titulo_conversion
 from tests.test_interfaz_progresiva import Formulario
 from tests.test_navegacion import Documento
 
 STATIC = Path(__file__).resolve().parents[1] / "frontend" / "web" / "calculadora" / "static" / "calculadora"
+NOMBRES = ("Binario", "Octal", "Decimal", "Hexadecimal")
 
 
 def texto_plano(respuesta):
     return " ".join(strip_tags(respuesta.content.decode("utf-8")).split())
+
+
+def resultados_de(respuesta):
+    """(origen, [(escritura, base), …]) tal como los lee el panel Resultado, en su orden."""
+    texto = texto_plano(respuesta)
+    seccion = texto[texto.index("Resultado Número de origen: "):texto.index(" Procedimiento")]
+    origen = seccion.split("Número de origen: ")[1].split(" ")[0]
+    escrituras = re.findall(rf"= (\S+) ({'|'.join(NOMBRES)})", seccion)
+    return origen, escrituras
 
 
 class PruebasConversionBasesWeb(SimpleTestCase):
@@ -89,12 +101,16 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         for valor, etiqueta in ((2, "Binario"), (8, "Octal"), (10, "Decimal"), (16, "Hexadecimal")):
             self.assertRegex(html, rf'<option value="{valor}"[^>]*>{etiqueta}</option>')
         self.assertRegex(html, r'name="base_origen"[\s\S]*?<option value="10" selected>Decimal</option>')
-        # Ya no hay un único destino ni un botón para intercambiarlo con el origen.
+        # Ya no hay un único destino, ni botón de intercambio, ni botones por par de bases.
         self.assertNotIn('name="base_destino"', html)
         self.assertNotIn("data-intercambiar-bases", html)
         self.assertNotIn("base-swap", html)
-        # «Convertir a»: un grupo accesible de casillas, una por base, en orden fijo.
-        self.assertIn("<legend>Convertir a</legend>", html)
+        self.assertNotIn("⇄", html)
+        for par in ("Binario → Decimal", "Octal → Binario", "Hexadecimal → Octal"):
+            self.assertNotIn(f">{par}<", html)
+        # «Convertir a»: fieldset + legend y una casilla real por base, en orden fijo,
+        # cada una dentro de su label y descrita por la ayuda y los errores del grupo.
+        self.assertRegex(html, r'<fieldset class="choice-fieldset base-targets" data-destinos aria-describedby="destinos-ayuda destinos-aviso destinos-errores">\s*<legend>Convertir a</legend>')
         casillas = self.casillas_destino(respuesta)
         self.assertEqual([c["type"] for c in casillas], ["checkbox"] * 4)
         self.assertEqual([c["value"] for c in casillas], ["2", "8", "10", "16"])
@@ -102,15 +118,23 @@ class PruebasConversionBasesWeb(SimpleTestCase):
             [c["id"] for c in casillas],
             ["id_bases_destino_0", "id_bases_destino_1", "id_bases_destino_2", "id_bases_destino_3"],
         )
-        # Predeterminado: decimal → binario, como hasta ahora; la casilla del origen no se ofrece.
+        for valor, etiqueta in zip(("2", "8", "10", "16"), NOMBRES):
+            self.assertRegex(
+                html,
+                rf'<label class="option" data-destino-base="{valor}"><input type="checkbox" name="bases_destino" value="{valor}" id="id_bases_destino_\d"( checked)?><span>{etiqueta}</span></label>',
+            )
+        # Predeterminado: decimal → binario, como hasta ahora. El servidor no oculta ni
+        # desactiva ninguna casilla: sin JavaScript se ven las cuatro y él rechaza origen = destino.
         self.assertEqual([c["value"] for c in casillas if "checked" in c], ["2"])
-        self.assertEqual([c["value"] for c in casillas if "disabled" in c], ["10"])
-        self.assertRegex(html, r'<label class="option" data-destino-base="10" hidden>')
-        for base in (2, 8, 16):
-            self.assertRegex(html, rf'<label class="option" data-destino-base="{base}">')
-        self.assertIn("Marca una, varias o todas las demás bases.", html)
+        self.assertEqual([c for c in casillas if "disabled" in c], [])
+        self.assertNotIn('data-destino-base="10" hidden', html)
+        documento = Documento(respuesta)
+        self.assertIn("destinos-ayuda", documento.ids)
+        self.assertIn("destinos-aviso", documento.ids)
+        self.assertIn("destinos-errores", documento.ids)
+        self.assertIn('id="destinos-ayuda" class="field-help option-help">Marca una, varias o todas las demás bases.', html)
         # Aviso en vivo de destinos, vacío hasta que JavaScript lo use.
-        self.assertIn('data-validacion-destinos role="alert" hidden', html)
+        self.assertIn('id="destinos-aviso" class="field-error" data-validacion-destinos role="alert" hidden', html)
         # Sin tarjetas grandes para elegir la base ni el modo.
         self.assertNotIn('name="modo"', html)
         self.assertNotIn('name="base"', html)
@@ -133,19 +157,30 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         # Aviso de validación en vivo, vacío hasta que JavaScript lo use.
         self.assertIn('data-validacion-cliente role="alert" hidden', html)
 
-    def test_cambio_de_origen_actualiza_teclado_etiqueta_y_casillas_sin_javascript(self):
+    def test_cambio_de_origen_actualiza_teclado_y_etiqueta_y_conserva_las_casillas_sin_javascript(self):
         respuesta = self.convertir("", 16, 2)
         html = respuesta.content.decode("utf-8")
         self.assertRegex(html, r'<div class="base-keyboard" data-teclado-base="16" data-nombre-base="hexadecimal"\s*>')
         self.assertRegex(html, r'data-teclado-base="10"[^>]*hidden')
         self.assertRegex(html, r'<span data-number-label-base="16"\s*>Número hexadecimal</span>')
         self.assertRegex(html, r'data-number-label-base="10"[^>]*hidden')
-        # Ahora la casilla oculta es la hexadecimal y la decimal vuelve a ofrecerse; binario sigue marcado.
+        # Las casillas vuelven tal como se enviaron: binario marcado y las cuatro disponibles.
         casillas = self.casillas_destino(respuesta)
-        self.assertEqual([c["value"] for c in casillas if "disabled" in c], ["16"])
         self.assertEqual([c["value"] for c in casillas if "checked" in c], ["2"])
-        self.assertRegex(html, r'<label class="option" data-destino-base="16" hidden>')
-        self.assertRegex(html, r'<label class="option" data-destino-base="10">')
+        self.assertEqual([c for c in casillas if "disabled" in c], [])
+        self.assertNotRegex(html.split("base-targets")[1].split("</fieldset>")[0], r"<label[^>]*hidden")
+
+    def test_sin_javascript_el_origen_marcado_como_destino_se_explica_y_se_puede_corregir(self):
+        # Sin JavaScript nadie oculta la casilla del origen: si el usuario la deja marcada y
+        # cambia el origen a esa misma base, el servidor lo rechaza y la casilla sigue a la
+        # vista, marcada, para que pueda desmarcarla; con otra base ya marcada se resuelve.
+        respuesta = self.convertir("101", 2, (2, 16))
+        self.assertContains(respuesta, "La base de origen y la base de destino deben ser distintas.")
+        self.assertNotContains(respuesta, 'id="resultado"')
+        self.assertEqual([c["value"] for c in self.casillas_destino(respuesta) if "checked" in c], ["2", "16"])
+        self.assertEqual([c for c in self.casillas_destino(respuesta) if "disabled" in c], [])
+        origen, escrituras = resultados_de(self.convertir("101", 2, 16))
+        self.assertEqual((origen, escrituras), ("101₂", [("5₁₆", "Hexadecimal")]))
 
     def test_el_envio_por_defecto_del_formulario_convierte_decimal_a_binario(self):
         formulario = Formulario(self.client.get(self.ruta).content.decode("utf-8"), "conversion-form")
@@ -154,12 +189,13 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         datos = formulario.como_datos(numero="13", base_origen="10")
         self.assertEqual(datos["bases_destino"], ["2"])
         respuesta = self.client.post(self.ruta, datos)
-        self.assertContains(respuesta, "13₁₀ = 1101₂")
+        self.assertEqual(resultados_de(respuesta), ("13₁₀", [("1101₂", "Binario")]))
         self.assertContains(respuesta, "Decimal → binario")
 
     def test_el_campo_del_numero_es_de_una_linea(self):
         html = self.client.get(self.ruta).content.decode("utf-8")
         self.assertIn('class="field-input field-input-numeral"', html)
+        self.assertIn(f'maxlength="{ConversionBasesForm.LONGITUD_MAXIMA}"', html)
         self.assertNotIn("field-input-code", html)
         self.assertNotIn("<textarea", html)
 
@@ -167,6 +203,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         # 26₁₀ = 11010₂ = 32₈ = 1A₁₆
         escrituras = {2: "11010", 8: "32", 10: "26", 16: "1A"}
         subindices = {2: "₂", 8: "₈", 10: "₁₀", 16: "₁₆"}
+        nombres = {2: "Binario", 8: "Octal", 10: "Decimal", 16: "Hexadecimal"}
         for origen, numero in escrituras.items():
             for destino, esperado in escrituras.items():
                 if origen == destino:
@@ -174,20 +211,39 @@ class PruebasConversionBasesWeb(SimpleTestCase):
                 with self.subTest(origen=origen, destino=destino):
                     respuesta = self.convertir(numero, origen, destino)
                     self.assertEqual(respuesta.status_code, 200)
-                    self.assertContains(respuesta, f"{numero}{subindices[origen]}")
-                    self.assertContains(respuesta, f"{esperado}{subindices[destino]}")
+                    self.assertEqual(
+                        resultados_de(respuesta),
+                        (f"{numero}{subindices[origen]}", [(f"{esperado}{subindices[destino]}", nombres[destino])]),
+                    )
                     self.assertContains(respuesta, "Procedimiento")
 
     def test_cada_origen_a_todas_las_demas_bases(self):
         escrituras = {2: "11010", 8: "32", 10: "26", 16: "1A"}
         subindices = {2: "₂", 8: "₈", 10: "₁₀", 16: "₁₆"}
+        nombres = {2: "Binario", 8: "Octal", 10: "Decimal", 16: "Hexadecimal"}
         for origen, numero in escrituras.items():
             destinos = [base for base in (2, 8, 10, 16) if base != origen]
             with self.subTest(origen=origen):
-                texto = texto_plano(self.convertir(numero, origen, destinos))
-                for destino in destinos:
-                    self.assertIn(f"{numero}{subindices[origen]} = {escrituras[destino]}{subindices[destino]}", texto)
-                self.assertNotIn(f"= {numero}{subindices[origen]}", texto)
+                origen_leido, leidas = resultados_de(self.convertir(numero, origen, destinos))
+                self.assertEqual(origen_leido, f"{numero}{subindices[origen]}")
+                self.assertEqual(leidas, [(f"{escrituras[b]}{subindices[b]}", nombres[b]) for b in destinos])
+
+    def test_casos_de_referencia_de_p16(self):
+        casos = (
+            ("725", 8, (10,), "725₈", [("469₁₀", "Decimal")]),
+            ("725", 8, (2, 10), "725₈", [("111010101₂", "Binario"), ("469₁₀", "Decimal")]),
+            ("725", 8, (2, 10, 16), "725₈", [("111010101₂", "Binario"), ("469₁₀", "Decimal"), ("1D5₁₆", "Hexadecimal")]),
+            ("1010", 2, (8, 10, 16), "1010₂", [("12₈", "Octal"), ("10₁₀", "Decimal"), ("A₁₆", "Hexadecimal")]),
+            ("ff", 16, (2, 8, 10), "FF₁₆", [("11111111₂", "Binario"), ("377₈", "Octal"), ("255₁₀", "Decimal")]),
+            ("13", 10, (8,), "13₁₀", [("15₈", "Octal")]),
+            ("0", 8, (2, 10, 16), "0₈", [("0₂", "Binario"), ("0₁₀", "Decimal"), ("0₁₆", "Hexadecimal")]),
+            ("0017", 8, (2,), "17₈", [("1111₂", "Binario")]),
+        )
+        for numero, origen, destinos, origen_esperado, esperadas in casos:
+            with self.subTest(numero=numero, origen=origen, destinos=destinos):
+                respuesta = self.convertir(numero, origen, destinos)
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertEqual(resultados_de(respuesta), (origen_esperado, esperadas))
 
     def test_origen_como_destino_no_se_permite(self):
         for base in (2, 8, 10, 16):
@@ -205,18 +261,46 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertNotContains(respuesta, 'id="resultado"')
         self.assertNotContains(respuesta, "Este campo es obligatorio")
 
-    def test_destinos_repetidos_o_desordenados_se_normalizan(self):
-        respuesta = self.convertir("13", 10, (16, 2, 16))
+    def test_destinos_desordenados_se_ordenan_como_las_casillas(self):
+        respuesta = self.convertir("13", 10, (16, 2))
+        self.assertContains(respuesta, "Decimal → binario y hexadecimal")
+        self.assertEqual(resultados_de(respuesta), ("13₁₀", [("1101₂", "Binario"), ("D₁₆", "Hexadecimal")]))
         texto = texto_plano(respuesta)
-        self.assertIn("Decimal → binario y hexadecimal", texto)
-        self.assertLess(texto.index("13₁₀ = 1101₂"), texto.index("13₁₀ = D₁₆"))
-        self.assertEqual(texto.count("13₁₀ = D₁₆"), 1)
         self.assertEqual(texto.count("Decimal → hexadecimal"), 1)
+
+    def test_contrato_http_estricto(self):
+        """Envíos manipulados: se rechazan con un mensaje claro, sin resultado ni traceback."""
+        casos = (
+            ({"numero": "13", "base_origen": "10", "bases_destino": ["2", "2"]}, "Las bases de destino no deben repetirse."),
+            ({"numero": "13", "base_origen": "10", "bases_destino": ["2", "16", "2"]}, "Las bases de destino no deben repetirse."),
+            ({"numero": "13", "base_origen": "10", "bases_destino": ["2"], "extra": "1"}, "no forman parte del formulario"),
+            ({"numero": ["13", "14"], "base_origen": "10", "bases_destino": ["2"]}, "hay campos repetidos"),
+            ({"numero": "13", "base_origen": ["10", "8"], "bases_destino": ["2"]}, "hay campos repetidos"),
+            ({"numero": "13", "base_origen": "3", "bases_destino": ["2"]}, "no es una de las opciones disponibles"),
+            ({"numero": "13", "base_origen": "abc", "bases_destino": ["2"]}, "no es una de las opciones disponibles"),
+            ({"numero": "13", "base_origen": "10", "bases_destino": ["3"]}, "no es una de las opciones disponibles"),
+            ({"numero": "13", "base_origen": "10", "bases_destino": ["2", "3"]}, "no es una de las opciones disponibles"),
+            ({"numero": "13", "base_origen": "10", "bases_destino": ["<b>x</b>"]}, "no es una de las opciones disponibles"),
+            ({"numero": "1" * 129, "base_origen": "10", "bases_destino": ["2"]}, "El número no puede tener más de 128 caracteres."),
+            ({"numero": "102", "base_origen": "2", "bases_destino": ["8"]}, "El dígito 2 no es válido en un número binario."),
+            ({"numero": "<script>alert(1)</script>", "base_origen": "10", "bases_destino": ["2"]}, "no es válido en un número decimal"),
+        )
+        for datos, mensaje in casos:
+            with self.subTest(datos=datos):
+                respuesta = self.client.post(self.ruta, datos)
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertIn(mensaje, texto_plano(respuesta))
+                self.assertNotContains(respuesta, 'id="resultado"')
+                self.assertNotContains(respuesta, "Traceback")
+                self.assertNotContains(respuesta, "<script>alert")
+                self.assertNotContains(respuesta, "<b>x</b>")
+        # El tope es inclusivo y las casillas repetidas legítimas (una por base) siguen valiendo.
+        self.assertContains(self.convertir("1" * 128, 2, 10), "Procedimiento")
+        self.assertContains(self.convertir("13", 10, (2, 8, 16)), "Procedimiento")
 
     def test_decimal_a_binario_en_una_etapa(self):
         respuesta = self.convertir("13", 10, 2)
-        self.assertContains(respuesta, "13₁₀")
-        self.assertContains(respuesta, "1101₂")
+        self.assertEqual(resultados_de(respuesta), ("13₁₀", [("1101₂", "Binario")]))
         self.assertContains(respuesta, "Decimal → binario")
         self.assertContains(respuesta, "13 ÷ 2")
         self.assertContains(respuesta, "residuos se leen")
@@ -227,13 +311,12 @@ class PruebasConversionBasesWeb(SimpleTestCase):
 
     def test_decimal_a_hexadecimal_sustituye_diez_por_a(self):
         respuesta = self.convertir("26", 10, 16)
-        self.assertContains(respuesta, "1A₁₆")
+        self.assertEqual(resultados_de(respuesta), ("26₁₀", [("1A₁₆", "Hexadecimal")]))
         self.assertContains(respuesta, "10 → A")
 
     def test_binario_a_decimal_muestra_la_combinacion_lineal(self):
         respuesta = self.convertir("1011", 2, 10)
-        self.assertContains(respuesta, "1011₂")
-        self.assertContains(respuesta, "11₁₀")
+        self.assertEqual(resultados_de(respuesta), ("1011₂", [("11₁₀", "Decimal")]))
         self.assertContains(respuesta, "Binario → decimal")
         self.assertContains(respuesta, "1·2")
         self.assertContains(respuesta, "<sup>3</sup>", html=False)
@@ -245,15 +328,14 @@ class PruebasConversionBasesWeb(SimpleTestCase):
 
     def test_hexadecimal_a_decimal_en_minusculas(self):
         respuesta = self.convertir("1a", 16, 10)
-        self.assertContains(respuesta, "1A₁₆")
+        self.assertEqual(resultados_de(respuesta), ("1A₁₆", [("26₁₀", "Decimal")]))
         self.assertContains(respuesta, "Hexadecimal → decimal")
         self.assertContains(respuesta, "A = 10")
-        self.assertContains(respuesta, "26₁₀")
 
     def test_binario_a_hexadecimal_en_dos_etapas(self):
         respuesta = self.convertir("1010", 2, 16)
         texto = texto_plano(respuesta)
-        self.assertIn("1010₂ = A₁₆", texto)
+        self.assertEqual(resultados_de(respuesta), ("1010₂", [("A₁₆", "Hexadecimal")]))
         self.assertIn("pasa por decimal", texto)
         self.assertIn("escriben la base pedida.", texto)
         self.assertNotIn("uno de los resultados pedidos", texto)
@@ -270,24 +352,31 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertIn("Este valor decimal se reutiliza en las etapas siguientes", texto)
 
     def test_octal_a_binario_en_dos_etapas(self):
-        texto = texto_plano(self.convertir("17", 8, 2))
-        self.assertIn("17₈ = 1111₂", texto)
+        respuesta = self.convertir("17", 8, 2)
+        texto = texto_plano(respuesta)
+        self.assertEqual(resultados_de(respuesta), ("17₈", [("1111₂", "Binario")]))
         self.assertIn("17₈ → 15₁₀ decimal intermedio → 1111₂", texto)
         self.assertIn("Etapa 1 · Octal → decimal", texto)
         self.assertIn("Etapa 2 · Decimal → binario", texto)
 
     def test_octal_a_las_otras_tres_bases_comparte_la_expansion(self):
-        respuesta = self.convertir("17", 8, (2, 10, 16))
+        respuesta = self.convertir("725", 8, (2, 10, 16))
         texto = texto_plano(respuesta)
         self.assertIn("Octal → binario, decimal y hexadecimal", texto)
-        # Solo los resultados pedidos, en el orden de las casillas, con el mismo origen.
-        resultado = texto[texto.index("Resultado"):texto.index("Procedimiento")]
-        self.assertEqual(resultado, "Resultado 17₈ = 1111₂ 17₈ = 15₁₀ 17₈ = F₁₆ ")
+        # Una sola sección de resultados: el origen una vez y solo las escrituras pedidas, en orden.
+        self.assertEqual(texto.count("Resultado "), 1)
+        self.assertEqual(texto.count("Número de origen"), 1)
+        self.assertEqual(
+            resultados_de(respuesta),
+            ("725₈", [("111010101₂", "Binario"), ("469₁₀", "Decimal"), ("1D5₁₆", "Hexadecimal")]),
+        )
         # La expansión hacia decimal aparece una sola vez y alimenta las dos divisiones.
         self.assertEqual(texto.count("Expansión posicional"), 1)
         self.assertEqual(texto.count("Octal → decimal"), 1)
-        self.assertEqual(texto.count("1·8"), 1)
-        self.assertIn("17₈ → 15₁₀ decimal intermedio → 1111₂ F₁₆", texto)
+        self.assertEqual(texto.count("7·8"), 1)
+        self.assertIn("725₈ = 7·82 + 2·81 + 5·80 = 448 + 16 + 5 = 469₁₀", texto)
+        self.assertEqual(texto.count("decimal intermedio"), 1)
+        self.assertIn("725₈ → 469₁₀ decimal intermedio → 111010101₂ 1D5₁₆", texto)
         self.assertIn("escriben las demás bases pedidas.", texto)
         self.assertIn("Ese valor decimal es, además, uno de los resultados pedidos.", texto)
         self.assertIn("Etapa 1 · Octal → decimal", texto)
@@ -297,16 +386,30 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         # Decimal fue pedido, pero no existe una etapa decimal → decimal ni una segunda expansión.
         self.assertNotIn("Decimal → decimal", texto)
         self.assertEqual(texto.count("Divisiones sucesivas entre"), 2)
-        self.assertEqual(texto.count("Divisiones sucesivas de 15₁₀"), 2)
-        self.assertIn("15 ÷ 2", texto)
-        self.assertIn("15 ÷ 16", texto)
-        self.assertIn("15 → F", texto)
+        self.assertEqual(texto.count("Divisiones sucesivas de 469₁₀"), 2)
+        self.assertIn("469 ÷ 2", texto)
+        self.assertIn("469 ÷ 16", texto)
+        self.assertIn("13 → D", texto)
+
+    def test_octal_a_binario_y_decimal_expansion_una_vez_y_solo_una_division(self):
+        respuesta = self.convertir("725", 8, (2, 10))
+        texto = texto_plano(respuesta)
+        self.assertEqual(resultados_de(respuesta), ("725₈", [("111010101₂", "Binario"), ("469₁₀", "Decimal")]))
+        self.assertEqual(texto.count("Expansión posicional"), 1)
+        self.assertEqual(texto.count("Divisiones sucesivas entre"), 1)
+        self.assertIn("Etapa 1 · Octal → decimal", texto)
+        self.assertIn("Etapa 2 · Decimal → binario", texto)
+        self.assertNotIn("Etapa 3", texto)
+        self.assertNotIn("Decimal → decimal", texto)
+        self.assertNotIn("Decimal → hexadecimal", texto)
+        self.assertIn("escriben la otra base pedida.", texto)
+        self.assertIn("uno de los resultados pedidos", texto)
 
     def test_decimal_a_varias_bases_sin_etapa_intermedia(self):
-        texto = texto_plano(self.convertir("13", 10, (2, 8, 16)))
+        respuesta = self.convertir("13", 10, (2, 8, 16))
+        texto = texto_plano(respuesta)
         self.assertIn("Decimal → binario, octal y hexadecimal", texto)
-        resultado = texto[texto.index("Resultado"):texto.index("Procedimiento")]
-        self.assertEqual(resultado, "Resultado 13₁₀ = 1101₂ 13₁₀ = 15₈ 13₁₀ = D₁₆ ")
+        self.assertEqual(resultados_de(respuesta), ("13₁₀", [("1101₂", "Binario"), ("15₈", "Octal"), ("D₁₆", "Hexadecimal")]))
         self.assertIn("no hay etapa intermedia", texto)
         self.assertNotIn("Expansión posicional", texto)
         self.assertNotIn("decimal intermedio", texto)
@@ -319,25 +422,25 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertIn("13 → D", texto)
 
     def test_solo_se_muestran_los_destinos_pedidos(self):
-        texto = texto_plano(self.convertir("17", 8, 16))
+        respuesta = self.convertir("17", 8, 16)
+        texto = texto_plano(respuesta)
         self.assertIn("Octal → hexadecimal", texto)
-        self.assertIn("17₈ = F₁₆", texto)
+        self.assertEqual(resultados_de(respuesta), ("17₈", [("F₁₆", "Hexadecimal")]))
         self.assertNotIn("1111₂", texto)
-        self.assertNotIn("17₈ = 15₁₀", texto)
         self.assertNotIn("Etapa 3", texto)
 
-        texto = texto_plano(self.convertir("17", 8, (10, 16)))
+        respuesta = self.convertir("17", 8, (10, 16))
+        texto = texto_plano(respuesta)
         self.assertIn("Octal → decimal y hexadecimal", texto)
-        self.assertIn("17₈ = 15₁₀", texto)
-        self.assertIn("17₈ = F₁₆", texto)
+        self.assertEqual(resultados_de(respuesta), ("17₈", [("15₁₀", "Decimal"), ("F₁₆", "Hexadecimal")]))
         self.assertNotIn("1111₂", texto)
         self.assertNotIn("Decimal → binario", texto)
 
     def test_binario_a_octal_y_decimal_reutiliza_el_intermedio(self):
-        texto = texto_plano(self.convertir("1011", 2, (8, 10)))
+        respuesta = self.convertir("1011", 2, (8, 10))
+        texto = texto_plano(respuesta)
         self.assertIn("Binario → octal y decimal", texto)
-        self.assertIn("1011₂ = 13₈", texto)
-        self.assertIn("1011₂ = 11₁₀", texto)
+        self.assertEqual(resultados_de(respuesta), ("1011₂", [("13₈", "Octal"), ("11₁₀", "Decimal")]))
         self.assertIn("1011₂ → 11₁₀ decimal intermedio → 13₈", texto)
         self.assertIn("escriben la otra base pedida.", texto)
         self.assertIn("uno de los resultados pedidos", texto)
@@ -352,8 +455,10 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertEqual(resultado["titulo"], "Octal → binario, decimal y hexadecimal")
         self.assertEqual(resultado["origen"], "17₈")
         self.assertEqual(resultado["bases_destino"], (2, 10, 16))
-        self.assertEqual([r["destino"] for r in resultado["resultados"]], ["1111₂", "15₁₀", "F₁₆"])
-        self.assertEqual([r["igualdad"] for r in resultado["resultados"]], ["17₈ = 1111₂", "17₈ = 15₁₀", "17₈ = F₁₆"])
+        self.assertEqual(
+            [(r["base"], r["nombre"], r["destino"]) for r in resultado["resultados"]],
+            [(2, "binario", "1111₂"), (10, "decimal", "15₁₀"), (16, "hexadecimal", "F₁₆")],
+        )
         self.assertEqual([e["tipo"] for e in resultado["etapas"]], ["expansion", "division", "division"])
         self.assertEqual([e["titulo"] for e in resultado["etapas"]], ["Octal → decimal", "Decimal → binario", "Decimal → hexadecimal"])
         self.assertEqual(resultado["intermedio"], "15₁₀")
@@ -369,7 +474,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         solo_decimal = convertir_entrada(numero="1011", base_origen=2, bases_destino=[10])
         self.assertIsNone(solo_decimal["intermedio"])
         self.assertEqual([e["tipo"] for e in solo_decimal["etapas"]], ["expansion"])
-        self.assertEqual(solo_decimal["resultados"][0]["igualdad"], "1011₂ = 11₁₀")
+        self.assertEqual(solo_decimal["resultados"], ({"base": 10, "nombre": "decimal", "destino": "11₁₀"},))
 
     def test_titulos_enumeran_los_destinos(self):
         self.assertEqual(enumerar(["binario"]), "binario")
@@ -409,18 +514,6 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertContains(self.convertir("", 10, 2), "Ingresa un número.")
         self.assertContains(self.convertir("-13", 10, 2), "no negativos")
         self.assertContains(self.convertir("-11", 2, (8, 16)), "no negativos")
-
-    def test_base_invalida_en_el_formulario(self):
-        for datos in (
-            {"numero": "1", "base_origen": "3", "bases_destino": ["2"]},
-            {"numero": "1", "base_origen": "10", "bases_destino": ["3"]},
-            {"numero": "1", "base_origen": "10", "bases_destino": ["2", "3"]},
-        ):
-            with self.subTest(datos=datos):
-                respuesta = self.client.post(self.ruta, datos)
-                self.assertEqual(respuesta.status_code, 200)
-                self.assertNotContains(respuesta, 'id="resultado"')
-                self.assertNotContains(respuesta, "Traceback")
 
     def test_tema_y_recursos_locales(self):
         html = self.client.get(self.ruta).content.decode("utf-8")

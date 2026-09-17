@@ -220,8 +220,7 @@ def conversion_bases(request):
         except ValueError as error:
             form.add_error("numero", str(error))
 
-    # El teclado, la etiqueta del número y la casilla de destino que se oculta siguen
-    # a la base de origen, también sin JavaScript.
+    # El teclado y la etiqueta del número siguen a la base de origen, también sin JavaScript.
     base_origen = form["base_origen"].value() if form.is_bound else form.initial.get("base_origen", 10)
     try:
         base_entrada = int(base_origen)

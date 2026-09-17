@@ -324,8 +324,12 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             with cliente_http.open(solicitud, timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 conversion = respuesta.read().decode("utf-8")
-            self.assertIn("13₁₀ = 1101₂", conversion)
-            self.assertIn("13₁₀ = D₁₆", conversion)
+            # Conversión multidestino real por la pila empaquetada: el origen una vez y las dos escrituras.
+            self.assertIn("Decimal → binario y hexadecimal", conversion)
+            self.assertIn("13₁₀", conversion)
+            self.assertIn("1101₂", conversion)
+            self.assertIn("D₁₆", conversion)
+            self.assertNotIn("15₈", conversion)
 
             # Operaciones con vectores: la combinación lineal reutiliza Gauss-Jordan por la misma pila.
             url_vectores = f"{url}vectores/operaciones/"

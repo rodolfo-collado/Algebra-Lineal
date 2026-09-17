@@ -994,24 +994,38 @@ textarea:focus {
     list-style: none;
 }
 
-/* Una igualdad por destino pedido, con el mismo origen a la izquierda. */
-.base-equalities {
+/* Resultado: el origen una sola vez y, debajo, una escritura por destino pedido. */
+.base-results {
     display: grid;
-    gap: 0.45rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.base-equality {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.55rem 0.75rem;
-    margin: 0;
+    gap: 0.4rem;
     font-size: 1.35rem;
     font-weight: 700;
     letter-spacing: 0.01em;
+}
+
+.base-results-origin {
+    margin: 0;
+}
+
+.base-results-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0 0 0 0.5rem;
+    list-style: none;
+}
+
+.base-result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.6rem;
+}
+
+.base-result-name {
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
 }
 
 .base-equals {
@@ -1022,6 +1036,8 @@ textarea:focus {
 .base-numeral {
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
+    /* Un número largo se parte antes que provocar desplazamiento horizontal. */
+    overflow-wrap: anywhere;
 }
 
 .base-numeral-result {
@@ -1367,7 +1383,7 @@ textarea:focus {
         width: 100%;
     }
 
-    .base-equality {
+    .base-results {
         font-size: 1.15rem;
     }
 }
