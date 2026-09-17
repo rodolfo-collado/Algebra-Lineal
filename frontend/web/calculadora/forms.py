@@ -257,7 +257,12 @@ class SistemaForm(forms.Form):
 
 
 class ConversionBasesForm(forms.Form):
-    """Un número, su base de origen y la base de destino; las bases deben diferir."""
+    """Un número, su base de origen y las bases a las que convertirlo.
+
+    Los destinos son casillas: una, varias o todas las demás bases, nunca la de
+    origen y al menos una. El orden de los destinos es siempre el de las casillas,
+    aunque un POST manipulado los envíe desordenados o repetidos.
+    """
 
     BASES = (
         (2, "Binario"),
@@ -286,24 +291,34 @@ class ConversionBasesForm(forms.Form):
         initial=10,
         widget=forms.Select(attrs={"class": "field-select"}),
     )
-    base_destino = forms.TypedChoiceField(
-        label="Base de destino",
+    bases_destino = forms.TypedMultipleChoiceField(
+        label="Convertir a",
         choices=BASES,
         coerce=int,
-        initial=2,
-        widget=forms.Select(attrs={"class": "field-select"}),
+        initial=[2],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
     )
 
     def clean_numero(self):
         return self.cleaned_data.get("numero", "")
 
+    def clean_bases_destino(self):
+        elegidas = set(self.cleaned_data.get("bases_destino") or ())
+        return [base for base, _ in self.BASES if base in elegidas]
+
     def clean(self):
         datos = super().clean()
-        if datos.get("base_origen") and datos.get("base_origen") == datos.get("base_destino"):
+        destinos = datos.get("bases_destino")
+        if destinos is None:
+            return datos
+        if datos.get("base_origen") in destinos:
             self.add_error(
-                "base_destino",
+                "bases_destino",
                 "La base de origen y la base de destino deben ser distintas.",
             )
+        elif not destinos:
+            self.add_error("bases_destino", "Elige al menos una base de destino.")
         return datos
 
 

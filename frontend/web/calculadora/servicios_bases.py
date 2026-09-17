@@ -1,11 +1,13 @@
 """Presentación estructurada de conversiones de base para la interfaz web."""
 
+from collections.abc import Iterable
+
 from backend.sistemas_numericos import (
     NOMBRES_BASE,
     SUBINDICES_BASE,
     ConversionDesdeDecimal,
     ConversionHaciaDecimal,
-    convertir,
+    convertir_a_varias_bases,
 )
 
 
@@ -14,8 +16,22 @@ def notacion(digitos: str, base: int) -> str:
     return f"{digitos}{SUBINDICES_BASE[base]}"
 
 
+def enumerar(nombres: Iterable[str]) -> str:
+    """«binario», «binario y octal» o «binario, decimal y hexadecimal»."""
+    nombres = list(nombres)
+    if len(nombres) <= 1:
+        return "".join(nombres)
+    return f"{', '.join(nombres[:-1])} y {nombres[-1]}"
+
+
 def titulo_direccion(base_origen: int, base_destino: int) -> str:
     return f"{NOMBRES_BASE[base_origen].capitalize()} → {NOMBRES_BASE[base_destino]}"
+
+
+def titulo_conversion(base_origen: int, bases_destino: Iterable[int]) -> str:
+    """«Octal → binario, decimal y hexadecimal»: el origen y todos los destinos pedidos."""
+    destinos = enumerar(NOMBRES_BASE[base] for base in bases_destino)
+    return f"{NOMBRES_BASE[base_origen].capitalize()} → {destinos}"
 
 
 def _etapa_expansion(conversion: ConversionHaciaDecimal) -> dict:
@@ -49,31 +65,45 @@ def _etapa_division(conversion: ConversionDesdeDecimal) -> dict:
     }
 
 
-def convertir_entrada(*, numero: str, base_origen: int, base_destino: int) -> dict:
+def convertir_entrada(*, numero: str, base_origen: int, bases_destino: Iterable[int]) -> dict:
     """Ejecuta la conversión y arma un diccionario listo para la plantilla.
 
-    No genera HTML: solo datos (etapas con sus pasos, notaciones y textos de
-    lectura). Con decimal en un extremo hay una etapa; si ninguna base es
-    decimal, la expansión posicional y las divisiones sucesivas se encadenan
-    y el valor decimal intermedio queda a la vista.
+    No genera HTML: solo datos (resultados, etapas con sus pasos, notaciones y
+    textos de lectura). Cada etapa aparece una sola vez: si el origen no es
+    decimal, la expansión posicional es la etapa compartida y va primero;
+    después hay una etapa de divisiones sucesivas por cada destino no decimal,
+    todas desde el mismo valor intermedio. Si se pidió decimal, su resultado es
+    ese valor y no genera una etapa propia.
     """
-    conversion = convertir(numero, base_origen, base_destino)
-    etapas = []
-    if conversion.hacia_decimal:
-        etapas.append(_etapa_expansion(conversion.hacia_decimal))
-    if conversion.desde_decimal:
-        etapas.append(_etapa_division(conversion.desde_decimal))
+    conversion = convertir_a_varias_bases(numero, base_origen, bases_destino)
+    compartida = _etapa_expansion(conversion.hacia_decimal) if conversion.hacia_decimal else None
+    divisiones = tuple(
+        _etapa_division(destino.desde_decimal)
+        for destino in conversion.destinos
+        if destino.desde_decimal
+    )
+    decimal = notacion(str(conversion.valor_decimal), 10)
+    origen = compartida["origen"] if compartida else decimal
 
-    origen = etapas[0]["origen"]
-    destino = notacion(conversion.resultado, base_destino)
+    resultados = []
+    for destino in conversion.destinos:
+        escritura = notacion(destino.resultado, destino.base_destino)
+        resultados.append({
+            "base": destino.base_destino,
+            "destino": escritura,
+            "igualdad": f"{origen} = {escritura}",
+        })
+
     return {
-        "titulo": titulo_direccion(base_origen, base_destino),
+        "titulo": titulo_conversion(base_origen, conversion.bases_destino),
         "origen": origen,
-        "destino": destino,
-        "igualdad": f"{origen} = {destino}",
         "base_origen": base_origen,
-        "base_destino": base_destino,
-        "etapas": tuple(etapas),
-        # Solo con dos etapas: el decimal por el que pasa la conversión.
-        "intermedio": notacion(str(conversion.valor_decimal), 10) if len(etapas) == 2 else None,
+        "bases_destino": conversion.bases_destino,
+        "resultados": tuple(resultados),
+        "etapas": ((compartida,) if compartida else ()) + divisiones,
+        # Solo cuando la expansión alimenta divisiones: el decimal por el que pasa todo
+        # y las escrituras que salen de él (una rama por destino no decimal).
+        "intermedio": decimal if compartida and divisiones else None,
+        "ramas": tuple(etapa["destino"] for etapa in divisiones) if compartida else (),
+        "decimal_pedido": 10 in conversion.bases_destino,
     }

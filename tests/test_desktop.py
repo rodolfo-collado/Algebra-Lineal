@@ -304,15 +304,17 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             with cliente_http.open(url_bases, timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 self.assertIn("Conversión de bases", respuesta.read().decode("utf-8"))
+            # Varias casillas «Convertir a» viajan como campos repetidos, igual que en el navegador.
             solicitud = Request(
                 url_bases,
                 data=urlencode(
-                    {
-                        "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
-                        "numero": "13",
-                        "base_origen": "10",
-                        "base_destino": "2",
-                    }
+                    [
+                        ("csrfmiddlewaretoken", csrf.group(1).decode("ascii")),
+                        ("numero", "13"),
+                        ("base_origen", "10"),
+                        ("bases_destino", "2"),
+                        ("bases_destino", "16"),
+                    ]
                 ).encode("ascii"),
                 headers={
                     "Content-Type": "application/x-www-form-urlencoded",
@@ -322,8 +324,8 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             with cliente_http.open(solicitud, timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 conversion = respuesta.read().decode("utf-8")
-            self.assertIn("13₁₀", conversion)
-            self.assertIn("1101₂", conversion)
+            self.assertIn("13₁₀ = 1101₂", conversion)
+            self.assertIn("13₁₀ = D₁₆", conversion)
 
             # Operaciones con vectores: la combinación lineal reutiliza Gauss-Jordan por la misma pila.
             url_vectores = f"{url}vectores/operaciones/"

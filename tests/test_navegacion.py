@@ -318,7 +318,7 @@ class PruebasNavegacion(SimpleTestCase):
             "/sistemas/", {"sistema": "x1+x2=3;x1-x2=1", "metodo": "comparar"},
         )))
         paginas.append(("/bases/conversion/", self.client.post(
-            "/bases/conversion/", {"numero": "1010", "base_origen": "2", "base_destino": "16"},
+            "/bases/conversion/", {"numero": "1010", "base_origen": "2", "bases_destino": ["10", "16"]},
         )))
         for ruta, respuesta in paginas:
             with self.subTest(ruta=ruta):

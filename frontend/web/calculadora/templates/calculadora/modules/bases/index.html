@@ -35,17 +35,23 @@
                         <p class="field-error" role="alert">{{ error }}</p>
                     {% endfor %}
                 </div>
-                <button type="button" class="base-swap" data-intercambiar-bases
-                        aria-label="Intercambiar base de origen y base de destino" title="Intercambiar bases" hidden>
-                    <span aria-hidden="true">⇄</span>
-                </button>
-                <div class="base-selector">
-                    <label for="{{ form.base_destino.id_for_label }}">{{ form.base_destino.label }}</label>
-                    {{ form.base_destino }}
-                    {% for error in form.base_destino.errors %}
+                {% comment %}Casillas reales: una, varias o todas las demás bases. La casilla de la base de origen se oculta y desactiva (también sin JavaScript, según la base activa); el servidor vuelve a comprobarlo al convertir.{% endcomment %}
+                <fieldset class="choice-fieldset base-targets" data-destinos>
+                    <legend>{{ form.bases_destino.label }}</legend>
+                    <div class="option-list">
+                        {% for casilla in form.bases_destino %}
+                            <label class="option" data-destino-base="{{ casilla.data.value }}"{% if casilla.data.value == base_entrada_activa %} hidden{% endif %}>
+                                <input type="checkbox" name="bases_destino" value="{{ casilla.data.value }}" id="{{ casilla.id_for_label }}"{% if casilla.data.value == base_entrada_activa %} disabled{% elif casilla.data.selected %} checked{% endif %}>
+                                <span>{{ casilla.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <p class="field-help option-help">Marca una, varias o todas las demás bases.</p>
+                    <p class="field-error" data-validacion-destinos role="alert" hidden></p>
+                    {% for error in form.bases_destino.errors %}
                         <p class="field-error" role="alert">{{ error }}</p>
                     {% endfor %}
-                </div>
+                </fieldset>
             </div>
 
             {% for base, nombre, teclado in bases_entrada %}
@@ -71,11 +77,16 @@
 
             <section class="panel panel-final" aria-labelledby="equality-title">
                 <h3 id="equality-title" class="panel-title">Resultado</h3>
-                <p class="base-equality" aria-label="{{ resultado.igualdad }}">
-                    <span class="base-numeral">{{ resultado.origen }}</span>
-                    <span class="base-equals" aria-hidden="true">=</span>
-                    <span class="base-numeral base-numeral-result">{{ resultado.destino }}</span>
-                </p>
+                {% comment %}Solo las escrituras pedidas, una igualdad por destino y en el orden de las casillas.{% endcomment %}
+                <ul class="base-equalities">
+                    {% for escritura in resultado.resultados %}
+                        <li class="base-equality" aria-label="{{ escritura.igualdad }}">
+                            <span class="base-numeral">{{ resultado.origen }}</span>
+                            <span class="base-equals" aria-hidden="true">=</span>
+                            <span class="base-numeral base-numeral-result">{{ escritura.destino }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
             </section>
 
             <section class="panel" aria-labelledby="procedure-title">

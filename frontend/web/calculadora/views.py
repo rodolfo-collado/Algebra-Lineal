@@ -202,7 +202,7 @@ def ecuaciones_matriciales(request):
 
 @require_http_methods(["GET", "POST"])
 def conversion_bases(request):
-    """Conversión entre binario, octal, decimal y hexadecimal con procedimiento visible."""
+    """Conversión de un número a una o varias de las otras bases con procedimiento compartido."""
     actual = catalogo.herramienta_por_ruta(request.resolver_match)
     if actual is None or actual.id != "conversion-bases":
         raise Http404("No existe esa herramienta.")
@@ -215,12 +215,13 @@ def conversion_bases(request):
             resultado = convertir_entrada(
                 numero=form.cleaned_data["numero"],
                 base_origen=form.cleaned_data["base_origen"],
-                base_destino=form.cleaned_data["base_destino"],
+                bases_destino=form.cleaned_data["bases_destino"],
             )
         except ValueError as error:
             form.add_error("numero", str(error))
 
-    # El teclado y la etiqueta del número siguen a la base de origen, también sin JavaScript.
+    # El teclado, la etiqueta del número y la casilla de destino que se oculta siguen
+    # a la base de origen, también sin JavaScript.
     base_origen = form["base_origen"].value() if form.is_bound else form.initial.get("base_origen", 10)
     try:
         base_entrada = int(base_origen)

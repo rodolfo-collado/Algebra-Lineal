@@ -5,16 +5,13 @@
     if (!root) return;
 
     const origen = root.querySelector('select[name="base_origen"]');
-    const destino = root.querySelector('select[name="base_destino"]');
     const campo = root.querySelector('input[name="numero"]');
-    const intercambiar = root.querySelector("[data-intercambiar-bases]");
+    const destinos = root.querySelectorAll('input[name="bases_destino"]');
     const aviso = root.querySelector("[data-validacion-cliente]");
+    const avisoDestinos = root.querySelector("[data-validacion-destinos]");
     const teclados = root.querySelectorAll("[data-teclado-base]");
     const etiquetasNumero = root.querySelectorAll("[data-number-label-base]");
-    if (!origen || !destino || !campo) return;
-
-    let origenAnterior = origen.value;
-    let destinoAnterior = destino.value;
+    if (!origen || !campo || !destinos.length) return;
 
     function bloqueActivo() {
         return Array.from(teclados).find((bloque) => bloque.dataset.tecladoBase === origen.value) || null;
@@ -58,10 +55,23 @@
         }
     }
 
-    // Una base no puede ser origen y destino a la vez: se apaga en el otro selector.
-    function sincronizarOpciones() {
-        Array.from(destino.options).forEach((opcion) => { opcion.disabled = opcion.value === origen.value; });
-        Array.from(origen.options).forEach((opcion) => { opcion.disabled = opcion.value === destino.value; });
+    // Hace falta al menos un destino; el servidor lo vuelve a comprobar al convertir.
+    function validarDestinos() {
+        if (!avisoDestinos) return;
+        const alguno = Array.from(destinos).some((casilla) => !casilla.disabled && casilla.checked);
+        avisoDestinos.textContent = alguno ? "" : "Elige al menos una base de destino.";
+        avisoDestinos.hidden = alguno;
+    }
+
+    // La base de origen nunca es destino: su casilla se apaga, se desmarca y se oculta.
+    function sincronizarDestinos() {
+        destinos.forEach((casilla) => {
+            const esOrigen = casilla.value === origen.value;
+            casilla.disabled = esOrigen;
+            if (esOrigen) casilla.checked = false;
+            const opcion = casilla.closest("[data-destino-base]");
+            if (opcion) opcion.hidden = esOrigen;
+        });
     }
 
     function actualizar() {
@@ -76,38 +86,16 @@
         etiquetasNumero.forEach((etiqueta) => {
             etiqueta.hidden = etiqueta.dataset.numberLabelBase !== origen.value;
         });
-        sincronizarOpciones();
+        sincronizarDestinos();
         validar();
     }
 
+    // El aviso de destinos solo aparece tras interactuar: al cargar, el error lo pone el servidor.
     origen.addEventListener("change", () => {
-        // Elegir como origen la base de destino equivale a intercambiarlas.
-        if (origen.value === destino.value) destino.value = origenAnterior;
-        origenAnterior = origen.value;
-        destinoAnterior = destino.value;
         actualizar();
+        validarDestinos();
     });
-
-    destino.addEventListener("change", () => {
-        if (destino.value === origen.value) origen.value = destinoAnterior;
-        origenAnterior = origen.value;
-        destinoAnterior = destino.value;
-        actualizar();
-    });
-
-    if (intercambiar) {
-        intercambiar.hidden = false;
-        intercambiar.addEventListener("click", () => {
-            const valorOrigen = origen.value;
-            origen.value = destino.value;
-            destino.value = valorOrigen;
-            origenAnterior = origen.value;
-            destinoAnterior = destino.value;
-            actualizar();
-            campo.focus();
-        });
-    }
-
+    destinos.forEach((casilla) => casilla.addEventListener("change", validarDestinos));
     campo.addEventListener("input", validar);
     actualizar();
 })();
