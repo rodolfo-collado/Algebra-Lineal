@@ -285,7 +285,7 @@ class PruebasResultadosProducto(SimpleTestCase):
             self.assertIn(f"/static/calculadora/{recurso}", html)
         self.assertNotIn('src="https://', html)
         self.assertNotIn('href="https://', html)
-        self.assertIn('data-teclado-para="matrix-fields"', html)
+        self.assertIn('id="matrix-fields" data-perfil="numerico"', html)
 
     def test_servicio_delega_en_el_backend(self):
         with patch("frontend.web.calculadora.servicios_matrices.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:

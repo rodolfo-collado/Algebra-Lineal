@@ -30,7 +30,7 @@ from .opciones_vectores import AYUDAS, texto_boton
 from .servicios import resolver_entrada_web
 from .servicios_bases import convertir_entrada
 from .servicios_vectores import operar_vectores
-from .teclados import TECLADO_MATRIZ, TECLADO_SISTEMA, TECLADOS_BASE
+from .teclados import PERFILES_BASE, perfiles_para
 
 
 @require_GET
@@ -105,8 +105,7 @@ def sistemas(request):
             "opciones_abiertas": set(form.bloques_elegidos()) != set(BLOQUES_PREDETERMINADOS),
             "guias": guias,
             "exploraciones": exploraciones,
-            "teclado_sistema": TECLADO_SISTEMA,
-            "teclado_matriz": TECLADO_MATRIZ,
+            "perfiles_teclado": perfiles_para("sistema", "numerico"),
         },
     )
 
@@ -154,7 +153,7 @@ def operaciones_vectores(request):
             "ayudas_operacion": AYUDAS,
             "texto_boton": texto_boton(estructura["operacion"]),
             "valores_vectores": form.valores_ingresados(),
-            "teclado_vector": TECLADO_MATRIZ,
+            "perfiles_teclado": perfiles_para("numerico"),
         },
     )
 
@@ -174,7 +173,7 @@ def operaciones_matrices(request):
                 form.add_error(None, str(error))
     return render(request, "calculadora/modules/matrices/index.html", {
         "form": form, "resultado": resultado, "opciones_matrices": OPCIONES_MATRICES,
-        "teclado_matriz": TECLADO_MATRIZ,
+        "perfiles_teclado": perfiles_para("numerico"),
     })
 
 
@@ -196,7 +195,7 @@ def ecuaciones_matriciales(request):
     return render(request, "calculadora/modules/ecuaciones/index.html", {
         "form": form, "resultado": resultado, "ayuda_metodos": AYUDA_METODOS_ECUACION,
         # El procedimiento reutiliza los bloques de Resolver un sistema, todos visibles.
-        "mostrar": frozenset(BLOQUES_PREDETERMINADOS), "teclado_matriz": TECLADO_MATRIZ,
+        "mostrar": frozenset(BLOQUES_PREDETERMINADOS), "perfiles_teclado": perfiles_para("numerico"),
     })
 
 
@@ -226,7 +225,7 @@ def conversion_bases(request):
         base_entrada = int(base_origen)
     except (TypeError, ValueError):
         base_entrada = 10
-    if base_entrada not in TECLADOS_BASE:
+    if base_entrada not in PERFILES_BASE:
         base_entrada = 10
 
     return render(
@@ -236,8 +235,17 @@ def conversion_bases(request):
             "form": form,
             "resultado": resultado,
             "bases_entrada": tuple(
-                (base, NOMBRES_BASE[base], teclado) for base, teclado in TECLADOS_BASE.items()
+                (base, NOMBRES_BASE[base]) for base in PERFILES_BASE
             ),
+            "perfiles_teclado": perfiles_para(*(perfil.id for perfil in PERFILES_BASE.values())),
+            "bases_digitos": {
+                base: {
+                    "nombre": NOMBRES_BASE[base], "perfil": perfil.id,
+                    "digitos": [tecla.insercion for tecla in perfil.teclas],
+                }
+                for base, perfil in PERFILES_BASE.items()
+            },
+            "perfil_entrada": PERFILES_BASE[base_entrada].id,
             "base_entrada_activa": base_entrada,
         },
     )

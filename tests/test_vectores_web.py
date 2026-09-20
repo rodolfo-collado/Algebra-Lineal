@@ -25,9 +25,9 @@ from frontend.web.calculadora.opciones_vectores import (
     nombres_vectores,
 )
 from frontend.web.calculadora.servicios_vectores import operar_vectores
-from frontend.web.calculadora.teclados import TECLADO_MATRIZ
+from frontend.web.calculadora.teclados import perfiles_para
 from tests.test_navegacion import Documento
-from tests.test_teclado import Botones
+from tests.test_teclado import Pagina
 
 RAIZ = Path(__file__).resolve().parents[1]
 STATIC = RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora"
@@ -243,18 +243,19 @@ class PruebasFormulario(SimpleTestCase):
 
     def test_teclado_contextual_reutilizado_y_controles_de_estructura_aparte(self):
         html = self.client.get(RUTA).content.decode("utf-8")
-        self.assertIn('class="math-keyboard" data-teclado="matriz" data-teclado-para="vector-fields"', html)
+        pagina = Pagina(html)
+        self.assertEqual(len(pagina.teclados), 1)
+        self.assertEqual(pagina.contenedores["vector-fields"], "numerico")
+        self.assertEqual(pagina.perfiles_publicados, perfiles_para("numerico"))
         self.assertIn('role="group" aria-label="Teclado matemático" hidden>', html)
-        botones = Botones(html)
-        teclado = [attrs for grupo, attrs in botones.botones if grupo == "teclado"]
-        self.assertEqual([b["data-insercion"] for b in teclado], [t.insercion for t in TECLADO_MATRIZ.teclas])
-        self.assertEqual([b["data-insercion"] for b in teclado], ["-", "/"])
+        teclado = pagina.perfiles_publicados["numerico"]["grupos"][0]["teclas"]
+        self.assertEqual([t["insercion"] for t in teclado], ["-", "/"])
         estructura = re.findall(r'aria-label="(Quitar una componente|Agregar una componente|Quitar un vector|Agregar un vector)" hidden', html)
         self.assertEqual(sorted(estructura), ["Agregar un vector", "Agregar una componente", "Quitar un vector", "Quitar una componente"])
         self.assertIn('aria-label="Estructura de los vectores"', html)
         for boton in teclado:
-            self.assertNotIn("Quitar", boton["aria-label"])
-            self.assertNotIn("Agregar", boton["aria-label"])
+            self.assertNotIn("Quitar", boton["nombre"])
+            self.assertNotIn("Agregar", boton["nombre"])
         self.assertIn("<noscript>", html)
         self.assertIn('name="ajustar"', html)
 

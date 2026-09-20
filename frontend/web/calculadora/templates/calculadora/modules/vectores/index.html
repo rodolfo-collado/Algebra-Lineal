@@ -31,7 +31,7 @@
                 </fieldset>
             </section>
 
-            <section id="vector-fields" class="workspace-section" aria-labelledby="vectors-title">
+            <section id="vector-fields" data-perfil="numerico" class="workspace-section" aria-labelledby="vectors-title">
                 <h3 id="vectors-title" class="section-title">Vectores</h3>
 
                 <div class="structure-controls vector-structure" role="group" aria-label="Estructura de los vectores">
@@ -78,7 +78,7 @@
                 </p>
                 <p class="field-help vector-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos.</p>
 
-                {% include "calculadora/components/math_keyboard.html" with teclado=teclado_vector campos_id="vector-fields" %}
+                {% include "calculadora/components/math_keyboard.html" %}
                 <noscript>
                     <p class="field-help">Sin JavaScript, cambia la operación o la dimensión y pulsa <strong>Aplicar</strong> para redibujar los vectores antes de calcular.</p>
                     <button class="btn btn-secondary" type="submit" name="ajustar" value="1">Aplicar</button>

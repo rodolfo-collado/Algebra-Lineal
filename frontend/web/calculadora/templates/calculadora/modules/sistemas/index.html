@@ -49,7 +49,7 @@
                 </fieldset>
             </div>
 
-            <fieldset id="system-fields" class="input-mode">
+            <fieldset id="system-fields" data-perfil="sistema" class="input-mode">
                 <legend class="sr-only">Sistema de ecuaciones</legend>
                 <div class="field-group">
                     {{ form.sistema.label_tag }}
@@ -61,11 +61,10 @@
                     {% for error in form.sistema.errors %}
                         <p class="field-error" role="alert">{{ error }}</p>
                     {% endfor %}
-                    {% include "calculadora/components/math_keyboard.html" with teclado=teclado_sistema campos_id="system-fields" %}
                 </div>
             </fieldset>
 
-            <fieldset id="matrix-fields" class="input-mode" hidden disabled>
+            <fieldset id="matrix-fields" data-perfil="numerico" class="input-mode" hidden disabled>
                 <legend class="sr-only">Matriz aumentada</legend>
                 <div class="structure-controls" role="group" aria-label="Estructura de la matriz">
                     <div class="dimension-field">
@@ -102,8 +101,8 @@
                         Completa todas las celdas con números, enteros o fracciones.
                     </p>
                 </div>
-                {% include "calculadora/components/math_keyboard.html" with teclado=teclado_matriz campos_id="matrix-fields" %}
             </fieldset>
+            {% include "calculadora/components/math_keyboard.html" %}
             <noscript><p class="field-help">Para editar la cuadrícula de una matriz, activa JavaScript. Puedes resolver y comparar métodos usando el sistema escrito como texto.</p></noscript>
 
             {% comment %}Las opciones avanzadas solo se despliegan cuando el usuario las necesita; sus casillas viajan igual, plegadas o no.{% endcomment %}
