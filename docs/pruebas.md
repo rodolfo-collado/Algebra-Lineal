@@ -41,6 +41,32 @@ columnas, flujo Aplicar sin JavaScript y POST manipulados— y que la interfaz
 no cargue fuentes ni scripts remotos.
 Sirven para detectar regresiones cuando el proyecto crezca.
 
+Para el teclado contextual P17, `uv run python -m unittest tests.test_teclado -v`
+comprueba perfiles válidos, inserciones compatibles con el parser, un componente
+por herramienta, contextos de campos, datos de bases compartidos, ocultación
+sin JavaScript y nombres de controles POST. Los helpers distinguen los
+formularios de cálculo del buscador y excluyen los controles inertes de `template`.
+Las suites web de cada herramienta conservan sus pruebas de POST y resultados.
+
+La regresión de JavaScript usa el DOM real del navegador, sin dependencias nuevas:
+
+```bash
+uv run python -m tests.teclado_browser
+```
+
+Abre `http://127.0.0.1:8766/`: los 18 casos deben indicar `PASS`. Se sirven el
+componente Django y el motor reales, con un documento aislado por caso. Cubre
+cursor, selección, foco, `input` con propagación, retroceso, etiquetas accesibles,
+cambios de perfil, campos agregados/eliminados y objetivos no editables; incluye
+un perfil de prueba ajeno a las herramientas para comprobar la extensibilidad.
+Este ejecutor es local y manual; `unittest discover` y CI no lanzan un navegador.
+
+Completa con la revisión de las cinco herramientas: Sistemas texto ↔ matriz,
+dimensiones y operaciones que regeneran campos, bases 2 → 8 → 10 → 16 y uno,
+varios o todos los destinos. Comprueba teclado físico, temas claro/oscuro,
+escritorio/móvil y ausencia de desbordamiento horizontal de la página. Las
+cuadrículas anchas conservan su scroll local. No guardes capturas en el repositorio.
+
 Para comprobar que todo el código compila:
 
 ```bash

@@ -79,9 +79,11 @@ El launcher inicia Waitress en loopback y abre pywebview. Consulta
    relaciones se reservan para módulos realmente distintos: las variantes de
    una misma herramienta (método, bloques del resultado) son opciones de su
    formulario, no herramientas aparte.
-5. Si la herramienta necesita símbolos, declara un `TecladoContextual` en
-   `teclados.py` con solo las teclas que usa e inclúyelo con
-   `components/math_keyboard.html` dentro del contenedor de sus campos. Los
+5. Si la herramienta necesita símbolos, reutiliza o declara un `Perfil` en
+   `teclados.py`, publícalo con `perfiles_para(...)` como `perfiles_teclado`
+   y asigna `data-perfil` al contenedor de sus campos. Incluye una sola vez
+   `components/math_keyboard.html` en el formulario, fuera de los bloques
+   de entrada que se alternan. No es necesario cambiar `teclado.js`. Los
    controles que cambian la estructura (más filas, menos columnas) van aparte,
    nunca dentro del teclado.
 6. Añade pruebas de rutas, navegación, búsqueda y comportamiento. Mantén la
