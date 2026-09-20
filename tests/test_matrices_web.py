@@ -361,9 +361,10 @@ class PruebasComponentesYRecursosMatrices(SimpleTestCase):
         r = self.client.get(RUTA)
         for recurso in ("matrices.js", "teclado.js", "tema.js", "styles.css"):
             self.assertContains(r, f"/static/calculadora/{recurso}")
-        self.assertContains(r, 'data-teclado-para="matrix-fields"')
-        self.assertContains(r, 'data-insercion="/"')
-        self.assertContains(r, 'data-insercion="-"')
+        self.assertContains(r, 'id="matrix-fields" data-perfil="numerico"')
+        from tests.test_teclado import Pagina
+        teclas = Pagina(r.content.decode()).perfiles_publicados["numerico"]["grupos"][0]["teclas"]
+        self.assertEqual([t["insercion"] for t in teclas], ["-", "/"])
         self.assertNotContains(r, 'src="https://')
         self.assertNotContains(r, 'href="https://')
 

@@ -349,7 +349,8 @@ class PruebasNavegacion(SimpleTestCase):
         self.assertContains(respuesta, "x1 = 7")
         self.assertContains(respuesta, "Para editar la cuadrícula de una matriz, activa JavaScript.")
         # Lo que solo funciona con JavaScript nace oculto: no aparenta funcionar.
-        self.assertContains(pagina, 'class="math-keyboard" data-teclado="sistema" data-teclado-para="system-fields"')
+        self.assertContains(pagina, 'class="math-keyboard" data-perfiles="math-keyboard-profiles"', count=1)
+        self.assertContains(pagina, 'id="system-fields" data-perfil="sistema"')
         self.assertContains(pagina, 'aria-label="Agregar una ecuación" hidden')
 
     def test_landmarks_skip_link_y_control_de_menu(self):

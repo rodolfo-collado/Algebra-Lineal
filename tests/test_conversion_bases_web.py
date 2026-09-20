@@ -19,6 +19,7 @@ from frontend.web.calculadora.forms import ConversionBasesForm
 from frontend.web.calculadora.servicios_bases import convertir_entrada, enumerar, titulo_conversion
 from tests.test_interfaz_progresiva import Formulario
 from tests.test_navegacion import Documento
+from tests.test_teclado import Pagina
 
 STATIC = Path(__file__).resolve().parents[1] / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 NOMBRES = ("Binario", "Octal", "Decimal", "Hexadecimal")
@@ -142,26 +143,23 @@ class PruebasConversionBasesWeb(SimpleTestCase):
 
     def test_teclado_y_etiqueta_siguen_a_la_base_de_origen(self):
         html = self.client.get(self.ruta).content.decode("utf-8")
-        for base in (2, 8, 10, 16):
-            self.assertIn(f'data-teclado="base-{base}"', html)
+        pagina = Pagina(html)
+        self.assertEqual(len(pagina.teclados), 1)
+        self.assertEqual(set(pagina.perfiles_publicados), {"base-2", "base-8", "base-10", "base-16"})
         self.assertIn("calculadora/teclado.js", html)
         self.assertIn("calculadora/conversion.js", html)
-        # Por defecto el origen es decimal: solo ese contenedor y esa etiqueta quedan visibles.
-        self.assertRegex(html, r'<div class="base-keyboard" data-teclado-base="10" data-nombre-base="decimal"\s*>')
-        self.assertRegex(html, r'data-teclado-base="2"[^>]*hidden')
-        self.assertRegex(html, r'data-teclado-base="16"[^>]*hidden')
+        self.assertEqual(pagina.contenedores["number-fields"], "base-10")
         self.assertRegex(html, r'<span data-number-label-base="10"\s*>Número decimal</span>')
         self.assertRegex(html, r'data-number-label-base="2"[^>]*hidden[^>]*>Número binario<')
-        self.assertIn('data-insercion="A"', html)
-        self.assertIn('data-insercion="F"', html)
+        self.assertEqual(pagina.json["bases-digitos"]["16"]["digitos"], list("0123456789ABCDEF"))
         # Aviso de validación en vivo, vacío hasta que JavaScript lo use.
         self.assertIn('data-validacion-cliente role="alert" hidden', html)
 
     def test_cambio_de_origen_actualiza_teclado_y_etiqueta_y_conserva_las_casillas_sin_javascript(self):
         respuesta = self.convertir("", 16, 2)
         html = respuesta.content.decode("utf-8")
-        self.assertRegex(html, r'<div class="base-keyboard" data-teclado-base="16" data-nombre-base="hexadecimal"\s*>')
-        self.assertRegex(html, r'data-teclado-base="10"[^>]*hidden')
+        self.assertEqual(Pagina(html).contenedores["number-fields"], "base-16")
+        self.assertEqual(len(Pagina(html).teclados), 1)
         self.assertRegex(html, r'<span data-number-label-base="16"\s*>Número hexadecimal</span>')
         self.assertRegex(html, r'data-number-label-base="10"[^>]*hidden')
         # Las casillas vuelven tal como se enviaron: binario marcado y las cuatro disponibles.

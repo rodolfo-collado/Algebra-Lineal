@@ -26,7 +26,7 @@
                 <p class="field-help" data-metodos-ayuda>{{ form.configuracion.ayuda_metodos }}</p>
             </fieldset>
         </section>
-        <section class="workspace-section" id="matrix-fields" aria-labelledby="matrices-title">
+        <section class="workspace-section" id="matrix-fields" data-perfil="numerico" aria-labelledby="matrices-title">
             <h3 class="section-title" id="matrices-title">Matrices de entrada</h3>
             <div class="structure-controls structure-controls-matrices" role="group" aria-label="Estructura de las matrices">
                 {% include "calculadora/modules/matrices/_dimension.html" with campo=form.filas quitar="Quitar una fila" agregar="Agregar una fila" %}
@@ -45,7 +45,7 @@
                 {% for matriz in form.matrices %}{% include "calculadora/components/matriz_entrada.html" with nombre=matriz.nombre filas=matriz.filas vector=matriz.vector only %}{% endfor %}
             </div>
             <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. Las matrices pueden ser rectangulares.</p>
-            {% include "calculadora/components/math_keyboard.html" with teclado=teclado_matriz campos_id="matrix-fields" %}
+            {% include "calculadora/components/math_keyboard.html" %}
         </section>
         <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular</button></div>
     </form>

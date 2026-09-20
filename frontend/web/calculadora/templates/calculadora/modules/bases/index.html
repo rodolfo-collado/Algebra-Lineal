@@ -12,9 +12,9 @@
                 </div>
             {% endif %}
 
-            <div id="number-fields" class="field-group">
+            <div id="number-fields" data-perfil="{{ perfil_entrada }}" class="field-group">
                 <label for="{{ form.numero.id_for_label }}">
-                    {% for base, nombre, teclado in bases_entrada %}
+                    {% for base, nombre in bases_entrada %}
                         <span data-number-label-base="{{ base }}" {% if base != base_entrada_activa %}hidden{% endif %}>Número {{ nombre }}</span>
                     {% endfor %}
                 </label>
@@ -53,11 +53,8 @@
                 </fieldset>
             </div>
 
-            {% for base, nombre, teclado in bases_entrada %}
-                <div class="base-keyboard" data-teclado-base="{{ base }}" data-nombre-base="{{ nombre }}" {% if base != base_entrada_activa %}hidden{% endif %}>
-                    {% include "calculadora/components/math_keyboard.html" with teclado=teclado campos_id="number-fields" %}
-                </div>
-            {% endfor %}
+            {{ bases_digitos|json_script:"bases-digitos" }}
+            {% include "calculadora/components/math_keyboard.html" %}
 
             <div class="workspace-actions">
                 <button class="btn btn-primary" type="submit">Convertir</button>

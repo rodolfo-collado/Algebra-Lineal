@@ -172,7 +172,7 @@ class PruebasEstructuraEcuacion(SimpleTestCase):
         self.assertIn("x tiene 3 componentes desconocidas; se determinan al resolver.", html)
         self.assertIn('aria-label="Dimensiones de A"', html)
         self.assertIn("<legend>Método</legend>", html)
-        self.assertIn('data-teclado-para="equation-fields"', html)
+        self.assertIn('id="equation-fields" data-perfil="numerico"', html)
 
     def test_formulario_entrega_a_y_b_exactos(self):
         form = EcuacionMatricialForm(datos_ecuacion(a=[["1/2", -1, 0]], b=["-2/3"], metodo="comparar"))
@@ -465,8 +465,9 @@ class PruebasRecursosEcuacion(SimpleTestCase):
             self.assertContains(respuesta, f"/static/calculadora/{recurso}")
         self.assertNotContains(respuesta, "matrices.js")
         self.assertContains(respuesta, 'id="theme-toggle"')
-        self.assertContains(respuesta, 'data-insercion="/"')
-        self.assertContains(respuesta, 'data-insercion="-"')
+        from tests.test_teclado import Pagina
+        teclas = Pagina(respuesta.content.decode()).perfiles_publicados["numerico"]["grupos"][0]["teclas"]
+        self.assertEqual([t["insercion"] for t in teclas], ["-", "/"])
         self.assertNotContains(respuesta, 'src="https://')
         self.assertNotContains(respuesta, 'href="https://')
         self.assertTrue((ESTATICOS / "ecuaciones.js").is_file())

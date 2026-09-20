@@ -7,7 +7,7 @@
     <form id="ecuacion-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
         {% csrf_token %}
         {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
-        <section class="workspace-section" id="equation-fields" aria-labelledby="equation-title">
+        <section class="workspace-section" id="equation-fields" data-perfil="numerico" aria-labelledby="equation-title">
             <h3 class="section-title" id="equation-title">Ecuación matricial</h3>
             <p class="field-help">A y b son conocidos; x es el vector incógnita que se busca. Elige solo las dimensiones de A: b tiene tantas componentes como filas tiene A, y x tantas como columnas.</p>
             <div class="structure-controls structure-controls-matrices" role="group" aria-label="Dimensiones de A">
@@ -29,7 +29,7 @@
                 {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.1.nombre filas=form.matrices.1.filas vector=True only %}
             </div>
             <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. A puede ser rectangular: más ecuaciones que incógnitas o más incógnitas que ecuaciones.</p>
-            {% include "calculadora/components/math_keyboard.html" with teclado=teclado_matriz campos_id="equation-fields" %}
+            {% include "calculadora/components/math_keyboard.html" %}
         </section>
         <section class="workspace-section">
             <fieldset class="choice-fieldset">

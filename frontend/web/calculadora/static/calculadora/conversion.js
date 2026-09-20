@@ -9,25 +9,16 @@
     const destinos = root.querySelectorAll('input[name="bases_destino"]');
     const aviso = root.querySelector("[data-validacion-cliente]");
     const avisoDestinos = root.querySelector("[data-validacion-destinos]");
-    const teclados = root.querySelectorAll("[data-teclado-base]");
+    const datos = document.getElementById("bases-digitos");
+    const contexto = campo?.closest("[data-perfil]");
     const etiquetasNumero = root.querySelectorAll("[data-number-label-base]");
-    if (!origen || !campo || !destinos.length) return;
-
-    function bloqueActivo() {
-        return Array.from(teclados).find((bloque) => bloque.dataset.tecladoBase === origen.value) || null;
-    }
-
-    // Los dígitos válidos salen de las teclas del teclado activo: una sola fuente de verdad.
-    function digitosValidos() {
-        const bloque = bloqueActivo();
-        if (!bloque) return null;
-        return new Set(Array.from(bloque.querySelectorAll("button[data-insercion]"), (tecla) => tecla.dataset.insercion));
-    }
+    if (!origen || !campo || !destinos.length || !datos || !contexto) return;
+    const bases = JSON.parse(datos.textContent);
 
     function mensajeInvalido(texto) {
-        const bloque = bloqueActivo();
-        const validos = digitosValidos();
-        if (!bloque || !validos) return "";
+        const base = bases[origen.value];
+        if (!base) return "";
+        const validos = new Set(base.digitos);
         const limpio = texto.trim();
         if (!limpio) return "";
         if (limpio[0] === "+" || limpio[0] === "-") {
@@ -38,7 +29,7 @@
             const simbolo = caracter.toUpperCase();
             if (validos.has(simbolo)) continue;
             if (origen.value === "16") return `${simbolo} no es un dígito hexadecimal válido.`;
-            return `El dígito ${caracter} no es válido en un número ${bloque.dataset.nombreBase}.`;
+            return `El dígito ${caracter} no es válido en un número ${base.nombre}.`;
         }
         return "";
     }
@@ -75,14 +66,7 @@
     }
 
     function actualizar() {
-        teclados.forEach((bloque) => {
-            const corresponde = bloque.dataset.tecladoBase === origen.value;
-            bloque.hidden = !corresponde;
-            // El teclado interno nace hidden hasta que teclado.js lo revela;
-            // al cambiar de base hay que volver a mostrar el contenedor activo.
-            const teclado = bloque.querySelector(".math-keyboard");
-            if (teclado && corresponde) teclado.hidden = false;
-        });
+        if (bases[origen.value]) contexto.dataset.perfil = bases[origen.value].perfil;
         etiquetasNumero.forEach((etiqueta) => {
             etiqueta.hidden = etiqueta.dataset.numberLabelBase !== origen.value;
         });

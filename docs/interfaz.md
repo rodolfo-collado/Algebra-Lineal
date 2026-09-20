@@ -179,21 +179,36 @@ prepara el formulario, nunca resuelve por GET, e ignora valores inválidos.
 
 ## Teclado matemático contextual
 
-`teclados.py` declara `Tecla(etiqueta, insercion, nombre, retroceso)` agrupadas
-en un `TecladoContextual`. Cada herramienta incluye solo el teclado que
-necesita:
+`teclados.py` conserva `Tecla(etiqueta, insercion, nombre, retroceso)` y
+`GrupoTeclas`, y los compone en perfiles declarativos (`Perfil`). La vista
+publica únicamente los necesarios mediante `perfiles_para(...)`. Cada
+herramienta incluye **una sola instancia** del componente dentro del formulario:
 
 ```django
-{% include "calculadora/components/math_keyboard.html" with teclado=teclado_sistema campos_id="system-fields" %}
+{% include "calculadora/components/math_keyboard.html" %}
 ```
 
-`teclado.js` inserta `insercion` en el campo activo del contenedor
-`campos_id`. El teclado va plegado bajo un desplegable «Teclado matemático»
-(el título del teclado); tanto el desplegable como el teclado nacen con
-`hidden` y solo se muestran cuando el script existe: sin JavaScript no
-aparenta funcionar. Al expandirse conserva variables, operaciones, nueva
-ecuación y la inserción en la posición del cursor. No registres teclas sin
-una operación real detrás.
+Los campos heredan `data-perfil` de su contenedor más cercano. En Sistemas,
+`system-fields` declara `sistema` y `matrix-fields` declara `numerico`; el
+teclado queda fuera de ambos fieldsets para poder alternarlos. Matrices,
+Vectores y Ax = b comparten `numerico` (`−`, `a⁄b`). El componente publica los
+perfiles con `json_script`; sus plantillas HTML inertes generan grupos y botones
+con nombres accesibles y `type="button"`.
+
+`teclado.js` no conoce herramientas ni sintaxis matemática. Delega `focusin`
+en el formulario, conserva el último objetivo válido y observa cambios de
+perfil, estructura, visibilidad o disponibilidad. Las celdas regeneradas heredan
+su perfil; los campos eliminados, ocultos, deshabilitados o de solo lectura no
+reciben inserciones. `setRangeText` respeta cursor y selección; `retroceso`
+recoloca el cursor, se devuelve el foco y se emite un único evento `input`
+que burbujea. No se intercepta la escritura física.
+
+El teclado sigue plegado bajo «Teclado matemático»; tanto el desplegable como
+el teclado nacen con `hidden` y solo se muestran si hay JavaScript y un campo
+válido. Sin JavaScript los formularios y sus POST mantienen el comportamiento
+anterior. Añadir un perfil consiste en registrarlo, publicarlo desde la vista
+y declararlo en los campos, sin modificar el motor. No registres teclas sin
+una inserción real detrás.
 
 Los controles que cambian la estructura de una entrada (agregar o quitar
 ecuaciones y variables; componentes y vectores) son botones aparte, con
@@ -214,8 +229,8 @@ La entrada de Operaciones con vectores es una fila por vector,
 generadores son campos numéricos con botones +/−; `vectores.js` redibuja las
 filas con el mismo marcado del parcial y conserva lo escrito. Sin JavaScript,
 el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructura
-sin calcular. El teclado contextual es el de la cuadrícula de matrices
-(`TECLADO_MATRIZ`: `−` y `a⁄b`), incluido con `campos_id="vector-fields"`.
+sin calcular. `vector-fields` declara `data-perfil="numerico"`, compartido
+con las celdas de matrices y Ax = b, incluido el escalar cuando está presente.
 
 ## Matrices
 
@@ -248,7 +263,7 @@ calcular. La edición dinámica utiliza plantillas HTML inertes que incluyen los
 mismos componentes del servidor; `matrices.js` reetiqueta las dimensiones y los
 métodos, muestra u oculta los controles y genera la cuadrícula de cada entrada
 con su forma. No mantiene matrices ocultas dentro del formulario. El teclado se
-reutiliza con `campos_id="matrix-fields"`. Tab y flechas permiten recorrer las
+reutiliza con `data-perfil="numerico"` en `matrix-fields`. Tab y flechas permiten recorrer las
 celdas.
 
 `components/matriz_entrada.html` y `matriz_celda.html` representan la cuadrícula
@@ -336,7 +351,11 @@ destino no decimal añade solo su etapa de divisiones; el destino decimal, si se
 pidió, es ese valor intermedio y no genera una etapa propia. Con origen decimal
 no hay etapa intermedia. Los datos llegan del servicio (`resultados`, `etapas`,
 `intermedio`, `ramas`, `decimal_pedido`); la plantilla no calcula ni repite.
-El teclado contextual sigue a la base de origen, como en el resto de módulos.
+El único teclado cambia entre los perfiles `base-2`, `base-8`, `base-10` y
+`base-16`. `conversion.js` actualiza `data-perfil` de `number-fields` al cambiar
+el origen; recibe nombres, perfiles y dígitos en `bases-digitos`, derivados
+del mismo registro. No contiene otra tabla de dígitos ni manipula teclados.
+La selección multidestino de P16 mantiene sus controles y su contrato POST.
 
 ## Guía educativa
 

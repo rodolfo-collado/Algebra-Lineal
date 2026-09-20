@@ -27,7 +27,7 @@ from frontend.web.calculadora.opciones_sistemas import BLOQUES, BLOQUES_PREDETER
 from frontend.web.calculadora.servicios import resolver_entrada_web
 from tests.test_navegacion import Documento, disponibles
 from tests.test_resolver_sistema import UNICA, seccion_resultado
-from tests.test_teclado import Botones
+from tests.test_teclado import Pagina
 from tests.test_web import datos_matriz
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -292,21 +292,23 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         html = self.client.get("/sistemas/").content.decode("utf-8")
         desplegables = Desplegables(html)
         teclados = desplegables.con_clase("disclosure-keyboard")
-        self.assertEqual(len(teclados), 2)
+        self.assertEqual(len(teclados), 1)
         for teclado in teclados:
             self.assertFalse(teclado["open"])
             self.assertTrue(teclado["hidden"])
             self.assertEqual(teclado["summary"].strip(), "Teclado matemático")
-        # Los botones siguen dentro del grupo del teclado, con su inserción y su nombre accesible.
-        botones = [attrs for grupo, attrs in Botones(html).botones if grupo == "teclado"]
-        self.assertTrue(botones)
-        for boton in botones:
-            self.assertEqual(boton["type"], "button")
-            self.assertTrue(boton["data-insercion"])
+        # El registro conserva las inserciones y los nombres para generar los botones.
+        perfiles = Pagina(html).perfiles_publicados
+        self.assertEqual(set(perfiles), {"sistema", "numerico"})
+        for perfil in perfiles.values():
+            for grupo in perfil["grupos"]:
+                for tecla in grupo["teclas"]:
+                    self.assertTrue(tecla["insercion"])
+                    self.assertTrue(tecla["nombre"])
         # teclado.js muestra el desplegable (cerrado) y mantiene la inserción en el cursor.
         script = (STATIC / "teclado.js").read_text(encoding="utf-8")
         self.assertIn('teclado.closest("details.disclosure")', script)
-        self.assertIn("desplegable.hidden = false", script)
+        self.assertIn("desplegable.hidden = !objetivo", script)
         self.assertIn("setRangeText", script)
         self.assertNotIn("open = true", script)
 
@@ -365,8 +367,8 @@ class PruebasFormularioProgresivo(SimpleTestCase):
 
     def test_cambiar_el_modo_de_entrada_no_pierde_su_comportamiento(self):
         pagina = self.client.get("/sistemas/").content.decode("utf-8")
-        self.assertRegex(pagina, r'<fieldset id="system-fields" class="input-mode">')
-        self.assertRegex(pagina, r'<fieldset id="matrix-fields" class="input-mode" hidden disabled>')
+        self.assertRegex(pagina, r'<fieldset id="system-fields" data-perfil="sistema" class="input-mode">')
+        self.assertRegex(pagina, r'<fieldset id="matrix-fields" data-perfil="numerico" class="input-mode" hidden disabled>')
         # El modo matricial sigue enviando sus celdas y resolviendo igual que el texto.
         matriz = self.client.post("/sistemas/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss_jordan"))
         texto = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss_jordan"})
