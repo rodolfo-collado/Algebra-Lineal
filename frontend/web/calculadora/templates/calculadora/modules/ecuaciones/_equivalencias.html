@@ -1,41 +1,41 @@
 {% comment %}Cadena de equivalencias de Ax = b antes de eliminar: ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada [A | b]. Son las primeras etapas de «Ver procedimiento»; todo son datos estructurados del servicio y el HTML vive solo aquí.{% endcomment %}
 <div class="procedure-stage">
-        <h4 class="stage-title">1 · Ecuación matricial</h4>
-        <p class="procedure-lead">{{ resultado.forma }}: A y b son conocidos y x es la incógnita.</p>
-        <div class="matrix-equation" tabindex="0" role="region" aria-label="Ecuación matricial A por x igual a b">
-            <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.a etiqueta="Matriz A" only %}</div>
-            <span class="matrix-expression">·</span>
-            <div class="matrix-operand"><span class="muted">x</span>{% include "calculadora/components/matriz.html" with matriz=resultado.incognitas etiqueta="Vector incógnita x" only %}</div>
-            <span class="matrix-expression">=</span>
-            <div class="matrix-operand"><span class="muted">b</span>{% include "calculadora/components/matriz.html" with matriz=resultado.b etiqueta="Vector b" only %}</div>
-        </div>
+    <h4 class="stage-title">1 · Ecuación matricial</h4>
+    <p class="procedure-lead">{{ resultado.forma }}: A y b son conocidos y x es la incógnita.</p>
+    <div class="matrix-equation" tabindex="0" role="region" aria-label="Ecuación matricial A por x igual a b">
+        <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.a etiqueta="Matriz A" only %}</div>
+        <span class="matrix-expression">·</span>
+        <div class="matrix-operand"><span class="muted">x</span>{% include "calculadora/components/matriz.html" with matriz=resultado.incognitas etiqueta="Vector incógnita x" only %}</div>
+        <span class="matrix-expression">=</span>
+        <div class="matrix-operand"><span class="muted">b</span>{% include "calculadora/components/matriz.html" with matriz=resultado.b etiqueta="Vector b" only %}</div>
     </div>
+</div>
 
 <div class="procedure-stage">
-        <h4 class="stage-title">2 · Ecuación vectorial</h4>
-        <p class="procedure-lead">Ax es la combinación lineal de las columnas de A con coeficientes x₁, …, xₙ, así que Ax = b equivale a:</p>
-        <p class="procedure-line">{{ resultado.ecuacion_vectorial.simbolica }}</p>
-        <div class="matrix-equation" tabindex="0" role="region" aria-label="Ecuación vectorial con las columnas de A">
-            {% for termino in resultado.ecuacion_vectorial.terminos %}
-                {% if not forloop.first %}<span class="matrix-expression">+</span>{% endif %}
-                <span class="matrix-expression">{{ termino.coeficiente }}</span>
-                <div class="matrix-operand"><span class="muted">{{ termino.nombre }}</span>{% include "calculadora/components/matriz.html" with matriz=termino.matriz etiqueta=termino.etiqueta only %}</div>
-            {% endfor %}
-            <span class="matrix-expression">=</span>
-            <div class="matrix-operand"><span class="muted">b</span>{% include "calculadora/components/matriz.html" with matriz=resultado.b etiqueta="Vector b de la ecuación vectorial" only %}</div>
-        </div>
+    <h4 class="stage-title">2 · Ecuación vectorial</h4>
+    <p class="procedure-lead">Ax es la combinación lineal de las columnas de A con coeficientes x₁, …, xₙ, así que Ax = b equivale a:</p>
+    <p class="procedure-line">{{ resultado.ecuacion_vectorial.simbolica }}</p>
+    <div class="matrix-equation" tabindex="0" role="region" aria-label="Ecuación vectorial con las columnas de A">
+        {% for termino in resultado.ecuacion_vectorial.terminos %}
+            {% if not forloop.first %}<span class="matrix-expression">+</span>{% endif %}
+            <span class="matrix-expression">{{ termino.coeficiente }}</span>
+            <div class="matrix-operand"><span class="muted">{{ termino.nombre }}</span>{% include "calculadora/components/matriz.html" with matriz=termino.matriz etiqueta=termino.etiqueta only %}</div>
+        {% endfor %}
+        <span class="matrix-expression">=</span>
+        <div class="matrix-operand"><span class="muted">b</span>{% include "calculadora/components/matriz.html" with matriz=resultado.b etiqueta="Vector b de la ecuación vectorial" only %}</div>
     </div>
+</div>
 
 <div class="procedure-stage">
-        <h4 class="stage-title">3 · Sistema equivalente</h4>
-        <p class="procedure-lead">Igualando componente a componente queda una ecuación por cada una de las {{ resultado.filas }} fila{{ resultado.filas|pluralize }} de A, con {{ resultado.columnas }} incógnita{{ resultado.columnas|pluralize }}:</p>
-        <ol class="equations">
-            {% for ecuacion in resultado.ecuaciones %}<li><code>{{ ecuacion }}</code></li>{% endfor %}
-        </ol>
-    </div>
+    <h4 class="stage-title">3 · Sistema equivalente</h4>
+    <p class="procedure-lead">Igualando componente a componente queda una ecuación por cada una de las {{ resultado.filas }} fila{{ resultado.filas|pluralize }} de A, con {{ resultado.columnas }} incógnita{{ resultado.columnas|pluralize }}:</p>
+    <ol class="equations">
+        {% for ecuacion in resultado.ecuaciones %}<li><code>{{ ecuacion }}</code></li>{% endfor %}
+    </ol>
+</div>
 
 <div class="procedure-stage">
-        <h4 class="stage-title">4 · Matriz aumentada</h4>
-        <p class="procedure-lead">Los coeficientes son las entradas de A y la columna aumentada es b: [A | b]. Sobre ella trabaja la eliminación.</p>
-        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_aumentada etiqueta="Matriz aumentada A barra b" columnas_pivote=None %}
-    </div>
+    <h4 class="stage-title">4 · Matriz aumentada</h4>
+    <p class="procedure-lead">Los coeficientes son las entradas de A y la columna aumentada es b: [A | b]. Sobre ella trabaja la eliminación.</p>
+    {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_aumentada etiqueta="Matriz aumentada A barra b" columnas_pivote=None %}
+</div>
