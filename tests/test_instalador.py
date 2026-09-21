@@ -95,7 +95,8 @@ class PruebasInstalacionPorUsuario(unittest.TestCase):
         # P13B viaja en el mismo smoke: AB y Ax comparando los dos procedimientos.
         self.assertIn("operacion = 'producto'", prueba)
         self.assertIn("operacion = 'matriz_vector'", prueba)
-        self.assertIn('id="procedure-title-2"', prueba)
+        self.assertIn('id="procedimiento"', prueba)
+        self.assertIn('class="disclosure disclosure-nested"', prueba)
         # P14: Ax = b con solución fraccionaria y un caso rectangular, más su recurso local.
         self.assertIn("matrices/ecuaciones/", prueba)
         self.assertIn("ecuaciones.js", prueba)

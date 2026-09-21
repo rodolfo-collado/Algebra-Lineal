@@ -55,20 +55,24 @@
 {% block tool_result %}
 {% if resultado %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
-        <div class="panel panel-final">
+        <header class="results-heading">
             <p class="section-kicker">{{ resultado.etiqueta }} · {{ resultado.dimensiones_resultado }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
-            <h2 id="results-title" class="panel-title">Resultado</h2>
-            <div class="matrix-equation">
-                <span class="matrix-expression">{{ resultado.expresion }} =</span>
-                {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Matriz resultado" only %}
-            </div>
-            {% if resultado.metodos %}<p class="field-help">{{ resultado.forma }} {{ resultado.ayuda }}</p>{% endif %}
-        </div>
+            <h2 id="results-title">{{ resultado.expresion }}</h2>
+        </header>
+        {% comment %}Entrada → procedimiento plegable → resultado: la matriz obtenida se presenta una sola vez, en el panel final.{% endcomment %}
         {% if resultado.metodos %}
             {% include "calculadora/modules/matrices/_producto.html" %}
         {% else %}
             {% include "calculadora/modules/matrices/_procedimiento.html" %}
         {% endif %}
+        <section class="panel panel-final" aria-labelledby="final-title">
+            <h3 id="final-title" class="panel-title">Resultado</h3>
+            <div class="matrix-equation">
+                <span class="matrix-expression">{{ resultado.expresion }} =</span>
+                {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Matriz resultado" only %}
+            </div>
+            {% if resultado.metodos %}<p class="field-help">{{ resultado.forma }} {{ resultado.ayuda }}</p>{% endif %}
+        </section>
     </section>
 {% endif %}
 {% endblock %}

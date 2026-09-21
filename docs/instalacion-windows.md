@@ -45,6 +45,15 @@ La cadena de distribución mantiene el launcher y su configuración `onedir` y
 Código → PyInstaller → dist/AlgebraLineal/ → Inno Setup → instalador .exe
 ```
 
+El análisis estático de PyInstaller no ve los módulos que Django importa por
+nombre (context processors, vistas, servicios y las librerías de
+`{% load %}` en `templatetags/`), y su hook de Django no localiza `settings`
+porque vive en `frontend/web/algebra_web/`. Por eso `hiddenimports` en
+`AlgebraLineal.spec` los enumera explícitamente: cada módulo nuevo de ese tipo
+se añade ahí, y `tests/test_desktop.py` comprueba que las librerías de
+`templatetags/` estén en la lista. Si falta uno, la aplicación instalada
+responde `500` aunque la suite pase.
+
 En una PC de desarrollo Windows con Python x64, instala **uv** e
 [Inno Setup 6.3 o posterior](https://jrsoftware.org/isdl.php). Inno Setup convierte
 la carpeta construida en un instalador con accesos directos y desinstalador.

@@ -184,8 +184,9 @@ class PruebasResultadosProducto(SimpleTestCase):
         ])
         self.assertIn("Fila 1 de AB", html)
         self.assertIn("c₁₁ = 19, c₁₂ = 22", html)
-        self.assertEqual(html.count('id="procedure-title"'), 1)
-        self.assertNotIn('id="procedure-title-2"', html)
+        # Un solo método: su desarrollo va directo dentro de «Ver procedimiento», sin sub-bloques.
+        self.assertEqual(html.count('id="procedimiento"'), 1)
+        self.assertNotIn("disclosure-nested", html)
         self.assertNotIn("Columna por columna", html)
 
     def test_dos_por_tres_por_tres_por_dos_y_tres_por_dos_por_dos_por_cuatro(self):
@@ -218,13 +219,14 @@ class PruebasResultadosProducto(SimpleTestCase):
         html, doc = self.calcular(datos_producto(metodo="comparar"))
         self.assertEqual(html.count('id="results-title"'), 1)
         self.assertEqual(html.count('<table class="matrix-table" aria-label="Matriz resultado"'), 1)
-        self.assertEqual(html.count('id="procedure-title"'), 1)
-        self.assertEqual(html.count('id="procedure-title-2"'), 1)
-        self.assertIn("Procedimiento: Fila por columna", html)
-        self.assertIn("Procedimiento: Por columnas", html)
+        # P18: un «Ver procedimiento» plegado con un sub-bloque por método, antes del único resultado.
+        self.assertEqual(html.count('id="procedimiento"'), 1)
+        self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
+        self.assertIn(">Fila por columna</h4>", html)
+        self.assertIn(">Por columnas</h4>", html)
         self.assertIn("Comparación de métodos", html)
-        self.assertLess(html.index('id="results-title"'), html.index('id="procedure-title"'))
-        self.assertLess(html.index('id="procedure-title"'), html.index('id="procedure-title-2"'))
+        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index(">Fila por columna</h4>"), html.index(">Por columnas</h4>"))
         # Ambas lecturas terminan en la misma matriz.
         self.assertEqual(doc.tablas["Resultado del desarrollo"], doc.tablas["Matriz resultado"])
         self.assertEqual(doc.tablas["Resultado ensamblado"], doc.tablas["Matriz resultado"])
@@ -256,8 +258,8 @@ class PruebasResultadosProducto(SimpleTestCase):
         html, doc = self.calcular(datos_matriz_vector(a=[["1/2", -1], [3, "2/3"]], x=[4, "-3/2"], metodo="comparar"))
         self.assertEqual(doc.tablas["Matriz resultado"], [["7/2"], ["11"]])
         self.assertEqual(html.count('<table class="matrix-table" aria-label="Matriz resultado"'), 1)
-        self.assertIn("Procedimiento: Regla fila-vector", html)
-        self.assertIn("Procedimiento: Combinación lineal de columnas", html)
+        self.assertIn(">Regla fila-vector</h4>", html)
+        self.assertIn(">Combinación lineal de columnas</h4>", html)
         self.assertIn("(Ax)₁ = fila₁(A) · x = a₁₁x₁ + a₁₂x₂ = (1/2)·4 + (-1)·(-3/2) = 2 + 3/2 = 7/2", lineas(html))
         self.assertIn("Ax = x₁a₁ + x₂a₂ = 4a₁ − (3/2)a₂", html)
 
@@ -278,9 +280,10 @@ class PruebasResultadosProducto(SimpleTestCase):
         self.assertEqual(html.count('<details class="procedure-group">'), 8)
         self.assertEqual(ENTRADAS_DESPLEGADAS, 12)
 
-    def test_resultado_antes_del_procedimiento_y_recursos_locales(self):
+    def test_procedimiento_plegado_antes_del_resultado_y_recursos_locales(self):
         html, _ = self.calcular(datos_producto(metodo="comparar"))
-        self.assertLess(html.index('id="results-title"'), html.index('id="procedure-title"'))
+        self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
+        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
         for recurso in ("matrices.js", "teclado.js", "tema.js", "styles.css"):
             self.assertIn(f"/static/calculadora/{recurso}", html)
         self.assertNotIn('src="https://', html)

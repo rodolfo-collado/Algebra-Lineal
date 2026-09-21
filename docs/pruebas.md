@@ -48,6 +48,18 @@ sin JavaScript y nombres de controles POST. Los helpers distinguen los
 formularios de cálculo del buscador y excluyen los controles inertes de `template`.
 Las suites web de cada herramienta conservan sus pruebas de POST y resultados.
 
+Para el procedimiento plegable P18, `uv run python -m unittest
+tests.test_procedimiento_plegable -v` comprueba con un parser HTML
+estructural que en Sistemas, Vectores, Matrices y Ax = b hay un único «Ver
+procedimiento» (`details` nativo, cerrado, con su título como encabezado)
+antes del único panel de resultado, que queda fuera de él; que el
+procedimiento conserva los pasos, equivalencias, desarrollos y métodos; que la
+clasificación, la solución, los coeficientes y la matriz obtenida aparecen una
+sola vez; que el ancla `#resultado` y la jerarquía de encabezados se
+mantienen; que sin JavaScript todo el contenido está en el HTML; y que Inicio
+y Conversión de bases no cambian. Las suites de cada herramienta se adaptaron
+al orden Entrada → Procedimiento plegable → Resultado.
+
 La regresión de JavaScript usa el DOM real del navegador, sin dependencias nuevas:
 
 ```bash

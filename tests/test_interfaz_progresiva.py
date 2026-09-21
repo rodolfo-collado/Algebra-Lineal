@@ -1,5 +1,5 @@
 """Divulgación progresiva: Inicio por temas, menú bajo demanda, teclado y opciones plegados,
-resultado primero y conexiones «También puedes explorar». Contratos HTML, POST y de los
+procedimiento plegable antes del resultado (P18) y conexiones «También puedes explorar». Contratos HTML, POST y de los
 scripts locales, sin depender de clases decorativas."""
 
 import os
@@ -349,7 +349,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         explicito = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": METODO_PREDETERMINADO, "mostrar_definido": "1", "mostrar": TODOS})
         texto = seccion_resultado(respuesta)
         self.assertEqual(texto, seccion_resultado(explicito))
-        for presente in ("Procedimiento paso a paso", "Clasificación", "Columnas pivote: C1, C2", "x1 = 2", "x2 = 1"):
+        for presente in ("Ver procedimiento", "Operaciones por filas", "Clasificación", "Columnas pivote: C1, C2", "x1 = 2", "x2 = 1"):
             self.assertIn(presente, texto)
 
     def test_elegir_cada_metodo_desde_el_selector_envia_su_clave(self):
@@ -394,38 +394,51 @@ class PruebasFormularioProgresivo(SimpleTestCase):
                 self.assertEqual(opciones["open"], abiertas)
 
 
-class PruebasResultadoPrimero(SimpleTestCase):
-    def test_el_resultado_precede_al_procedimiento_y_enlaza_con_el(self):
+class PruebasProcedimientoPlegable(SimpleTestCase):
+    """P18: Entrada → «Ver procedimiento» (details cerrado) → Resultado final, una sola vez."""
+
+    def test_el_procedimiento_plegado_precede_al_resultado(self):
         respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
-        orden = ("Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
-                 "Ver procedimiento", "Matriz reducida", "Columnas pivote:", "Entender este resultado",
-                 "Procedimiento paso a paso", "Matriz inicial", "Paso 1")
+        orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1", "Matriz reducida",
+                 "Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
+                 "Columnas pivote:", "Entender este resultado")
         posiciones = [texto.index(fragmento) for fragmento in orden]
         self.assertEqual(posiciones, sorted(posiciones), orden)
-        self.assertIn('href="#procedimiento"', html)
+        procedimiento = Desplegables(html).por_id("procedimiento")
+        self.assertFalse(procedimiento["open"])
+        self.assertEqual(" ".join(procedimiento["summary"].split()), "Ver procedimiento")
+        self.assertNotIn('href="#procedimiento"', html)
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertLess(html.index('id="resultado"'), html.index('id="procedimiento"'))
+        # El resultado queda fuera del details: se ve sin abrir el procedimiento.
+        self.assertLess(html.index("</details>", html.index('id="procedimiento"')), html.index('id="final-title"'))
 
-    def test_sin_procedimiento_no_hay_enlace_ni_ancla(self):
+    def test_sin_procedimiento_no_hay_desplegable_y_la_matriz_final_sigue_en_el_resultado(self):
         respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "pivotes"]})
         html = respuesta.content.decode("utf-8")
-        self.assertNotIn("#procedimiento", html)
         self.assertNotIn('id="procedimiento"', html)
         self.assertNotIn("Ver procedimiento", html)
-        self.assertIn("Resultado final Clasificación Consistente de solución única Solución x1 = 2 x2 = 1", seccion_resultado(respuesta))
+        texto = seccion_resultado(respuesta)
+        self.assertIn("Resultado final Clasificación Consistente de solución única Solución x1 = 2 x2 = 1", texto)
+        self.assertEqual(texto.count("Matriz escalonada"), 1)
 
-    def test_comparar_pone_el_resultado_comun_antes_de_cada_metodo(self):
+    def test_comparar_pliega_cada_metodo_y_deja_un_resultado_comun(self):
         respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
+        # El título «Gauss y Gauss-Jordan» va antes; el orden se mide desde el desplegable.
         texto = seccion_resultado(respuesta)
-        orden = ("Resultado final", "Clasificación", "Solución x1 = 2 x2 = 1", "Ver procedimiento", "Columnas pivote:",
-                 "Matriz inicial", "Procedimiento paso a paso", "Matriz escalonada", "Matriz reducida")
+        texto = texto[texto.index("Ver procedimiento"):]
+        orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas", "Matriz escalonada",
+                 "Gauss-Jordan", "Matriz reducida", "Resultado final", "Clasificación", "Solución x1 = 2 x2 = 1", "Columnas pivote:")
         posiciones = [texto.index(fragmento) for fragmento in orden]
         self.assertEqual(posiciones, sorted(posiciones), orden)
-        self.assertEqual(html.count('<section class="panel panel-method"'), 2)
-        self.assertLess(html.index('id="procedimiento"'), html.index('class="panel panel-method"'))
+        desplegables = Desplegables(html)
+        metodos = [d for d in desplegables.details if "disclosure-nested" in d["clases"]]
+        self.assertEqual([" ".join(d["summary"].split()) for d in metodos], ["Gauss", "Gauss-Jordan"])
+        self.assertFalse(any(d["open"] for d in metodos))
+        self.assertFalse(desplegables.por_id("procedimiento")["open"])
 
 
 class PruebasExplorar(SimpleTestCase):

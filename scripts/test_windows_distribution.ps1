@@ -124,7 +124,7 @@ try {
             $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Matriz resultado"[^>]*>(.*?)</table>').Groups[1].Value
             $cells = @([regex]::Matches($resultTable, '<td[^>]*>\s*([^<]+?)\s*</td>') | ForEach-Object { $_.Groups[1].Value.Trim() })
             if (($cells -join ',') -ne ($expectedMatrices[$operation] -join ',')) { throw "Resultado incorrecto de matrices: $operation" }
-            if (-not $response.Content.Contains('id="procedure-title"')) { throw "Falta procedimiento de matrices: $operation" }
+            if (-not $response.Content.Contains('id="procedimiento"')) { throw "Falta procedimiento de matrices: $operation" }
         }
         # P13B: AB (2x3 por 3x2) y Ax (2x3 por x de 3) comparando los dos métodos.
         $productBodies = @(
@@ -143,9 +143,9 @@ try {
             $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Matriz resultado"[^>]*>(.*?)</table>').Groups[1].Value
             $cells = @([regex]::Matches($resultTable, '<td[^>]*>\s*([^<]+?)\s*</td>') | ForEach-Object { $_.Groups[1].Value.Trim() })
             if (($cells -join ',') -ne ($expectedProducts[$productBody.operacion] -join ',')) { throw "Resultado incorrecto de matrices: $($productBody.operacion)" }
-            foreach ($marker in @('id="procedure-title"', 'id="procedure-title-2"')) {
-                if (-not $response.Content.Contains($marker)) { throw "Falta un procedimiento comparado de matrices: $($productBody.operacion)" }
-            }
+            # P18: un «Ver procedimiento» plegado con un sub-bloque por método.
+            if (-not $response.Content.Contains('id="procedimiento"')) { throw "Falta un procedimiento comparado de matrices: $($productBody.operacion)" }
+            if (([regex]::Matches($response.Content, 'class="disclosure disclosure-nested"')).Count -ne 2) { throw "Faltan los dos métodos comparados de matrices: $($productBody.operacion)" }
         }
         # P14: Ax = b con x desconocido. Solución fraccionaria comparando métodos y un caso rectangular 3x2.
         $equationsUrl = $url + 'matrices/ecuaciones/'
@@ -159,8 +159,8 @@ try {
                celda_b_0_0 = '2'; celda_b_1_0 = '3'; celda_b_2_0 = '5' }
         )
         $expectedEquations = @(
-            @{ x = @('1/2', '1/3'); markers = @('Ax = b tiene solución única.', 'b = (1/2)a₁ + (1/3)a₂', 'id="procedure-title"', 'id="procedure-title-2"') },
-            @{ x = @('2', '3'); markers = @('Ax = b tiene solución única.', 'A (3×2) · x (2) = b (3)', 'x1 = 2', 'x2 = 3', 'id="procedure-title"') }
+            @{ x = @('1/2', '1/3'); markers = @('Ax = b tiene solución única.', 'b = (1/2)a₁ + (1/3)a₂', 'id="procedimiento"', 'class="disclosure disclosure-nested"') },
+            @{ x = @('2', '3'); markers = @('Ax = b tiene solución única.', 'A (3×2) · x (2) = b (3)', 'x1 = 2', 'x2 = 3', 'id="procedimiento"') }
         )
         for ($case = 0; $case -lt $equationBodies.Count; $case++) {
             $equationBody = $equationBodies[$case]

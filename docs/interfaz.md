@@ -137,6 +137,32 @@ herramientas relacionadas y «También puedes explorar». Cada bloque es opciona
 {% block tool_result %}…{% endblock %}
 ```
 
+### Entrada → Procedimiento plegable → Resultado
+
+Tras resolver, las herramientas principales (Resolver un sistema, Operaciones
+con vectores, Operaciones con matrices y Resolver Ax = b) siguen un mismo
+patrón dentro de `section#resultado`:
+
+```html
+<header class="results-heading">…<h2 id="results-title">…</h2></header>
+<details class="disclosure disclosure-procedure" id="procedimiento">
+    <summary><h3>Ver procedimiento</h3></summary> …
+</details>
+<section class="panel panel-final"><h3>Resultado</h3> …</section>
+```
+
+El procedimiento nace cerrado, también después de resolver, y se abre con
+ratón, teclado o sin JavaScript. Explica *cómo* se llega (matrices
+intermedias, operaciones, matriz final, equivalencias, desarrollo componente
+a componente); el panel final dice *qué* se obtuvo. **El resultado se
+presenta una sola vez: el procedimiento explica cómo se obtiene, pero no
+crea un segundo resultado.** Una cadena puede terminar en la matriz o el
+vector obtenido (`= (5, 7, 9)`), pero no hay otro bloque «Resultado»,
+clasificación, solución o coeficientes dentro del procedimiento. Al comparar
+métodos, cada uno es un sub-bloque cerrado (`disclosure-nested`) y el
+resultado común aparece una vez. Conversión de bases e Inicio conservan su
+presentación. No se guardan preferencias de apertura.
+
 `components/related_tools.html` muestra las relacionadas como enlaces
 discretos y no aparece cuando la herramienta no declara ninguna. Las
 relaciones se reservan para módulos realmente distintos: las variantes de un
@@ -153,6 +179,21 @@ Las opciones avanzadas viven en `details.disclosure` con un `summary` real
 Espacio y anuncian su estado. Los controles plegados siguen formando parte
 del formulario, así que sus valores viajan igual en el envío.
 
+Para los bloques plegables del resultado existe el componente
+`{% disclosure %}` (`templatetags/componentes.py`, que renderiza
+`components/disclosure.html`):
+
+```django
+{% load componentes %}
+{% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+    …contenido…
+{% enddisclosure %}
+```
+
+Acepta `nivel=4` (título como `h4`, para sub-bloques), `clase` y `abierto`.
+El título va dentro del `summary` como encabezado real, así que la
+jerarquía h2 → h3 → h4 se conserva y no hay botones dentro del `summary`.
+
 ### Divulgación progresiva en Resolver un sistema
 
 La jerarquía del formulario es: Método y Tipo de entrada como selectores
@@ -163,12 +204,17 @@ plegado, «Opciones de resultado» plegadas y Resolver. Las opciones conservan
 sus casillas y predeterminados (todo activo) y se despliegan solas cuando lo
 elegido difiere de lo predeterminado (`opciones_abiertas`).
 
-El resultado es el centro: el panel «Resultado final» va primero con la
-clasificación, la solución, el enlace «Ver procedimiento» (`#procedimiento`),
-la matriz final con sus pivotes, el sistema resultante y las guías plegadas
-(«Entender este resultado»); después vienen el procedimiento paso a paso (con
-la matriz inicial) o, al comparar, un panel por método. Nada de lo que se
-mostraba deja de mostrarse: solo cambia el orden.
+Tras resolver, «Ver procedimiento» (`#procedimiento`, cerrado) reúne la
+matriz inicial, las operaciones por filas (`_procedimiento_metodo.html` con
+`_pasos.html`), la matriz final con sus pivotes, el sistema resultante y la
+sustitución regresiva (`_bloques_metodo.html`); al comparar, un sub-bloque
+cerrado por método y la matriz inicial una vez. Debajo, el panel «Resultado
+final» muestra la clasificación, la solución, las columnas pivote
+(`_pivotes.html`, la lectura directa de la matriz final) y las guías plegadas
+(«Entender este resultado»). Si «Procedimiento» está desmarcado no hay
+desplegable y la matriz final se muestra en el panel final, para que siga
+visible sin repetirse; al comparar, cada matriz final y sistema resultante
+nombran su método («Matriz escalonada · Gauss»).
 
 `exploraciones.py` construye «También puedes explorar» tras resolver: el
 mismo sistema con el otro método o comparando, los bloques que se dejaron sin
@@ -283,10 +329,14 @@ La capa de presentación solo formatea esos datos: `servicios_matrices.py`
 escribe las igualdades (`c₂₃ = fila₂(A) · columna₃(B) = … = 9/2`, `Ab₁ = 2a₁ −
 a₂ + 3a₃`) y decide qué bloques mostrar según el método elegido
 (`fila_columna`, `columnas` o `comparar`, con identificadores compartidos entre
-`AB` y `Ax` y etiquetas distintas). Resultado precede a Procedimiento y se
-muestra una sola vez aunque se comparen los métodos. Las plantillas
-`_expresion.html`, `_producto.html`, `_producto_fila_columna.html` y
-`_producto_columnas.html` agrupan el procedimiento con `details`/`summary` por
+`AB` y `Ax` y etiquetas distintas). El procedimiento va plegado antes del
+panel Resultado, que muestra la matriz una sola vez aunque se comparen los
+métodos. `_expresion.html` escribe la expresión como una sola cadena
+(operandos → desarrollo por entradas → matriz obtenida) y la comparten
+`_procedimiento.html` (suma, resta, escalar y traspuesta) y
+`_producto_fila_columna.html`; `_producto.html` pliega cada método en un
+sub-bloque al comparar, y `_producto_fila_columna.html` y
+`_producto_columnas.html` agrupan el desarrollo con `details`/`summary` por
 fila o por columna, abiertos cuando el resultado tiene pocas entradas
 (`ENTRADAS_DESPLEGADAS`). Las igualdades largas se parten en líneas en la fuente
 de interfaz, donde los subíndices se leen mejor; las expresiones con matrices
@@ -318,14 +368,16 @@ comprobación `A · x = Ax = b`, la interpretación como combinación lineal
 (`b = 3a₁ + 2a₂`, escrita con `combinacion_columnas` de
 `servicios_matrices.py`) y la cadena de equivalencias. La eliminación se
 presenta con `servicios.presentar_resolucion`, la misma adaptación de
-Resolver un sistema, y las plantillas `modules/ecuaciones/_metodos.html`
-incluyen `modules/sistemas/_pasos.html` y `_bloques_metodo.html` con todos
-los bloques visibles (`mostrar`) y las columnas pivote de cada método. El
-resultado (`.classification` con `data-kind`, solución, comprobación e
-interpretación) precede a `_equivalencias.html` (ecuación matricial, ecuación
-vectorial con las columnas de A, sistema equivalente y `[A | b]` con
-`matrix.html`) y a los paneles de eliminación; al comparar, el resultado se
-muestra una vez y hay un panel por método.
+Resolver un sistema, y `modules/ecuaciones/_metodos.html` incluye
+`modules/sistemas/_procedimiento_metodo.html` con todos los bloques visibles
+(`mostrar`) y las columnas pivote una vez. «Ver procedimiento» reúne
+`_equivalencias.html` (ecuación matricial, ecuación vectorial con las
+columnas de A, sistema equivalente y `[A | b]` con `matrix.html`) y la
+eliminación (un sub-bloque cerrado por método al comparar); debajo, el panel
+Resultado (`.classification` con `data-kind` y la solución, conjunto solución
+o contradicción) se muestra una vez, y después van plegados «Comprobar
+solución» (`A · x = b`) e «Interpretar Ax = b» (combinación lineal de las
+columnas de A).
 
 ## Conversión de bases
 
@@ -368,8 +420,9 @@ clasificación. El parcial `components/concept_guide.html` los renderiza.
 
 Sigue el flujo de [Desarrollo](desarrollo.md#añadir-una-herramienta).
 En presentación, reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`,
-`.disclosure`, `.concept-guide`, `components/explore.html`, el teclado
-contextual y los tokens compartidos. Si muestra
+`.disclosure`, `{% disclosure %}`, `.concept-guide`, `components/explore.html`,
+el teclado contextual y los tokens compartidos, y sigue el patrón Entrada →
+Procedimiento plegable → Resultado. Si muestra
 matrices, usa `components/matriz.html`; para sistemas aumentados, `matrix.html`.
 Ambos admiten `columnas_pivote`. No copies el `<head>`, header, sidebar o selector
 de tema: extiende el layout común.
