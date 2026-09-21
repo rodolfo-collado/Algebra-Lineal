@@ -192,9 +192,12 @@ componentes (de 1 a 10). No hay campos `x`, `y`, `z` ni sintaxis de listas.
     coeficientes libres y una combinación concreta (libres en cero);
   - inconsistente: **no**, porque el sistema asociado no tiene solución.
 
-El procedimiento habla el lenguaje del ejercicio —coeficientes `c1, c2, …`,
-no variables `x1, x2, …`—: planteamiento, sistema equivalente, matriz
-aumentada, operaciones por filas, matriz reducida y lectura del resultado.
+El procedimiento, plegado bajo «Ver procedimiento», habla el lenguaje del
+ejercicio —coeficientes `c1, c2, …`, no variables `x1, x2, …`—: planteamiento,
+sistema equivalente, matriz aumentada, operaciones por filas, matriz reducida
+y lectura de la matriz; la conclusión y los coeficientes solo aparecen en el
+resultado. En suma, resta y escalar el desarrollo es una sola cadena,
+`u + v = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)`.
 Todo se calcula con `fractions.Fraction`: `(1/2, 2/3) + (1/2, 1/3) = (1, 1)`.
 
 El núcleo vive en `backend/vectores.py` (listas, ciclos y `Fraction`, sin
@@ -266,13 +269,16 @@ Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
 | Mostrar | Procedimiento, Clasificación, Columnas pivote, Sistema resultante | Todos activos |
 
 La matriz final y la solución se muestran siempre. Las casillas de Mostrar
-esperan plegadas bajo «Opciones de resultado». Tras resolver, el resultado va
-primero (clasificación, solución, matriz final) y el procedimiento después;
+esperan plegadas bajo «Opciones de resultado». Tras resolver, la página lee
+Entrada → «Ver procedimiento» (plegado: matriz inicial, operaciones por
+filas, matriz final, sistema resultante y sustitución regresiva) → Resultado
+final (clasificación, solución y columnas pivote), siempre visible y una sola
+vez; si «Procedimiento» se desmarca, la matriz final pasa al resultado.
 «También puedes explorar» ofrece el mismo sistema con el otro método o
 comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve
-la misma entrada con los dos métodos y presenta un procedimiento por método;
-como la clasificación y la solución coinciden, aparecen una sola vez, antes
-de los procedimientos.
+la misma entrada con los dos métodos y pliega cada procedimiento en su propio
+sub-bloque; como la clasificación y la solución coinciden, aparecen una sola
+vez, en el resultado común.
 Las rutas de la versión anterior (`/sistemas/gauss/`, `/sistemas/gauss-jordan/`,
 `/sistemas/clasificacion/` y `/sistemas/columnas-pivote/`) redirigen a
 `/sistemas/`, las dos primeras con el método ya seleccionado.
@@ -325,7 +331,8 @@ que en `Ax` se llama **Regla fila-vector**), **Por columnas**
 columnas de A; en `Ax`, **Combinación lineal de columnas**:
 `Ax = x₁a₁ + … + xₙaₙ`) o **Comparar ambos**. Son dos lecturas del mismo
 producto, no dos operaciones: el resultado se calcula una sola vez y se muestra
-una sola vez; cada método muestra su procedimiento con la igualdad completa de
+una sola vez; cada método (un sub-bloque plegado al comparar) muestra su
+procedimiento con la igualdad completa de
 cada entrada (`c₂₃ = fila₂(A) · columna₃(B) = a₂₁b₁₃ + … = 3·2 + (-1)·4 +
 5·(1/2) = 9/2`) o de cada columna (`Ab₁ = 2a₁ − a₂ + 3a₃`, los vectores
 escalados y la columna obtenida). Los grupos por fila o por columna se
@@ -340,9 +347,11 @@ columna, cambiando solo la validación y la explicación. Los productos
 `aᵢₖbₖⱼ` se calculan una vez y se entregan agrupados por entrada y por
 columna. `forms_matrices.py` valida dimensiones, método, campos y números con
 el parser común; `opciones_matrices.py` centraliza la configuración y
-`servicios_matrices.py` adapta los datos a presentación. El resultado aparece
-antes del procedimiento: expresión matricial, regla por entrada y desarrollo;
-la traspuesta explica el intercambio de filas/columnas y de dimensiones.
+`servicios_matrices.py` adapta los datos a presentación. El procedimiento va
+plegado antes del resultado: la regla por entrada y una sola cadena
+`A + B = [A] + [B] = [desarrollo] = [C]`; la traspuesta explica el intercambio
+de filas/columnas y de dimensiones. La matriz obtenida se presenta una vez,
+en el panel Resultado.
 Los componentes de entrada y `components/matriz.html` se pueden reutilizar (x
 se captura y se muestra como matriz `n×1`); `matrix.html` mantiene la
 representación aumentada de sistemas. Las igualdades y matrices anchas se
@@ -367,7 +376,8 @@ ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
 Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
 `matrices.py`. El método se elige como en Resolver un sistema (Gauss,
 Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
-sola vez y los dos procedimientos). El resultado va antes del procedimiento:
+sola vez y los dos procedimientos plegados). El procedimiento va plegado y el
+resultado, debajo, siempre visible:
 
 - solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
   `x2 = 2`, el vector columna x y la comprobación `A · x = b` calculada con
@@ -380,12 +390,13 @@ sola vez y los dos procedimientos). El resultado va antes del procedimiento:
   decir, `0 = 1`); b no pertenece al conjunto generado por las columnas de A.
 
 La interpretación como combinación lineal se deriva solo de la clasificación
-del sistema. El procedimiento muestra la cadena de equivalencias —ecuación
+del sistema. «Ver procedimiento» muestra la cadena de equivalencias —ecuación
 matricial, ecuación vectorial con las columnas de A, sistema equivalente
 (`ecuaciones_de_matriz`, con `n` incógnitas) y matriz aumentada— y después la
 eliminación con los mismos bloques de Resolver un sistema: operaciones por
 filas, matriz escalonada o reducida con sus pivotes, columnas pivote, sistema
-resultante y sustitución regresiva. `EcuacionMatricialForm`
+resultante y sustitución regresiva. La comprobación `A · x = b` y la
+interpretación van en sus propios bloques plegados después del resultado. `EcuacionMatricialForm`
 (`forms_ecuaciones.py`) comparte con `MatricesForm` la base `FormularioCeldas`
 —celdas, parser y comprobaciones del POST— y exige que b tenga exactamente
 una componente por fila de A; x nunca viaja en el POST. Con JavaScript los
