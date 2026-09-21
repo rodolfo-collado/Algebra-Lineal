@@ -46,6 +46,10 @@ hiddenimports = [
     "frontend.web.calculadora.views",
     "frontend.web.calculadora.teclados",
     "frontend.web.calculadora.catalogo",
+    # Las librerías de {% load %} se importan por nombre y el hook de Django no
+    # encuentra la raíz del proyecto (settings vive en frontend/web/algebra_web).
+    "frontend.web.calculadora.templatetags",
+    "frontend.web.calculadora.templatetags.componentes",
     "backend.vectores",
     "backend.matrices",
     "backend.ecuaciones_matriciales",

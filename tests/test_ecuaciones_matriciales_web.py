@@ -172,7 +172,7 @@ class PruebasEstructuraEcuacion(SimpleTestCase):
         self.assertIn("x tiene 3 componentes desconocidas; se determinan al resolver.", html)
         self.assertIn('aria-label="Dimensiones de A"', html)
         self.assertIn("<legend>Método</legend>", html)
-        self.assertIn('data-teclado-para="equation-fields"', html)
+        self.assertIn('id="equation-fields" data-perfil="numerico"', html)
 
     def test_formulario_entrega_a_y_b_exactos(self):
         form = EcuacionMatricialForm(datos_ecuacion(a=[["1/2", -1, 0]], b=["-2/3"], metodo="comparar"))
@@ -245,8 +245,8 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         self.assertIn('data-kind="inconsistente"', html)
         self.assertNotIn("Vector solución x", doc.tablas)
         self.assertNotIn("Producto Ax", doc.tablas)
-        # Sin solución no se muestra ningún vector x ni líneas x1 = … en el resultado.
-        self.assertNotIn("x1 =", texto[:texto.index("Procedimiento")])
+        # Sin solución no se muestra ningún vector x ni líneas x1 = … en el resultado (tras el procedimiento plegado).
+        self.assertNotIn("x1 =", texto[texto.index("Resultado Ax = b no tiene solución."):])
 
     def test_fracciones_exactas(self):
         html, doc, texto = self.resolver(datos_ecuacion(*FRACCIONES))
@@ -257,10 +257,13 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         html, doc, texto = self.resolver(datos_ecuacion(a=[["1/2", "1/3"], ["-3/4", 2]], b=["5/6", "5/4"], metodo="comparar"))
         self.assertEqual(doc.tablas["Vector solución x"], [["1"], ["1"]])
 
-    def test_resultado_antes_del_procedimiento_y_cadena_de_equivalencias(self):
+    def test_procedimiento_plegado_antes_del_resultado_y_cadena_de_equivalencias(self):
         html, doc, texto = self.resolver(datos_ecuacion(*UNICA))
-        self.assertLess(html.index('id="results-title"'), html.index('id="equivalences-title"'))
-        self.assertLess(html.index('id="equivalences-title"'), html.index('id="procedure-title"'))
+        # P18: un «Ver procedimiento» cerrado con las equivalencias y la eliminación, y después el resultado.
+        self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
+        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(texto.index("Ver procedimiento"), texto.index("1 · Ecuación matricial"))
+        self.assertLess(texto.index("Eliminación por Gauss-Jordan"), texto.index("Resultado Ax = b"))
         for etapa in ("1 · Ecuación matricial", "2 · Ecuación vectorial", "3 · Sistema equivalente", "4 · Matriz aumentada"):
             self.assertIn(etapa, texto)
         self.assertLess(texto.index("1 · Ecuación matricial"), texto.index("2 · Ecuación vectorial"))
@@ -287,8 +290,8 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         self.assertIn("Sustitución regresiva", texto)
         self.assertIn("x2 = 2", texto)
         self.assertEqual(doc.tablas["Matriz escalonada"], [["1", "1", "5"], ["0", "1", "2"]])
-        self.assertEqual(html.count('id="procedure-title"'), 1)
-        self.assertNotIn('id="procedure-title-2"', html)
+        self.assertEqual(html.count('id="procedimiento"'), 1)
+        self.assertNotIn("disclosure-nested", html)
 
     def test_gauss_jordan_muestra_reducida(self):
         html, doc, texto = self.resolver(datos_ecuacion(*UNICA, metodo="gauss_jordan"))
@@ -303,16 +306,14 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         self.assertEqual(html.count('id="results-title"'), 1)
         self.assertEqual(texto.count("Ax = b tiene infinitas soluciones."), 1)
         self.assertEqual(texto.count("x3 es libre"), 1)
-        self.assertEqual(html.count('id="procedure-title"'), 1)
-        self.assertEqual(html.count('id="procedure-title-2"'), 1)
-        self.assertIn("Eliminación por Gauss", texto)
-        self.assertIn("Eliminación por Gauss-Jordan", texto)
+        self.assertEqual(html.count('id="procedimiento"'), 1)
+        # Un sub-bloque cerrado por método dentro del procedimiento, en orden.
+        self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
+        self.assertIn("Eliminación por Gauss y Gauss-Jordan", texto)
         self.assertIn("Comparación de métodos", texto)
-        self.assertIn("Gauss y Gauss-Jordan", texto)
-        self.assertLess(html.index('id="procedure-title"'), html.index('id="procedure-title-2"'))
+        self.assertLess(html.index(">Gauss</h4>"), html.index(">Gauss-Jordan</h4>"))
         self.assertIn("Matriz escalonada", doc.tablas)
         self.assertIn("Matriz reducida", doc.tablas)
-        self.assertEqual(html.count('class="panel panel-method"'), 2)
         # Las equivalencias se muestran una sola vez: no dependen del método.
         self.assertEqual(texto.count("4 · Matriz aumentada"), 1)
 
@@ -465,8 +466,9 @@ class PruebasRecursosEcuacion(SimpleTestCase):
             self.assertContains(respuesta, f"/static/calculadora/{recurso}")
         self.assertNotContains(respuesta, "matrices.js")
         self.assertContains(respuesta, 'id="theme-toggle"')
-        self.assertContains(respuesta, 'data-insercion="/"')
-        self.assertContains(respuesta, 'data-insercion="-"')
+        from tests.test_teclado import Pagina
+        teclas = Pagina(respuesta.content.decode()).perfiles_publicados["numerico"]["grupos"][0]["teclas"]
+        self.assertEqual([t["insercion"] for t in teclas], ["-", "/"])
         self.assertNotContains(respuesta, 'src="https://')
         self.assertNotContains(respuesta, 'href="https://')
         self.assertTrue((ESTATICOS / "ecuaciones.js").is_file())

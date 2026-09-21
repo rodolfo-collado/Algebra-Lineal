@@ -1,6 +1,6 @@
-{% comment %}Por columnas (AB) o combinación lineal de columnas (Ax): las columnas de A y, por cada columna del resultado, la combinación con sus coeficientes, los vectores escalados y la columna obtenida.{% endcomment %}
+{% comment %}Por columnas (AB) o combinación lineal de columnas (Ax): las columnas de A y, por cada columna del resultado, la combinación con sus coeficientes, los vectores escalados y la columna obtenida. Al comparar, el título lo pone el sub-bloque.{% endcomment %}
 <div class="procedure-stage">
-    <h4 class="stage-title">{{ metodo.titulo }}</h4>
+    {% if not resultado.comparando %}<h4 class="stage-title">{{ metodo.titulo }}</h4>{% endif %}
     <p>{{ metodo.descripcion }}</p>
     <p class="matrix-formula">{{ metodo.formula }}</p>
     <p class="procedure-lead">Columnas de A:</p>

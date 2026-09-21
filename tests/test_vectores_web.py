@@ -25,9 +25,9 @@ from frontend.web.calculadora.opciones_vectores import (
     nombres_vectores,
 )
 from frontend.web.calculadora.servicios_vectores import operar_vectores
-from frontend.web.calculadora.teclados import TECLADO_MATRIZ
+from frontend.web.calculadora.teclados import perfiles_para
 from tests.test_navegacion import Documento
-from tests.test_teclado import Botones
+from tests.test_teclado import Pagina
 
 RAIZ = Path(__file__).resolve().parents[1]
 STATIC = RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora"
@@ -243,18 +243,19 @@ class PruebasFormulario(SimpleTestCase):
 
     def test_teclado_contextual_reutilizado_y_controles_de_estructura_aparte(self):
         html = self.client.get(RUTA).content.decode("utf-8")
-        self.assertIn('class="math-keyboard" data-teclado="matriz" data-teclado-para="vector-fields"', html)
+        pagina = Pagina(html)
+        self.assertEqual(len(pagina.teclados), 1)
+        self.assertEqual(pagina.contenedores["vector-fields"], "numerico")
+        self.assertEqual(pagina.perfiles_publicados, perfiles_para("numerico"))
         self.assertIn('role="group" aria-label="Teclado matemático" hidden>', html)
-        botones = Botones(html)
-        teclado = [attrs for grupo, attrs in botones.botones if grupo == "teclado"]
-        self.assertEqual([b["data-insercion"] for b in teclado], [t.insercion for t in TECLADO_MATRIZ.teclas])
-        self.assertEqual([b["data-insercion"] for b in teclado], ["-", "/"])
+        teclado = pagina.perfiles_publicados["numerico"]["grupos"][0]["teclas"]
+        self.assertEqual([t["insercion"] for t in teclado], ["-", "/"])
         estructura = re.findall(r'aria-label="(Quitar una componente|Agregar una componente|Quitar un vector|Agregar un vector)" hidden', html)
         self.assertEqual(sorted(estructura), ["Agregar un vector", "Agregar una componente", "Quitar un vector", "Quitar una componente"])
         self.assertIn('aria-label="Estructura de los vectores"', html)
         for boton in teclado:
-            self.assertNotIn("Quitar", boton["aria-label"])
-            self.assertNotIn("Agregar", boton["aria-label"])
+            self.assertNotIn("Quitar", boton["nombre"])
+            self.assertNotIn("Agregar", boton["nombre"])
         self.assertIn("<noscript>", html)
         self.assertIn('name="ajustar"', html)
 
@@ -272,10 +273,11 @@ class PruebasOperacionesWeb(SimpleTestCase):
     def test_suma(self):
         respuesta = self.client.post(RUTA, datos_vectores("suma", u=[1, 2, 3], v=[4, 5, 6]))
         texto = seccion_resultado(respuesta)
-        self.assertIn("Suma de vectores Resultado u + v = (5, 7, 9)", texto)
-        self.assertIn("Procedimiento Vectores de entrada u = (1, 2, 3) v = (4, 5, 6)", texto)
-        self.assertIn("u + v = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)", texto)
-        self.assertLess(texto.index("Resultado"), texto.index("Procedimiento"))
+        self.assertIn("Resultado u + v = (5, 7, 9)", texto)
+        # P18: el desarrollo va plegado antes del resultado y sustituye los vectores en la propia cadena.
+        self.assertIn("Ver procedimiento Componente a componente u + v = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)", texto)
+        self.assertNotIn("Vectores de entrada", texto)
+        self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado u + v"))
         self.assertContains(respuesta, 'class="vector vector-result"')
         self.assertContains(respuesta, 'class="panel panel-final"')
 
@@ -293,8 +295,8 @@ class PruebasOperacionesWeb(SimpleTestCase):
 
     def test_resta(self):
         texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", u=[4, 6], v=[1, 2])))
-        self.assertIn("Resta de vectores Resultado u − v = (3, 4)", texto)
-        self.assertIn("u − v = (4 - 1, 6 - 2) = (3, 4)", texto)
+        self.assertIn("Resultado u − v = (3, 4)", texto)
+        self.assertIn("u − v = (4, 6) − (1, 2) = (4 - 1, 6 - 2) = (3, 4)", texto)
         texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", u=[5, 7, 9], v=[1, 2, 3])))
         self.assertIn("= (4, 5, 6)", texto)
         texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", u=[5], v=[-1])))
@@ -303,13 +305,12 @@ class PruebasOperacionesWeb(SimpleTestCase):
     def test_escalar(self):
         texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="3", u=[1, -2, 4])))
         self.assertIn("Resultado k·u = (3, -6, 12)", texto)
-        self.assertIn("k = 3", texto)
-        self.assertIn("k·u = (3·1, 3·(-2), 3·4) = (3, -6, 12)", texto)
+        self.assertIn("k·u = 3·(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)", texto)
         texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="0", u=[1, 2, 3])))
         self.assertIn("k·u = (0, 0, 0)", texto)
         texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="1/2", u=["1/3", -4])))
         self.assertIn("k·u = (1/6, -2)", texto)
-        self.assertIn("((1/2)·(1/3), (1/2)·(-4))", texto)
+        self.assertIn("k·u = (1/2)·(1/3, -4) = ((1/2)·(1/3), (1/2)·(-4))", texto)
 
     def test_dimension_grande_y_dimension_uno(self):
         u = list(range(1, 9))
@@ -336,15 +337,17 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
     def test_solucion_unica_con_procedimiento_en_lenguaje_de_coeficientes(self):
         respuesta = self.client.post(RUTA, combinacion([[1, 0], [0, 1]], [3, 4]))
         texto = seccion_resultado(respuesta)
-        self.assertIn("Combinación lineal Resultado Sí: b es combinación lineal de v1 y v2. Existe una única combinación.", texto)
+        self.assertIn("Resultado Sí: b es combinación lineal de v1 y v2. Existe una única combinación.", texto)
         self.assertIn("Coeficientes c1 = 3 c2 = 4", texto)
         self.assertIn("b como combinación lineal (3, 4) = 3(1, 0) + 4(0, 1)", texto)
         self.assertIn("1 · Planteamiento Buscamos c1 y c2 tales que: c1(1, 0) + c2(0, 1) = (3, 4)", texto)
         self.assertIn("2 · Sistema equivalente", texto)
         self.assertIn("c1 = 3 c2 = 4 Cada vector generador es una columna y b es la columna aumentada", texto)
         self.assertIn("3 · Gauss-Jordan No fue necesario realizar operaciones por filas.", texto)
-        self.assertIn("4 · Lectura del resultado El sistema es consistente de solución única.", texto)
-        self.assertLess(texto.index("Resultado"), texto.index("Procedimiento"))
+        self.assertIn("4 · Lectura de la matriz El sistema es consistente de solución única.", texto)
+        # P18: procedimiento plegado antes; la conclusión y los coeficientes solo en el resultado.
+        self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado Sí:"))
+        self.assertEqual(texto.count("c1 = 3 c2 = 4"), 2)  # sistema equivalente y coeficientes
         self.assertContains(respuesta, 'data-kind="unica"')
         # Habla de coeficientes c, no de variables x.
         self.assertNotRegex(texto, r"\bx[1-9]")

@@ -77,8 +77,7 @@ def _operacion_componente_a_componente(entrada):
         resultado = multiplicar_escalar(escalar, u)
         desarrollo = desarrollo_escalar(escalar, u)
         expresion = f"{NOMBRE_ESCALAR}·u"
-        entradas = [_entrada("u", u)]
-        escalar_texto = numero(escalar)
+        sustitucion = f"{_con_parentesis(escalar, tambien_fracciones=True)}·{texto_vector(u)}"
     else:
         u, v = vectores["u"], vectores["v"]
         if operacion == "suma":
@@ -89,18 +88,16 @@ def _operacion_componente_a_componente(entrada):
             resultado = restar_vectores(u, v)
             desarrollo = desarrollo_resta(u, v)
             expresion = "u − v"
-        entradas = [_entrada("u", u), _entrada("v", v)]
-        escalar_texto = None
+        sustitucion = f"{texto_vector(u)} {expresion[2]} {texto_vector(v)}"
 
     return {
         "operacion": operacion,
         "etiqueta": etiqueta_operacion(operacion),
         "titulo": TITULOS[operacion],
         "dimension": entrada["dimension"],
-        "entradas": entradas,
-        "escalar": escalar_texto,
         "expresion": expresion,
-        # «u + v = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)», una igualdad por línea.
+        # «u + v = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)», una igualdad por línea.
+        "sustitucion": sustitucion,
         "desarrollo": f"({', '.join(desarrollo)})",
         "resultado": componentes(resultado),
         "resultado_texto": texto_vector(resultado),

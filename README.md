@@ -69,8 +69,10 @@ relación entre la ecuación matricial, el sistema y la matriz aumentada.
 ### Sistemas numéricos
 
 - Conversión de enteros no negativos entre binario, octal, decimal y hexadecimal.
+- Un mismo número a una, varias o todas las demás bases en una sola consulta.
 - Divisiones sucesivas y expansión posicional con pasos visibles.
-- Conversión entre bases no decimales mostrando el paso intermedio por decimal.
+- Conversión entre bases no decimales mostrando el paso intermedio por decimal,
+  calculado una sola vez y compartido por todos los destinos.
 
 Los formatos de entrada, límites de interfaz y ejemplos completos están en
 la [guía de funcionalidades](docs/funcionalidades.md).

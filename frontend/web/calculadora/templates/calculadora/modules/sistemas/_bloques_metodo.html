@@ -1,11 +1,8 @@
-{% comment %}Bloques propios de un método: la matriz final siempre (resaltando sus pivotes si se piden), el sistema resultante y la sustitución regresiva según lo elegido en Mostrar. Las columnas pivote como análisis van aquí solo con un método; al comparar se muestran una vez en el resultado común.{% endcomment %}
+{% comment %}Bloques finales de un método: la matriz final siempre (resaltando sus pivotes si se piden), el sistema resultante y la sustitución regresiva según lo elegido en Mostrar. Van al final del procedimiento o, si este no se muestra, en el panel del resultado; nunca en los dos. `con_metodo` añade el método a los encabezados cuando no hay otro bloque que lo nombre (Comparar ambos sin procedimiento).{% endcomment %}
 <div class="final-block">
-    <h4 class="final-label">{{ resultado.etiqueta_matriz }}</h4>
+    <h4 class="final-label">{{ resultado.etiqueta_matriz }}{% if con_metodo %} · {{ resultado.metodo }}{% endif %}</h4>
     {% if "pivotes" in mostrar %}
         {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_final etiqueta=resultado.etiqueta_matriz columnas_pivote=resultado.columnas_pivote %}
-        {% if not comparando %}
-            {% include "calculadora/modules/sistemas/_pivotes.html" %}
-        {% endif %}
     {% else %}
         {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_final etiqueta=resultado.etiqueta_matriz %}
     {% endif %}
@@ -13,7 +10,7 @@
 
 {% if "sistema-resultante" in mostrar and resultado.mostrar_sistema_resultante %}
     <div class="final-block">
-        <h4 class="final-label">Sistema resultante</h4>
+        <h4 class="final-label">Sistema resultante{% if con_metodo %} · {{ resultado.metodo }}{% endif %}</h4>
         <ul class="equations">
             {% for ecuacion in resultado.ecuaciones_resultantes %}
                 <li><code>{{ ecuacion }}</code></li>

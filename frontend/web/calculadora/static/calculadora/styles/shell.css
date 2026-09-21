@@ -93,13 +93,11 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition:
-        border-color var(--motion-fast),
-        background var(--motion-fast);
 }
 
-.navigation-toggle:hover,
-.theme-toggle:hover {
+.navigation-toggle:not(:disabled):hover,
+.theme-toggle:not(:disabled):hover,
+.sidebar-close:not(:disabled):hover {
     border-color: var(--color-brand);
     background: var(--color-brand-soft);
 }

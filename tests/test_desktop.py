@@ -174,6 +174,13 @@ class PruebasLauncherDesktop(unittest.TestCase):
                 with self.subTest(modulo=modulo):
                     self.assertIn(modulo, ocultos)
         self.assertIn("frontend.web.calculadora.views", ocultos)
+        # {% load %} importa cada librería de tags por nombre; sin ellas la app instalada responde 500.
+        templatetags = RAIZ / "frontend" / "web" / "calculadora" / "templatetags"
+        self.assertIn("frontend.web.calculadora.templatetags", ocultos)
+        for libreria in templatetags.glob("*.py"):
+            if libreria.stem != "__init__":
+                with self.subTest(libreria=libreria.stem):
+                    self.assertIn(f"frontend.web.calculadora.templatetags.{libreria.stem}", ocultos)
 
     def test_resuelve_el_icono_local(self):
         ruta = desktop.application_icon_path()
@@ -304,15 +311,17 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             with cliente_http.open(url_bases, timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 self.assertIn("Conversión de bases", respuesta.read().decode("utf-8"))
+            # Varias casillas «Convertir a» viajan como campos repetidos, igual que en el navegador.
             solicitud = Request(
                 url_bases,
                 data=urlencode(
-                    {
-                        "csrfmiddlewaretoken": csrf.group(1).decode("ascii"),
-                        "numero": "13",
-                        "base_origen": "10",
-                        "base_destino": "2",
-                    }
+                    [
+                        ("csrfmiddlewaretoken", csrf.group(1).decode("ascii")),
+                        ("numero", "13"),
+                        ("base_origen", "10"),
+                        ("bases_destino", "2"),
+                        ("bases_destino", "16"),
+                    ]
                 ).encode("ascii"),
                 headers={
                     "Content-Type": "application/x-www-form-urlencoded",
@@ -322,8 +331,12 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             with cliente_http.open(solicitud, timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 conversion = respuesta.read().decode("utf-8")
+            # Conversión multidestino real por la pila empaquetada: el origen una vez y las dos escrituras.
+            self.assertIn("Decimal → binario y hexadecimal", conversion)
             self.assertIn("13₁₀", conversion)
             self.assertIn("1101₂", conversion)
+            self.assertIn("D₁₆", conversion)
+            self.assertNotIn("15₈", conversion)
 
             # Operaciones con vectores: la combinación lineal reutiliza Gauss-Jordan por la misma pila.
             url_vectores = f"{url}vectores/operaciones/"
@@ -389,7 +402,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                     html = respuesta.read().decode("utf-8")
                 self.assertEqual(Contenido(html).tablas["Matriz resultado"], esperado)
                 for procedimiento in procedimientos:
-                    self.assertIn(f"Procedimiento: {procedimiento}", html)
+                    self.assertIn(f">{procedimiento}</h4>", html)
             with cliente_http.open(f"{url}static/calculadora/matrices.js", timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 contenido = respuesta.read().decode("utf-8")
@@ -406,7 +419,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             self.assertIn('aria-label="Vector incógnita x, no editable"', pagina)
             for datos, x, textos in (
                 (datos_ecuacion(a=[[2, 0], [0, 3]], b=[1, 1], metodo="comparar"), [["1/2"], ["1/3"]],
-                 ("Ax = b tiene solución única.", "b = (1/2)a₁ + (1/3)a₂", 'id="procedure-title-2"')),
+                 ("Ax = b tiene solución única.", "b = (1/2)a₁ + (1/3)a₂", 'id="procedimiento"', 'class="disclosure disclosure-nested"')),
                 (datos_ecuacion(a=[[1, 0], [0, 1], [1, 1]], b=[2, 3, 5]), [["2"], ["3"]],
                  ("A (3×2) · x (2) = b (3)", "x1 = 2", "x2 = 3")),
             ):

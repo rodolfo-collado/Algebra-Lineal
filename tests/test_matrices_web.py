@@ -240,10 +240,11 @@ class PruebasResultadosMatrices(SimpleTestCase):
     def test_resta_fraccionaria_rectangular(self):
         self.comprobar(datos_matrices("resta", a=[["1/2"], [-2], [0]], b=[["1/3"], [3], ["-7/3"]]), [["1/6"], ["-5"], ["7/3"]])
 
-    def test_resultado_antes_de_procedimiento(self):
+    def test_procedimiento_plegado_antes_del_resultado(self):
         r = self.client.post(RUTA, datos_matrices())
         html = r.content.decode()
-        self.assertLess(html.index('id="results-title"'), html.index('id="procedure-title"'))
+        self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
+        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
 
     def test_servicio_delega_la_matematica(self):
         with patch("frontend.web.calculadora.servicios_matrices.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:
@@ -361,9 +362,10 @@ class PruebasComponentesYRecursosMatrices(SimpleTestCase):
         r = self.client.get(RUTA)
         for recurso in ("matrices.js", "teclado.js", "tema.js", "styles.css"):
             self.assertContains(r, f"/static/calculadora/{recurso}")
-        self.assertContains(r, 'data-teclado-para="matrix-fields"')
-        self.assertContains(r, 'data-insercion="/"')
-        self.assertContains(r, 'data-insercion="-"')
+        self.assertContains(r, 'id="matrix-fields" data-perfil="numerico"')
+        from tests.test_teclado import Pagina
+        teclas = Pagina(r.content.decode()).perfiles_publicados["numerico"]["grupos"][0]["teclas"]
+        self.assertEqual([t["insercion"] for t in teclas], ["-", "/"])
         self.assertNotContains(r, 'src="https://')
         self.assertNotContains(r, 'href="https://')
 

@@ -86,10 +86,6 @@
     border-radius: var(--radius-sm);
     font-weight: 700;
     cursor: pointer;
-    transition:
-        background var(--motion),
-        box-shadow var(--motion),
-        border-color var(--motion);
 }
 
 .btn-primary {
@@ -99,7 +95,7 @@
     box-shadow: var(--shadow-sm);
 }
 
-.btn-primary:hover {
+.btn-primary:not(:disabled):hover {
     background: var(--color-brand-strong);
     box-shadow: var(--shadow-md);
 }
@@ -110,9 +106,55 @@
     border-color: var(--color-border);
 }
 
-.btn-secondary:hover {
+.btn-secondary:not(:disabled):hover {
     border-color: var(--color-brand);
     background: var(--color-brand-soft);
+}
+
+/* Un mismo feedback para acciones, teclas y controles de estructura/navegación. */
+:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .sidebar-close, .search-submit) {
+    transition:
+        background-color var(--motion-fast),
+        border-color var(--motion-fast),
+        color var(--motion-fast),
+        box-shadow var(--motion-fast),
+        transform var(--motion-fast);
+}
+
+:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .sidebar-close, .search-submit):disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* El relieve confirma la pulsación también en táctil y con movimiento reducido. */
+:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .sidebar-close, .search-submit):not(:disabled):active {
+    border-color: var(--color-brand);
+    box-shadow: inset 0 0 0 1px currentColor;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .sidebar-close, .search-submit):not(:disabled):active {
+        transform: translateY(1px);
+    }
+
+    /* Solo opacidad: el resultado nunca espera ni cambia de posición. */
+    .panel-final {
+        animation: contenido-entrada var(--motion);
+    }
+
+    /* Un único cuerpo nativo, incluso con contenido dinámico o anidado.
+       Sin soporte, quedan el chevrón y la apertura/cierre nativos inmediatos. */
+    @supports selector(details::details-content) {
+        details[open]::details-content {
+            animation: contenido-entrada var(--motion);
+        }
+    }
+}
+
+@keyframes contenido-entrada {
+    from { opacity: 0.92; }
+    to { opacity: 1; }
 }
 
 .badge {
@@ -260,7 +302,7 @@
     cursor: pointer;
 }
 
-.search-large .search-submit:hover {
+.search-large .search-submit:not(:disabled):hover {
     border-color: var(--color-brand);
     background: var(--color-brand-soft);
 }
@@ -726,6 +768,52 @@ a.tool-link .tool-link-name {
     padding: 0.15rem 0.8rem 0.85rem;
 }
 
+/* Componente {% disclosure %}: chevrón al inicio y título como encabezado real dentro del summary. */
+.disclosure-summary > .disclosure-chevron:first-child {
+    margin-left: 0;
+    color: var(--color-brand);
+}
+
+.disclosure-title {
+    margin: 0;
+    font: inherit;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.disclosure-detail {
+    min-width: 0;
+    color: var(--color-muted);
+    font-weight: 400;
+    overflow-wrap: anywhere;
+}
+
+/* «Ver procedimiento»: el bloque plegable que precede al resultado de cada herramienta. */
+.disclosure-procedure {
+    margin-top: 0;
+    background: var(--color-surface-raised);
+}
+
+.disclosure-procedure > .disclosure-summary {
+    min-height: 2.75rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.95rem;
+}
+
+.disclosure-procedure > .disclosure-body {
+    padding: 0.35rem 1.1rem 1.15rem;
+}
+
+/* Sub-bloques (un método al comparar, comprobación e interpretación): más discretos. */
+.disclosure-nested {
+    margin-top: 0.85rem;
+    background: var(--color-surface-muted);
+}
+
+.disclosure-nested > .disclosure-body {
+    padding: 0.25rem 0.9rem 0.9rem;
+}
+
 /* —— Teclado matemático contextual —— */
 
 .math-keyboard {
@@ -772,10 +860,9 @@ a.tool-link .tool-link-name {
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: border-color var(--motion-fast), background var(--motion-fast);
 }
 
-.math-key:hover {
+.math-key:not(:disabled):hover {
     border-color: var(--color-brand);
     background: var(--color-brand-soft);
 }
@@ -828,7 +915,6 @@ a.tool-link .tool-link-name {
     font-size: 1.05rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background var(--motion-fast), border-color var(--motion-fast);
 }
 
 .stepper-btn[hidden] {
@@ -845,7 +931,7 @@ a.tool-link .tool-link-name {
     border-left: 0;
 }
 
-.stepper-btn:hover {
+.stepper-btn:not(:disabled):hover {
     background: var(--color-brand-soft);
     border-color: var(--color-brand);
 }

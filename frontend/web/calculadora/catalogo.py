@@ -185,8 +185,8 @@ CONVERSION_BASES = Herramienta(
     nombre="Conversión de bases",
     categoria=BASES_NUMERICAS,
     descripcion=(
-        "Convierte números entre decimal y binario, octal o hexadecimal, "
-        "con el procedimiento de divisiones sucesivas o expansión posicional."
+        "Convierte un número entre binario, octal, decimal y hexadecimal, a una o varias "
+        "bases a la vez, con el procedimiento de divisiones sucesivas o expansión posicional."
     ),
     estado="disponible",
     route_name="calculadora:conversion-bases",

@@ -1,22 +1,36 @@
-{% comment %}Procedimiento a partir de datos estructurados del núcleo (no HTML generado en el backend). Una etapa si interviene decimal; dos, encadenadas por el decimal intermedio, si ninguna base es decimal.{% endcomment %}
+{% comment %}Procedimiento a partir de datos estructurados del núcleo (no HTML generado en el backend). Cada etapa aparece una sola vez: la expansión posicional (si el origen no es decimal) es la etapa compartida; después, una etapa de divisiones sucesivas por cada destino no decimal, todas desde el mismo valor intermedio.{% endcomment %}
 
 {% if resultado.intermedio %}
     <p class="procedure-lead">
-        Ninguna de las dos bases es decimal, así que la conversión pasa por decimal:
-        primero la expansión posicional y después las divisiones sucesivas.
+        La base de origen no es decimal, así que la conversión pasa por decimal: la expansión posicional
+        obtiene el valor decimal una sola vez y, a partir de él, las divisiones sucesivas escriben
+        {% if resultado.ramas|length > 1 %}las demás bases pedidas{% elif resultado.decimal_pedido %}la otra base pedida{% else %}la base pedida{% endif %}.
+        {% if resultado.decimal_pedido %}Ese valor decimal es, además, uno de los resultados pedidos.{% endif %}
     </p>
-    <p class="expansion-line stage-chain" aria-label="Cadena de conversión">
+    <div class="stage-route" role="group" aria-label="Ruta de la conversión">
         <span class="base-numeral">{{ resultado.origen }}</span>
-        <span aria-hidden="true"> = </span>
-        <span class="base-numeral">{{ resultado.intermedio }}</span>
-        <span aria-hidden="true"> = </span>
-        <span class="base-numeral base-numeral-result">{{ resultado.destino }}</span>
+        <span class="stage-route-arrow" aria-hidden="true">→</span>
+        <span class="stage-route-node">
+            <span class="base-numeral">{{ resultado.intermedio }}</span>
+            <span class="stage-route-note">decimal intermedio</span>
+        </span>
+        <span class="stage-route-arrow" aria-hidden="true">→</span>
+        <ul class="stage-route-branches">
+            {% for rama in resultado.ramas %}
+                <li><span class="base-numeral base-numeral-result">{{ rama }}</span></li>
+            {% endfor %}
+        </ul>
+    </div>
+{% elif resultado.etapas|length > 1 %}
+    <p class="procedure-lead">
+        El número ya está en decimal, así que no hay etapa intermedia: cada base se obtiene por
+        divisiones sucesivas a partir del mismo valor.
     </p>
 {% endif %}
 
 {% for etapa in resultado.etapas %}
     <div class="procedure-stage">
-        {% if resultado.intermedio %}
+        {% if resultado.etapas|length > 1 %}
             <h4 class="stage-title">Etapa {{ forloop.counter }} · {{ etapa.titulo }}</h4>
         {% endif %}
 
@@ -78,6 +92,9 @@
             <p class="expansion-line">
                 <span aria-hidden="true">= </span><span class="base-numeral base-numeral-result">{{ etapa.destino }}</span>
             </p>
+            {% if resultado.intermedio %}
+                <p class="procedure-note">Este valor decimal se reutiliza en las etapas siguientes; no se vuelve a calcular.</p>
+            {% endif %}
         {% endif %}
     </div>
 {% endfor %}

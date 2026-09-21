@@ -1,5 +1,5 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% load static %}
+{% load static componentes %}
 
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title">
@@ -49,7 +49,7 @@
                 </fieldset>
             </div>
 
-            <fieldset id="system-fields" class="input-mode">
+            <fieldset id="system-fields" data-perfil="sistema" class="input-mode">
                 <legend class="sr-only">Sistema de ecuaciones</legend>
                 <div class="field-group">
                     {{ form.sistema.label_tag }}
@@ -61,11 +61,10 @@
                     {% for error in form.sistema.errors %}
                         <p class="field-error" role="alert">{{ error }}</p>
                     {% endfor %}
-                    {% include "calculadora/components/math_keyboard.html" with teclado=teclado_sistema campos_id="system-fields" %}
                 </div>
             </fieldset>
 
-            <fieldset id="matrix-fields" class="input-mode" hidden disabled>
+            <fieldset id="matrix-fields" data-perfil="numerico" class="input-mode" hidden disabled>
                 <legend class="sr-only">Matriz aumentada</legend>
                 <div class="structure-controls" role="group" aria-label="Estructura de la matriz">
                     <div class="dimension-field">
@@ -102,8 +101,8 @@
                         Completa todas las celdas con números, enteros o fracciones.
                     </p>
                 </div>
-                {% include "calculadora/components/math_keyboard.html" with teclado=teclado_matriz campos_id="matrix-fields" %}
             </fieldset>
+            {% include "calculadora/components/math_keyboard.html" %}
             <noscript><p class="field-help">Para editar la cuadrícula de una matriz, activa JavaScript. Puedes resolver y comparar métodos usando el sistema escrito como texto.</p></noscript>
 
             {% comment %}Las opciones avanzadas solo se despliegan cuando el usuario las necesita; sus casillas viajan igual, plegadas o no.{% endcomment %}
@@ -148,25 +147,42 @@
                 <h2 id="results-title">{{ titulo_resultado }}</h2>
             </header>
 
-            {% comment %}El resultado va primero: clasificación y solución a la vista; el procedimiento y las guías vienen después. Lo que coincide entre métodos (clasificación, solución y pivotes) se muestra una sola vez.{% endcomment %}
+            {% comment %}Entrada → procedimiento plegable → resultado. El procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución); el panel final dice qué se obtuvo (clasificación, solución, pivotes) una sola vez. Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque.{% endcomment %}
+            {% if "procedimiento" in mostrar %}
+                {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                    <div class="final-block">
+                        <h4 class="final-label">Matriz inicial</h4>
+                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                    </div>
+                    {% for resultado in resultados %}
+                        {% if comparando %}
+                            {% disclosure titulo=resultado.metodo nivel=4 clase="disclosure-nested" %}
+                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                            {% enddisclosure %}
+                        {% else %}
+                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                        {% endif %}
+                    {% endfor %}
+                {% enddisclosure %}
+            {% endif %}
+
             <section class="panel panel-final" aria-labelledby="final-title">
                 <h3 id="final-title" class="panel-title">Resultado final</h3>
                 {% if "clasificacion" in mostrar %}
                     {% include "calculadora/modules/sistemas/_clasificacion.html" %}
                 {% endif %}
                 {% include "calculadora/modules/sistemas/_solucion.html" %}
-                {% if "procedimiento" in mostrar %}
-                    <p class="results-actions"><a class="btn btn-secondary" href="#procedimiento">Ver procedimiento</a></p>
+                {% if "pivotes" in mostrar %}
+                    {% comment %}Las columnas pivote son la lectura directa de la matriz final y coinciden entre métodos: se toman del primer resultado.{% endcomment %}
+                    <div class="final-block">
+                        {% include "calculadora/modules/sistemas/_pivotes.html" %}
+                    </div>
                 {% endif %}
-                {% if comparando %}
-                    {% if "pivotes" in mostrar %}
-                        {% comment %}Los dos métodos comparten las columnas pivote: se toman del primer resultado.{% endcomment %}
-                        <div class="final-block">
-                            {% include "calculadora/modules/sistemas/_pivotes.html" %}
-                        </div>
-                    {% endif %}
-                {% else %}
-                    {% include "calculadora/modules/sistemas/_bloques_metodo.html" %}
+                {% if "procedimiento" not in mostrar %}
+                    {% comment %}Sin procedimiento, la matriz final (y el sistema resultante) se muestran aquí: siempre están, y una sola vez. Al comparar, cada bloque nombra su método.{% endcomment %}
+                    {% for resultado in resultados %}
+                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" with con_metodo=comparando %}
+                    {% endfor %}
                 {% endif %}
                 {% if guias %}
                     {# Contenido educativo en segundo plano: no compite con el resultado. #}
@@ -181,39 +197,6 @@
                     </details>
                 {% endif %}
             </section>
-
-            {% if comparando %}
-                {% if "procedimiento" in mostrar %}
-                    <section class="panel" id="procedimiento" aria-labelledby="initial-title">
-                        <h3 id="initial-title" class="panel-title">Matriz inicial</h3>
-                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
-                    </section>
-                {% endif %}
-                {% comment %}Un panel por método con su procedimiento y sus bloques propios.{% endcomment %}
-                {% for resultado in resultados %}
-                    <section class="panel panel-method" aria-labelledby="method-title-{{ forloop.counter }}">
-                        <h3 id="method-title-{{ forloop.counter }}" class="panel-title">{{ resultado.metodo }}</h3>
-                        {% if "procedimiento" in mostrar %}
-                            <div class="final-block">
-                                <h4 class="final-label">Procedimiento paso a paso</h4>
-                                {% include "calculadora/modules/sistemas/_pasos.html" %}
-                            </div>
-                        {% endif %}
-                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" %}
-                    </section>
-                {% endfor %}
-            {% elif "procedimiento" in mostrar %}
-                <section class="panel panel-steps" id="procedimiento" aria-labelledby="steps-title">
-                    <h3 id="steps-title" class="panel-title">Procedimiento paso a paso</h3>
-                    <div class="final-block">
-                        <h4 class="final-label">Matriz inicial</h4>
-                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
-                    </div>
-                    <div class="final-block">
-                        {% include "calculadora/modules/sistemas/_pasos.html" %}
-                    </div>
-                </section>
-            {% endif %}
         </section>
     {% endif %}
 {% endblock %}

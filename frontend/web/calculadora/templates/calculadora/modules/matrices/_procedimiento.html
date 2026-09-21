@@ -1,6 +1,6 @@
-<section class="panel" aria-labelledby="procedure-title">
-    <h3 id="procedure-title" class="panel-title">Procedimiento</h3>
-    {% include "calculadora/modules/matrices/_expresion.html" %}
+{% load componentes %}
+{% comment %}Suma, resta, escalar y traspuesta: la regla por entrada y la cadena completa, plegadas; la matriz obtenida solo cierra la cadena y se presenta una vez en el panel final.{% endcomment %}
+{% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
     <div class="procedure-stage">
         <h4 class="stage-title">{% if resultado.operacion == "traspuesta" %}De filas a columnas{% else %}Entrada por entrada{% endif %}</h4>
         <p>{{ resultado.ayuda }}</p>
@@ -12,10 +12,6 @@
             </ol>
             <p class="field-help">a[i, j] identifica la entrada de A en la fila i, columna j.</p>
         {% endif %}
-        <div class="matrix-equation" tabindex="0" role="region" aria-label="Desarrollo por entradas">
-            {% include "calculadora/components/matriz.html" with matriz=resultado.desarrollo etiqueta="Desarrollo por entradas" only %}
-            <span class="matrix-expression">=</span>
-            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado del desarrollo" only %}
-        </div>
+        {% include "calculadora/modules/matrices/_expresion.html" with desarrollo=resultado.desarrollo %}
     </div>
-</section>
+{% enddisclosure %}

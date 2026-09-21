@@ -318,7 +318,7 @@ class PruebasNavegacion(SimpleTestCase):
             "/sistemas/", {"sistema": "x1+x2=3;x1-x2=1", "metodo": "comparar"},
         )))
         paginas.append(("/bases/conversion/", self.client.post(
-            "/bases/conversion/", {"numero": "1010", "base_origen": "2", "base_destino": "16"},
+            "/bases/conversion/", {"numero": "1010", "base_origen": "2", "bases_destino": ["10", "16"]},
         )))
         for ruta, respuesta in paginas:
             with self.subTest(ruta=ruta):
@@ -349,7 +349,8 @@ class PruebasNavegacion(SimpleTestCase):
         self.assertContains(respuesta, "x1 = 7")
         self.assertContains(respuesta, "Para editar la cuadrícula de una matriz, activa JavaScript.")
         # Lo que solo funciona con JavaScript nace oculto: no aparenta funcionar.
-        self.assertContains(pagina, 'class="math-keyboard" data-teclado="sistema" data-teclado-para="system-fields"')
+        self.assertContains(pagina, 'class="math-keyboard" data-perfiles="math-keyboard-profiles"', count=1)
+        self.assertContains(pagina, 'id="system-fields" data-perfil="sistema"')
         self.assertContains(pagina, 'aria-label="Agregar una ecuación" hidden')
 
     def test_landmarks_skip_link_y_control_de_menu(self):

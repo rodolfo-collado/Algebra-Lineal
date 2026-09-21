@@ -1,0 +1,11 @@
+{% comment %}Bloque plegable nativo del tag {% disclosure %}: chevrón, título como encabezado y cuerpo. Nace cerrado salvo que se pida `abierto`.{% endcomment %}
+<details class="disclosure{% if clase %} {{ clase }}{% endif %}"{% if id %} id="{{ id }}"{% endif %}{% if abierto %} open{% endif %}>
+    <summary class="disclosure-summary">
+        <svg class="disclosure-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        {% if nivel == 4 %}<h4 class="disclosure-title">{{ titulo }}</h4>{% else %}<h3 class="disclosure-title">{{ titulo }}</h3>{% endif %}
+        {% if detalle %}<span class="disclosure-detail">{{ detalle }}</span>{% endif %}
+    </summary>
+    <div class="disclosure-body">{{ contenido }}</div>
+</details>
