@@ -174,6 +174,13 @@ class PruebasLauncherDesktop(unittest.TestCase):
                 with self.subTest(modulo=modulo):
                     self.assertIn(modulo, ocultos)
         self.assertIn("frontend.web.calculadora.views", ocultos)
+        # {% load %} importa cada librería de tags por nombre; sin ellas la app instalada responde 500.
+        templatetags = RAIZ / "frontend" / "web" / "calculadora" / "templatetags"
+        self.assertIn("frontend.web.calculadora.templatetags", ocultos)
+        for libreria in templatetags.glob("*.py"):
+            if libreria.stem != "__init__":
+                with self.subTest(libreria=libreria.stem):
+                    self.assertIn(f"frontend.web.calculadora.templatetags.{libreria.stem}", ocultos)
 
     def test_resuelve_el_icono_local(self):
         ruta = desktop.application_icon_path()
