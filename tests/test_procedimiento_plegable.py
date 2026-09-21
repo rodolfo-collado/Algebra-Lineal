@@ -488,3 +488,33 @@ class PruebasTransversales(SimpleTestCase):
         self.assertLess(texto.index("Resultado Número de origen"), texto.index("Procedimiento"))
         self.assertIn("1101", texto)
         self.assertIn("D", texto)
+
+
+class PruebasComparacionSinProcedimiento(SimpleTestCase):
+    """Comparar ambos sin «Procedimiento»: cada matriz final nombra su método y sigue habiendo un solo resultado."""
+
+    def resolver(self, sistema, mostrar):
+        return self.client.post("/sistemas/", {"sistema": sistema, "metodo": "comparar", "mostrar_definido": "1", "mostrar": mostrar}).content.decode("utf-8")
+
+    def test_cada_matriz_final_y_sistema_resultante_nombran_su_metodo(self):
+        html = self.resolver(INFINITAS, ["clasificacion", "pivotes", "sistema-resultante"])
+        texto = texto_resultado(html)
+        self.assertNotIn("Ver procedimiento", texto)
+        for bloque in ("Matriz escalonada · Gauss", "Sistema resultante · Gauss ", "Matriz reducida · Gauss-Jordan", "Sistema resultante · Gauss-Jordan"):
+            self.assertEqual(texto.count(bloque), 1, bloque)
+        self.assertLess(texto.index("Matriz escalonada · Gauss"), texto.index("Matriz reducida · Gauss-Jordan"))
+        # Un único resultado canónico: clasificación y solución una sola vez, antes de las matrices.
+        self.assertEqual(texto.count("Consistente de soluciones infinitas"), 1)
+        self.assertEqual(texto.count("Solución "), 1)
+        self.assertEqual(texto.count("x2 es libre"), 1)
+        self.assertLess(texto.index("Solución "), texto.index("Matriz escalonada · Gauss"))
+        self.assertEqual(len(Estructura(html).paneles_finales), 1)
+
+    def test_con_un_solo_metodo_o_con_procedimiento_no_se_repite_el_nombre(self):
+        solo = texto_resultado(self.client.post("/sistemas/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["sistema-resultante"]}).content.decode("utf-8"))
+        self.assertIn("Matriz escalonada 1 1 2 0 0 0 Sistema resultante x1 + x2 = 2 0 = 0", solo)
+        self.assertNotIn("· Gauss", solo)
+        con_procedimiento = texto_resultado(self.resolver(INFINITAS, TODOS))
+        # Con procedimiento, el sub-bloque «Gauss»/«Gauss-Jordan» ya nombra el método: los encabezados no lo repiten.
+        self.assertNotIn("Matriz escalonada · Gauss", con_procedimiento)
+        self.assertNotIn("Sistema resultante · Gauss", con_procedimiento)

@@ -179,9 +179,9 @@
                     </div>
                 {% endif %}
                 {% if "procedimiento" not in mostrar %}
-                    {% comment %}Sin procedimiento, la matriz final (y el sistema resultante) se muestran aquí: siempre están, y una sola vez.{% endcomment %}
+                    {% comment %}Sin procedimiento, la matriz final (y el sistema resultante) se muestran aquí: siempre están, y una sola vez. Al comparar, cada bloque nombra su método.{% endcomment %}
                     {% for resultado in resultados %}
-                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" %}
+                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" with con_metodo=comparando %}
                     {% endfor %}
                 {% endif %}
                 {% if guias %}

@@ -213,7 +213,8 @@ final» muestra la clasificación, la solución, las columnas pivote
 (`_pivotes.html`, la lectura directa de la matriz final) y las guías plegadas
 («Entender este resultado»). Si «Procedimiento» está desmarcado no hay
 desplegable y la matriz final se muestra en el panel final, para que siga
-visible sin repetirse.
+visible sin repetirse; al comparar, cada matriz final y sistema resultante
+nombran su método («Matriz escalonada · Gauss»).
 
 `exploraciones.py` construye «También puedes explorar» tras resolver: el
 mismo sistema con el otro método o comparando, los bloques que se dejaron sin
