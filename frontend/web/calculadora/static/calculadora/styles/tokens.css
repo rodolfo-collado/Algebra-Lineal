@@ -74,6 +74,7 @@
     --header-height: 3rem;
     --nav-width: 19rem;
     --content-max: 1200px;
+    /* Estado/entrada y pulsación: sin demora ni dependencia funcional. */
     --motion: 160ms ease;
     --motion-fast: 120ms ease;
 }

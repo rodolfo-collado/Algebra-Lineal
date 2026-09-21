@@ -54,6 +54,41 @@ Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-rais
 `--color-pivot`, …) en lugar de hexadecimales sueltos. Cada token existe en el
 bloque claro y en `[data-theme="dark"]`.
 
+## Movimiento funcional
+
+Las animaciones son una mejora progresiva. Ningún estado, contenido o acción
+depende de que una animación se ejecute.
+
+- `--motion-fast` (120 ms) unifica el feedback de controles y chevrons;
+  `--motion` (160 ms) se usa para entradas breves. No hay retrasos.
+- Botones, steppers, teclas matemáticas y controles de navegación comparten
+  pulsación de 1 px y borde interior; `:disabled` excluye hover y pulsación.
+  El foco visible se conserva. No hay timers ni cambios en el motor del teclado.
+- Radios, casillas y segmentos conservan controles HTML nativos y transiciones
+  de fondo/borde. Seleccionar no cambia el peso de letra ni mueve opciones vecinas.
+- Los chevrons comunican apertura/cierre. Donde el navegador admite
+  [`::details-content`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Selectors/::details-content),
+  el cuerpo completo entra con opacidad de 0.92 a 1. El cierre es inmediato;
+  no se retiene contenido interactivo ni se interpola altura. Sin soporte,
+  `<details>/<summary>` conserva todo su comportamiento nativo, también sin JS.
+- El panel final usa la misma entrada, visible desde el primer instante, sin
+  desplazamiento, espera ni clase añadida por JavaScript.
+- No se animan celdas, cambios de dimensiones, regeneraciones de campos, perfiles
+  del teclado, controles condicionales ni el desplazamiento del drawer. `hidden`,
+  `disabled`, `inert`, Escape y restauración de foco mantienen sus contratos.
+  El cambio de tema conserva su comportamiento, sin transición global de colores.
+
+`prefers-reduced-motion: reduce` cancela animaciones y transiciones, incluido el
+pseudo-elemento del disclosure. La pulsación no se desplaza; su borde interior,
+selección y foco siguen dando feedback instantáneo. Se mantienen las orientaciones
+estáticas que explican un estado (chevrons abiertos) o el layout (flecha entre
+matrices en móvil), sin animarlas.
+
+Para nuevos componentes: reutilizar estos tokens y estados, declarar cada
+propiedad en `transition` (nunca `all`), activar desplazamientos solo dentro de
+`prefers-reduced-motion: no-preference` y dejar visible el estado CSS por defecto.
+Evitar animaciones por celda, bucles, timers, delays y dependencias nuevas.
+
 ## Principio: primero el problema, después las herramientas, al final las opciones
 
 La interfaz reduce la carga cognitiva con divulgación progresiva: el Inicio

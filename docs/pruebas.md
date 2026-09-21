@@ -60,13 +60,38 @@ mantienen; que sin JavaScript todo el contenido está en el HTML; y que Inicio
 y Conversión de bases no cambian. Las suites de cada herramienta se adaptaron
 al orden Entrada → Procedimiento plegable → Resultado.
 
+Para P19, `uv run python -m unittest tests.test_microinteracciones -v` comprueba
+tokens breves, propiedades de transición explícitas, ausencia de retardos y bucles,
+cancelación con movimiento reducido (también `::details-content`), pulsación solo
+en controles habilitados, foco, selección sin cambios de métricas y entrada de
+contenido visible por defecto. Son contratos CSS, no pruebas de percepción visual.
+Se complementan con las suites existentes:
+
+- `test_teclado` y runner DOM: perfiles, inserción, foco y campos regenerados.
+- `test_procedimiento_plegable`, `test_interfaz_progresiva` y suites web:
+  details/summary nativos, resultado único, formularios/POST sin JS, Inicio y Bases.
+- `test_navegacion`: navegación; `test_desktop`, `test_instalador`, `test_webview2`
+  y `test_recursos_interfaz`: aplicación, recursos empaquetados y `templatetags`.
+
+Revisión manual P19: 1280×720 y 390×844, claro/oscuro, las cinco herramientas;
+pulsación, Tab/flechas, opciones y teclado; abrir/cerrar rápidamente procedimientos,
+métodos, comprobación, interpretación, opciones e Inicio por temas. Comprobar el
+drawer con toggle, Cerrar, backdrop y Escape y verificar restauración del foco.
+Repetir con `prefers-reduced-motion: reduce` emulado y sin JavaScript: contenido y
+estados deben seguir disponibles. Probar matrices grandes, dimensión máxima de
+vectores y cambios repetidos de estructura/operación sin pérdida de valores
+compartidos ni colas. El cierre de disclosures y controles `hidden` es inmediato.
+No hay JS nuevo ni dependencias para movimiento; no se animan las celdas.
+
 La regresión de JavaScript usa el DOM real del navegador, sin dependencias nuevas:
 
 ```bash
 uv run python -m tests.teclado_browser
 ```
 
-Abre `http://127.0.0.1:8766/`: los 18 casos deben indicar `PASS`. Se sirven el
+Abre `http://127.0.0.1:8766/` en una ventana visible con foco real: los 18 casos
+deben indicar `PASS`. En P19 se confirmó 18/18 en el navegador integrado visible;
+los fallos anteriores de foco no se reprodujeron en esas condiciones. Se sirven el
 componente Django y el motor reales, con un documento aislado por caso. Cubre
 cursor, selección, foco, `input` con propagación, retroceso, etiquetas accesibles,
 cambios de perfil, campos agregados/eliminados y objetivos no editables; incluye
