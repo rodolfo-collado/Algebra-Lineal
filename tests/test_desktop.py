@@ -395,7 +395,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                     html = respuesta.read().decode("utf-8")
                 self.assertEqual(Contenido(html).tablas["Matriz resultado"], esperado)
                 for procedimiento in procedimientos:
-                    self.assertIn(f"Procedimiento: {procedimiento}", html)
+                    self.assertIn(f">{procedimiento}</h4>", html)
             with cliente_http.open(f"{url}static/calculadora/matrices.js", timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 contenido = respuesta.read().decode("utf-8")
@@ -412,7 +412,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             self.assertIn('aria-label="Vector incógnita x, no editable"', pagina)
             for datos, x, textos in (
                 (datos_ecuacion(a=[[2, 0], [0, 3]], b=[1, 1], metodo="comparar"), [["1/2"], ["1/3"]],
-                 ("Ax = b tiene solución única.", "b = (1/2)a₁ + (1/3)a₂", 'id="procedure-title-2"')),
+                 ("Ax = b tiene solución única.", "b = (1/2)a₁ + (1/3)a₂", 'id="procedimiento"', 'class="disclosure disclosure-nested"')),
                 (datos_ecuacion(a=[[1, 0], [0, 1], [1, 1]], b=[2, 3, 5]), [["2"], ["3"]],
                  ("A (3×2) · x (2) = b (3)", "x1 = 2", "x2 = 3")),
             ):

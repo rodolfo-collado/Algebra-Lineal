@@ -525,35 +525,22 @@ textarea:focus {
     letter-spacing: -0.02em;
 }
 
-/* El resultado encabeza la sección: la clasificación va pegada al título del panel. */
-.panel-title + .classification {
-    margin-top: 0;
-}
-
-.results-actions {
-    margin: 0.9rem 0 0;
-}
-
-/* Tras «Ver procedimiento», la matriz final y sus bloques empiezan como sección aparte. */
-.results-actions + .final-block {
-    margin-top: 1.15rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-border);
-}
 
 .pivot-legend {
     margin: 0.5rem 0 0;
     font-size: 0.8rem;
 }
 
+/* La clasificación va pegada al título del panel del resultado. */
+.panel-title + .classification {
+    margin-top: 0;
+}
+
 .results > .panel,
+.results > .disclosure,
 .steps,
 .step {
     min-width: 0;
-}
-
-.panel-steps {
-    background: var(--color-surface-raised);
 }
 
 .panel-final {

@@ -377,3 +377,114 @@ class PruebasMatrices(SimpleTestCase):
                 for tabla in ("Resultado del desarrollo", "Resultado ensamblado"):
                     if tabla in doc.tablas:
                         self.assertEqual(doc.tablas[tabla], doc.tablas["Matriz resultado"])
+
+
+class PruebasEcuacionMatricial(SimpleTestCase):
+    def resolver(self, a, b, metodo=None):
+        datos = datos_ecuacion(a, b) if metodo is None else datos_ecuacion(a, b, metodo=metodo)
+        return self.client.post(RUTA_ECUACIONES, datos).content.decode("utf-8")
+
+    def test_procedimiento_plegado_con_equivalencias_y_eliminacion_y_un_solo_resultado(self):
+        from frontend.web.calculadora.servicios_ecuaciones import resolver_ecuacion_web
+
+        for (a, b) in (AXB_UNICA, AXB_INFINITAS, AXB_INCONSISTENTE):
+            for metodo in ("gauss", "gauss_jordan", "comparar"):
+                with self.subTest(b=b, metodo=metodo):
+                    html = self.resolver(a, b, metodo)
+                    estructura = comprobar_estructura(self, html)
+                    esperado = resolver_ecuacion_web({"a": a, "b": b, "metodo": metodo})
+                    procedimiento, resultado = partes(html)
+                    for etapa in ("1 · Ecuación matricial", "2 · Ecuación vectorial", "3 · Sistema equivalente", "4 · Matriz aumentada"):
+                        self.assertIn(etapa, procedimiento)
+                        self.assertNotIn(etapa, resultado)
+                    for metodo_web in esperado["metodos"]:
+                        self.assertIn(metodo_web["etiqueta_matriz"], procedimiento)
+                        for paso in metodo_web["pasos"]:
+                            self.assertIn(paso["operacion"], procedimiento)
+                    # La clasificación y la solución/contradicción viven solo en el panel final.
+                    self.assertNotIn(esperado["enunciado"], procedimiento)
+                    for ausente in ("Solución", "Conjunto solución", "Contradicción", "Comprobación", "Interpretación"):
+                        self.assertNotIn(ausente, procedimiento)
+                    self.assertEqual(resultado.count(esperado["enunciado"]), 1)
+                    for linea in esperado["solucion_general"]:
+                        self.assertEqual(resultado.count(linea), 1)
+                    todo = texto_resultado(html)
+                    self.assertEqual(todo.count(esperado["enunciado"]), 1)
+                    self.assertEqual(todo.count(f"El sistema equivalente es {esperado['clasificacion'].lower()}"), 1)
+                    anidados = [" ".join(d["summary"].split()) for d in estructura.details if "disclosure-nested" in d["clases"]]
+                    self.assertEqual(anidados, ["Gauss", "Gauss-Jordan"] if metodo == "comparar" else [])
+
+    def test_comprobacion_e_interpretacion_plegadas_despues_del_resultado(self):
+        for (a, b), comprobable in ((AXB_UNICA, True), (AXB_INFINITAS, False), (AXB_INCONSISTENTE, False)):
+            with self.subTest(b=b):
+                html = self.resolver(a, b)
+                estructura = comprobar_estructura(self, html)
+                extras = [d for d in estructura.details if d["nivel"] == 0 and " ".join(d["summary"].split()) != "Ver procedimiento"]
+                titulos = [" ".join(d["summary"].split()) for d in extras]
+                self.assertEqual(titulos, ["Comprobar solución", "Interpretar Ax = b"] if comprobable else ["Interpretar Ax = b"])
+                self.assertFalse(any(d["open"] for d in extras))
+                panel = estructura.indice("panel-final")
+                for titulo in titulos:
+                    posicion = next(i for i, (tipo, d) in enumerate(estructura.eventos) if tipo == "details" and " ".join(d["summary"].split()) == titulo)
+                    self.assertGreater(posicion, panel)
+                texto = texto_resultado(html)
+                self.assertIn("b es combinación lineal" if comprobable or b == AXB_INFINITAS[1] else "b no pertenece", texto)
+                if comprobable:
+                    self.assertIn("Producto Ax", Contenido(html).tablas)
+
+
+class PruebasTransversales(SimpleTestCase):
+    """Contratos comunes a las cuatro herramientas y lo que P18 no toca."""
+
+    def respuestas(self):
+        return (
+            ("/sistemas/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS}),
+            ("/sistemas/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "sistema-resultante"]}),
+            (RUTA_VECTORES, datos_vectores("escalar", escalar="2", u=[1, 2])),
+            (RUTA_VECTORES, combinacion([[1, 2], [3, 4]], [-1, 0])),
+            (RUTA_MATRICES, datos_matrices("traspuesta")),
+            (RUTA_MATRICES, datos_producto(metodo="comparar")),
+            (RUTA_ECUACIONES, datos_ecuacion(*AXB_UNICA)),
+            (RUTA_ECUACIONES, datos_ecuacion(*AXB_INFINITAS, metodo="comparar")),
+        )
+
+    def test_ancla_y_foco_del_resultado_se_conservan(self):
+        for ruta, datos in self.respuestas():
+            with self.subTest(ruta=ruta):
+                html = self.client.post(ruta, datos).content.decode("utf-8")
+                self.assertIn(f'action="{ruta}#resultado"', html)
+                self.assertRegex(html, r'<section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">')
+                self.assertEqual(html.count('id="resultado"'), 1)
+
+    def test_los_encabezados_del_resultado_no_saltan_niveles(self):
+        for ruta, datos in self.respuestas():
+            with self.subTest(ruta=ruta):
+                html = self.client.post(ruta, datos).content.decode("utf-8")
+                niveles = [d["nivel"] for tipo, d in Estructura(html).eventos if tipo == "encabezado"]
+                self.assertEqual(niveles[0], 2)
+                for anterior, siguiente in zip(niveles, niveles[1:]):
+                    self.assertLessEqual(siguiente, anterior + 1, niveles)
+
+    def test_sin_javascript_todo_el_contenido_esta_en_el_html(self):
+        for ruta, datos in self.respuestas():
+            with self.subTest(ruta=ruta):
+                html = self.client.post(ruta, datos).content.decode("utf-8")
+                seccion = html[html.index('id="resultado"'):html.index("</main>")]
+                self.assertNotIn(" hidden", seccion)
+                self.assertNotIn("<script", seccion)
+                self.assertNotIn("<template", seccion)
+                self.assertEqual(seccion.count("<details"), seccion.count("</details>"))
+                self.assertEqual(seccion.count("<details"), seccion.count("<summary"))
+
+    def test_inicio_y_conversion_de_bases_no_cambian(self):
+        inicio = self.client.get("/").content.decode("utf-8")
+        self.assertNotIn("disclosure-procedure", inicio)
+        self.assertNotIn('id="procedimiento"', inicio)
+        bases = self.client.post("/bases/conversion/", {"numero": "13", "base_origen": "10", "bases_destino": ["2", "16"]}).content.decode("utf-8")
+        self.assertNotIn("disclosure-procedure", bases)
+        self.assertNotIn('id="procedimiento"', bases)
+        texto = texto_resultado(bases)
+        # Conversión de bases conserva su presentación de P16: resultado y después el procedimiento compartido.
+        self.assertLess(texto.index("Resultado Número de origen"), texto.index("Procedimiento"))
+        self.assertIn("1101", texto)
+        self.assertIn("D", texto)

@@ -1,5 +1,5 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% load static %}
+{% load static componentes %}
 
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
@@ -49,9 +49,18 @@
 {% block tool_result %}
 {% if resultado %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
-        <div class="panel panel-final">
+        <header class="results-heading">
             <p class="section-kicker">Ecuación matricial · {{ resultado.titulo_metodo }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
-            <h2 id="results-title" class="panel-title">Resultado</h2>
+            <h2 id="results-title">{{ resultado.forma }}</h2>
+        </header>
+        {% comment %}Entrada → procedimiento plegable (equivalencias y eliminación) → resultado (clasificación y solución, una vez) → comprobación e interpretación plegadas, que aportan información distinta del procedimiento.{% endcomment %}
+        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+            <p class="stage-chain">Ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada → {{ resultado.titulo_metodo }} → conjunto solución</p>
+            {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
+            {% include "calculadora/modules/ecuaciones/_metodos.html" %}
+        {% enddisclosure %}
+        <section class="panel panel-final" aria-labelledby="final-title">
+            <h3 id="final-title" class="panel-title">Resultado</h3>
             <div class="classification equation-verdict" data-kind="{{ resultado.clasificacion_clave }}">
                 <span class="classification-icon" aria-hidden="true"></span>
                 <div>
@@ -80,29 +89,25 @@
                     </div>
                 {% endif %}
             </div>
-            {% if resultado.comprobacion %}
-                <div class="final-block">
-                    <h4 class="final-label">Comprobación</h4>
-                    <p class="procedure-lead">Al sustituir x, el producto Ax {% if resultado.comprobacion.coincide %}reproduce{% else %}no reproduce{% endif %} b.</p>
-                    <div class="matrix-equation" tabindex="0" role="region" aria-label="Comprobación: A por x igual a b">
-                        <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.a etiqueta="Matriz A de la comprobación" only %}</div>
-                        <span class="matrix-expression">·</span>
-                        <div class="matrix-operand"><span class="muted">x</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.x etiqueta="Vector x sustituido" only %}</div>
-                        <span class="matrix-expression">=</span>
-                        <div class="matrix-operand"><span class="muted">Ax</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.producto etiqueta="Producto Ax" only %}</div>
-                        <span class="matrix-expression">=</span>
-                        <div class="matrix-operand"><span class="muted">b</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.b etiqueta="Vector b de la comprobación" only %}</div>
-                    </div>
+        </section>
+        {% if resultado.comprobacion %}
+            {% disclosure titulo="Comprobar solución" id="comprobacion" clase="disclosure-procedure" %}
+                <p class="procedure-lead">Al sustituir x, el producto Ax {% if resultado.comprobacion.coincide %}reproduce{% else %}no reproduce{% endif %} b.</p>
+                <div class="matrix-equation" tabindex="0" role="region" aria-label="Comprobación: A por x igual a b">
+                    <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.a etiqueta="Matriz A de la comprobación" only %}</div>
+                    <span class="matrix-expression">·</span>
+                    <div class="matrix-operand"><span class="muted">x</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.x etiqueta="Vector x sustituido" only %}</div>
+                    <span class="matrix-expression">=</span>
+                    <div class="matrix-operand"><span class="muted">Ax</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.producto etiqueta="Producto Ax" only %}</div>
+                    <span class="matrix-expression">=</span>
+                    <div class="matrix-operand"><span class="muted">b</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.b etiqueta="Vector b de la comprobación" only %}</div>
                 </div>
-            {% endif %}
-            <div class="final-block">
-                <h4 class="final-label">Interpretación como combinación lineal</h4>
-                <p class="interpretation">{{ resultado.interpretacion.texto }}</p>
-                {% if resultado.interpretacion.igualdad %}<p class="combination-equality"><code>{{ resultado.interpretacion.igualdad }}</code></p>{% endif %}
-            </div>
-        </div>
-        {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
-        {% include "calculadora/modules/ecuaciones/_metodos.html" %}
+            {% enddisclosure %}
+        {% endif %}
+        {% disclosure titulo="Interpretar Ax = b" id="interpretacion" clase="disclosure-procedure" %}
+            <p class="interpretation">{{ resultado.interpretacion.texto }}</p>
+            {% if resultado.interpretacion.igualdad %}<p class="combination-equality"><code>{{ resultado.interpretacion.igualdad }}</code></p>{% endif %}
+        {% enddisclosure %}
     </section>
 {% endif %}
 {% endblock %}

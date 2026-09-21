@@ -119,7 +119,7 @@ class PruebasIdentidadVisual(SimpleTestCase):
                 for termino in ("Search tools", "Steps", "Related tools", "Coming soon", "Home"):
                     self.assertNotIn(f">{termino}<", html)
                 self.assertIn("Buscar herramientas", html)
-        self.assertIn("Procedimiento paso a paso", self.client.post(
+        self.assertIn("Ver procedimiento", self.client.post(
             "/sistemas/", {"sistema": "x1=1", "metodo": "gauss"},
         ).content.decode("utf-8"))
 
