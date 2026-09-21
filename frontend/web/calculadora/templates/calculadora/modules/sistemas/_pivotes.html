@@ -1,4 +1,4 @@
-{% comment %}Columnas pivote del sistema: un análisis común a los dos métodos, así que en Comparar ambos se muestra una sola vez.{% endcomment %}
+{% comment %}Columnas pivote: la lectura directa de la matriz final, común a los dos métodos, así que se muestra una sola vez en el resultado.{% endcomment %}
 <div class="pivot-block">
     <h4 class="final-label" aria-hidden="true">Columnas pivote</h4>
     <p class="sr-only">Columnas pivote: {% for columna in resultado.columnas_pivote %}C{{ columna }}{% if not forloop.last %}, {% endif %}{% empty %}Ninguna{% endfor %}</p>
@@ -10,6 +10,6 @@
         {% endfor %}
     </ul>
     {% if resultado.columnas_pivote %}
-        <p class="pivot-legend muted">Las columnas resaltadas en la matriz contienen un pivote.</p>
+        <p class="pivot-legend muted">Las columnas resaltadas en la matriz final contienen un pivote.</p>
     {% endif %}
 </div>

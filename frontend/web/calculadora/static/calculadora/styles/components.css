@@ -726,6 +726,52 @@ a.tool-link .tool-link-name {
     padding: 0.15rem 0.8rem 0.85rem;
 }
 
+/* Componente {% disclosure %}: chevrón al inicio y título como encabezado real dentro del summary. */
+.disclosure-summary > .disclosure-chevron:first-child {
+    margin-left: 0;
+    color: var(--color-brand);
+}
+
+.disclosure-title {
+    margin: 0;
+    font: inherit;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.disclosure-detail {
+    min-width: 0;
+    color: var(--color-muted);
+    font-weight: 400;
+    overflow-wrap: anywhere;
+}
+
+/* «Ver procedimiento»: el bloque plegable que precede al resultado de cada herramienta. */
+.disclosure-procedure {
+    margin-top: 0;
+    background: var(--color-surface-raised);
+}
+
+.disclosure-procedure > .disclosure-summary {
+    min-height: 2.75rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.95rem;
+}
+
+.disclosure-procedure > .disclosure-body {
+    padding: 0.35rem 1.1rem 1.15rem;
+}
+
+/* Sub-bloques (un método al comparar, comprobación e interpretación): más discretos. */
+.disclosure-nested {
+    margin-top: 0.85rem;
+    background: var(--color-surface-muted);
+}
+
+.disclosure-nested > .disclosure-body {
+    padding: 0.25rem 0.9rem 0.9rem;
+}
+
 /* —— Teclado matemático contextual —— */
 
 .math-keyboard {

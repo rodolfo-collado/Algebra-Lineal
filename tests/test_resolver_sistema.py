@@ -206,19 +206,20 @@ class PruebasMetodos(SimpleTestCase):
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
         self.assertIn("Comparación de métodos Gauss y Gauss-Jordan", texto)
-        self.assertEqual(texto.count("Procedimiento paso a paso"), 2)
+        self.assertEqual(texto.count("Operaciones por filas"), 2)
         self.assertEqual(texto.count("Matriz inicial"), 1)
         self.assertLess(texto.index("Matriz escalonada"), texto.index("Matriz reducida"))
         self.assertEqual(texto.count("Sustitución regresiva"), 1)
-        # Pivotes, clasificación y solución son comunes: aparecen una sola vez, antes de los procedimientos.
+        # Pivotes, clasificación y solución son comunes: aparecen una sola vez, en el resultado
+        # que sigue al procedimiento plegado (P18).
         self.assertEqual(texto.count("Columnas pivote:"), 1)
         self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count('class="classification"'), 1)
         self.assertEqual(texto.count("Solución x1 = 2 x2 = 1"), 1)
-        self.assertLess(texto.index("Resultado final"), texto.index("Matriz escalonada"))
+        self.assertLess(texto.index("Matriz escalonada"), texto.index("Resultado final"))
         # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
         self.assertEqual(html.count(' pivot"'), 8)
-        self.assertEqual(html.count('<section class="panel panel-method"'), 2)
+        self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
         # Las guías de los dos métodos quedan plegadas después del resultado.
         self.assertContains(respuesta, "Gauss se detiene en forma escalonada")
         self.assertContains(respuesta, "Gauss-Jordan reduce por completo")
@@ -269,7 +270,7 @@ class PruebasMetodos(SimpleTestCase):
                     esperado = ", ".join(f"C{c}" for c in columnas) or "Ninguna"
                     self.assertIn(f"Columnas pivote: {esperado}", texto)
                     self.assertIn(clasificacion, texto)
-                    self.assertIn("Procedimiento paso a paso", texto)
+                    self.assertIn("Operaciones por filas", texto)
                     resultado = resolver_entrada_web("matriz", metodo, matriz_aumentada=matriz)
                     for linea in resultado["solucion_general"]:
                         self.assertIn(linea, texto)
@@ -300,7 +301,7 @@ class PruebasBloquesDelResultado(SimpleTestCase):
     def test_mostrar_u_ocultar_procedimiento(self):
         con = seccion_resultado(self.resolver(["procedimiento"]))
         sin = seccion_resultado(self.resolver(["clasificacion", "pivotes", "sistema-resultante"]))
-        for bloque in ("Matriz inicial", "Procedimiento paso a paso", "Paso 1", "Sustitución regresiva"):
+        for bloque in ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1", "Sustitución regresiva"):
             self.assertIn(bloque, con)
             self.assertNotIn(bloque, sin)
         self.assertIn("Procedimiento y resultado", con)
@@ -369,7 +370,7 @@ class PruebasBloquesDelResultado(SimpleTestCase):
             respuesta = self.resolver(TODOS)
         for ausente in ("entender-resultado", "concept-guides", 'class="related"', "related-title"):
             self.assertNotContains(respuesta, ausente)
-        for presente in ("Resultado final", "Procedimiento paso a paso", "x1 = 2"):
+        for presente in ("Resultado final", "Ver procedimiento", "Operaciones por filas", "x1 = 2"):
             self.assertContains(respuesta, presente)
 
     def test_entrada_invalida_muestra_el_error_sin_resultado(self):
