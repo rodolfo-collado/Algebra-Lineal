@@ -1,19 +1,16 @@
-{% comment %}Expresión matricial completa: los operandos con su nombre y el resultado. Compartida por todas las operaciones.{% endcomment %}
-<div class="procedure-stage">
-    <h4 class="stage-title">Expresión matricial: {{ resultado.expresion }}</h4>
-    <div class="matrix-equation" tabindex="0" role="region" aria-label="Expresión matricial completa">
-        {% if resultado.factor %}<span class="matrix-expression">{{ resultado.factor }} ·</span>{% endif %}
-        {% for entrada in resultado.entradas %}
-            {% if not forloop.first %}<span class="matrix-expression">{{ resultado.simbolo }}</span>{% endif %}
-            <div class="matrix-operand">
-                <span class="muted">{{ entrada.nombre }}{% if resultado.operacion == "traspuesta" %} (antes de trasponer){% endif %}</span>
-                {% include "calculadora/components/matriz.html" with matriz=entrada.matriz etiqueta=entrada.nombre only %}
-            </div>
-        {% endfor %}
-        <span class="matrix-expression">{% if resultado.operacion == "traspuesta" %}→{% else %}={% endif %}</span>
+{% comment %}La expresión matricial como una sola cadena de igualdades: los operandos con su nombre, el desarrollo por entradas (`desarrollo`) y la matriz obtenida como último término. La comparten suma, resta, escalar, traspuesta y «fila por columna».{% endcomment %}
+<div class="matrix-equation" tabindex="0" role="region" aria-label="Expresión matricial completa">
+    {% if resultado.operacion != "traspuesta" %}<span class="matrix-expression">{{ resultado.expresion }} =</span>{% endif %}
+    {% if resultado.factor %}<span class="matrix-expression">{{ resultado.factor }} ·</span>{% endif %}
+    {% for entrada in resultado.entradas %}
+        {% if not forloop.first %}<span class="matrix-expression">{{ resultado.simbolo }}</span>{% endif %}
         <div class="matrix-operand">
-            <span class="muted">{% if resultado.operacion == "traspuesta" %}Aᵀ{% elif resultado.metodos %}{{ resultado.expresion }}{% else %}Resultado{% endif %}</span>
-            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado de la expresión" only %}
+            <span class="muted">{{ entrada.nombre }}</span>
+            {% include "calculadora/components/matriz.html" with matriz=entrada.matriz etiqueta=entrada.nombre only %}
         </div>
-    </div>
+    {% endfor %}
+    <span class="matrix-expression">{% if resultado.operacion == "traspuesta" %}→{% else %}={% endif %}</span>
+    {% include "calculadora/components/matriz.html" with matriz=desarrollo etiqueta="Desarrollo por entradas" only %}
+    <span class="matrix-expression">=</span>
+    {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado del desarrollo" only %}
 </div>
