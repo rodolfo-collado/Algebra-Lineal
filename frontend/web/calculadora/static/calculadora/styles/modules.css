@@ -1263,15 +1263,6 @@ textarea:focus {
     font-weight: 600;
 }
 
-.vector-inputs-list {
-    display: grid;
-    gap: 0.4rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    font-size: 1.02rem;
-}
-
 .vector-steps {
     display: grid;
     gap: 0.4rem;

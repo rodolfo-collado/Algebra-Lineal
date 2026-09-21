@@ -268,3 +268,51 @@ class PruebasSistemas(SimpleTestCase):
                 self.assertNotIn("Paso 1", todo)
                 self.assertNotIn("Sustitución regresiva", todo)
                 self.assertLess(todo.index("Solución x1 = 2 x2 = 1"), todo.index("Matriz escalonada"))
+
+
+class PruebasVectores(SimpleTestCase):
+    def test_operaciones_desarrollo_plegado_y_vector_resultante_una_vez(self):
+        casos = (
+            (datos_vectores("suma", u=[1, 2, 3], v=[4, 5, 6]), "u + v", "(1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)"),
+            (datos_vectores("resta", u=[4, 6], v=[1, 2]), "u − v", "(4, 6) − (1, 2) = (4 - 1, 6 - 2) = (3, 4)"),
+            (datos_vectores("escalar", escalar="3", u=[1, -2, 4]), "k·u", "3·(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)"),
+            (datos_vectores("escalar", escalar="-1/2", u=["1/3", -4]), "k·u", "(-1/2)·(1/3, -4) = ((-1/2)·(1/3), (-1/2)·(-4)) = (-1/6, 2)"),
+        )
+        for datos, expresion, cadena in casos:
+            with self.subTest(operacion=datos["operacion"]):
+                html = self.client.post(RUTA_VECTORES, datos).content.decode("utf-8")
+                comprobar_estructura(self, html)
+                procedimiento, resultado = partes(html)
+                # La cadena arranca en la expresión, sustituye los vectores y termina en el resultado.
+                self.assertIn(f"{expresion} = {cadena}", procedimiento)
+                self.assertNotIn("Vectores de entrada", procedimiento)
+                vector = cadena.rsplit("= ", 1)[1]
+                self.assertIn(f"Resultado {expresion} = {vector}", resultado)
+                self.assertEqual(texto_resultado(html).count("Resultado"), 1)
+
+    def test_combinacion_lineal_conserva_las_etapas_sin_duplicar_la_conclusion(self):
+        casos = (
+            (combinacion([[1, 2], [3, 4]], [-1, 0]), "Sí: b es combinación lineal de v1 y v2.", "c1 = 2"),
+            (combinacion([[1, 2], [2, 4]], [3, 6]), "Sí: b es combinación lineal de v1 y v2.", "c1 = 3 - 2c2"),
+            (combinacion([[1, 2], [2, 4]], [3, 7]), "No: b no es combinación lineal de v1 y v2.", "0 = 1"),
+        )
+        for datos, conclusion, linea in casos:
+            with self.subTest(conclusion=conclusion):
+                html = self.client.post(RUTA_VECTORES, datos).content.decode("utf-8")
+                comprobar_estructura(self, html)
+                procedimiento, resultado = partes(html)
+                for etapa in ("1 · Planteamiento", "2 · Sistema equivalente", "columna aumentada", "3 · Gauss-Jordan", "Matriz reducida", "4 · Lectura de la matriz"):
+                    self.assertIn(etapa, procedimiento)
+                    self.assertNotIn(etapa, resultado)
+                # La lectura explica la matriz (clasificación y justificación) pero no repite la respuesta.
+                self.assertIn("El sistema es", procedimiento)
+                for ausente in ("Coeficientes", "Solución general", "Sí:", "No:", "como combinación lineal"):
+                    self.assertNotIn(ausente, procedimiento)
+                self.assertEqual(resultado.count(conclusion), 1)
+                todo = texto_resultado(html)
+                self.assertEqual(todo.count(conclusion), 1)
+                if linea != "0 = 1":
+                    self.assertEqual(todo.count(linea), 1)
+                    self.assertIn(linea, resultado)
+                else:
+                    self.assertIn(linea, procedimiento)
