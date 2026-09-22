@@ -1,20 +1,37 @@
 """Evalúa un AST de abajo hacia arriba con las operaciones ya existentes.
 
-No hay otra suma ni otro producto: cada nodo llama a `backend.matrices` o
-`backend.vectores`. El identificador de un nodo es su ruta en el árbol
-(`0`, `0.1`, `0.1.0`), estable para pedir una subexpresión.
+No hay otra suma ni otro producto numérico: cada nodo llama a
+`backend.matrices` o `backend.vectores`. El identificador de un nodo es su
+ruta en el árbol (`0`, `0.1`, `0.1.0`), estable para pedir una subexpresión.
 
-Una igualdad evalúa los dos AST y compara esos valores exactos. No resuelve
-incógnitas: eso sigue en `backend.ecuaciones_matriciales`.
+Una igualdad con valores numéricos compara esos valores. Si aparece una
+matriz desconocida declarada y un vector simbólico, `Ax = b` compara
+coeficientes. Hallar x con A y b numéricos sigue en
+`backend.ecuaciones_matriciales`.
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from fractions import Fraction
 
 from backend.matrices import resolver_operacion_matrices, validar_matriz, validar_vector
 from backend.vectores import multiplicar_escalar, restar_vectores, sumar_vectores
 
+from backend.expresiones_matriciales.lineal import (
+    Aplicacion,
+    MatrizDesconocida,
+    VectorLineal,
+    VectorSimbolico,
+    analizar_lineal,
+    determinar,
+    enumerar,
+    escalar as escalar_forma,
+    exigir_columnas,
+    matriz_por_simbolico,
+    restar as restar_formas,
+    sumar as sumar_formas,
+    variables_simbolicas,
+)
 from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma
 from backend.expresiones_matriciales.parser import analizar_entrada, nombre_valido
 
@@ -76,6 +93,7 @@ class Comparacion:
     tipo: str | None
     filas: int | None
     columnas: int | None
+    alcance: str = "valores"
 
 
 def aplanar(paso):
@@ -97,12 +115,41 @@ def localizar(nodo, buscado, ruta="0"):
     return None
 
 
+def _dimension(definicion, clave, nombre):
+    valor = definicion.get(clave)
+    if type(valor) is not int or valor < 1:
+        raise ValueError(f"Las dimensiones de {nombre} deben ser enteros positivos.")
+    return valor
+
+
 def preparar_simbolo(nombre, definicion):
-    """Normaliza un símbolo definido a un valor exacto."""
+    """Normaliza un símbolo definido a un valor exacto o a un objeto simbólico declarado."""
     if not nombre_valido(nombre):
         raise ValueError(f"«{nombre}» no es un nombre de símbolo. Usa una letra seguida de letras o dígitos, como A, u o k.")
-    tipo = definicion.get("tipo") if isinstance(definicion, dict) else None
-    valor = definicion.get("valor") if isinstance(definicion, dict) else None
+    if not isinstance(definicion, dict):
+        raise ValueError(f"El símbolo {nombre} necesita un tipo: matriz, vector o escalar.")
+    tipo = definicion.get("tipo")
+    if tipo == "matriz_desconocida":
+        return Valor(
+            "matriz_desconocida",
+            MatrizDesconocida(nombre, _dimension(definicion, "filas", nombre), _dimension(definicion, "columnas", nombre)),
+            definicion["filas"], definicion["columnas"],
+        )
+    if tipo == "vector_simbolico":
+        cantidad = _dimension(definicion, "filas", nombre)
+        return Valor("vector_simbolico", VectorSimbolico(nombre, variables_simbolicas(nombre, cantidad)), cantidad, None)
+    if tipo == "vector_lineal":
+        textos = definicion.get("valor")
+        if not isinstance(textos, (list, tuple)) or not textos or any(not isinstance(texto, str) for texto in textos):
+            raise ValueError(f"Cada componente de {nombre} debe ser el texto de una expresión lineal.")
+        componentes = []
+        for indice, texto in enumerate(textos, 1):
+            try:
+                componentes.append(analizar_lineal(texto))
+            except ValueError as error:
+                raise ValueError(f"En la componente {indice} de {nombre}: {error}") from None
+        return Valor("vector_lineal", VectorLineal(tuple(componentes)), len(componentes), None)
+    valor = definicion.get("valor")
     if tipo == "escalar":
         if isinstance(valor, bool) or not isinstance(valor, (int, Fraction)):
             raise ValueError(f"El escalar {nombre} debe ser un número exacto.")
@@ -139,7 +186,7 @@ def evaluar(texto, simbolos, nodo=None):
             return Evaluacion(_parcial(entrada, entorno, nodo))
         izquierda = _lado(entrada.izquierda, entorno, "izq", "izquierdo")
         derecha = _lado(entrada.derecha, entorno, "der", "derecho")
-        return _comparar(entrada.texto, izquierda, derecha)
+        return _cerrar_igualdad(entrada.texto, izquierda, derecha)
     if nodo:
         elegido = localizar(entrada, nodo)
         if elegido is None:
@@ -171,8 +218,29 @@ def _parcial(igualdad, entorno, nodo):
         raise ValueError(f"En el lado {nombre}: {error}") from None
 
 
+def _cerrar_igualdad(texto, izquierda, derecha):
+    izq, der = _valor(izquierda), _valor(derecha)
+    if izq.tipo == "aplicacion" and der.tipo == "vector_lineal":
+        return _determinacion(texto, izq, der, derecha.texto, "derecho")
+    if der.tipo == "aplicacion" and izq.tipo == "vector_lineal":
+        return _determinacion(texto, der, izq, izquierda.texto, "izquierdo")
+    if izq.tipo == "aplicacion" or der.tipo == "aplicacion":
+        raise ValueError(
+            "Para determinar una matriz desconocida el otro lado tiene que ser un vector de expresiones lineales. "
+            f"Aquí el lado izquierdo es {_clase(izq)} y el lado derecho es {_clase(der)}."
+        )
+    return _comparar(texto, izquierda, derecha)
+
+
+def _determinacion(texto, aplicacion, lineal, etiqueta, ubicacion):
+    hecho = determinar(aplicacion.valor.matriz, aplicacion.valor.vector, lineal.valor, etiqueta.strip() or "el otro lado", ubicacion)
+    return replace(hecho, texto=texto)
+
+
 def _comparar(texto, izquierda, derecha):
     izq, der = _valor(izquierda), _valor(derecha)
+    if izq.tipo == "vector_lineal" or der.tipo == "vector_lineal":
+        return _comparar_lineales(texto, izquierda, derecha, izq, der)
     comparable = _comparables(izq, der)
     coincide = izq.valor == der.valor if comparable else None
     return Comparacion(
@@ -182,6 +250,49 @@ def _comparar(texto, izquierda, derecha):
         izq.filas if comparable else None,
         izq.columnas if comparable else None,
     )
+
+
+def _orden_variables(izq, der):
+    declaradas = izq.valor.variables or der.valor.variables
+    vistas = []
+    for lado in (izq.valor, der.valor):
+        for componente in lado.componentes:
+            for nombre, _coeficiente in componente.coeficientes:
+                if nombre not in vistas:
+                    vistas.append(nombre)
+    if not declaradas:
+        return tuple(vistas)
+    return tuple(declaradas) + tuple(nombre for nombre in vistas if nombre not in declaradas)
+
+
+def _comparar_lineales(texto, izquierda, derecha, izq, der):
+    comparable = izq.tipo == der.tipo == "vector_lineal" and izq.filas == der.filas
+    coincide = izq.valor.componentes == der.valor.componentes if comparable else None
+    variables = _orden_variables(izq, der) if comparable else ()
+    return Comparacion(
+        texto, izquierda, derecha, coincide, comparable,
+        _mensaje_lineal(izq, der, coincide, comparable, variables),
+        "vector_lineal" if comparable else None,
+        izq.filas if comparable else None,
+        None,
+        "simbolica",
+    )
+
+
+def _mensaje_lineal(izq, der, coincide, comparable, variables):
+    if not comparable:
+        return (
+            "No se pueden comparar ambos lados: "
+            f"el lado izquierdo es {_clase(izq)} y el lado derecho es {_clase(der)}."
+        )
+    if not variables:
+        if coincide:
+            return "Ambos lados representan la expresión lineal 0."
+        return "Los lados no representan la misma expresión lineal."
+    lista = enumerar(variables)
+    if coincide:
+        return f"Ambos lados representan la misma expresión lineal para todos los valores de {lista}."
+    return f"Los lados no representan la misma expresión lineal para todos los valores de {lista}."
 
 
 def _comparables(izq, der):
@@ -197,9 +308,19 @@ def _comparables(izq, der):
 def _clase(valor):
     if valor.tipo == "matriz":
         return f"una matriz {valor.filas}×{valor.columnas}"
+    if valor.tipo == "matriz_desconocida":
+        return f"la matriz desconocida {valor.valor.nombre} de {valor.filas}×{valor.columnas}"
     if valor.tipo == "vector":
         sufijo = "" if valor.filas == 1 else "s"
         return f"un vector de {valor.filas} componente{sufijo}"
+    if valor.tipo == "vector_simbolico":
+        return f"el vector simbólico {valor.valor.nombre} de {valor.filas} componentes"
+    if valor.tipo == "vector_lineal":
+        sufijo = "" if valor.filas == 1 else "s"
+        return f"un vector lineal de {valor.filas} componente{sufijo}"
+    if valor.tipo == "aplicacion":
+        matriz, vector = valor.valor.matriz, valor.valor.vector
+        return f"el producto {matriz.nombre}{vector.nombre}, con {matriz.nombre} desconocida"
     return "un escalar"
 
 
@@ -260,9 +381,18 @@ def _negar(paso):
 def describir(valor, texto):
     if valor.tipo == "matriz":
         return f"{texto} es {valor.filas}×{valor.columnas}"
+    if valor.tipo == "matriz_desconocida":
+        return f"{texto} es la matriz desconocida {valor.filas}×{valor.columnas}"
     if valor.tipo == "vector":
         sufijo = "" if valor.filas == 1 else "s"
         return f"{texto} es un vector de {valor.filas} componente{sufijo}"
+    if valor.tipo == "vector_simbolico":
+        return f"{texto} es un vector simbólico de {valor.filas} componentes"
+    if valor.tipo == "vector_lineal":
+        sufijo = "" if valor.filas == 1 else "s"
+        return f"{texto} es un vector lineal de {valor.filas} componente{sufijo}"
+    if valor.tipo == "aplicacion":
+        return f"{texto} es el producto de una matriz desconocida"
     return f"{texto} es un escalar"
 
 
@@ -272,7 +402,19 @@ def _no(texto, izq, der, izq_texto, der_texto, porque):
     )
 
 
+_SIMBOLICOS = frozenset({"matriz_desconocida", "vector_simbolico", "vector_lineal", "aplicacion"})
+
+
 def _operar(texto, izq, der, izq_texto, der_texto, tabla, es_suma):
+    if izq.tipo == "vector_lineal" and der.tipo == "vector_lineal":
+        if izq.filas != der.filas:
+            _no(texto, izq, der, izq_texto, der_texto, "Para sumar o restar vectores lineales, ambos deben tener la misma cantidad de componentes.")
+        operar = sumar_formas if es_suma else restar_formas
+        componentes = tuple(operar(a, b) for a, b in zip(izq.valor.componentes, der.valor.componentes))
+        variables = izq.valor.variables or der.valor.variables
+        return Valor("vector_lineal", VectorLineal(componentes, variables), len(componentes), None), None
+    if izq.tipo in _SIMBOLICOS or der.tipo in _SIMBOLICOS:
+        _no(texto, izq, der, izq_texto, der_texto, "Solo se suman o restan vectores lineales entre sí. Una matriz desconocida no se suma.")
     clave = tabla.get((izq.tipo, der.tipo))
     if clave is None:
         _no(
@@ -293,8 +435,20 @@ def _operar(texto, izq, der, izq_texto, der_texto, tabla, es_suma):
     return Valor("escalar", resultado), None
 
 
+def _por_escalar_lineal(factor, vector):
+    componentes = tuple(escalar_forma(factor, componente) for componente in vector.componentes)
+    return Valor("vector_lineal", VectorLineal(componentes, vector.variables), len(componentes), None)
+
+
+def _por_escalar_simbolico(factor, vector):
+    componentes = tuple(escalar_forma(factor, analizar_lineal(variable)) for variable in vector.variables)
+    return Valor("vector_lineal", VectorLineal(componentes, vector.variables), len(componentes), None)
+
+
 def _multiplicar(texto, izq, der, izq_texto, der_texto):
     par = (izq.tipo, der.tipo)
+    if izq.tipo in _SIMBOLICOS or der.tipo in _SIMBOLICOS:
+        return _producto_simbolico(texto, izq, der, izq_texto, der_texto, par)
     if par == ("escalar", "escalar"):
         return Valor("escalar", izq.valor * der.valor), None
     if par == ("escalar", "vector"):
@@ -331,6 +485,33 @@ def _multiplicar(texto, izq, der, izq_texto, der_texto):
         ("vector", "matriz"): "El producto de un vector por una matriz no está definido en esta herramienta.",
     }
     _no(texto, izq, der, izq_texto, der_texto, motivos.get(par, "Esa combinación de tipos no tiene producto en esta herramienta."))
+
+
+def _producto_simbolico(texto, izq, der, izq_texto, der_texto, par):
+    if par == ("escalar", "vector_lineal"):
+        return _por_escalar_lineal(izq.valor, der.valor), None
+    if par == ("vector_lineal", "escalar"):
+        return _por_escalar_lineal(der.valor, izq.valor), None
+    if par == ("escalar", "vector_simbolico"):
+        return _por_escalar_simbolico(izq.valor, der.valor), None
+    if par == ("vector_simbolico", "escalar"):
+        return _por_escalar_simbolico(der.valor, izq.valor), None
+    if par == ("matriz", "vector_simbolico"):
+        if izq.columnas != der.filas:
+            raise ValueError(
+                f"{izq_texto} es {izq.filas}×{izq.columnas} y necesita un vector de {izq.columnas} componentes, "
+                f"pero {der_texto} tiene {der.filas}."
+            )
+        return Valor("vector_lineal", matriz_por_simbolico(izq.valor, der.valor), izq.filas, None), None
+    if par == ("matriz_desconocida", "vector_simbolico"):
+        exigir_columnas(izq.valor, der.valor)
+        return Valor("aplicacion", Aplicacion(izq.valor, der.valor), izq.filas, der.filas), None
+    if "matriz_desconocida" in par or "aplicacion" in par:
+        _no(
+            texto, izq, der, izq_texto, der_texto,
+            "Una matriz desconocida solo se multiplica, en esta herramienta, por el vector simbólico declarado.",
+        )
+    _no(texto, izq, der, izq_texto, der_texto, "Esa combinación simbólica no está definida en esta herramienta.")
 
 
 def _detalle_vector(operacion, izq, der, resultado):
