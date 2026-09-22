@@ -6,7 +6,9 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import patch
 
-from backend.expresiones_matriciales import aplanar, analizar, estructura, evaluar
+from backend.expresiones_matriciales import (
+    Comparacion, Igualdad, aplanar, analizar, analizar_entrada, estructura, evaluar,
+)
 from backend.expresiones_matriciales.lexer import tokenizar
 from backend.matrices import (
     multiplicar_escalar_matriz,
@@ -57,10 +59,18 @@ class PruebasLexer(TestCase):
         tokens = [token for token in tokenizar("-3/4") if token.tipo != "fin"]
         self.assertEqual([(token.tipo, token.valor) for token in tokens], [("menos", "-"), ("numero", "3/4")])
 
-    def test_rechaza_igualdad_division_suelta_y_caracteres_ajenos(self):
-        for texto in ("A = B", "1 / 2", "A$B"):
+    def test_un_igual_es_un_token_y_no_rompe_el_resto(self):
+        tipos = [(token.tipo, token.valor) for token in tokenizar("-3/4 + 2.5A = 1/2") if token.tipo != "fin"]
+        self.assertEqual(tipos, [
+            ("menos", "-"), ("numero", "3/4"), ("mas", "+"), ("numero", "2.5"), ("nombre", "A"),
+            ("igual", "="), ("numero", "1/2"),
+        ])
+        self.assertEqual(sum(token.tipo == "igual" for token in tokenizar("A = B = C")), 2)
+
+    def test_rechaza_relacionales_division_suelta_y_caracteres_ajenos(self):
+        for texto in ("A == B", "A != B", "A < B", "A > B", "A <= B", "A >= B", "1 / 2", "A$B"):
             with self.subTest(texto=texto):
-                with self.assertRaises(ValueError):
+                with self.assertRaisesRegex(ValueError, "no forma parte|fracciones"):
                     tokenizar(texto)
 
 
@@ -223,4 +233,158 @@ class PruebasRegresion(TestCase):
                 if isinstance(nodo, (ast.Import, ast.ImportFrom)):
                     modulos = [alias.name for alias in nodo.names] if isinstance(nodo, ast.Import) else [nodo.module or ""]
                     for modulo in modulos:
-                        self.assertFalse(modulo.startswith(("numpy", "sympy")))
+                        self.assertFalse(modulo.startswith(("numpy", "sympy", "scipy")))
+
+
+def visibles(paso):
+    return [(item.texto, item.resultado) for item in aplanar(paso) if item.operacion not in ("numero", "simbolo")]
+
+
+class PruebasIgualdad(TestCase):
+    def test_dos_arboles_independientes_con_la_precedencia_de_cada_lado(self):
+        entrada = analizar_entrada("A + BC = (A + B)C", NOMBRES)
+        self.assertIsInstance(entrada, Igualdad)
+        self.assertFalse(hasattr(entrada, "operacion"))
+        self.assertEqual(estructura(entrada), (
+            "igualdad",
+            ("suma", ("simbolo", "A"), ("producto", ("simbolo", "B"), ("simbolo", "C"))),
+            ("producto", ("suma", ("simbolo", "A"), ("simbolo", "B")), ("simbolo", "C")),
+        ))
+        with self.assertRaisesRegex(ValueError, "no es una operación"):
+            analizar("A = B", NOMBRES)
+
+    def test_ejemplo_obligatorio(self):
+        comparacion = evaluar("A(u + v) = Au + Av", EJEMPLO)
+        self.assertIsInstance(comparacion, Comparacion)
+        self.assertEqual(visibles(comparacion.izquierda), [("u + v", [1, 4]), ("A(u + v)", [22, 7])])
+        self.assertEqual(visibles(comparacion.derecha), [("Au", [3, 11]), ("Av", [19, -4]), ("Au + Av", [22, 7])])
+        self.assertTrue(comparacion.comparable)
+        self.assertTrue(comparacion.coincide)
+        self.assertEqual(comparacion.tipo, "vector")
+        self.assertIn("[22, 7]", comparacion.mensaje)
+        self.assertNotIn("demostr", comparacion.mensaje)
+        producto = aplanar(comparacion.izquierda)[-1]
+        esperado = resolver_operacion_matrices("matriz_vector", A, vector=[1, 4])
+        self.assertEqual(producto.detalle["pasos"], esperado["pasos"])
+        self.assertEqual(producto.detalle["columnas"], esperado["columnas"])
+        au = next(paso for paso in aplanar(comparacion.derecha) if paso.texto == "Au")
+        self.assertEqual(au.detalle["operacion"], "matriz_vector")
+
+    def test_identidades_con_valores_concretos(self):
+        casos = (
+            ("2(A + B) = 2A + 2B", MATRICES),
+            ("A(B + C) = AB + AC", MATRICES),
+            ("A(u - v) = Au - Av", EJEMPLO),
+            ("A * (u + v) = A*u + A*v", EJEMPLO),
+            ("(1/2)A + (1/2)A = A", MATRICES),
+            ("(1/3)A + (2/3)A = A", {"A": MATRICES["A"]}),
+            ("(1/3) + (1/3) + (1/3) = 1", {}),
+            ("0.5 = 1/2", {}),
+        )
+        for texto, simbolos in casos:
+            with self.subTest(texto=texto):
+                comparacion = evaluar(texto, simbolos)
+                self.assertTrue(comparacion.coincide, comparacion.mensaje)
+                self.assertEqual(comparacion.izquierda.resultado, comparacion.derecha.resultado)
+
+    def test_igualdades_falsas_siguen_siendo_un_resultado(self):
+        distinta = evaluar("A + B = A - B", MATRICES)
+        self.assertTrue(distinta.comparable)
+        self.assertFalse(distinta.coincide)
+        self.assertNotEqual(distinta.izquierda.resultado, distinta.derecha.resultado)
+        self.assertIn("diferentes", distinta.mensaje)
+        vectores = evaluar("Au = Av", EJEMPLO)
+        self.assertEqual(vectores.izquierda.resultado, [3, 11])
+        self.assertEqual(vectores.derecha.resultado, [19, -4])
+        self.assertFalse(vectores.coincide)
+
+    def test_escalares_vectores_y_matrices_comparables(self):
+        self.assertTrue(evaluar("1/2 + 1/2 = 1", {}).coincide)
+        self.assertFalse(evaluar("1/3 = 0.3333", {}).coincide)
+        self.assertTrue(evaluar("u = u", EJEMPLO).coincide)
+        self.assertFalse(evaluar("u = v", EJEMPLO).coincide)
+        self.assertTrue(evaluar("A = A", MATRICES).coincide)
+        self.assertFalse(evaluar("A = B", MATRICES).coincide)
+
+    def test_tipos_o_dimensiones_distintas_no_son_falso(self):
+        casos = (
+            ("A = u", EJEMPLO, "una matriz 2×2", "un vector de 2 componentes"),
+            ("k = A", MATRICES, "un escalar", "una matriz 2×2"),
+            ("u = w", {"u": EJEMPLO["u"], "w": {"tipo": "vector", "valor": [1, 2, 3]}}, "2 componentes", "3 componentes"),
+            (
+                "P = Q",
+                {"P": {"tipo": "matriz", "valor": [[1, 2, 3], [4, 5, 6]]}, "Q": {"tipo": "matriz", "valor": [[1, 2], [3, 4], [5, 6]]}},
+                "una matriz 2×3",
+                "una matriz 3×2",
+            ),
+        )
+        for texto, simbolos, izq, der in casos:
+            with self.subTest(texto=texto):
+                comparacion = evaluar(texto, simbolos)
+                self.assertFalse(comparacion.comparable)
+                self.assertIsNone(comparacion.coincide)
+                self.assertIn("No se pueden comparar ambos lados", comparacion.mensaje)
+                self.assertIn(izq, comparacion.mensaje)
+                self.assertIn(der, comparacion.mensaje)
+                self.assertNotIn("Falso", comparacion.mensaje)
+
+    def test_el_error_indica_el_lado_y_la_subexpresion(self):
+        ancho = {
+            "A": {"tipo": "matriz", "valor": [[1, 0], [0, 1]]},
+            "B": {"tipo": "matriz", "valor": [[1, 2], [3, 4]]},
+            "C": {"tipo": "matriz", "valor": [[1, 2, 3]]},
+            "D": {"tipo": "matriz", "valor": [[1, 0], [0, 1]]},
+        }
+        with self.assertRaisesRegex(ValueError, r"En el lado izquierdo: No se puede calcular B \+ C"):
+            evaluar("A(B + C) = D", ancho)
+        with self.assertRaisesRegex(ValueError, r"En el lado derecho: No se puede calcular B \+ C"):
+            evaluar("D = A(B + C)", ancho)
+        with self.assertRaisesRegex(ValueError, r"En el lado derecho: El símbolo Z no está definido"):
+            evaluar("A = Z", {"A": MATRICES["A"]})
+        with self.assertRaisesRegex(ValueError, r"\AEl símbolo Z no está definido"):
+            evaluar("A + Z", {"A": MATRICES["A"]})
+
+    def test_sintaxis_invalida(self):
+        casos = (
+            ("A =", "lado derecho"),
+            ("= A", "lado izquierdo"),
+            ("A = B = C", "una igualdad"),
+            ("A == B", "=="),
+            ("A + = B", "lado izquierdo"),
+            ("(A", "paréntesis"),
+            ("A)", "paréntesis"),
+            ("(A = B", "lado izquierdo"),
+            ("A = (B", "lado derecho"),
+        )
+        for texto, fragmento in casos:
+            with self.subTest(texto=texto):
+                with self.assertRaisesRegex(ValueError, fragmento):
+                    analizar_entrada(texto, NOMBRES)
+
+    def test_rutas_de_cada_lado_y_evaluacion_parcial(self):
+        comparacion = evaluar("A(u + v) = Au + Av", EJEMPLO)
+        izquierdas = [paso.id for paso in aplanar(comparacion.izquierda)]
+        derechas = [paso.id for paso in aplanar(comparacion.derecha)]
+        self.assertTrue(all(ruta.startswith("izq:") for ruta in izquierdas))
+        self.assertTrue(all(ruta.startswith("der:") for ruta in derechas))
+        self.assertFalse(set(izquierdas) & set(derechas))
+        self.assertIn("izq:0.1", izquierdas)
+        self.assertIn("der:0.0", derechas)
+        suma = evaluar("A(u + v) = Au + Av", EJEMPLO, "izq:0.1")
+        self.assertEqual(suma.principal.id, "izq:0.1")
+        self.assertEqual(suma.principal.resultado, [1, 4])
+        self.assertEqual(evaluar("A(u + v) = Au + Av", EJEMPLO, "der:0.0").principal.resultado, [3, 11])
+        self.assertEqual(evaluar("A(u + v) = Au + Av", EJEMPLO, "der:0.1").principal.resultado, [19, -4])
+        self.assertEqual(evaluar("A(u + v) = Au + Av", EJEMPLO, "der:0").principal.resultado, [22, 7])
+        for ruta in ("0.1", "izq:9", "der:0.1.9", "izq:", "medio:0"):
+            with self.subTest(ruta=ruta):
+                with self.assertRaisesRegex(ValueError, "No existe la subexpresión"):
+                    evaluar("A(u + v) = Au + Av", EJEMPLO, ruta)
+
+    def test_las_expresiones_de_p20_siguen_sin_igualdad(self):
+        simbolos = {**MATRICES, "u": EJEMPLO["u"], "v": EJEMPLO["v"]}
+        for texto in ("A + B", "A - B", "AB", "Au", "A(u + v)", "2A", "-3B", "A * B"):
+            with self.subTest(texto=texto):
+                resultado = evaluar(texto, simbolos)
+                self.assertNotIsInstance(resultado, Comparacion)
+                self.assertEqual(resultado.principal.id, "0")
