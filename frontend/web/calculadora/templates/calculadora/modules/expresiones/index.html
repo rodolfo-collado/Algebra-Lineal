@@ -27,7 +27,7 @@
                 <label for="{{ form.expresion.id_for_label }}">Expresión</label>
                 {{ form.expresion }}
                 {{ form.expresion.errors }}
-                <p class="field-help">Suma, resta, producto y paréntesis. <code>2A</code>, <code>AB</code> y <code>A(u + v)</code> equivalen a <code>2*A</code>, <code>A*B</code> y <code>A*(u + v)</code>. Si un texto admite más de una lectura, escribe <code>*</code>. Fracciones como <code>1/2</code>.</p>
+                <p class="field-help">Suma, resta, producto y paréntesis. <code>2A</code>, <code>AB</code> y <code>A(u + v)</code> equivalen a <code>2*A</code>, <code>A*B</code> y <code>A*(u + v)</code>. Un solo <code>=</code> compara dos expresiones con los valores definidos, como <code>A(u + v) = Au + Av</code>; no resuelve incógnitas. Si un texto admite más de una lectura, escribe <code>*</code>. Fracciones como <code>1/2</code>.</p>
             </div>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
@@ -40,38 +40,45 @@
 {% if resultado %}
     {% numeric_results %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
-        <header class="results-heading">
-            <p class="section-kicker">{% if resultado.parcial %}Subexpresión{% else %}Expresión{% endif %} · {{ resultado.dimensiones }}</p>
-            <h2 id="results-title">{{ resultado.texto }}</h2>
-        </header>
-        {% include "calculadora/components/numeric_format.html" %}
-        <section class="panel panel-final" aria-labelledby="final-title">
-            <h3 id="final-title" class="panel-title">Resultado</h3>
-            <div class="matrix-equation">
-                <span class="matrix-expression">{{ resultado.igualdad }}</span>
-                {% if resultado.matriz %}
-                    {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" only %}
-                {% endif %}
+        {% if resultado.modo == "igualdad" %}
+            <header class="results-heading">
+                <p class="section-kicker">Igualdad{% if resultado.dimensiones %} · {{ resultado.dimensiones }}{% endif %}</p>
+                <h2 id="results-title">{{ resultado.texto }}</h2>
+            </header>
+            {% include "calculadora/components/numeric_format.html" %}
+            <div class="equality-sides">
+                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.izquierda titulo="Lado izquierdo" identificador="lado-izquierdo" %}
+                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.derecha titulo="Lado derecho" identificador="lado-derecho" %}
             </div>
-        </section>
-        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-            <ol class="expression-steps">
-                {% for paso in resultado.pasos %}
-                    <li>
-                        <p class="matrix-expression">{{ paso.igualdad }}</p>
-                        {% if paso.matriz %}
-                            {% include "calculadora/components/matriz.html" with matriz=paso.matriz etiqueta=paso.texto only %}
-                        {% endif %}
-                        {% if paso.lineas %}
-                            <ul class="expression-lines">
-                                {% for linea in paso.lineas %}<li><code>{{ linea }}</code></li>{% endfor %}
-                            </ul>
-                        {% endif %}
-                        <button class="btn btn-secondary" type="submit" name="nodo" value="{{ paso.id }}" form="expresiones-form">Calcular solo esta parte</button>
-                    </li>
-                {% endfor %}
-            </ol>
-        {% enddisclosure %}
+            <section class="panel panel-final" aria-labelledby="final-title">
+                <h3 id="final-title" class="panel-title equality-verdict equality-verdict-{{ resultado.veredicto }}">{{ resultado.titulo }}</h3>
+                <p class="equality-message">{{ resultado.mensaje }}</p>
+            </section>
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                <h4 class="stage-title">Lado izquierdo</h4>
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos %}
+                <h4 class="stage-title">Lado derecho</h4>
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos %}
+            {% enddisclosure %}
+        {% else %}
+            <header class="results-heading">
+                <p class="section-kicker">{% if resultado.parcial %}Subexpresión{% else %}Expresión{% endif %} · {{ resultado.dimensiones }}</p>
+                <h2 id="results-title">{{ resultado.texto }}</h2>
+            </header>
+            {% include "calculadora/components/numeric_format.html" %}
+            <section class="panel panel-final" aria-labelledby="final-title">
+                <h3 id="final-title" class="panel-title">Resultado</h3>
+                <div class="matrix-equation">
+                    <span class="matrix-expression">{{ resultado.igualdad }}</span>
+                    {% if resultado.matriz %}
+                        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" only %}
+                    {% endif %}
+                </div>
+            </section>
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos %}
+            {% enddisclosure %}
+        {% endif %}
     </section>
     {% endnumeric_results %}
 {% endif %}

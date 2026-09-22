@@ -87,8 +87,19 @@ class Producto(Nodo):
         return (self.izquierda, self.derecha)
 
 
+@dataclass(frozen=True)
+class Igualdad:
+    """Dos expresiones ya analizadas. No participa en la suma ni en el producto."""
+
+    texto: str
+    izquierda: Nodo
+    derecha: Nodo
+
+
 def estructura(nodo):
     """Forma del árbol sin texto ni posiciones: así `AB` y `A*B` se comparan."""
+    if isinstance(nodo, Igualdad):
+        return ("igualdad", estructura(nodo.izquierda), estructura(nodo.derecha))
     if isinstance(nodo, Numero):
         return ("numero", nodo.valor)
     if isinstance(nodo, Simbolo):

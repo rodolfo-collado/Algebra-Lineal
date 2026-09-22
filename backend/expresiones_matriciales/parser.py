@@ -13,7 +13,7 @@ from fractions import Fraction
 from backend.parser_sistemas import convertir_a_numero
 
 from backend.expresiones_matriciales.lexer import tokenizar
-from backend.expresiones_matriciales.nodos import Negacion, Numero, Producto, Resta, Simbolo, Suma
+from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma
 
 _NOMBRE = re.compile(r"[A-Za-z][A-Za-z0-9]*\Z")
 _INICIA_FACTOR = frozenset({"numero", "nombre", "izq"})
@@ -96,6 +96,8 @@ class Parser:
     def parsear(self):
         if not self.texto.strip():
             raise ValueError("Escribe una expresión.")
+        if any(token.tipo == "igual" for token in self.tokens):
+            raise ValueError("El signo = no es una operación de la expresión. Separa dos expresiones completas con un solo =.")
         nodo = self._expresion()
         if self.actual.tipo != "fin":
             if self.actual.tipo == "der":
@@ -183,5 +185,37 @@ class Parser:
 
 
 def analizar(texto, nombres):
-    """Convierte texto en AST usando solo los símbolos definidos."""
+    """Convierte una expresión, sin igualdades, en AST."""
     return Parser(texto, nombres).parsear()
+
+
+def _parsear_lado(fragmento, nombres, lado):
+    try:
+        return analizar(fragmento, nombres)
+    except ValueError as error:
+        raise ValueError(f"En el lado {lado}: {error}") from None
+
+
+def analizar_entrada(texto, nombres):
+    """Una expresión, o la única igualdad `izquierda = derecha`.
+
+    Cada lado vuelve a entrar por `analizar`. `=` no es un nodo aritmético:
+    aquí solo separa dos árboles. Resolver `Ax = b` es otra herramienta.
+    """
+    tokens = tokenizar(texto)
+    iguales = [token for token in tokens if token.tipo == "igual"]
+    if not iguales:
+        return analizar(texto, nombres)
+    if len(iguales) != 1:
+        raise ValueError("Solo se admite una igualdad. Escribe dos expresiones separadas por un solo =.")
+    corte = iguales[0]
+    izquierda, derecha = texto[:corte.inicio], texto[corte.fin:]
+    if not izquierda.strip():
+        raise ValueError("Falta la expresión del lado izquierdo.")
+    if not derecha.strip():
+        raise ValueError("Falta la expresión del lado derecho.")
+    return Igualdad(
+        texto.strip(),
+        _parsear_lado(izquierda, nombres, "izquierdo"),
+        _parsear_lado(derecha, nombres, "derecho"),
+    )

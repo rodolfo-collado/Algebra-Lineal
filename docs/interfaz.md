@@ -395,6 +395,12 @@ El resultado va primero. **Ver procedimiento** lista los nodos de abajo hacia
 arriba y cada uno puede pedirse solo con **Calcular solo esta parte**. El
 selector Exacto/Decimal es el de las demás herramientas de álgebra.
 
+Si el texto trae un solo `=`, la misma página muestra el lado izquierdo, el
+lado derecho y si coinciden para los valores definidos. No hay un selector
+Expresión/Igualdad. El procedimiento de cada lado sigue plegado; las rutas de
+**Calcular solo esta parte** son `izq:…` y `der:…`. Exacto/Decimal formatea
+ambos lados después de la comparación exacta.
+
 ## Resolver Ax = b
 
 `/matrices/ecuaciones/` resuelve `Ax = b` cuando x es la incógnita.

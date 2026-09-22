@@ -221,3 +221,87 @@ class PruebasSeguridad(SimpleTestCase):
             [["4", "10"], ["6", "2"]],
         )
         self.assertEqual(sumar_matrices(a, a), [[4, 10], [6, 2]])
+
+
+class PruebasIgualdadWeb(SimpleTestCase):
+    def test_ejemplo_obligatorio(self):
+        html = self.client.post(RUTA, datos_expresion("A(u + v) = Au + Av", EJEMPLO)).content.decode()
+        texto = str(Texto(html))
+        for fragmento in (
+            "Lado izquierdo", "u + v = [1, 4]", "A(u + v) = [22, 7]",
+            "Lado derecho", "Au = [3, 11]", "Av = [19, -4]", "Au + Av = [22, 7]",
+            "Ambos lados coinciden", "producen [22, 7]",
+        ):
+            self.assertIn(fragmento, texto)
+        self.assertNotIn("Verdadero", texto)
+        self.assertNotIn("demostr", texto)
+        self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
+        self.assertEqual(html.count('id="procedimiento"'), 1)
+        self.assertEqual(html.count('id="numeric-mode"'), 1)
+        self.assertIn('name="nodo" value="izq:0.1"', html)
+        self.assertIn('name="nodo" value="der:0.0"', html)
+        self.assertNotIn('name="nodo" value="0.1"', html)
+
+    def test_falsa_e_incompatible_no_son_un_error(self):
+        falsa = self.client.post(RUTA, datos_expresion("Au = Av", EJEMPLO))
+        texto = str(Texto(falsa.content.decode()))
+        self.assertContains(falsa, 'id="resultado"')
+        self.assertIn("Los resultados son diferentes", texto)
+        self.assertIn("[3, 11]", texto)
+        self.assertIn("[19, -4]", texto)
+        incompatible = self.client.post(RUTA, datos_expresion("A = u", EJEMPLO[:2]))
+        aviso = str(Texto(incompatible.content.decode()))
+        self.assertContains(incompatible, 'id="resultado"')
+        self.assertIn("No se pueden comparar ambos lados", aviso)
+        self.assertIn("matriz 2×2", aviso)
+        self.assertIn("vector de 2 componentes", aviso)
+        self.assertNotIn("Falso", aviso)
+
+    def test_fraccion_exacta_aunque_el_decimal_no_sume_uno(self):
+        respuesta = self.client.post(RUTA, {"expresion": "(1/3) + (1/3) + (1/3) = 1", "cantidad": "0"})
+        html = respuesta.content.decode()
+        self.assertIn("Ambos lados coinciden", str(Texto(html)))
+        self.assertIn("producen 1", str(Texto(html)))
+        self.assertIn("1/3", str(Texto(html)))
+        self.assertIn("0.3333", html)
+        self.assertEqual(html.count('id="numeric-mode"'), 1)
+
+    def test_subexpresion_de_cada_lado(self):
+        izquierda = self.client.post(RUTA, datos_expresion("A(u + v) = Au + Av", EJEMPLO, nodo="izq:0.1"))
+        texto = str(Texto(izquierda.content.decode()))
+        self.assertIn("u + v = [1, 4]", texto)
+        self.assertIn("Subexpresión", texto)
+        self.assertNotIn("Ambos lados coinciden", texto)
+        derecha = str(Texto(self.client.post(RUTA, datos_expresion("A(u + v) = Au + Av", EJEMPLO, nodo="der:0.1")).content.decode()))
+        self.assertIn("Av = [19, -4]", derecha)
+        self.assertNotIn("Au + Av = [22, 7]", derecha)
+
+    def rechazar(self, datos, mensaje):
+        respuesta = self.client.post(RUTA, datos)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, mensaje)
+        self.assertNotContains(respuesta, 'id="resultado"')
+
+    def test_rutas_manipuladas_sintaxis_y_simbolo_desconocido(self):
+        for nodo in ("0.1", "izq:9", "der:0.1.9", "izq:0;id", "<script>", "medio:0"):
+            with self.subTest(nodo=nodo):
+                self.rechazar(datos_expresion("A(u + v) = Au + Av", EJEMPLO, nodo=nodo), "No existe la subexpresión")
+        ataque = self.client.post(RUTA, datos_expresion("A = A", EJEMPLO[:1], nodo="<script>")).content.decode()
+        self.assertIn("&lt;script&gt;", ataque)
+        self.assertNotIn("«<script>»", ataque)
+        datos = datos_expresion("A = A", EJEMPLO[:1], nodo="izq:0")
+        datos["eval"] = "1"
+        self.rechazar(datos, "no coinciden")
+        self.rechazar(datos_expresion("A =", EJEMPLO[:1]), "lado derecho")
+        self.rechazar(datos_expresion("= A", EJEMPLO[:1]), "lado izquierdo")
+        self.rechazar(datos_expresion("A = A = A", EJEMPLO[:1]), "una igualdad")
+        self.rechazar(datos_expresion("A == A", EJEMPLO[:1]), "==")
+        self.rechazar(datos_expresion("A + = A", EJEMPLO[:1]), "lado izquierdo")
+        self.rechazar(datos_expresion("A = Z", EJEMPLO[:1]), "El símbolo Z no está definido")
+        self.rechazar(datos_expresion("(A = A", EJEMPLO[:1]), "paréntesis")
+        self.rechazar(datos_expresion("A(B + C) = D", (
+            {"nombre": "A", "tipo": "matriz", "valor": [[1, 0], [0, 1]]},
+            {"nombre": "B", "tipo": "matriz", "valor": [[1, 2], [3, 4]]},
+            {"nombre": "C", "tipo": "matriz", "valor": [[1, 2, 3]]},
+            {"nombre": "D", "tipo": "matriz", "valor": [[1, 0], [0, 1]]},
+        )), "En el lado izquierdo")

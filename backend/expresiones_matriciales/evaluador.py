@@ -3,16 +3,22 @@
 No hay otra suma ni otro producto: cada nodo llama a `backend.matrices` o
 `backend.vectores`. El identificador de un nodo es su ruta en el árbol
 (`0`, `0.1`, `0.1.0`), estable para pedir una subexpresión.
+
+Una igualdad evalúa los dos AST y compara esos valores exactos. No resuelve
+incógnitas: eso sigue en `backend.ecuaciones_matriciales`.
 """
 
+import re
 from dataclasses import dataclass
 from fractions import Fraction
 
 from backend.matrices import resolver_operacion_matrices, validar_matriz, validar_vector
 from backend.vectores import multiplicar_escalar, restar_vectores, sumar_vectores
 
-from backend.expresiones_matriciales.nodos import Negacion, Numero, Producto, Resta, Simbolo, Suma
-from backend.expresiones_matriciales.parser import analizar, nombre_valido
+from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma
+from backend.expresiones_matriciales.parser import analizar_entrada, nombre_valido
+
+_RUTA_LADO = re.compile(r"^(izq|der):(\d+(?:\.\d+)*)$")
 
 _SUMA = {
     ("matriz", "matriz"): "suma",
@@ -55,6 +61,21 @@ class Evaluacion:
 
     def por_id(self):
         return {paso.id: paso for paso in aplanar(self.principal)}
+
+
+@dataclass(frozen=True)
+class Comparacion:
+    """Resultado de evaluar los dos lados. `coincide` solo existe si son comparables."""
+
+    texto: str
+    izquierda: Paso
+    derecha: Paso
+    coincide: bool | None
+    comparable: bool
+    mensaje: str
+    tipo: str | None
+    filas: int | None
+    columnas: int | None
 
 
 def aplanar(paso):
@@ -102,19 +123,106 @@ def preparar_simbolo(nombre, definicion):
 
 
 def evaluar(texto, simbolos, nodo=None):
-    """Evalúa la expresión completa o, si `nodo` es una ruta, solo esa subexpresión."""
+    """Evalúa una expresión o compara los dos lados de una igualdad.
+
+    `nodo` pide una subexpresión. En una igualdad la ruta lleva el lado:
+    `izq:0.1` o `der:0`. El signo `=` no se evalúa como operación.
+    """
     entorno = {}
     for nombre, definicion in simbolos.items():
         if nombre in entorno:
             raise ValueError(f"El símbolo {nombre} está repetido.")
         entorno[nombre] = preparar_simbolo(nombre, definicion)
-    arbol = analizar(texto, entorno)
+    entrada = analizar_entrada(texto, entorno)
+    if isinstance(entrada, Igualdad):
+        if nodo:
+            return Evaluacion(_parcial(entrada, entorno, nodo))
+        izquierda = _lado(entrada.izquierda, entorno, "izq", "izquierdo")
+        derecha = _lado(entrada.derecha, entorno, "der", "derecho")
+        return _comparar(entrada.texto, izquierda, derecha)
     if nodo:
-        elegido = localizar(arbol, nodo)
+        elegido = localizar(entrada, nodo)
         if elegido is None:
             raise ValueError(f"No existe la subexpresión «{nodo}» en esta expresión.")
         return Evaluacion(_evaluar(elegido, entorno, nodo))
-    return Evaluacion(_evaluar(arbol, entorno, "0"))
+    return Evaluacion(_evaluar(entrada, entorno, "0"))
+
+
+def _lado(nodo, entorno, prefijo, nombre):
+    try:
+        return _evaluar(nodo, entorno, f"{prefijo}:0")
+    except ValueError as error:
+        raise ValueError(f"En el lado {nombre}: {error}") from None
+
+
+def _parcial(igualdad, entorno, nodo):
+    coincidencia = _RUTA_LADO.fullmatch(nodo) if isinstance(nodo, str) else None
+    if coincidencia is None:
+        raise ValueError(f"No existe la subexpresión «{nodo}» en esta expresión.")
+    prefijo, ruta = coincidencia.group(1), coincidencia.group(2)
+    arbol = igualdad.izquierda if prefijo == "izq" else igualdad.derecha
+    elegido = localizar(arbol, ruta)
+    if elegido is None:
+        raise ValueError(f"No existe la subexpresión «{nodo}» en esta expresión.")
+    try:
+        return _evaluar(elegido, entorno, nodo)
+    except ValueError as error:
+        nombre = "izquierdo" if prefijo == "izq" else "derecho"
+        raise ValueError(f"En el lado {nombre}: {error}") from None
+
+
+def _comparar(texto, izquierda, derecha):
+    izq, der = _valor(izquierda), _valor(derecha)
+    comparable = _comparables(izq, der)
+    coincide = izq.valor == der.valor if comparable else None
+    return Comparacion(
+        texto, izquierda, derecha, coincide, comparable,
+        _mensaje(izq, der, coincide, comparable),
+        izq.tipo if comparable else None,
+        izq.filas if comparable else None,
+        izq.columnas if comparable else None,
+    )
+
+
+def _comparables(izq, der):
+    if izq.tipo != der.tipo:
+        return False
+    if izq.tipo == "vector":
+        return izq.filas == der.filas
+    if izq.tipo == "matriz":
+        return (izq.filas, izq.columnas) == (der.filas, der.columnas)
+    return True
+
+
+def _clase(valor):
+    if valor.tipo == "matriz":
+        return f"una matriz {valor.filas}×{valor.columnas}"
+    if valor.tipo == "vector":
+        sufijo = "" if valor.filas == 1 else "s"
+        return f"un vector de {valor.filas} componente{sufijo}"
+    return "un escalar"
+
+
+def _texto_resultado(valor):
+    if valor.tipo == "escalar":
+        return str(Fraction(valor.valor))
+    if valor.tipo == "vector":
+        return "[" + ", ".join(str(Fraction(componente)) for componente in valor.valor) + "]"
+    return None
+
+
+def _mensaje(izq, der, coincide, comparable):
+    if not comparable:
+        return (
+            "No se pueden comparar ambos lados: "
+            f"el lado izquierdo es {_clase(izq)} y el lado derecho es {_clase(der)}."
+        )
+    if coincide:
+        texto = _texto_resultado(izq)
+        if texto is None:
+            return "Ambos lados producen la misma matriz para los valores dados."
+        return f"Ambos lados producen {texto} para los valores dados."
+    return "Los resultados son diferentes para los valores dados."
 
 
 def _evaluar(nodo, entorno, ruta):

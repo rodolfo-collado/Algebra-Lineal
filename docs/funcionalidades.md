@@ -408,7 +408,8 @@ La reutilización del cálculo se explica en [Algoritmos](algoritmos.md).
 ## Expresiones matriciales
 
 **Expresiones matriciales** (`/matrices/expresiones/`) evalúa una expresión
-compuesta con las mismas operaciones de matrices y vectores. No sustituye a
+compuesta con las mismas operaciones de matrices y vectores, o compara dos
+expresiones separadas por un solo `=`. No sustituye a
 Operaciones con matrices ni a Resolver Ax = b: esas herramientas siguen siendo
 el acceso directo a una sola operación o a la ecuación.
 
@@ -427,8 +428,12 @@ siguiente: `-3B` es `(-3)B`.
 La multiplicación implícita equivale a `*` cuando hay una sola lectura:
 
 ```text
-2A = 2*A    AB = A*B    Au = A*u    A(u + v) = A*(u + v)
+2A ↔ 2*A    AB ↔ A*B    Au ↔ A*u    A(u + v) ↔ A*(u + v)
 ```
+
+Un solo `=` compara dos expresiones, por ejemplo `A(u + v) = Au + Av`. No es una
+operación como `+` o `*`: cada lado se analiza con el mismo parser. Se rechazan
+`A = B = C`, `==`, un lado vacío y los demás operadores relacionales.
 
 Si `AB` puede ser el símbolo `AB` o el producto `A*B`, la expresión se rechaza
 y hay que escribir `*`. No se adivina.
@@ -445,30 +450,42 @@ ni producto vector por matriz.
 
 El error nombra la subexpresión que falla. Si `B + C` no se puede sumar, el
 mensaje habla de `B + C`. Si esa suma existe pero `A(B + C)` no se puede
-multiplicar, el mensaje habla de ese producto y muestra las dimensiones.
+multiplicar, el mensaje habla de ese producto y muestra las dimensiones. Dentro
+de una igualdad, además indica si el fallo está en el lado izquierdo o en el
+derecho. Una igualdad falsa no es un error: es un resultado.
 
 ### Arquitectura
 
 ```text
-texto → lexer → parser → AST → evaluador → primitivas existentes
+texto → ¿un solo =?
+  no → lexer → parser → AST → evaluador → primitivas existentes
+  sí → cada lado por ese mismo camino → comparación de los dos valores
 ```
 
 Cada nodo guarda operación, hijos, texto y una ruta estable (`0`, `0.1`,
-`0.1.0`). La evaluación recorre el árbol de abajo hacia arriba. Se puede pedir
-solo una ruta: la interfaz ofrece **Calcular solo esta parte** en cada paso.
-Matriz por matriz y matriz por vector reutilizan el procedimiento de
+`0.1.0`). En una igualdad las rutas llevan el lado (`izq:0`, `izq:0.1`,
+`der:0`) para que no se confundan. La evaluación recorre cada árbol de abajo
+hacia arriba. Se puede pedir solo una ruta: la interfaz ofrece **Calcular solo
+esta parte** en cada paso, también en cualquiera de los dos lados. Matriz por
+matriz y matriz por vector reutilizan el procedimiento de
 `resolver_operacion_matrices`; no hay un segundo algoritmo de producto.
 
-El resultado usa el selector Exacto/Decimal ya existente.
+La comparación usa los `Fraction` calculados, no el texto decimal. Solo es
+verdadera o falsa si ambos lados son el mismo tipo y las mismas dimensiones
+(escalar, vector de n componentes o matriz m×n). Si no, el mensaje dice qué es
+cada lado. Que coincidan significa que producen el mismo objeto para los
+símbolos definidos; no demuestra la identidad para todos los valores ni despeja
+una incógnita. `Ax = b` sigue en su herramienta.
 
-### Límites de este incremento
+El resultado usa el selector Exacto/Decimal ya existente. Cambia cómo se ven
+los dos lados; no vuelve a comparar.
+
+### Límites
 
 No hay inversa, determinante, potencias, traspuesta dentro de la expresión,
-sistemas simbólicos, matrices con entradas simbólicas, derivadas ni ecuaciones
-(`Ax = b` sigue en su herramienta). El signo `=` no forma parte del lenguaje.
-Tampoco se resuelve una matriz desconocida. El árbol y las rutas quedan listos
-para, más adelante, comparar expresiones o sustituir una incógnita sin cambiar
-el parser.
+sistemas simbólicos, matrices con entradas `x1` o `3x1 - 2x2`, ni símbolos sin
+valor. Un nombre que no esté definido es un error, no una incógnita. Tampoco
+se comparan coeficientes ni se resuelve una matriz desconocida.
 
 ## Visualización de resultados en PyGebra
 
