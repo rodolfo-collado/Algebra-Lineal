@@ -18,6 +18,7 @@ def normalizar_numero(texto: str, base: int) -> str:
     - Recorta espacios extremos.
     - Rechaza vacíos, signos y caracteres ajenos a la base.
     - En hexadecimal, normaliza a–f → A–F.
+    - Acepta un punto opcional; normaliza .31 → 0.31 y 5. → 5.
     - Conserva ceros iniciales (útiles en la presentación); el valor numérico
       lo interpreta la conversión.
     """
@@ -31,14 +32,25 @@ def normalizar_numero(texto: str, base: int) -> str:
 
     if limpio[0] in "+-":
         raise ValueError(
-            "Este módulo convierte solo números enteros no negativos."
+            "Este módulo convierte solo números no negativos."
         )
 
     if any(caracter.isspace() for caracter in limpio):
         raise ValueError("El número no debe contener espacios en medio.")
 
+    if limpio.count(".") > 1:
+        raise ValueError("El número admite como máximo un punto decimal.")
+    if limpio == ".":
+        raise ValueError("Ingresa al menos un dígito además del punto decimal.")
+    if limpio.startswith("."):
+        limpio = "0" + limpio
+    limpio = limpio.removesuffix(".")
+
     digitos = []
     for caracter in limpio:
+        if caracter == ".":
+            digitos.append(caracter)
+            continue
         try:
             valor = digito_a_valor(caracter)
         except ValueError:

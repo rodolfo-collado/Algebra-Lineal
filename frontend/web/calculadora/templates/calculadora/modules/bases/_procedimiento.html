@@ -3,7 +3,7 @@
 {% if resultado.intermedio %}
     <p class="procedure-lead">
         La base de origen no es decimal, así que la conversión pasa por decimal: la expansión posicional
-        obtiene el valor decimal una sola vez y, a partir de él, las divisiones sucesivas escriben
+        obtiene el valor decimal una sola vez y, a partir de él, las divisiones sucesivas{% if resultado.tiene_fraccion %} y las multiplicaciones fraccionarias{% endif %} escriben
         {% if resultado.ramas|length > 1 %}las demás bases pedidas{% elif resultado.decimal_pedido %}la otra base pedida{% else %}la base pedida{% endif %}.
         {% if resultado.decimal_pedido %}Ese valor decimal es, además, uno de los resultados pedidos.{% endif %}
     </p>
@@ -24,7 +24,7 @@
 {% elif resultado.etapas|length > 1 %}
     <p class="procedure-lead">
         El número ya está en decimal, así que no hay etapa intermedia: cada base se obtiene por
-        divisiones sucesivas a partir del mismo valor.
+        divisiones sucesivas{% if resultado.tiene_fraccion %} y multiplicaciones fraccionarias{% endif %} a partir del mismo valor.
     </p>
 {% endif %}
 
@@ -35,6 +35,8 @@
         {% endif %}
 
         {% if etapa.tipo == "division" %}
+            {% if etapa.mostrar_divisiones %}
+            {% if etapa.multiplicaciones %}<h4 class="stage-title">Parte entera</h4>{% endif %}
             <p class="procedure-lead">
                 Divisiones sucesivas entre {{ etapa.base_salida }} y lectura de residuos de abajo hacia arriba.
             </p>
@@ -68,6 +70,24 @@
                 </div>
             {% endif %}
             <p class="procedure-note">{{ etapa.lectura_residuos }}</p>
+            {% endif %}
+            {% if etapa.multiplicaciones %}
+                <h4 class="stage-title">Parte fraccionaria</h4>
+                <p class="procedure-lead">Multiplicaciones sucesivas por {{ etapa.base_salida }}: toma el dígito entero y continúa con la fracción restante.</p>
+                <div class="table-wrap">
+                    <table class="procedure-table">
+                        <caption class="sr-only">Multiplicaciones sucesivas de {{ etapa.origen }}</caption>
+                        <thead><tr><th scope="col">Multiplicación</th><th scope="col">Dígito</th><th scope="col">Fracción restante</th></tr></thead>
+                        <tbody>
+                            {% for paso in etapa.multiplicaciones %}
+                                <tr><td><span class="math-inline">{{ paso.operacion }}</span></td><td>{{ paso.digito }}</td><td>{{ paso.restante }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if etapa.periodo %}<p class="procedure-note">{{ etapa.periodo }}</p>{% endif %}
+                <p class="procedure-note">{{ etapa.lectura_fraccion }}</p>
+            {% endif %}
         {% else %}
             <p class="procedure-lead">
                 Expansión posicional: cada dígito se multiplica por la potencia de la base según su posición.

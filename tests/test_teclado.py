@@ -269,10 +269,12 @@ class PruebasRegistro(unittest.TestCase):
         for base, perfil in PERFILES_BASE.items():
             with self.subTest(base=base):
                 self.assertEqual(perfil.id, f"base-{base}")
-                self.assertEqual([grupo.nombre for grupo in perfil.grupos], ["Dígitos"])
-                digitos = [tecla.insercion for tecla in perfil.teclas]
+                self.assertEqual([grupo.nombre for grupo in perfil.grupos], ["Dígitos", "Separador"])
+                digitos = [tecla.insercion for tecla in perfil.grupos[0].teclas]
                 self.assertEqual(digitos, [simbolo_de_valor(valor) for valor in range(base)])
-                self.assertEqual([tecla.etiqueta for tecla in perfil.teclas], digitos)
+                self.assertEqual([tecla.etiqueta for tecla in perfil.teclas], digitos + ["."])
+                self.assertEqual(perfil.teclas[-1].insercion, ".")
+                self.assertEqual(normalizar_numero("0" + perfil.teclas[-1].insercion + "1", base), "0.1")
                 self.assertEqual(normalizar_numero("".join(digitos), base), "".join(digitos))
                 self.assertEqual(teclados.digitos(base), "".join(digitos))
         self.assertEqual(teclados.digitos(2), "01")
@@ -386,7 +388,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
                 self.assertEqual(datos["perfil"], f"base-{base}")
                 self.assertEqual(datos["nombre"], NOMBRES_BASE[int(base)])
                 self.assertEqual(datos["digitos"], [tecla["insercion"] for grupo in perfil["grupos"] for tecla in grupo["teclas"]])
-                self.assertEqual(datos["digitos"], [simbolo_de_valor(valor) for valor in range(int(base))])
+                self.assertEqual(datos["digitos"], [simbolo_de_valor(valor) for valor in range(int(base))] + ["."])
         # conversion.js no lleva otra lista de dígitos ni conoce los perfiles por su nombre.
         script = (STATIC / "conversion.js").read_text(encoding="utf-8")
         self.assertIn("bases-digitos", script)

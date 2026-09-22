@@ -3,6 +3,8 @@
 import os
 import re
 from pathlib import Path
+from fractions import Fraction
+from unittest.mock import call, patch
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
 
@@ -20,6 +22,7 @@ from frontend.web.calculadora.servicios_bases import convertir_entrada, enumerar
 from tests.test_interfaz_progresiva import Formulario
 from tests.test_navegacion import Documento
 from tests.test_teclado import Pagina
+from backend.sistemas_numericos import conversion as motor
 
 STATIC = Path(__file__).resolve().parents[1] / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 NOMBRES = ("Binario", "Octal", "Decimal", "Hexadecimal")
@@ -151,7 +154,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertEqual(pagina.contenedores["number-fields"], "base-10")
         self.assertRegex(html, r'<span data-number-label-base="10"\s*>Número decimal</span>')
         self.assertRegex(html, r'data-number-label-base="2"[^>]*hidden[^>]*>Número binario<')
-        self.assertEqual(pagina.json["bases-digitos"]["16"]["digitos"], list("0123456789ABCDEF"))
+        self.assertEqual(pagina.json["bases-digitos"]["16"]["digitos"], list("0123456789ABCDEF."))
         # Aviso de validación en vivo, vacío hasta que JavaScript lo use.
         self.assertIn('data-validacion-cliente role="alert" hidden', html)
 
@@ -523,3 +526,61 @@ class PruebasConversionBasesWeb(SimpleTestCase):
 
     def test_sistemas_sigue_disponible(self):
         self.assertEqual(self.client.get("/sistemas/").status_code, 200)
+
+    def test_conversiones_fraccionarias_y_normalizacion(self):
+        casos = (
+            ("0.5", 10, 2, "0.1₂"), (".25", 10, 16, "0.4₁₆"),
+            ("5.5", 10, 16, "5.8₁₆"), ("5.", 10, 16, "5₁₆"),
+            ("0.31", 10, 16, "0.4(F5C28)₁₆"),
+            ("0.1", 2, 10, "0.5₁₀"), ("101.101", 2, 10, "5.625₁₀"),
+            ("A.F", 16, 10, "10.9375₁₀"), ("17.4", 8, 10, "15.5₁₀"),
+            ("101.101", 2, 16, "5.A₁₆"), ("A.F", 16, 2, "1010.1111₂"),
+        )
+        for numero, origen, destino, esperado in casos:
+            with self.subTest(numero=numero, destino=destino):
+                respuesta = self.convertir(numero, origen, destino)
+                self.assertEqual(resultados_de(respuesta)[1][0][0], esperado)
+
+    def test_procedimiento_fraccionario_separado_y_periodo_visible(self):
+        respuesta = self.convertir("0.31", 10, 16)
+        self.assertNotContains(respuesta, "Divisiones sucesivas")
+        self.assertContains(respuesta, "Multiplicaciones sucesivas")
+        self.assertContains(respuesta, "0.31 × 16 = 4.96")
+        self.assertContains(respuesta, "0.96 × 16 = 15.36")
+        self.assertContains(respuesta, "Periódico · período: F5C28")
+        self.assertContains(respuesta, "La fracción restante 0.96 se repite")
+        self.assertContains(respuesta, "dígito fraccionario 2")
+        texto = texto_plano(self.convertir("5.5", 10, 16))
+        self.assertLess(texto.index("Parte entera"), texto.index("Parte fraccionaria"))
+        self.assertIn("5 ÷ 16", texto)
+        self.assertIn("0.5 × 16 = 8", texto)
+        self.assertIn("arriba hacia abajo: 5.8₁₆", texto)
+        self.assertNotContains(self.convertir("5", 10, 16), "Parte fraccionaria")
+
+    def test_expansion_fraccionaria_y_multidestino_calculan_una_vez(self):
+        with (
+            patch.object(motor, "base_a_decimal", wraps=motor.base_a_decimal) as hacia,
+            patch.object(motor, "decimal_a_base", wraps=motor.decimal_a_base) as desde,
+        ):
+            respuesta = self.convertir("101.101", 2, (8, 10, 16))
+        hacia.assert_called_once_with("101.101", 2)
+        self.assertEqual(desde.call_args_list, [call(Fraction(45, 8), 8), call(Fraction(45, 8), 16)])
+        self.assertEqual(resultados_de(respuesta), (
+            "101.101₂", [("5.5₈", "Octal"), ("5.625₁₀", "Decimal"), ("5.A₁₆", "Hexadecimal")],
+        ))
+        self.assertContains(respuesta, "Expansión posicional:", count=1)
+        for exponente in (-1, -2, -3):
+            self.assertContains(respuesta, f"<sup>{exponente}</sup>")
+        self.assertContains(respuesta, "4 + 0 + 1 + 0.5 + 0 + 0.125")
+        self.assertContains(respuesta, "no se vuelve a calcular")
+        self.assertEqual(resultados_de(self.convertir("00.1", 2, 10))[0], "0.1₂")
+
+    def test_errores_fraccionarios_y_limite_sin_resultado_parcial(self):
+        for texto, base in (("1.2.3", 10), (".", 10), ("2.01", 2), ("0.2", 2), ("A.G", 16)):
+            with self.subTest(texto=texto):
+                self.assertNotContains(self.convertir(texto, base, 8), 'id="resultado"')
+        with patch.object(motor, "MAX_PASOS_FRACCIONARIOS", 2):
+            respuesta = self.convertir("0.31", 10, (2, 16))
+        self.assertContains(respuesta, "límite de seguridad")
+        self.assertContains(respuesta, "No se ha truncado ni aproximado")
+        self.assertNotContains(respuesta, 'id="resultado"')
