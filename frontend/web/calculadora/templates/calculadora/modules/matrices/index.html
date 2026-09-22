@@ -1,5 +1,5 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% load static %}
+{% load static numeros %}
 
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-matrices>
@@ -54,17 +54,15 @@
 
 {% block tool_result %}
 {% if resultado %}
+    {% comment %}Entrada → resultado → procedimiento plegable: la matriz obtenida se presenta una sola vez, en el panel final. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+    {% numeric_results %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
             <p class="section-kicker">{{ resultado.etiqueta }} · {{ resultado.dimensiones_resultado }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
             <h2 id="results-title">{{ resultado.expresion }}</h2>
         </header>
-        {% comment %}Entrada → procedimiento plegable → resultado: la matriz obtenida se presenta una sola vez, en el panel final.{% endcomment %}
-        {% if resultado.metodos %}
-            {% include "calculadora/modules/matrices/_producto.html" %}
-        {% else %}
-            {% include "calculadora/modules/matrices/_procedimiento.html" %}
-        {% endif %}
+        {% include "calculadora/components/numeric_format.html" %}
+
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
             <div class="matrix-equation">
@@ -73,11 +71,19 @@
             </div>
             {% if resultado.metodos %}<p class="field-help">{{ resultado.forma }} {{ resultado.ayuda }}</p>{% endif %}
         </section>
+
+        {% if resultado.metodos %}
+            {% include "calculadora/modules/matrices/_producto.html" %}
+        {% else %}
+            {% include "calculadora/modules/matrices/_procedimiento.html" %}
+        {% endif %}
     </section>
+    {% endnumeric_results %}
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'calculadora/numeros.js' %}" defer></script>
 {{ opciones_matrices|json_script:"matrix-options" }}
 <template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
 <template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>

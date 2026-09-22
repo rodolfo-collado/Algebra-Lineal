@@ -1,5 +1,14 @@
 {% load componentes %}
-{% comment %}Suma, resta o escalar: el desarrollo componente a componente plegado y, debajo, el vector resultante una sola vez. La cadena sustituye los vectores, opera y termina en el resultado; no hace falta volver a listar la entrada.{% endcomment %}
+{% comment %}Suma, resta o escalar: el vector resultante una sola vez y, debajo, el desarrollo componente a componente plegado. La cadena sustituye los vectores, opera y termina en el resultado; no hace falta volver a listar la entrada.{% endcomment %}
+<section class="panel panel-final" aria-labelledby="vector-result-title">
+    <h3 id="vector-result-title" class="panel-title">Resultado</h3>
+    <p class="vector-equality">
+        <span class="vector-expression">{{ resultado.expresion }}</span>
+        <span class="vector-equals" aria-hidden="true">=</span>
+        {% include "calculadora/components/vector.html" with componentes=resultado.resultado destacado=True nombre="" %}
+    </p>
+</section>
+
 {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
     <div class="procedure-stage">
         <h4 class="stage-title">Componente a componente</h4>
@@ -11,12 +20,3 @@
         </ol>
     </div>
 {% enddisclosure %}
-
-<section class="panel panel-final" aria-labelledby="vector-result-title">
-    <h3 id="vector-result-title" class="panel-title">Resultado</h3>
-    <p class="vector-equality">
-        <span class="vector-expression">{{ resultado.expresion }}</span>
-        <span class="vector-equals" aria-hidden="true">=</span>
-        {% include "calculadora/components/vector.html" with componentes=resultado.resultado destacado=True nombre="" %}
-    </p>
-</section>

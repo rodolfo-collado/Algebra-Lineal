@@ -50,6 +50,7 @@ hiddenimports = [
     # encuentra la raíz del proyecto (settings vive en frontend/web/algebra_web).
     "frontend.web.calculadora.templatetags",
     "frontend.web.calculadora.templatetags.componentes",
+    "frontend.web.calculadora.templatetags.numeros",
     "backend.vectores",
     "backend.matrices",
     "backend.ecuaciones_matriciales",

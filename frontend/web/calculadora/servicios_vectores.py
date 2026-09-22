@@ -8,7 +8,7 @@ sistema equivalente y la conclusión en el lenguaje del ejercicio).
 
 from fractions import Fraction
 
-from backend.matrices import formatear_fraccion
+from .presentacion_numerica import formatear_exacto
 from backend.vectores import (
     NOMBRE_COEFICIENTE,
     evaluar_combinacion_lineal,
@@ -29,7 +29,7 @@ TITULOS = {
 
 
 def numero(valor):
-    return formatear_fraccion(Fraction(valor))
+    return formatear_exacto(Fraction(valor))
 
 
 def componentes(vector):
@@ -44,7 +44,7 @@ def texto_vector(vector):
 def _con_parentesis(valor, tambien_fracciones=False):
     """Un operando negativo (o fraccionario, si se pide) se encierra para no confundir signos."""
     fraccion = Fraction(valor)
-    texto = formatear_fraccion(fraccion)
+    texto = formatear_exacto(fraccion)
     if fraccion < 0 or (tambien_fracciones and fraccion.denominator != 1):
         return f"({texto})"
     return texto
@@ -107,7 +107,7 @@ def _operacion_componente_a_componente(entrada):
 def termino_combinacion(coeficiente, vector_texto, primero):
     """Escribe c·v dentro de una suma: 3(1, 0), - 2(0, 1), + 1/2(1, 1)."""
     fraccion = Fraction(coeficiente)
-    magnitud = formatear_fraccion(abs(fraccion))
+    magnitud = formatear_exacto(abs(fraccion))
     factor = "" if magnitud == "1" else magnitud
     if primero:
         signo = "-" if fraccion < 0 else ""

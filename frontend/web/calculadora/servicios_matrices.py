@@ -2,7 +2,8 @@
 
 from fractions import Fraction
 
-from backend.matrices import formatear_fraccion, resolver_operacion_matrices, vector_columna
+from backend.matrices import resolver_operacion_matrices, vector_columna
+from .presentacion_numerica import formatear_exacto
 
 from .opciones_matrices import CONFIGURACION, ENTRADAS_DESPLEGADAS, es_vector, metodos_a_mostrar
 from .servicios import formatear_matriz
@@ -17,19 +18,19 @@ def subindice(*indices):
 
 
 def _operando(numero):
-    texto = formatear_fraccion(numero)
+    texto = formatear_exacto(numero)
     return f"({texto})" if numero < 0 or numero.denominator != 1 else texto
 
 
 def _sumando(numero):
     """Dentro de una suma solo los negativos necesitan paréntesis: 6 + (-4) + 5/2."""
-    texto = formatear_fraccion(numero)
+    texto = formatear_exacto(numero)
     return f"({texto})" if numero < 0 else texto
 
 
 def _coeficiente(numero, primero):
     """(signo, factor) de un término de la combinación: 2a₁ − a₂ + (1/2)a₃ − 0a₄."""
-    magnitud = formatear_fraccion(abs(numero))
+    magnitud = formatear_exacto(abs(numero))
     if magnitud == "1":
         factor = ""
     elif numero.denominator != 1:
@@ -103,10 +104,10 @@ def _fila_por_columna(calculo, opcion):
             ]
             if comunes > 1:
                 partes.append(" + ".join(_sumando(producto) for producto in paso["productos"]))
-            partes.append(formatear_fraccion(paso["resultado"]))
+            partes.append(formatear_exacto(paso["resultado"]))
             celdas.append(sustitucion)
             lineas.append(" = ".join(partes))
-            resumen.append(f"{_nombre_entrada(operacion, i, j)} = {formatear_fraccion(paso['resultado'])}")
+            resumen.append(f"{_nombre_entrada(operacion, i, j)} = {formatear_exacto(paso['resultado'])}")
         desarrollo.append(celdas)
         filas.append({"titulo": f"Fila {pasos_fila[0]['posicion'][0]} de {opcion['expresion']}", "lineas": lineas, "resumen": ", ".join(resumen)})
     if len(calculo["columnas"]) == 1:
@@ -150,7 +151,7 @@ def _por_columnas(calculo, opcion):
             "simbolica": f"{nombre} = {simbolica} = {numerica}",
             "terminos": terminos,
             "escaladas": [
-                {"matriz": _columna_texto(escalada), "etiqueta": f"Columna {k} de A multiplicada por {formatear_fraccion(coeficiente)}"}
+                {"matriz": _columna_texto(escalada), "etiqueta": f"Columna {k} de A multiplicada por {formatear_exacto(coeficiente)}"}
                 for k, (coeficiente, escalada) in enumerate(zip(columna["coeficientes"], columna["escaladas"]), start=1)
             ],
             "resultado": _columna_texto(columna["resultado"]),

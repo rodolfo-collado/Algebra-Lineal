@@ -1,5 +1,5 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% load static componentes %}
+{% load static componentes numeros %}
 
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title">
@@ -141,30 +141,14 @@
 
 {% block tool_result %}
     {% if resultados %}
+        {% comment %}Entrada → resultado → procedimiento plegable. El panel final dice qué se obtuvo (clasificación, solución, pivotes) una sola vez; el procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución). Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+        {% numeric_results %}
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">{% if comparando %}Comparación de métodos{% elif "procedimiento" in mostrar %}Procedimiento y resultado{% else %}Resultado{% endif %}</p>
                 <h2 id="results-title">{{ titulo_resultado }}</h2>
             </header>
-
-            {% comment %}Entrada → procedimiento plegable → resultado. El procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución); el panel final dice qué se obtuvo (clasificación, solución, pivotes) una sola vez. Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque.{% endcomment %}
-            {% if "procedimiento" in mostrar %}
-                {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                    <div class="final-block">
-                        <h4 class="final-label">Matriz inicial</h4>
-                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
-                    </div>
-                    {% for resultado in resultados %}
-                        {% if comparando %}
-                            {% disclosure titulo=resultado.metodo nivel=4 clase="disclosure-nested" %}
-                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
-                            {% enddisclosure %}
-                        {% else %}
-                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
-                        {% endif %}
-                    {% endfor %}
-                {% enddisclosure %}
-            {% endif %}
+            {% include "calculadora/components/numeric_format.html" %}
 
             <section class="panel panel-final" aria-labelledby="final-title">
                 <h3 id="final-title" class="panel-title">Resultado final</h3>
@@ -197,11 +181,31 @@
                     </details>
                 {% endif %}
             </section>
+
+            {% if "procedimiento" in mostrar %}
+                {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                    <div class="final-block">
+                        <h4 class="final-label">Matriz inicial</h4>
+                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                    </div>
+                    {% for resultado in resultados %}
+                        {% if comparando %}
+                            {% disclosure titulo=resultado.metodo nivel=4 clase="disclosure-nested" %}
+                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                            {% enddisclosure %}
+                        {% else %}
+                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                        {% endif %}
+                    {% endfor %}
+                {% enddisclosure %}
+            {% endif %}
         </section>
+        {% endnumeric_results %}
     {% endif %}
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'calculadora/numeros.js' %}" defer></script>
     {{ matrix_values|json_script:"matrix-initial-values" }}
     <script src="{% static 'calculadora/matriz.js' %}" defer></script>
     <script src="{% static 'calculadora/teclado.js' %}" defer></script>
