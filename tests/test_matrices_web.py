@@ -101,7 +101,7 @@ class PruebasCatalogoMatrices(SimpleTestCase):
         # Desde P14 la categoría tiene dos herramientas; Operaciones con matrices sigue igual.
         self.assertTrue(catalogo.MATRICES.disponible)
         self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES)[0], catalogo.OPERACIONES_MATRICES)
-        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 2)
+        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 3)
         self.assertEqual(reverse("calculadora:operaciones-matrices"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_MATRICES)
 

@@ -62,6 +62,7 @@ entrada para mantenerla legible.
 
 - Suma, resta, producto por escalar y traspuesta.
 - Producto `AB` y producto matriz-vector `Ax`.
+- Expresiones compuestas, como `A(u + v)` o `2A - 3B`, reutilizando esas operaciones.
 - Procedimiento por filas o como combinación lineal de columnas.
 - Resolución de `Ax = b`, también con matrices rectangulares.
 

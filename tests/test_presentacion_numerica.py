@@ -124,6 +124,10 @@ class PruebasIntegracionNumerica(SimpleTestCase):
             ("/matrices/operaciones/", datos_matriz_vector(a=[[1, 0]], x=["1/3", "1/2"], metodo="comparar")),
             ("/matrices/ecuaciones/", datos_ecuacion([[3, 0], [0, 2]], [1, 1], metodo="comparar")),
             ("/matrices/ecuaciones/", datos_ecuacion([[3, 1]], [1])),
+            ("/matrices/expresiones/", {
+                "expresion": "(1/3)*A", "cantidad": "1", "nombre_0": "A", "tipo_0": "matriz",
+                "filas_0": "1", "columnas_0": "1", "celda_0_0_0": "1",
+            }),
         ]
         for ruta, datos in casos:
             with self.subTest(ruta=ruta, datos=datos):
@@ -144,7 +148,7 @@ class PruebasIntegracionNumerica(SimpleTestCase):
                 self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
 
     def test_bases_entrada_y_errores_no_reciben_selector(self):
-        for ruta in ("/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/bases/conversion/"):
+        for ruta in ("/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/bases/conversion/"):
             self.assertNotContains(self.client.get(ruta), "data-numeric-controls")
         self.assertNotContains(self.client.post("/sistemas/", {"sistema": "x1+=1"}), "data-numeric-controls")
         conversion = self.client.post("/bases/conversion/", {

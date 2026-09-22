@@ -5,7 +5,7 @@
 ## Usar y comprender
 
 - [Funcionalidades](funcionalidades.md): formatos de entrada, terminal, sistemas,
-  vectores, matrices, conversión de bases y ejemplos para interpretar resultados.
+  vectores, matrices, expresiones matriciales, conversión de bases y ejemplos para interpretar resultados.
 - [Algoritmos](algoritmos.md): implementación manual, aritmética exacta,
   procedimientos estructurados y conexiones entre Ax, combinaciones y sistemas.
 - [Instalación Windows](instalacion-windows.md): requisitos, uso y desinstalación;

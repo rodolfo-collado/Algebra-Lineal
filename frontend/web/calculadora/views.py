@@ -13,10 +13,12 @@ from . import catalogo
 from .exploraciones import exploraciones_sistema
 from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .forms_ecuaciones import EcuacionMatricialForm
+from .forms_expresiones import ExpresionMatricialForm
 from .forms_matrices import MatricesForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
 from .servicios_ecuaciones import resolver_ecuacion_web
+from .servicios_expresiones import evaluar_expresion_web
 from .servicios_matrices import operar_matrices
 from .guias import guias_para_resultado
 from .opciones_sistemas import (
@@ -174,6 +176,25 @@ def operaciones_matrices(request):
     return render(request, "calculadora/modules/matrices/index.html", {
         "form": form, "resultado": resultado, "opciones_matrices": OPCIONES_MATRICES,
         "perfiles_teclado": perfiles_para("numerico"),
+    })
+
+
+@require_http_methods(["GET", "POST"])
+def expresiones_matriciales(request):
+    """Expresiones compuestas: los símbolos se definen uno a uno y el motor reutiliza las operaciones."""
+    accion = next((nombre for nombre in ("agregar", "eliminar", "ajustar") if nombre in request.POST), None)
+    form = ExpresionMatricialForm(request.POST or None, accion=accion)
+    resultado = None
+    if request.method == "POST" and form.is_valid():
+        if accion:
+            form = ExpresionMatricialForm(initial=form.cleaned_data["estado"])
+        else:
+            try:
+                resultado = evaluar_expresion_web(form.cleaned_data["entrada"])
+            except ValueError as error:
+                form.add_error("expresion", str(error))
+    return render(request, "calculadora/modules/expresiones/index.html", {
+        "form": form, "resultado": resultado, "perfiles_teclado": perfiles_para("numerico"),
     })
 
 

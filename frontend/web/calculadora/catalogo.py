@@ -169,7 +169,7 @@ OPERACIONES_VECTORES = Herramienta(
         "combinacion lineal", "coeficientes", "ecuación vectorial", "span", "generado",
         "conjunto generado", "dimensión", "componentes", "rn",
     ),
-    relacionadas=("ecuaciones-matriciales",),
+    relacionadas=("ecuaciones-matriciales", "expresiones-matriciales"),
     invitacion="Operar con vectores",
 )
 
@@ -203,7 +203,7 @@ OPERACIONES_MATRICES = Herramienta(
                     "multiplicación de matrices", "producto de matrices", "matriz por matriz",
                     "ax", "matriz por vector", "fila por columna", "regla fila-vector",
                     "producto punto", "combinación lineal"),
-    relacionadas=("ecuaciones-matriciales",),
+    relacionadas=("ecuaciones-matriciales", "expresiones-matriciales"),
     invitacion="Operar con matrices",
 )
 
@@ -218,14 +218,30 @@ ECUACIONES_MATRICIALES = Herramienta(
                     "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
                     "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
                     "inconsistente"),
-    relacionadas=("sistemas", "operaciones-matrices", "operaciones-vectores"),
+    relacionadas=("sistemas", "operaciones-matrices", "operaciones-vectores", "expresiones-matriciales"),
     invitacion="Resolver una ecuación matricial",
+)
+
+EXPRESIONES_MATRICIALES = Herramienta(
+    id="expresiones-matriciales",
+    nombre="Expresiones matriciales",
+    categoria=MATRICES,
+    descripcion="Evalúa una expresión con sumas, restas y productos de matrices, vectores y escalares.",
+    estado="disponible",
+    route_name="calculadora:expresiones-matriciales",
+    palabras_clave=(
+        "expresión", "expresiones matriciales", "componer", "paréntesis",
+        "multiplicación implícita", "2a", "ab", "au",
+    ),
+    relacionadas=("operaciones-matrices", "ecuaciones-matriciales", "operaciones-vectores"),
+    invitacion="Evaluar una expresión matricial",
 )
 
 HERRAMIENTAS = (
     SISTEMAS,
     OPERACIONES_VECTORES,
     OPERACIONES_MATRICES,
+    EXPRESIONES_MATRICIALES,
     ECUACIONES_MATRICIALES,
     CONVERSION_BASES,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
