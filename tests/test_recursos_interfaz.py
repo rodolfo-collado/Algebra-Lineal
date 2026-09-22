@@ -41,9 +41,10 @@ ASSETS_LOCALES = (
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "vectores.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "matrices.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "ecuaciones.js",
-    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "mark.svg",
-    RAIZ / "assets" / "algebra-lineal.ico",
-    RAIZ / "assets" / "algebra-lineal.svg",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "favicon.svg",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "favicon.ico",
+    RAIZ / "assets" / "brand" / "app" / "pygebra.ico",
+    RAIZ / "assets" / "brand" / "svg" / "pygebra-mark.svg",
 )
 
 
@@ -77,7 +78,7 @@ class PruebasRecursosLocales(unittest.TestCase):
                 self.assertGreater(ruta.stat().st_size, 0)
 
     def test_el_icono_es_un_ico_versionado(self):
-        contenido = (RAIZ / "assets" / "algebra-lineal.ico").read_bytes()
+        contenido = (RAIZ / "assets" / "brand" / "app" / "pygebra.ico").read_bytes()
 
         self.assertEqual(contenido[:4], b"\x00\x00\x01\x00")
 

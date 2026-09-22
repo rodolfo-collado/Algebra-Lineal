@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/algebra-lineal.svg" alt="Marca de Álgebra Lineal: matriz aumentada" width="80">
+  <img src="assets/brand/svg/pygebra-mark-black.svg" alt="Símbolo de PyGebra" width="80">
 </p>
 
 # Álgebra Lineal
@@ -144,7 +144,8 @@ Empieza por el [índice de documentación](docs/README.md) o elige una guía:
 | [Funcionalidades](docs/funcionalidades.md) | Entradas, ejemplos, métodos y lectura de resultados. |
 | [Algoritmos](docs/algoritmos.md) | Cálculo manual, exactitud y conexiones conceptuales. |
 | [Arquitectura](docs/arquitectura.md) | Backend, interfaces y distribución. |
-| [Interfaz](docs/interfaz.md) | Identidad visual, componentes, navegación y accesibilidad. |
+| [Interfaz](docs/interfaz.md) | Componentes, navegación y accesibilidad de la interfaz actual. |
+| [Identidad visual](docs/identidad-visual.md) | Símbolo oficial de PyGebra, geometría y archivos. |
 | [Instalación Windows](docs/instalacion-windows.md) | Uso del instalador y construcción del paquete. |
 | [Desarrollo](docs/desarrollo.md) | Entorno local y extensión del catálogo. |
 | [Pruebas](docs/pruebas.md) | Suite, verificaciones y smoke del instalador. |

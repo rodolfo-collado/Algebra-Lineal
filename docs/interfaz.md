@@ -14,11 +14,16 @@ plantillas Django, CSS propio y JavaScript mínimo, todos locales.
 
 ## Identidad
 
-- Nombre: **Álgebra Lineal**
+- Nombre visible de la aplicación, en esta versión: **Álgebra Lineal**
 - Subtítulo: Aprende resolviendo
-- Marca: una cuadrícula `[A | b]` en `assets/` y en el header
-- Paleta: verde esmeralda como acento principal y azul profundo para la
-  columna de términos independientes, con equivalencia clara y oscura
+- Símbolo oficial: PyGebra, variante Larga A. Geometría, archivos y acento
+  candidato están en [Identidad visual](identidad-visual.md).
+- El header todavía muestra la cuadrícula `[A | b]` anterior. Sustituirla
+  forma parte del rediseño de la interfaz.
+- Paleta de esta interfaz: verde esmeralda como acento principal y azul
+  profundo para la columna de términos independientes, con equivalencia clara
+  y oscura. El verde `#1A6560` documentado en la identidad todavía no
+  sustituye estos tokens.
 
 El tema claro u oscuro se guarda en `localStorage` (`algebra-lineal-tema`).
 Si el usuario no ha elegido, se respeta `prefers-color-scheme`. El icono del

@@ -187,7 +187,7 @@ class PruebasLauncherDesktop(unittest.TestCase):
 
         self.assertIsNotNone(ruta)
         self.assertTrue(Path(ruta).is_file())
-        self.assertTrue(ruta.endswith("algebra-lineal.ico"))
+        self.assertTrue(ruta.endswith("pygebra.ico"))
 
 
 class PruebaSmokeWaitressDjango(unittest.TestCase):

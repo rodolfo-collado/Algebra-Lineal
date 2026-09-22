@@ -15,7 +15,9 @@
 
 - [Arquitectura](arquitectura.md): responsabilidades, flujo de ejecución,
   catálogo central e infraestructura desktop.
-- [Interfaz](interfaz.md): decisiones de UI/UX, identidad visual, accesibilidad,
+- [Identidad visual](identidad-visual.md): símbolo oficial de PyGebra, geometría,
+  versiones monocromáticas y archivos.
+- [Interfaz](interfaz.md): decisiones de UI/UX, accesibilidad,
   componentes compartidos y comportamiento con o sin JavaScript.
 - [Desarrollo](desarrollo.md): entorno con uv, ejecución local y cómo extender
   el catálogo sin duplicar navegación o cálculo.
