@@ -86,7 +86,12 @@ El launcher inicia Waitress en loopback y abre pywebview. Consulta
    de entrada que se alternan. No es necesario cambiar `teclado.js`. Los
    controles que cambian la estructura (más filas, menos columnas) van aparte,
    nunca dentro del teclado.
-6. Añade pruebas de rutas, navegación, búsqueda y comportamiento. Mantén la
+6. Si muestra valores exactos, envuelve su `section#resultado` con
+   `{% numeric_results %}` (`{% load numeros %}`), incluye
+   `components/numeric_format.html` bajo el encabezado del resultado y carga
+   `numeros.js` en `extra_js`. El selector Exacto / Decimal queda resuelto sin
+   tocar el backend ni el servicio; consulta [Interfaz](interfaz.md#formato-exacto-y-decimal).
+7. Añade pruebas de rutas, navegación, búsqueda y comportamiento. Mantén la
    matemática en `backend/` y la presentación en los templates del módulo.
 
 Las decisiones de componentes, accesibilidad y estilo están en

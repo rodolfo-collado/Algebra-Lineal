@@ -1,4 +1,4 @@
-# Documentación de Álgebra Lineal
+# Documentación de PyGebra
 
 [Volver a la portada](../README.md)
 

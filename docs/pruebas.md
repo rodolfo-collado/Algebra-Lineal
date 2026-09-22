@@ -52,13 +52,13 @@ Para el procedimiento plegable P18, `uv run python -m unittest
 tests.test_procedimiento_plegable -v` comprueba con un parser HTML
 estructural que en Sistemas, Vectores, Matrices y Ax = b hay un único «Ver
 procedimiento» (`details` nativo, cerrado, con su título como encabezado)
-antes del único panel de resultado, que queda fuera de él; que el
+después del único panel de resultado, que queda fuera de él; que el
 procedimiento conserva los pasos, equivalencias, desarrollos y métodos; que la
 clasificación, la solución, los coeficientes y la matriz obtenida aparecen una
 sola vez; que el ancla `#resultado` y la jerarquía de encabezados se
 mantienen; que sin JavaScript todo el contenido está en el HTML; y que Inicio
 y Conversión de bases no cambian. Las suites de cada herramienta se adaptaron
-al orden Entrada → Procedimiento plegable → Resultado.
+al orden Entrada → Resultado → Procedimiento plegable.
 
 Para P19, `uv run python -m unittest tests.test_microinteracciones -v` comprueba
 tokens breves, propiedades de transición explícitas, ausencia de retardos y bucles,
@@ -124,3 +124,38 @@ la instalación real; para un cambio visual, tampoco sustituyen la revisión de 
 El workflow de release reutiliza CI: una prueba, build o smoke fallidos bloquean
 la publicación. La validación del tag puede comprobarse localmente y en pruebas
 sin crear tags en este repositorio; consulta [Releases](releases.md).
+
+## Rediseño PyGebra y presentación numérica
+
+`uv run python -m unittest tests.test_presentacion_numerica -v` cubre valores
+exactos, periódicos, negativos, cero, fracciones impropias, acarreo, empates de
+redondeo, recorte de ceros, precisión, enteros grandes y detección de aproximación.
+También verifica el error máximo de redondeo sobre miles de racionales,
+el formato exacto previo, expresiones con índices, HTML escapado y atributos.
+
+Las integraciones prueban Sistemas (ambos métodos y comparación), operaciones
+y combinación lineal de Vectores, Matrices, AB, Ax y Ax=b (única e infinitas):
+ambas representaciones preparadas, exacto visible sin JS, procedimientos
+conservados, controles únicos y ausencia del selector en entradas, errores y
+Conversión de bases. `tests.test_identidad_visual` comprueba que el header
+deriva del SVG oficial mediante `scripts/sync_brand_mark.py`, y
+`tests.test_recursos_interfaz` que `numeros.js` sigue siendo un recurso local.
+
+El comportamiento en el DOM real (cambio de formato, precisiones, vuelta al
+exacto, preferencias guardadas o inválidas, sin `localStorage`, migración del
+tema histórico y funcionamiento sin JavaScript) se comprueba con el mismo
+patrón que el teclado, sin dependencias nuevas:
+
+```bash
+uv run python -m tests.presentacion_browser
+```
+
+Abre `http://127.0.0.1:8876/`: los 10 casos deben indicar `PASS`. Sirve el
+componente, el bloque `numeric_results` y los scripts de producción con un
+documento aislado por caso; el fixture ya trae valores exactos preparados por
+Django. Es un ejecutor local y manual; `unittest discover` y CI no lo lanzan.
+
+La revisión de navegador debe incluir cambio de formato después del cálculo,
+precisiones, volver al exacto, navegación entre módulos, ambos temas, drawer,
+Escape/foco, búsqueda y scroll local de matrices en 375 px, tablet, 1100×760
+y escritorio amplio. Los controles numéricos no realizan peticiones de cálculo.
