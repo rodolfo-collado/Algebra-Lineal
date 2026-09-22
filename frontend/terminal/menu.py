@@ -45,7 +45,7 @@ def mostrar_opciones(opciones):
 
 
 def mostrar_menu(matriz):
-    consola.titulo("PRÁCTICA DE MATRICES")
+    consola.titulo("CALCULADORA DE MATRICES")
     mostrar_opciones(_OPCIONES)
     consola.info(describir_matriz_activa(matriz))
     consola.info("Los índices de filas y columnas empiezan en 1.")
