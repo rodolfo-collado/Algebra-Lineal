@@ -36,7 +36,7 @@ flowchart TD
 | `installer/AlgebraLineal.iss` | Inno Setup: empaqueta esa carpeta, accesos directos, prerrequisito WebView2 y desinstalación. |
 | `scripts/` | Build Windows, smoke de distribución y validación de tags de release. |
 | `tests/` | Pruebas matemáticas, frontend, infraestructura, distribución y documentación. |
-| `assets/` | Identidad SVG e icono ICO existentes. |
+| `assets/brand/` | Símbolo oficial de PyGebra: SVG canónico, PNG, favicon e icono de Windows. |
 | `pyproject.toml`, `uv.lock`, `.python-version` | Versión/dependencias declaradas, resolución bloqueada y Python de referencia. |
 | `.github/workflows/` | CI de validación y CD de publicación desde tags de `main`. |
 
