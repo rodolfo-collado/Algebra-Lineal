@@ -93,7 +93,12 @@ def set_windows_app_user_model_id() -> None:
         return
     import ctypes
 
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
+    # En Linux `ctypes` no tiene `windll`. Las pruebas de arranque parchean
+    # la plataforma a win32 sin esa API; no debe impedir crear la ventana.
+    shell32 = getattr(getattr(ctypes, "windll", None), "shell32", None)
+    if shell32 is None:
+        return
+    shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
 
 
 def application_icon_path() -> str | None:

@@ -208,6 +208,10 @@ class PruebasLauncherDesktop(unittest.TestCase):
             desktop.set_windows_app_user_model_id()
         windll.shell32.SetCurrentProcessExplicitAppUserModelID.assert_not_called()
 
+    def test_win32_sin_windll_no_impide_el_arranque(self):
+        with patch.object(desktop.sys, "platform", "win32"), patch("ctypes.windll", None, create=True):
+            desktop.set_windows_app_user_model_id()
+
 
 class PruebaSmokeWaitressDjango(unittest.TestCase):
     def test_waitress_django_y_backend_responden_por_http(self):
