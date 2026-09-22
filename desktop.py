@@ -29,6 +29,8 @@ WINDOW_HEIGHT = 760
 WINDOW_MIN_SIZE = (760, 560)
 WINDOW_BACKGROUND = "#EEF3F0"
 ICON_RELATIVE_PATH = Path("assets") / "brand" / "app" / "pygebra.ico"
+# Estable entre versiones: Windows agrupa las actualizaciones como la misma aplicación.
+APP_USER_MODEL_ID = "PyGebra.Desktop"
 STARTUP_TIMEOUT_SECONDS = 10.0
 SHUTDOWN_TIMEOUT_SECONDS = 5.0
 WAITRESS_THREADS = 4
@@ -75,6 +77,23 @@ def ensure_webview2_runtime() -> None:
             f"{WEBVIEW2_DOWNLOAD_URL}\n"
             "Después, vuelve a abrir PyGebra."
         )
+
+
+def set_windows_app_user_model_id() -> None:
+    """Fija la identidad de Windows antes de crear cualquier ventana.
+
+    pywebview carga ``pygebra.ico`` en la barra de título. La barra de tareas
+    no usa ese icono: agrupa el proceso con el acceso directo que lo lanzó.
+    Sin un AppUserModelID explícito, ese acceso queda ligado a
+    ``AlgebraLineal.exe`` y Windows reutiliza el icono cacheado de esa ruta
+    (el símbolo anterior) aunque el ejecutable ya traiga el icono nuevo.
+    El instalador declara el mismo identificador y el ``pygebra.ico`` empaquetado.
+    """
+    if sys.platform != "win32":
+        return
+    import ctypes
+
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
 
 
 def application_icon_path() -> str | None:
@@ -363,6 +382,7 @@ def desktop_debug_enabled() -> bool:
 
 def run_desktop() -> None:
     """Ejecuta el ciclo completo de Django, Waitress y pywebview."""
+    set_windows_app_user_model_id()
     server = None
     thread = None
     shutdown = None

@@ -226,6 +226,19 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
         self.assertEqual(setup["SetupIconFile"], r"{#ProjectRoot}\assets\brand\app\pygebra.ico")
         self.assertTrue((RAIZ / "assets" / "brand" / "app" / "pygebra.ico").is_file())
 
+    def test_los_accesos_directos_declaran_el_icono_y_la_identidad(self):
+        texto = SCRIPT_INNO.read_text(encoding="utf-8")
+        icono = r"{app}\_internal\assets\brand\app\pygebra.ico"
+        self.assertIn('#define AppUserModelId "PyGebra.Desktop"', texto)
+        for linea in secciones()["Icons"]:
+            self.assertIn(f'IconFilename: "{icono}"', linea)
+            self.assertIn('AppUserModelID: "{#AppUserModelId}"', linea)
+        spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
+        self.assertIn("pygebra.ico", spec)
+        smoke = SCRIPT_PRUEBA.read_text(encoding="utf-8")
+        self.assertIn(r"_internal\assets\brand\app\pygebra.ico", smoke)
+        self.assertIn("PyGebra.Desktop", smoke)
+
     def test_ci_compila_con_la_version_de_inno_setup_documentada(self):
         ci = WORKFLOW_CI.read_text(encoding="utf-8")
         documentacion = (RAIZ / "docs" / "instalacion-windows.md").read_text(encoding="utf-8")

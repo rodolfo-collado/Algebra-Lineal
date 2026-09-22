@@ -189,6 +189,25 @@ class PruebasLauncherDesktop(unittest.TestCase):
         self.assertTrue(Path(ruta).is_file())
         self.assertTrue(ruta.endswith("pygebra.ico"))
 
+    def test_el_spec_y_la_identidad_apuntan_al_icono_actual(self):
+        spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
+        self.assertGreaterEqual(spec.count("pygebra.ico"), 2)
+        self.assertEqual(desktop.APP_USER_MODEL_ID, "PyGebra.Desktop")
+        self.assertNotRegex(desktop.APP_USER_MODEL_ID, r"\d")
+        fuente = Path(desktop.__file__).read_text(encoding="utf-8")
+        self.assertLess(
+            fuente.index("set_windows_app_user_model_id()"),
+            fuente.index("create_desktop_window(webview, url)"),
+        )
+
+    def test_otra_plataforma_no_fija_la_identidad_de_windows(self):
+        from unittest.mock import MagicMock
+
+        windll = MagicMock()
+        with patch.object(desktop.sys, "platform", "linux"), patch("ctypes.windll", windll, create=True):
+            desktop.set_windows_app_user_model_id()
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID.assert_not_called()
+
 
 class PruebaSmokeWaitressDjango(unittest.TestCase):
     def test_waitress_django_y_backend_responden_por_http(self):
