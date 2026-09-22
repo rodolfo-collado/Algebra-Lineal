@@ -67,7 +67,7 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
         self.assertEqual(catalogo.ECUACIONES_MATRICIALES.nombre, "Resolver Ax = b")
         self.assertEqual(reverse("calculadora:ecuaciones-matriciales"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.ECUACIONES_MATRICIALES)
-        self.assertEqual(catalogo.ECUACIONES_MATRICIALES.relacionadas, ())
+        self.assertEqual(catalogo.ECUACIONES_MATRICIALES.relacionadas, ("sistemas", "operaciones-matrices", "operaciones-vectores"))
         # Operaciones con matrices sigue igual: Ax con x conocido no cambia de significado.
         self.assertEqual(catalogo.OPERACIONES_MATRICES.ruta, RUTA_OPERACIONES)
         self.assertIn("ax", catalogo.OPERACIONES_MATRICES.palabras_clave)
@@ -245,8 +245,8 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         self.assertIn('data-kind="inconsistente"', html)
         self.assertNotIn("Vector solución x", doc.tablas)
         self.assertNotIn("Producto Ax", doc.tablas)
-        # Sin solución no se muestra ningún vector x ni líneas x1 = … en el resultado (tras el procedimiento plegado).
-        self.assertNotIn("x1 =", texto[texto.index("Resultado Ax = b no tiene solución."):])
+        # Sin solución no se muestra ningún vector x ni líneas x1 = … en el resultado (antes del procedimiento plegado).
+        self.assertNotIn("x1 =", texto[texto.index("Resultado Ax = b no tiene solución."):texto.index("Ver procedimiento")])
 
     def test_fracciones_exactas(self):
         html, doc, texto = self.resolver(datos_ecuacion(*FRACCIONES))
@@ -257,13 +257,13 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         html, doc, texto = self.resolver(datos_ecuacion(a=[["1/2", "1/3"], ["-3/4", 2]], b=["5/6", "5/4"], metodo="comparar"))
         self.assertEqual(doc.tablas["Vector solución x"], [["1"], ["1"]])
 
-    def test_procedimiento_plegado_antes_del_resultado_y_cadena_de_equivalencias(self):
+    def test_resultado_antes_del_procedimiento_plegado_y_cadena_de_equivalencias(self):
         html, doc, texto = self.resolver(datos_ecuacion(*UNICA))
-        # P18: un «Ver procedimiento» cerrado con las equivalencias y la eliminación, y después el resultado.
+        # El resultado va primero; después, un «Ver procedimiento» cerrado con las equivalencias y la eliminación.
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
         self.assertLess(texto.index("Ver procedimiento"), texto.index("1 · Ecuación matricial"))
-        self.assertLess(texto.index("Eliminación por Gauss-Jordan"), texto.index("Resultado Ax = b"))
+        self.assertLess(texto.index("Resultado Ax = b"), texto.index("Eliminación por Gauss-Jordan"))
         for etapa in ("1 · Ecuación matricial", "2 · Ecuación vectorial", "3 · Sistema equivalente", "4 · Matriz aumentada"):
             self.assertIn(etapa, texto)
         self.assertLess(texto.index("1 · Ecuación matricial"), texto.index("2 · Ecuación vectorial"))

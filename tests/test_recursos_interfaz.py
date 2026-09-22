@@ -41,6 +41,7 @@ ASSETS_LOCALES = (
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "vectores.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "matrices.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "ecuaciones.js",
+    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "numeros.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "favicon.svg",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "favicon.ico",
     RAIZ / "assets" / "brand" / "app" / "pygebra.ico",
