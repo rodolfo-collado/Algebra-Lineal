@@ -93,15 +93,27 @@ lineal, y las pruebas comprueban que coincide con `combinar` de ese módulo.
 y llama al motor de sistemas elegido; al vivir por encima de `sistemas.py` y
 de `matrices.py`, `matrices.py` no necesita importar `sistemas.py`.
 
-`expresiones_matriciales` no calcula por su cuenta. El parser arma un árbol;
-cada nodo llama a `sumar_matrices`, `restar_matrices`,
+`expresiones_matriciales` no recalcula los productos numéricos. El parser arma
+un árbol; cada nodo llama a `sumar_matrices`, `restar_matrices`,
 `multiplicar_escalar_matriz`, `multiplicar_matrices`,
 `multiplicar_matriz_vector` o a las operaciones de `vectores.py`. El
 procedimiento de un producto es el que ya devuelve
-`resolver_operacion_matrices`. Una igualdad no añade un nodo aritmético: son
-dos árboles de ese parser, evaluados por separado y comparados con `Fraction`.
-`ecuaciones_matriciales` sigue resolviendo `Ax = b` por el motor de sistemas;
-no usa esta comparación.
+`resolver_operacion_matrices`. Una igualdad numérica no añade un nodo
+aritmético: son dos árboles de ese parser, evaluados por separado y comparados
+con `Fraction`.
+
+Si A se declaró desconocida y x es un vector simbólico, el producto `Ax` no
+pasa por Gauss. Cada componente del otro lado se normaliza a una forma lineal
+(constante y coeficientes `Fraction`). La columna j de A es el coeficiente de
+la variable j de x, en el orden del vector, no el alfabético. `coef_vector`
+es esa extracción. La comprobación vuelve a armar `Ax` y compara coeficientes;
+no sustituye números. `backend/expresiones.py` sigue siendo la forma lineal de
+los sistemas (variables numeradas `x1`, `x2` para Gauss). No se mezcla con
+esta: allí la variable es un índice, aquí el nombre completo lo declara el
+vector simbólico.
+
+`ecuaciones_matriciales` sigue resolviendo `Ax = b` por el motor de sistemas
+cuando A y b son numéricos y x es la incógnita. No usa esta comparación.
 
 Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
 eliminación hacia arriba, así que la diferencia entre los dos métodos está en un

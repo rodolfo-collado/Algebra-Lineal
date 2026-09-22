@@ -2,14 +2,36 @@
 
 from django import forms
 
+from backend.expresiones_matriciales.lineal import analizar_lineal
 from backend.expresiones_matriciales.parser import nombre_valido
 
 from .forms_matrices import FormularioCeldas, campo_dimension, campo_numero
 from .opciones_matrices import DIMENSION_MAXIMA, DIMENSION_MINIMA
 
 MAX_SIMBOLOS = 8
-TIPOS = (("matriz", "Matriz"), ("vector", "Vector"), ("escalar", "Escalar"))
+TIPOS = (
+    ("matriz", "Matriz"),
+    ("vector", "Vector"),
+    ("escalar", "Escalar"),
+    ("matriz_desconocida", "Matriz desconocida"),
+    ("vector_simbolico", "Vector simbólico"),
+    ("vector_lineal", "Vector lineal"),
+)
 _TIPOS_VALIDOS = {clave for clave, _ in TIPOS}
+_SIN_CELDAS = frozenset({"matriz_desconocida", "vector_simbolico"})
+_CON_COLUMNAS = frozenset({"matriz", "matriz_desconocida"})
+_COMPONENTES = frozenset({"vector", "vector_simbolico", "vector_lineal"})
+
+
+def campo_lineal(etiqueta):
+    return forms.CharField(
+        label=etiqueta, required=False, max_length=200,
+        widget=forms.TextInput(attrs={
+            "class": "matrix-input matrix-input-lineal", "autocomplete": "off",
+            "spellcheck": "false", "placeholder": "3x1 - 2x2",
+        }),
+        error_messages={"max_length": "Cada componente admite hasta 200 caracteres."},
+    )
 
 
 class ExpresionMatricialForm(FormularioCeldas):
@@ -36,6 +58,7 @@ class ExpresionMatricialForm(FormularioCeldas):
     def __init__(self, *args, accion=None, **kwargs):
         self.accion = accion
         super().__init__(*args, **kwargs)
+        self.nombres_lineales = []
         self.bloques = []
         for indice in range(self._cantidad()):
             self._bloque(indice)
@@ -83,20 +106,22 @@ class ExpresionMatricialForm(FormularioCeldas):
             label=f"Tipo del símbolo {indice + 1}", choices=TIPOS,
             initial=self.initial.get(f"tipo_{indice}", "matriz"),
             widget=forms.Select(attrs={"class": "field-input symbol-field-type", "data-campo": "tipo"}),
-            error_messages={"invalid_choice": "El tipo debe ser matriz, vector o escalar."},
+            error_messages={"invalid_choice": "El tipo debe ser matriz, vector o escalar, matriz desconocida, vector simbólico o vector lineal."},
         )
         bloque = {
             "indice": indice, "tipo": tipo, "filas": filas, "columnas": columnas,
             "nombre": self[f"nombre_{indice}"], "tipo_campo": self[f"tipo_{indice}"],
             "filas_campo": None, "columnas_campo": None, "celdas": [],
+            "nota": self._nota(tipo, indice, filas),
+            "celdas_visibles": tipo not in _SIN_CELDAS,
         }
         if tipo != "escalar":
-            etiqueta = "Componentes" if tipo == "vector" else "Filas"
+            etiqueta = "Componentes" if tipo in _COMPONENTES else "Filas"
             self.fields[f"filas_{indice}"] = campo_dimension(etiqueta)
             self.fields[f"filas_{indice}"].initial = filas
             self.fields[f"filas_{indice}"].widget.attrs["data-campo"] = "filas"
             bloque["filas_campo"] = self[f"filas_{indice}"]
-        if tipo == "matriz":
+        if tipo in _CON_COLUMNAS:
             self.fields[f"columnas_{indice}"] = campo_dimension("Columnas")
             self.fields[f"columnas_{indice}"].initial = columnas
             self.fields[f"columnas_{indice}"].widget.attrs["data-campo"] = "columnas"
@@ -106,8 +131,13 @@ class ExpresionMatricialForm(FormularioCeldas):
             celdas = []
             for columna in range(ancho):
                 clave = f"celda_{indice}_{fila}_{columna}"
-                self.nombres_celdas.append(clave)
-                self.fields[clave] = campo_numero(self._etiqueta(tipo, indice, fila, columna))
+                etiqueta = self._etiqueta(tipo, indice, fila, columna)
+                if tipo == "vector_lineal":
+                    self.nombres_lineales.append(clave)
+                    self.fields[clave] = campo_lineal(etiqueta)
+                else:
+                    self.nombres_celdas.append(clave)
+                    self.fields[clave] = campo_numero(etiqueta)
                 self.fields[clave].widget.attrs.update({
                     "data-campo": "celda", "data-fila": str(fila), "data-columna": str(columna),
                 })
@@ -115,11 +145,25 @@ class ExpresionMatricialForm(FormularioCeldas):
             bloque["celdas"].append(celdas)
         self.bloques.append(bloque)
 
+    def _nota(self, tipo, indice, filas):
+        if tipo == "matriz_desconocida":
+            return "Matriz desconocida: indica filas y columnas. Las entradas no se escriben; se determinan al comparar coeficientes."
+        if tipo == "vector_lineal":
+            return "Cada componente es una expresión lineal, como 3x1 - 2x2."
+        if tipo != "vector_simbolico":
+            return ""
+        nombre = str(self._publicado(f"nombre_{indice}", "") or "").strip()
+        if not nombre_valido(nombre):
+            return "Indica el nombre. Sus componentes serán independientes: nombre1, nombre2, …"
+        return "Componentes independientes: " + ", ".join(f"{nombre}{numero}" for numero in range(1, filas + 1)) + "."
+
     @staticmethod
     def _forma(tipo, filas, columnas):
+        if tipo in _SIN_CELDAS:
+            return 0, 0
         if tipo == "escalar":
             return 1, 1
-        if tipo == "vector":
+        if tipo in ("vector", "vector_lineal"):
             return filas, 1
         return filas, columnas
 
@@ -130,6 +174,8 @@ class ExpresionMatricialForm(FormularioCeldas):
         nombre = nombre or str(indice + 1)
         if tipo == "escalar":
             return f"Valor del escalar {nombre}"
+        if tipo == "vector_lineal":
+            return f"Vector lineal {nombre}, componente {fila + 1}"
         if tipo == "vector":
             return f"Vector {nombre}, componente {fila + 1}"
         return f"Matriz {nombre}, fila {fila + 1}, columna {columna + 1}"
@@ -152,10 +198,10 @@ class ExpresionMatricialForm(FormularioCeldas):
                 self.add_error(f"nombre_{indice}", f"El símbolo {nombre} está repetido.")
             vistos.add(nombre)
             filas = datos.get(f"filas_{indice}") if tipo != "escalar" else 1
-            columnas = datos.get(f"columnas_{indice}") if tipo == "matriz" else 1
+            columnas = datos.get(f"columnas_{indice}") if tipo in _CON_COLUMNAS else 1
             if tipo != "escalar" and filas is None:
                 self.add_error(f"filas_{indice}", "Indica esa dimensión.")
-            if tipo == "matriz" and columnas is None:
+            if tipo in _CON_COLUMNAS and columnas is None:
                 self.add_error(f"columnas_{indice}", "Indica el número de columnas.")
             simbolos.append({
                 "indice": indice, "nombre": nombre, "tipo": tipo,
@@ -177,14 +223,31 @@ class ExpresionMatricialForm(FormularioCeldas):
             self.add_error("expresion", "Escribe una expresión.")
             return datos
         self.convertir_numeros(datos, self.nombres_celdas)
+        for clave in self.nombres_lineales:
+            texto = (datos.get(clave) or "").strip()
+            if not texto:
+                self.add_error(clave, "Escribe la expresión lineal de esta componente.")
+                continue
+            try:
+                analizar_lineal(texto)
+            except ValueError as error:
+                self.add_error(clave, str(error))
+            else:
+                datos[clave] = texto
         if self.errors:
             return datos
         entrada = {}
         for simbolo in simbolos:
             indice, tipo = simbolo["indice"], simbolo["tipo"]
+            if tipo == "matriz_desconocida":
+                entrada[simbolo["nombre"]] = {"tipo": tipo, "filas": simbolo["filas"], "columnas": simbolo["columnas"]}
+                continue
+            if tipo == "vector_simbolico":
+                entrada[simbolo["nombre"]] = {"tipo": tipo, "filas": simbolo["filas"]}
+                continue
             if tipo == "escalar":
                 valor = datos[f"celda_{indice}_0_0"]
-            elif tipo == "vector":
+            elif tipo in ("vector", "vector_lineal"):
                 valor = [datos[f"celda_{indice}_{fila}_0"] for fila in range(simbolo["filas"])]
             else:
                 valor = [
@@ -217,7 +280,7 @@ class ExpresionMatricialForm(FormularioCeldas):
             esperados.update((f"nombre_{indice}", f"tipo_{indice}"))
             if tipo != "escalar":
                 esperados.add(f"filas_{indice}")
-            if tipo == "matriz":
+            if tipo in _CON_COLUMNAS:
                 esperados.add(f"columnas_{indice}")
             alto, ancho = self._forma(tipo, simbolo["filas"], simbolo["columnas"])
             esperados.update(f"celda_{indice}_{fila}_{columna}" for fila in range(alto) for columna in range(ancho))
@@ -250,7 +313,7 @@ class ExpresionMatricialForm(FormularioCeldas):
             plano[f"tipo_{indice}"] = simbolo["tipo"]
             if simbolo["tipo"] != "escalar":
                 plano[f"filas_{indice}"] = simbolo["filas"]
-            if simbolo["tipo"] == "matriz":
+            if simbolo["tipo"] in _CON_COLUMNAS:
                 plano[f"columnas_{indice}"] = simbolo["columnas"]
             for (fila, columna), texto in simbolo["celdas"].items():
                 plano[f"celda_{indice}_{fila}_{columna}"] = texto

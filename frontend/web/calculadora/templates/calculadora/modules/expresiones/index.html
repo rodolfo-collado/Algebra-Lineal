@@ -10,7 +10,7 @@
         {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
         <section class="workspace-section" id="expression-fields" data-perfil="numerico" aria-labelledby="simbolos-title">
             <h3 class="section-title" id="simbolos-title">Símbolos</h3>
-            <p class="field-help">Agrega solo las matrices, vectores o escalares que usa la expresión.</p>
+            <p class="field-help">Agrega solo los objetos que usa la expresión. Una matriz desconocida no pide entradas; un vector simbólico declara sus variables; un vector lineal escribe cada componente.</p>
             <div class="symbol-list" data-simbolos>
                 {% for bloque in form.bloques %}
                     {% include "calculadora/modules/expresiones/_simbolo.html" %}
@@ -27,7 +27,7 @@
                 <label for="{{ form.expresion.id_for_label }}">Expresión</label>
                 {{ form.expresion }}
                 {{ form.expresion.errors }}
-                <p class="field-help">Suma, resta, producto y paréntesis. <code>2A</code>, <code>AB</code> y <code>A(u + v)</code> equivalen a <code>2*A</code>, <code>A*B</code> y <code>A*(u + v)</code>. Un solo <code>=</code> compara dos expresiones con los valores definidos, como <code>A(u + v) = Au + Av</code>; no resuelve incógnitas. Si un texto admite más de una lectura, escribe <code>*</code>. Fracciones como <code>1/2</code>.</p>
+                <p class="field-help">Suma, resta, producto y paréntesis. <code>2A</code>, <code>AB</code> y <code>A(u + v)</code> equivalen a <code>2*A</code>, <code>A*B</code> y <code>A*(u + v)</code>. Un solo <code>=</code> no es una operación: con valores numéricos compara esos valores, como <code>A(u + v) = Au + Av</code>. Si A es una matriz desconocida, x un vector simbólico y el otro lado un vector lineal, <code>Ax = b</code> determina A comparando coeficientes, para todos los valores de las variables. Hallar x con A y b numéricos sigue en Resolver Ax = b. Si un texto admite más de una lectura, escribe <code>*</code>. Fracciones como <code>1/2</code>.</p>
             </div>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
@@ -40,9 +40,11 @@
 {% if resultado %}
     {% numeric_results %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
-        {% if resultado.modo == "igualdad" %}
+        {% if resultado.modo == "determinacion" %}
+            {% include "calculadora/modules/expresiones/_determinacion.html" %}
+        {% elif resultado.modo == "igualdad" %}
             <header class="results-heading">
-                <p class="section-kicker">Igualdad{% if resultado.dimensiones %} · {{ resultado.dimensiones }}{% endif %}</p>
+                <p class="section-kicker">{% if resultado.alcance == "simbolica" %}Igualdad simbólica{% else %}Igualdad{% endif %}{% if resultado.dimensiones %} · {{ resultado.dimensiones }}{% endif %}</p>
                 <h2 id="results-title">{{ resultado.texto }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}

@@ -58,19 +58,64 @@
         return input;
     }
 
+    function esVector(tipo) {
+        return tipo === "vector" || tipo === "vector_lineal" || tipo === "vector_simbolico";
+    }
+
+    function nota(card) {
+        let aviso = card.querySelector("[data-nota]");
+        if (!aviso) {
+            aviso = document.createElement("p");
+            aviso.className = "field-help";
+            aviso.dataset.nota = "";
+            card.querySelector("[data-rejilla]").before(aviso);
+        }
+        return aviso;
+    }
+
+    function actualizarNota(card, tipo, filas) {
+        const aviso = nota(card);
+        const rejilla = card.querySelector("[data-rejilla]");
+        const nombre = campo(card, "nombre").value || "x";
+        if (tipo === "matriz_desconocida") {
+            aviso.hidden = false;
+            aviso.textContent = "Matriz desconocida: indica filas y columnas. Las entradas no se escriben; se determinan al comparar coeficientes.";
+            rejilla.hidden = true;
+            return;
+        }
+        if (tipo === "vector_simbolico") {
+            const componentes = Array.from({ length: filas }, (_, i) => `${nombre}${i + 1}`).join(", ");
+            aviso.hidden = false;
+            aviso.textContent = filas ? `Componentes independientes: ${componentes}.` : "Indica cuántas componentes independientes tiene.";
+            rejilla.hidden = true;
+            return;
+        }
+        if (tipo === "vector_lineal") {
+            aviso.hidden = false;
+            aviso.textContent = "Cada componente es una expresión lineal, como 3x1 - 2x2.";
+            rejilla.hidden = false;
+            return;
+        }
+        aviso.hidden = true;
+        rejilla.hidden = false;
+    }
+
     function reconstruir(card) {
         const tipo = campo(card, "tipo").value;
         const guardado = memoria(card);
+        const vector = esVector(tipo);
+        const conColumnas = tipo === "matriz" || tipo === "matriz_desconocida";
+        const conCeldas = tipo !== "matriz_desconocida" && tipo !== "vector_simbolico";
         let filas = 1;
         let columnas = 1;
         if (tipo === "escalar") {
             ocultar(card, "filas");
             ocultar(card, "columnas");
         } else {
-            const entradaFilas = mostrar(card, "filas", tipo === "vector" ? "Componentes" : "Filas");
+            const entradaFilas = mostrar(card, "filas", vector ? "Componentes" : "Filas");
             filas = entero(entradaFilas);
             if (filas === null) return;
-            if (tipo === "vector") {
+            if (!conColumnas) {
                 ocultar(card, "columnas");
             } else {
                 const entradaColumnas = mostrar(card, "columnas", "Columnas");
@@ -80,25 +125,34 @@
         }
         const cuerpo = card.querySelector("tbody");
         cuerpo.replaceChildren();
-        const nombre = campo(card, "nombre").value || "símbolo";
-        for (let i = 0; i < filas; i += 1) {
-            const fila = document.createElement("tr");
-            for (let j = 0; j < columnas; j += 1) {
-                const copia = celda.content.cloneNode(true);
-                const input = copia.querySelector("input");
-                const label = copia.querySelector("label");
-                input.dataset.fila = String(i);
-                input.dataset.columna = String(j);
-                input.value = guardado.get(`${i}_${j}`) || "";
-                label.textContent = tipo === "escalar"
-                    ? `Valor del escalar ${nombre}`
-                    : tipo === "vector"
-                        ? `Vector ${nombre}, componente ${i + 1}`
-                        : `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
-                fila.append(copia);
+        if (conCeldas) {
+            const nombre = campo(card, "nombre").value || "símbolo";
+            const ancho = tipo === "matriz" ? columnas : 1;
+            const alto = tipo === "escalar" ? 1 : filas;
+            for (let i = 0; i < alto; i += 1) {
+                const fila = document.createElement("tr");
+                for (let j = 0; j < ancho; j += 1) {
+                    const copia = celda.content.cloneNode(true);
+                    const input = copia.querySelector("input");
+                    const label = copia.querySelector("label");
+                    input.dataset.fila = String(i);
+                    input.dataset.columna = String(j);
+                    input.value = guardado.get(`${i}_${j}`) || "";
+                    input.classList.toggle("matrix-input-lineal", tipo === "vector_lineal");
+                    input.placeholder = tipo === "vector_lineal" ? "3x1 - 2x2" : "";
+                    label.textContent = tipo === "escalar"
+                        ? `Valor del escalar ${nombre}`
+                        : tipo === "vector_lineal"
+                            ? `Vector lineal ${nombre}, componente ${i + 1}`
+                            : tipo === "vector"
+                                ? `Vector ${nombre}, componente ${i + 1}`
+                                : `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
+                    fila.append(copia);
+                }
+                cuerpo.append(fila);
             }
-            cuerpo.append(fila);
         }
+        actualizarNota(card, tipo, filas);
         reindex();
     }
 
@@ -163,8 +217,30 @@
         if (event.target.dataset.campo === "tipo") reconstruir(tarjeta(event.target));
     });
     lista.addEventListener("input", (event) => {
+        const card = tarjeta(event.target);
+        if (!card) return;
         if (event.target.dataset.campo === "filas" || event.target.dataset.campo === "columnas") {
-            reconstruir(tarjeta(event.target));
+            reconstruir(card);
+        }
+        if (event.target.dataset.campo === "nombre") {
+            const tipo = campo(card, "tipo").value;
+            const nombre = event.target.value || "símbolo";
+            if (tipo === "vector_simbolico") {
+                actualizarNota(card, "vector_simbolico", entero(campo(card, "filas")) || 0);
+            }
+            card.querySelectorAll("[data-campo=celda]").forEach(input => {
+                const label = input.closest("td") && input.closest("td").querySelector("label");
+                if (!label) return;
+                const i = Number(input.dataset.fila);
+                const j = Number(input.dataset.columna);
+                label.textContent = tipo === "escalar"
+                    ? `Valor del escalar ${nombre}`
+                    : tipo === "vector_lineal"
+                        ? `Vector lineal ${nombre}, componente ${i + 1}`
+                        : tipo === "vector"
+                            ? `Vector ${nombre}, componente ${i + 1}`
+                            : `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
+            });
         }
     });
 

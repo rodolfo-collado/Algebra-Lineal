@@ -454,12 +454,18 @@ multiplicar, el mensaje habla de ese producto y muestra las dimensiones. Dentro
 de una igualdad, además indica si el fallo está en el lado izquierdo o en el
 derecho. Una igualdad falsa no es un error: es un resultado.
 
+Con símbolos numéricos, que ambos lados coincidan significa que producen el
+mismo objeto para esos valores. No demuestra la identidad para todos los
+valores. Hallar el vector x cuando A y b son numéricos sigue en Resolver Ax = b.
+
 ### Arquitectura
 
 ```text
 texto → ¿un solo =?
   no → lexer → parser → AST → evaluador → primitivas existentes
-  sí → cada lado por ese mismo camino → comparación de los dos valores
+  sí → cada lado por ese mismo camino
+        numérico → comparación de los dos valores
+        Ax simbólico → coeficientes de formas lineales → matriz A
 ```
 
 Cada nodo guarda operación, hijos, texto y una ruta estable (`0`, `0.1`,
@@ -470,22 +476,64 @@ esta parte** en cada paso, también en cualquiera de los dos lados. Matriz por
 matriz y matriz por vector reutilizan el procedimiento de
 `resolver_operacion_matrices`; no hay un segundo algoritmo de producto.
 
-La comparación usa los `Fraction` calculados, no el texto decimal. Solo es
-verdadera o falsa si ambos lados son el mismo tipo y las mismas dimensiones
-(escalar, vector de n componentes o matriz m×n). Si no, el mensaje dice qué es
-cada lado. Que coincidan significa que producen el mismo objeto para los
-símbolos definidos; no demuestra la identidad para todos los valores ni despeja
-una incógnita. `Ax = b` sigue en su herramienta.
+La comparación numérica usa los `Fraction` calculados, no el texto decimal.
+Solo es verdadera o falsa si ambos lados son el mismo tipo y las mismas
+dimensiones. Si no, el mensaje dice qué es cada lado. El resultado usa el
+selector Exacto/Decimal ya existente. Cambia cómo se ven los valores; no vuelve
+a comparar.
 
-El resultado usa el selector Exacto/Decimal ya existente. Cambia cómo se ven
-los dos lados; no vuelve a comparar.
+El camino simbólico solo se activa si un símbolo se declaró como matriz
+desconocida, vector simbólico o vector lineal. Un nombre sin definición sigue
+siendo un error.
+
+### Expresión lineal simbólica
+
+Una forma lineal es una constante más un coeficiente exacto por variable, por
+ejemplo `3x1 - 2x2 + 5`. Los coeficientes son `Fraction`. Dos textos distintos
+con los mismos coeficientes son la misma forma: `x1 + x1` es `2x1` y
+`2(x1 + x2) - x1` es `x1 + 2x2`. Una variable que no aparece tiene coeficiente 0.
+
+Solo se conservan la suma, la resta, la negación y el producto por un escalar
+numérico. Se rechazan `x1*x2`, `x1^2`, `1/x1` y llamadas como `sin(x1)`.
+
+En la misma página se declaran tres objetos, sin adivinar incógnitas:
+
+- **Matriz desconocida.** Nombre, filas y columnas. No tiene celdas.
+- **Vector simbólico.** Nombre y cantidad de componentes. `x` con 2 componentes
+  es `[x1, x2]`, en ese orden. Esas variables no se evalúan a un número.
+- **Vector lineal.** Cada componente se escribe como texto y pasa por el parser
+  lineal. No se usa `eval`.
+
+Si la expresión es `Ax = b`, A es la única matriz desconocida, x el vector
+simbólico de n componentes y b un vector lineal de m componentes cuyas variables
+pertenecen a x, PyGebra determina A comparando coeficientes. No usa Gauss.
+
+`Ax = x1 a1 + … + xn an`. Si b se agrupa como `x1 c1 + … + xn cn`, entonces
+`aj = cj` para que la igualdad valga para todos los valores de las variables.
+La columna j de A es el vector de coeficientes de la variable j. Después se
+reconstruye `Ax` con esa matriz y se comparan los coeficientes exactos; no se
+sustituyen valores de prueba.
+
+Un término constante distinto de cero no puede salir de `Ax`. Una variable que
+no está en x, como `x3` cuando x es `[x1, x2]`, se rechaza. Las dimensiones se
+comprueban antes: A de 3×2 no admite un x de 3 componentes, y `Ax` de 3
+componentes no se iguala con un b de 4.
+
+Si A ya es numérica y x es simbólico, la misma igualdad compara los dos vectores
+lineales. Coincidir entonces significa la misma expresión para todos los valores
+de las variables declaradas, no solo para los números de una matriz concreta.
+
+El selector Exacto/Decimal cambia cómo se ven los coeficientes. La comparación
+sigue siendo exacta.
 
 ### Límites
 
-No hay inversa, determinante, potencias, traspuesta dentro de la expresión,
-sistemas simbólicos, matrices con entradas `x1` o `3x1 - 2x2`, ni símbolos sin
-valor. Un nombre que no esté definido es un error, no una incógnita. Tampoco
-se comparan coeficientes ni se resuelve una matriz desconocida.
+No hay inversa, determinante, potencias ni traspuesta dentro de la expresión
+numérica. En el camino simbólico tampoco hay dos matrices desconocidas,
+`AX = B`, `XA = B`, inversas o determinantes simbólicos, polinomios, división
+por variables ni un sistema algebraico general. Un nombre que no esté definido
+sigue siendo un error, no una incógnita. Resolver Ax = b, con A y b conocidos
+y x incógnita, no cambia.
 
 ## Visualización de resultados en PyGebra
 

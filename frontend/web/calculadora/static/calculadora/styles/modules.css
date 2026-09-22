@@ -1422,7 +1422,10 @@ textarea:focus {
 }
 
 .symbol-field-name { width: 7rem; }
-.symbol-field-type { width: 9.5rem; }
+.symbol-field-type { width: auto; min-width: 12.5rem; }
+.matrix-input-lineal { width: 11rem; text-align: left; }
+[data-rejilla][hidden],
+[data-nota][hidden] { display: none; }
 .symbol-field-dim,
 .symbol-head .dimension-field { width: auto; }
 

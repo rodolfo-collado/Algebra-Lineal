@@ -10,7 +10,8 @@
         {% endif %}
         <button class="btn btn-secondary" type="submit" name="eliminar" value="{{ bloque.indice }}" data-eliminar>Eliminar</button>
     </div>
-    <div class="matrix" data-rejilla>
+    <p class="field-help" data-nota {% if not bloque.nota %}hidden{% endif %}>{{ bloque.nota }}</p>
+    <div class="matrix" data-rejilla {% if not bloque.celdas_visibles %}hidden{% endif %}>
         <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
         <div class="matrix-scroll" tabindex="0">
             <table class="matrix-table matrix-entry-table">

@@ -2,7 +2,8 @@
 
 from fractions import Fraction
 
-from backend.expresiones_matriciales import Comparacion, Evaluacion, aplanar, evaluar
+from backend.expresiones_matriciales import Comparacion, Determinacion, Evaluacion, aplanar, evaluar
+from backend.expresiones_matriciales.lineal import enumerar, texto_forma
 from backend.matrices import vector_columna
 
 from .presentacion_numerica import formatear_exacto
@@ -14,14 +15,57 @@ _SIGNOS = {"resta": "−", "resta_vector": "−", "escalar": "·", "escalar_vect
 
 def evaluar_expresion_web(entrada):
     resultado = evaluar(entrada["expresion"], entrada["simbolos"], entrada.get("nodo"))
+    if isinstance(resultado, Determinacion):
+        return presentar_determinacion(resultado)
     if isinstance(resultado, Comparacion):
         return presentar_igualdad(resultado)
     return presentar(resultado)
 
 
+def presentar_determinacion(determinacion):
+    variables = determinacion.vector.variables
+    nombres = determinacion.nombres_columnas
+    producto = f"{determinacion.matriz.nombre}{determinacion.vector.nombre}"
+    return {
+        "modo": "determinacion",
+        "texto": determinacion.texto,
+        "nombre": determinacion.matriz.nombre,
+        "vector": determinacion.vector.nombre,
+        "producto": producto,
+        "etiqueta": determinacion.etiqueta,
+        "filas": determinacion.matriz.filas,
+        "columnas": determinacion.matriz.columnas,
+        "variables": variables,
+        "variables_texto": enumerar(variables),
+        "matriz": formatear_matriz(determinacion.resultado),
+        "coeficientes": [[formatear_exacto(coeficiente) for coeficiente in columna] for columna in determinacion.columnas],
+        "verificada": determinacion.verificada,
+        "por_columnas": f"{determinacion.matriz.nombre} = [{' '.join(nombres)}]",
+        "desarrollo": producto + " = " + " + ".join(f"{variable} {nombre}" for variable, nombre in zip(variables, nombres)),
+        "agrupacion": determinacion.etiqueta + " = " + " + ".join(
+            f"{variable} {_columna(columna)}" for variable, columna in zip(variables, determinacion.columnas)
+        ),
+        "comparaciones": [
+            f"{nombre} = {_columna(columna)}" for nombre, columna in zip(nombres, determinacion.columnas)
+        ],
+        "comprobacion": [
+            f"componente {indice}: {texto_forma(obtenida, variables)} {'coincide' if obtenida == esperada else 'no coincide'}"
+            for indice, (obtenida, esperada) in enumerate(zip(determinacion.verificacion, determinacion.componentes), 1)
+        ],
+    }
+
+
+def _columna(coeficientes):
+    return "[" + ", ".join(formatear_exacto(coeficiente) for coeficiente in coeficientes) + "]^T"
+
+
 def presentar_igualdad(comparacion):
     if not comparacion.comparable:
         titulo, veredicto = "No se pueden comparar ambos lados", "incomparable"
+    elif comparacion.alcance == "simbolica" and comparacion.coincide:
+        titulo, veredicto = "Misma expresión lineal", "coincide"
+    elif comparacion.alcance == "simbolica":
+        titulo, veredicto = "No es la misma expresión lineal", "distinto"
     elif comparacion.coincide:
         titulo, veredicto = "Ambos lados coinciden", "coincide"
     else:
@@ -34,6 +78,7 @@ def presentar_igualdad(comparacion):
         "mensaje": comparacion.mensaje,
         "coincide": comparacion.coincide,
         "comparable": comparacion.comparable,
+        "alcance": comparacion.alcance,
         "dimensiones": None if veredicto == "incomparable" else dimensiones(comparacion.izquierda),
         "izquierda": presentar(Evaluacion(comparacion.izquierda)),
         "derecha": presentar(Evaluacion(comparacion.derecha)),
@@ -68,6 +113,14 @@ def presentar_paso(paso):
 def dimensiones(paso):
     if paso.tipo == "escalar":
         return "escalar"
+    if paso.tipo == "vector_lineal":
+        return f"vector lineal de {paso.filas} componente" + ("" if paso.filas == 1 else "s")
+    if paso.tipo == "vector_simbolico":
+        return f"vector simbólico de {paso.filas} componente" + ("" if paso.filas == 1 else "s")
+    if paso.tipo == "matriz_desconocida":
+        return f"matriz desconocida {paso.filas}×{paso.columnas}"
+    if paso.tipo == "aplicacion":
+        return f"{paso.filas} componentes simbólicos"
     if paso.tipo == "vector":
         return f"{paso.filas} componente" + ("" if paso.filas == 1 else "s")
     return f"{paso.filas}×{paso.columnas}"
@@ -76,12 +129,23 @@ def dimensiones(paso):
 def igualdad(paso):
     if paso.tipo == "matriz":
         return f"{paso.texto} ="
+    if paso.tipo == "aplicacion":
+        return f"{paso.texto} queda por determinar"
     return f"{paso.texto} = {texto_valor(paso)}"
 
 
 def texto_valor(paso):
     if paso.tipo == "escalar":
         return formatear_exacto(paso.resultado)
+    if paso.tipo == "vector_lineal":
+        orden = paso.resultado.variables
+        return "[" + ", ".join(texto_forma(componente, orden) for componente in paso.resultado.componentes) + "]"
+    if paso.tipo == "vector_simbolico":
+        return "[" + ", ".join(paso.resultado.variables) + "]"
+    if paso.tipo == "matriz_desconocida":
+        return f"matriz desconocida {paso.filas}×{paso.columnas}"
+    if paso.tipo == "aplicacion":
+        return f"{paso.resultado.matriz.nombre}{paso.resultado.vector.nombre}"
     return "[" + ", ".join(formatear_exacto(componente) for componente in paso.resultado) + "]"
 
 
@@ -90,6 +154,11 @@ def matriz_de(paso):
         return formatear_matriz(paso.resultado)
     if paso.tipo == "vector":
         return formatear_matriz(vector_columna(paso.resultado))
+    if paso.tipo == "vector_lineal":
+        orden = paso.resultado.variables
+        return [[texto_forma(componente, orden)] for componente in paso.resultado.componentes]
+    if paso.tipo == "vector_simbolico":
+        return [[variable] for variable in paso.resultado.variables]
     return None
 
 
