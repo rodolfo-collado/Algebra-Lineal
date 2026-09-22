@@ -396,10 +396,15 @@ arriba y cada uno puede pedirse solo con **Calcular solo esta parte**. El
 selector Exacto/Decimal es el de las demás herramientas de álgebra.
 
 Si el texto trae un solo `=`, la misma página muestra el lado izquierdo, el
-lado derecho y si coinciden para los valores definidos. No hay un selector
-Expresión/Igualdad. El procedimiento de cada lado sigue plegado; las rutas de
-**Calcular solo esta parte** son `izq:…` y `der:…`. Exacto/Decimal formatea
-ambos lados después de la comparación exacta.
+lado derecho y si coinciden. No hay un selector Expresión/Igualdad/Resolver A.
+Con valores numéricos la comparación vale para esos valores. Si A es una matriz
+desconocida, x un vector simbólico y el otro lado un vector lineal, el
+resultado es la matriz y, plegado, cómo se obtuvo: columnas, desarrollo,
+agrupación, coeficientes y comprobación simbólica. Una matriz desconocida no
+tiene celdas; un vector simbólico muestra `x1, x2, …`; un vector lineal usa
+campos de texto. Las rutas de **Calcular solo esta parte** siguen siendo
+`izq:…` y `der:…` en las igualdades numéricas. Exacto/Decimal formatea
+coeficientes y valores después de la comparación exacta.
 
 ## Resolver Ax = b
 

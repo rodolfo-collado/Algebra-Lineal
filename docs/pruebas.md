@@ -41,7 +41,10 @@ columnas, flujo Aplicar sin JavaScript y POST manipulados—, las expresiones
 matriciales —lexer, parser, árbol, tipos, dimensiones, procedimiento por nodo,
 subexpresión, fracciones exactas, igualdades verdaderas y falsas, lados no
 comparables, rutas `izq`/`der`, regresión contra las primitivas, integración
-web, POST manipulado y formato Exacto/Decimal— y que la interfaz
+web, POST manipulado y formato Exacto/Decimal—, las formas lineales
+simbólicas —suma, resta, producto por escalar, normalización, coeficientes,
+matriz desconocida, `Ax = b` rectangular y fraccionario, variable ajena,
+término constante, no linealidad y la regresión numérica de P20 y P21— y que la interfaz
 no cargue fuentes ni scripts remotos.
 Sirven para detectar regresiones cuando el proyecto crezca.
 
