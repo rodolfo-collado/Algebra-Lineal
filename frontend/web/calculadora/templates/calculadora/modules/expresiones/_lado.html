@@ -1,0 +1,9 @@
+<section class="panel equality-side" aria-labelledby="{{ identificador }}-title">
+    <h3 id="{{ identificador }}-title" class="panel-title">{{ titulo }}</h3>
+    <div class="matrix-equation">
+        <span class="matrix-expression">{{ lado.igualdad }}</span>
+        {% if lado.matriz %}
+            {% include "calculadora/components/matriz.html" with matriz=lado.matriz etiqueta=lado.texto only %}
+        {% endif %}
+    </div>
+</section>

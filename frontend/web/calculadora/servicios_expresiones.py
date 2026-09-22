@@ -2,7 +2,7 @@
 
 from fractions import Fraction
 
-from backend.expresiones_matriciales import aplanar, evaluar
+from backend.expresiones_matriciales import Comparacion, Evaluacion, aplanar, evaluar
 from backend.matrices import vector_columna
 
 from .presentacion_numerica import formatear_exacto
@@ -13,7 +13,31 @@ _SIGNOS = {"resta": "−", "resta_vector": "−", "escalar": "·", "escalar_vect
 
 
 def evaluar_expresion_web(entrada):
-    return presentar(evaluar(entrada["expresion"], entrada["simbolos"], entrada.get("nodo")))
+    resultado = evaluar(entrada["expresion"], entrada["simbolos"], entrada.get("nodo"))
+    if isinstance(resultado, Comparacion):
+        return presentar_igualdad(resultado)
+    return presentar(resultado)
+
+
+def presentar_igualdad(comparacion):
+    if not comparacion.comparable:
+        titulo, veredicto = "No se pueden comparar ambos lados", "incomparable"
+    elif comparacion.coincide:
+        titulo, veredicto = "Ambos lados coinciden", "coincide"
+    else:
+        titulo, veredicto = "Los resultados son diferentes", "distinto"
+    return {
+        "modo": "igualdad",
+        "texto": comparacion.texto,
+        "titulo": titulo,
+        "veredicto": veredicto,
+        "mensaje": comparacion.mensaje,
+        "coincide": comparacion.coincide,
+        "comparable": comparacion.comparable,
+        "dimensiones": None if veredicto == "incomparable" else dimensiones(comparacion.izquierda),
+        "izquierda": presentar(Evaluacion(comparacion.izquierda)),
+        "derecha": presentar(Evaluacion(comparacion.derecha)),
+    }
 
 
 def presentar(evaluacion):

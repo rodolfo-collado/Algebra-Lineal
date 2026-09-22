@@ -1443,3 +1443,20 @@ textarea:focus {
     margin: 0.35rem 0 0.6rem;
     padding-left: 1.1rem;
 }
+
+.equality-sides {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.equality-message {
+    margin: 0.35rem 0 0;
+}
+
+.equality-verdict-coincide { color: var(--color-success); }
+.equality-verdict-distinto { color: var(--color-danger); }
+
+@media (min-width: 761px) {
+    .equality-sides { grid-template-columns: 1fr 1fr; }
+}

@@ -19,7 +19,7 @@ class ExpresionMatricialForm(FormularioCeldas):
         label="Expresión", required=False, max_length=400,
         widget=forms.Textarea(attrs={
             "class": "field-input field-input-code", "rows": 2, "spellcheck": "false",
-            "placeholder": "A(u + v)",
+            "placeholder": "A(u + v) = Au + Av",
         }),
         error_messages={"max_length": "La expresión admite hasta 400 caracteres."},
     )
