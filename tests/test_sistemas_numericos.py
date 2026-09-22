@@ -2,6 +2,7 @@
 
 import ast
 import unittest
+from fractions import Fraction
 from pathlib import Path
 from unittest.mock import call, patch
 
@@ -11,6 +12,7 @@ from backend.sistemas_numericos import (
     convertir,
     convertir_a_varias_bases,
     decimal_a_base,
+    escribir_decimal_exacto,
     digito_a_valor,
     normalizar_numero,
     parsear_decimal,
@@ -395,6 +397,123 @@ class PruebasValidacion(unittest.TestCase):
         self.assertEqual(parsear_decimal(" 26 "), 26)
 
 
+class PruebasFraccionarias(unittest.TestCase):
+    def test_decimal_a_base_finita_y_periodica(self):
+        for texto, base, esperado in (
+            ("0.5", 2, "0.1"), ("0.25", 16, "0.4"), ("5.5", 16, "5.8"),
+            ("0.31", 16, "0.4(F5C28)"), ("5.31", 2, "101.01(00111101011100001010)"),
+        ):
+            with self.subTest(texto=texto, base=base):
+                self.assertEqual(convertir(texto, 10, base).resultado, esperado)
+
+    def test_procedimientos_exactos_separados(self):
+        resultado = decimal_a_base(Fraction(11, 2), 16)
+        self.assertEqual(resultado.pasos, decimal_a_base(5, 16).pasos)
+        self.assertEqual(resultado.parte_entera, "5")
+        self.assertEqual(resultado.parte_no_periodica, "8")
+        self.assertEqual(resultado.parte_periodica, "")
+        self.assertIsNone(resultado.inicio_periodo)
+        paso, = resultado.multiplicaciones
+        self.assertEqual((paso.fraccion_inicial, paso.base, paso.producto, paso.digito,
+                          paso.simbolo_digito, paso.fraccion_restante),
+                         (Fraction(1, 2), 16, 8, 8, "8", 0))
+        self.assertEqual(decimal_a_base(Fraction(1, 2), 2).pasos, ())
+        self.assertEqual(decimal_a_base(15, 2).multiplicaciones, ())
+
+    def test_periodo_y_preperiodo(self):
+        resultado = decimal_a_base(Fraction(31, 100), 16)
+        self.assertEqual((resultado.parte_no_periodica, resultado.parte_periodica, resultado.inicio_periodo),
+                         ("4", "F5C28", 1))
+        self.assertEqual(len(resultado.multiplicaciones), 6)
+        self.assertEqual(resultado.multiplicaciones[-1].fraccion_restante,
+                         resultado.multiplicaciones[1].fraccion_inicial)
+        puro = decimal_a_base(Fraction(1, 3), 2)
+        self.assertEqual((puro.resultado, puro.parte_no_periodica, puro.inicio_periodo), ("0.(01)", "", 0))
+
+    def test_base_a_decimal_y_exponentes_negativos(self):
+        for texto, base, esperado in (
+            ("0.1", 2, "0.5"), ("101.101", 2, "5.625"),
+            ("A.F", 16, "10.9375"), ("17.4", 8, "15.5"),
+        ):
+            with self.subTest(texto=texto):
+                resultado = convertir(texto, base, 10)
+                self.assertEqual(resultado.resultado, esperado)
+                self.assertEqual(resultado.valor_decimal, Fraction(esperado))
+        pasos = base_a_decimal("101.101", 2).pasos
+        self.assertEqual([p.posicion for p in pasos], [2, 1, 0, -1, -2, -3])
+        self.assertEqual([p.potencia for p in pasos], [4, 2, 1, Fraction(1, 2), Fraction(1, 4), Fraction(1, 8)])
+
+    def test_multidestino_reutiliza_el_mismo_valor_exacto(self):
+        with (
+            patch.object(conversion_modulo, "base_a_decimal", wraps=base_a_decimal) as hacia,
+            patch.object(conversion_modulo, "decimal_a_base", wraps=decimal_a_base) as desde,
+            patch.object(conversion_modulo, "parsear_decimal", wraps=parsear_decimal) as parseo,
+        ):
+            resultado = convertir_a_varias_bases("101.101", 2, (10, 8, 16))
+        hacia.assert_called_once_with("101.101", 2)
+        parseo.assert_not_called()
+        self.assertEqual(desde.call_args_list, [call(Fraction(45, 8), 8), call(Fraction(45, 8), 16)])
+        self.assertEqual([r.resultado for r in resultado.destinos], ["5.625", "5.5", "5.A"])
+        for r in resultado.destinos[1:]:
+            self.assertIs(r.desde_decimal.valor_decimal, resultado.valor_decimal)
+        self.assertEqual(convertir("A.F", 16, 2).resultado, "1010.1111")
+        self.assertEqual(convertir("A.F", 16, 8).resultado, "12.74")
+        with patch.object(conversion_modulo, "parsear_decimal", wraps=parsear_decimal) as parseo:
+            convertir_a_varias_bases("5.31", 10, (2, 8, 16))
+        parseo.assert_called_once_with("5.31")
+
+    def test_normalizacion_y_validacion(self):
+        for texto, base, esperado in ((".31", 10, "0.31"), ("5.", 10, "5"),
+                                      (" 00.aF ", 16, "00.AF"), ("15", 10, "15")):
+            self.assertEqual(normalizar_numero(texto, base), esperado)
+        for texto, base in (("1.2.3", 10), (".", 10), ("", 10), ("2.01", 2),
+                            ("0.2", 2), ("A.G", 16), ("8.1", 8), ("0.8", 8),
+                            ("-0.5", 10), ("+0.5", 10), ("0,5", 10), ("1. 2", 10)):
+            with self.subTest(texto=texto), self.assertRaises(ValueError):
+                normalizar_numero(texto, base)
+        for valor in (0.5, True, "0.5", Fraction(-1, 2)):
+            with self.subTest(valor=valor), self.assertRaises(ValueError):
+                decimal_a_base(valor, 2)
+        self.assertEqual(parsear_decimal(".31"), Fraction(31, 100))
+        self.assertEqual(convertir("15", 10, 2).resultado, "1111")
+        self.assertEqual(convertir("254", 10, 16).resultado, "FE")
+        self.assertEqual(convertir("1111", 2, 10).resultado, "15")
+
+    def test_limite_no_trunca_y_detecta_ciclo_en_el_ultimo_paso(self):
+        with patch.object(conversion_modulo, "MAX_PASOS_FRACCIONARIOS", 6):
+            self.assertEqual(convertir("0.31", 10, 16).resultado, "0.4(F5C28)")
+        with patch.object(conversion_modulo, "MAX_PASOS_FRACCIONARIOS", 5):
+            with self.assertRaisesRegex(ValueError, "No se ha truncado ni aproximado"):
+                convertir("0.31", 10, 16)
+        with patch.object(conversion_modulo, "MAX_PASOS_FRACCIONARIOS", 1):
+            self.assertEqual(convertir("0.5", 10, 2).resultado, "0.1")
+        with self.assertRaisesRegex(ValueError, "límite de seguridad"):
+            convertir("0.00001", 10, 2)
+
+    def test_escritura_decimal_sin_redondeo(self):
+        for texto in ("0", "123", "0.00000000000000000001", "12345678901234567890.123456789"):
+            self.assertEqual(escribir_decimal_exacto(parsear_decimal(texto)), texto)
+        self.assertEqual(escribir_decimal_exacto(Fraction(-1, 8)), "-0.125")
+        with self.assertRaises(ValueError):
+            escribir_decimal_exacto(Fraction(1, 3))
+
+    def test_expansiones_reconstruyen_el_racional_por_serie_geometrica(self):
+        # Una comprobación independiente del algoritmo, para finitos y periódicos.
+        for base in (2, 8, 16):
+            for denominador in range(2, 40):
+                valor = Fraction(denominador + 1, denominador)
+                resultado = decimal_a_base(valor, base)
+                def evaluar(digitos):
+                    return sum(digito_a_valor(d) * base ** i for i, d in enumerate(reversed(digitos)))
+                n = len(resultado.parte_no_periodica)
+                reconstruido = Fraction(evaluar(resultado.parte_entera))
+                reconstruido += Fraction(evaluar(resultado.parte_no_periodica), base ** n)
+                if resultado.parte_periodica:
+                    k = len(resultado.parte_periodica)
+                    reconstruido += Fraction(evaluar(resultado.parte_periodica), base ** n * (base ** k - 1))
+                self.assertEqual(reconstruido, valor)
+
+
 class PruebasSinConversionesAutomaticas(unittest.TestCase):
     def test_el_modulo_no_usa_bin_oct_hex_ni_int_con_base(self):
         prohibidas = []
@@ -402,7 +521,7 @@ class PruebasSinConversionesAutomaticas(unittest.TestCase):
             arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=str(ruta))
             for nodo in ast.walk(arbol):
                 if isinstance(nodo, ast.Call):
-                    if isinstance(nodo.func, ast.Name) and nodo.func.id in {"bin", "oct", "hex"}:
+                    if isinstance(nodo.func, ast.Name) and nodo.func.id in {"bin", "oct", "hex", "float"}:
                         prohibidas.append(f"{ruta.name}:{nodo.lineno} {nodo.func.id}()")
                     if (
                         isinstance(nodo.func, ast.Name)

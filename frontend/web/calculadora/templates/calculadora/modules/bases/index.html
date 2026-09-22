@@ -18,7 +18,7 @@
                         <span data-number-label-base="{{ base }}" {% if base != base_entrada_activa %}hidden{% endif %}>Número {{ nombre }}</span>
                     {% endfor %}
                 </label>
-                <p class="field-help">Escribe solo dígitos válidos en la base de origen; el teclado de abajo se adapta a ella.</p>
+                <p class="field-help">Usa dígitos válidos en la base de origen y un punto para la parte fraccionaria; el teclado de abajo se adapta a ella.</p>
                 {{ form.numero }}
                 {% comment %}Aviso en vivo al cambiar de base o escribir; el servidor vuelve a validar al convertir.{% endcomment %}
                 <p class="field-error" data-validacion-cliente role="alert" hidden></p>
@@ -84,6 +84,7 @@
                                 <span class="base-equals" aria-hidden="true">=</span>
                                 <span class="base-numeral base-numeral-result">{{ escritura.destino }}</span>
                                 <span class="base-result-name">{{ escritura.nombre|capfirst }}</span>
+                                {% if escritura.periodo %}<span class="base-result-name">Periódico · período: {{ escritura.periodo }} (entre paréntesis)</span>{% endif %}
                             </li>
                         {% endfor %}
                     </ul>

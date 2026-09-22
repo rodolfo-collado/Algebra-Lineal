@@ -101,7 +101,7 @@ class PruebasCatalogoMatrices(SimpleTestCase):
         # Desde P14 la categoría tiene dos herramientas; Operaciones con matrices sigue igual.
         self.assertTrue(catalogo.MATRICES.disponible)
         self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES)[0], catalogo.OPERACIONES_MATRICES)
-        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 2)
+        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 3)
         self.assertEqual(reverse("calculadora:operaciones-matrices"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_MATRICES)
 
@@ -240,11 +240,11 @@ class PruebasResultadosMatrices(SimpleTestCase):
     def test_resta_fraccionaria_rectangular(self):
         self.comprobar(datos_matrices("resta", a=[["1/2"], [-2], [0]], b=[["1/3"], [3], ["-7/3"]]), [["1/6"], ["-5"], ["7/3"]])
 
-    def test_procedimiento_plegado_antes_del_resultado(self):
+    def test_resultado_antes_del_procedimiento_plegado(self):
         r = self.client.post(RUTA, datos_matrices())
         html = r.content.decode()
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
 
     def test_servicio_delega_la_matematica(self):
         with patch("frontend.web.calculadora.servicios_matrices.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:

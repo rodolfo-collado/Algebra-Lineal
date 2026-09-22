@@ -14,13 +14,16 @@ plantillas Django, CSS propio y JavaScript mínimo, todos locales.
 
 ## Identidad
 
-- Nombre: **Álgebra Lineal**
-- Subtítulo: Aprende resolviendo
-- Marca: una cuadrícula `[A | b]` en `assets/` y en el header
-- Paleta: verde esmeralda como acento principal y azul profundo para la
-  columna de términos independientes, con equivalencia clara y oscura
+- Nombre visible: **PyGebra**; subtítulo en Inicio: **Aprende resolviendo**.
+- Símbolo oficial: **Larga A**, negro en claro y blanco en oscuro.
+  El header usa un derivado reproducible del SVG canónico, sin placa ni sombra.
+- Base blanca/casi negra y grises neutros. Acento `#1A6560` en claro y
+  `#7DCFC6` en oscuro, reservado para acciones, enlaces, selección y foco.
+- [Identidad visual](identidad-visual.md) documenta la geometría y sus derivados.
 
-El tema claro u oscuro se guarda en `localStorage` (`algebra-lineal-tema`).
+El tema claro u oscuro se guarda en `localStorage` (`pygebra-tema`). Se lee
+primero esta clave; si falta, se recupera y migra `algebra-lineal-tema`.
+Si el almacenamiento está bloqueado, tema y menú siguen funcionando.
 Si el usuario no ha elegido, se respeta `prefers-color-scheme`. El icono del
 selector representa el tema activo: sol en claro, luna en oscuro.
 
@@ -139,18 +142,18 @@ que también marca la herramienta activa y calcula las relacionadas.
 
 ### Inicio por temas
 
-`pages/inicio.html` es un punto de entrada: nombre, «Aprende resolviendo»,
-la pregunta «¿Qué quieres resolver?» con el buscador y los temas de la primera
-área como tarjetas (`pages/_area.html`). Cada tema es un `details` que
-despliega sus herramientas (`components/tool_link.html`); las demás áreas
-esperan bajo «Ver más temas». No hay accesos rápidos ni tarjetas de
-herramienta sueltas: cada herramienta se descubre dentro de su tema, y el
-menú y la búsqueda son los otros dos caminos. Con `?q=` el Inicio muestra los
-resultados en lugar de los temas.
+`pages/inicio.html` presenta PyGebra, «Aprende resolviendo», «¿Qué quieres
+resolver?» con su buscador y «Explorar por temas». Cada área disponible es
+un `details` cerrado; al abrirla aparecen los temas, también plegados, y
+cada tema despliega las herramientas de `catalogo.py`. Son filas con bordes
+discretos: ninguna cuadrícula de tarjetas ni accesos duplicados. Las áreas
+sin herramientas disponibles quedan dentro del menú y de la búsqueda GET,
+sin ocupar el Inicio. Con `?q=` se muestran los resultados de búsqueda.
 
-El recorrido es Inicio → tema → herramienta → resultado. Los breadcrumbs de
-área y categoría enlazan a su ancla del Inicio, que se abre sola. Límites
-sigue marcado como «Próximamente», sin enlace a una pantalla inexistente.
+El recorrido es Inicio → área → tema → herramienta → resultado. Los
+breadcrumbs abren las anclas de área y categoría con todos sus ancestros.
+El drawer también pliega las áreas y conserva búsqueda, categorías,
+Escape, backdrop, teclado, restauración de foco, `aria-expanded` e `inert`.
 
 Sin JavaScript la navegación permanece visible en flujo, antes del contenido,
 y el buscador usa su envío GET. En sistemas se puede resolver desde texto; la
@@ -172,7 +175,7 @@ herramientas relacionadas y «También puedes explorar». Cada bloque es opciona
 {% block tool_result %}…{% endblock %}
 ```
 
-### Entrada → Procedimiento plegable → Resultado
+### Entrada → Resultado → Procedimiento plegable
 
 Tras resolver, las herramientas principales (Resolver un sistema, Operaciones
 con vectores, Operaciones con matrices y Resolver Ax = b) siguen un mismo
@@ -180,10 +183,10 @@ patrón dentro de `section#resultado`:
 
 ```html
 <header class="results-heading">…<h2 id="results-title">…</h2></header>
+<section class="panel panel-final"><h3>Resultado</h3> …</section>
 <details class="disclosure disclosure-procedure" id="procedimiento">
     <summary><h3>Ver procedimiento</h3></summary> …
 </details>
-<section class="panel panel-final"><h3>Resultado</h3> …</section>
 ```
 
 El procedimiento nace cerrado, también después de resolver, y se abre con
@@ -199,7 +202,9 @@ resultado común aparece una vez. Conversión de bases e Inicio conservan su
 presentación. No se guardan preferencias de apertura.
 
 `components/related_tools.html` muestra las relacionadas como enlaces
-discretos y no aparece cuando la herramienta no declara ninguna. Las
+discretos después de resolver y no aparece cuando la herramienta no declara
+ninguna o ya se muestran exploraciones contextuales. Así se evita duplicar
+los destinos. Las relaciones se declaran en el catálogo. Las
 relaciones se reservan para módulos realmente distintos: las variantes de un
 mismo problema (método, bloques del resultado) son opciones del formulario.
 
@@ -243,7 +248,7 @@ Tras resolver, «Ver procedimiento» (`#procedimiento`, cerrado) reúne la
 matriz inicial, las operaciones por filas (`_procedimiento_metodo.html` con
 `_pasos.html`), la matriz final con sus pivotes, el sistema resultante y la
 sustitución regresiva (`_bloques_metodo.html`); al comparar, un sub-bloque
-cerrado por método y la matriz inicial una vez. Debajo, el panel «Resultado
+cerrado por método y la matriz inicial una vez. Antes, el panel «Resultado
 final» muestra la clasificación, la solución, las columnas pivote
 (`_pivotes.html`, la lectura directa de la matriz final) y las guías plegadas
 («Entender este resultado»). Si «Procedimiento» está desmarcado no hay
@@ -364,7 +369,7 @@ La capa de presentación solo formatea esos datos: `servicios_matrices.py`
 escribe las igualdades (`c₂₃ = fila₂(A) · columna₃(B) = … = 9/2`, `Ab₁ = 2a₁ −
 a₂ + 3a₃`) y decide qué bloques mostrar según el método elegido
 (`fila_columna`, `columnas` o `comparar`, con identificadores compartidos entre
-`AB` y `Ax` y etiquetas distintas). El procedimiento va plegado antes del
+`AB` y `Ax` y etiquetas distintas). El procedimiento va plegado después del
 panel Resultado, que muestra la matriz una sola vez aunque se comparen los
 métodos. `_expresion.html` escribe la expresión como una sola cadena
 (operandos → desarrollo por entradas → matriz obtenida) y la comparten
@@ -377,10 +382,34 @@ fila o por columna, abiertos cuando el resultado tiene pocas entradas
 de interfaz, donde los subíndices se leen mejor; las expresiones con matrices
 se desplazan localmente. Resolver una ecuación matricial tiene su propio formulario.
 
+## Expresiones matriciales
+
+`/matrices/expresiones/` compone las operaciones ya existentes. El formulario
+empieza con un símbolo; **Agregar símbolo** y **Eliminar** cambian la lista, y
+el tipo o las dimensiones se ajustan en ese símbolo. Con JavaScript,
+`expresiones.js` redibuja las celdas y conserva lo escrito. Sin JavaScript,
+**Aplicar** pide al servidor la estructura nueva antes de calcular. El cálculo
+no añade una opción a `CONFIGURACION`.
+
+El resultado va primero. **Ver procedimiento** lista los nodos de abajo hacia
+arriba y cada uno puede pedirse solo con **Calcular solo esta parte**. El
+selector Exacto/Decimal es el de las demás herramientas de álgebra.
+
+Si el texto trae un solo `=`, la misma página muestra el lado izquierdo, el
+lado derecho y si coinciden. No hay un selector Expresión/Igualdad/Resolver A.
+Con valores numéricos la comparación vale para esos valores. Si A es una matriz
+desconocida, x un vector simbólico y el otro lado un vector lineal, el
+resultado es la matriz y, plegado, cómo se obtuvo: columnas, desarrollo,
+agrupación, coeficientes y comprobación simbólica. Una matriz desconocida no
+tiene celdas; un vector simbólico muestra `x1, x2, …`; un vector lineal usa
+campos de texto. Las rutas de **Calcular solo esta parte** siguen siendo
+`izq:…` y `der:…` en las igualdades numéricas. Exacto/Decimal formatea
+coeficientes y valores después de la comparación exacta.
+
 ## Resolver Ax = b
 
-`/matrices/ecuaciones/` es la segunda herramienta de Matrices y un formulario
-aparte, `EcuacionMatricialForm` (`forms_ecuaciones.py`): x es la incógnita,
+`/matrices/ecuaciones/` resuelve `Ax = b` cuando x es la incógnita.
+Es un formulario aparte, `EcuacionMatricialForm` (`forms_ecuaciones.py`): x es la incógnita,
 así que no es una operación más de `MatricesForm`. Ambos heredan de
 `FormularioCeldas` (`forms_matrices.py`), que genera las celdas
 `celda_<nombre>_<i>_<j>` con sus labels, rechaza campos repetidos, compara el
@@ -408,7 +437,7 @@ Resolver un sistema, y `modules/ecuaciones/_metodos.html` incluye
 (`mostrar`) y las columnas pivote una vez. «Ver procedimiento» reúne
 `_equivalencias.html` (ecuación matricial, ecuación vectorial con las
 columnas de A, sistema equivalente y `[A | b]` con `matrix.html`) y la
-eliminación (un sub-bloque cerrado por método al comparar); debajo, el panel
+eliminación (un sub-bloque cerrado por método al comparar); antes, el panel
 Resultado (`.classification` con `data-kind` y la solución, conjunto solución
 o contradicción) se muestra una vez, y después van plegados «Comprobar
 solución» (`A · x = b`) e «Interpretar Ax = b» (combinación lineal de las
@@ -457,7 +486,7 @@ Sigue el flujo de [Desarrollo](desarrollo.md#añadir-una-herramienta).
 En presentación, reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`,
 `.disclosure`, `{% disclosure %}`, `.concept-guide`, `components/explore.html`,
 el teclado contextual y los tokens compartidos, y sigue el patrón Entrada →
-Procedimiento plegable → Resultado. Si muestra
+Resultado → Procedimiento plegable. Si muestra
 matrices, usa `components/matriz.html`; para sistemas aumentados, `matrix.html`.
 Ambos admiten `columnas_pivote`. No copies el `<head>`, header, sidebar o selector
 de tema: extiende el layout común.
@@ -466,3 +495,32 @@ Hoy están disponibles las herramientas de sistemas de ecuaciones, las
 operaciones con vectores (incluida la combinación lineal), las operaciones con
 matrices (incluidos `AB` y `Ax`), Resolver Ax = b y la conversión de bases.
 No agregues enlaces a pantallas que todavía no existen.
+
+## Formato exacto y decimal
+
+Sistemas, Vectores (incluida combinación lineal), Matrices (incluidos AB y Ax)
+y Ax=b ofrecen un selector discreto junto al resultado. Exacto es el valor
+predeterminado y el contenido del HTML sin JavaScript. Decimal permite elegir
+un máximo de 2, 4, 6 u 8 decimales; el valor inicial es 4. Se recortan ceros
+finales: `7/2` → `3.5`, `4` → `4`, `1/3` → `0.3333`.
+
+`presentacion_numerica.py` calcula estas representaciones directamente del
+numerador y denominador, con redondeo a la mitad al par. No usa `float`.
+`templatetags/numeros.py` adapta el bloque de resultados ya calculados:
+valores, expresiones, matrices intermedias, operaciones por filas, sustitución,
+comprobación y etiquetas accesibles. Las expresiones heredadas conservan
+sus literales racionales exactos; el adaptador los representa, sin evaluar
+la expresión ni cambiar los índices. La entrada queda fuera del bloque.
+
+`components/numeric_format.html` es el control compartido y `numeros.js`
+solo cambia texto/atributos preparados por Python. Cambiar modo o precisión
+no envía formularios ni ejecuta motores. Las igualdades de líneas redondeadas
+usan `≈`; para matrices y cadenas repartidas en celdas, una nota de grupo
+informa la precisión únicamente cuando existe aproximación.
+
+Se guardan `pygebra-formato-numerico` y `pygebra-precision-decimal` en
+`localStorage`, sin cookies ni estado de negocio. Si falla el almacenamiento,
+se parte de Exacto y se pueden cambiar los controles durante esa visita.
+Sin JavaScript los controles permanecen ocultos y la matemática exacta
+continúa visible. Conversión de bases conserva su significado y no incluye
+este selector. Los algoritmos y sus resultados `Fraction` no cambian.

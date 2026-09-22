@@ -75,6 +75,8 @@ vectores                →  sistemas
 vectores                →  matrices
 ecuaciones_matriciales  →  sistemas
 ecuaciones_matriciales  →  matrices
+expresiones_matriciales →  matrices
+expresiones_matriciales →  vectores
 sistemas  →  gauss_jordan  →  gauss  →  operaciones_filas  →  matrices
 sistemas  →  expresiones   →  matrices
 ```
@@ -90,6 +92,28 @@ lineal, y las pruebas comprueban que coincide con `combinar` de ese módulo.
 `ecuaciones_matriciales.py` tampoco escalona: escribe `Ax = b` como `[A | b]`
 y llama al motor de sistemas elegido; al vivir por encima de `sistemas.py` y
 de `matrices.py`, `matrices.py` no necesita importar `sistemas.py`.
+
+`expresiones_matriciales` no recalcula los productos numéricos. El parser arma
+un árbol; cada nodo llama a `sumar_matrices`, `restar_matrices`,
+`multiplicar_escalar_matriz`, `multiplicar_matrices`,
+`multiplicar_matriz_vector` o a las operaciones de `vectores.py`. El
+procedimiento de un producto es el que ya devuelve
+`resolver_operacion_matrices`. Una igualdad numérica no añade un nodo
+aritmético: son dos árboles de ese parser, evaluados por separado y comparados
+con `Fraction`.
+
+Si A se declaró desconocida y x es un vector simbólico, el producto `Ax` no
+pasa por Gauss. Cada componente del otro lado se normaliza a una forma lineal
+(constante y coeficientes `Fraction`). La columna j de A es el coeficiente de
+la variable j de x, en el orden del vector, no el alfabético. `coef_vector`
+es esa extracción. La comprobación vuelve a armar `Ax` y compara coeficientes;
+no sustituye números. `backend/expresiones.py` sigue siendo la forma lineal de
+los sistemas (variables numeradas `x1`, `x2` para Gauss). No se mezcla con
+esta: allí la variable es un índice, aquí el nombre completo lo declara el
+vector simbólico.
+
+`ecuaciones_matriciales` sigue resolviendo `Ax = b` por el motor de sistemas
+cuando A y b son numéricos y x es la incógnita. No usa esta comparación.
 
 Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
 eliminación hacia arriba, así que la diferencia entre los dos métodos está en un
@@ -112,16 +136,58 @@ Las reglas para mantener esta separación están en [CONTRIBUTING](../CONTRIBUTI
 
 ## Conversión de bases
 
-Solo hacen falta dos algoritmos manuales: divisiones sucesivas hacia la base
-destino y expansión posicional hacia decimal. Entre bases no decimales se
-encadenan ambos. `digitos.py` convierte símbolos A–F y calcula potencias;
-`validacion.py` comprueba bases y dígitos; `conversion.py` devuelve pasos con
-dividendo, cociente y residuo, o dígito, posición, potencia y aporte.
+Se extienden los dos procesos manuales existentes, con enteros y `Fraction`
+para conservar valores exactos, sin `float`:
+
+- **Desde decimal:** la parte entera sigue usando divisiones sucesivas y lee
+  los residuos de abajo hacia arriba. La parte fraccionaria usa multiplicaciones
+  sucesivas por la base destino: toma el entero como siguiente dígito y continúa
+  con la fracción restante. Los dígitos fraccionarios se leen de arriba hacia
+  abajo. Por ejemplo, `5.5₁₀ = 5.8₁₆`: se divide 5 entre 16 y se multiplica
+  `0.5 × 16 = 8`, con fracción restante cero.
+- **Hacia decimal:** una sola expansión posicional incluye exponentes positivos,
+  cero y negativos. `101.101₂ = 1·2² + 0·2¹ + 1·2⁰ + 1·2⁻¹ + 0·2⁻² + 1·2⁻³
+  = 5.625₁₀`; `A.F₁₆ = 10·16⁰ + 15·16⁻¹ = 10.9375₁₀`.
+
+Entre bases no decimales se mantiene **origen → decimal exacto → destino**.
+No hay tablas ni agrupaciones particulares para cada par de bases.
+`digitos.py` convierte símbolos A–F y calcula potencias; `validacion.py`
+comprueba bases y dígitos a ambos lados del punto. Acepta `.31` como `0.31`
+y `5.` como `5`; rechaza múltiples puntos, solo `.`, signos y dígitos inválidos.
+Los paréntesis de períodos son una notación de salida, no una sintaxis de entrada.
+
+`conversion.py` devuelve pasos estructurados de división, expansión y
+`PasoMultiplicacion` (fracción inicial, base, producto, dígito, símbolo y fracción
+restante). `ConversionDesdeDecimal.pasos` conserva las divisiones existentes;
+`multiplicaciones` registra la etapa fraccionaria por separado. La web prepara
+las fórmulas y explicaciones en `servicios_bases.py`; los templates solo las
+renderizan y no muestran divisiones de cero cuando el valor es menor que uno.
+
 `convertir_a_varias_bases` es la abstracción multidestino sobre esas mismas
 funciones: valida el origen y los destinos (sin repetidos, sin la base de
 origen, al menos uno), lleva el número a decimal una sola vez y reutiliza ese
-valor en una división sucesiva por cada destino no decimal; el destino decimal,
+valor en las divisiones y multiplicaciones de cada destino no decimal; el destino decimal,
 si se pidió, es el propio valor intermedio. `convertir` es su caso de un destino.
+`escribir_decimal_exacto` escribe ese racional escalando su denominador 2ⁿ·5ᵐ
+a una potencia de diez, sin redondear ni volver a interpretar el origen.
+
+### Expansiones periódicas
+
+Antes de cada multiplicación se registra la fracción restante y su posición.
+Si llega a cero, la expansión es finita. Si una fracción se repite, desde allí
+se repetirán los mismos dígitos: se guarda la parte no periódica, la parte
+periódica y `inicio_periodo` (índice desde cero dentro de los dígitos fraccionarios;
+`None` cuando es finita). Así, `0.31₁₀ = 0.4(F5C28)₁₆` tiene parte no periódica
+`4`, período `F5C28` e inicio `1`. Los paréntesis señalan el período en la salida.
+
+Aunque todo racional termina o repite, su período puede ser enorme incluso
+con una entrada corta. El límite de seguridad es **1024 multiplicaciones por
+destino**. Primero se comprueba la repetición, incluso tras el último paso
+permitido; si no termina ni se detecta un período dentro del límite, se lanza
+`ValueError` con una explicación visible. No se devuelve una aproximación ni
+un resultado truncado. El límite protege tiempo, memoria y tamaño del
+procedimiento; no sustituye la detección de ciclos.
+
 No se usan `bin`, `oct`, `hex` ni `int(texto, base)` para resolver la conversión.
 Las pruebas AST comprueban esta restricción y los ejemplos se conservan en
 [Sistemas numéricos](funcionalidades.md#sistemas-numéricos).

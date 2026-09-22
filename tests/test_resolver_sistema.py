@@ -43,7 +43,7 @@ def seccion_resultado(respuesta):
 
 class PruebasNavegacionUnificada(SimpleTestCase):
     def test_la_navegacion_no_lista_las_pseudo_herramientas(self):
-        rutas = ("/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/bases/conversion/")
+        rutas = ("/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/bases/conversion/")
         for ruta in ("/", *rutas):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
@@ -67,7 +67,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         # Cada tema del Inicio despliega sus herramientas; ya no hay chips de acceso rápido.
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
-            ["/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/bases/conversion/"],
+            ["/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/bases/conversion/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")
         for consulta in ("gauss", "clasificación", "columnas pivote"):
@@ -211,12 +211,12 @@ class PruebasMetodos(SimpleTestCase):
         self.assertLess(texto.index("Matriz escalonada"), texto.index("Matriz reducida"))
         self.assertEqual(texto.count("Sustitución regresiva"), 1)
         # Pivotes, clasificación y solución son comunes: aparecen una sola vez, en el resultado
-        # que sigue al procedimiento plegado (P18).
+        # que precede al procedimiento plegado.
         self.assertEqual(texto.count("Columnas pivote:"), 1)
         self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count('class="classification"'), 1)
         self.assertEqual(texto.count("Solución x1 = 2 x2 = 1"), 1)
-        self.assertLess(texto.index("Matriz escalonada"), texto.index("Resultado final"))
+        self.assertLess(texto.index("Resultado final"), texto.index("Matriz escalonada"))
         # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
         self.assertEqual(html.count(' pivot"'), 8)
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
@@ -288,7 +288,7 @@ class PruebasBloquesDelResultado(SimpleTestCase):
         respuesta = self.resolver([])
         texto = seccion_resultado(respuesta)
         # La solución encabeza el resultado; la matriz final la acompaña después.
-        self.assertIn("Resultado Gauss Resultado final Solución x1 = 2 x2 = 1 Matriz escalonada", texto)
+        self.assertIn("Resultado final Solución x1 = 2 x2 = 1 Matriz escalonada", texto)
         for ausente in ("Matriz inicial", "Procedimiento paso a paso", "Columnas pivote", "Sistema resultante",
                         "Sustitución regresiva", "Clasificación", "Consistente"):
             self.assertNotIn(ausente, texto)

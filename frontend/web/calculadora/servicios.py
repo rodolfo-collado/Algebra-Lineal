@@ -2,7 +2,7 @@
 
 from fractions import Fraction
 
-from backend.matrices import formatear_fraccion
+from .presentacion_numerica import formatear_exacto
 from backend.parser_sistemas import parsear_sistema
 from backend.sistemas import (
     INCONSISTENTE,
@@ -38,7 +38,7 @@ def clave_clasificacion(clasificacion):
 def formatear_matriz(matriz):
     """Convierte los valores exactos del backend a celdas legibles en HTML."""
     return [
-        [formatear_fraccion(Fraction(valor)) for valor in fila]
+        [formatear_exacto(Fraction(valor)) for valor in fila]
         for fila in matriz
     ]
 
@@ -60,7 +60,7 @@ def adaptar_sustitucion(pasos):
     """Prepara la sustitución ya calculada por el backend para mostrarla."""
     adaptados = []
     for paso in pasos:
-        valor = formatear_fraccion(Fraction(paso["valor"]))
+        valor = formatear_exacto(Fraction(paso["valor"]))
         expresion = paso["expresion"]
         texto = f"x{paso['variable']} = {valor}"
         if expresion != valor:

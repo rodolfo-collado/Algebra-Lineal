@@ -1,0 +1,16 @@
+<ol class="expression-steps">
+    {% for paso in pasos %}
+        <li>
+            <p class="matrix-expression">{{ paso.igualdad }}</p>
+            {% if paso.matriz %}
+                {% include "calculadora/components/matriz.html" with matriz=paso.matriz etiqueta=paso.texto only %}
+            {% endif %}
+            {% if paso.lineas %}
+                <ul class="expression-lines">
+                    {% for linea in paso.lineas %}<li><code>{{ linea }}</code></li>{% endfor %}
+                </ul>
+            {% endif %}
+            <button class="btn btn-secondary" type="submit" name="nodo" value="{{ paso.id }}" form="expresiones-form">Calcular solo esta parte</button>
+        </li>
+    {% endfor %}
+</ol>

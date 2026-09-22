@@ -1,13 +1,12 @@
 {% comment %}Recomendaciones discretas desde el registro central; solo aparecen cuando la herramienta declara relaciones con destinos disponibles.{% endcomment %}
-{% if herramientas_relacionadas %}
+{% if herramientas_relacionadas and resultado and not exploraciones %}
     <section class="related" aria-labelledby="related-title">
-        <h2 id="related-title" class="related-title">Herramientas relacionadas</h2>
+        <h2 id="related-title" class="related-title">También puedes explorar…</h2>
         <ul class="related-list">
             {% for relacionada in herramientas_relacionadas %}
                 <li class="related-item">
                     <a class="related-link" href="{{ relacionada.ruta }}">
                         <span class="related-name">{{ relacionada.nombre }}</span>
-                        <span class="related-hint">{{ relacionada.descripcion }}</span>
                     </a>
                 </li>
             {% endfor %}

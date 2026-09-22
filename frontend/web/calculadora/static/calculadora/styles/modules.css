@@ -370,6 +370,7 @@ label[for="id_sistema"],
 }
 
 .field-input,
+select.field-input,
 .dimension-field input,
 textarea {
     width: 100%;
@@ -544,8 +545,12 @@ textarea:focus {
 }
 
 .panel-final {
-    border-color: color-mix(in srgb, var(--color-brand) 45%, var(--color-border));
-    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-strong);
+    box-shadow: none;
+}
+
+.results > .panel-final {
+    margin-bottom: 1rem;
 }
 
 .steps {
@@ -726,8 +731,8 @@ textarea:focus {
 }
 
 .classification[data-kind="unica"] {
-    border-color: var(--color-success-border);
-    background: var(--color-success-soft);
+    border-color: var(--color-border);
+    background: var(--color-surface);
 }
 
 .classification[data-kind="unica"] .classification-icon {
@@ -740,8 +745,8 @@ textarea:focus {
 }
 
 .classification[data-kind="infinitas"] {
-    border-color: var(--color-warning-border);
-    background: var(--color-warning-soft);
+    border-color: var(--color-border);
+    background: var(--color-surface);
 }
 
 .classification[data-kind="infinitas"] .classification-icon {
@@ -754,8 +759,8 @@ textarea:focus {
 }
 
 .classification[data-kind="inconsistente"] {
-    border-color: var(--color-danger-border);
-    background: var(--color-danger-soft);
+    border-color: var(--color-border);
+    background: var(--color-surface);
 }
 
 .classification[data-kind="inconsistente"] .classification-icon {
@@ -774,7 +779,7 @@ textarea:focus {
 .classification-value {
     margin: 0;
     font-size: 1.05rem;
-    font-weight: 800;
+    font-weight: 600;
 }
 
 .equations,
@@ -795,14 +800,14 @@ textarea:focus {
 }
 
 .solution {
-    padding: 0.9rem;
-    border-radius: var(--radius-md);
-    background: var(--color-brand-soft);
-    border: 1px solid color-mix(in srgb, var(--color-brand) 30%, var(--color-border));
+    padding: 0.9rem 0;
 }
 
 .solution-list {
-    margin-top: 0.85rem;
+    margin-top: 0.6rem;
+    padding-left: 0;
+    list-style: none;
+    font-size: 1.25rem;
 }
 
 /* Opciones compactas: radios y casillas nativas dentro de una píldora. */
@@ -1232,12 +1237,12 @@ textarea:focus {
 }
 
 .vector-result {
-    color: var(--color-brand);
+    color: var(--color-text);
     font-weight: 700;
 }
 
 .vector-result .vector-fence {
-    color: var(--color-brand);
+    color: var(--color-text);
 }
 
 .vector-equality {
@@ -1384,4 +1389,77 @@ textarea:focus {
     .tool-lead {
         display: none;
     }
+}
+
+.symbol-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.symbol-card {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0.85rem 1rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+}
+
+.symbol-head,
+.symbol-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: end;
+}
+
+.symbol-head > label {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+    font-size: 0.85rem;
+}
+
+.symbol-field-name { width: 7rem; }
+.symbol-field-type { width: auto; min-width: 12.5rem; }
+.matrix-input-lineal { width: 11rem; text-align: left; }
+[data-rejilla][hidden],
+[data-nota][hidden] { display: none; }
+.symbol-field-dim,
+.symbol-head .dimension-field { width: auto; }
+
+.expression-field {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 1rem;
+}
+
+.expression-steps {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.expression-lines {
+    margin: 0.35rem 0 0.6rem;
+    padding-left: 1.1rem;
+}
+
+.equality-sides {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.equality-message {
+    margin: 0.35rem 0 0;
+}
+
+.equality-verdict-coincide { color: var(--color-success); }
+.equality-verdict-distinto { color: var(--color-danger); }
+
+@media (min-width: 761px) {
+    .equality-sides { grid-template-columns: 1fr 1fr; }
 }

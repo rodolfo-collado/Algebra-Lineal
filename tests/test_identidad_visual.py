@@ -20,6 +20,7 @@ from frontend.web.calculadora.guias import (
     GUIA_METODO_GAUSS,
     guias_para_resultado,
 )
+from scripts.sync_brand_mark import TARGET, header_mark
 
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -97,18 +98,28 @@ class PruebasIdentidadVisual(SimpleTestCase):
             self.assertIn(variable, tokens)
         self.assertIn('[data-theme="dark"]', tokens)
 
+    def test_header_pygebra_deriva_del_svg_oficial(self):
+        # El parcial del header es el master con clase y aria; no tiene geometría propia.
+        self.assertEqual(TARGET.read_text(encoding="utf-8"), header_mark())
+        html = self.client.get("/").content.decode("utf-8")
+        self.assertIn("<title>Inicio · PyGebra</title>", html)
+        self.assertIn('aria-label="PyGebra, inicio"', html)
+        self.assertIn('<span class="app-name">PyGebra</span>', html)
+        for antiguo in ("app-mark-plate", "app-mark-cell", "app-tagline", "Álgebra Lineal, inicio"):
+            self.assertNotIn(antiguo, html)
+
     def test_inicio_eleva_identidad_y_areas(self):
         respuesta = self.client.get(reverse("calculadora:inicio"))
         self.assertContains(respuesta, "Aprende resolviendo")
-        self.assertContains(respuesta, "Ver más temas")
+        self.assertContains(respuesta, "Explorar por temas")
         self.assertContains(respuesta, "home-hero")
         self.assertContains(respuesta, 'role="search"')
         self.assertContains(respuesta, "tool-link")
         self.assertContains(respuesta, 'data-categoria="sistemas-ecuaciones"')
         ids = DocumentoIds(respuesta).ids
         for fragmento in (
-            "algebra-lineal", "sistemas-numericos", "calculo",
-            "sistemas-ecuaciones", "vectores", "matrices", "bases-numericas", "limites",
+            "algebra-lineal", "sistemas-numericos",
+            "sistemas-ecuaciones", "vectores", "matrices", "bases-numericas",
         ):
             self.assertIn(fragmento, ids)
 

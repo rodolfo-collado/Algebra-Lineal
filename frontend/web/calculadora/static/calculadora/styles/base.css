@@ -15,7 +15,6 @@ body {
     color: var(--color-text);
     font-family: var(--font-ui);
     line-height: 1.5;
-    overflow-x: hidden;
 }
 
 code,
@@ -100,6 +99,7 @@ button:focus-visible,
 summary:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
+select:focus-visible,
 [tabindex="-1"]:focus-visible {
     outline: 3px solid var(--color-focus);
     outline-offset: 2px;

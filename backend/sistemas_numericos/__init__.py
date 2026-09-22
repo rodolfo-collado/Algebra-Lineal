@@ -1,6 +1,6 @@
 """Conversión entre bases numéricas: núcleo matemático independiente de la web.
 
-Algoritmos elementales (divisiones sucesivas y expansión posicional). No usa
+Algoritmos elementales (divisiones, multiplicaciones y expansión posicional). No usa
 ``bin``, ``oct``, ``hex`` ni ``int(texto, base)``: la conversión se construye
 paso a paso para poder mostrarla en el procedimiento académico.
 """
@@ -12,11 +12,13 @@ from .conversion import (
     ConversionMultiple,
     PasoDivision,
     PasoExpansion,
+    PasoMultiplicacion,
     ResultadoDestino,
     base_a_decimal,
     convertir,
     convertir_a_varias_bases,
     decimal_a_base,
+    escribir_decimal_exacto,
     parsear_decimal,
 )
 from .digitos import (
@@ -39,11 +41,13 @@ __all__ = [
     "ConversionMultiple",
     "PasoDivision",
     "PasoExpansion",
+    "PasoMultiplicacion",
     "ResultadoDestino",
     "base_a_decimal",
     "convertir",
     "convertir_a_varias_bases",
     "decimal_a_base",
+    "escribir_decimal_exacto",
     "digito_a_valor",
     "normalizar_numero",
     "parsear_decimal",

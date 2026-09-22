@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/algebra-lineal.svg" alt="Marca de Álgebra Lineal: matriz aumentada" width="80">
+  <img src="assets/brand/svg/pygebra-mark-black.svg" alt="Símbolo de PyGebra" width="80">
 </p>
 
-# Álgebra Lineal
+# PyGebra
 
 **Aprende resolviendo.** Una calculadora educativa que muestra el camino hasta
 el resultado y ayuda a conectar sistemas, matrices y vectores.
@@ -17,7 +17,7 @@ el resultado y ayuda a conectar sistemas, matrices y vectores.
 
 ## Entender el procedimiento
 
-El resultado es solo una parte del ejercicio. Álgebra Lineal permite seguir
+El resultado es solo una parte del ejercicio. PyGebra permite seguir
 las operaciones, comparar métodos y ver por qué un sistema tiene solución
 única, infinitas soluciones o ninguna.
 
@@ -25,6 +25,8 @@ las operaciones, comparar métodos y ver por qué un sistema tiene solución
   productos y conversiones acompañados por su desarrollo.
 - **Aritmética exacta:** los racionales se conservan como fracciones, sin
   redondear los pasos intermedios.
+- **Formato a tu elección:** resultados exactos o decimales (2, 4, 6 u 8 posiciones),
+  sin recalcular; los valores redondeados se identifican como aproximaciones.
 - **Algoritmos manuales:** el cálculo se implementa con Python estándar,
   sin delegar el álgebra a NumPy, SciPy o SymPy.
 - **Conceptos conectados:** un producto `Ax` se puede leer como combinación
@@ -60,11 +62,17 @@ entrada para mantenerla legible.
 
 - Suma, resta, producto por escalar y traspuesta.
 - Producto `AB` y producto matriz-vector `Ax`.
+- Expresiones compuestas, como `A(u + v)` o `2A - 3B`, y una igualdad entre dos de ellas, como `A(u + v) = Au + Av`.
+- Determinación de una matriz desconocida en `Ax = b`, cuando x es un vector simbólico y b un vector de expresiones lineales.
 - Procedimiento por filas o como combinación lineal de columnas.
 - Resolución de `Ax = b`, también con matrices rectangulares.
 
-En `Ax`, x es conocido; en `Ax = b`, la herramienta busca x y explica la
+En el producto `Ax`, x es conocido. Resolver Ax = b busca x y explica la
 relación entre la ecuación matricial, el sistema y la matriz aumentada.
+En Expresiones matriciales, `=` con valores numéricos comprueba esos valores.
+Si A se declara como matriz desconocida y x como vector simbólico, `Ax = b`
+determina A para todos los valores de las variables. Hallar x con A y b
+numéricos sigue en Resolver Ax = b.
 
 ### Sistemas numéricos
 
@@ -99,7 +107,8 @@ Cuando haya una versión publicada:
 
 1. Descarga `AlgebraLineal-Setup-<version>.exe` de sus assets.
 2. Ejecuta el instalador y elige si deseas un acceso directo en el escritorio.
-3. Abre **Álgebra Lineal** desde el menú Inicio o el acceso directo.
+3. Abre el acceso directo **Álgebra Lineal** (nombre histórico del instalador);
+   la ventana y la interfaz se presentan como **PyGebra**.
 
 **No necesitas tener Python instalado.** El instalador incluye el runtime y
 las dependencias de la aplicación. Se instala para tu usuario y no requiere
@@ -144,9 +153,11 @@ Empieza por el [índice de documentación](docs/README.md) o elige una guía:
 | [Funcionalidades](docs/funcionalidades.md) | Entradas, ejemplos, métodos y lectura de resultados. |
 | [Algoritmos](docs/algoritmos.md) | Cálculo manual, exactitud y conexiones conceptuales. |
 | [Arquitectura](docs/arquitectura.md) | Backend, interfaces y distribución. |
-| [Interfaz](docs/interfaz.md) | Identidad visual, componentes, navegación y accesibilidad. |
+| [Interfaz](docs/interfaz.md) | Componentes, navegación y accesibilidad de la interfaz actual. |
+| [Identidad visual](docs/identidad-visual.md) | Símbolo oficial de PyGebra, geometría y archivos. |
 | [Instalación Windows](docs/instalacion-windows.md) | Uso del instalador y construcción del paquete. |
 | [Desarrollo](docs/desarrollo.md) | Entorno local y extensión del catálogo. |
+| [Guía de ejecución](docs/ejecucion.md) | Requisitos, formas de iniciar PyGebra y verificación. |
 | [Pruebas](docs/pruebas.md) | Suite, verificaciones y smoke del instalador. |
 | [Releases](docs/releases.md) | Versionado, promoción a main y entrega automatizada. |
 

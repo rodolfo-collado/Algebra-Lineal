@@ -1,11 +1,11 @@
-# Documentación de Álgebra Lineal
+# Documentación de PyGebra
 
 [Volver a la portada](../README.md)
 
 ## Usar y comprender
 
 - [Funcionalidades](funcionalidades.md): formatos de entrada, terminal, sistemas,
-  vectores, matrices, conversión de bases y ejemplos para interpretar resultados.
+  vectores, matrices, expresiones matriciales, conversión de bases y ejemplos para interpretar resultados.
 - [Algoritmos](algoritmos.md): implementación manual, aritmética exacta,
   procedimientos estructurados y conexiones entre Ax, combinaciones y sistemas.
 - [Instalación Windows](instalacion-windows.md): requisitos, uso y desinstalación;
@@ -15,10 +15,14 @@
 
 - [Arquitectura](arquitectura.md): responsabilidades, flujo de ejecución,
   catálogo central e infraestructura desktop.
-- [Interfaz](interfaz.md): decisiones de UI/UX, identidad visual, accesibilidad,
+- [Identidad visual](identidad-visual.md): símbolo oficial de PyGebra, geometría,
+  versiones monocromáticas y archivos.
+- [Interfaz](interfaz.md): decisiones de UI/UX, accesibilidad,
   componentes compartidos y comportamiento con o sin JavaScript.
 - [Desarrollo](desarrollo.md): entorno con uv, ejecución local y cómo extender
   el catálogo sin duplicar navegación o cálculo.
+- [Guía de ejecución](ejecucion.md): requisitos, arranque web, terminal o
+  escritorio y comprobaciones para usar el proyecto completo.
 - [Pruebas](pruebas.md): suite, Django, compilación, enlaces y smoke real Windows.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   política de tags, CD y checksums.

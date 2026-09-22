@@ -1,13 +1,14 @@
 """P18: procedimiento plegable y resultado único.
 
-Tras resolver, cada herramienta principal lee Entrada → «Ver procedimiento»
-(details cerrado) → Resultado (panel visible, una sola vez). Se prueba la
+Tras resolver, cada herramienta principal lee Entrada → Resultado (panel
+visible, una sola vez) → «Ver procedimiento» (details cerrado). Se prueba la
 estructura semántica (details/summary nativos, orden en el DOM, un solo panel
 final) y que el contenido educativo sigue presente, sin depender de clases
 decorativas ni de cadenas exactas del HTML más allá de los textos matemáticos.
 """
 
 import os
+import re
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -162,16 +163,23 @@ class PruebasComponenteDisclosure(SimpleTestCase):
 
 
 def partes(html):
-    """(texto del procedimiento, texto desde el panel final) según el orden del DOM."""
+    """Texto educativo y resultado separados por sus contenedores, sin mezclar extras."""
     inicio = html.index('id="procedimiento"')
     panel = html.index("panel-final")
-    fin = html.index('id="explore-title"') if 'id="explore-title"' in html else html.index("</main>")
+    # El procedimiento principal puede contener otros details: contar su cierre real.
+    profundidad = 1
+    fin = inicio
+    for marca in re.finditer(r"</?details\b[^>]*>", html[inicio:]):
+        profundidad += -1 if marca.group().startswith("</") else 1
+        if profundidad == 0:
+            fin = inicio + marca.end()
+            break
     limpiar = lambda trozo: " ".join(strip_tags(trozo).split())
-    return limpiar(html[inicio:panel]), limpiar(html[panel:fin])
+    return limpiar(html[inicio:fin]), limpiar(html[panel:inicio])
 
 
 def comprobar_estructura(caso, html):
-    """Contrato común: un solo «Ver procedimiento» cerrado, antes del único panel final, que queda fuera de él."""
+    """Contrato común: un solo «Ver procedimiento» cerrado, después del único panel final, que queda fuera de él."""
     estructura = Estructura(html)
     principal = estructura.principal()
     caso.assertEqual(principal["id"], "procedimiento")
@@ -179,7 +187,7 @@ def comprobar_estructura(caso, html):
     caso.assertEqual(principal["encabezado"], "h3")
     caso.assertEqual(len(estructura.paneles_finales), 1, "un solo resultado canónico")
     caso.assertEqual(estructura.paneles_finales[0]["dentro"], 0, "el resultado no vive dentro del details")
-    caso.assertLess(estructura.indice("details", id="procedimiento"), estructura.indice("panel-final"))
+    caso.assertLess(estructura.indice("panel-final"), estructura.indice("details", id="procedimiento"))
     caso.assertEqual(html.count('id="procedimiento"'), 1)
     for anidado in estructura.details:
         if "procedure-group" not in anidado["clases"]:
@@ -192,7 +200,7 @@ class PruebasSistemas(SimpleTestCase):
         datos = datos or {"sistema": sistema}
         return self.client.post("/sistemas/", {**datos, "metodo": metodo, "mostrar_definido": "1", "mostrar": mostrar}).content.decode("utf-8")
 
-    def test_procedimiento_cerrado_antes_del_resultado_en_todos_los_casos(self):
+    def test_resultado_antes_del_procedimiento_cerrado_en_todos_los_casos(self):
         for metodo in ("gauss", "gauss_jordan", "comparar"):
             for sistema in (UNICA, INFINITAS, INCONSISTENTE):
                 for tipo in ("texto", "matriz"):
@@ -470,7 +478,10 @@ class PruebasTransversales(SimpleTestCase):
             with self.subTest(ruta=ruta):
                 html = self.client.post(ruta, datos).content.decode("utf-8")
                 seccion = html[html.index('id="resultado"'):html.index("</main>")]
-                self.assertNotIn(" hidden", seccion)
+                # Solo los controles de formato son una mejora progresiva; la matemática sigue visible.
+                sin_controles = re.sub(r'<div class="numeric-format"[\s\S]*?</div>', '', seccion)
+                self.assertNotIn(" hidden", sin_controles)
+                self.assertIn('data-numeric-controls hidden', seccion)
                 self.assertNotIn("<script", seccion)
                 self.assertNotIn("<template", seccion)
                 self.assertEqual(seccion.count("<details"), seccion.count("</details>"))

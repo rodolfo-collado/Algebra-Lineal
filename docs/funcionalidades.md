@@ -257,8 +257,8 @@ caracteres.
 
 ## Sistemas en la interfaz visual
 
-Inicio permite buscar una herramienta o entrar en un tema (Sistemas de
-ecuaciones, Vectores, Matrices; las demás áreas bajo «Ver más temas»); el
+Inicio de PyGebra permite buscar una herramienta o abrir un área y después
+un tema (Sistemas de ecuaciones, Vectores, Matrices, Bases numéricas); el
 menú ☰ abre el mismo árbol en cualquier página. Dentro de **Álgebra Lineal →
 Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
 (`/sistemas/`), que se configura en el propio formulario:
@@ -270,10 +270,9 @@ Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
 
 La matriz final y la solución se muestran siempre. Las casillas de Mostrar
 esperan plegadas bajo «Opciones de resultado». Tras resolver, la página lee
-Entrada → «Ver procedimiento» (plegado: matriz inicial, operaciones por
-filas, matriz final, sistema resultante y sustitución regresiva) → Resultado
-final (clasificación, solución y columnas pivote), siempre visible y una sola
-vez; si «Procedimiento» se desmarca, la matriz final pasa al resultado.
+Entrada → Resultado final (clasificación, solución y columnas pivote),
+siempre visible y una sola vez → «Ver procedimiento» (plegado: matriz inicial,
+operaciones por filas, matriz final, sistema resultante y sustitución regresiva); si «Procedimiento» se desmarca, la matriz final pasa al resultado.
 «También puedes explorar» ofrece el mismo sistema con el otro método o
 comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve
 la misma entrada con los dos métodos y pliega cada procedimiento en su propio
@@ -348,7 +347,7 @@ columna, cambiando solo la validación y la explicación. Los productos
 columna. `forms_matrices.py` valida dimensiones, método, campos y números con
 el parser común; `opciones_matrices.py` centraliza la configuración y
 `servicios_matrices.py` adapta los datos a presentación. El procedimiento va
-plegado antes del resultado: la regla por entrada y una sola cadena
+plegado después del resultado: la regla por entrada y una sola cadena
 `A + B = [A] + [B] = [desarrollo] = [C]`; la traspuesta explica el intercambio
 de filas/columnas y de dimensiones. La matriz obtenida se presenta una vez,
 en el panel Resultado.
@@ -376,8 +375,8 @@ ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
 Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
 `matrices.py`. El método se elige como en Resolver un sistema (Gauss,
 Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
-sola vez y los dos procedimientos plegados). El procedimiento va plegado y el
-resultado, debajo, siempre visible:
+sola vez y los dos procedimientos plegados). El resultado aparece primero, siempre visible, y el procedimiento va
+plegado después:
 
 - solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
   `x2 = 2`, el vector columna x y la comprobación `A · x = b` calculada con
@@ -405,3 +404,146 @@ misma estructura.
 
 Para las decisiones de presentación y accesibilidad, consulta [Interfaz](interfaz.md).
 La reutilización del cálculo se explica en [Algoritmos](algoritmos.md).
+
+## Expresiones matriciales
+
+**Expresiones matriciales** (`/matrices/expresiones/`) evalúa una expresión
+compuesta con las mismas operaciones de matrices y vectores, o compara dos
+expresiones separadas por un solo `=`. No sustituye a
+Operaciones con matrices ni a Resolver Ax = b: esas herramientas siguen siendo
+el acceso directo a una sola operación o a la ecuación.
+
+El usuario define solo los símbolos que necesita (nombre, tipo y valores) y
+escribe la expresión. Con JavaScript puede agregar, quitar, cambiar el tipo y
+las dimensiones sin recargar el inicio; sin JavaScript, **Agregar símbolo**,
+**Eliminar** y **Aplicar** hacen lo mismo en el servidor.
+
+### Sintaxis
+
+Enteros, fracciones (`1/2`, `-3/4`) y los decimales exactos que ya acepta el
+parser del proyecto. Símbolos definidos por el usuario (`A`, `u`, `k`, `A1`).
+Operadores `+`, `-`, `*` y paréntesis. El menos unario aplica al factor
+siguiente: `-3B` es `(-3)B`.
+
+La multiplicación implícita equivale a `*` cuando hay una sola lectura:
+
+```text
+2A ↔ 2*A    AB ↔ A*B    Au ↔ A*u    A(u + v) ↔ A*(u + v)
+```
+
+Un solo `=` compara dos expresiones, por ejemplo `A(u + v) = Au + Av`. No es una
+operación como `+` o `*`: cada lado se analiza con el mismo parser. Se rechazan
+`A = B = C`, `==`, un lado vacío y los demás operadores relacionales.
+
+Si `AB` puede ser el símbolo `AB` o el producto `A*B`, la expresión se rechaza
+y hay que escribir `*`. No se adivina.
+
+Precedencia: paréntesis, multiplicación, suma y resta. `A + BC` es `A + (BC)`.
+`(A + B)C` respeta los paréntesis. La resta asocia por la izquierda.
+
+### Tipos y dimensiones
+
+Suma y resta: matriz con matriz, vector con vector o escalar con escalar, y
+solo si las dimensiones coinciden. Producto: escalar con escalar, vector o
+matriz; matriz con matriz; matriz con vector. No hay producto punto automático
+ni producto vector por matriz.
+
+El error nombra la subexpresión que falla. Si `B + C` no se puede sumar, el
+mensaje habla de `B + C`. Si esa suma existe pero `A(B + C)` no se puede
+multiplicar, el mensaje habla de ese producto y muestra las dimensiones. Dentro
+de una igualdad, además indica si el fallo está en el lado izquierdo o en el
+derecho. Una igualdad falsa no es un error: es un resultado.
+
+Con símbolos numéricos, que ambos lados coincidan significa que producen el
+mismo objeto para esos valores. No demuestra la identidad para todos los
+valores. Hallar el vector x cuando A y b son numéricos sigue en Resolver Ax = b.
+
+### Arquitectura
+
+```text
+texto → ¿un solo =?
+  no → lexer → parser → AST → evaluador → primitivas existentes
+  sí → cada lado por ese mismo camino
+        numérico → comparación de los dos valores
+        Ax simbólico → coeficientes de formas lineales → matriz A
+```
+
+Cada nodo guarda operación, hijos, texto y una ruta estable (`0`, `0.1`,
+`0.1.0`). En una igualdad las rutas llevan el lado (`izq:0`, `izq:0.1`,
+`der:0`) para que no se confundan. La evaluación recorre cada árbol de abajo
+hacia arriba. Se puede pedir solo una ruta: la interfaz ofrece **Calcular solo
+esta parte** en cada paso, también en cualquiera de los dos lados. Matriz por
+matriz y matriz por vector reutilizan el procedimiento de
+`resolver_operacion_matrices`; no hay un segundo algoritmo de producto.
+
+La comparación numérica usa los `Fraction` calculados, no el texto decimal.
+Solo es verdadera o falsa si ambos lados son el mismo tipo y las mismas
+dimensiones. Si no, el mensaje dice qué es cada lado. El resultado usa el
+selector Exacto/Decimal ya existente. Cambia cómo se ven los valores; no vuelve
+a comparar.
+
+El camino simbólico solo se activa si un símbolo se declaró como matriz
+desconocida, vector simbólico o vector lineal. Un nombre sin definición sigue
+siendo un error.
+
+### Expresión lineal simbólica
+
+Una forma lineal es una constante más un coeficiente exacto por variable, por
+ejemplo `3x1 - 2x2 + 5`. Los coeficientes son `Fraction`. Dos textos distintos
+con los mismos coeficientes son la misma forma: `x1 + x1` es `2x1` y
+`2(x1 + x2) - x1` es `x1 + 2x2`. Una variable que no aparece tiene coeficiente 0.
+
+Solo se conservan la suma, la resta, la negación y el producto por un escalar
+numérico. Se rechazan `x1*x2`, `x1^2`, `1/x1` y llamadas como `sin(x1)`.
+
+En la misma página se declaran tres objetos, sin adivinar incógnitas:
+
+- **Matriz desconocida.** Nombre, filas y columnas. No tiene celdas.
+- **Vector simbólico.** Nombre y cantidad de componentes. `x` con 2 componentes
+  es `[x1, x2]`, en ese orden. Esas variables no se evalúan a un número.
+- **Vector lineal.** Cada componente se escribe como texto y pasa por el parser
+  lineal. No se usa `eval`.
+
+Si la expresión es `Ax = b`, A es la única matriz desconocida, x el vector
+simbólico de n componentes y b un vector lineal de m componentes cuyas variables
+pertenecen a x, PyGebra determina A comparando coeficientes. No usa Gauss.
+
+`Ax = x1 a1 + … + xn an`. Si b se agrupa como `x1 c1 + … + xn cn`, entonces
+`aj = cj` para que la igualdad valga para todos los valores de las variables.
+La columna j de A es el vector de coeficientes de la variable j. Después se
+reconstruye `Ax` con esa matriz y se comparan los coeficientes exactos; no se
+sustituyen valores de prueba.
+
+Un término constante distinto de cero no puede salir de `Ax`. Una variable que
+no está en x, como `x3` cuando x es `[x1, x2]`, se rechaza. Las dimensiones se
+comprueban antes: A de 3×2 no admite un x de 3 componentes, y `Ax` de 3
+componentes no se iguala con un b de 4.
+
+Si A ya es numérica y x es simbólico, la misma igualdad compara los dos vectores
+lineales. Coincidir entonces significa la misma expresión para todos los valores
+de las variables declaradas, no solo para los números de una matriz concreta.
+
+El selector Exacto/Decimal cambia cómo se ven los coeficientes. La comparación
+sigue siendo exacta.
+
+### Límites
+
+No hay inversa, determinante, potencias ni traspuesta dentro de la expresión
+numérica. En el camino simbólico tampoco hay dos matrices desconocidas,
+`AX = B`, `XA = B`, inversas o determinantes simbólicos, polinomios, división
+por variables ni un sistema algebraico general. Un nombre que no esté definido
+sigue siendo un error, no una incógnita. Resolver Ax = b, con A y b conocidos
+y x incógnita, no cambia.
+
+## Visualización de resultados en PyGebra
+
+Sistemas, Vectores, Matrices, Expresiones matriciales y Ax=b permiten alternar **Exacto / Decimal**
+después de resolver. El máximo de decimales puede ser 2, 4 (predeterminado),
+6 u 8. La preferencia se conserva localmente entre herramientas compatibles.
+`1/2` se ve como `0.5` y `1/3` como `0.3333` con cuatro decimales; `4` sigue
+siendo `4`. Se indica `≈` en expresiones redondeadas y una nota de aproximación
+para matrices o grupos. La precisión afecta también a todo el procedimiento.
+
+No se recalcula: la fuente de verdad sigue siendo `Fraction`, con aritmética
+exacta en Python. Sin JavaScript, el resultado exacto y sus pasos permanecen
+disponibles. Conversión de bases queda fuera de este modo de presentación.

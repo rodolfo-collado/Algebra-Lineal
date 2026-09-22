@@ -1,0 +1,47 @@
+{% load componentes %}
+<header class="results-heading">
+    <p class="section-kicker">Matriz determinada · {{ resultado.filas }}×{{ resultado.columnas }}</p>
+    <h2 id="results-title">{{ resultado.texto }}</h2>
+</header>
+{% include "calculadora/components/numeric_format.html" %}
+<section class="panel panel-final" aria-labelledby="final-title">
+    <h3 id="final-title" class="panel-title">{{ resultado.nombre }} =</h3>
+    <p class="equality-message">Esta matriz hace que la igualdad se cumpla para todos los valores de {{ resultado.variables_texto }}, no solo para unos valores de prueba.</p>
+    <div class="matrix-equation">
+        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta=resultado.nombre only %}
+    </div>
+</section>
+{% disclosure titulo="Cómo se obtuvo" id="procedimiento" clase="disclosure-procedure" %}
+    <ol class="expression-steps">
+        <li>
+            <h4 class="stage-title">Escribir {{ resultado.nombre }} por columnas</h4>
+            <p><code>{{ resultado.por_columnas }}</code></p>
+        </li>
+        <li>
+            <h4 class="stage-title">Desarrollar {{ resultado.producto }}</h4>
+            <p><code>{{ resultado.desarrollo }}</code></p>
+        </li>
+        <li>
+            <h4 class="stage-title">Agrupar el lado derecho</h4>
+            <p><code>{{ resultado.agrupacion }}</code></p>
+        </li>
+        <li>
+            <h4 class="stage-title">Comparar coeficientes</h4>
+            <p>La igualdad debe cumplirse para cualquier {{ resultado.variables_texto }}.</p>
+            <ul class="expression-lines">
+                {% for linea in resultado.comparaciones %}<li><code>{{ linea }}</code></li>{% endfor %}
+            </ul>
+        </li>
+        <li>
+            <h4 class="stage-title">Construir {{ resultado.nombre }}</h4>
+            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta=resultado.nombre only %}
+        </li>
+        <li>
+            <h4 class="stage-title">Comprobación simbólica</h4>
+            <p>Se reconstruye {{ resultado.producto }} y se comparan los coeficientes exactos. No se sustituyen valores de prueba.</p>
+            <ul class="expression-lines">
+                {% for linea in resultado.comprobacion %}<li><code>{{ linea }}</code></li>{% endfor %}
+            </ul>
+        </li>
+    </ol>
+{% enddisclosure %}

@@ -27,16 +27,16 @@ flowchart TD
 
 | Ruta | Responsabilidad |
 | --- | --- |
-| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones, sistemas, vectores, Ax=b y bases. |
+| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b y bases. |
 | `frontend/terminal/` | `menu.py` coordina; `opciones.py` ejecuta opciones; `entradas.py` lee; `salida.py` presenta; `consola.py` maneja color, pausas y limpieza. |
 | `frontend/web/algebra_web/` | Configuración Django, rutas raíz y entradas WSGI/ASGI. |
 | `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, guías, exploraciones, templates y recursos locales. |
 | `desktop.py` | Servidor local y ciclo de vida de la ventana nativa. |
 | `AlgebraLineal.spec` | PyInstaller: Python, dependencias, templates, recursos e icono en una carpeta `onedir`, sin consola (`windowed`). |
 | `installer/AlgebraLineal.iss` | Inno Setup: empaqueta esa carpeta, accesos directos, prerrequisito WebView2 y desinstalación. |
-| `scripts/` | Build Windows, smoke de distribución y validación de tags de release. |
+| `scripts/` | Build Windows, smoke de distribución, validación de tags de release y sincronización del símbolo del header. |
 | `tests/` | Pruebas matemáticas, frontend, infraestructura, distribución y documentación. |
-| `assets/` | Identidad SVG e icono ICO existentes. |
+| `assets/brand/` | Símbolo oficial de PyGebra: SVG canónico, PNG, favicon e icono de Windows. |
 | `pyproject.toml`, `uv.lock`, `.python-version` | Versión/dependencias declaradas, resolución bloqueada y Python de referencia. |
 | `.github/workflows/` | CI de validación y CD de publicación desde tags de `main`. |
 
@@ -66,14 +66,30 @@ planteamiento y conclusión de la combinación lineal).
 templates/calculadora/
 ├── base.html                 # header, cajón de navegación, breadcrumbs y contenido
 ├── layouts/herramienta.html  # estructura común de una herramienta
-├── components/               # cajón, buscador, breadcrumbs, relacionadas, explorar, teclado, matrices, vectores, guías
-├── pages/                    # inicio.html y _area.html (temas de un área)
+├── components/               # cajón, buscador, breadcrumbs, relacionadas, explorar, teclado, matrices, vectores, guías, formato numérico
+├── pages/                    # inicio.html y _area.html (un área plegable con sus temas)
 ├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal
 ├── modules/matrices/         # entrada rectangular, resultado y procedimientos
+├── modules/expresiones/      # símbolos, expresión o igualdad, y procedimiento por nodos
 ├── modules/ecuaciones/       # Ax = b: entrada, equivalencias y eliminación reutilizada
 └── modules/bases/            # index.html y procedimiento de la conversión
 ```
+
+La presentación numérica compartida vive en `presentacion_numerica.py`.
+`representar(Fraction, precision)` devuelve exacto, decimal y `es_aproximado`
+mediante división entera y redondeo controlado, sin `float`. Los servicios
+comparten `formatear_exacto`; sus contratos textuales se mantienen. Para las
+expresiones que el backend ya entrega como texto, `representar_texto` reconoce
+sus literales racionales exactos sin evaluar la expresión ni tocar el backend.
+
+El bloque `{% numeric_results %}` (`templatetags/numeros.py`) adapta solo el
+HTML de resultados: texto y etiquetas accesibles, con variantes para cada
+precisión. Conserva el escapado de Django y no modifica atributos técnicos,
+formularios, URLs ni datos de entrada. Los enteros no necesitan variantes
+porque su representación no cambia. `numeros.js` selecciona las variantes
+preparadas y persiste preferencias locales; nunca vuelve a resolver.
+PyInstaller registra la nueva biblioteca de etiquetas como importación oculta.
 
 Los detalles de UI/UX y los scripts JavaScript se documentan en
 [Interfaz](interfaz.md). El parser y las dependencias internas del cálculo se

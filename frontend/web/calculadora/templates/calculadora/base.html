@@ -4,12 +4,20 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Álgebra Lineal{% endblock %}</title>
-    <link rel="icon" href="{% static 'calculadora/mark.svg' %}" type="image/svg+xml">
+    <title>{% block title %}PyGebra{% endblock %}</title>
+    <link rel="icon" href="{% static 'calculadora/favicon.svg' %}" type="image/svg+xml">
+    <link rel="icon" href="{% static 'calculadora/favicon.ico' %}" sizes="16x16 32x32 48x48">
     <script>
         (function () {
             var root = document.documentElement;
-            var stored = localStorage.getItem("algebra-lineal-tema");
+            var stored = null;
+            try {
+                stored = localStorage.getItem("pygebra-tema");
+                if (stored === null) {
+                    stored = localStorage.getItem("algebra-lineal-tema");
+                    if (stored === "light" || stored === "dark") localStorage.setItem("pygebra-tema", stored);
+                }
+            } catch (_) { /* El tema y el menú funcionan sin almacenamiento. */ }
             var theme = stored === "light" || stored === "dark"
                 ? stored
                 : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");

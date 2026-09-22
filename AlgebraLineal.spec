@@ -17,8 +17,8 @@ datas = [
         "frontend/web/calculadora/static",
     ),
     (
-        str(PROJECT_ROOT / "assets" / "algebra-lineal.ico"),
-        "assets",
+        str(PROJECT_ROOT / "assets" / "brand" / "app" / "pygebra.ico"),
+        "assets/brand/app",
     ),
 ]
 
@@ -35,8 +35,10 @@ hiddenimports = [
     "frontend.web.calculadora.servicios_vectores",
     "frontend.web.calculadora.servicios_matrices",
     "frontend.web.calculadora.servicios_ecuaciones",
+    "frontend.web.calculadora.servicios_expresiones",
     "frontend.web.calculadora.forms_matrices",
     "frontend.web.calculadora.forms_ecuaciones",
+    "frontend.web.calculadora.forms_expresiones",
     "frontend.web.calculadora.opciones_matrices",
     "frontend.web.calculadora.opciones_ecuaciones",
     "frontend.web.calculadora.opciones_sistemas",
@@ -50,9 +52,15 @@ hiddenimports = [
     # encuentra la raíz del proyecto (settings vive en frontend/web/algebra_web).
     "frontend.web.calculadora.templatetags",
     "frontend.web.calculadora.templatetags.componentes",
+    "frontend.web.calculadora.templatetags.numeros",
     "backend.vectores",
     "backend.matrices",
     "backend.ecuaciones_matriciales",
+    "backend.expresiones_matriciales",
+    "backend.expresiones_matriciales.nodos",
+    "backend.expresiones_matriciales.lexer",
+    "backend.expresiones_matriciales.parser",
+    "backend.expresiones_matriciales.evaluador",
     "backend.sistemas_numericos",
     "backend.sistemas_numericos.conversion",
     "backend.sistemas_numericos.digitos",
@@ -88,7 +96,7 @@ exe = EXE(
     upx=False,
     console=False,
     disable_windowed_traceback=True,
-    icon=str(PROJECT_ROOT / "assets" / "algebra-lineal.ico"),
+    icon=str(PROJECT_ROOT / "assets" / "brand" / "app" / "pygebra.ico"),
 )
 coll = COLLECT(
     exe,

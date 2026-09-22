@@ -1,0 +1,95 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static numeros componentes %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-labelledby="workspace-title" data-expresiones>
+    <h2 id="workspace-title" class="sr-only">Entrada</h2>
+    <form id="expresiones-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+        {% csrf_token %}
+        {{ form.cantidad }}{{ form.cantidad.errors }}
+        {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
+        <section class="workspace-section" id="expression-fields" data-perfil="numerico" aria-labelledby="simbolos-title">
+            <h3 class="section-title" id="simbolos-title">Símbolos</h3>
+            <p class="field-help">Agrega solo los objetos que usa la expresión. Una matriz desconocida no pide entradas; un vector simbólico declara sus variables; un vector lineal escribe cada componente.</p>
+            <div class="symbol-list" data-simbolos>
+                {% for bloque in form.bloques %}
+                    {% include "calculadora/modules/expresiones/_simbolo.html" %}
+                {% empty %}
+                    <p class="field-help" data-vacio>Sin símbolos: la expresión solo puede usar números, como <code>2 + 1/2</code>.</p>
+                {% endfor %}
+            </div>
+            <div class="symbol-actions">
+                <button class="btn btn-secondary" type="submit" name="agregar" value="1" data-agregar>Agregar símbolo</button>
+                <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
+            </div>
+            <noscript><p class="field-help">Cambia un tipo o las dimensiones y pulsa <strong>Aplicar</strong> antes de calcular. <strong>Agregar símbolo</strong> y <strong>Eliminar</strong> también funcionan sin JavaScript.</p></noscript>
+            <div class="expression-field">
+                <label for="{{ form.expresion.id_for_label }}">Expresión</label>
+                {{ form.expresion }}
+                {{ form.expresion.errors }}
+                <p class="field-help">Suma, resta, producto y paréntesis. <code>2A</code>, <code>AB</code> y <code>A(u + v)</code> equivalen a <code>2*A</code>, <code>A*B</code> y <code>A*(u + v)</code>. Un solo <code>=</code> no es una operación: con valores numéricos compara esos valores, como <code>A(u + v) = Au + Av</code>. Si A es una matriz desconocida, x un vector simbólico y el otro lado un vector lineal, <code>Ax = b</code> determina A comparando coeficientes, para todos los valores de las variables. Hallar x con A y b numéricos sigue en Resolver Ax = b. Si un texto admite más de una lectura, escribe <code>*</code>. Fracciones como <code>1/2</code>.</p>
+            </div>
+            {% include "calculadora/components/math_keyboard.html" %}
+        </section>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular</button></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+    {% numeric_results %}
+    <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        {% if resultado.modo == "determinacion" %}
+            {% include "calculadora/modules/expresiones/_determinacion.html" %}
+        {% elif resultado.modo == "igualdad" %}
+            <header class="results-heading">
+                <p class="section-kicker">{% if resultado.alcance == "simbolica" %}Igualdad simbólica{% else %}Igualdad{% endif %}{% if resultado.dimensiones %} · {{ resultado.dimensiones }}{% endif %}</p>
+                <h2 id="results-title">{{ resultado.texto }}</h2>
+            </header>
+            {% include "calculadora/components/numeric_format.html" %}
+            <div class="equality-sides">
+                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.izquierda titulo="Lado izquierdo" identificador="lado-izquierdo" %}
+                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.derecha titulo="Lado derecho" identificador="lado-derecho" %}
+            </div>
+            <section class="panel panel-final" aria-labelledby="final-title">
+                <h3 id="final-title" class="panel-title equality-verdict equality-verdict-{{ resultado.veredicto }}">{{ resultado.titulo }}</h3>
+                <p class="equality-message">{{ resultado.mensaje }}</p>
+            </section>
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                <h4 class="stage-title">Lado izquierdo</h4>
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos %}
+                <h4 class="stage-title">Lado derecho</h4>
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos %}
+            {% enddisclosure %}
+        {% else %}
+            <header class="results-heading">
+                <p class="section-kicker">{% if resultado.parcial %}Subexpresión{% else %}Expresión{% endif %} · {{ resultado.dimensiones }}</p>
+                <h2 id="results-title">{{ resultado.texto }}</h2>
+            </header>
+            {% include "calculadora/components/numeric_format.html" %}
+            <section class="panel panel-final" aria-labelledby="final-title">
+                <h3 id="final-title" class="panel-title">Resultado</h3>
+                <div class="matrix-equation">
+                    <span class="matrix-expression">{{ resultado.igualdad }}</span>
+                    {% if resultado.matriz %}
+                        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" only %}
+                    {% endif %}
+                </div>
+            </section>
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos %}
+            {% enddisclosure %}
+        {% endif %}
+    </section>
+    {% endnumeric_results %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'calculadora/numeros.js' %}" defer></script>
+<template id="symbol-template">{% include "calculadora/modules/expresiones/_simbolo_plantilla.html" %}</template>
+<template id="expression-cell-template"><td><label class="sr-only"></label><input type="text" class="matrix-input" autocomplete="off" spellcheck="false" inputmode="text" data-campo="celda" data-fila="" data-columna=""></td></template>
+<script src="{% static 'calculadora/expresiones.js' %}" defer></script>
+<script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}

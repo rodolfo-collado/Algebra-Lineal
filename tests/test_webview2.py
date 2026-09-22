@@ -71,7 +71,7 @@ class PruebasWebView2(unittest.TestCase):
             desktop.report_startup_error(desktop.DesktopStartupError("Falta WebView2"))
         args = messagebox.user32.MessageBoxW.call_args.args
         self.assertIn("Falta WebView2", args[1])
-        self.assertEqual(args[2], "Álgebra Lineal")
+        self.assertEqual(args[2], "PyGebra")
 
     def test_inicio_windows_selecciona_edgechromium_y_cierra_waitress(self):
         webview = MagicMock()

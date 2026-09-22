@@ -1,5 +1,5 @@
 """Divulgación progresiva: Inicio por temas, menú bajo demanda, teclado y opciones plegados,
-procedimiento plegable antes del resultado (P18) y conexiones «También puedes explorar». Contratos HTML, POST y de los
+procedimiento plegable después del resultado (P18) y conexiones «También puedes explorar». Contratos HTML, POST y de los
 scripts locales, sin depender de clases decorativas."""
 
 import os
@@ -210,11 +210,11 @@ class PruebasMenuBajoDemanda(SimpleTestCase):
 
 
 class PruebasInicioPorTemas(SimpleTestCase):
-    def test_el_inicio_presenta_temas_plegados_y_ver_mas_temas(self):
+    def test_el_inicio_presenta_areas_y_temas_plegados(self):
         respuesta = self.client.get("/")
         html = respuesta.content.decode("utf-8")
         desplegables = Desplegables(html)
-        for categoria in catalogo.CATEGORIAS:
+        for categoria in (c for c in catalogo.CATEGORIAS if c.area.disponible):
             with self.subTest(categoria=categoria.id):
                 tema = desplegables.por_id(categoria.id)
                 self.assertIn("topic", tema["clases"])
@@ -223,16 +223,14 @@ class PruebasInicioPorTemas(SimpleTestCase):
                 self.assertIn(categoria.descripcion, tema["summary"])
                 if not categoria.disponible:
                     self.assertIn("Próximamente", tema["summary"])
-        # La primera área queda a la vista; las demás esperan bajo «Ver más temas».
-        mas_temas = desplegables.por_id("mas-temas")
-        self.assertFalse(mas_temas["open"])
-        self.assertIn("Ver más temas", mas_temas["summary"])
-        primera, *otras = catalogo.AREAS
-        inicio_mas = html.index('id="mas-temas"')
-        self.assertLess(html.index(f'id="{primera.id}"'), inicio_mas)
-        for area in otras:
-            self.assertGreater(html.index(f'id="{area.id}"'), inicio_mas)
-            self.assertIn(area.nombre, mas_temas["summary"])
+        # Todas las áreas disponibles empiezan cerradas, independientemente de su orden.
+        for area in catalogo.AREAS:
+            if area.disponible:
+                grupo = desplegables.por_id(area.id)
+                self.assertFalse(grupo["open"])
+                self.assertIn(area.nombre, grupo["summary"])
+            else:
+                self.assertNotIn(area.id, [d["id"] for d in desplegables.details])
         # Cada herramienta se descubre dentro de su tema, una sola vez.
         for herramienta in disponibles():
             inicio_tema = html.index(f'id="{herramienta.categoria.id}"')
@@ -243,7 +241,7 @@ class PruebasInicioPorTemas(SimpleTestCase):
     def test_el_inicio_es_breve_sin_accesos_duplicados(self):
         respuesta = self.client.get("/")
         html = respuesta.content.decode("utf-8")
-        self.assertContains(respuesta, '<h1 class="home-title">Álgebra Lineal</h1>', html=True)
+        self.assertContains(respuesta, '<h1 class="home-title">PyGebra</h1>', html=True)
         self.assertContains(respuesta, "Aprende resolviendo")
         self.assertContains(respuesta, "¿Qué quieres resolver?")
         for ausente in ("Calculadora educativa", "Explora los temas disponibles", "Acceso rápido", 'class="chip"'):
@@ -254,14 +252,15 @@ class PruebasInicioPorTemas(SimpleTestCase):
         # Ningún área ni tema se lista fuera de su lugar: los ids de breadcrumbs siguen existiendo.
         ids = Documento(respuesta).ids
         for elemento in (*catalogo.AREAS, *catalogo.CATEGORIAS):
-            self.assertIn(elemento.id, ids)
+            if elemento.disponible:
+                self.assertIn(elemento.id, ids)
 
     def test_la_busqueda_del_inicio_sigue_filtrando_los_temas(self):
         html = self.client.get("/").content.decode("utf-8")
         # buscador.js abre los details con coincidencias y oculta los grupos vacíos: los temas y
         # «Ver más temas» deben declararse como grupos con sus índices dentro.
-        for id_ in ("mas-temas", *(c.id for c in catalogo.CATEGORIAS)):
-            self.assertRegex(html, rf'<details class="[^"]*" id="{id_}" data-grupo>')
+        for id_ in (*(a.id for a in catalogo.AREAS if a.disponible), *(c.id for c in catalogo.CATEGORIAS if c.disponible)):
+            self.assertRegex(html, rf'<details class="[^"]*" id="{id_}" data-grupo[^>]*>')
         for herramienta in catalogo.HERRAMIENTAS:
             self.assertIn(f'data-indice="{herramienta.indice}"', html)
         self.assertContains(self.client.get("/", {"q": "binario"}), "Ver todos los temas")
@@ -313,7 +312,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         self.assertNotIn("open = true", script)
 
     def test_el_teclado_plegado_llega_a_todas_las_herramientas(self):
-        for ruta in ("/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/bases/conversion/"):
+        for ruta in ("/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
                 teclados = Desplegables(html).con_clase("disclosure-keyboard")
@@ -395,16 +394,18 @@ class PruebasFormularioProgresivo(SimpleTestCase):
 
 
 class PruebasProcedimientoPlegable(SimpleTestCase):
-    """P18: Entrada → «Ver procedimiento» (details cerrado) → Resultado final, una sola vez."""
+    """Entrada → Resultado final, una sola vez → «Ver procedimiento» (details cerrado)."""
 
-    def test_el_procedimiento_plegado_precede_al_resultado(self):
+    def test_el_resultado_precede_al_procedimiento_plegado(self):
         respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
-        orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1", "Matriz reducida",
-                 "Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
-                 "Columnas pivote:", "Entender este resultado")
-        posiciones = [texto.index(fragmento) for fragmento in orden]
+        orden = ("Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
+                 "Columnas pivote:", "Entender este resultado", "Ver procedimiento", "Matriz inicial",
+                 "Operaciones por filas", "Paso 1", "Matriz reducida")
+        posiciones = []
+        for fragmento in orden:
+            posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
         self.assertEqual(posiciones, sorted(posiciones), orden)
         procedimiento = Desplegables(html).por_id("procedimiento")
         self.assertFalse(procedimiento["open"])
@@ -413,7 +414,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertLess(html.index('id="resultado"'), html.index('id="procedimiento"'))
         # El resultado queda fuera del details: se ve sin abrir el procedimiento.
-        self.assertLess(html.index("</details>", html.index('id="procedimiento"')), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
 
     def test_sin_procedimiento_no_hay_desplegable_y_la_matriz_final_sigue_en_el_resultado(self):
         respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "pivotes"]})
@@ -429,10 +430,13 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         html = respuesta.content.decode("utf-8")
         # El título «Gauss y Gauss-Jordan» va antes; el orden se mide desde el desplegable.
         texto = seccion_resultado(respuesta)
-        texto = texto[texto.index("Ver procedimiento"):]
-        orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas", "Matriz escalonada",
-                 "Gauss-Jordan", "Matriz reducida", "Resultado final", "Clasificación", "Solución x1 = 2 x2 = 1", "Columnas pivote:")
-        posiciones = [texto.index(fragmento) for fragmento in orden]
+        texto = texto[texto.index("Resultado final"):]
+        orden = ("Resultado final", "Clasificación", "Solución x1 = 2 x2 = 1", "Columnas pivote:",
+                 "Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas", "Matriz escalonada",
+                 "Gauss-Jordan", "Matriz reducida")
+        posiciones = []
+        for fragmento in orden:
+            posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
         self.assertEqual(posiciones, sorted(posiciones), orden)
         desplegables = Desplegables(html)
         metodos = [d for d in desplegables.details if "disclosure-nested" in d["clases"]]
