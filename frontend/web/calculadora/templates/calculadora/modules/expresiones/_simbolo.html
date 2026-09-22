@@ -1,0 +1,30 @@
+<article class="symbol-card" data-simbolo>
+    <div class="symbol-head">
+        <label for="{{ bloque.nombre.id_for_label }}">Nombre {{ bloque.nombre }}{{ bloque.nombre.errors }}</label>
+        <label for="{{ bloque.tipo_campo.id_for_label }}">Tipo {{ bloque.tipo_campo }}{{ bloque.tipo_campo.errors }}</label>
+        {% if bloque.filas_campo %}
+            {% include "calculadora/modules/matrices/_dimension.html" with campo=bloque.filas_campo quitar="Quitar una fila" agregar="Agregar una fila" %}
+        {% endif %}
+        {% if bloque.columnas_campo %}
+            {% include "calculadora/modules/matrices/_dimension.html" with campo=bloque.columnas_campo quitar="Quitar una columna" agregar="Agregar una columna" %}
+        {% endif %}
+        <button class="btn btn-secondary" type="submit" name="eliminar" value="{{ bloque.indice }}" data-eliminar>Eliminar</button>
+    </div>
+    <div class="matrix" data-rejilla>
+        <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
+        <div class="matrix-scroll" tabindex="0">
+            <table class="matrix-table matrix-entry-table">
+                <tbody>
+                    {% for fila in bloque.celdas %}
+                        <tr>
+                            {% for campo in fila %}
+                                <td><label class="sr-only" for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{{ campo.errors }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <span class="matrix-fence matrix-fence-end" aria-hidden="true"></span>
+    </div>
+</article>

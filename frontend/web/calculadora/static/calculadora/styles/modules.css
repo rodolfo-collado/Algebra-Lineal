@@ -370,6 +370,7 @@ label[for="id_sistema"],
 }
 
 .field-input,
+select.field-input,
 .dimension-field input,
 textarea {
     width: 100%;
@@ -1388,4 +1389,57 @@ textarea:focus {
     .tool-lead {
         display: none;
     }
+}
+
+.symbol-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.symbol-card {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0.85rem 1rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+}
+
+.symbol-head,
+.symbol-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: end;
+}
+
+.symbol-head > label {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+    font-size: 0.85rem;
+}
+
+.symbol-field-name { width: 7rem; }
+.symbol-field-type { width: 9.5rem; }
+.symbol-field-dim,
+.symbol-head .dimension-field { width: auto; }
+
+.expression-field {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 1rem;
+}
+
+.expression-steps {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.expression-lines {
+    margin: 0.35rem 0 0.6rem;
+    padding-left: 1.1rem;
 }

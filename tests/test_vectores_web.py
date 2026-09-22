@@ -83,7 +83,7 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         self.assertEqual(reverse("calculadora:operaciones-vectores"), RUTA)
         self.assertEqual(resolve(RUTA).view_name, "calculadora:operaciones-vectores")
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_VECTORES)
-        self.assertEqual(self.herramienta.relacionadas, ("ecuaciones-matriciales",))
+        self.assertEqual(self.herramienta.relacionadas, ("ecuaciones-matriciales", "expresiones-matriciales"))
         for palabra in ("vector", "vectores", "suma de vectores", "resta de vectores", "escalar",
                         "combinación lineal", "span", "generado", "dimensión"):
             self.assertIn(palabra, self.herramienta.palabras_clave)
@@ -106,8 +106,10 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         # «combinación lineal» (Ax como combinación de columnas), y desde P14 Resolver
         # Ax = b responde a «vector» (vector b) y a «combinación lineal»; vectores sigue primero.
         compartidas = {
-            "escalar": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES),
-            "vector": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES),
+            "escalar": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES),
+            "vector": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES, catalogo.ECUACIONES_MATRICIALES),
+            "vectores": (catalogo.OPERACIONES_VECTORES, catalogo.EXPRESIONES_MATRICIALES),
+            "suma de vectores": (catalogo.OPERACIONES_VECTORES, catalogo.EXPRESIONES_MATRICIALES),
             "combinación lineal": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES),
         }
         for consulta in ("vector", "vectores", "suma de vectores", "escalar", "combinación lineal", "span", "dimension"):

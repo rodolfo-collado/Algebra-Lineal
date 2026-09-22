@@ -57,7 +57,7 @@ class PruebasCatalogoP13B(SimpleTestCase):
         # de la categoría (P14) resuelve Ax = b con x desconocido, no un producto.
         documento = Documento(self.client.get(RUTA))
         enlaces = [a["href"] for a in documento.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, [RUTA, "/matrices/ecuaciones/"])
+        self.assertEqual(enlaces, [RUTA, "/matrices/expresiones/", "/matrices/ecuaciones/"])
         self.assertNotIn("Multiplicación de matrices", [a.get("title") for a in documento.enlaces_en("Herramientas")])
 
     def test_busqueda_encuentra_los_productos(self):

@@ -40,6 +40,7 @@ HERRAMIENTAS = {
     "/sistemas/": {"sistema", "numerico"},
     "/vectores/operaciones/": {"numerico"},
     "/matrices/operaciones/": {"numerico"},
+    "/matrices/expresiones/": {"numerico"},
     "/matrices/ecuaciones/": {"numerico"},
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
 }
@@ -62,6 +63,10 @@ CONTROLES = {
     "/matrices/ecuaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",
         "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo",
+    },
+    "/matrices/expresiones/": {
+        "ajustar", "agregar", "cantidad", "celda_0_0_0", "celda_0_0_1", "celda_0_1_0", "celda_0_1_1",
+        "columnas_0", "csrfmiddlewaretoken", "eliminar", "expresion", "filas_0", "nombre_0", "tipo_0",
     },
     "/bases/conversion/": {"base_origen", "bases_destino", "csrfmiddlewaretoken", "numero"},
 }
