@@ -1,5 +1,5 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% load static %}
+{% load static numeros %}
 
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title" data-vectores>
@@ -94,21 +94,26 @@
 
 {% block tool_result %}
     {% if resultado %}
+        {% comment %}Entrada → resultado (una sola vez) → procedimiento plegable. numeric_results prepara la vista exacta/decimal de todo el bloque sin recalcular.{% endcomment %}
+        {% numeric_results %}
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">{{ resultado.etiqueta }}</p>
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
+            {% include "calculadora/components/numeric_format.html" %}
             {% if resultado.operacion == "combinacion" %}
                 {% include "calculadora/modules/vectores/_combinacion.html" %}
             {% else %}
                 {% include "calculadora/modules/vectores/_operacion.html" %}
             {% endif %}
         </section>
+        {% endnumeric_results %}
     {% endif %}
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'calculadora/numeros.js' %}" defer></script>
     {{ valores_vectores|json_script:"vector-initial-values" }}
     <script src="{% static 'calculadora/vectores.js' %}" defer></script>
     <script src="{% static 'calculadora/teclado.js' %}" defer></script>

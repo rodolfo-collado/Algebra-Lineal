@@ -1,26 +1,27 @@
-/* Tokens semánticos: verde esmeralda como acento, azul profundo para la columna aumentada. */
+/* PyGebra: superficies neutras, símbolo monocromático y verde como acento. */
 
 :root,
 [data-theme="light"] {
     color-scheme: light;
 
-    --color-bg: #eef3f0;
-    --color-bg-accent: #e2ece6;
-    --color-surface: #f6f9f7;
+    --color-bg: #ffffff;
+    --color-bg-accent: #f5f5f5;
+    --color-surface: #fafafa;
     --color-surface-raised: #ffffff;
-    --color-surface-muted: #edf3ef;
-    --color-text: #17221c;
-    --color-muted: #5b6b62;
-    --color-border: #cdd9d2;
-    --color-border-strong: #a3b4aa;
+    --color-surface-muted: #f3f3f3;
+    --color-mark: #000000;
+    --color-text: #191919;
+    --color-muted: #626262;
+    --color-border: #dedede;
+    --color-border-strong: #a0a0a0;
 
-    --color-brand: #1b7a4e;
-    --color-brand-strong: #145f3c;
-    --color-brand-soft: #dcefe4;
-    --color-brand-text: #f3fbf6;
+    --color-brand: #1A6560;
+    --color-brand-strong: #124e4a;
+    --color-brand-soft: #edf5f4;
+    --color-brand-text: #ffffff;
 
-    --color-accent: #1a5f8a;
-    --color-accent-soft: #dceaf3;
+    --color-accent: #454545;
+    --color-accent-soft: #f0f0f0;
 
     --color-success: #1f6b4a;
     --color-success-soft: #dcefe6;
@@ -34,17 +35,14 @@
     --color-danger-soft: #f6e8e8;
     --color-danger-border: #dfb4b4;
 
-    --color-aug: #e3eef4;
-    --color-aug-strong: #1a5f8a;
-    --color-pivot: rgb(27 122 78 / 0.14);
-    --color-mark-cell: #f3fbf6;
-    --color-mark-bar: #8fcbae;
-    --color-mark-aug: #c5dde8;
+    --color-aug: #f0f0f0;
+    --color-aug-strong: #454545;
+    --color-pivot: rgb(26 101 96 / 0.12);
 
-    --color-focus: rgb(27 122 78 / 0.35);
-    --color-shadow: rgb(23 34 28 / 0.08);
-    --color-shadow-strong: rgb(23 34 28 / 0.16);
-    --color-backdrop: rgb(23 34 28 / 0.45);
+    --color-focus: #1A6560;
+    --color-shadow: rgb(0 0 0 / 0.04);
+    --color-shadow-strong: rgb(0 0 0 / 0.12);
+    --color-backdrop: rgb(0 0 0 / 0.35);
 
     /* Compatibilidad con tokens previos */
     --color-primary: var(--color-brand);
@@ -53,8 +51,8 @@
     --color-primary-soft: var(--color-brand-soft);
 
     --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
     --radius-pill: 999px;
 
     --shadow-sm: 0 1px 2px var(--color-shadow);
@@ -71,7 +69,7 @@
     --font-display: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
     --font-math: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
 
-    --header-height: 3rem;
+    --header-height: 3.5rem;
     --nav-width: 19rem;
     --content-max: 1200px;
     /* Estado/entrada y pulsación: sin demora ni dependencia funcional. */
@@ -82,23 +80,24 @@
 [data-theme="dark"] {
     color-scheme: dark;
 
-    --color-bg: #101714;
-    --color-bg-accent: #16201b;
-    --color-surface: #182220;
-    --color-surface-raised: #1f2b27;
-    --color-surface-muted: #141d19;
-    --color-text: #e6efe9;
-    --color-muted: #9aaba2;
-    --color-border: #2b3a33;
-    --color-border-strong: #3d4f47;
+    --color-bg: #141414;
+    --color-bg-accent: #1a1a1a;
+    --color-surface: #191919;
+    --color-surface-raised: #1e1e1e;
+    --color-surface-muted: #262626;
+    --color-mark: #FFFFFF;
+    --color-text: #ededed;
+    --color-muted: #adadad;
+    --color-border: #363636;
+    --color-border-strong: #737373;
 
-    --color-brand: #4cc38a;
-    --color-brand-strong: #6ad3a0;
-    --color-brand-soft: #1b3527;
-    --color-brand-text: #08170f;
+    --color-brand: #7DCFC6;
+    --color-brand-strong: #a2e2dc;
+    --color-brand-soft: #203330;
+    --color-brand-text: #101a19;
 
-    --color-accent: #6aa8cc;
-    --color-accent-soft: #1d303a;
+    --color-accent: #cccccc;
+    --color-accent-soft: #2b2b2b;
 
     --color-success: #6fbf95;
     --color-success-soft: #1d3228;
@@ -112,14 +111,11 @@
     --color-danger-soft: #3a2424;
     --color-danger-border: #6a3b3b;
 
-    --color-aug: #1e3038;
-    --color-aug-strong: #8fbfda;
-    --color-pivot: rgb(76 195 138 / 0.18);
-    --color-mark-cell: #182220;
-    --color-mark-bar: #4fa07a;
-    --color-mark-aug: #2a4454;
+    --color-aug: #2b2b2b;
+    --color-aug-strong: #cccccc;
+    --color-pivot: rgb(125 207 198 / 0.16);
 
-    --color-focus: rgb(106 211 160 / 0.45);
+    --color-focus: #7DCFC6;
     --color-shadow: rgb(0 0 0 / 0.32);
     --color-shadow-strong: rgb(0 0 0 / 0.45);
     --color-backdrop: rgb(0 0 0 / 0.55);

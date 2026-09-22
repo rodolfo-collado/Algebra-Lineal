@@ -2,7 +2,7 @@
   <img src="assets/brand/svg/pygebra-mark-black.svg" alt="Símbolo de PyGebra" width="80">
 </p>
 
-# Álgebra Lineal
+# PyGebra
 
 **Aprende resolviendo.** Una calculadora educativa que muestra el camino hasta
 el resultado y ayuda a conectar sistemas, matrices y vectores.
@@ -17,7 +17,7 @@ el resultado y ayuda a conectar sistemas, matrices y vectores.
 
 ## Entender el procedimiento
 
-El resultado es solo una parte del ejercicio. Álgebra Lineal permite seguir
+El resultado es solo una parte del ejercicio. PyGebra permite seguir
 las operaciones, comparar métodos y ver por qué un sistema tiene solución
 única, infinitas soluciones o ninguna.
 
@@ -25,6 +25,8 @@ las operaciones, comparar métodos y ver por qué un sistema tiene solución
   productos y conversiones acompañados por su desarrollo.
 - **Aritmética exacta:** los racionales se conservan como fracciones, sin
   redondear los pasos intermedios.
+- **Formato a tu elección:** resultados exactos o decimales (2, 4, 6 u 8 posiciones),
+  sin recalcular; los valores redondeados se identifican como aproximaciones.
 - **Algoritmos manuales:** el cálculo se implementa con Python estándar,
   sin delegar el álgebra a NumPy, SciPy o SymPy.
 - **Conceptos conectados:** un producto `Ax` se puede leer como combinación
@@ -99,7 +101,8 @@ Cuando haya una versión publicada:
 
 1. Descarga `AlgebraLineal-Setup-<version>.exe` de sus assets.
 2. Ejecuta el instalador y elige si deseas un acceso directo en el escritorio.
-3. Abre **Álgebra Lineal** desde el menú Inicio o el acceso directo.
+3. Abre el acceso directo **Álgebra Lineal** (nombre histórico del instalador);
+   la ventana y la interfaz se presentan como **PyGebra**.
 
 **No necesitas tener Python instalado.** El instalador incluye el runtime y
 las dependencias de la aplicación. Se instala para tu usuario y no requiere

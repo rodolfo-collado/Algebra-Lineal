@@ -73,7 +73,7 @@ class PruebasCatalogoP13B(SimpleTestCase):
 
     def test_descripcion_y_ayuda_mencionan_ab_y_ax(self):
         respuesta = self.client.get(RUTA)
-        self.assertContains(respuesta, "entre matrices (AB) o por un vector (Ax)")
+        self.assertContains(respuesta, "calcula AB o Ax")
         self.assertContains(respuesta, "Matriz por vector (Ax)")
         self.assertContains(respuesta, "Multiplicación de matrices")
 
@@ -219,13 +219,13 @@ class PruebasResultadosProducto(SimpleTestCase):
         html, doc = self.calcular(datos_producto(metodo="comparar"))
         self.assertEqual(html.count('id="results-title"'), 1)
         self.assertEqual(html.count('<table class="matrix-table" aria-label="Matriz resultado"'), 1)
-        # P18: un «Ver procedimiento» plegado con un sub-bloque por método, antes del único resultado.
+        # Un único resultado y, después, «Ver procedimiento» plegado con un sub-bloque por método.
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
         self.assertIn(">Fila por columna</h4>", html)
         self.assertIn(">Por columnas</h4>", html)
         self.assertIn("Comparación de métodos", html)
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
         self.assertLess(html.index(">Fila por columna</h4>"), html.index(">Por columnas</h4>"))
         # Ambas lecturas terminan en la misma matriz.
         self.assertEqual(doc.tablas["Resultado del desarrollo"], doc.tablas["Matriz resultado"])
@@ -280,10 +280,10 @@ class PruebasResultadosProducto(SimpleTestCase):
         self.assertEqual(html.count('<details class="procedure-group">'), 8)
         self.assertEqual(ENTRADAS_DESPLEGADAS, 12)
 
-    def test_procedimiento_plegado_antes_del_resultado_y_recursos_locales(self):
+    def test_resultado_antes_del_procedimiento_plegado_y_recursos_locales(self):
         html, _ = self.calcular(datos_producto(metodo="comparar"))
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
         for recurso in ("matrices.js", "teclado.js", "tema.js", "styles.css"):
             self.assertIn(f"/static/calculadora/{recurso}", html)
         self.assertNotIn('src="https://', html)

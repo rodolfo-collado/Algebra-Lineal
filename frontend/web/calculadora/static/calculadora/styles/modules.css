@@ -544,8 +544,12 @@ textarea:focus {
 }
 
 .panel-final {
-    border-color: color-mix(in srgb, var(--color-brand) 45%, var(--color-border));
-    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-strong);
+    box-shadow: none;
+}
+
+.results > .panel-final {
+    margin-bottom: 1rem;
 }
 
 .steps {
@@ -726,8 +730,8 @@ textarea:focus {
 }
 
 .classification[data-kind="unica"] {
-    border-color: var(--color-success-border);
-    background: var(--color-success-soft);
+    border-color: var(--color-border);
+    background: var(--color-surface);
 }
 
 .classification[data-kind="unica"] .classification-icon {
@@ -740,8 +744,8 @@ textarea:focus {
 }
 
 .classification[data-kind="infinitas"] {
-    border-color: var(--color-warning-border);
-    background: var(--color-warning-soft);
+    border-color: var(--color-border);
+    background: var(--color-surface);
 }
 
 .classification[data-kind="infinitas"] .classification-icon {
@@ -754,8 +758,8 @@ textarea:focus {
 }
 
 .classification[data-kind="inconsistente"] {
-    border-color: var(--color-danger-border);
-    background: var(--color-danger-soft);
+    border-color: var(--color-border);
+    background: var(--color-surface);
 }
 
 .classification[data-kind="inconsistente"] .classification-icon {
@@ -774,7 +778,7 @@ textarea:focus {
 .classification-value {
     margin: 0;
     font-size: 1.05rem;
-    font-weight: 800;
+    font-weight: 600;
 }
 
 .equations,
@@ -795,14 +799,14 @@ textarea:focus {
 }
 
 .solution {
-    padding: 0.9rem;
-    border-radius: var(--radius-md);
-    background: var(--color-brand-soft);
-    border: 1px solid color-mix(in srgb, var(--color-brand) 30%, var(--color-border));
+    padding: 0.9rem 0;
 }
 
 .solution-list {
-    margin-top: 0.85rem;
+    margin-top: 0.6rem;
+    padding-left: 0;
+    list-style: none;
+    font-size: 1.25rem;
 }
 
 /* Opciones compactas: radios y casillas nativas dentro de una píldora. */
@@ -1232,12 +1236,12 @@ textarea:focus {
 }
 
 .vector-result {
-    color: var(--color-brand);
+    color: var(--color-text);
     font-weight: 700;
 }
 
 .vector-result .vector-fence {
-    color: var(--color-brand);
+    color: var(--color-text);
 }
 
 .vector-equality {

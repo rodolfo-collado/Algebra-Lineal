@@ -10,7 +10,7 @@ El nombre de la identidad es **PyGebra**.
 
 El símbolo es un recorrido que termina avanzando. PyGebra no se limita a entregar un resultado: ayuda a seguir el procedimiento y a ver cómo se conectan los conceptos. El dibujo no representa una letra, ni Python, ni una serpiente, ni un laberinto.
 
-La aplicación, en esta versión, sigue titulándose Álgebra Lineal. El cambio de nombre en la interfaz queda para el rediseño.
+La interfaz web y la ventana de escritorio se presentan como **PyGebra**. Los nombres técnicos históricos de paquetes e instalador se conservan.
 
 ## Símbolo
 
@@ -74,7 +74,7 @@ Blanco `#FFFFFF` sobre negro o casi negro, según la superficie.
 
 Es un color de acento del producto, no un requisito del logotipo. No hay un logo verde oficial.
 
-Puede servir, cuando se rediseñe la interfaz, para un estado activo, un enlace, un botón secundario, un acento pequeño, una visualización o un indicador. La decisión de usarlo se toma en ese rediseño. Los tokens actuales de la interfaz no cambian con esta página.
+La interfaz usa este acento para acciones principales, enlaces, selección y foco. Fondos, superficies, textos y bordes son neutros en ambos temas; los colores se centralizan en `styles/tokens.css`.
 
 ## Escala
 
@@ -91,7 +91,7 @@ El símbolo se probó hasta 16 px y sigue reconociéndose. Eso no fija 16 px com
 - **Escritorio.** `assets/brand/app/pygebra.ico`, referenciado por el launcher, PyInstaller e Inno Setup.
 - **Aplicación.** `app-icon-192.png`, `app-icon-256.png` y `app-icon-512.png`. El lienzo de 64 ocupa el 68 % del lado, centrado, con el resto transparente. Hay las mismas piezas en blanco.
 - **Documentación.** El SVG negro sobre claro y el blanco sobre oscuro. Esta página es el ejemplo.
-- **Navegación.** El header todavía dibuja la cuadrícula `[A | b]` anterior. Sustituirla es parte del rediseño, no de estos assets.
+- **Navegación.** El header combina Larga A y el texto PyGebra. `components/mark.html` deriva del SVG canónico mediante `uv run python scripts/sync_brand_mark.py`; una prueba verifica su sincronización exacta. El símbolo usa el token monocromático `--color-mark`, independiente del acento verde.
 - **Tema claro y tema oscuro.** Negro sobre claro, blanco sobre oscuro. Sin sombra ni segundo color dentro del símbolo.
 
 ## Lockup

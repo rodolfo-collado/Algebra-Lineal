@@ -120,7 +120,7 @@ class PruebasCatalogo(SimpleTestCase):
         """Gauss, Gauss-Jordan, clasificación y pivotes son opciones de Resolver un sistema, no herramientas."""
         self.assertEqual(catalogo.herramientas_de(catalogo.SISTEMAS_ECUACIONES), (catalogo.SISTEMAS,))
         self.assertEqual(catalogo.SISTEMAS.ruta, "/sistemas/")
-        self.assertEqual(catalogo.SISTEMAS.relacionadas, ())
+        self.assertEqual(catalogo.SISTEMAS.relacionadas, ("ecuaciones-matriciales",))
         self.assertEqual({h.id for h in catalogo.HERRAMIENTAS} & set(RUTAS_ANTIGUAS), set())
         for nombre in PSEUDO_HERRAMIENTAS:
             self.assertNotIn(nombre, [h.nombre for h in catalogo.HERRAMIENTAS])
@@ -235,7 +235,7 @@ class PruebasBuscador(SimpleTestCase):
 class PruebasNavegacion(SimpleTestCase):
     def test_inicio_es_general_sin_formulario_matematico(self):
         respuesta = self.client.get(reverse("calculadora:inicio"))
-        self.assertContains(respuesta, "Inicio · Álgebra Lineal")
+        self.assertContains(respuesta, "Inicio · PyGebra")
         self.assertContains(respuesta, "¿Qué quieres resolver?")
         self.assertContains(respuesta, "Aprende resolviendo")
         self.assertNotContains(respuesta, 'name="sistema"')
@@ -246,14 +246,17 @@ class PruebasNavegacion(SimpleTestCase):
     def test_inicio_descubre_todas_las_herramientas_del_catalogo(self):
         respuesta = self.client.get("/")
         documento = Documento(respuesta)
-        for herramienta in catalogo.HERRAMIENTAS:
+        for herramienta in catalogo.herramientas_disponibles():
             with self.subTest(herramienta=herramienta.id):
                 self.assertContains(respuesta, herramienta.nombre)
                 self.assertContains(respuesta, herramienta.descripcion)
                 if herramienta.disponible:
                     self.assertContains(respuesta, f'href="{herramienta.ruta}"')
         for elemento in (*catalogo.AREAS, *catalogo.CATEGORIAS):
-            self.assertIn(elemento.id, documento.ids)
+            if elemento.disponible:
+                self.assertIn(elemento.id, documento.ids)
+            else:
+                self.assertNotIn(elemento.id, documento.ids)
         # Sin caminos duplicados: las herramientas se descubren dentro de su tema.
         self.assertNotContains(respuesta, "Acceso rápido")
 

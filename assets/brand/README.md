@@ -38,13 +38,13 @@ En los iconos de aplicación el lienzo de 64 ocupa el 68 % del lado y queda cent
 | Símbolo | `#000000` | `#FFFFFF` |
 | Acento secundario | `#1A6560` | `#7DCFC6` |
 
-El verde es un candidato para la interfaz futura. No es un color del logotipo y no existe un logo verde oficial.
+El verde es el acento de la interfaz de PyGebra. No es un color del logotipo y no existe un logo verde oficial.
 
 `favicon.svg` pinta el símbolo de negro y, si el sistema está en oscuro, de blanco. Sigue siendo la misma geometría.
 
 ## Web
 
-`frontend/web/calculadora/static/calculadora/favicon.svg` y `favicon.ico` son copias generadas. `base.html` las enlaza. El dibujo del header sigue siendo la marca anterior hasta el rediseño.
+`frontend/web/calculadora/static/calculadora/favicon.svg` y `favicon.ico` son copias generadas. `base.html` las enlaza. El header usa Larga A en negro/blanco: su parcial se sincroniza desde el master con `uv run python scripts/sync_brand_mark.py`.
 
 ## Escritorio
 

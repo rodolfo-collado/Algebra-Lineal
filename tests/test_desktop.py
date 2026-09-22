@@ -215,7 +215,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             with cliente_http.open(url, timeout=3.0) as respuesta:
                 html = respuesta.read().decode("utf-8")
                 self.assertEqual(respuesta.status, 200)
-                self.assertIn("Inicio · Álgebra Lineal", html)
+                self.assertIn("Inicio · PyGebra", html)
                 self.assertIn('href="/sistemas/"', html)
 
             url_sistemas = f"{url}sistemas/"

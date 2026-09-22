@@ -1,13 +1,19 @@
 (() => {
     "use strict";
 
-    const STORAGE_KEY = "algebra-lineal-tema";
+    const STORAGE_KEY = "pygebra-tema";
     const root = document.documentElement;
     const button = document.getElementById("theme-toggle");
     const media = window.matchMedia("(prefers-color-scheme: dark)");
 
     function storedTheme() {
-        const value = localStorage.getItem(STORAGE_KEY);
+        let value = null;
+        try {
+            // La clave histórica sigue leyéndose; base.html la migra a la nueva.
+            value = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem("algebra-lineal-tema");
+        } catch (_) {
+            // Sin persistencia se conserva el tema visible.
+        }
         return value === "light" || value === "dark" ? value : null;
     }
 
@@ -28,11 +34,8 @@
 
         const siguiente = theme === "dark" ? "claro" : "oscuro";
         button.setAttribute("aria-label", `Cambiar a tema ${siguiente}`);
+        // El texto visible es siempre «Tema»: el icono y el aria-label indican el estado.
         button.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
-        const label = button.querySelector(".theme-toggle-text");
-        if (label) {
-            label.textContent = theme === "dark" ? "Oscuro" : "Claro";
-        }
     }
 
     applyTheme(storedTheme() || currentTheme() || systemTheme());
@@ -40,7 +43,11 @@
     if (button) {
         button.addEventListener("click", () => {
             const next = currentTheme() === "dark" ? "light" : "dark";
-            localStorage.setItem(STORAGE_KEY, next);
+            try {
+                localStorage.setItem(STORAGE_KEY, next);
+            } catch (_) {
+                // Sin almacenamiento el cambio vale para esta visita.
+            }
             applyTheme(next);
         });
     }

@@ -1,6 +1,11 @@
-{% comment %}Un área del Inicio: sus categorías como temas plegados. Las herramientas se descubren al abrir el tema, así el Inicio no crece con cada módulo nuevo.{% endcomment %}
-<section class="home-area" id="{{ area.id }}" data-grupo aria-labelledby="area-{{ area.id }}">
-    <h2 id="area-{{ area.id }}" class="home-area-title">{{ area.nombre }}</h2>
+<details class="home-area" id="{{ area.id }}" data-grupo aria-labelledby="area-{{ area.id }}">
+    <summary class="home-area-summary">
+        <span><span id="area-{{ area.id }}" class="home-area-title">{{ area.nombre }}</span>
+        <span class="home-area-description">{{ area.descripcion }}</span></span>
+        <svg class="area-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </summary>
     <ul class="topic-list">
         {% for categoria, herramientas in categorias %}
             <li class="topic-item">
@@ -26,4 +31,4 @@
             </li>
         {% endfor %}
     </ul>
-</section>
+</details>

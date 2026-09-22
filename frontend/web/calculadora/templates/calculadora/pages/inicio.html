@@ -1,10 +1,10 @@
 {% extends "calculadora/base.html" %}
 
-{% block title %}Inicio · Álgebra Lineal{% endblock %}
+{% block title %}Inicio · PyGebra{% endblock %}
 
 {% block content %}
     <header class="home-hero">
-        <h1 class="home-title">Álgebra Lineal</h1>
+        <h1 class="home-title">PyGebra</h1>
         <p class="home-lead">Aprende resolviendo</p>
         {% include "calculadora/components/search.html" with search_id="buscador-inicio" search_target="catalogo-inicio" search_large=True search_label="¿Qué quieres resolver?" search_placeholder="Buscar Gauss, vectores, matrices…" %}
     </header>
@@ -30,27 +30,13 @@
             {% endif %}
         </section>
     {% else %}
-        {% comment %}Solo los temas a la vista: cada uno despliega sus herramientas. El resto de áreas espera bajo «Ver más temas».{% endcomment %}
-        <div id="catalogo-inicio" class="catalog">
-            {% for area, categorias in arbol_navegacion|slice:":1" %}
-                {% include "calculadora/pages/_area.html" %}
-            {% endfor %}
-            {% with otras_areas=arbol_navegacion|slice:"1:" %}
-                {% if otras_areas %}
-                    <details class="home-more" id="mas-temas" data-grupo>
-                        <summary class="home-more-summary">
-                            <svg class="home-more-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                                <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            <span>Ver más temas</span>
-                            <span class="home-more-hint">{% for area, categorias in otras_areas %}{{ area.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</span>
-                        </summary>
-                        {% for area, categorias in otras_areas %}
-                            {% include "calculadora/pages/_area.html" %}
-                        {% endfor %}
-                    </details>
-                {% endif %}
-            {% endwith %}
-        </div>
+        <section class="home-catalog" aria-labelledby="explorar-title">
+            <h2 id="explorar-title">Explorar por temas</h2>
+            <div id="catalogo-inicio" class="catalog">
+                {% for area, categorias in arbol_navegacion %}
+                    {% if area.disponible %}{% include "calculadora/pages/_area.html" %}{% endif %}
+                {% endfor %}
+            </div>
+        </section>
     {% endif %}
 {% endblock %}

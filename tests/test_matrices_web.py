@@ -240,11 +240,11 @@ class PruebasResultadosMatrices(SimpleTestCase):
     def test_resta_fraccionaria_rectangular(self):
         self.comprobar(datos_matrices("resta", a=[["1/2"], [-2], [0]], b=[["1/3"], [3], ["-7/3"]]), [["1/6"], ["-5"], ["7/3"]])
 
-    def test_procedimiento_plegado_antes_del_resultado(self):
+    def test_resultado_antes_del_procedimiento_plegado(self):
         r = self.client.post(RUTA, datos_matrices())
         html = r.content.decode()
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
 
     def test_servicio_delega_la_matematica(self):
         with patch("frontend.web.calculadora.servicios_matrices.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:

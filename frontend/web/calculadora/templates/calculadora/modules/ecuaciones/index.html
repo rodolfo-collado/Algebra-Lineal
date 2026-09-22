@@ -1,5 +1,5 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% load static componentes %}
+{% load static componentes numeros %}
 
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
@@ -48,17 +48,15 @@
 
 {% block tool_result %}
 {% if resultado %}
+    {% comment %}Entrada → resultado (clasificación y solución, una vez) → procedimiento plegable (equivalencias y eliminación) → comprobación e interpretación plegadas, que aportan información distinta del procedimiento. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+    {% numeric_results %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
             <p class="section-kicker">Ecuación matricial · {{ resultado.titulo_metodo }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
             <h2 id="results-title">{{ resultado.forma }}</h2>
         </header>
-        {% comment %}Entrada → procedimiento plegable (equivalencias y eliminación) → resultado (clasificación y solución, una vez) → comprobación e interpretación plegadas, que aportan información distinta del procedimiento.{% endcomment %}
-        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-            <p class="stage-chain">Ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada → {{ resultado.titulo_metodo }} → conjunto solución</p>
-            {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
-            {% include "calculadora/modules/ecuaciones/_metodos.html" %}
-        {% enddisclosure %}
+        {% include "calculadora/components/numeric_format.html" %}
+
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
             <div class="classification equation-verdict" data-kind="{{ resultado.clasificacion_clave }}">
@@ -90,6 +88,13 @@
                 {% endif %}
             </div>
         </section>
+
+        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+            <p class="stage-chain">Ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada → {{ resultado.titulo_metodo }} → conjunto solución</p>
+            {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
+            {% include "calculadora/modules/ecuaciones/_metodos.html" %}
+        {% enddisclosure %}
+
         {% if resultado.comprobacion %}
             {% disclosure titulo="Comprobar solución" id="comprobacion" clase="disclosure-procedure" %}
                 <p class="procedure-lead">Al sustituir x, el producto Ax {% if resultado.comprobacion.coincide %}reproduce{% else %}no reproduce{% endif %} b.</p>
@@ -109,10 +114,12 @@
             {% if resultado.interpretacion.igualdad %}<p class="combination-equality"><code>{{ resultado.interpretacion.igualdad }}</code></p>{% endif %}
         {% enddisclosure %}
     </section>
+    {% endnumeric_results %}
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'calculadora/numeros.js' %}" defer></script>
 <template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
 <template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
 <script src="{% static 'calculadora/ecuaciones.js' %}" defer></script>

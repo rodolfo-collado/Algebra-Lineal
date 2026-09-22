@@ -257,8 +257,8 @@ caracteres.
 
 ## Sistemas en la interfaz visual
 
-Inicio permite buscar una herramienta o entrar en un tema (Sistemas de
-ecuaciones, Vectores, Matrices; las demás áreas bajo «Ver más temas»); el
+Inicio de PyGebra permite buscar una herramienta o abrir un área y después
+un tema (Sistemas de ecuaciones, Vectores, Matrices, Bases numéricas); el
 menú ☰ abre el mismo árbol en cualquier página. Dentro de **Álgebra Lineal →
 Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
 (`/sistemas/`), que se configura en el propio formulario:
@@ -270,10 +270,9 @@ Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
 
 La matriz final y la solución se muestran siempre. Las casillas de Mostrar
 esperan plegadas bajo «Opciones de resultado». Tras resolver, la página lee
-Entrada → «Ver procedimiento» (plegado: matriz inicial, operaciones por
-filas, matriz final, sistema resultante y sustitución regresiva) → Resultado
-final (clasificación, solución y columnas pivote), siempre visible y una sola
-vez; si «Procedimiento» se desmarca, la matriz final pasa al resultado.
+Entrada → Resultado final (clasificación, solución y columnas pivote),
+siempre visible y una sola vez → «Ver procedimiento» (plegado: matriz inicial,
+operaciones por filas, matriz final, sistema resultante y sustitución regresiva); si «Procedimiento» se desmarca, la matriz final pasa al resultado.
 «También puedes explorar» ofrece el mismo sistema con el otro método o
 comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve
 la misma entrada con los dos métodos y pliega cada procedimiento en su propio
@@ -348,7 +347,7 @@ columna, cambiando solo la validación y la explicación. Los productos
 columna. `forms_matrices.py` valida dimensiones, método, campos y números con
 el parser común; `opciones_matrices.py` centraliza la configuración y
 `servicios_matrices.py` adapta los datos a presentación. El procedimiento va
-plegado antes del resultado: la regla por entrada y una sola cadena
+plegado después del resultado: la regla por entrada y una sola cadena
 `A + B = [A] + [B] = [desarrollo] = [C]`; la traspuesta explica el intercambio
 de filas/columnas y de dimensiones. La matriz obtenida se presenta una vez,
 en el panel Resultado.
@@ -376,8 +375,8 @@ ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
 Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
 `matrices.py`. El método se elige como en Resolver un sistema (Gauss,
 Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
-sola vez y los dos procedimientos plegados). El procedimiento va plegado y el
-resultado, debajo, siempre visible:
+sola vez y los dos procedimientos plegados). El resultado aparece primero, siempre visible, y el procedimiento va
+plegado después:
 
 - solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
   `x2 = 2`, el vector columna x y la comprobación `A · x = b` calculada con
@@ -405,3 +404,16 @@ misma estructura.
 
 Para las decisiones de presentación y accesibilidad, consulta [Interfaz](interfaz.md).
 La reutilización del cálculo se explica en [Algoritmos](algoritmos.md).
+
+## Visualización de resultados en PyGebra
+
+Sistemas, Vectores, Matrices y Ax=b permiten alternar **Exacto / Decimal**
+después de resolver. El máximo de decimales puede ser 2, 4 (predeterminado),
+6 u 8. La preferencia se conserva localmente entre herramientas compatibles.
+`1/2` se ve como `0.5` y `1/3` como `0.3333` con cuatro decimales; `4` sigue
+siendo `4`. Se indica `≈` en expresiones redondeadas y una nota de aproximación
+para matrices o grupos. La precisión afecta también a todo el procedimiento.
+
+No se recalcula: la fuente de verdad sigue siendo `Fraction`, con aritmética
+exacta en Python. Sin JavaScript, el resultado exacto y sus pasos permanecen
+disponibles. Conversión de bases queda fuera de este modo de presentación.

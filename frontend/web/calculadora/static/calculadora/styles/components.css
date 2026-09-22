@@ -16,6 +16,13 @@
     text-transform: uppercase;
 }
 
+/* El kicker de la herramienta repite la ruta en tono discreto, sin versales. */
+.tool-header .tool-kicker {
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
 .tool-header {
     display: grid;
     gap: 0.35rem;
@@ -28,7 +35,7 @@
 .home-title {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 1.45rem;
+    font-size: clamp(1.5rem, 3vw, 2rem);
     letter-spacing: -0.03em;
     line-height: 1.2;
 }
@@ -72,7 +79,6 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface-raised);
-    box-shadow: var(--shadow-sm);
 }
 
 .btn {
@@ -311,38 +317,94 @@
     font-size: 0.85rem;
 }
 
-/* —— Inicio: punto de entrada, un buscador y los temas —— */
+/* —— Inicio: nombre, «Aprende resolviendo», un buscador y las áreas plegadas —— */
 
 .home-hero {
-    display: grid;
-    justify-items: center;
-    gap: 0.35rem;
-    margin-bottom: 1.5rem;
-    padding: 1.6rem 1.35rem 1.5rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    background: var(--color-surface-raised);
-    box-shadow: var(--shadow-sm);
-    text-align: center;
+    max-width: 760px;
+    margin: 2.5rem auto;
 }
 
 .home-hero .home-title {
-    font-size: clamp(1.6rem, 2.8vw, 2.1rem);
+    font-size: clamp(2.2rem, 5vw, 3rem);
 }
 
 .home-hero .home-lead {
-    font-size: 1rem;
+    margin-top: 0.4rem;
+    font-size: 1.25rem;
 }
 
 .home-hero .search {
-    width: min(100%, 40rem);
-    margin-top: 0.9rem;
-    text-align: left;
+    width: 100%;
+    margin-top: 2.5rem;
 }
 
 .home-hero .search-label {
     font-size: 1.05rem;
-    text-align: center;
+}
+
+.home-catalog,
+.search-results {
+    max-width: 760px;
+    margin-inline: auto;
+}
+
+.home-catalog > h2 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+/* Área → tema → herramienta: filas plegables con bordes discretos, sin cuadrícula de tarjetas. */
+.home-area {
+    border-top: 1px solid var(--color-border);
+}
+
+.home-area:last-child {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.home-area-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.2rem 0.5rem;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--motion-fast);
+}
+
+.home-area-summary::-webkit-details-marker {
+    display: none;
+}
+
+.home-area-summary:hover {
+    background: var(--color-surface);
+}
+
+.home-area-title {
+    display: block;
+    font-size: 1rem;
+    font-weight: 650;
+}
+
+.home-area-description {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.area-chevron {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+    color: var(--color-muted);
+    transition: transform var(--motion-fast);
+}
+
+.home-area[open] > .home-area-summary .area-chevron {
+    transform: rotate(90deg);
 }
 
 .home-section {
@@ -364,55 +426,25 @@
     letter-spacing: -0.02em;
 }
 
-.home-area + .home-area,
-.home-more .home-area {
-    margin-top: 1.4rem;
-}
-
 .home-area[hidden],
 .topic[hidden],
-.home-more[hidden],
 .tool-item[hidden] {
     display: none;
 }
 
-.home-area-title {
-    margin: 0 0 0.6rem;
-    color: var(--color-muted);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-/* Temas: una tarjeta por categoría; al abrirla aparecen sus herramientas. */
+/* Temas: una fila por categoría, colgada del área; al abrirla aparecen sus herramientas. */
 .topic-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
-    align-items: start;
-    gap: 0.75rem;
-    margin: 0;
-    padding: 0;
+    margin: 0 0 1rem 0.6rem;
+    padding: 0 0 0 0.7rem;
+    border-left: 1px solid var(--color-border);
     list-style: none;
 }
 
 .topic {
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
     background: var(--color-surface-raised);
-    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
-.topic:hover,
-.topic[open] {
-    border-color: var(--color-brand);
-}
-
-.topic[open] {
-    box-shadow: var(--shadow-sm);
-}
-
-.topic-upcoming {
+.topic-summary:hover {
     background: var(--color-surface);
 }
 
@@ -473,55 +505,6 @@
 
 .topic > .tool-list {
     padding: 0 0.95rem 0.95rem;
-}
-
-/* «Ver más temas»: las demás áreas esperan plegadas para no alargar el Inicio. */
-.home-more {
-    margin-top: 1.25rem;
-}
-
-.home-more-summary {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 2.4rem;
-    padding: 0.4rem 0.7rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-raised);
-    font-size: 0.88rem;
-    font-weight: 700;
-    list-style: none;
-    cursor: pointer;
-    user-select: none;
-    transition: border-color var(--motion-fast), background var(--motion-fast);
-}
-
-.home-more-summary::-webkit-details-marker {
-    display: none;
-}
-
-.home-more-summary:hover {
-    border-color: var(--color-brand);
-    background: var(--color-brand-soft);
-}
-
-.home-more-chevron {
-    width: 0.9rem;
-    height: 0.9rem;
-    flex: none;
-    color: var(--color-brand);
-    transition: transform var(--motion-fast);
-}
-
-.home-more[open] > .home-more-summary .home-more-chevron {
-    transform: rotate(90deg);
-}
-
-.home-more-hint {
-    color: var(--color-muted);
-    font-weight: 500;
 }
 
 .category-icon {
@@ -631,33 +614,21 @@ a.tool-link .tool-link-name {
 }
 
 .related-link {
-    display: grid;
-    gap: 0.1rem;
-    max-width: 22rem;
-    min-height: 2.5rem;
-    padding: 0.5rem 0.8rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface-raised);
+    display: inline-block;
+    padding: 0.4rem 0;
     color: var(--color-text);
-    text-align: left;
-    cursor: pointer;
-    transition: border-color var(--motion-fast), background var(--motion-fast);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    transition: color var(--motion-fast);
 }
 
 .related-link:hover {
-    border-color: var(--color-brand);
-    background: var(--color-brand-soft);
+    color: var(--color-brand);
 }
 
 .related-name {
     font-size: 0.88rem;
     font-weight: 700;
-}
-
-.related-hint {
-    color: var(--color-muted);
-    font-size: 0.78rem;
 }
 
 /* —— También puedes explorar: conexiones educativas con herramientas existentes —— */
@@ -1115,5 +1086,59 @@ a.tool-link .tool-link-name {
 
     .search-large .search-submit {
         margin: 0.45rem 0 0;
+    }
+}
+
+/* —— Formato Exacto / Decimal: controles junto al resultado; sin JavaScript quedan ocultos y el HTML es exacto —— */
+
+.numeric-format {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+}
+
+.numeric-format[hidden],
+.numeric-format [hidden] {
+    display: none;
+}
+
+.numeric-format select {
+    min-height: 2.75rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    font: inherit;
+}
+
+/* Nota de aproximación: solo ocupa espacio cuando hay valores redondeados. */
+.numeric-notice {
+    flex-basis: 100%;
+    margin: 0.15rem 0 0;
+}
+
+.numeric-notice:empty {
+    display: none;
+}
+
+@media (max-width: 480px) {
+    .home-hero {
+        margin-top: 1.5rem;
+    }
+
+    .home-hero .search {
+        margin-top: 1.75rem;
+    }
+
+    .home-area-description {
+        font-size: 0.85rem;
+    }
+
+    .numeric-format {
+        column-gap: 0.4rem;
     }
 }

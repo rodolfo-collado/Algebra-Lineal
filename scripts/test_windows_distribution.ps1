@@ -40,6 +40,15 @@ function Wait-AppUrl {
     throw 'Django no respondió dentro de 30 segundos.'
 }
 
+# Texto de cada celda de una tabla de matriz; el formato Exacto/Decimal envuelve los
+# valores no enteros en <span data-numeric>, así que se retiran las etiquetas internas.
+function Get-CellTexts {
+    param([string]$TableHtml)
+    return @([regex]::Matches($TableHtml, '(?s)<td[^>]*>(.*?)</td>') | ForEach-Object {
+        [regex]::Replace($_.Groups[1].Value, '<[^>]+>', '').Trim()
+    })
+}
+
 try {
     $setup = Start-Process -FilePath $installer -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/TASKS=desktopicon', ('/DIR="' + $installDirectory + '"')) -WindowStyle Hidden -PassThru -Wait
     if ($setup.ExitCode -ne 0) { throw "El instalador falló: $($setup.ExitCode)" }
@@ -122,9 +131,10 @@ try {
             if ($operation -eq 'escalar') { $matrixBody.escalar = '1/2' }
             $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -Method Post -WebSession $matrixSession -Headers @{ Referer = $matricesUrl } -Body $matrixBody
             $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Matriz resultado"[^>]*>(.*?)</table>').Groups[1].Value
-            $cells = @([regex]::Matches($resultTable, '<td[^>]*>\s*([^<]+?)\s*</td>') | ForEach-Object { $_.Groups[1].Value.Trim() })
+            $cells = Get-CellTexts $resultTable
             if (($cells -join ',') -ne ($expectedMatrices[$operation] -join ',')) { throw "Resultado incorrecto de matrices: $operation" }
             if (-not $response.Content.Contains('id="procedimiento"')) { throw "Falta procedimiento de matrices: $operation" }
+            if (-not $response.Content.Contains('data-numeric-controls')) { throw "Falta el selector Exacto/Decimal en matrices: $operation" }
         }
         # P13B: AB (2x3 por 3x2) y Ax (2x3 por x de 3) comparando los dos métodos.
         $productBodies = @(
@@ -141,7 +151,7 @@ try {
             $productBody.csrfmiddlewaretoken = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
             $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -Method Post -WebSession $productSession -Headers @{ Referer = $matricesUrl } -Body $productBody
             $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Matriz resultado"[^>]*>(.*?)</table>').Groups[1].Value
-            $cells = @([regex]::Matches($resultTable, '<td[^>]*>\s*([^<]+?)\s*</td>') | ForEach-Object { $_.Groups[1].Value.Trim() })
+            $cells = Get-CellTexts $resultTable
             if (($cells -join ',') -ne ($expectedProducts[$productBody.operacion] -join ',')) { throw "Resultado incorrecto de matrices: $($productBody.operacion)" }
             # P18: un «Ver procedimiento» plegado con un sub-bloque por método.
             if (-not $response.Content.Contains('id="procedimiento"')) { throw "Falta un procedimiento comparado de matrices: $($productBody.operacion)" }
@@ -168,13 +178,13 @@ try {
             $equationBody.csrfmiddlewaretoken = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
             $response = Invoke-WebRequest -UseBasicParsing -Uri $equationsUrl -Method Post -WebSession $equationSession -Headers @{ Referer = $equationsUrl } -Body $equationBody
             $solutionTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Vector solución x"[^>]*>(.*?)</table>').Groups[1].Value
-            $cells = @([regex]::Matches($solutionTable, '<td[^>]*>\s*([^<]+?)\s*</td>') | ForEach-Object { $_.Groups[1].Value.Trim() })
+            $cells = Get-CellTexts $solutionTable
             if (($cells -join ',') -ne ($expectedEquations[$case].x -join ',')) { throw "Resultado incorrecto de Ax = b (caso $($case + 1))." }
             foreach ($marker in $expectedEquations[$case].markers) {
                 if (-not $response.Content.Contains($marker)) { throw "Falta '$marker' en Ax = b (caso $($case + 1))." }
             }
         }
-        foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'ecuaciones.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'favicon.svg', 'favicon.ico')) {
+        foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'ecuaciones.js', 'numeros.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'favicon.svg', 'favicon.ico')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'static/calculadora/' + $asset)
             if ($response.StatusCode -ne 200) { throw "No se sirvió el recurso $asset" }
         }
