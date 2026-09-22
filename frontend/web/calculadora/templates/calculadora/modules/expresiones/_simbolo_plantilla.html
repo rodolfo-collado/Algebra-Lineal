@@ -6,6 +6,9 @@
                 <option value="matriz" selected>Matriz</option>
                 <option value="vector">Vector</option>
                 <option value="escalar">Escalar</option>
+                <option value="matriz_desconocida">Matriz desconocida</option>
+                <option value="vector_simbolico">Vector simbólico</option>
+                <option value="vector_lineal">Vector lineal</option>
             </select>
         </label>
         <div class="dimension-field" data-dimension="filas">
@@ -26,6 +29,7 @@
         </div>
         <button class="btn btn-secondary" type="submit" data-eliminar>Eliminar</button>
     </div>
+    <p class="field-help" data-nota hidden></p>
     <div class="matrix" data-rejilla>
         <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
         <div class="matrix-scroll" tabindex="0">
