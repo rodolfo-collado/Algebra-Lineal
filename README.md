@@ -152,6 +152,7 @@ Empieza por el [índice de documentación](docs/README.md) o elige una guía:
 | [Identidad visual](docs/identidad-visual.md) | Símbolo oficial de PyGebra, geometría y archivos. |
 | [Instalación Windows](docs/instalacion-windows.md) | Uso del instalador y construcción del paquete. |
 | [Desarrollo](docs/desarrollo.md) | Entorno local y extensión del catálogo. |
+| [Guía de ejecución](docs/ejecucion.md) | Requisitos, formas de iniciar PyGebra y verificación. |
 | [Pruebas](docs/pruebas.md) | Suite, verificaciones y smoke del instalador. |
 | [Releases](docs/releases.md) | Versionado, promoción a main y entrega automatizada. |
 

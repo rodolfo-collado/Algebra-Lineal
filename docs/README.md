@@ -21,6 +21,8 @@
   componentes compartidos y comportamiento con o sin JavaScript.
 - [Desarrollo](desarrollo.md): entorno con uv, ejecución local y cómo extender
   el catálogo sin duplicar navegación o cálculo.
+- [Guía de ejecución](ejecucion.md): requisitos, arranque web, terminal o
+  escritorio y comprobaciones para usar el proyecto completo.
 - [Pruebas](pruebas.md): suite, Django, compilación, enlaces y smoke real Windows.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   política de tags, CD y checksums.
