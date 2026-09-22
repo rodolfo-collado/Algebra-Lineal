@@ -17,8 +17,8 @@ datas = [
         "frontend/web/calculadora/static",
     ),
     (
-        str(PROJECT_ROOT / "assets" / "algebra-lineal.ico"),
-        "assets",
+        str(PROJECT_ROOT / "assets" / "brand" / "app" / "pygebra.ico"),
+        "assets/brand/app",
     ),
 ]
 
@@ -88,7 +88,7 @@ exe = EXE(
     upx=False,
     console=False,
     disable_windowed_traceback=True,
-    icon=str(PROJECT_ROOT / "assets" / "algebra-lineal.ico"),
+    icon=str(PROJECT_ROOT / "assets" / "brand" / "app" / "pygebra.ico"),
 )
 coll = COLLECT(
     exe,

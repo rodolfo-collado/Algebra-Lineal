@@ -219,8 +219,8 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
     def test_el_icono_del_instalador_es_el_de_la_aplicacion(self):
         setup = directivas_setup()
 
-        self.assertEqual(setup["SetupIconFile"], r"{#ProjectRoot}\assets\algebra-lineal.ico")
-        self.assertTrue((RAIZ / "assets" / "algebra-lineal.ico").is_file())
+        self.assertEqual(setup["SetupIconFile"], r"{#ProjectRoot}\assets\brand\app\pygebra.ico")
+        self.assertTrue((RAIZ / "assets" / "brand" / "app" / "pygebra.ico").is_file())
 
     def test_ci_compila_con_la_version_de_inno_setup_documentada(self):
         ci = WORKFLOW_CI.read_text(encoding="utf-8")

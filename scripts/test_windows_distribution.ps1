@@ -174,7 +174,7 @@ try {
                 if (-not $response.Content.Contains($marker)) { throw "Falta '$marker' en Ax = b (caso $($case + 1))." }
             }
         }
-        foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'ecuaciones.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'mark.svg')) {
+        foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'ecuaciones.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'favicon.svg', 'favicon.ico')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'static/calculadora/' + $asset)
             if ($response.StatusCode -ne 200) { throw "No se sirvió el recurso $asset" }
         }
