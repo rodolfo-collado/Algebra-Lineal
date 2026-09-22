@@ -102,6 +102,10 @@ class PruebasInstalacionPorUsuario(unittest.TestCase):
         self.assertIn("ecuaciones.js", prueba)
         self.assertIn("Ax = b tiene solución única.", prueba)
         self.assertIn("b = (1/2)a₁ + (1/3)a₂", prueba)
+        # Formato Exacto/Decimal: las celdas se leen sin el span de datos y numeros.js se sirve.
+        self.assertIn("Get-CellTexts", prueba)
+        self.assertIn("data-numeric-controls", prueba)
+        self.assertIn("numeros.js", prueba)
 
 
 class PruebasFlujoDelAsistente(unittest.TestCase):

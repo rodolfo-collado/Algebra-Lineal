@@ -153,8 +153,10 @@ repositorio. Comprueba ambos accesos directos y que el ejecutable sea `windowed`
 abre desde Inicio, resuelve por Gauss y Gauss-Jordan, las cuatro operaciones
 matriciales básicas, los productos `AB` y `Ax` comparando métodos y la ecuación
 `Ax = b` (solución fraccionaria comparando métodos y un caso
-rectangular 3×2) a través del Django/Waitress empaquetado, solicita CSS/JS
-(incluidos `matrices.js` y `ecuaciones.js`) e icono, cierra la ventana y
+rectangular 3×2) a través del Django/Waitress empaquetado, leyendo las celdas
+exactas que el formato Exacto/Decimal envuelve en `<span data-numeric>`,
+solicita CSS/JS (incluidos `matrices.js`, `ecuaciones.js` y `numeros.js`) e
+icono, cierra la ventana y
 verifica que el proceso y el servidor terminan. Repite la apertura y luego
 desinstala comprobando que se eliminaron archivos, registro y accesos directos.
 Si esta máquina ya tiene
