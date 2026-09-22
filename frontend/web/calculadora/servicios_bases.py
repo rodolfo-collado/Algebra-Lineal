@@ -8,6 +8,7 @@ from backend.sistemas_numericos import (
     ConversionDesdeDecimal,
     ConversionHaciaDecimal,
     convertir_a_varias_bases,
+    escribir_decimal_exacto,
 )
 
 
@@ -35,30 +36,58 @@ def titulo_conversion(base_origen: int, bases_destino: Iterable[int]) -> str:
 
 
 def _etapa_expansion(conversion: ConversionHaciaDecimal) -> dict:
-    significativo = conversion.texto_normalizado.lstrip("0") or "0"
+    entera, punto, fraccionaria = conversion.texto_normalizado.partition(".")
+    significativo = (entera.lstrip("0") or "0") + punto + fraccionaria
     return {
         "tipo": "expansion",
         "titulo": titulo_direccion(conversion.base_origen, 10),
         "base_entrada": conversion.base_origen,
         "origen": notacion(significativo, conversion.base_origen),
-        "destino": notacion(str(conversion.resultado), 10),
+        "destino": notacion(escribir_decimal_exacto(conversion.resultado), 10),
         "pasos": conversion.pasos,
-        "suma_parcial": " + ".join(str(paso.contribucion) for paso in conversion.pasos),
+        "suma_parcial": " + ".join(escribir_decimal_exacto(paso.contribucion) for paso in conversion.pasos),
         "sustituciones_hex": tuple(paso for paso in conversion.pasos if paso.valor >= 10),
     }
 
 
 def _etapa_division(conversion: ConversionDesdeDecimal) -> dict:
     destino = notacion(conversion.resultado, conversion.base_destino)
+    entero = notacion(conversion.parte_entera, conversion.base_destino)
+    multiplicaciones = tuple(
+        {
+            "operacion": (
+                f"{escribir_decimal_exacto(paso.fraccion_inicial)} × {paso.base} = "
+                f"{escribir_decimal_exacto(paso.producto)}"
+            ),
+            "digito": (
+                f"{paso.digito} → {paso.simbolo_digito}"
+                if paso.digito >= 10 else paso.simbolo_digito
+            ),
+            "restante": escribir_decimal_exacto(paso.fraccion_restante),
+        }
+        for paso in conversion.multiplicaciones
+    )
+    periodo = ""
+    if conversion.inicio_periodo is not None:
+        repetida = conversion.multiplicaciones[conversion.inicio_periodo].fraccion_inicial
+        periodo = (
+            f"La fracción restante {escribir_decimal_exacto(repetida)} se repite: "
+            f"el período {conversion.parte_periodica} comienza en el dígito fraccionario "
+            f"{conversion.inicio_periodo + 1}. Los paréntesis indican los dígitos que se repiten."
+        )
     return {
         "tipo": "division",
         "titulo": titulo_direccion(10, conversion.base_destino),
         "base_salida": conversion.base_destino,
-        "origen": notacion(str(conversion.valor_decimal), 10),
+        "origen": notacion(escribir_decimal_exacto(conversion.valor_decimal), 10),
         "destino": destino,
         "pasos": conversion.pasos,
+        "multiplicaciones": multiplicaciones,
+        "mostrar_divisiones": bool(conversion.pasos) or not multiplicaciones,
+        "periodo": periodo,
+        "lectura_fraccion": f"Los dígitos se leen de arriba hacia abajo: {destino}.",
         "lectura_residuos": (
-            f"Los residuos se leen de abajo hacia arriba: {destino}."
+            f"Los residuos se leen de abajo hacia arriba: {entero}."
             if conversion.pasos
             else f"El cero en cualquier base se escribe {destino}."
         ),
@@ -71,7 +100,7 @@ def convertir_entrada(*, numero: str, base_origen: int, bases_destino: Iterable[
     No genera HTML: solo datos (resultados, etapas con sus pasos, notaciones y
     textos de lectura). Cada etapa aparece una sola vez: si el origen no es
     decimal, la expansión posicional es la etapa compartida y va primero;
-    después hay una etapa de divisiones sucesivas por cada destino no decimal,
+    después hay divisiones y multiplicaciones por cada destino no decimal,
     todas desde el mismo valor intermedio. Si se pidió decimal, su resultado es
     ese valor y no genera una etapa propia.
     """
@@ -82,7 +111,7 @@ def convertir_entrada(*, numero: str, base_origen: int, bases_destino: Iterable[
         for destino in conversion.destinos
         if destino.desde_decimal
     )
-    decimal = notacion(str(conversion.valor_decimal), 10)
+    decimal = notacion(escribir_decimal_exacto(conversion.valor_decimal), 10)
     origen = compartida["origen"] if compartida else decimal
 
     # El origen va aparte y una sola vez; cada resultado solo aporta su escritura y su base.
@@ -91,6 +120,8 @@ def convertir_entrada(*, numero: str, base_origen: int, bases_destino: Iterable[
             "base": destino.base_destino,
             "nombre": NOMBRES_BASE[destino.base_destino],
             "destino": notacion(destino.resultado, destino.base_destino),
+            **({"periodo": destino.desde_decimal.parte_periodica}
+               if destino.desde_decimal and destino.desde_decimal.parte_periodica else {}),
         }
         for destino in conversion.destinos
     )
@@ -107,4 +138,5 @@ def convertir_entrada(*, numero: str, base_origen: int, bases_destino: Iterable[
         "intermedio": decimal if compartida and divisiones else None,
         "ramas": tuple(etapa["destino"] for etapa in divisiones) if compartida else (),
         "decimal_pedido": 10 in conversion.bases_destino,
+        "tiene_fraccion": conversion.valor_decimal % 1 != 0,
     }

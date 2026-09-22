@@ -22,10 +22,13 @@
         const limpio = texto.trim();
         if (!limpio) return "";
         if (limpio[0] === "+" || limpio[0] === "-") {
-            return "Este módulo convierte solo números enteros no negativos.";
+            return "Este módulo convierte solo números no negativos.";
         }
         if (/\s/.test(limpio)) return "El número no debe contener espacios en medio.";
+        if (limpio.split(".").length > 2) return "El número admite como máximo un punto decimal.";
+        if (limpio === ".") return "Ingresa al menos un dígito además del punto decimal.";
         for (const caracter of limpio) {
+            if (caracter === ".") continue;
             const simbolo = caracter.toUpperCase();
             if (validos.has(simbolo)) continue;
             if (origen.value === "16") return `${simbolo} no es un dígito hexadecimal válido.`;
