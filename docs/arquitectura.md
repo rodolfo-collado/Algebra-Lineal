@@ -71,7 +71,7 @@ templates/calculadora/
 ├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal
 ├── modules/matrices/         # entrada rectangular, resultado y procedimientos
-├── modules/expresiones/      # símbolos, expresión compuesta y procedimiento por nodos
+├── modules/expresiones/      # símbolos, expresión o igualdad, y procedimiento por nodos
 ├── modules/ecuaciones/       # Ax = b: entrada, equivalencias y eliminación reutilizada
 └── modules/bases/            # index.html y procedimiento de la conversión
 ```

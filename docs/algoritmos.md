@@ -98,7 +98,10 @@ cada nodo llama a `sumar_matrices`, `restar_matrices`,
 `multiplicar_escalar_matriz`, `multiplicar_matrices`,
 `multiplicar_matriz_vector` o a las operaciones de `vectores.py`. El
 procedimiento de un producto es el que ya devuelve
-`resolver_operacion_matrices`.
+`resolver_operacion_matrices`. Una igualdad no añade un nodo aritmético: son
+dos árboles de ese parser, evaluados por separado y comparados con `Fraction`.
+`ecuaciones_matriciales` sigue resolviendo `Ax = b` por el motor de sistemas;
+no usa esta comparación.
 
 Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
 eliminación hacia arriba, así que la diferencia entre los dos métodos está en un

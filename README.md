@@ -62,12 +62,14 @@ entrada para mantenerla legible.
 
 - Suma, resta, producto por escalar y traspuesta.
 - Producto `AB` y producto matriz-vector `Ax`.
-- Expresiones compuestas, como `A(u + v)` o `2A - 3B`, reutilizando esas operaciones.
+- Expresiones compuestas, como `A(u + v)` o `2A - 3B`, y una igualdad entre dos de ellas, como `A(u + v) = Au + Av`.
 - Procedimiento por filas o como combinación lineal de columnas.
 - Resolución de `Ax = b`, también con matrices rectangulares.
 
 En `Ax`, x es conocido; en `Ax = b`, la herramienta busca x y explica la
 relación entre la ecuación matricial, el sistema y la matriz aumentada.
+En Expresiones matriciales, `=` solo comprueba dos expresiones con valores
+ya definidos: no despeja una incógnita ni demuestra una identidad general.
 
 ### Sistemas numéricos
 
