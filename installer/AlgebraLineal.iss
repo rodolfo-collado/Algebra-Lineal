@@ -7,6 +7,8 @@
 #endif
 #define AppName "Álgebra Lineal"
 #define AppExe "AlgebraLineal.exe"
+; Mismo identificador que desktop.APP_USER_MODEL_ID. No depende de la versión.
+#define AppUserModelId "PyGebra.Desktop"
 
 [Setup]
 AppId={{D0455B79-7F5E-4C78-9F3B-F47187E9A83A}
@@ -51,9 +53,12 @@ Name: "desktopicon"; Description: "Crear un acceso directo en el escritorio"; Gr
 Source: "{#ProjectRoot}\build\prerequisites\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{app}\prerequisites"; Flags: ignoreversion; Check: NeedsWebView2; AfterInstall: InstallWebView2
 Source: "{#ProjectRoot}\dist\AlgebraLineal\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+; La barra de tareas muestra el icono del acceso directo, no el de la ventana.
+; IconFilename apunta al pygebra.ico ya incluido por PyInstaller, no al icono
+; cacheado de AlgebraLineal.exe. AppUserModelID coincide con desktop.py.
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\_internal\assets\brand\app\pygebra.ico"; AppUserModelID: "{#AppUserModelId}"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon; IconFilename: "{app}\_internal\assets\brand\app\pygebra.ico"; AppUserModelID: "{#AppUserModelId}"
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "Abrir {#AppName}"; Flags: nowait postinstall skipifsilent; Check: WebView2Installed

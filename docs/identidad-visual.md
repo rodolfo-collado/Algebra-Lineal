@@ -88,7 +88,7 @@ El símbolo se probó hasta 16 px y sigue reconociéndose. Eso no fija 16 px com
 ## Usos
 
 - **Favicon.** `favicon.svg` y `favicon.ico` en los estáticos de la calculadora. El SVG usa negro y pasa a blanco si el sistema está en oscuro.
-- **Escritorio.** `assets/brand/app/pygebra.ico`, referenciado por el launcher, PyInstaller e Inno Setup.
+- **Escritorio.** `assets/brand/app/pygebra.ico`, referenciado por el launcher, PyInstaller e Inno Setup. En Windows la barra de título usa ese archivo, pero la barra de tareas sigue al acceso directo. El launcher fija el `AppUserModelID` `PyGebra.Desktop` (estable entre versiones) antes de crear la ventana, y los accesos directos declaran el mismo identificador y este icono, no el icono cacheado de `AlgebraLineal.exe`.
 - **Aplicación.** `app-icon-192.png`, `app-icon-256.png` y `app-icon-512.png`. El lienzo de 64 ocupa el 68 % del lado, centrado, con el resto transparente. Hay las mismas piezas en blanco.
 - **Documentación.** El SVG negro sobre claro y el blanco sobre oscuro. Esta página es el ejemplo.
 - **Navegación.** El header combina Larga A y el texto PyGebra. `components/mark.html` deriva del SVG canónico mediante `uv run python scripts/sync_brand_mark.py`; una prueba verifica su sincronización exacta. El símbolo usa el token monocromático `--color-mark`, independiente del acento verde.
