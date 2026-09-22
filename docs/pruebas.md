@@ -37,7 +37,10 @@ comparación con un solo resultado y POST manipulados—, la ecuación matricial
 solución única, infinitas o inconsistente, fracciones, equivalencia exacta con
 Resolver un sistema y entre Gauss y Gauss-Jordan, comprobación `A · x = b`,
 interpretación como combinación lineal, b derivado de las filas y x de las
-columnas, flujo Aplicar sin JavaScript y POST manipulados— y que la interfaz
+columnas, flujo Aplicar sin JavaScript y POST manipulados—, las expresiones
+matriciales —lexer, parser, árbol, tipos, dimensiones, procedimiento por nodo,
+subexpresión, fracciones exactas, regresión contra las primitivas, integración
+web, POST manipulado y formato Exacto/Decimal— y que la interfaz
 no cargue fuentes ni scripts remotos.
 Sirven para detectar regresiones cuando el proyecto crezca.
 

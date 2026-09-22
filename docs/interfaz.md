@@ -382,10 +382,23 @@ fila o por columna, abiertos cuando el resultado tiene pocas entradas
 de interfaz, donde los subíndices se leen mejor; las expresiones con matrices
 se desplazan localmente. Resolver una ecuación matricial tiene su propio formulario.
 
+## Expresiones matriciales
+
+`/matrices/expresiones/` compone las operaciones ya existentes. El formulario
+empieza con un símbolo; **Agregar símbolo** y **Eliminar** cambian la lista, y
+el tipo o las dimensiones se ajustan en ese símbolo. Con JavaScript,
+`expresiones.js` redibuja las celdas y conserva lo escrito. Sin JavaScript,
+**Aplicar** pide al servidor la estructura nueva antes de calcular. El cálculo
+no añade una opción a `CONFIGURACION`.
+
+El resultado va primero. **Ver procedimiento** lista los nodos de abajo hacia
+arriba y cada uno puede pedirse solo con **Calcular solo esta parte**. El
+selector Exacto/Decimal es el de las demás herramientas de álgebra.
+
 ## Resolver Ax = b
 
-`/matrices/ecuaciones/` es la segunda herramienta de Matrices y un formulario
-aparte, `EcuacionMatricialForm` (`forms_ecuaciones.py`): x es la incógnita,
+`/matrices/ecuaciones/` resuelve `Ax = b` cuando x es la incógnita.
+Es un formulario aparte, `EcuacionMatricialForm` (`forms_ecuaciones.py`): x es la incógnita,
 así que no es una operación más de `MatricesForm`. Ambos heredan de
 `FormularioCeldas` (`forms_matrices.py`), que genera las celdas
 `celda_<nombre>_<i>_<j>` con sus labels, rechaza campos repetidos, compara el

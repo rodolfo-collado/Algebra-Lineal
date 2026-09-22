@@ -75,6 +75,8 @@ vectores                →  sistemas
 vectores                →  matrices
 ecuaciones_matriciales  →  sistemas
 ecuaciones_matriciales  →  matrices
+expresiones_matriciales →  matrices
+expresiones_matriciales →  vectores
 sistemas  →  gauss_jordan  →  gauss  →  operaciones_filas  →  matrices
 sistemas  →  expresiones   →  matrices
 ```
@@ -90,6 +92,13 @@ lineal, y las pruebas comprueban que coincide con `combinar` de ese módulo.
 `ecuaciones_matriciales.py` tampoco escalona: escribe `Ax = b` como `[A | b]`
 y llama al motor de sistemas elegido; al vivir por encima de `sistemas.py` y
 de `matrices.py`, `matrices.py` no necesita importar `sistemas.py`.
+
+`expresiones_matriciales` no calcula por su cuenta. El parser arma un árbol;
+cada nodo llama a `sumar_matrices`, `restar_matrices`,
+`multiplicar_escalar_matriz`, `multiplicar_matrices`,
+`multiplicar_matriz_vector` o a las operaciones de `vectores.py`. El
+procedimiento de un producto es el que ya devuelve
+`resolver_operacion_matrices`.
 
 Gauss-Jordan no repite el escalonamiento: llama a `aplicar_gauss` y solo añade la
 eliminación hacia arriba, así que la diferencia entre los dos métodos está en un

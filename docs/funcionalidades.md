@@ -405,9 +405,74 @@ misma estructura.
 Para las decisiones de presentación y accesibilidad, consulta [Interfaz](interfaz.md).
 La reutilización del cálculo se explica en [Algoritmos](algoritmos.md).
 
+## Expresiones matriciales
+
+**Expresiones matriciales** (`/matrices/expresiones/`) evalúa una expresión
+compuesta con las mismas operaciones de matrices y vectores. No sustituye a
+Operaciones con matrices ni a Resolver Ax = b: esas herramientas siguen siendo
+el acceso directo a una sola operación o a la ecuación.
+
+El usuario define solo los símbolos que necesita (nombre, tipo y valores) y
+escribe la expresión. Con JavaScript puede agregar, quitar, cambiar el tipo y
+las dimensiones sin recargar el inicio; sin JavaScript, **Agregar símbolo**,
+**Eliminar** y **Aplicar** hacen lo mismo en el servidor.
+
+### Sintaxis
+
+Enteros, fracciones (`1/2`, `-3/4`) y los decimales exactos que ya acepta el
+parser del proyecto. Símbolos definidos por el usuario (`A`, `u`, `k`, `A1`).
+Operadores `+`, `-`, `*` y paréntesis. El menos unario aplica al factor
+siguiente: `-3B` es `(-3)B`.
+
+La multiplicación implícita equivale a `*` cuando hay una sola lectura:
+
+```text
+2A = 2*A    AB = A*B    Au = A*u    A(u + v) = A*(u + v)
+```
+
+Si `AB` puede ser el símbolo `AB` o el producto `A*B`, la expresión se rechaza
+y hay que escribir `*`. No se adivina.
+
+Precedencia: paréntesis, multiplicación, suma y resta. `A + BC` es `A + (BC)`.
+`(A + B)C` respeta los paréntesis. La resta asocia por la izquierda.
+
+### Tipos y dimensiones
+
+Suma y resta: matriz con matriz, vector con vector o escalar con escalar, y
+solo si las dimensiones coinciden. Producto: escalar con escalar, vector o
+matriz; matriz con matriz; matriz con vector. No hay producto punto automático
+ni producto vector por matriz.
+
+El error nombra la subexpresión que falla. Si `B + C` no se puede sumar, el
+mensaje habla de `B + C`. Si esa suma existe pero `A(B + C)` no se puede
+multiplicar, el mensaje habla de ese producto y muestra las dimensiones.
+
+### Arquitectura
+
+```text
+texto → lexer → parser → AST → evaluador → primitivas existentes
+```
+
+Cada nodo guarda operación, hijos, texto y una ruta estable (`0`, `0.1`,
+`0.1.0`). La evaluación recorre el árbol de abajo hacia arriba. Se puede pedir
+solo una ruta: la interfaz ofrece **Calcular solo esta parte** en cada paso.
+Matriz por matriz y matriz por vector reutilizan el procedimiento de
+`resolver_operacion_matrices`; no hay un segundo algoritmo de producto.
+
+El resultado usa el selector Exacto/Decimal ya existente.
+
+### Límites de este incremento
+
+No hay inversa, determinante, potencias, traspuesta dentro de la expresión,
+sistemas simbólicos, matrices con entradas simbólicas, derivadas ni ecuaciones
+(`Ax = b` sigue en su herramienta). El signo `=` no forma parte del lenguaje.
+Tampoco se resuelve una matriz desconocida. El árbol y las rutas quedan listos
+para, más adelante, comparar expresiones o sustituir una incógnita sin cambiar
+el parser.
+
 ## Visualización de resultados en PyGebra
 
-Sistemas, Vectores, Matrices y Ax=b permiten alternar **Exacto / Decimal**
+Sistemas, Vectores, Matrices, Expresiones matriciales y Ax=b permiten alternar **Exacto / Decimal**
 después de resolver. El máximo de decimales puede ser 2, 4 (predeterminado),
 6 u 8. La preferencia se conserva localmente entre herramientas compatibles.
 `1/2` se ve como `0.5` y `1/3` como `0.3333` con cuatro decimales; `4` sigue
