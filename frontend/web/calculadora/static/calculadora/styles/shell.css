@@ -31,25 +31,10 @@
 
 .app-mark {
     display: block;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2rem;
+    height: 2rem;
+    color: var(--color-mark);
     flex: none;
-}
-
-.app-mark-plate {
-    fill: var(--color-brand);
-}
-
-.app-mark-cell {
-    fill: var(--color-mark-cell);
-}
-
-.app-mark-bar {
-    fill: var(--color-mark-bar);
-}
-
-.app-mark-aug {
-    fill: var(--color-mark-aug);
 }
 
 .app-brand-text {
@@ -60,14 +45,9 @@
 
 .app-name {
     font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 700;
+    font-size: 1.1rem;
+    font-weight: 650;
     letter-spacing: -0.02em;
-}
-
-.app-tagline {
-    color: var(--color-muted);
-    font-size: 0.72rem;
 }
 
 .header-actions {
@@ -84,11 +64,11 @@
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    min-height: 2.25rem;
+    min-height: 2.75rem;
     padding: 0.25rem 0.7rem;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-muted);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-raised);
     color: var(--color-text);
     font-size: 0.8rem;
     font-weight: 600;
@@ -166,7 +146,7 @@
     min-width: 0;
     width: min(100% - 2rem, var(--content-max));
     margin: 0 auto;
-    padding: 1.1rem 0 2.5rem;
+    padding: 1.5rem 0 3rem;
 }
 
 /* —— Cajón de navegación —— */
@@ -270,14 +250,37 @@
     display: none;
 }
 
+/* Cada área es un details: título plegable con el mismo chevrón que sus categorías. */
 .nav-area-title {
-    margin: 0 0 0.25rem;
-    padding-inline: 0.6rem;
-    color: var(--color-muted);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: 0.9rem;
+    font-weight: 650;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--motion-fast);
+}
+
+.nav-area-title::-webkit-details-marker {
+    display: none;
+}
+
+.nav-area-title:hover {
+    background: var(--color-surface-muted);
+}
+
+.nav-area[open] > .nav-area-title {
+    margin-bottom: 0.25rem;
+}
+
+.nav-area[open] > .nav-area-title .nav-chevron {
+    transform: rotate(90deg);
 }
 
 .nav-category[hidden] {
@@ -442,12 +445,6 @@
 @media (max-width: 880px) {
     html[data-drawer] {
         overflow: hidden;
-    }
-}
-
-@media (max-width: 760px) {
-    .app-tagline {
-        display: none;
     }
 }
 

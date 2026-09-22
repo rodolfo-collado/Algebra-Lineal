@@ -23,7 +23,7 @@ from urllib.request import Request, urlopen
 LOOPBACK_HOST = "127.0.0.1"
 DJANGO_SETTINGS_MODULE = "frontend.web.algebra_web.settings"
 DESKTOP_ENVIRONMENT = "ALGEBRA_DESKTOP"
-APP_TITLE = "Álgebra Lineal"
+APP_TITLE = "PyGebra"
 WINDOW_WIDTH = 1100
 WINDOW_HEIGHT = 760
 WINDOW_MIN_SIZE = (760, 560)
@@ -73,7 +73,7 @@ def ensure_webview2_runtime() -> None:
             "Vuelve a ejecutar el instalador de Álgebra Lineal con conexión a Internet "
             "para instalarlo. También puedes descargar el runtime Evergreen desde:\n"
             f"{WEBVIEW2_DOWNLOAD_URL}\n"
-            "Después, vuelve a abrir Álgebra Lineal."
+            "Después, vuelve a abrir PyGebra."
         )
 
 

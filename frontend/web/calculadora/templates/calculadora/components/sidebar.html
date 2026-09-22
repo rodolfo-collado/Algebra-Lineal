@@ -11,8 +11,13 @@
             <span>Inicio</span>
         </a>
         {% for area, categorias in arbol_navegacion %}
-            <section class="nav-area" data-grupo aria-labelledby="nav-area-{{ area.id }}">
-                <h2 id="nav-area-{{ area.id }}" class="nav-area-title">{{ area.nombre }}</h2>
+            <details class="nav-area" data-grupo aria-labelledby="nav-area-{{ area.id }}"{% if area == categoria_actual.area %} open{% endif %}>
+                <summary class="nav-area-title" id="nav-area-{{ area.id }}">
+                    <span>{{ area.nombre }}</span>
+                    <svg class="nav-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                        <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </summary>
                 {% for categoria, herramientas in categorias %}
                     <details class="nav-category" data-grupo data-categoria="{{ categoria.id }}"{% if categoria == categoria_actual %} open{% endif %}>
                         <summary class="nav-category-summary">
@@ -20,7 +25,6 @@
                                 {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}
                             </span>
                             <span class="nav-category-name">{{ categoria.nombre }}</span>
-                            {% if not categoria.disponible %}<span class="nav-badge">Próximamente</span>{% endif %}
                             <svg class="nav-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
                                 <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
@@ -41,7 +45,7 @@
                         </ul>
                     </details>
                 {% endfor %}
-            </section>
+            </details>
         {% endfor %}
     </nav>
 </aside>

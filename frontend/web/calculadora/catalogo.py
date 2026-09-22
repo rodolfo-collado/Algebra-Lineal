@@ -139,10 +139,7 @@ SISTEMAS = Herramienta(
     id="sistemas",
     nombre="Resolver un sistema",
     categoria=SISTEMAS_ECUACIONES,
-    descripcion=(
-        "Resuelve por Gauss o Gauss-Jordan, o compara los dos, con el procedimiento "
-        "paso a paso, la clasificación, las columnas pivote y el sistema resultante."
-    ),
+    descripcion="Resuelve un sistema y explora sus pasos con Gauss o Gauss-Jordan.",
     estado="disponible",
     route_name="calculadora:sistemas",
     palabras_clave=(
@@ -153,8 +150,7 @@ SISTEMAS = Herramienta(
         "soluciones infinitas", "variables libres", "pivote", "pivotes", "columnas pivote",
         "variables pivote",
     ),
-    # No hay otra herramienta disponible que aporte algo sobre el mismo sistema.
-    relacionadas=(),
+    relacionadas=("ecuaciones-matriciales",),
     invitacion="Resolver el sistema completo",
 )
 
@@ -164,10 +160,7 @@ OPERACIONES_VECTORES = Herramienta(
     id="operaciones-vectores",
     nombre="Operaciones con vectores",
     categoria=VECTORES,
-    descripcion=(
-        "Suma, resta y multiplica por un escalar vectores de cualquier dimensión, "
-        "y comprueba si un vector es combinación lineal de otros con el procedimiento."
-    ),
+    descripcion="Opera con vectores o encuentra los coeficientes de una combinación lineal.",
     estado="disponible",
     route_name="calculadora:operaciones-vectores",
     palabras_clave=(
@@ -176,7 +169,7 @@ OPERACIONES_VECTORES = Herramienta(
         "combinacion lineal", "coeficientes", "ecuación vectorial", "span", "generado",
         "conjunto generado", "dimensión", "componentes", "rn",
     ),
-    relacionadas=(),
+    relacionadas=("ecuaciones-matriciales",),
     invitacion="Operar con vectores",
 )
 
@@ -203,16 +196,14 @@ CONVERSION_BASES = Herramienta(
 # un sistema. En Ax el vector x es conocido y solo se calcula el producto.
 OPERACIONES_MATRICES = Herramienta(
     id="operaciones-matrices", nombre="Operaciones con matrices", categoria=MATRICES,
-    descripcion=(
-        "Suma, resta, multiplica por un escalar, entre matrices (AB) o por un vector (Ax) "
-        "y traspón matrices rectangulares, con procedimiento y fracciones exactas."
-    ),
+    descripcion="Opera con matrices, calcula AB o Ax y sigue el desarrollo paso a paso.",
     estado="disponible", route_name="calculadora:operaciones-matrices",
     palabras_clave=("matriz", "matrices", "suma", "resta", "escalar", "traspuesta",
                     "transpuesta", "filas", "columnas", "rectangular", "fracciones",
                     "multiplicación de matrices", "producto de matrices", "matriz por matriz",
                     "ax", "matriz por vector", "fila por columna", "regla fila-vector",
                     "producto punto", "combinación lineal"),
+    relacionadas=("ecuaciones-matriciales",),
     invitacion="Operar con matrices",
 )
 
@@ -221,15 +212,13 @@ OPERACIONES_MATRICES = Herramienta(
 # sistema (Gauss, Gauss-Jordan o ambos) sobre la matriz aumentada [A | b].
 ECUACIONES_MATRICIALES = Herramienta(
     id="ecuaciones-matriciales", nombre="Resolver Ax = b", categoria=MATRICES,
-    descripcion=(
-        "Resuelve la ecuación matricial Ax = b con A y b conocidos: la escribe como ecuación vectorial, "
-        "sistema y matriz aumentada [A | b], y determina si tiene solución única, infinitas o ninguna."
-    ),
+    descripcion="Encuentra x y conecta la ecuación matricial Ax = b con su sistema lineal.",
     estado="disponible", route_name="calculadora:ecuaciones-matriciales",
     palabras_clave=("ecuación matricial", "ecuaciones matriciales", "ax=b", "ax = b", "resolver ax=b",
                     "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
                     "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
                     "inconsistente"),
+    relacionadas=("sistemas", "operaciones-matrices", "operaciones-vectores"),
     invitacion="Resolver una ecuación matricial",
 )
 
