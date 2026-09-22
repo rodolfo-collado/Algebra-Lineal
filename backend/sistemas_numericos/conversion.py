@@ -12,6 +12,13 @@ from .validacion import normalizar_numero, validar_base
 MAX_PASOS_FRACCIONARIOS = 1024
 
 
+def _partir_signo(normalizado: str) -> tuple[bool, str]:
+    """Separa el ``-`` inicial ya validado. La magnitud sigue el algoritmo actual."""
+    if normalizado.startswith("-"):
+        return True, normalizado[1:]
+    return False, normalizado
+
+
 @dataclass(frozen=True)
 class PasoDivision:
     """Un paso de división sucesiva: dividendo ÷ base = cociente, residuo."""
@@ -86,6 +93,8 @@ class Conversion:
     resultado: str
     hacia_decimal: ConversionHaciaDecimal | None
     desde_decimal: ConversionDesdeDecimal | None
+    # El procedimiento muestra la magnitud; este indicador evita leer el signo del texto.
+    negativo: bool = False
 
     @property
     def etapas(self) -> tuple[ConversionHaciaDecimal | ConversionDesdeDecimal, ...]:
@@ -116,6 +125,7 @@ class ConversionMultiple:
     valor_decimal: int | Fraction
     hacia_decimal: ConversionHaciaDecimal | None
     destinos: tuple[ResultadoDestino, ...]
+    negativo: bool = False
 
     @property
     def bases_destino(self) -> tuple[int, ...]:
@@ -135,18 +145,19 @@ def decimal_a_base(valor: int | Fraction, base_destino: int) -> ConversionDesdeD
     que exceda MAX_PASOS_FRACCIONARIOS produce ValueError, nunca truncamiento.
 
     Ejemplo (13 → binario): 13÷2→6 r1, 6÷2→3 r0, 3÷2→1 r1, 1÷2→0 r1 → 1101₂.
+    Un valor negativo usa este mismo procedimiento sobre su magnitud y el signo
+    se antepone al resultado. El cero no conserva signo.
     """
     validar_base(base_destino)
     if base_destino == 10:
         raise ValueError("La base destino debe ser distinta de decimal.")
     if not isinstance(valor, (int, Fraction)) or isinstance(valor, bool):
         raise ValueError("El valor decimal debe ser un entero o Fraction exacto.")
-    if valor < 0:
-        raise ValueError(
-            "Este módulo convierte solo números no negativos."
-        )
 
-    if valor == 0:
+    # El signo no entra al algoritmo: divisiones y multiplicaciones ven la magnitud.
+    negativo = valor < 0
+    magnitud = -valor if negativo else valor
+    if magnitud == 0:
         return ConversionDesdeDecimal(
             valor_decimal=0,
             base_destino=base_destino,
@@ -156,8 +167,8 @@ def decimal_a_base(valor: int | Fraction, base_destino: int) -> ConversionDesdeD
 
     pasos: list[PasoDivision] = []
     residuos: list[str] = []
-    actual = valor // 1
-    fraccion = Fraction(valor - actual)
+    actual = magnitud // 1
+    fraccion = Fraction(magnitud - actual)
     while actual > 0:
         # División entera: cociente y residuo de n = q·b + r, 0 ≤ r < b.
         cociente = actual // base_destino
@@ -210,6 +221,8 @@ def decimal_a_base(valor: int | Fraction, base_destino: int) -> ConversionDesdeD
         resultado += "." + parte_no_periodica
         if parte_periodica:
             resultado += f"({parte_periodica})"
+    if negativo:
+        resultado = "-" + resultado
     return ConversionDesdeDecimal(
         valor_decimal=valor,
         base_destino=base_destino,
@@ -239,8 +252,9 @@ def base_a_decimal(texto: str, base_origen: int) -> ConversionHaciaDecimal:
         raise ValueError("La base de origen debe ser distinta de decimal.")
 
     normalizado = normalizar_numero(texto, base_origen)
+    negativo, magnitud = _partir_signo(normalizado)
     # Quitar ceros a la izquierda para el cálculo, salvo el cero solo.
-    entera, _, fraccionaria = normalizado.partition(".")
+    entera, _, fraccionaria = magnitud.partition(".")
     entera = entera.lstrip("0") or "0"
     significativo = entera + fraccionaria
     n = len(entera)
@@ -267,11 +281,13 @@ def base_a_decimal(texto: str, base_origen: int) -> ConversionHaciaDecimal:
             )
         )
 
+    if total == 0:
+        negativo = False
     return ConversionHaciaDecimal(
         texto_original=texto.strip(),
-        texto_normalizado=normalizado,
+        texto_normalizado=magnitud,
         base_origen=base_origen,
-        resultado=total,
+        resultado=-total if negativo else total,
         pasos=tuple(pasos),
     )
 
@@ -283,12 +299,16 @@ def parsear_decimal(texto: str) -> int | Fraction:
     conversiones automáticas de otras bases.
     """
     normalizado = normalizar_numero(texto, 10)
-    entera, _, fraccionaria = normalizado.partition(".")
+    negativo, magnitud = _partir_signo(normalizado)
+    entera, _, fraccionaria = magnitud.partition(".")
     significativo = entera + fraccionaria
     total = 0
     for digito in significativo:
         total = total * 10 + digito_a_valor(digito)
-    return Fraction(total, potencia_entera(10, len(fraccionaria))) if fraccionaria else total
+    valor = Fraction(total, potencia_entera(10, len(fraccionaria))) if fraccionaria else total
+    if not negativo or valor == 0:
+        return valor
+    return -valor
 
 
 def escribir_decimal_exacto(valor: int | Fraction) -> str:
@@ -363,6 +383,7 @@ def convertir_a_varias_bases(
         valor_decimal=valor_decimal,
         hacia_decimal=hacia_decimal,
         destinos=tuple(resultados),
+        negativo=valor_decimal < 0,
     )
 
 
@@ -386,4 +407,5 @@ def convertir(texto: str, base_origen: int, base_destino: int) -> Conversion:
         resultado=destino.resultado,
         hacia_decimal=conversion.hacia_decimal,
         desde_decimal=destino.desde_decimal,
+        negativo=conversion.negativo,
     )

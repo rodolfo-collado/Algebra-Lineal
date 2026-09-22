@@ -76,7 +76,7 @@ numéricos sigue en Resolver Ax = b.
 
 ### Sistemas numéricos
 
-- Conversión de enteros no negativos entre binario, octal, decimal y hexadecimal.
+- Conversión entre binario, octal, decimal y hexadecimal, incluidos números negativos.
 - Un mismo número a una, varias o todas las demás bases en una sola consulta.
 - Divisiones sucesivas y expansión posicional con pasos visibles.
 - Conversión entre bases no decimales mostrando el paso intermedio por decimal,

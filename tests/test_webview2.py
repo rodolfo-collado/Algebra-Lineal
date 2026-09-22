@@ -88,6 +88,33 @@ class PruebasWebView2(unittest.TestCase):
         self.assertFalse(webview.start.call_args.kwargs["http_server"])
         cerrar.assert_called_once_with(server, thread)
 
+    def test_fija_la_identidad_de_windows_antes_de_crear_la_ventana(self):
+        orden = []
+        windll = MagicMock()
+
+        def marcar(app_id):
+            orden.append(app_id)
+            return 0
+
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID.side_effect = marcar
+        webview = MagicMock()
+
+        def crear(*args, **kwargs):
+            orden.append("ventana")
+            return MagicMock()
+
+        webview.create_window.side_effect = crear
+        with patch.object(desktop.sys, "platform", "win32"), \
+                patch.object(desktop, "webview2_available", return_value=True), \
+                patch("ctypes.windll", windll, create=True), \
+                patch.dict("sys.modules", webview=webview), \
+                patch.object(desktop, "load_wsgi_application"), \
+                patch.object(desktop, "start_waitress", return_value=(object(), object(), "http://127.0.0.1:49173/", None)), \
+                patch.object(desktop, "wait_for_server"), \
+                patch.object(desktop, "stop_waitress"):
+            desktop.run_desktop()
+        self.assertEqual(orden, ["PyGebra.Desktop", "ventana"])
+
     def test_fallo_de_webview_no_deja_el_servidor_abierto(self):
         webview = MagicMock()
         webview.start.side_effect = RuntimeError("fallo de ventana")

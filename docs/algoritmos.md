@@ -152,9 +152,18 @@ para conservar valores exactos, sin `float`:
 Entre bases no decimales se mantiene **origen → decimal exacto → destino**.
 No hay tablas ni agrupaciones particulares para cada par de bases.
 `digitos.py` convierte símbolos A–F y calcula potencias; `validacion.py`
-comprueba bases y dígitos a ambos lados del punto. Acepta `.31` como `0.31`
-y `5.` como `5`; rechaza múltiples puntos, solo `.`, signos y dígitos inválidos.
+comprueba bases y dígitos a ambos lados del punto. Acepta `.31` como `0.31`,
+`5.` como `5` y un único `-` al inicio (`-13`, `-.31`); rechaza múltiples puntos,
+solo `.`, el signo `+`, un `-` que no esté al inicio y dígitos inválidos.
 Los paréntesis de períodos son una notación de salida, no una sintaxis de entrada.
+
+Para números negativos, PyGebra separa el signo, convierte la magnitud con los
+mismos algoritmos y vuelve a aplicar el signo al resultado. `-13₁₀` es `-1101₂`.
+Esto no es complemento a dos ni una representación de ancho fijo: el módulo
+convierte números matemáticos escritos en distintas bases, no patrones de bits.
+El cero con signo (`-0`, `-000.000`) vale `0` y se escribe sin signo. Divisiones,
+multiplicaciones, expansiones y períodos muestran la magnitud; el signo aparece
+solo en el número completo.
 
 `conversion.py` devuelve pasos estructurados de división, expansión y
 `PasoMultiplicacion` (fracción inicial, base, producto, dígito, símbolo y fracción

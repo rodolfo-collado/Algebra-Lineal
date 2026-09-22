@@ -57,10 +57,29 @@ try {
         if (-not (Test-Path -LiteralPath $path)) { throw "El instalador no creó $path" }
     }
     $shell = New-Object -ComObject WScript.Shell
+    $expectedIcon = Join-Path $installDirectory '_internal\assets\brand\app\pygebra.ico'
+    if (-not (Test-Path -LiteralPath $expectedIcon -PathType Leaf)) {
+        throw "La distribución no incluye el icono de PyGebra: $expectedIcon"
+    }
     foreach ($shortcutPath in @($startShortcut, $desktopShortcut)) {
         $shortcut = $shell.CreateShortcut($shortcutPath)
         if ($shortcut.TargetPath -ne $appPath -or $shortcut.WorkingDirectory -ne $installDirectory) {
             throw "El acceso directo depende de una ruta incorrecta: $shortcutPath"
+        }
+        $location = [string]$shortcut.IconLocation
+        $iconPath = $location
+        $iconIndex = 0
+        if ($location -match '^(.*),(\d+)$') {
+            $iconPath = $Matches[1]
+            $iconIndex = [int]$Matches[2]
+        }
+        if ($iconIndex -ne 0 -or [IO.Path]::GetFullPath($iconPath) -ne [IO.Path]::GetFullPath($expectedIcon)) {
+            throw "El acceso directo no usa pygebra.ico: $shortcutPath -> $location"
+        }
+        $shortcutBytes = [IO.File]::ReadAllBytes($shortcutPath)
+        $shortcutText = [Text.Encoding]::Unicode.GetString($shortcutBytes)
+        if ($shortcutText -notlike '*PyGebra.Desktop*') {
+            throw "El acceso directo no declara AppUserModelID PyGebra.Desktop: $shortcutPath"
         }
     }
 

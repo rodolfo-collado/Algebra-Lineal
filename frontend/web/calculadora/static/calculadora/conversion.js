@@ -21,13 +21,16 @@
         const validos = new Set(base.digitos);
         const limpio = texto.trim();
         if (!limpio) return "";
-        if (limpio[0] === "+" || limpio[0] === "-") {
-            return "Este módulo convierte solo números no negativos.";
-        }
         if (/\s/.test(limpio)) return "El número no debe contener espacios en medio.";
-        if (limpio.split(".").length > 2) return "El número admite como máximo un punto decimal.";
-        if (limpio === ".") return "Ingresa al menos un dígito además del punto decimal.";
-        for (const caracter of limpio) {
+        // Misma sintaxis que normalizar_numero: un único "-" al inicio, sobre la magnitud.
+        const magnitud = limpio[0] === "-" ? limpio.slice(1) : limpio;
+        if (!magnitud) return "Ingresa al menos un dígito además del signo.";
+        if ([...magnitud].some((caracter) => caracter === "+" || caracter === "-")) {
+            return "El signo solo puede ser un − al inicio.";
+        }
+        if (magnitud.split(".").length > 2) return "El número admite como máximo un punto decimal.";
+        if (magnitud === ".") return "Ingresa al menos un dígito además del punto decimal.";
+        for (const caracter of magnitud) {
             if (caracter === ".") continue;
             const simbolo = caracter.toUpperCase();
             if (validos.has(simbolo)) continue;

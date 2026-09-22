@@ -208,8 +208,8 @@ dimensiones incompatibles se detectan antes de intentar resolver.
 
 ## Sistemas numéricos
 
-La herramienta **Conversión de bases** (`/bases/conversion/`) convierte enteros
-no negativos entre binario, octal, decimal y hexadecimal: se escribe el número,
+La herramienta **Conversión de bases** (`/bases/conversion/`) convierte números
+entre binario, octal, decimal y hexadecimal: se escribe el número,
 se elige una única base de origen y, bajo **Convertir a**, se marcan una, varias
 o todas las demás bases (la de origen no se ofrece como destino y hace falta al
 menos una). Solo hay dos algoritmos, y cualquier par de bases se resuelve con
@@ -238,9 +238,12 @@ genera una segunda etapa. Si el origen ya es decimal, no hay etapa intermedia.
 En hexadecimal los residuos y dígitos `10`–`15` se escriben `A`–`F`; la entrada
 acepta minúsculas y el resultado se normaliza a mayúsculas. El procedimiento
 muestra esa sustitución (`10 → A`, `A = 10`) y siempre queda visible junto al
-resultado. Los dígitos inválidos para la base elegida, la entrada vacía y los
-números negativos se rechazan con un mensaje claro; no se admiten fracciones ni
-otras bases.
+resultado. Se admite un punto decimal (`.31` como `0.31`, `5.` como `5`) y un
+único `-` al inicio. El signo se conserva y el algoritmo trabaja sobre la
+magnitud, así que `-13₁₀` es `-1101₂`: no es complemento a dos. El cero negativo
+(`-0`, `-0.0`) se escribe `0`. Los dígitos inválidos para la base elegida, la
+entrada vacía y un signo mal colocado se rechazan con un mensaje claro; no se
+admiten otras bases.
 
 El núcleo vive en `backend/sistemas_numericos/` y devuelve los pasos como datos
 (dividendo, cociente, residuo y símbolo; o dígito, valor, posición, potencia y
@@ -248,8 +251,8 @@ aporte), sin HTML. `convertir_a_varias_bases` obtiene el decimal una vez y lo
 reparte entre los destinos; `convertir` es su caso de un solo destino. No usa
 `bin`, `oct`, `hex` ni `int(texto, base)`: la conversión se construye a mano, y
 `tests/test_sistemas_numericos.py` lo comprueba con `ast`. El teclado en
-pantalla solo ofrece los dígitos válidos para la base de origen (`0 1`, `0`–`7`,
-`0`–`9` o `0`–`F`) y, al cambiarla, la entrada se revisa al instante y la
+pantalla ofrece el signo −, el punto y los dígitos válidos para la base de origen
+(`0 1`, `0`–`7`, `0`–`9` o `0`–`F`) y, al cambiarla, la entrada se revisa al instante y la
 casilla de esa base desaparece de «Convertir a» (sin JavaScript se ven las
 cuatro casillas); el servidor vuelve a validar al convertir: destinos válidos,
 sin repetir, sin la base de origen, al menos uno, y un número de hasta 128
