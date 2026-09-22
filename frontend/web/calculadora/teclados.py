@@ -86,6 +86,7 @@ OPERACIONES = GrupoTeclas("Operaciones", (Tecla("+", "+", "Más"), MENOS, FRACCI
 ECUACIONES = GrupoTeclas("Ecuaciones", (Tecla("; nueva ecuación", ";\n", "Separar la siguiente ecuación"),))
 VALORES = GrupoTeclas("Valores", (MENOS, FRACCION))
 SEPARADOR = GrupoTeclas("Separador", (Tecla(".", ".", "Punto decimal"),))
+SIGNO = GrupoTeclas("Signo", (MENOS,))
 
 
 def grupo_digitos(base: int) -> GrupoTeclas:
@@ -97,7 +98,7 @@ PERFIL_NUMERICO = Perfil("numerico", (VALORES,), ayuda="Inserta en la celda dond
 PERFILES_BASE = {
     base: Perfil(
         f"base-{base}",
-        (grupo_digitos(base), SEPARADOR),
+        (grupo_digitos(base), SEPARADOR, SIGNO),
         ayuda="Inserta en el campo del número. También puedes escribir con el teclado físico.",
     )
     for base in sorted(BASES_SOPORTADAS)

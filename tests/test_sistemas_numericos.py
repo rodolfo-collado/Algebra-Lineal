@@ -199,8 +199,8 @@ class PruebasConversionEntreBases(unittest.TestCase):
             convertir("102", 2, 16)
         with self.assertRaisesRegex(ValueError, "Ingresa un número"):
             convertir("   ", 8, 2)
-        with self.assertRaisesRegex(ValueError, "no negativos"):
-            convertir("-1", 10, 16)
+        with self.assertRaisesRegex(ValueError, "al inicio"):
+            convertir("--1", 10, 16)
         with self.assertRaisesRegex(ValueError, "base debe ser"):
             convertir("1", 3, 10)
         self.assertEqual(convertir("  ff ", 16, 2).resultado, "11111111")
@@ -383,13 +383,10 @@ class PruebasValidacion(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalizar_numero("hola", 16)
 
-    def test_negativos_rechazados(self):
-        with self.assertRaisesRegex(ValueError, "no negativos"):
-            normalizar_numero("-13", 10)
-        with self.assertRaisesRegex(ValueError, "no negativos"):
-            decimal_a_base(-1, 2)
-        with self.assertRaisesRegex(ValueError, "no negativos"):
-            normalizar_numero("-1011", 2)
+    def test_signo_solo_al_inicio(self):
+        self.assertEqual(normalizar_numero("-13", 10), "-13")
+        self.assertEqual(normalizar_numero("-1011", 2), "-1011")
+        self.assertEqual(decimal_a_base(-1, 2).resultado, "-1")
 
     def test_parsear_decimal(self):
         self.assertEqual(parsear_decimal("0"), 0)
@@ -468,10 +465,12 @@ class PruebasFraccionarias(unittest.TestCase):
             self.assertEqual(normalizar_numero(texto, base), esperado)
         for texto, base in (("1.2.3", 10), (".", 10), ("", 10), ("2.01", 2),
                             ("0.2", 2), ("A.G", 16), ("8.1", 8), ("0.8", 8),
-                            ("-0.5", 10), ("+0.5", 10), ("0,5", 10), ("1. 2", 10)):
+                            ("+0.5", 10), ("0,5", 10), ("1. 2", 10), ("--1", 10)):
             with self.subTest(texto=texto), self.assertRaises(ValueError):
                 normalizar_numero(texto, base)
-        for valor in (0.5, True, "0.5", Fraction(-1, 2)):
+        self.assertEqual(normalizar_numero("-0.5", 10), "-0.5")
+        self.assertEqual(normalizar_numero("-.31", 10), "-0.31")
+        for valor in (0.5, True, "0.5"):
             with self.subTest(valor=valor), self.assertRaises(ValueError):
                 decimal_a_base(valor, 2)
         self.assertEqual(parsear_decimal(".31"), Fraction(31, 100))
@@ -512,6 +511,95 @@ class PruebasFraccionarias(unittest.TestCase):
                     k = len(resultado.parte_periodica)
                     reconstruido += Fraction(evaluar(resultado.parte_periodica), base ** n * (base ** k - 1))
                 self.assertEqual(reconstruido, valor)
+
+
+class PruebasNumerosNegativos(unittest.TestCase):
+    def test_enteros_conservan_el_signo_en_las_cuatro_bases(self):
+        self.assertEqual(convertir("-13", 10, 2).resultado, "-1101")
+        self.assertEqual(convertir("-13", 10, 8).resultado, "-15")
+        self.assertEqual(convertir("-13", 10, 16).resultado, "-D")
+        self.assertEqual(convertir("-1101", 2, 10).resultado, "-13")
+        self.assertEqual(convertir("-15", 8, 10).resultado, "-13")
+        self.assertEqual(convertir("-D", 16, 10).resultado, "-13")
+        pasos = decimal_a_base(-13, 2)
+        self.assertEqual(pasos.pasos, decimal_a_base(13, 2).pasos)
+        self.assertTrue(all(paso.dividendo > 0 for paso in pasos.pasos))
+        self.assertTrue(convertir("-13", 10, 2).negativo)
+
+    def test_fracciones_y_periodo_usan_la_magnitud(self):
+        self.assertEqual(convertir("-0.5", 10, 2).resultado, "-0.1")
+        self.assertEqual(convertir("-5.5", 10, 16).resultado, "-5.8")
+        self.assertEqual(convertir("-101.101", 2, 10).resultado, "-5.625")
+        self.assertEqual(convertir("-A.F", 16, 10).resultado, "-10.9375")
+        self.assertEqual(parsear_decimal("-5.625"), Fraction(-45, 8))
+        self.assertEqual(parsear_decimal("-5"), -5)
+        positivo = decimal_a_base(Fraction(31, 100), 16)
+        negativo = decimal_a_base(Fraction(-31, 100), 16)
+        self.assertEqual(negativo.resultado, "-" + positivo.resultado)
+        self.assertEqual(negativo.parte_periodica, positivo.parte_periodica)
+        self.assertEqual(negativo.parte_no_periodica, positivo.parte_no_periodica)
+        self.assertEqual(negativo.multiplicaciones, positivo.multiplicaciones)
+        self.assertTrue(all(paso.fraccion_inicial >= 0 for paso in negativo.multiplicaciones))
+        expansion = base_a_decimal("-101.101", 2)
+        self.assertEqual(expansion.resultado, Fraction(-45, 8))
+        self.assertTrue(all(paso.contribucion >= 0 for paso in expansion.pasos))
+        self.assertEqual(sum(paso.contribucion for paso in expansion.pasos), Fraction(45, 8))
+
+    def test_multidestino_calcula_el_decimal_una_vez(self):
+        with (
+            patch.object(conversion_modulo, "parsear_decimal", wraps=parsear_decimal) as parseo,
+            patch.object(conversion_modulo, "decimal_a_base", wraps=decimal_a_base) as desde,
+        ):
+            conversion = convertir_a_varias_bases("-13", 10, (2, 8, 16))
+        parseo.assert_called_once_with("-13")
+        self.assertEqual([llamada.args[0] for llamada in desde.call_args_list], [-13, -13, -13])
+        self.assertTrue(all(llamada.args[0] is conversion.valor_decimal for llamada in desde.call_args_list))
+        self.assertEqual([destino.resultado for destino in conversion.destinos], ["-1101", "-15", "-D"])
+        self.assertTrue(conversion.negativo)
+
+        with (
+            patch.object(conversion_modulo, "base_a_decimal", wraps=base_a_decimal) as hacia,
+            patch.object(conversion_modulo, "decimal_a_base", wraps=decimal_a_base) as desde,
+        ):
+            conversion = convertir_a_varias_bases("-101.101", 2, (10, 8, 16))
+        hacia.assert_called_once_with("-101.101", 2)
+        self.assertEqual(desde.call_count, 2)
+        self.assertTrue(all(llamada.args[0] is conversion.valor_decimal for llamada in desde.call_args_list))
+        self.assertEqual(
+            [destino.resultado for destino in conversion.destinos],
+            ["-5.625", "-5.5", "-5.A"],
+        )
+
+    def test_cero_negativo_se_escribe_sin_signo(self):
+        for texto, base in (("-0", 10), ("-0.0", 8), ("-000", 2), ("-000.000", 16)):
+            with self.subTest(texto=texto, base=base):
+                conversion = convertir_a_varias_bases(
+                    texto, base, tuple(destino for destino in (2, 8, 10, 16) if destino != base)
+                )
+                self.assertEqual(conversion.valor_decimal, 0)
+                self.assertFalse(conversion.negativo)
+                self.assertTrue(all(destino.resultado == "0" for destino in conversion.destinos))
+
+    def test_sintaxis_invalida_y_regresiones_positivas(self):
+        for texto, base in (
+            ("-", 10), ("+", 10), ("+13", 10), ("--13", 10), ("+-13", 10),
+            ("-+13", 10), ("1-3", 10), ("10-", 10), ("A-F", 16), ("-.", 10),
+        ):
+            with self.subTest(texto=texto), self.assertRaises(ValueError):
+                normalizar_numero(texto, base)
+        for texto, base, esperado in (
+            ("13", 10, "13"), ("0.31", 10, "0.31"), ("101.101", 2, "101.101"),
+            ("A.F", 16, "A.F"), (".5", 10, "0.5"), ("5.", 10, "5"),
+            ("-13", 10, "-13"), ("-0.31", 10, "-0.31"), ("-.31", 10, "-0.31"),
+            ("-5.", 10, "-5"), ("-101.101", 2, "-101.101"), ("-a.f", 16, "-A.F"),
+        ):
+            with self.subTest(texto=texto):
+                self.assertEqual(normalizar_numero(texto, base), esperado)
+        self.assertEqual(convertir("13", 10, 2).resultado, "1101")
+        self.assertEqual(convertir("0.31", 10, 16).resultado, "0.4(F5C28)")
+        self.assertEqual(convertir("101.101", 2, 10).resultado, "5.625")
+        self.assertEqual(convertir("A.F", 16, 10).resultado, "10.9375")
+        self.assertFalse(convertir("13", 10, 2).negativo)
 
 
 class PruebasSinConversionesAutomaticas(unittest.TestCase):

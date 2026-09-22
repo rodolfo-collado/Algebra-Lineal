@@ -1,5 +1,8 @@
 {% comment %}Procedimiento a partir de datos estructurados del núcleo (no HTML generado en el backend). Cada etapa aparece una sola vez: la expansión posicional (si el origen no es decimal) es la etapa compartida; después, una etapa de divisiones sucesivas por cada destino no decimal, todas desde el mismo valor intermedio.{% endcomment %}
 
+{% if resultado.nota_signo %}
+    <p class="procedure-lead">{{ resultado.nota_signo }}</p>
+{% endif %}
 {% if resultado.intermedio %}
     <p class="procedure-lead">
         La base de origen no es decimal, así que la conversión pasa por decimal: la expansión posicional

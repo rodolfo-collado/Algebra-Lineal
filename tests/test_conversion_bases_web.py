@@ -154,7 +154,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertEqual(pagina.contenedores["number-fields"], "base-10")
         self.assertRegex(html, r'<span data-number-label-base="10"\s*>Número decimal</span>')
         self.assertRegex(html, r'data-number-label-base="2"[^>]*hidden[^>]*>Número binario<')
-        self.assertEqual(pagina.json["bases-digitos"]["16"]["digitos"], list("0123456789ABCDEF."))
+        self.assertEqual(pagina.json["bases-digitos"]["16"]["digitos"], list("0123456789ABCDEF.-"))
         # Aviso de validación en vivo, vacío hasta que JavaScript lo use.
         self.assertIn('data-validacion-cliente role="alert" hidden', html)
 
@@ -494,11 +494,16 @@ class PruebasConversionBasesWeb(SimpleTestCase):
             "opcion.hidden = esOrigen",
             '"Elige al menos una base de destino."',
             'origen.addEventListener("change"',
+            'limpio[0] === "-"',
+            "El signo solo puede ser un − al inicio.",
+            "bases[origen.value]",
+            "validar();",
         ):
             with self.subTest(contrato=contrato):
                 self.assertIn(contrato, script)
         self.assertNotIn("base_destino\"", script)
         self.assertNotIn("intercambiar", script)
+        self.assertNotIn("solo números no negativos", script)
 
     def test_error_digito_invalido_sin_traceback(self):
         respuesta = self.convertir("102", 2, 10)
@@ -511,10 +516,16 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         # El error también aplica cuando los destinos no son decimales.
         self.assertContains(self.convertir("1G", 16, (2, 8)), "G no es un dígito hexadecimal válido.")
 
-    def test_rechaza_negativos_y_vacio(self):
+    def test_vacio_y_signo_mal_colocado(self):
         self.assertContains(self.convertir("", 10, 2), "Ingresa un número.")
-        self.assertContains(self.convertir("-13", 10, 2), "no negativos")
-        self.assertContains(self.convertir("-11", 2, (8, 16)), "no negativos")
+        for texto, base in (
+            ("-", 10), ("+", 10), ("+13", 10), ("--13", 10), ("+-13", 10),
+            ("-+13", 10), ("1-3", 10), ("10-", 10), ("A-F", 16), ("-.", 10),
+        ):
+            with self.subTest(texto=texto):
+                respuesta = self.convertir(texto, base, 2)
+                self.assertNotContains(respuesta, 'id="resultado"')
+                self.assertNotContains(respuesta, "solo números no negativos")
 
     def test_tema_y_recursos_locales(self):
         html = self.client.get(self.ruta).content.decode("utf-8")
@@ -574,6 +585,64 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertContains(respuesta, "4 + 0 + 1 + 0.5 + 0 + 0.125")
         self.assertContains(respuesta, "no se vuelve a calcular")
         self.assertEqual(resultados_de(self.convertir("00.1", 2, 10))[0], "0.1₂")
+
+    def test_negativos_conservan_el_signo_y_el_procedimiento_usa_la_magnitud(self):
+        origen, escrituras = resultados_de(self.convertir("-13", 10, (2, 8, 16)))
+        self.assertEqual(origen, "-13₁₀")
+        self.assertEqual(escrituras, [("-1101₂", "Binario"), ("-15₈", "Octal"), ("-D₁₆", "Hexadecimal")])
+        texto = texto_plano(self.convertir("-13", 10, 2))
+        self.assertIn(
+            "El número es negativo. Convertimos su magnitud 13 y conservamos el signo −.",
+            texto,
+        )
+        self.assertEqual(texto.count("El número es negativo"), 1)
+        self.assertIn("13 ÷ 2", texto)
+        self.assertNotIn("-13 ÷ 2", texto)
+
+        fraccion = texto_plano(self.convertir("-0.31", 10, 16))
+        self.assertIn("0.31 × 16 = 4.96", fraccion)
+        self.assertNotIn("-0.31 × 16", fraccion)
+        self.assertIn("-0.4(F5C28)₁₆", fraccion)
+        self.assertIn("período: F5C28", fraccion)
+
+        binario = texto_plano(self.convertir("-101.101", 2, 10))
+        self.assertIn("magnitud 101.101", binario)
+        self.assertIn("4 + 0 + 1 + 0.5 + 0 + 0.125", binario)
+        self.assertEqual(resultados_de(self.convertir("-101.101", 2, 10))[1][0][0], "-5.625₁₀")
+        self.assertEqual(resultados_de(self.convertir("-5.5", 10, 16))[1][0][0], "-5.8₁₆")
+        self.assertEqual(resultados_de(self.convertir("-A.F", 16, 10))[1][0][0], "-10.9375₁₀")
+        self.assertEqual(resultados_de(self.convertir("-0.5", 10, 2))[1][0][0], "-0.1₂")
+        # El mismo texto cambia de válido a inválido según la base de origen.
+        self.assertEqual(resultados_de(self.convertir("-2", 10, 2))[1][0][0], "-10₂")
+        self.assertContains(self.convertir("-2", 2, 10), "no es válido en un número binario")
+
+    def test_multidestino_negativo_reutiliza_un_solo_decimal(self):
+        with (
+            patch.object(motor, "base_a_decimal", wraps=motor.base_a_decimal) as hacia,
+            patch.object(motor, "decimal_a_base", wraps=motor.decimal_a_base) as desde,
+        ):
+            respuesta = self.convertir("-101.101", 2, (8, 10, 16))
+        hacia.assert_called_once_with("-101.101", 2)
+        self.assertEqual(desde.call_count, 2)
+        self.assertTrue(all(llamada.args[0] is desde.call_args_list[0].args[0] for llamada in desde.call_args_list))
+        self.assertEqual(desde.call_args_list[0].args[0], Fraction(-45, 8))
+        self.assertEqual(resultados_de(respuesta), (
+            "-101.101₂",
+            [("-5.5₈", "Octal"), ("-5.625₁₀", "Decimal"), ("-5.A₁₆", "Hexadecimal")],
+        ))
+        self.assertContains(respuesta, "Expansión posicional:", count=1)
+
+    def test_cero_negativo_no_muestra_signo(self):
+        for texto in ("-0", "-0.0", "-000", "-000.000"):
+            with self.subTest(texto=texto):
+                respuesta = self.convertir(texto, 10, (2, 8, 16))
+                origen, escrituras = resultados_de(respuesta)
+                self.assertEqual(origen, "0₁₀")
+                self.assertEqual(
+                    escrituras,
+                    [("0₂", "Binario"), ("0₈", "Octal"), ("0₁₆", "Hexadecimal")],
+                )
+                self.assertNotContains(respuesta, "El número es negativo")
 
     def test_errores_fraccionarios_y_limite_sin_resultado_parcial(self):
         for texto, base in (("1.2.3", 10), (".", 10), ("2.01", 2), ("0.2", 2), ("A.G", 16)):

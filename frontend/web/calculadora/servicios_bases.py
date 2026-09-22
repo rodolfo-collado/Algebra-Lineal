@@ -29,6 +29,21 @@ def titulo_direccion(base_origen: int, base_destino: int) -> str:
     return f"{NOMBRES_BASE[base_origen].capitalize()} → {NOMBRES_BASE[base_destino]}"
 
 
+def _significativo(texto: str) -> str:
+    """Magnitud visible: sin ceros enteros de más y sin signo."""
+    entera, punto, fraccionaria = texto.partition(".")
+    return (entera.lstrip("0") or "0") + punto + fraccionaria
+
+
+def _nota_signo(negativo: bool, magnitud: str) -> str:
+    if not negativo:
+        return ""
+    return (
+        f"El número es negativo. Convertimos su magnitud {magnitud} "
+        "y conservamos el signo −."
+    )
+
+
 def titulo_conversion(base_origen: int, bases_destino: Iterable[int]) -> str:
     """«Octal → binario, decimal y hexadecimal»: el origen y todos los destinos pedidos."""
     destinos = enumerar(NOMBRES_BASE[base] for base in bases_destino)
@@ -36,14 +51,13 @@ def titulo_conversion(base_origen: int, bases_destino: Iterable[int]) -> str:
 
 
 def _etapa_expansion(conversion: ConversionHaciaDecimal) -> dict:
-    entera, punto, fraccionaria = conversion.texto_normalizado.partition(".")
-    significativo = (entera.lstrip("0") or "0") + punto + fraccionaria
+    significativo = _significativo(conversion.texto_normalizado)
     return {
         "tipo": "expansion",
         "titulo": titulo_direccion(conversion.base_origen, 10),
         "base_entrada": conversion.base_origen,
         "origen": notacion(significativo, conversion.base_origen),
-        "destino": notacion(escribir_decimal_exacto(conversion.resultado), 10),
+        "destino": notacion(escribir_decimal_exacto(abs(conversion.resultado)), 10),
         "pasos": conversion.pasos,
         "suma_parcial": " + ".join(escribir_decimal_exacto(paso.contribucion) for paso in conversion.pasos),
         "sustituciones_hex": tuple(paso for paso in conversion.pasos if paso.valor >= 10),
@@ -79,7 +93,7 @@ def _etapa_division(conversion: ConversionDesdeDecimal) -> dict:
         "tipo": "division",
         "titulo": titulo_direccion(10, conversion.base_destino),
         "base_salida": conversion.base_destino,
-        "origen": notacion(escribir_decimal_exacto(conversion.valor_decimal), 10),
+        "origen": notacion(escribir_decimal_exacto(abs(conversion.valor_decimal)), 10),
         "destino": destino,
         "pasos": conversion.pasos,
         "multiplicaciones": multiplicaciones,
@@ -106,13 +120,18 @@ def convertir_entrada(*, numero: str, base_origen: int, bases_destino: Iterable[
     """
     conversion = convertir_a_varias_bases(numero, base_origen, bases_destino)
     compartida = _etapa_expansion(conversion.hacia_decimal) if conversion.hacia_decimal else None
+    if compartida:
+        magnitud = _significativo(conversion.hacia_decimal.texto_normalizado)
+        origen = notacion(("-" + magnitud) if conversion.negativo else magnitud, base_origen)
+    else:
+        magnitud = escribir_decimal_exacto(abs(conversion.valor_decimal))
+        origen = notacion(escribir_decimal_exacto(conversion.valor_decimal), 10)
     divisiones = tuple(
         _etapa_division(destino.desde_decimal)
         for destino in conversion.destinos
         if destino.desde_decimal
     )
     decimal = notacion(escribir_decimal_exacto(conversion.valor_decimal), 10)
-    origen = compartida["origen"] if compartida else decimal
 
     # El origen va aparte y una sola vez; cada resultado solo aporta su escritura y su base.
     resultados = tuple(
@@ -129,6 +148,7 @@ def convertir_entrada(*, numero: str, base_origen: int, bases_destino: Iterable[
     return {
         "titulo": titulo_conversion(base_origen, conversion.bases_destino),
         "origen": origen,
+        "nota_signo": _nota_signo(conversion.negativo, magnitud),
         "base_origen": base_origen,
         "bases_destino": conversion.bases_destino,
         "resultados": resultados,

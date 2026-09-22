@@ -16,11 +16,12 @@ def normalizar_numero(texto: str, base: int) -> str:
     """Limpia y valida un número en la base indicada; devuelve dígitos normalizados.
 
     - Recorta espacios extremos.
-    - Rechaza vacíos, signos y caracteres ajenos a la base.
+    - Acepta un único ``-`` al inicio (``-13``, ``-.31``). No admite ``+``.
+    - Rechaza vacío, un signo en cualquier otra posición y caracteres ajenos a la base.
     - En hexadecimal, normaliza a–f → A–F.
-    - Acepta un punto opcional; normaliza .31 → 0.31 y 5. → 5.
+    - Acepta un punto opcional; normaliza .31 → 0.31, -.31 → -0.31 y 5. → 5.
     - Conserva ceros iniciales (útiles en la presentación); el valor numérico
-      lo interpreta la conversión.
+      lo interpreta la conversión. El cero negativo se descarta al interpretar.
     """
     validar_base(base)
     if texto is None:
@@ -30,21 +31,23 @@ def normalizar_numero(texto: str, base: int) -> str:
     if not limpio:
         raise ValueError("Ingresa un número.")
 
-    if limpio[0] in "+-":
-        raise ValueError(
-            "Este módulo convierte solo números no negativos."
-        )
-
     if any(caracter.isspace() for caracter in limpio):
         raise ValueError("El número no debe contener espacios en medio.")
 
-    if limpio.count(".") > 1:
+    negativo = limpio[0] == "-"
+    magnitud = limpio[1:] if negativo else limpio
+    if not magnitud:
+        raise ValueError("Ingresa al menos un dígito además del signo.")
+    if any(caracter in "+-" for caracter in magnitud):
+        raise ValueError("El signo solo puede ser un − al inicio.")
+
+    if magnitud.count(".") > 1:
         raise ValueError("El número admite como máximo un punto decimal.")
-    if limpio == ".":
+    if magnitud == ".":
         raise ValueError("Ingresa al menos un dígito además del punto decimal.")
-    if limpio.startswith("."):
-        limpio = "0" + limpio
-    limpio = limpio.removesuffix(".")
+    if magnitud.startswith("."):
+        magnitud = "0" + magnitud
+    limpio = magnitud.removesuffix(".")
 
     digitos = []
     for caracter in limpio:
@@ -77,4 +80,5 @@ def normalizar_numero(texto: str, base: int) -> str:
         # Presentación académica: A–F en mayúsculas.
         digitos.append(caracter.upper() if valor >= 10 else caracter)
 
-    return "".join(digitos)
+    normalizado = "".join(digitos)
+    return f"-{normalizado}" if negativo else normalizado
