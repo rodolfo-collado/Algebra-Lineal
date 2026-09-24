@@ -46,16 +46,13 @@
                             <p class="field-error" role="alert">{{ error }}</p>
                         {% endfor %}
                     </div>
-                    <div class="dimension-field" data-solo-operacion="combinacion" {% if estructura.operacion != "combinacion" %}hidden{% endif %}>
-                        <label for="{{ form.vectores.id_for_label }}">Vectores generadores</label>
+                    <div class="dimension-field" data-cantidad-vectores {% if estructura.operacion == "escalar" %}hidden{% endif %}>
+                        <label for="{{ form.vectores.id_for_label }}">Número de vectores</label>
                         <div class="stepper" data-estructura="vectores">
                             <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar un vector" hidden>−</button>
                             {{ form.vectores }}
                             <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar un vector" hidden>+</button>
                         </div>
-                        {% for error in form.vectores.errors %}
-                            <p class="field-error" role="alert">{{ error }}</p>
-                        {% endfor %}
                     </div>
                 </div>
 
@@ -70,6 +67,10 @@
                         {% include "calculadora/modules/vectores/_fila.html" %}
                     {% endfor %}
                 </div>
+                <button type="button" class="btn btn-secondary" data-agregar-vector hidden>+ Agregar vector</button>
+                {% for error in form.vectores.errors %}
+                    <p class="field-error" role="alert">{{ error }}</p>
+                {% endfor %}
                 {% for error in form.escalar.errors %}
                     <p class="field-error" role="alert">{{ error }}</p>
                 {% endfor %}

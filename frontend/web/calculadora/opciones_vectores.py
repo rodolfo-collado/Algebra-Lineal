@@ -15,20 +15,18 @@ OPERACION_PREDETERMINADA = "suma"
 
 # Explicación breve por operación, en el lenguaje del ejercicio.
 AYUDAS = {
-    "suma": "u + v se calcula componente a componente.",
-    "resta": "u − v se calcula componente a componente.",
+    "suma": "Suma dos o más vectores componente a componente.",
+    "resta": "Resta dos o más vectores en el orden indicado, componente a componente.",
     "escalar": "k·u multiplica cada componente de u por el escalar k.",
     "combinacion": "¿Existen c1, …, ck tales que c1·v1 + … + ck·vk = b?",
 }
 
-# Límites razonables para una calculadora de aula: la dimensión no está
-# fijada, pero la interfaz debe seguir siendo legible.
+# La dimensión conserva su límite de interfaz; la cantidad depende de la operación.
 DIMENSION_PREDETERMINADA = 3
 DIMENSION_MINIMA = 1
 DIMENSION_MAXIMA = 10
 VECTORES_PREDETERMINADOS = 2
 VECTORES_MINIMOS = 1
-VECTORES_MAXIMOS = 6
 
 # Nombres de los vectores de entrada según la operación.
 NOMBRE_ESCALAR = "k"
@@ -47,7 +45,7 @@ def nombres_vectores(operacion: str, cantidad: int) -> tuple[str, ...]:
         return (*nombres_generadores(cantidad), NOMBRE_OBJETIVO)
     if operacion == "escalar":
         return VECTOR_ESCALAR
-    return VECTORES_BINARIOS
+    return (*VECTORES_BINARIOS, *(f"v{i}" for i in range(3, cantidad + 1)))
 
 
 def etiqueta_operacion(operacion: str) -> str:
