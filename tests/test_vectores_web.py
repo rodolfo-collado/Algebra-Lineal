@@ -21,7 +21,6 @@ from frontend.web.calculadora.forms import VectoresForm
 from frontend.web.calculadora.opciones_vectores import (
     DIMENSION_MAXIMA,
     OPERACIONES,
-    VECTORES_MAXIMOS,
     nombres_vectores,
 )
 from frontend.web.calculadora.servicios_vectores import operar_vectores
@@ -197,8 +196,8 @@ class PruebasFormulario(SimpleTestCase):
         self.assertIn('aria-label="Componente 1 de u"', html)
         self.assertIn('aria-label="Componente 3 de v"', html)
         self.assertRegex(html, r'data-vector="u"[^>]*aria-label="Vector u"')
-        # El campo de vectores generadores existe pero nace oculto: solo aplica a la combinación.
-        self.assertRegex(html, r'data-solo-operacion="combinacion"\s+hidden>')
+        self.assertIn('data-cantidad-vectores', html)
+        self.assertIn('data-agregar-vector', html)
 
     def test_el_servidor_redibuja_la_estructura_pedida(self):
         # Sin JavaScript, «Aplicar» reajusta dimensión y operación conservando lo escrito, sin calcular.
@@ -218,7 +217,7 @@ class PruebasFormulario(SimpleTestCase):
         celdas = [c["name"] for c in Documento(respuesta).controles if c.get("data-cell")]
         self.assertEqual(celdas, [f"{n}_{i}" for n in ("v1", "v2", "v3", "b") for i in range(4)])
         self.assertContains(respuesta, ">Comprobar</button>")
-        self.assertRegex(respuesta.content.decode("utf-8"), r'data-solo-operacion="combinacion"\s*>')
+        self.assertContains(respuesta, 'data-cantidad-vectores')
         self.assertContains(respuesta, 'class="vector-row vector-row-target"')
 
     def test_tras_un_error_se_conservan_valores_y_estructura(self):
@@ -230,7 +229,7 @@ class PruebasFormulario(SimpleTestCase):
 
     def test_estructura_del_formulario_por_operacion(self):
         self.assertEqual(nombres_vectores("suma", 0), ("u", "v"))
-        self.assertEqual(nombres_vectores("resta", 5), ("u", "v"))
+        self.assertEqual(nombres_vectores("resta", 5), ("u", "v", "v3", "v4", "v5"))
         self.assertEqual(nombres_vectores("escalar", 0), ("u",))
         self.assertEqual(nombres_vectores("combinacion", 3), ("v1", "v2", "v3", "b"))
         form = VectoresForm()
@@ -473,8 +472,7 @@ class PruebasValidacionWeb(SimpleTestCase):
         self.assertIn(f"La dimensión máxima admitida es {DIMENSION_MAXIMA}.", self.post({"operacion": "suma", "dimension": str(DIMENSION_MAXIMA + 1)}))
         self.assertIn("La dimensión debe ser un número entero.", self.post({"operacion": "suma", "dimension": "2.5"}))
         self.assertIn("Hace falta al menos un vector generador.", self.post({"operacion": "combinacion", "dimension": "2", "vectores": "0"}))
-        self.assertIn(f"Se admiten como máximo {VECTORES_MAXIMOS} vectores generadores.",
-                      self.post({"operacion": "combinacion", "dimension": "2", "vectores": str(VECTORES_MAXIMOS + 1)}))
+        self.assertNotContains(self.client.post(RUTA, combinacion([[1, 0]] * 12, [2, 0])), 'class="alert error"')
         self.assertIn("Indica cuántos vectores generadores hay.", self.post({"operacion": "combinacion", "dimension": "2", "b_0": "1", "b_1": "2"}))
 
     def test_vector_objetivo_incompleto_y_escalar_invalido(self):

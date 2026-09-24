@@ -8,6 +8,8 @@ la que se construyen los productos AB y Ax.
 import random
 from fractions import Fraction
 
+from backend.operandos import ARIDAD_MATRICES, exigir_aridad, nombre_matriz
+
 
 def generar_matriz(cantidad_filas, cantidad_columnas):
     matriz = []
@@ -267,6 +269,38 @@ def _pasos_producto(a, b, resultado):
         "pasos": pasos, "columnas": columnas,
         "columnas_a": tuple(tuple(columna) for columna in columnas_de_a),
     }
+
+
+def resolver_coleccion_matrices(operacion, matrices):
+    """Opera una colección; cada etapa del producto reutiliza ambas evidencias."""
+    if operacion not in ("suma", "resta", "producto"):
+        raise ValueError("Selecciona suma, resta o producto de matrices.")
+    matrices = list(matrices)
+    exigir_aridad(len(matrices), ARIDAD_MATRICES[operacion])
+    # Validar todas antes de calcular evita procedimientos parciales inválidos.
+    formas = [dimensiones(matriz) for matriz in matrices]
+    for i in range(1, len(matrices)):
+        compatibles = formas[i - 1][1] == formas[i][0] if operacion == "producto" else formas[0] == formas[i]
+        if not compatibles:
+            raise ValueError(
+                f"Dimensiones incompatibles entre {nombre_matriz(i - 1) if operacion == 'producto' else 'A'} "
+                f"y {nombre_matriz(i)}: "
+                + ("las columnas de la anterior deben coincidir con las filas de la siguiente."
+                   if operacion == "producto" else "las matrices deben tener las mismas dimensiones.")
+            )
+    acumulado = matrices[0]
+    etapas = []
+    for matriz in matrices[1:]:
+        calculo = resolver_operacion_matrices(operacion, acumulado, matriz)
+        if operacion == "producto":
+            etapas.append({"izquierda": acumulado, "derecha": matriz, "calculo": calculo})
+        acumulado = calculo["resultado"]
+    if operacion == "producto":
+        return {**calculo, "etapas": etapas}
+    for i, fila in enumerate(calculo["pasos"]):
+        for j, paso in enumerate(fila):
+            paso["operandos"] = tuple(Fraction(matriz[i][j]) for matriz in matrices)
+    return calculo
 
 
 def resolver_operacion_matrices(operacion, a, b=None, escalar=None, vector=None):

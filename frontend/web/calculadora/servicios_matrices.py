@@ -2,10 +2,10 @@
 
 from fractions import Fraction
 
-from backend.matrices import resolver_operacion_matrices, vector_columna
+from backend.matrices import resolver_coleccion_matrices, resolver_operacion_matrices, vector_columna
 from .presentacion_numerica import formatear_exacto
 
-from .opciones_matrices import CONFIGURACION, ENTRADAS_DESPLEGADAS, es_vector, metodos_a_mostrar
+from .opciones_matrices import CONFIGURACION, ENTRADAS_DESPLEGADAS, es_vector, metodos_a_mostrar, configuracion_operandos
 from .servicios import formatear_matriz
 
 SUBINDICES = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
@@ -64,31 +64,39 @@ def combinacion_columnas(coeficientes, nombre="a"):
 
 
 # Nombres con los que cada operación describe el mismo producto.
-def _nombre_entrada(operacion, i, j):
-    return f"(Ax){subindice(i)}" if operacion == "matriz_vector" else f"c{subindice(i, j)}"
+def _nombre_entrada(operacion, i, j, nombre="c"):
+    return f"(Ax){subindice(i)}" if operacion == "matriz_vector" else f"{nombre}{subindice(i, j)}"
 
 
-def _regla_entrada(operacion, i, j):
-    columna = "x" if operacion == "matriz_vector" else f"columna{subindice(j)}(B)"
-    return f"fila{subindice(i)}(A) · {columna}"
+def _regla_entrada(operacion, i, j, izquierda="A", derecha="B"):
+    columna = "x" if operacion == "matriz_vector" else f"columna{subindice(j)}({derecha})"
+    return f"fila{subindice(i)}({izquierda}) · {columna}"
 
 
-def _termino_simbolico(operacion, i, k, j):
-    factor = f"x{subindice(k)}" if operacion == "matriz_vector" else f"b{subindice(k, j)}"
-    return f"a{subindice(i, k)}{factor}"
+def _termino_simbolico(operacion, i, k, j, izquierda="a", derecha="b"):
+    factor = f"x{subindice(k)}" if operacion == "matriz_vector" else f"{derecha}{subindice(k, j)}"
+    return f"{izquierda}{subindice(i, k)}{factor}"
 
 
-def _nombre_columna(operacion, j):
-    return "Ax" if operacion == "matriz_vector" else f"Ab{subindice(j)}"
+def _nombre_columna(operacion, j, izquierda="A", derecha="b"):
+    return "Ax" if operacion == "matriz_vector" else f"{izquierda}{derecha}{subindice(j)}"
 
 
-def _coeficiente_simbolico(operacion, k, j):
-    return f"x{subindice(k)}" if operacion == "matriz_vector" else f"b{subindice(k, j)}"
+def _coeficiente_simbolico(operacion, k, j, derecha="b"):
+    return f"x{subindice(k)}" if operacion == "matriz_vector" else f"{derecha}{subindice(k, j)}"
+
+
+def _nombres_producto(opcion):
+    izquierda, derecha = opcion.get("operandos_producto", ("A", "B"))
+    simbolo_izquierda = izquierda.lower() if len(izquierda) == 1 else f"({izquierda})"
+    return izquierda, derecha, simbolo_izquierda, derecha.lower()
 
 
 def _fila_por_columna(calculo, opcion):
     """Cada entrada como producto punto: nombre = regla = símbolos = sustitución = productos = valor."""
     operacion = calculo["operacion"]
+    izquierda, derecha, simbolo_i, simbolo_d = _nombres_producto(opcion)
+    salida = opcion.get("salida_simbolica", "c")
     desarrollo = []
     filas = []
     for pasos_fila in calculo["pasos"]:
@@ -98,8 +106,8 @@ def _fila_por_columna(calculo, opcion):
             comunes = len(paso["productos"])
             sustitucion = " + ".join(f"{_operando(a)}·{_operando(b)}" for a, b in zip(paso["fila"], paso["columna"]))
             partes = [
-                f"{_nombre_entrada(operacion, i, j)} = {_regla_entrada(operacion, i, j)}",
-                " + ".join(_termino_simbolico(operacion, i, k, j) for k in range(1, comunes + 1)),
+                f"{_nombre_entrada(operacion, i, j, salida)} = {_regla_entrada(operacion, i, j, izquierda, derecha)}",
+                " + ".join(_termino_simbolico(operacion, i, k, j, simbolo_i, simbolo_d) for k in range(1, comunes + 1)),
                 sustitucion,
             ]
             if comunes > 1:
@@ -107,7 +115,7 @@ def _fila_por_columna(calculo, opcion):
             partes.append(formatear_exacto(paso["resultado"]))
             celdas.append(sustitucion)
             lineas.append(" = ".join(partes))
-            resumen.append(f"{_nombre_entrada(operacion, i, j)} = {formatear_exacto(paso['resultado'])}")
+            resumen.append(f"{_nombre_entrada(operacion, i, j, salida)} = {formatear_exacto(paso['resultado'])}")
         desarrollo.append(celdas)
         filas.append({"titulo": f"Fila {pasos_fila[0]['posicion'][0]} de {opcion['expresion']}", "lineas": lineas, "resumen": ", ".join(resumen)})
     if len(calculo["columnas"]) == 1:
@@ -119,7 +127,7 @@ def _fila_por_columna(calculo, opcion):
         "descripcion": (
             "Cada entrada de Ax es el producto punto de una fila de A con el vector x."
             if operacion == "matriz_vector" else
-            "Cada entrada cᵢⱼ es el producto punto de la fila i de A con la columna j de B."
+            f"Cada entrada {salida}ᵢⱼ es el producto punto de la fila i de {izquierda} con la columna j de {derecha}."
         ),
         "formula": opcion["formula"], "desarrollo": desarrollo, "grupos": filas,
     }
@@ -129,18 +137,19 @@ def _por_columnas(calculo, opcion):
     """Cada columna del resultado como combinación lineal de las columnas de A."""
     operacion = calculo["operacion"]
     expresion = opcion["expresion"]
+    izquierda, derecha, simbolo_i, simbolo_d = _nombres_producto(opcion)
     columnas_a = [
-        {"nombre": f"a{subindice(k)}", "matriz": _columna_texto(columna), "etiqueta": f"Columna {k} de A"}
+        {"nombre": f"{simbolo_i}{subindice(k)}", "matriz": _columna_texto(columna), "etiqueta": f"Columna {k} de {izquierda}"}
         for k, columna in enumerate(calculo["columnas_a"], start=1)
     ]
     grupos = []
     for columna in calculo["columnas"]:
         j = columna["posicion"]
-        nombre = _nombre_columna(operacion, j)
+        nombre = _nombre_columna(operacion, j, izquierda, simbolo_d)
         simbolica = " + ".join(
-            f"{_coeficiente_simbolico(operacion, k, j)}a{subindice(k)}" for k in range(1, len(columna["coeficientes"]) + 1)
+            f"{_coeficiente_simbolico(operacion, k, j, simbolo_d)}{simbolo_i}{subindice(k)}" for k in range(1, len(columna["coeficientes"]) + 1)
         )
-        numerica = combinacion_columnas(columna["coeficientes"])
+        numerica = combinacion_columnas(columna["coeficientes"], simbolo_i)
         terminos = []
         for k, coeficiente in enumerate(columna["coeficientes"], start=1):
             signo, factor = _coeficiente(coeficiente, k == 1)
@@ -151,7 +160,7 @@ def _por_columnas(calculo, opcion):
             "simbolica": f"{nombre} = {simbolica} = {numerica}",
             "terminos": terminos,
             "escaladas": [
-                {"matriz": _columna_texto(escalada), "etiqueta": f"Columna {k} de A multiplicada por {formatear_exacto(coeficiente)}"}
+                {"matriz": _columna_texto(escalada), "etiqueta": f"Columna {k} de {izquierda} multiplicada por {formatear_exacto(coeficiente)}"}
                 for k, (coeficiente, escalada) in enumerate(zip(columna["coeficientes"], columna["escaladas"]), start=1)
             ],
             "resultado": _columna_texto(columna["resultado"]),
@@ -163,15 +172,18 @@ def _por_columnas(calculo, opcion):
         ensamble = ""
     else:
         descripcion = (
-            "Cada columna de AB es A por la columna correspondiente de B, y Abⱼ es la combinación lineal "
-            "de las columnas de A con los coeficientes de bⱼ."
+            f"Cada columna de {expresion} es {izquierda} por la columna correspondiente de {derecha}, y {izquierda}{simbolo_d}ⱼ es la combinación lineal "
+            f"de las columnas de {izquierda} con los coeficientes de {simbolo_d}ⱼ."
         )
         formula = "AB = [Ab₁ Ab₂ … Abₚ], con Abⱼ = b₁ⱼa₁ + b₂ⱼa₂ + … + bₙⱼaₙ"
         ensamble = "AB = [" + " ".join(grupo["nombre"] for grupo in grupos) + "] ="
+        if "operandos_producto" in opcion:
+            formula = f"{expresion} = [{izquierda}{simbolo_d}₁ … {izquierda}{simbolo_d}ₚ]"
+            ensamble = expresion + " = [" + " ".join(grupo["nombre"] for grupo in grupos) + "] ="
     return {
         "clave": "columnas", "titulo": dict(opcion["metodos"])["columnas"],
         "descripcion": descripcion, "formula": formula, "columnas_a": columnas_a,
-        "grupos": grupos, "ensamble": ensamble,
+        "grupos": grupos, "ensamble": ensamble, "izquierda": izquierda,
     }
 
 
@@ -211,9 +223,11 @@ def _procedimientos_producto(calculo, opcion, metodo):
 def operar_matrices(entrada):
     operacion = entrada["operacion"]
     matrices = entrada["matrices"]
-    opcion = CONFIGURACION[operacion]
+    opcion = configuracion_operandos(operacion, len(matrices))
     if operacion == "matriz_vector":
         calculo = resolver_operacion_matrices(operacion, matrices["A"], vector=entrada["vector"])
+    elif operacion in ("suma", "resta", "producto"):
+        calculo = resolver_coleccion_matrices(operacion, list(matrices.values()))
     else:
         calculo = resolver_operacion_matrices(operacion, matrices["A"], matrices.get("B"), entrada.get("escalar"))
     resultado = {
@@ -231,6 +245,39 @@ def operar_matrices(entrada):
     }
     if opcion["metodos"]:
         resultado.update(_procedimientos_producto(calculo, opcion, entrada["metodo"]))
+        if operacion == "producto" and len(matrices) > 2:
+            resultado["etapas"] = []
+            nombres = list(matrices)
+            for i, etapa in enumerate(calculo["etapas"], start=1):
+                izquierda = "".join(nombres[:i])
+                derecha = nombres[i]
+                nombre_resultado = izquierda + derecha
+                opcion_etapa = {
+                    **CONFIGURACION["producto"], "expresion": nombre_resultado,
+                    "operandos_producto": (izquierda, derecha), "salida_simbolica": f"({nombre_resultado})",
+                    "formula": f"({nombre_resultado})ᵢⱼ = filaᵢ({izquierda}) · columnaⱼ({derecha})",
+                }
+                detalle = {
+                    **opcion_etapa, "operacion": "producto",
+                    "entradas": [{"nombre": izquierda, "matriz": formatear_matriz(etapa["izquierda"])},
+                                 {"nombre": derecha, "matriz": formatear_matriz(etapa["derecha"])}],
+                    "matriz": formatear_matriz(etapa["calculo"]["resultado"]),
+                    **_procedimientos_producto(etapa["calculo"], opcion_etapa, entrada["metodo"]),
+                }
+                detalle["expresion"] = nombre_resultado
+                resultado["etapas"].append({
+                    "titulo": f"Paso {i}: {izquierda} · {derecha} = {nombre_resultado}",
+                    "asignacion": f"Se usa el resultado intermedio {izquierda}." if i > 1 else "Multiplica las dos primeras matrices.",
+                    "resultado": detalle, "nombre": nombre_resultado,
+                })
+            agrupacion = nombres[0] + nombres[1]
+            for nombre in nombres[2:]:
+                agrupacion = f"({agrupacion}){nombre}"
+            resultado["agrupacion"] = f"{opcion['expresion']} = {agrupacion}"
+            resultado["forma"] = "Multiplicación de izquierda a derecha."
     else:
         resultado.update(_procedimiento_por_entrada(calculo, opcion, matrices))
+        if len(matrices) > 2:
+            resultado["ayuda"] = "Todas las matrices tienen las mismas dimensiones. Se opera cada posición en el orden indicado."
+            resultado["formula"] = "cᵢⱼ = " + f" {opcion['simbolo']} ".join(f"{nombre.lower()}ᵢⱼ" for nombre in matrices)
     return resultado

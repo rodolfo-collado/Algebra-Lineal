@@ -1,5 +1,7 @@
 """Configuración de la herramienta; los límites son de interfaz, no matemáticos."""
 
+from backend.operandos import ARIDAD_MATRICES, nombre_matriz
+
 DIMENSION_MINIMA = 1
 DIMENSION_MAXIMA = 10
 DIMENSION_PREDETERMINADA = 2
@@ -24,14 +26,14 @@ CONFIGURACION = {
         "formas": {**FORMA_A, "B": ("filas", "columnas")}, "dimensiones": DIMENSIONES_COMUNES,
         "forma_texto": "{m}×{n} en cada matriz de entrada.", "metodos": (), "ayuda_metodos": "",
         "expresion": "A + B", "simbolo": "+", "formula": "cᵢⱼ = aᵢⱼ + bᵢⱼ",
-        "ayuda": "Suma las entradas en la misma posición. A y B comparten filas y columnas.",
+        "ayuda": "Suma las entradas en la misma posición. Todas las matrices comparten filas y columnas.",
     },
     "resta": {
         "etiqueta": "Resta", "matrices": ("A", "B"), "escalar": False,
         "formas": {**FORMA_A, "B": ("filas", "columnas")}, "dimensiones": DIMENSIONES_COMUNES,
         "forma_texto": "{m}×{n} en cada matriz de entrada.", "metodos": (), "ayuda_metodos": "",
         "expresion": "A − B", "simbolo": "−", "formula": "cᵢⱼ = aᵢⱼ − bᵢⱼ",
-        "ayuda": "Resta las entradas en la misma posición. A y B comparten filas y columnas.",
+        "ayuda": "Resta las entradas en la misma posición y en el orden indicado. Todas las matrices comparten filas y columnas.",
     },
     "escalar": {
         "etiqueta": "Multiplicación por escalar", "matrices": ("A",), "escalar": True,
@@ -60,7 +62,7 @@ CONFIGURACION = {
         ),
         "expresion": "AB", "simbolo": "·",
         "formula": "cᵢⱼ = filaᵢ(A) · columnaⱼ(B) = aᵢ₁b₁ⱼ + aᵢ₂b₂ⱼ + … + aᵢₙbₙⱼ",
-        "ayuda": "AB existe solo si el número de columnas de A coincide con el número de filas de B: A (m×n) · B (n×p) da AB (m×p).",
+        "ayuda": "AB existe solo si el número de columnas de A coincide con el número de filas de B: A (m×n) · B (n×p) da AB (m×p). En una cadena, se comprueba cada pareja consecutiva y se multiplica de izquierda a derecha.",
     },
     "matriz_vector": {
         "etiqueta": "Matriz por vector (Ax)", "matrices": ("A", "x"), "escalar": False,
@@ -78,7 +80,28 @@ CONFIGURACION = {
     },
 }
 OPERACIONES = tuple((clave, opcion["etiqueta"]) for clave, opcion in CONFIGURACION.items())
+for clave, opcion in CONFIGURACION.items():
+    opcion["aridad"] = ARIDAD_MATRICES[clave]
 CAMPOS_DIMENSION = ("filas", "columnas", "columnas_b")
+
+
+def configuracion_operandos(operacion, cantidad=2):
+    base = CONFIGURACION[operacion]
+    if base["aridad"][1] is not None:
+        return base
+    nombres = tuple(nombre_matriz(i) for i in range(cantidad))
+    formas = dict(base["formas"])
+    dimensiones = list(base["dimensiones"])
+    for i, nombre in enumerate(nombres[2:], start=2):
+        if operacion == "producto":
+            anterior = nombre_matriz(i - 1).lower()
+            campo = f"columnas_{nombre.lower()}"
+            formas[nombre] = (f"columnas_{anterior}", campo)
+            dimensiones.append((campo, f"Columnas de {nombre}"))
+        else:
+            formas[nombre] = ("filas", "columnas")
+    expresion = "".join(nombres) if operacion == "producto" else f" {base['simbolo']} ".join(nombres)
+    return {**base, "matrices": nombres, "formas": formas, "dimensiones": tuple(dimensiones), "expresion": expresion}
 
 
 def es_vector(opcion, nombre):

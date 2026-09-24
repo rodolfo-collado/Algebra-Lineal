@@ -3,8 +3,8 @@
     {% if not resultado.comparando %}<h4 class="stage-title">{{ metodo.titulo }}</h4>{% endif %}
     <p>{{ metodo.descripcion }}</p>
     <p class="matrix-formula">{{ metodo.formula }}</p>
-    <p class="procedure-lead">Columnas de A:</p>
-    <div class="matrix-equation" tabindex="0" role="region" aria-label="Columnas de A">
+    <p class="procedure-lead">Columnas de {{ metodo.izquierda }}:</p>
+    <div class="matrix-equation" tabindex="0" role="region" aria-label="Columnas de {{ metodo.izquierda }}">
         {% for columna in metodo.columnas_a %}
             <div class="matrix-operand">
                 <span class="muted">{{ columna.nombre }}</span>

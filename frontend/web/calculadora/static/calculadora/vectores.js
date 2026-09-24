@@ -17,9 +17,13 @@
     if (!dimensionInput || !vectoresInput || !lista || !operaciones.length) return;
 
     const initialValues = initialValuesElement ? JSON.parse(initialValuesElement.textContent) : {};
+    let primeraCarga = true;
+    let operacionAnterior = operacionActual();
+    const agregar = root.querySelector("[data-agregar-vector]");
     const OBJETIVO = "b";
 
     function limite(input, atributo, predeterminado) {
+        if (!input.hasAttribute(atributo)) return predeterminado;
         const valor = Number(input.getAttribute(atributo));
         return Number.isInteger(valor) ? valor : predeterminado;
     }
@@ -27,7 +31,7 @@
     function valorEntero(input, predeterminado) {
         const valor = Number(input.value);
         if (!Number.isInteger(valor)) return predeterminado;
-        return Math.min(Math.max(valor, limite(input, "min", 1)), limite(input, "max", 99));
+        return Math.min(Math.max(valor, limite(input, "min", 1)), limite(input, "max", Infinity));
     }
 
     function operacionActual() {
@@ -43,7 +47,7 @@
             return nombres;
         }
         if (operacion === "escalar") return ["u"];
-        return ["u", "v"];
+        return ["u", "v", ...Array.from({length: Math.max(0, cantidad - 2)}, (_, i) => `v${i + 3}`)];
     }
 
     function valoresActuales() {
@@ -73,7 +77,7 @@
         input.type = "text";
         input.name = campo;
         input.dataset.cell = campo;
-        input.value = valores[campo] ?? initialValues[campo] ?? "";
+        input.value = valores[campo] ?? (primeraCarga ? initialValues[campo] : "") ?? "";
         input.className = esObjetivo ? "matrix-input independent-input" : "matrix-input";
         input.setAttribute("aria-label", `Componente ${indice + 1} de ${nombre}`);
         input.autocomplete = "off";
@@ -138,8 +142,20 @@
 
     function render() {
         const operacion = operacionActual();
+        const minimo = operacion === "combinacion" || operacion === "escalar" ? 1 : 2;
+        vectoresInput.min = String(minimo);
+        vectoresInput.disabled = operacion === "escalar";
+        if (operacion !== operacionAnterior) {
+            if (![operacion, operacionAnterior].every(op => ["suma", "resta"].includes(op))) {
+                vectoresInput.value = String(minimo);
+            }
+            operacionAnterior = operacion;
+        }
+        root.querySelector("[data-cantidad-vectores]").hidden = true;
+        agregar.hidden = operacion === "escalar";
         const dimension = valorEntero(dimensionInput, 3);
         const cantidad = valorEntero(vectoresInput, 2);
+        vectoresInput.value = String(cantidad);
         const valores = valoresActuales();
         // El escalar conserva su nodo (y su valor) entre redibujados.
         const escalarExistente = lista.querySelector('input[name="escalar"]');
@@ -150,9 +166,31 @@
         if (operacion === "escalar") {
             lista.appendChild(filaEscalar(escalarExistente));
         }
-        nombresVectores(operacion, cantidad).forEach((nombre) => {
-            lista.appendChild(crearFila(nombre, dimension, valores));
+        const nombres = nombresVectores(operacion, cantidad);
+        nombres.forEach((nombre, indice) => {
+            const fila = crearFila(nombre, dimension, valores);
+            if (nombre !== OBJETIVO && indice >= minimo && operacion !== "escalar") {
+                const quitar = crear("button", "stepper-btn", "×");
+                quitar.type = "button";
+                quitar.setAttribute("aria-label", `Quitar vector ${nombre}`);
+                quitar.addEventListener("click", () => {
+                    // Desplazar los valores preserva el orden, también en la resta.
+                    for (let i = indice; i < cantidad - 1; i += 1) {
+                        for (let j = 0; j < dimension; j += 1) {
+                            lista.querySelector(`[name="${nombres[i]}_${j}"]`).value = lista.querySelector(`[name="${nombres[i + 1]}_${j}"]`).value;
+                        }
+                    }
+                    vectoresInput.value = String(cantidad - 1);
+                    render();
+                });
+                fila.appendChild(quitar);
+            }
+            lista.appendChild(fila);
         });
+        primeraCarga = false;
+        const resultado = document.getElementById("resultado");
+        if (resultado && render.iniciado) resultado.hidden = true;
+        render.iniciado = true;
 
         root.querySelectorAll("[data-solo-operacion]").forEach((bloque) => {
             bloque.hidden = bloque.dataset.soloOperacion !== operacion;
@@ -171,6 +209,10 @@
     operaciones.forEach((radio) => radio.addEventListener("change", render));
     dimensionInput.addEventListener("input", render);
     vectoresInput.addEventListener("input", render);
+    agregar.addEventListener("click", () => {
+        vectoresInput.value = String(valorEntero(vectoresInput, 2) + 1);
+        render();
+    });
 
     // Controles de estructura (+/- componente, +/- vector): cambian n y k, no
     // insertan símbolos. El campo numérico sigue siendo el valor que se envía.
@@ -181,7 +223,7 @@
             button.hidden = false;
             button.addEventListener("click", () => {
                 const minimo = limite(input, "min", 1);
-                const maximo = limite(input, "max", 99);
+                const maximo = limite(input, "max", Infinity);
                 const siguiente = valorEntero(input, minimo) + Number(button.dataset.paso);
                 input.value = String(Math.min(Math.max(siguiente, minimo), maximo));
                 input.dispatchEvent(new Event("input", { bubbles: true }));

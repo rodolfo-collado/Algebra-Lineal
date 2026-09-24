@@ -5,6 +5,7 @@ import re
 from django import forms
 
 from backend.parser_sistemas import construir_matriz_aumentada, convertir_a_numero
+from backend.operandos import ARIDAD_VECTORES, exigir_aridad
 
 from .opciones_sistemas import BLOQUES, BLOQUES_PREDETERMINADOS, METODO_PREDETERMINADO, METODOS
 from .opciones_vectores import (
@@ -14,7 +15,6 @@ from .opciones_vectores import (
     NOMBRE_OBJETIVO,
     OPERACION_PREDETERMINADA,
     OPERACIONES,
-    VECTORES_MAXIMOS,
     VECTORES_MINIMOS,
     VECTORES_PREDETERMINADOS,
     nombres_vectores,
@@ -392,19 +392,16 @@ class VectoresForm(forms.Form):
         required=False,
         initial=VECTORES_PREDETERMINADOS,
         min_value=VECTORES_MINIMOS,
-        max_value=VECTORES_MAXIMOS,
         widget=forms.NumberInput(
             attrs={
                 "class": "field-input",
                 "min": str(VECTORES_MINIMOS),
-                "max": str(VECTORES_MAXIMOS),
                 "inputmode": "numeric",
             }
         ),
         error_messages={
             "invalid": "La cantidad de vectores debe ser un número entero.",
             "min_value": "Hace falta al menos un vector generador.",
-            "max_value": f"Se admiten como máximo {VECTORES_MAXIMOS} vectores generadores.",
         },
     )
     escalar = forms.CharField(
@@ -442,6 +439,11 @@ class VectoresForm(forms.Form):
         }
         return iniciales
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self._valor_actual("operacion", OPERACION_PREDETERMINADA) == "escalar":
+            self.fields["vectores"].widget.attrs["disabled"] = True
+
     def _valor_actual(self, campo, predeterminado):
         if self.is_bound:
             return self.data.get(campo, predeterminado)
@@ -453,7 +455,7 @@ class VectoresForm(forms.Form):
             numero = int(str(valor).strip())
         except (TypeError, ValueError):
             return predeterminado
-        return min(max(numero, minimo), maximo)
+        return min(max(numero, minimo), maximo) if maximo is not None else max(numero, minimo)
 
     def estructura(self):
         """Operación, dimensión y filas de vectores (con lo escrito) para pintar la entrada.
@@ -470,7 +472,7 @@ class VectoresForm(forms.Form):
         )
         cantidad = self._entero(
             self._valor_actual("vectores", VECTORES_PREDETERMINADOS),
-            VECTORES_PREDETERMINADOS, VECTORES_MINIMOS, VECTORES_MAXIMOS,
+            VECTORES_PREDETERMINADOS, ARIDAD_VECTORES[operacion][0], None,
         )
         valores = self.data if self.is_bound else self.initial.get("valores", {})
 
@@ -522,17 +524,33 @@ class VectoresForm(forms.Form):
             if cantidad is None:
                 self.add_error("vectores", "Indica cuántos vectores generadores hay.")
                 return datos
+        elif operacion == "escalar":
+            cantidad = 1 if cantidad is None else cantidad
         else:
-            cantidad = 0
+            cantidad = VECTORES_PREDETERMINADOS if cantidad is None else cantidad
+        try:
+            exigir_aridad(cantidad, ARIDAD_VECTORES[operacion])
+        except ValueError as error:
+            self.add_error("vectores", str(error))
+            return datos
 
         nombres = nombres_vectores(operacion, cantidad)
         esperados = {f"{nombre}_{indice}" for nombre in nombres for indice in range(dimension)}
         recibidos = {nombre for nombre in self.data if self._CELDA.match(nombre)}
+        permitidos = esperados | {"operacion", "dimension", "vectores", "csrfmiddlewaretoken"}
+        if operacion == "escalar":
+            permitidos.add("escalar")
+        if hasattr(self.data, "getlist") and any(len(self.data.getlist(k)) != 1 for k in self.data):
+            self.add_error(None, "Envía un único valor por campo; hay campos repetidos.")
+            return datos
         if recibidos != esperados:
             self.add_error(
                 None,
                 "La cantidad de componentes no coincide con la dimensión y los vectores indicados.",
             )
+            return datos
+        if set(self.data) - permitidos:
+            self.add_error(None, "Se recibieron campos que no corresponden a la operación seleccionada.")
             return datos
 
         vectores = {}

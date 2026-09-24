@@ -11,6 +11,7 @@ y se resuelve con el Gauss-Jordan del proyecto.
 """
 
 from fractions import Fraction
+from backend.operandos import ARIDAD_VECTORES, exigir_aridad
 
 # La validación de un vector vive junto al producto punto, en backend.matrices,
 # porque las filas y columnas de una matriz también son vectores.
@@ -59,30 +60,33 @@ def convertir_vector_a_fracciones(vector):
     return [Fraction(componente) for componente in vector]
 
 
+def operar_vectores(operacion, vectores):
+    """Suma o resta una colección, de izquierda a derecha, sin mutarla."""
+    if operacion not in ("suma", "resta"):
+        raise ValueError("Selecciona suma o resta de vectores.")
+    vectores = list(vectores)
+    exigir_aridad(len(vectores), ARIDAD_VECTORES[operacion])
+    nombres = ["u", "v"] if len(vectores) == 2 else nombres_generadores(len(vectores))
+    _exigir(*validar_misma_dimension(vectores, nombres, "sumar" if operacion == "suma" else "restar"))
+    resultado = convertir_vector_a_fracciones(vectores[0])
+    signo = 1 if operacion == "suma" else -1
+    for vector in vectores[1:]:
+        resultado = [a + signo * Fraction(b) for a, b in zip(resultado, vector)]
+    return resultado
+
+
 def sumar_vectores(u, v):
     """Suma componente a componente: (u1 + v1, u2 + v2, ..., un + vn).
 
     Los dos vectores deben tener la misma dimension. El resultado conserva la
     aritmetica exacta: (1/2, 2/3) + (1/2, 1/3) = (1, 1).
     """
-    _exigir(*validar_misma_dimension((u, v), ("u", "v"), "sumar"))
-
-    resultado = []
-    for componente_u, componente_v in zip(u, v):
-        resultado.append(Fraction(componente_u) + Fraction(componente_v))
-
-    return resultado
+    return operar_vectores("suma", [u, v])
 
 
 def restar_vectores(u, v):
     """Resta componente a componente: u - v = (u1 - v1, u2 - v2, ..., un - vn)."""
-    _exigir(*validar_misma_dimension((u, v), ("u", "v"), "restar"))
-
-    resultado = []
-    for componente_u, componente_v in zip(u, v):
-        resultado.append(Fraction(componente_u) - Fraction(componente_v))
-
-    return resultado
+    return operar_vectores("resta", [u, v])
 
 
 def multiplicar_escalar(escalar, v):
