@@ -258,6 +258,24 @@ cuatro casillas); el servidor vuelve a validar al convertir: destinos válidos,
 sin repetir, sin la base de origen, al menos uno, y un número de hasta 128
 caracteres.
 
+La herramienta **Conversión de números romanos** (`/romanos/conversion/`) tiene
+su propio tema, **Numeración romana**, porque no es un sistema posicional de
+base n. Se elige la dirección (**Decimal → romano** o **Romano → decimal**), se
+escribe un número y se obtiene un único resultado, con el procedimiento plegado:
+
+- **Decimal → romano:** el número se separa por órdenes decimales y cada parte
+  se escribe con la tabla romana: `1963 = 1000 + 900 + 60 + 3`, con `1000 → M`,
+  `900 → CM`, `60 → LX` y `3 → III`, así que `1963 = MCMLXIII`.
+- **Romano → decimal:** se lee de izquierda a derecha reconociendo las restas
+  IV, IX, XL, XC, CD y CM: `MCMLXIII = 1000 + 900 + 50 + 10 + 1 + 1 + 1 = 1963`.
+
+Se usa la notación moderna convencional del 1 al 3999, solo con I, V, X, L, C,
+D y M; la entrada romana acepta minúsculas. No hay cero, negativos, fracciones
+ni barras para millares. Una escritura romana solo se acepta si es la canónica
+de su valor: `IIII` se rechaza indicando que 4 se escribe `IV`, y `VV`, `IC` o
+`MMMM` también se rechazan con un mensaje claro. El núcleo vive en
+`backend/sistemas_numericos/romanos.py`, separado de la conversión de bases.
+
 ## Sistemas en la interfaz visual
 
 Inicio de PyGebra permite buscar una herramienta o abrir un área y después

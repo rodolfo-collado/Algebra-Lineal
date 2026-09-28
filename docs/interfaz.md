@@ -473,6 +473,21 @@ el origen; recibe nombres, perfiles y dígitos en `bases-digitos`, derivados
 del mismo registro. No contiene otra tabla de dígitos ni manipula teclados.
 La selección multidestino de P16 mantiene sus controles y su contrato POST.
 
+## Conversión de números romanos
+
+`/romanos/conversion/` (`ConversionRomanosForm`, `servicios_romanos.py`,
+`modules/romanos/`) pide la dirección con un `.segmented` (Decimal → romano o
+Romano → decimal) y un único campo de hasta 15 caracteres, descrito por su
+ayuda (`aria-describedby`). No tiene teclado matemático ni selector Exacto /
+Decimal: trabaja con enteros y símbolos romanos, y no necesita JavaScript.
+Sigue Entrada → Resultado → Procedimiento plegable: el panel final reutiliza
+`.base-results` (el origen una vez y, debajo, la escritura obtenida) y
+`{% disclosure %}` guarda la descomposición por órdenes decimales o la lectura
+de izquierda a derecha, con la suma o la resta de cada fila entre paréntesis.
+El servidor rechaza campos ajenos o repetidos y direcciones inexistentes con
+un mensaje propio. Conversión de bases y esta herramienta se sugieren entre sí
+tras convertir.
+
 ## Guía educativa
 
 `frontend/web/calculadora/guias.py` define mensajes estáticos (`GuiaConcepto`)
@@ -493,7 +508,8 @@ de tema: extiende el layout común.
 
 Hoy están disponibles las herramientas de sistemas de ecuaciones, las
 operaciones con vectores (incluida la combinación lineal), las operaciones con
-matrices (incluidos `AB` y `Ax`), Resolver Ax = b y la conversión de bases.
+matrices (incluidos `AB` y `Ax`), Resolver Ax = b, la conversión de bases y la
+de números romanos.
 No agregues enlaces a pantallas que todavía no existen.
 
 ## Formato exacto y decimal

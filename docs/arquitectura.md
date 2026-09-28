@@ -27,7 +27,7 @@ flowchart TD
 
 | Ruta | Responsabilidad |
 | --- | --- |
-| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b y bases. |
+| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, bases y numeración romana. |
 | `frontend/terminal/` | `menu.py` coordina; `opciones.py` ejecuta opciones; `entradas.py` lee; `salida.py` presenta; `consola.py` maneja color, pausas y limpieza. |
 | `frontend/web/algebra_web/` | Configuración Django, rutas raíz y entradas WSGI/ASGI. |
 | `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, guías, exploraciones, templates y recursos locales. |
@@ -73,7 +73,8 @@ templates/calculadora/
 ├── modules/matrices/         # entrada rectangular, resultado y procedimientos
 ├── modules/expresiones/      # símbolos, expresión o igualdad, y procedimiento por nodos
 ├── modules/ecuaciones/       # Ax = b: entrada, equivalencias y eliminación reutilizada
-└── modules/bases/            # index.html y procedimiento de la conversión
+├── modules/bases/            # index.html y procedimiento de la conversión
+└── modules/romanos/          # decimal ↔ romano: resultado y procedimiento plegable
 ```
 
 La presentación numérica compartida vive en `presentacion_numerica.py`.
