@@ -22,6 +22,7 @@ from frontend.web.calculadora.forms_matrices import MatricesForm
 from frontend.web.calculadora.opciones_matrices import configuracion_operandos
 from frontend.web.calculadora.opciones_vectores import DIMENSION_MAXIMA as DIMENSION_VECTORES, nombres_vectores
 from frontend.web.calculadora.servicios_matrices import operar_matrices
+from tests.test_procedimiento_plegable import comprobar_estructura, partes
 from tests.test_vectores_web import datos_vectores, combinacion, RUTA as VECTORES
 from tests.test_matrices_web import Contenido, datos_matrices, RUTA as MATRICES
 from tests.test_multiplicacion_matrices_web import datos_matriz_vector
@@ -170,6 +171,32 @@ class PruebasWebColecciones(SimpleTestCase):
                     self.assertIn("Por columnas", texto)
                     self.assertIn("Columnas de AB:", texto)
                     self.assertIn("ABC = [ABc₁", texto)
+
+    def test_cadena_no_repite_la_matriz_final_dentro_del_procedimiento(self):
+        matrices = [[[1, 2]], [[1, 0, 2], [0, 1, 3]], [[1, 2], [3, 4], [5, 6]], [[1], [2]]]
+        for cantidad in (3, 4):
+            nombres = [nombre_matriz(i) for i in range(cantidad)]
+            intermedios = ["".join(nombres[:i]) for i in range(2, cantidad)]
+            anterior, ultima, final = intermedios[-1], nombres[-1], "".join(nombres)
+            for metodo in ("fila_columna", "columnas", "comparar"):
+                with self.subTest(cantidad=cantidad, metodo=metodo):
+                    html = self.client.post(MATRICES, datos_coleccion("producto", matrices[:cantidad], metodo)).content.decode()
+                    comprobar_estructura(self, html)
+                    procedimiento, _ = partes(html)
+                    # El último paso conserva título, explicación, métodos y operaciones…
+                    self.assertIn(f"Paso {cantidad - 1}: {anterior} · {ultima} = {final}", procedimiento)
+                    self.assertIn(f"Se usa el resultado intermedio {anterior}.", procedimiento)
+                    if metodo != "columnas":
+                        self.assertIn(f"({final})₁₁ = fila₁({anterior}) · columna₁({ultima})", procedimiento)
+                    if metodo != "fila_columna":
+                        self.assertIn(f"{final} = [{anterior}{ultima.lower()}₁", procedimiento)
+                    # …y solo los intermedios se vuelven a mostrar como matriz: el final vive en el panel.
+                    self.assertEqual(procedimiento.count("Resultado intermedio"), len(intermedios))
+                    for nombre in intermedios:
+                        self.assertRegex(html, rf'(?s)<p>Resultado intermedio {nombre}:</p>\s*<div class="matrix">(?:(?!</table>).)*aria-label="{nombre}"')
+                    self.assertNotIn("Resultado final", procedimiento)
+                    self.assertNotIn(f'<table class="matrix-table" aria-label="{final}"', html)
+                    self.assertEqual(html.count('<table class="matrix-table" aria-label="Matriz resultado"'), 1)
 
     def test_matrices_dimensiones_y_campos_ajenos(self):
         datos = datos_coleccion("producto", [[[1, 2]], [[1, 2, 3], [4, 5, 6]], [[1], [2]]])

@@ -1,4 +1,5 @@
 {% load componentes %}
+{% comment %}ABC… de izquierda a derecha: cada paso conserva su explicación y sus métodos; solo los resultados intermedios se repiten como matriz, porque el último ya es el del panel final.{% endcomment %}
 {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
     <p class="matrix-formula">{{ resultado.agrupacion }}</p>
     {% for etapa in resultado.etapas %}
@@ -6,8 +7,10 @@
             <h4 class="stage-title">{{ etapa.titulo }}</h4>
             <p>{{ etapa.asignacion }}</p>
             {% include "calculadora/modules/matrices/_metodos_producto.html" with resultado=etapa.resultado %}
-            <p>Resultado {% if forloop.last %}final{% else %}intermedio{% endif %} {{ etapa.nombre }}:</p>
-            {% include "calculadora/components/matriz.html" with matriz=etapa.resultado.matriz etiqueta=etapa.nombre only %}
+            {% if not forloop.last %}
+                <p>Resultado intermedio {{ etapa.nombre }}:</p>
+                {% include "calculadora/components/matriz.html" with matriz=etapa.resultado.matriz etiqueta=etapa.nombre only %}
+            {% endif %}
         </section>
     {% endfor %}
 {% enddisclosure %}
