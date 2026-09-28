@@ -7,7 +7,11 @@ ValueError. No imprime, no pide datos y no conoce ninguna interfaz.
 import re
 from fractions import Fraction
 
-from backend.presupuesto_sistemas import validar_dimensiones, validar_longitud_sistema
+from backend.presupuesto_sistemas import (
+    validar_dimensiones,
+    validar_literal_numerico,
+    validar_longitud_sistema,
+)
 
 SEPARADOR_ECUACIONES = ";"
 
@@ -51,8 +55,10 @@ def _separar_terminos(expresion):
     return terminos
 
 
-def _leer_termino(termino):
+def _leer_termino(termino, *, limitar_entrada=False):
     """Devuelve (indice de la variable, coeficiente) de un termino con signo."""
+    if limitar_entrada:
+        validar_literal_numerico(termino)
     coincidencia = _TERMINO.fullmatch(termino)
     if coincidencia is None:
         raise ValueError(
@@ -60,12 +66,15 @@ def _leer_termino(termino):
         )
 
     signo, texto_coeficiente, texto_indice = coincidencia.groups()
-    try:
-        coeficiente = (
-            Fraction(1) if texto_coeficiente is None else Fraction(texto_coeficiente)
-        )
-    except ZeroDivisionError:
-        raise ValueError("un coeficiente no puede tener denominador cero") from None
+    if texto_coeficiente is None:
+        coeficiente = Fraction(1)
+    else:
+        if limitar_entrada:
+            validar_literal_numerico(texto_coeficiente)
+        try:
+            coeficiente = Fraction(texto_coeficiente)
+        except ZeroDivisionError:
+            raise ValueError("un coeficiente no puede tener denominador cero") from None
 
     if signo == "-":
         coeficiente = -coeficiente
@@ -73,7 +82,7 @@ def _leer_termino(termino):
     return int(texto_indice), coeficiente
 
 
-def parsear_ecuacion(ecuacion):
+def parsear_ecuacion(ecuacion, *, limitar_entrada=False):
     """Devuelve ({indice: coeficiente}, termino independiente) de una ecuacion."""
     lados = ecuacion.split("=")
     if len(lados) != 2:
@@ -84,6 +93,8 @@ def parsear_ecuacion(ecuacion):
     if not izquierda or not derecha:
         raise ValueError("cada ecuación necesita términos a ambos lados del '='")
 
+    if limitar_entrada:
+        validar_literal_numerico(derecha)
     try:
         termino_independiente = convertir_a_numero(derecha)
     except ValueError:
@@ -91,7 +102,7 @@ def parsear_ecuacion(ecuacion):
 
     coeficientes = {}
     for termino in _separar_terminos(izquierda):
-        indice, coeficiente = _leer_termino(termino)
+        indice, coeficiente = _leer_termino(termino, limitar_entrada=limitar_entrada)
         # Una variable repetida suma sus coeficientes.
         coeficientes[indice] = coeficientes.get(indice, Fraction(0)) + coeficiente
 
@@ -103,8 +114,8 @@ def parsear_sistema(texto, *, limitar_entrada=False):
 
     Las ecuaciones se separan con ';' y la cantidad de variables la marca el
     mayor indice que aparece en todo el sistema.
-    La entrada web activa el presupuesto antes de dividir texto o reservar filas;
-    los consumidores de consola conservan su contrato anterior.
+    La entrada web activa el presupuesto antes de dividir texto, reservar filas
+    o convertir literales. Los consumidores de consola conservan su contrato.
     """
     if limitar_entrada and isinstance(texto, str):
         validar_longitud_sistema(texto)
@@ -123,9 +134,12 @@ def parsear_sistema(texto, *, limitar_entrada=False):
         )
 
     try:
-        analizadas = [parsear_ecuacion(ecuacion) for ecuacion in ecuaciones]
+        analizadas = [
+            parsear_ecuacion(ecuacion, limitar_entrada=limitar_entrada)
+            for ecuacion in ecuaciones
+        ]
     except ValueError as error:
-        raise ValueError(f"{_PREFIJO_ERROR}: {error}.") from None
+        raise ValueError(f"{_PREFIJO_ERROR}: {str(error).rstrip('.')}.") from None
 
     # Conversión a matriz aumentada: las variables ausentes valen cero.
     cantidad_variables = max(max(coeficientes) for coeficientes, _ in analizadas)

@@ -2,6 +2,7 @@
 
 import os
 import random
+from fractions import Fraction
 from unittest.mock import Mock, patch
 from urllib.parse import urlencode
 
@@ -15,11 +16,14 @@ from django.conf import settings
 from django.http import QueryDict
 from django.test import Client, SimpleTestCase, override_settings
 
-from backend.parser_sistemas import parsear_sistema
+from backend.parser_sistemas import convertir_a_numero, parsear_sistema
 from backend.presupuesto_sistemas import (
     CELDAS_MAXIMAS,
+    DIGITOS_MAXIMOS,
     ECUACIONES_MAXIMAS,
     LONGITUD_SISTEMA_MAXIMA,
+    MENSAJE_NOTACION_CIENTIFICA,
+    MENSAJE_NUMERO_GRANDE,
     VARIABLES_MAXIMAS,
     dimensiones_admitidas,
 )
@@ -273,3 +277,215 @@ class PruebasPresupuestoTexto(SimpleTestCase):
         texto = ";".join(["x9=1"] * 12)
         self.assertEqual(sum(map(len, parsear_sistema(texto, limitar_entrada=True))), CELDAS_MAXIMAS)
         self.assertTrue(dimensiones_admitidas(12, 9))
+
+
+def _literal_caro(texto):
+    compacto = "".join(str(texto).split())
+    return any(caracter in "eE" for caracter in compacto) or (
+        sum(caracter.isdigit() for caracter in compacto) > DIGITOS_MAXIMOS
+    )
+
+
+def _fraction_vigilada(valor=0, denominador=None):
+    if isinstance(valor, str) and _literal_caro(valor):
+        raise AssertionError(f"Fraction({valor[:48]!r})")
+    if denominador is None:
+        return Fraction(valor)
+    return Fraction(valor, denominador)
+
+
+class PruebasLiteralesSistemas(SimpleTestCase):
+    def assert_rechazo_textual(self, texto, fragmento):
+        with patch("backend.parser_sistemas.Fraction", _fraction_vigilada):
+            with self.assertRaises(ValueError) as contexto:
+                parsear_sistema(texto, limitar_entrada=True)
+        mensaje = str(contexto.exception)
+        self.assertIn(fragmento, mensaje)
+        self.assertNotIn("..", mensaje)
+        return mensaje
+
+    def test_literales_educativos_siguen_admitidos(self):
+        casos = (
+            ("3x1=1", [[3, 1]]),
+            ("-5x1=1", [[-5, 1]]),
+            ("1/2x1=1", [[Fraction(1, 2), 1]]),
+            ("-7/3x1=1", [[Fraction(-7, 3), 1]]),
+            ("0.25x1=1", [[Fraction(1, 4), 1]]),
+            ("x1=-5", [[1, -5]]),
+            ("x1=1/2", [[1, Fraction(1, 2)]]),
+            ("x1=-7/3", [[1, Fraction(-7, 3)]]),
+            ("x1=0.25", [[1, Fraction(1, 4)]]),
+            ("x1=.5", [[1, Fraction(1, 2)]]),
+            ("x1=5.", [[1, 5]]),
+            ("x1=1 / 2", [[1, Fraction(1, 2)]]),
+            (".5x1=0.25", [[Fraction(1, 2), Fraction(1, 4)]]),
+            ("+x1=2", [[1, 2]]),
+            ("-x1=3", [[-1, 3]]),
+            ("-1/2x1=1", [[Fraction(-1, 2), 1]]),
+        )
+        for texto, matriz in casos:
+            with self.subTest(texto=texto):
+                self.assertEqual(parsear_sistema(texto, limitar_entrada=True), matriz)
+
+    def test_valor_en_el_limite_de_digitos(self):
+        tope = "9" * DIGITOS_MAXIMOS
+        decimal = "1" * DIGITOS_MAXIMOS
+        self.assertEqual(parsear_sistema(f"x1={tope}", limitar_entrada=True), [[1, int(tope)]])
+        self.assertEqual(parsear_sistema(f"x1=-{tope}", limitar_entrada=True), [[1, -int(tope)]])
+        self.assertEqual(parsear_sistema(f"{tope}x1=1", limitar_entrada=True), [[int(tope), 1]])
+        self.assertEqual(
+            parsear_sistema(f"x1={tope}/{tope}", limitar_entrada=True),
+            [[1, 1]],
+        )
+        self.assertEqual(
+            parsear_sistema(f"x1=1/{tope}", limitar_entrada=True),
+            [[1, Fraction(1, int(tope))]],
+        )
+        self.assertEqual(
+            parsear_sistema(f"x1=1 / {tope}", limitar_entrada=True),
+            [[1, Fraction(1, int(tope))]],
+        )
+        self.assertEqual(
+            parsear_sistema(f"x1=0.{decimal}", limitar_entrada=True),
+            [[1, Fraction(int(decimal), 10 ** DIGITOS_MAXIMOS)]],
+        )
+        datos = datos_matriz([[1, 1]])
+        datos["matriz_0_0"] = tope
+        form = SistemaForm(datos)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["matriz_aumentada"][0][0], int(tope))
+
+    def test_componente_demasiado_largo_no_llega_a_fraction(self):
+        largo = "9" * (DIGITOS_MAXIMOS + 1)
+        casos = {
+            "entero": f"x1={largo}",
+            "numerador": f"x1={largo}/2",
+            "denominador": f"x1=1/{largo}",
+            "decimal": f"x1=0.{largo}",
+            "coeficiente": f"{largo}x1=1",
+            "numerador coeficiente": f"{largo}/2x1=1",
+            "denominador coeficiente": f"1/{largo}x1=1",
+            "decimal coeficiente": f"{largo}.5x1=1",
+            "termino independiente": f"x1={largo}",
+            "guion bajo": "x1=1_" + "0" * DIGITOS_MAXIMOS,
+        }
+        for nombre, texto in casos.items():
+            with self.subTest(nombre=nombre):
+                self.assert_rechazo_textual(texto, MENSAJE_NUMERO_GRANDE)
+
+    def test_denominador_cero_conserva_su_mensaje(self):
+        with self.assertRaises(ValueError) as coeficiente:
+            parsear_sistema("1/0x1=2", limitar_entrada=True)
+        self.assertEqual(
+            str(coeficiente.exception),
+            "Formato de sistema inválido: un coeficiente no puede tener denominador cero.",
+        )
+        with self.assertRaises(ValueError) as independiente:
+            parsear_sistema("x1=1/0", limitar_entrada=True)
+        self.assertEqual(
+            str(independiente.exception),
+            "Formato de sistema inválido: el término independiente debe ser un número.",
+        )
+        datos = datos_matriz([["1/0", 1]])
+        respuesta = self.client.post("/sistemas/", datos)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "no es un número válido")
+        self.assertNotContains(respuesta, "Traceback")
+
+    def test_notacion_cientifica_no_llega_a_fraction(self):
+        casos = (
+            "x1=1e1000000000",
+            "x1=1E1000000000",
+            "x1=1e-1000000000",
+            "x1=1E-1000000000",
+            "x1=1 e 1000000000",
+            "x1=1e2",
+            "x1=1E-2",
+            "1e1000000000x1=1",
+            "1E-1000000000x1=1",
+        )
+        for texto in casos:
+            with self.subTest(texto=texto):
+                self.assert_rechazo_textual(texto, MENSAJE_NOTACION_CIENTIFICA)
+        for texto in ("x1=test", "x1=hello", "x1=e10"):
+            with self.subTest(texto=texto):
+                with self.assertRaises(ValueError) as contexto:
+                    parsear_sistema(texto, limitar_entrada=True)
+                self.assertIn("término independiente", str(contexto.exception))
+                self.assertNotIn("científica", str(contexto.exception))
+
+    def test_texto_extremo_responde_200_sin_motor(self):
+        motor = Mock(side_effect=AssertionError("motor"))
+        resolvers = {
+            "gauss": ("Gauss", motor, "matriz_escalonada", "Matriz escalonada"),
+            "gauss_jordan": ("Gauss-Jordan", motor, "matriz_reducida", "Matriz reducida"),
+        }
+        textos = (
+            "x1=1e1000000000",
+            "x1=1e-1000000000",
+            "1e1000000000x1=1",
+            "x1=" + "9" * (DIGITOS_MAXIMOS + 1),
+        )
+        for texto in textos:
+            with self.subTest(texto=texto[:32]), patch(
+                "backend.parser_sistemas.Fraction", _fraction_vigilada
+            ), patch.dict("frontend.web.calculadora.servicios._RESOLVERS", resolvers):
+                respuesta = self.client.post("/sistemas/", {"metodo": "gauss", "sistema": texto})
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertNotContains(respuesta, "Traceback")
+                self.assertNotContains(respuesta, 'id="resultado"')
+                motor.assert_not_called()
+
+    def test_celda_extrema_no_convierte_ni_resuelve(self):
+        real = convertir_a_numero
+
+        def vigil(texto):
+            if _literal_caro(texto):
+                raise AssertionError(f"convertir({texto[:48]!r})")
+            return real(texto)
+
+        casos = {
+            "coeficiente cientifico": ("1e1000000000", "1"),
+            "independiente cientifico": ("1", "1e-1000000000"),
+            "coeficiente largo": ("9" * (DIGITOS_MAXIMOS + 1), "1"),
+            "independiente largo": ("1", "9" * (DIGITOS_MAXIMOS + 1)),
+            "decimal largo": ("0." + "1" * (DIGITOS_MAXIMOS + 1), "1"),
+            "denominador largo": ("1/" + "9" * (DIGITOS_MAXIMOS + 1), "1"),
+        }
+        for nombre, celdas in casos.items():
+            datos = datos_matriz([[1, 1]])
+            datos["matriz_0_0"], datos["matriz_0_1"] = celdas
+            with self.subTest(nombre=nombre), patch(
+                f"{FORMULARIOS}.convertir_a_numero", vigil
+            ), patch(f"{VISTAS}.resolver_entrada_web", side_effect=AssertionError("servicio")):
+                respuesta = self.client.post("/sistemas/", datos)
+                fragmento = (
+                    MENSAJE_NOTACION_CIENTIFICA if "cientifico" in nombre else MENSAJE_NUMERO_GRANDE
+                )
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertNotContains(respuesta, "Traceback")
+                self.assertContains(respuesta, fragmento)
+                self.assertNotContains(respuesta, 'id="resultado"')
+
+    def test_servicio_rechaza_el_literal_antes_del_motor(self):
+        motor = Mock(side_effect=AssertionError("motor"))
+        with patch("backend.parser_sistemas.Fraction", _fraction_vigilada), patch.dict(
+            "frontend.web.calculadora.servicios._RESOLVERS",
+            {"gauss": ("Gauss", motor, "matriz_escalonada", "Matriz escalonada")},
+        ):
+            for texto in ("x1=1e1000000000", "x1=" + "9" * (DIGITOS_MAXIMOS + 1)):
+                with self.subTest(texto=texto[:24]):
+                    with self.assertRaises(ValueError):
+                        resolver_entrada_web("sistema", "gauss", texto=texto)
+                    motor.assert_not_called()
+
+    def test_consola_y_convertir_a_numero_conservan_su_contrato(self):
+        self.assertEqual(parsear_sistema("x1=1e2"), [[1, 100]])
+        self.assertEqual(parsear_sistema("x1=1E-2"), [[1, Fraction(1, 100)]])
+        self.assertEqual(parsear_sistema("x1=" + "9" * (DIGITOS_MAXIMOS + 1))[0][1], int("9" * (DIGITOS_MAXIMOS + 1)))
+        with self.assertRaises(ValueError) as contexto:
+            parsear_sistema("1e2x1=1")
+        self.assertIn("coeficientes numéricos", str(contexto.exception))
+        self.assertEqual(convertir_a_numero("1e2"), 100)
+        self.assertEqual(convertir_a_numero("1_000"), 1000)
+        self.assertEqual(parsear_sistema("x1=1_000", limitar_entrada=True), [[1, 1000]])

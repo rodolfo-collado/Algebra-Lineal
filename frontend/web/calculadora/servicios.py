@@ -74,7 +74,11 @@ def adaptar_sustitucion(pasos):
 def resolver_entrada_web(
     tipo_entrada, metodo, *, texto=None, matriz_aumentada=None
 ):
-    """Converge cualquier entrada web en una matriz y delega al backend."""
+    """Converge cualquier entrada web en una matriz y delega al backend.
+
+    El texto pasa por el parser con presupuesto numérico. La matriz llega ya
+    validada: SistemaForm revisa cada celda antes de convertirla.
+    """
     if tipo_entrada == "sistema":
         matriz_inicial = parsear_sistema(texto or "", limitar_entrada=True)
     elif tipo_entrada == "matriz":

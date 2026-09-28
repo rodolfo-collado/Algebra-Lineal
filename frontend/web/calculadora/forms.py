@@ -12,6 +12,7 @@ from backend.presupuesto_sistemas import (
     LONGITUD_SISTEMA_MAXIMA,
     dimensiones_admitidas,
     validar_dimensiones,
+    validar_literal_numerico,
     validar_longitud_sistema,
 )
 
@@ -192,6 +193,7 @@ class SistemaForm(forms.Form):
                     continue
 
                 try:
+                    validar_literal_numerico(texto)
                     valores.append(convertir_a_numero(texto))
                 except ValueError as error:
                     errores.append(f"La celda {etiqueta}: {error}")

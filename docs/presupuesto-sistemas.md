@@ -9,6 +9,8 @@ web y a la aplicación desktop, que utiliza esas mismas vistas.
 | Variables | 12 | Acota pivotes, sustitución, expresiones y columnas del DOM. |
 | Celdas aumentadas | 120 | Presupuesto conjunto: `ecuaciones × (variables + 1)`. Incluye b. |
 | Texto del sistema | 10000 caracteres | Acota el análisis antes de separar ecuaciones; deja espacio para coeficientes, fracciones y formato educativo. |
+| Dígitos por componente | 100 | Entero, parte entera, numerador, denominador o parte decimal, contados en el texto. |
+| Notación científica | rechazada | `e`/`E` no se interpreta. No pertenece al contrato. |
 
 Los tres límites estructurales se cumplen simultáneamente. Caben sistemas
 cuadrados de hasta 10 variables, 12 ecuaciones con 9 variables, 10 con 11 y
@@ -110,8 +112,43 @@ rutas antiguas, procedimiento plegable y Exacto/Decimal.
 No hay un ejecutor DOM específico de Sistemas; la verificación interactiva usa
 la página real sin instalar dependencias ni añadir infraestructura de navegador.
 
-Pendiente fuera de este incremento: la longitud/magnitud de cada coeficiente
-y los exponentes que admite `Fraction` siguen sin un presupuesto numérico
-propio. Un límite de dimensiones o de caracteres no limita por sí solo el costo
-de enteros o racionales de magnitud extrema. Tampoco se añade control de
-concurrencia de peticiones ni se acotan aquí otros módulos matemáticos.
+## Literales numéricos
+
+Un límite de caracteres no impide que `1e1000000000` construya un entero de mil
+millones de dígitos: `Fraction` hace `10**exponente` antes del presupuesto
+estructural. La comprobación mira el texto y solo entonces llama a `Fraction`.
+
+La notación científica no es contrato de PyGebra. La documentación y los
+ejemplos usan enteros, fracciones y decimales (`3`, `-5`, `1/2`, `-7/3`,
+`0.25`). No hay pruebas ni ejemplos con `e`/`E`, y el patrón de un coeficiente
+(`xN`) tampoco la acepta. Python 3.13 sí la entiende dentro de `Fraction`, así
+que en consola `x1=1e2` vale `100` por accidente. No se incorpora a la gramática.
+La web la rechaza en cuanto hay un dígito y después una `e`/`E`, sin `int` del
+exponente y sin `10**n`.
+
+| Componente | Máximo |
+| --- | ---: |
+| Entero, o parte entera de un decimal | 100 dígitos |
+| Numerador | 100 dígitos |
+| Denominador | 100 dígitos |
+| Parte decimal | 100 dígitos |
+
+El signo, el punto y la barra no cuentan. `1_000` sigue aceptándose si no pasa
+de 100 dígitos, porque `Fraction` ya lo leía; no es sintaxis educativa. Un
+denominador cero conserva el error de antes.
+
+`convertir_a_numero` no cambia: la usan Vectores, Matrices, expresiones y la
+consola. El tope vive en `backend/presupuesto_sistemas.py` y solo se aplica a
+Resolver un sistema:
+
+- texto: `parsear_sistema(..., limitar_entrada=True)`, desde `resolver_entrada_web`;
+- matriz: `SistemaForm` valida cada celda y después llama a `convertir_a_numero`.
+
+El parser de consola sigue sin ese modo.
+
+La suite queda en **1112 pruebas**, 9 nuevas. Un `Fraction` vigilado falla si
+el literal caro llega a convertirse; no se construyen enteros de millones de
+dígitos.
+
+Pendiente fuera de este incremento: no hay control de concurrencia de
+peticiones. Este presupuesto no es una garantía universal de tiempo de cálculo.
