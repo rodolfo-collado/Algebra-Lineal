@@ -68,7 +68,7 @@ def _exigir_digitos(parte):
 
 def _rechazar_digitos_excesivos(cuerpo):
     if "_" in cuerpo:
-        # ponytail: con <=100 dígitos, 1_000 llega a Fraction; rechazar "_" si esa forma debe morir.
+        # Fraction admite separadores "_"; se cuentan solo los dígitos para aplicar el presupuesto.
         if sum(caracter.isdigit() for caracter in cuerpo) > DIGITOS_MAXIMOS:
             raise ValueError(MENSAJE_NUMERO_GRANDE)
         return
