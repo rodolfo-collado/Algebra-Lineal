@@ -6,6 +6,14 @@ from django import forms
 
 from backend.parser_sistemas import construir_matriz_aumentada, convertir_a_numero
 from backend.operandos import ARIDAD_VECTORES, OPERANDOS_MAXIMOS, exigir_aridad
+from backend.presupuesto_sistemas import (
+    ECUACIONES_MAXIMAS,
+    VARIABLES_MAXIMAS,
+    LONGITUD_SISTEMA_MAXIMA,
+    dimensiones_admitidas,
+    validar_dimensiones,
+    validar_longitud_sistema,
+)
 
 from .opciones_sistemas import BLOQUES, BLOQUES_PREDETERMINADOS, METODO_PREDETERMINADO, METODOS
 from .opciones_vectores import (
@@ -54,6 +62,7 @@ class SistemaForm(forms.Form):
     sistema = forms.CharField(
         label="Sistema de ecuaciones",
         required=False,
+        max_length=LONGITUD_SISTEMA_MAXIMA,
         strip=True,
         widget=forms.Textarea(
             attrs={
@@ -73,6 +82,7 @@ class SistemaForm(forms.Form):
         label="Número de ecuaciones",
         required=False,
         min_value=1,
+        max_value=ECUACIONES_MAXIMAS,
         widget=forms.NumberInput(
             attrs={
                 "class": "field-input",
@@ -83,12 +93,14 @@ class SistemaForm(forms.Form):
         error_messages={
             "invalid": "La cantidad de ecuaciones debe ser un número entero.",
             "min_value": "Debe haber al menos una ecuación.",
+            "max_value": f"Se admiten hasta {ECUACIONES_MAXIMAS} ecuaciones.",
         },
     )
     variables = forms.IntegerField(
         label="Número de variables",
         required=False,
         min_value=1,
+        max_value=VARIABLES_MAXIMAS,
         widget=forms.NumberInput(
             attrs={
                 "class": "field-input",
@@ -99,8 +111,17 @@ class SistemaForm(forms.Form):
         error_messages={
             "invalid": "La cantidad de variables debe ser un número entero.",
             "min_value": "Debe haber al menos una variable.",
+            "max_value": f"Se admiten hasta {VARIABLES_MAXIMAS} variables.",
         },
     )
+
+    def clean_sistema(self):
+        # También cuenta los espacios descartados por CharField(strip=True).
+        try:
+            validar_longitud_sistema(self.data.get("sistema") or "")
+        except ValueError as error:
+            raise forms.ValidationError(str(error)) from error
+        return self.cleaned_data.get("sistema", "")
 
     def clean_mostrar(self):
         seleccion = self.cleaned_data.get("mostrar") or []
@@ -116,7 +137,7 @@ class SistemaForm(forms.Form):
         if tipo_entrada in (None, "", "sistema"):
             # Mantiene compatibles los POST del flujo textual de P6.
             datos["tipo_entrada"] = "sistema"
-            if not datos.get("sistema"):
+            if not datos.get("sistema") and "sistema" not in self.errors:
                 self.add_error("sistema", "Ingresa un sistema de ecuaciones.")
             return datos
 
@@ -125,14 +146,20 @@ class SistemaForm(forms.Form):
 
         ecuaciones = datos.get("ecuaciones")
         variables = datos.get("variables")
-        if ecuaciones is None:
+        if ecuaciones is None and "ecuaciones" not in self.errors:
             self.add_error(
                 "ecuaciones", "Indica el número de ecuaciones."
             )
-        if variables is None:
+        if variables is None and "variables" not in self.errors:
             self.add_error("variables", "Indica el número de variables.")
 
         if self.errors.get("ecuaciones") or self.errors.get("variables"):
+            return datos
+
+        try:
+            validar_dimensiones(ecuaciones, variables)
+        except ValueError as error:
+            self.add_error(None, str(error))
             return datos
 
         nombres_esperados = {
@@ -194,7 +221,7 @@ class SistemaForm(forms.Form):
         datos_limpios = getattr(self, "cleaned_data", {})
         ecuaciones = datos_limpios.get("ecuaciones")
         variables = datos_limpios.get("variables")
-        if ecuaciones is None or variables is None:
+        if not dimensiones_admitidas(ecuaciones, variables):
             return []
 
         return self.valores_matriz_desde(self.data, ecuaciones, variables)
@@ -202,6 +229,8 @@ class SistemaForm(forms.Form):
     @staticmethod
     def valores_matriz_desde(datos, ecuaciones, variables):
         """Las celdas matriz_i_j de un envío o de una consulta, como filas de texto."""
+        if not dimensiones_admitidas(ecuaciones, variables):
+            return []
         return [
             [datos.get(f"matriz_{fila}_{columna}", "") for columna in range(variables + 1)]
             for fila in range(ecuaciones)
@@ -219,12 +248,19 @@ class SistemaForm(forms.Form):
             inicial["metodo"] = consulta["metodo"]
         if consulta.get("tipo_entrada") in dict(cls.TIPOS_ENTRADA):
             inicial["tipo_entrada"] = consulta["tipo_entrada"]
-        if consulta.get("sistema", "").strip():
+        if 0 < len(consulta.get("sistema", "")) <= LONGITUD_SISTEMA_MAXIMA and consulta["sistema"].strip():
             inicial["sistema"] = consulta["sistema"]
         for campo in ("ecuaciones", "variables"):
-            valor = consulta.get(campo, "")
-            if valor.isdigit() and int(valor) >= 1:
-                inicial[campo] = int(valor)
+            try:
+                valor = cls.base_fields[campo].clean(consulta.get(campo))
+            except forms.ValidationError:
+                continue
+            if valor is not None:
+                inicial[campo] = valor
+        if "ecuaciones" in inicial and "variables" in inicial:
+            if not dimensiones_admitidas(inicial["ecuaciones"], inicial["variables"]):
+                inicial.pop("ecuaciones")
+                inicial.pop("variables")
         if consulta.get("mostrar_definido"):
             elegidos = consulta.getlist("mostrar")
             inicial["mostrar"] = [clave for clave, _ in BLOQUES if clave in elegidos]

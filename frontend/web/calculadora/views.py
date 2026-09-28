@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from backend.sistemas_numericos import NOMBRES_BASE
+from backend.presupuesto_sistemas import CELDAS_MAXIMAS, dimensiones_admitidas
 
 from . import catalogo
 from .exploraciones import exploraciones_sistema
@@ -87,7 +88,9 @@ def sistemas(request):
                 form.add_error("sistema", str(error))
 
     matrix_values = form.valores_matriz_ingresados()
-    if not matrix_values and "ecuaciones" in inicial and "variables" in inicial:
+    if request.method == "GET" and dimensiones_admitidas(
+        inicial.get("ecuaciones"), inicial.get("variables")
+    ):
         matrix_values = SistemaForm.valores_matriz_desde(
             request.GET, inicial["ecuaciones"], inicial["variables"]
         )
@@ -103,6 +106,7 @@ def sistemas(request):
             "mostrar": mostrar,
             "titulo_resultado": titulo_resultado(form.cleaned_data["metodo"]) if resultados else None,
             "matrix_values": matrix_values,
+            "celdas_maximas": CELDAS_MAXIMAS,
             # Las opciones se despliegan solas cuando difieren de lo predeterminado.
             "opciones_abiertas": set(form.bloques_elegidos()) != set(BLOQUES_PREDETERMINADOS),
             "guias": guias,

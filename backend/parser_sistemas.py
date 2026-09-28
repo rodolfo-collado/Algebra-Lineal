@@ -7,6 +7,8 @@ ValueError. No imprime, no pide datos y no conoce ninguna interfaz.
 import re
 from fractions import Fraction
 
+from backend.presupuesto_sistemas import validar_dimensiones, validar_longitud_sistema
+
 SEPARADOR_ECUACIONES = ";"
 
 _PREFIJO_ERROR = "Formato de sistema inválido"
@@ -96,14 +98,21 @@ def parsear_ecuacion(ecuacion):
     return coeficientes, termino_independiente
 
 
-def parsear_sistema(texto):
+def parsear_sistema(texto, *, limitar_entrada=False):
     """Convierte un sistema escrito como texto en su matriz aumentada.
 
     Las ecuaciones se separan con ';' y la cantidad de variables la marca el
     mayor indice que aparece en todo el sistema.
+    La entrada web activa el presupuesto antes de dividir texto o reservar filas;
+    los consumidores de consola conservan su contrato anterior.
     """
+    if limitar_entrada and isinstance(texto, str):
+        validar_longitud_sistema(texto)
     if not isinstance(texto, str) or not texto.strip():
         raise ValueError(f"{_PREFIJO_ERROR}: el sistema no puede estar vacío.")
+
+    if limitar_entrada:
+        validar_dimensiones(texto.count(SEPARADOR_ECUACIONES) + 1, 1)
 
     # Separación de las ecuaciones
     ecuaciones = [parte.strip() for parte in texto.split(SEPARADOR_ECUACIONES)]
@@ -120,6 +129,8 @@ def parsear_sistema(texto):
 
     # Conversión a matriz aumentada: las variables ausentes valen cero.
     cantidad_variables = max(max(coeficientes) for coeficientes, _ in analizadas)
+    if limitar_entrada:
+        validar_dimensiones(len(analizadas), cantidad_variables)
     matriz = []
     for coeficientes, termino_independiente in analizadas:
         fila = [0] * cantidad_variables
