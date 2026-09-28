@@ -13,15 +13,19 @@ uv run python manage.py check
 
 Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`
 cubre aridad, colecciones exactas, dimensiones consecutivas, cadenas de tres y
-cuatro matrices, ambos procedimientos y validación estricta del POST. Las
-pruebas anteriores de dos operandos y operaciones unarias siguen en la suite.
+cuatro matrices, ambos procedimientos, validación estricta del POST y el
+presupuesto de entrada: hasta 50 operandos y 900 celdas en total, comprobados
+antes de construir el formulario y dentro del límite de campos por envío de
+Django. Las pruebas anteriores de dos operandos y operaciones unarias siguen en
+la suite.
 
 Para comprobar los controles en un DOM real, ejecuta
 `uv run python -m tests.operandos_browser` y abre
-`http://127.0.0.1:8877/__pruebas/`. Los diez casos usan la aplicación Django y
+`http://127.0.0.1:8877/__pruebas/`. Los quince casos usan la aplicación Django y
 los scripts de producción: añadir/quitar operandos, eliminar uno intermedio,
 preservar valores y orden, mínimos por operación, cambios a unarias y Ax,
-cantidades mayores de diez y los tres modos de presentación del producto.
+cantidades mayores de diez, los topes del presupuesto (50 operandos, 900 celdas
+y una cantidad manipulada) y los tres modos de presentación del producto.
 Este ejecutor local no añade dependencias ni se lanza en `unittest discover`.
 
 Las de `tests/` cubren las reglas matemáticas del backend (validaciones, matrices

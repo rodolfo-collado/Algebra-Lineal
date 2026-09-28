@@ -6,6 +6,15 @@ ARIDAD_MATRICES = {
     "escalar": (1, 1), "traspuesta": (1, 1), "matriz_vector": (2, 2),
 }
 
+# Presupuesto de entrada de la interfaz, no un límite matemático: el cálculo acepta
+# colecciones de cualquier tamaño, pero los formularios crean un campo por celda a
+# partir de la cantidad que envía el navegador y la acotan antes de construirlos.
+# 50 operandos con 900 celdas, más sus controles de estructura, caben en los 1000
+# campos por envío que admite Django (DATA_UPLOAD_MAX_NUMBER_FIELDS): lo que la
+# interfaz dibuja siempre se puede enviar.
+OPERANDOS_MAXIMOS = 50
+CELDAS_MAXIMAS = 900
+
 
 def exigir_aridad(cantidad, aridad):
     minimo, maximo = aridad

@@ -49,6 +49,7 @@
                 {% for matriz in form.matrices %}{% include "calculadora/components/matriz_entrada.html" with nombre=matriz.nombre filas=matriz.filas vector=matriz.vector only %}{% endfor %}
             </div>
             <button type="button" class="btn btn-secondary" data-agregar-matriz hidden>+ Agregar matriz</button>
+            <p class="field-help" data-limite-operandos hidden>{{ form.cantidad.field.error_messages.max_value }}</p>
             <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. Las matrices pueden ser rectangulares.</p>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>

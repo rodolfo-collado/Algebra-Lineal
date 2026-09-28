@@ -5,7 +5,7 @@ import re
 from django import forms
 
 from backend.parser_sistemas import construir_matriz_aumentada, convertir_a_numero
-from backend.operandos import ARIDAD_VECTORES, exigir_aridad
+from backend.operandos import ARIDAD_VECTORES, OPERANDOS_MAXIMOS, exigir_aridad
 
 from .opciones_sistemas import BLOQUES, BLOQUES_PREDETERMINADOS, METODO_PREDETERMINADO, METODOS
 from .opciones_vectores import (
@@ -392,6 +392,9 @@ class VectoresForm(forms.Form):
         required=False,
         initial=VECTORES_PREDETERMINADOS,
         min_value=VECTORES_MINIMOS,
+        # El mismo tope de operandos que matrices; con la dimensión máxima, 50
+        # vectores y b quedan dentro del presupuesto de celdas.
+        max_value=OPERANDOS_MAXIMOS,
         widget=forms.NumberInput(
             attrs={
                 "class": "field-input",
@@ -402,6 +405,7 @@ class VectoresForm(forms.Form):
         error_messages={
             "invalid": "La cantidad de vectores debe ser un número entero.",
             "min_value": "Hace falta al menos un vector generador.",
+            "max_value": f"La interfaz admite hasta {OPERANDOS_MAXIMOS} vectores por operación.",
         },
     )
     escalar = forms.CharField(
@@ -455,7 +459,7 @@ class VectoresForm(forms.Form):
             numero = int(str(valor).strip())
         except (TypeError, ValueError):
             return predeterminado
-        return min(max(numero, minimo), maximo) if maximo is not None else max(numero, minimo)
+        return min(max(numero, minimo), maximo)
 
     def estructura(self):
         """Operación, dimensión y filas de vectores (con lo escrito) para pintar la entrada.
@@ -472,7 +476,7 @@ class VectoresForm(forms.Form):
         )
         cantidad = self._entero(
             self._valor_actual("vectores", VECTORES_PREDETERMINADOS),
-            VECTORES_PREDETERMINADOS, ARIDAD_VECTORES[operacion][0], None,
+            VECTORES_PREDETERMINADOS, ARIDAD_VECTORES[operacion][0], OPERANDOS_MAXIMOS,
         )
         valores = self.data if self.is_bound else self.initial.get("valores", {})
 
@@ -518,9 +522,9 @@ class VectoresForm(forms.Form):
             return datos
 
         cantidad = datos.get("vectores")
+        if self.errors.get("vectores"):
+            return datos
         if operacion == "combinacion":
-            if self.errors.get("vectores"):
-                return datos
             if cantidad is None:
                 self.add_error("vectores", "Indica cuántos vectores generadores hay.")
                 return datos

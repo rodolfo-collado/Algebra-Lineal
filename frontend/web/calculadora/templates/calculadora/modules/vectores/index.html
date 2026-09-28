@@ -68,6 +68,7 @@
                     {% endfor %}
                 </div>
                 <button type="button" class="btn btn-secondary" data-agregar-vector hidden>+ Agregar vector</button>
+                <p class="field-help" data-limite-operandos hidden>{{ form.vectores.field.error_messages.max_value }}</p>
                 {% for error in form.vectores.errors %}
                     <p class="field-error" role="alert">{{ error }}</p>
                 {% endfor %}

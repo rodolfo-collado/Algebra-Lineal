@@ -93,6 +93,48 @@
             igual(cantidad(w, '[data-matrix-list] fieldset'), 28);
             igual(cantidad(w, '[name="celda_AB_0_0"]'), 1);
         }],
+        ["Matrices: tope de 50 operandos con aviso", "matrices", w => {
+            valor(w, '[name="filas"]', 1); valor(w, '[name="columnas"]', 1);
+            for (let i = 2; i < 60; i++) click(w, '[data-agregar-matriz]');
+            igual(cantidad(w, '[data-matrix-list] fieldset'), 50);
+            igual(w.document.querySelector('[data-agregar-matriz]').disabled, true);
+            igual(w.document.querySelector('[data-limite-operandos]').hidden, false);
+            click(w, '[aria-label="Quitar matriz AX"]');
+            igual(w.document.querySelector('[data-agregar-matriz]').disabled, false);
+            igual(w.document.querySelector('[data-limite-operandos]').hidden, true);
+        }],
+        ["Matrices: el presupuesto de celdas detiene Agregar", "matrices", w => {
+            valor(w, '[name="filas"]', 10); valor(w, '[name="columnas"]', 10);
+            for (let i = 2; i < 12; i++) click(w, '[data-agregar-matriz]');
+            igual(cantidad(w, '[data-matrix-list] fieldset'), 9);
+            igual(w.document.querySelector('[name="cantidad"]').value, '9');
+            igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('Las 10 matrices suman 1000 celdas'), true);
+            valor(w, '[name="filas"]', 5);
+            igual(cantidad(w, '[name^="celda_I_"]'), 50);
+        }],
+        ["Matrices: una dimensión que excede el presupuesto conserva la cuadrícula", "matrices", w => {
+            for (let i = 2; i < 12; i++) click(w, '[data-agregar-matriz]');
+            valor(w, '[name="filas"]', 10); valor(w, '[name="columnas"]', 10);
+            igual(cantidad(w, '[name^="celda_L_"]'), 20);
+            igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('Las 12 matrices suman 1200 celdas'), true);
+        }],
+        ["Matrices: cantidad manipulada vuelve a una estructura segura", "matrices", async (w, frame) => {
+            w.document.querySelector('[name="cantidad"]').value = '100000';
+            w = await enviar(frame);
+            igual(w.document.querySelector('.errorlist').textContent.includes('hasta 50 matrices'), true);
+            igual(cantidad(w, '[data-matrix-list] fieldset'), 2);
+            igual(w.document.querySelector('[name="cantidad"]').value, '2');
+            click(w, '[data-agregar-matriz]');
+            igual(cantidad(w, '[data-matrix-list] fieldset'), 3);
+        }],
+        ["Vectores: tope de 50 vectores con aviso", "vectores", w => {
+            for (let i = 2; i < 60; i++) click(w, '[data-agregar-vector]');
+            igual(cantidad(w, '[data-vector]'), 50);
+            igual(w.document.querySelector('[data-agregar-vector]').disabled, true);
+            igual(w.document.querySelector('[data-limite-operandos]').hidden, false);
+            click(w, '[name="operacion"][value="escalar"]');
+            igual(w.document.querySelector('[data-limite-operandos]').hidden, true);
+        }],
     ];
     for (const metodo of ['fila_columna', 'columnas', 'comparar']) {
         casos.push([`Producto rectangular de cuatro: ${metodo}`, 'matrices', async (w, frame) => {

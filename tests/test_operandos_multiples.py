@@ -9,18 +9,21 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settin
 import django
 django.setup()
 
+from django.conf import settings
 from django.http import QueryDict
 from django.test import SimpleTestCase
 from django.utils.html import strip_tags
 
 from backend.matrices import producto_punto, resolver_coleccion_matrices, resolver_operacion_matrices
-from backend.operandos import nombre_matriz
+from backend.operandos import CELDAS_MAXIMAS, OPERANDOS_MAXIMOS, nombre_matriz
 from backend.vectores import operar_vectores
 from frontend.web.calculadora.forms import VectoresForm
 from frontend.web.calculadora.forms_matrices import MatricesForm
+from frontend.web.calculadora.opciones_matrices import configuracion_operandos
+from frontend.web.calculadora.opciones_vectores import DIMENSION_MAXIMA as DIMENSION_VECTORES, nombres_vectores
 from frontend.web.calculadora.servicios_matrices import operar_matrices
 from tests.test_vectores_web import datos_vectores, combinacion, RUTA as VECTORES
-from tests.test_matrices_web import datos_matrices, RUTA as MATRICES
+from tests.test_matrices_web import Contenido, datos_matrices, RUTA as MATRICES
 from tests.test_multiplicacion_matrices_web import datos_matriz_vector
 
 
@@ -37,6 +40,15 @@ def datos_coleccion(operacion, matrices, metodo="comparar"):
     if operacion == "producto":
         datos["metodo"] = metodo
     return datos
+
+
+def llena(filas, columnas):
+    return [[1] * columnas for _ in range(filas)]
+
+
+def celdas_dibujadas(html):
+    """Celdas de matriz o componentes de vector que el servidor dibujó (sin plantillas inertes)."""
+    return sum(nombre.startswith("celda_") or "data-cell" in atributos for nombre, atributos in Contenido(html).campos.items())
 
 
 class PruebasColecciones(SimpleTestCase):
@@ -193,3 +205,124 @@ class PruebasWebColecciones(SimpleTestCase):
         respuesta = self.client.post(MATRICES, datos_coleccion("suma", [[[1]]] * 40))
         self.assertContains(respuesta, 'id="resultado"')
         self.assertContains(respuesta, 'name="celda_AN_0_0"')
+
+
+class PruebasPresupuesto(SimpleTestCase):
+    """Presupuesto de entrada: operandos × filas × columnas se acota antes de construir campos."""
+
+    def post(self, ruta, datos):
+        # El cliente de pruebas relanza cualquier excepción de la vista: un 500 haría fallar la prueba.
+        respuesta = self.client.post(ruta, datos)
+        self.assertEqual(respuesta.status_code, 200)
+        return respuesta.content.decode()
+
+    def test_mas_de_diez_operandos_de_varios_tamanos(self):
+        html = self.post(MATRICES, datos_coleccion("suma", [llena(3, 4)] * 12))
+        self.assertEqual(Contenido(html).tablas["Matriz resultado"], [["12"] * 4] * 3)
+        html = self.post(MATRICES, datos_coleccion("producto", [llena(3, 3)] * 12, "fila_columna"))
+        self.assertEqual(Contenido(html).tablas["Matriz resultado"], [[str(3 ** 11)] * 3] * 3)
+        self.assertIn("Paso 11: ABCDEFGHIJK · L = ABCDEFGHIJKL", strip_tags(html))
+        vectores = {nombre: [1] * 4 for nombre in nombres_vectores("suma", 12)}
+        self.assertIn("(12, 12, 12, 12)", strip_tags(self.post(VECTORES, datos_vectores("suma", vectores=12, **vectores))))
+
+    def test_cantidad_absurda_se_descarta_antes_de_construir_la_estructura(self):
+        for operacion in ("suma", "resta", "producto"):
+            datos = {"operacion": operacion, "cantidad": "100000", "filas": "10", "columnas": "10", "columnas_b": "10"}
+            with self.subTest(operacion=operacion), patch(
+                    "frontend.web.calculadora.forms_matrices.configuracion_operandos", wraps=configuracion_operandos) as configurar:
+                form = MatricesForm(datos)
+                self.assertEqual([llamada.args[1] for llamada in configurar.call_args_list], [2])
+                self.assertEqual(len(form.nombres_celdas), 200)
+                self.assertFalse(form.is_valid())
+                self.assertEqual(form.errors["cantidad"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} matrices por operación."])
+        with patch("frontend.web.calculadora.forms.nombres_vectores", wraps=nombres_vectores) as nombrar:
+            form = VectoresForm({"operacion": "suma", "vectores": "100000", "dimension": "10"})
+            self.assertFalse(form.is_valid())
+            self.assertEqual(len(form.estructura()["filas"]), OPERANDOS_MAXIMOS)
+        self.assertTrue(nombrar.called)
+        self.assertTrue(all(llamada.args[1] <= OPERANDOS_MAXIMOS for llamada in nombrar.call_args_list))
+        self.assertEqual(form.errors["vectores"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} vectores por operación."])
+
+    def test_matrices_de_tamano_maximo_con_una_cantidad_razonable(self):
+        nueve = [llena(10, 10)] * 9  # 900 celdas: justo el presupuesto
+        for operacion, esperado in (("suma", "9"), ("producto", str(10 ** 8))):
+            with self.subTest(operacion=operacion):
+                datos = datos_coleccion(operacion, nueve, "fila_columna")
+                self.assertLess(len(datos) + 1, settings.DATA_UPLOAD_MAX_NUMBER_FIELDS)  # + csrfmiddlewaretoken
+                html = self.post(MATRICES, datos)
+                self.assertEqual(Contenido(html).tablas["Matriz resultado"], [[esperado] * 10] * 10)
+        self.assertTrue(MatricesForm(datos_coleccion("resta", [llena(5, 5)] * 36)).is_valid())  # 36 × 5×5 = 900
+
+    def test_estructura_que_excede_el_presupuesto_se_rechaza_con_mensaje_legible(self):
+        producto = {"operacion": "producto", "cantidad": "10", "metodo": "fila_columna", "filas": "10", "columnas": "10",
+                    **{f"columnas_{nombre_matriz(i).lower()}": "10" for i in range(1, 10)}}
+        for datos, cantidad, celdas in (({"operacion": "suma", "cantidad": "37", "filas": "5", "columnas": "5"}, 37, 925),
+                                        (producto, 10, 1000)):
+            mensaje = (f"Las {cantidad} matrices suman {celdas} celdas y la interfaz admite hasta {CELDAS_MAXIMAS}: "
+                       "quita matrices o reduce sus filas y columnas.")
+            for extra in ({}, {"ajustar": "1"}):
+                with self.subTest(operacion=datos["operacion"], **extra):
+                    form = MatricesForm(datos | extra, ajustar=bool(extra))
+                    self.assertFalse(form.is_valid())
+                    self.assertEqual(form.non_field_errors(), [mensaje])
+                    # Se dibujan las mismas matrices con las dimensiones iniciales, dentro del presupuesto.
+                    self.assertEqual(len(form.matrices), cantidad)
+                    self.assertEqual(len(form.nombres_celdas), cantidad * 4)
+                    html = self.post(MATRICES, datos | extra)
+                    self.assertIn(mensaje, html)
+                    self.assertNotIn('id="resultado"', html)
+                    self.assertEqual(celdas_dibujadas(html), cantidad * 4)
+
+    def test_posts_manipulados_no_producen_errores_internos(self):
+        for cantidad in ("100000", "1" + "0" * 40, "1e9", "-5"):
+            for operacion, extra in (("suma", {}), ("producto", {"ajustar": "1"}), ("traspuesta", {})):
+                datos = {"operacion": operacion, "cantidad": cantidad, "filas": "10", "columnas": "10",
+                         "columnas_b": "10", "metodo": "comparar", "celda_ZZ_0_0": "1"} | extra
+                with self.subTest(ruta=MATRICES, cantidad=cantidad, operacion=operacion):
+                    html = self.post(MATRICES, datos)
+                    self.assertIn('class="alert error"', html)
+                    self.assertNotIn('id="resultado"', html)
+                    self.assertLessEqual(celdas_dibujadas(html), CELDAS_MAXIMAS)
+            for operacion, extra in (("suma", {}), ("combinacion", {"ajustar": "1"}), ("escalar", {})):
+                datos = {"operacion": operacion, "vectores": cantidad, "dimension": "10", "u_0": "1"} | extra
+                with self.subTest(ruta=VECTORES, cantidad=cantidad, operacion=operacion):
+                    html = self.post(VECTORES, datos)
+                    self.assertNotIn('id="resultado"', html)
+                    self.assertLessEqual(celdas_dibujadas(html), CELDAS_MAXIMAS)
+
+    def test_aridades_fijas_no_crecen_con_la_cantidad(self):
+        for datos, entradas in ((datos_matrices("traspuesta", a=[[1, 2]]), ("A",)),
+                                (datos_matrices("escalar", a=[[1, 2]], escalar=3), ("A",)),
+                                (datos_matriz_vector(), ("A", "x"))):
+            with self.subTest(operacion=datos["operacion"]):
+                form = MatricesForm(datos | {"cantidad": "100000"})
+                self.assertEqual(form.configuracion["matrices"], entradas)
+                self.assertFalse(form.is_valid())
+                self.assertIn("cantidad de matrices", form.non_field_errors()[0])
+                self.assertIn('id="resultado"', self.post(MATRICES, datos))
+        form = VectoresForm(datos_vectores("escalar", escalar="2", vectores=100000, u=[1, 2]))
+        self.assertFalse(form.is_valid())
+        self.assertEqual([fila["nombre"] for fila in form.estructura()["filas"]], ["u"])
+
+    def test_combinacion_con_mas_de_seis_generadores_hasta_el_tope(self):
+        for cantidad in (7, OPERANDOS_MAXIMOS):
+            with self.subTest(generadores=cantidad):
+                html = self.post(VECTORES, combinacion([[1, 0]] * cantidad, [3, 0]))
+                self.assertIn('id="resultado"', html)
+                self.assertIn(f"c{cantidad}", strip_tags(html))
+        form = VectoresForm(combinacion([[1, 0]] * (OPERANDOS_MAXIMOS + 1), [3, 0]))
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors["vectores"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} vectores por operación."])
+
+    def test_lo_que_la_interfaz_dibuja_siempre_se_puede_enviar(self):
+        # Peor envío de matrices: un producto de 50 operandos (una dimensión extra por matriz) con 900 celdas.
+        cadena = [llena(3, 6) if i % 2 == 0 else llena(6, 3) for i in range(OPERANDOS_MAXIMOS)]
+        self.assertEqual(sum(len(m) * len(m[0]) for m in cadena), CELDAS_MAXIMAS)
+        datos = datos_coleccion("producto", cadena, "fila_columna")
+        self.assertLessEqual(len(datos) + 2, settings.DATA_UPLOAD_MAX_NUMBER_FIELDS)  # + csrfmiddlewaretoken y ajustar
+        self.assertIn('id="resultado"', self.post(MATRICES, datos))
+        # En vectores cierra por construcción: 50 generadores y b de dimensión máxima.
+        self.assertLessEqual((OPERANDOS_MAXIMOS + 1) * DIMENSION_VECTORES, CELDAS_MAXIMAS)
+        datos = combinacion([[1] * DIMENSION_VECTORES] * OPERANDOS_MAXIMOS, [1] * DIMENSION_VECTORES)
+        self.assertLessEqual(len(datos) + 2, settings.DATA_UPLOAD_MAX_NUMBER_FIELDS)
+        self.assertIn('id="resultado"', self.post(VECTORES, datos))

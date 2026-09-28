@@ -2,6 +2,7 @@
 
 from django import forms
 
+from backend.operandos import CELDAS_MAXIMAS, OPERANDOS_MAXIMOS
 from backend.parser_sistemas import convertir_a_numero
 
 from .opciones_matrices import (
@@ -118,10 +119,14 @@ class FormularioCeldas(forms.Form):
 
 
 class MatricesForm(FormularioCeldas):
+    # Una cantidad fuera de rango se descarta (valor seguro 2) antes de nombrar matrices;
+    # matrices.js lee los topes de este mismo control.
     cantidad = forms.IntegerField(
-        label="Cantidad de matrices", initial=2, min_value=2, required=False, widget=forms.HiddenInput,
+        label="Cantidad de matrices", initial=2, min_value=2, max_value=OPERANDOS_MAXIMOS, required=False,
+        widget=forms.HiddenInput(attrs={"data-operandos-maximos": OPERANDOS_MAXIMOS, "data-celdas-maximas": CELDAS_MAXIMAS}),
         error_messages={"invalid": "La cantidad de matrices debe ser un número entero.",
-                        "min_value": "La operación requiere al menos 2 operandos."},
+                        "min_value": "La operación requiere al menos 2 operandos.",
+                        "max_value": f"La interfaz admite hasta {OPERANDOS_MAXIMOS} matrices por operación."},
     )
     operacion = forms.ChoiceField(
         label="Operación", choices=OPERACIONES, initial=OPERACION_PREDETERMINADA,
@@ -166,6 +171,18 @@ class MatricesForm(FormularioCeldas):
         estructura["metodo"] = metodo.initial if metodo.disabled else self._valor_seguro("metodo")
         self.estructura = estructura
 
+        # Presupuesto antes de crear un campo por celda. Si no cabe, se dibujan las mismas
+        # matrices con las dimensiones iniciales (a lo sumo 50 de 2×2) y clean() lo rechaza.
+        celdas = sum(filas * columnas for filas, columnas in map(self.forma, self.configuracion["matrices"]))
+        self.error_presupuesto = None
+        if celdas > CELDAS_MAXIMAS:
+            self.error_presupuesto = (
+                f"Las {len(self.configuracion['matrices'])} matrices suman {celdas} celdas y la interfaz admite "
+                f"hasta {CELDAS_MAXIMAS}: quita matrices o reduce sus filas y columnas."
+            )
+            for nombre, _ in self.configuracion["dimensiones"]:
+                estructura[nombre] = self.fields[nombre].initial
+
         if self.configuracion["escalar"]:
             self.fields["escalar"] = campo_numero("Escalar k")
         for nombre in self.configuracion["matrices"]:
@@ -188,6 +205,9 @@ class MatricesForm(FormularioCeldas):
     def clean(self):
         datos = super().clean()
         self.rechazar_campos_repetidos()
+        if self.error_presupuesto:
+            # También con Aplicar: una estructura que no cabe no se acepta ni para redibujar.
+            self.add_error(None, self.error_presupuesto)
         if self.errors or self.ajustar:
             return datos
 

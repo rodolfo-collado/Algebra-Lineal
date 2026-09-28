@@ -20,6 +20,7 @@
     let primeraCarga = true;
     let operacionAnterior = operacionActual();
     const agregar = root.querySelector("[data-agregar-vector]");
+    const limiteOperandos = root.querySelector("[data-limite-operandos]");
     const OBJETIVO = "b";
 
     function limite(input, atributo, predeterminado) {
@@ -156,6 +157,9 @@
         const dimension = valorEntero(dimensionInput, 3);
         const cantidad = valorEntero(vectoresInput, 2);
         vectoresInput.value = String(cantidad);
+        // El tope de operandos llega del servidor como `max` del campo.
+        agregar.disabled = cantidad >= limite(vectoresInput, "max", Infinity);
+        limiteOperandos.hidden = agregar.hidden || !agregar.disabled;
         const valores = valoresActuales();
         // El escalar conserva su nodo (y su valor) entre redibujados.
         const escalarExistente = lista.querySelector('input[name="escalar"]');

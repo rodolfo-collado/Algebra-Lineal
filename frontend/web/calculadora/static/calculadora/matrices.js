@@ -16,6 +16,9 @@
     let valorEscalar = "";
     const cantidad = root.querySelector('[name="cantidad"]');
     const agregar = root.querySelector('[data-agregar-matriz]');
+    const limiteOperandos = root.querySelector('[data-limite-operandos]');
+    // Los mismos topes que aplica el servidor antes de construir el formulario.
+    const maximos = { operandos: Number(cantidad.dataset.operandosMaximos), celdas: Number(cantidad.dataset.celdasMaximas) };
     let operacionAnterior = root.querySelector('[name="operacion"]:checked').value;
 
     function nombreMatriz(indice) {
@@ -137,6 +140,8 @@
     function actualizarEstructura(opcion) {
         cantidad.disabled = opcion.aridad[1] !== null;
         agregar.hidden = cantidad.disabled;
+        agregar.disabled = opcion.matrices.length >= maximos.operandos;
+        limiteOperandos.hidden = agregar.hidden || !agregar.disabled;
         const etiquetas = new Map(opcion.dimensiones);
         Object.entries(dimensiones).forEach(([nombre, campo]) => {
             const activo = etiquetas.has(nombre);
@@ -168,7 +173,16 @@
         actualizarEstructura(opcion);
         // No se corrigen silenciosamente dimensiones inválidas: el servidor
         // muestra el error. Mientras se escribe, se conserva la cuadrícula.
-        if (!opcion.dimensiones.every(([nombre]) => dimensionValida(entrada(nombre)))) return;
+        if (!opcion.dimensiones.every(([nombre]) => dimensionValida(entrada(nombre)))) return false;
+        // Tampoco se dibuja una cuadrícula que exceda el presupuesto: no se podría enviar.
+        const celdas = opcion.matrices.reduce((total, nombre) => {
+            const [filas, columnas] = forma(opcion, nombre);
+            return total + filas * columnas;
+        }, 0);
+        if (celdas > maximos.celdas) {
+            root.querySelector("[data-matrix-shape]").textContent = `Las ${opcion.matrices.length} matrices suman ${celdas} celdas y la interfaz admite hasta ${maximos.celdas}: quita matrices o reduce sus filas y columnas.`;
+            return false;
+        }
         guardar();
         lista.replaceChildren(...opcion.matrices.map(nombre => crearMatriz(nombre, ...forma(opcion, nombre))));
         controlesOperandos(opcion);
@@ -181,6 +195,7 @@
         const filas = entrada("filas");
         root.querySelector("[data-matrix-shape]").textContent = `${textoForma(opcion)} De ${filas.min} a ${filas.max} filas y columnas.`;
         actualizarBotones();
+        return true;
     }
 
     function controlesOperandos(opcion) {
@@ -222,7 +237,11 @@
 
     agregar.addEventListener('click', () => {
         cantidad.value = String(Number(cantidad.value) + 1);
-        render();
+        // Si la matriz nueva no cabe, se deshace el paso y queda el aviso de render().
+        if (!render()) {
+            cantidad.value = String(Number(cantidad.value) - 1);
+            actualizarEstructura(opcionActual());
+        }
     });
     root.querySelectorAll('[name="operacion"]').forEach(radio => radio.addEventListener("change", () => {
         if (opciones[radio.value].aridad[1] !== null || opciones[operacionAnterior].aridad[1] !== null) cantidad.value = "2";
@@ -242,6 +261,8 @@
     root.querySelectorAll(".stepper [data-paso]").forEach(activarStepper);
     root.addEventListener("input", ocultarResultado);
     root.querySelector("[data-aplicar]").hidden = true;
+    // Tras un envío rechazado el servidor dibuja una estructura segura: se parte de ella.
+    if (!cantidad.disabled) cantidad.value = String(lista.querySelectorAll("[data-matriz]").length);
     actualizarBotones();
     controlesOperandos(opcionActual());
 
