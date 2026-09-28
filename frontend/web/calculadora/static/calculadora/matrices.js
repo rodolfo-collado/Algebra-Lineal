@@ -55,11 +55,11 @@
         return dimensiones[nombre].querySelector("input");
     }
 
-    function opcionActual() {
+    function opcionActual(pedidas = Number(cantidad.value)) {
         const operacion = root.querySelector('[name="operacion"]:checked').value;
         const opcion = JSON.parse(JSON.stringify(opciones[operacion]));
         if (opcion.aridad[1] !== null) return opcion;
-        const total = Math.max(2, Number(cantidad.value) || 2);
+        const total = Math.max(2, pedidas || 2);
         opcion.matrices = Array.from({length: total}, (_, i) => nombreMatriz(i));
         opcion.matrices.slice(2).forEach((nombre, i) => {
             if (operacion === "producto") {
@@ -77,8 +77,8 @@
         if (input) valorEscalar = input.value;
     }
 
-    function dimensionValida(input) {
-        const valor = Number(input.value);
+    function dimensionValida(input, texto = input.value) {
+        const valor = Number(texto);
         return Number.isInteger(valor) && valor >= Number(input.min) && valor <= Number(input.max);
     }
 
@@ -89,10 +89,21 @@
 
     // (filas, columnas, es vector) de una entrada según la operación: en AB las
     // filas de B son las columnas de A; el vector x es una columna de n componentes.
-    function forma(opcion, nombre) {
+    // `valor` lee cada dimensión; por defecto, de su campo.
+    function forma(opcion, nombre, valor = campo => entrada(campo).value) {
         const [campoFilas, campoColumnas] = opcion.formas[nombre];
-        const filas = Number(entrada(campoFilas).value);
-        return [filas, campoColumnas ? Number(entrada(campoColumnas).value) : 1, !campoColumnas];
+        const filas = Number(valor(campoFilas));
+        return [filas, campoColumnas ? Number(valor(campoColumnas)) : 1, !campoColumnas];
+    }
+
+    // La regla de render() para dibujar una estructura: sus celdas, o null si alguna
+    // dimensión no es válida. Con `valor` evalúa una estructura candidata sin tocar nada.
+    function celdasDe(opcion, valor = campo => entrada(campo).value) {
+        if (!opcion.dimensiones.every(([nombre]) => dimensionValida(entrada(nombre), valor(nombre)))) return null;
+        return opcion.matrices.reduce((total, nombre) => {
+            const [filas, columnas] = forma(opcion, nombre, valor);
+            return total + filas * columnas;
+        }, 0);
     }
 
     function crearMatriz(nombre, m, n, vector) {
@@ -173,12 +184,9 @@
         actualizarEstructura(opcion);
         // No se corrigen silenciosamente dimensiones inválidas: el servidor
         // muestra el error. Mientras se escribe, se conserva la cuadrícula.
-        if (!opcion.dimensiones.every(([nombre]) => dimensionValida(entrada(nombre)))) return false;
+        const celdas = celdasDe(opcion);
+        if (celdas === null) return false;
         // Tampoco se dibuja una cuadrícula que exceda el presupuesto: no se podría enviar.
-        const celdas = opcion.matrices.reduce((total, nombre) => {
-            const [filas, columnas] = forma(opcion, nombre);
-            return total + filas * columnas;
-        }, 0);
         if (celdas > maximos.celdas) {
             root.querySelector("[data-matrix-shape]").textContent = `Las ${opcion.matrices.length} matrices suman ${celdas} celdas y la interfaz admite hasta ${maximos.celdas}: quita matrices o reduce sus filas y columnas.`;
             return false;
@@ -208,9 +216,27 @@
             quitar.textContent = '×';
             quitar.setAttribute('aria-label', `Quitar matriz ${nombre}`);
             quitar.addEventListener('click', () => {
+                const indice = offset + 2;
+                const restantes = opcion.matrices.length - 1;
+                // Quitar es atómico. Primero se evalúa, con la regla de render(), la estructura
+                // candidata: cada matriz posterior ocupa el lugar de la anterior con sus columnas
+                // (en AB eso puede agrandarla). Si no se puede dibujar, nada cambia.
+                const desplazadas = new Map();
+                for (let i = indice; i < restantes; i += 1) {
+                    const destino = `columnas_${opcion.matrices[i].toLowerCase()}`;
+                    const origen = `columnas_${opcion.matrices[i + 1].toLowerCase()}`;
+                    if (dimensiones[destino] && dimensiones[origen]) desplazadas.set(destino, entrada(origen).value);
+                }
+                const celdas = celdasDe(opcionActual(restantes), campo => desplazadas.get(campo) ?? entrada(campo).value);
+                if (celdas === null || celdas > maximos.celdas) {
+                    root.querySelector("[data-matrix-shape]").textContent = celdas === null
+                        ? `Corrige las dimensiones antes de quitar la matriz ${nombre}.`
+                        : `No se puede quitar la matriz ${nombre}: con las dimensiones actuales, las ${restantes} matrices restantes sumarían ${celdas} celdas y la interfaz admite hasta ${maximos.celdas}. Reduce filas o columnas y vuelve a intentarlo.`;
+                    return;
+                }
+                // Cabe: se aplica todo de una vez (valores, columnas, cantidad y cuadrícula).
                 guardar();
                 const valores = new Map(memoria);
-                const indice = offset + 2;
                 for (let i = indice; i < opcion.matrices.length; i += 1) {
                     const actual = opcion.matrices[i];
                     const siguiente = opcion.matrices[i + 1];
@@ -221,14 +247,12 @@
                         for (const [clave, valor] of valores) {
                             if (clave.startsWith(`celda_${siguiente}_`)) memoria.set(clave.replace(`celda_${siguiente}_`, `celda_${actual}_`), valor);
                         }
-                        const destino = dimensiones[`columnas_${actual.toLowerCase()}`];
-                        const origen = dimensiones[`columnas_${siguiente.toLowerCase()}`];
-                        if (destino && origen) destino.querySelector('input').value = origen.querySelector('input').value;
                     }
                 }
+                desplazadas.forEach((valor, campo) => { entrada(campo).value = valor; });
                 // Evitar que render vuelva a guardar los nombres anteriores.
                 lista.replaceChildren();
-                cantidad.value = String(opcion.matrices.length - 1);
+                cantidad.value = String(restantes);
                 render();
             });
             lista.querySelector(`[data-matriz="${nombre}"]`).append(quitar);

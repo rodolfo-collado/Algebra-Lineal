@@ -118,6 +118,54 @@
             igual(cantidad(w, '[name^="celda_L_"]'), 20);
             igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('Las 12 matrices suman 1200 celdas'), true);
         }],
+        ["Matrices: quitar una intermedia del producto desplaza valores y columnas", "matrices", async (w, frame) => {
+            click(w, '[name="operacion"][value="producto"]');
+            click(w, '[name="metodo"][value="fila_columna"]');
+            valor(w, '[name="filas"]', 1); valor(w, '[name="columnas_b"]', 3);
+            click(w, '[data-agregar-matriz]'); click(w, '[data-agregar-matriz]');
+            valor(w, '[name="columnas_d"]', 1);
+            const matrices = {A:[[1,2]], B:[[1,0,2],[0,1,3]], C:[[1,2],[3,4],[5,6]], D:[[1],[2]]};
+            for (const [nombre, matriz] of Object.entries(matrices)) matriz.forEach((fila,i) => fila.forEach((v,j) => valor(w, `[name="celda_${nombre}_${i}_${j}"]`, v)));
+            click(w, '[aria-label="Quitar matriz C"]');
+            // D pasa a ser C con sus columnas; sus filas son ahora las columnas de B.
+            igual(cantidad(w, '[data-matrix-list] fieldset'), 3);
+            igual(w.document.querySelector('[name="cantidad"]').value, '3');
+            igual(w.document.querySelector('[name="columnas_c"]').value, '1');
+            igual(['celda_C_0_0', 'celda_C_1_0', 'celda_C_2_0'].map(n => w.document.querySelector(`[name="${n}"]`).value), ['1', '2', '']);
+            igual(cantidad(w, '[name^="celda_D_"]'), 0);
+            valor(w, '[name="celda_C_2_0"]', 3);
+            w = await enviar(frame);
+            igual(w.document.querySelector('.panel-final td').textContent.trim(), '29');
+        }],
+        ["Matrices: quitar una intermedia que no cabe no cambia nada", "matrices", w => {
+            click(w, '[name="operacion"][value="producto"]');
+            valor(w, '[name="filas"]', 10); valor(w, '[name="columnas"]', 10); valor(w, '[name="columnas_b"]', 10);
+            // C (10×1) y D (1×10) son pequeñas: sin C, D quedaría de 10×10 (830 → 910 celdas).
+            for (const [nombre, columnas] of Object.entries({c: 1, d: 10, e: 10, f: 10, g: 10, h: 10, i: 10, j: 10, k: 1})) {
+                click(w, '[data-agregar-matriz]');
+                valor(w, `[name="columnas_${nombre}"]`, columnas);
+            }
+            const celdas = ['celda_C_0_0', 'celda_D_0_9', 'celda_E_9_9'];
+            celdas.forEach((nombre, i) => valor(w, `[name="${nombre}"]`, i + 7));
+            const estado = () => [
+                cantidad(w, '[data-matrix-list] fieldset'), cantidad(w, '[name^="celda_"]'), w.document.querySelector('[name="cantidad"]').value,
+                ...['c', 'd', 'j', 'k'].map(n => w.document.querySelector(`[name="columnas_${n}"]`).value),
+                ...celdas.map(n => w.document.querySelector(`[name="${n}"]`).value),
+            ];
+            igual(estado(), [11, 830, '11', '1', '10', '10', '1', '7', '8', '9']);
+            click(w, '[aria-label="Quitar matriz C"]');
+            igual(estado(), [11, 830, '11', '1', '10', '10', '1', '7', '8', '9']);
+            igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('No se puede quitar la matriz C: con las dimensiones actuales, las 10 matrices restantes sumarían 910 celdas'), true);
+            // Con una fila menos en A sí cabe (900): se quita C y los valores se desplazan.
+            valor(w, '[name="filas"]', 9);
+            click(w, '[aria-label="Quitar matriz C"]');
+            igual(cantidad(w, '[data-matrix-list] fieldset'), 10);
+            igual(cantidad(w, '[name^="celda_"]'), 900);
+            igual(w.document.querySelector('[name="cantidad"]').value, '10');
+            igual(['c', 'j'].map(n => w.document.querySelector(`[name="columnas_${n}"]`).value), ['10', '1']);
+            igual(['celda_C_0_9', 'celda_D_9_9'].map(n => w.document.querySelector(`[name="${n}"]`).value), ['8', '9']);
+            igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('No se puede quitar'), false);
+        }],
         ["Matrices: cantidad manipulada vuelve a una estructura segura", "matrices", async (w, frame) => {
             w.document.querySelector('[name="cantidad"]').value = '100000';
             w = await enviar(frame);
