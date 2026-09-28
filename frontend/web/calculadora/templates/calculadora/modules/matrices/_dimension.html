@@ -1,9 +1,9 @@
 <div class="dimension-field" data-dimension="{{ campo.name }}"{% if campo.field.disabled %} hidden{% endif %}>
     <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
     <div class="stepper" data-estructura="{{ campo.name }}">
-        <button type="button" class="stepper-btn" data-paso="-1" aria-label="{{ quitar }}" hidden>−</button>
+        <button type="button" class="stepper-btn" data-paso="-1" aria-label="{% if quitar %}{{ quitar }}{% else %}Reducir {{ campo.label|lower }}{% endif %}" hidden>−</button>
         {{ campo }}
-        <button type="button" class="stepper-btn" data-paso="1" aria-label="{{ agregar }}" hidden>+</button>
+        <button type="button" class="stepper-btn" data-paso="1" aria-label="{% if agregar %}{{ agregar }}{% else %}Aumentar {{ campo.label|lower }}{% endif %}" hidden>+</button>
     </div>
     {{ campo.errors }}
 </div>

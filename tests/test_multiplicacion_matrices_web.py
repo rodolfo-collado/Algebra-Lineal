@@ -13,7 +13,7 @@ django.setup()
 
 from django.test import Client, SimpleTestCase
 
-from backend.matrices import resolver_operacion_matrices
+from backend.matrices import resolver_coleccion_matrices, resolver_operacion_matrices
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.forms_matrices import MatricesForm
 from frontend.web.calculadora.opciones_matrices import CONFIGURACION, ENTRADAS_DESPLEGADAS
@@ -291,12 +291,12 @@ class PruebasResultadosProducto(SimpleTestCase):
         self.assertIn('id="matrix-fields" data-perfil="numerico"', html)
 
     def test_servicio_delega_en_el_backend(self):
-        with patch("frontend.web.calculadora.servicios_matrices.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:
+        with patch("frontend.web.calculadora.servicios_matrices.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver, \
+             patch("frontend.web.calculadora.servicios_matrices.resolver_coleccion_matrices", wraps=resolver_coleccion_matrices) as coleccion:
             producto = operar_matrices({"operacion": "producto", "matrices": {"A": [[1, 2]], "B": [[3], [4]]}, "metodo": "comparar"})
             matriz_vector = operar_matrices({"operacion": "matriz_vector", "matrices": {"A": [[1, 2]]}, "vector": [3, 4], "metodo": "columnas"})
-        self.assertEqual(resolver.call_args_list[0].args, ("producto", [[1, 2]], [[3], [4]], None))
-        self.assertEqual(resolver.call_args_list[1].args, ("matriz_vector", [[1, 2]]))
-        self.assertEqual(resolver.call_args_list[1].kwargs, {"vector": [3, 4]})
+        coleccion.assert_called_once_with("producto", [[[1, 2]], [[3], [4]]])
+        resolver.assert_called_once_with("matriz_vector", [[1, 2]], vector=[3, 4])
         self.assertEqual([m["clave"] for m in producto["metodos"]], ["fila_columna", "columnas"])
         self.assertTrue(producto["comparando"])
         self.assertEqual([m["clave"] for m in matriz_vector["metodos"]], ["columnas"])

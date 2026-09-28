@@ -2,11 +2,13 @@
 
 from django import forms
 
+from backend.operandos import CELDAS_MAXIMAS, OPERANDOS_MAXIMOS
 from backend.parser_sistemas import convertir_a_numero
 
 from .opciones_matrices import (
     CAMPOS_DIMENSION, CONFIGURACION, DIMENSION_MAXIMA, DIMENSION_MINIMA, DIMENSION_PREDETERMINADA,
     METODO_PREDETERMINADO, OPERACIONES, OPERACION_PREDETERMINADA, es_vector,
+    configuracion_operandos,
 )
 
 
@@ -117,6 +119,15 @@ class FormularioCeldas(forms.Form):
 
 
 class MatricesForm(FormularioCeldas):
+    # Una cantidad fuera de rango se descarta (valor seguro 2) antes de nombrar matrices;
+    # matrices.js lee los topes de este mismo control.
+    cantidad = forms.IntegerField(
+        label="Cantidad de matrices", initial=2, min_value=2, max_value=OPERANDOS_MAXIMOS, required=False,
+        widget=forms.HiddenInput(attrs={"data-operandos-maximos": OPERANDOS_MAXIMOS, "data-celdas-maximas": CELDAS_MAXIMAS}),
+        error_messages={"invalid": "La cantidad de matrices debe ser un número entero.",
+                        "min_value": "La operación requiere al menos 2 operandos.",
+                        "max_value": f"La interfaz admite hasta {OPERANDOS_MAXIMOS} matrices por operación."},
+    )
     operacion = forms.ChoiceField(
         label="Operación", choices=OPERACIONES, initial=OPERACION_PREDETERMINADA,
         widget=forms.RadioSelect,
@@ -138,7 +149,16 @@ class MatricesForm(FormularioCeldas):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         estructura = {"operacion": self._valor_seguro("operacion")}
-        self.configuracion = CONFIGURACION[estructura["operacion"]]
+        base = CONFIGURACION[estructura["operacion"]]
+        self.fields["cantidad"].disabled = base["aridad"][1] is not None
+        estructura["cantidad"] = self._valor_seguro("cantidad") if not self.fields["cantidad"].disabled else 2
+        self.configuracion = configuracion_operandos(estructura["operacion"], estructura["cantidad"])
+        self.dimensiones_adicionales = []
+        for nombre, etiqueta in self.configuracion["dimensiones"]:
+            if nombre not in self.fields:
+                self.fields[nombre] = campo_dimension(etiqueta)
+                estructura[nombre] = self._valor_seguro(nombre)
+                self.dimensiones_adicionales.append(self[nombre])
         etiquetas = dict(self.configuracion["dimensiones"])
         for nombre in CAMPOS_DIMENSION:
             campo = self.fields[nombre]
@@ -150,6 +170,18 @@ class MatricesForm(FormularioCeldas):
         metodo.choices = self.configuracion["metodos"] or CONFIGURACION["producto"]["metodos"]
         estructura["metodo"] = metodo.initial if metodo.disabled else self._valor_seguro("metodo")
         self.estructura = estructura
+
+        # Presupuesto antes de crear un campo por celda. Si no cabe, se dibujan las mismas
+        # matrices con las dimensiones iniciales (a lo sumo 50 de 2×2) y clean() lo rechaza.
+        celdas = sum(filas * columnas for filas, columnas in map(self.forma, self.configuracion["matrices"]))
+        self.error_presupuesto = None
+        if celdas > CELDAS_MAXIMAS:
+            self.error_presupuesto = (
+                f"Las {len(self.configuracion['matrices'])} matrices suman {celdas} celdas y la interfaz admite "
+                f"hasta {CELDAS_MAXIMAS}: quita matrices o reduce sus filas y columnas."
+            )
+            for nombre, _ in self.configuracion["dimensiones"]:
+                estructura[nombre] = self.fields[nombre].initial
 
         if self.configuracion["escalar"]:
             self.fields["escalar"] = campo_numero("Escalar k")
@@ -164,6 +196,8 @@ class MatricesForm(FormularioCeldas):
     @property
     def forma_texto(self):
         """«A: 2×3 · B: 3×4 → AB: 2×4.», con las dimensiones vigentes."""
+        if self.estructura["operacion"] == "producto" and self.estructura["cantidad"] > 2:
+            return " · ".join(f"{nombre}: {'×'.join(map(str, self.forma(nombre)))}" for nombre in self.configuracion["matrices"])
         return self.configuracion["forma_texto"].format(
             m=self.estructura["filas"], n=self.estructura["columnas"], p=self.estructura["columnas_b"],
         )
@@ -171,6 +205,9 @@ class MatricesForm(FormularioCeldas):
     def clean(self):
         datos = super().clean()
         self.rechazar_campos_repetidos()
+        if self.error_presupuesto:
+            # También con Aplicar: una estructura que no cabe no se acepta ni para redibujar.
+            self.add_error(None, self.error_presupuesto)
         if self.errors or self.ajustar:
             return datos
 
@@ -178,7 +215,7 @@ class MatricesForm(FormularioCeldas):
         # de cálculo, el POST fue manipulado. Aplicar sí lo tolera: al cambiar de
         # operación aún puede enviarse la estructura anterior.
         ajenos = [
-            _minuscula_inicial(self.fields[nombre].label) for nombre in ("columnas_b", "metodo")
+            _minuscula_inicial(self.fields[nombre].label or nombre) for nombre in ("columnas_b", "metodo", "cantidad")
             if self.fields[nombre].disabled and nombre in self.data
         ]
         if ajenos:
