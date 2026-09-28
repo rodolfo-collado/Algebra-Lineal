@@ -5,7 +5,8 @@ Abrir http://127.0.0.1:8877/__pruebas/. No requiere dependencias nuevas.
 
 import os
 from pathlib import Path
-from wsgiref.simple_server import make_server
+from socketserver import ThreadingMixIn
+from wsgiref.simple_server import WSGIServer, make_server
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
 
@@ -32,6 +33,12 @@ def pruebas(environ, start_response):
     return [contenido]
 
 
+class ServidorConHilos(ThreadingMixIn, WSGIServer):
+    # Como los demás ejecutores DOM: una conexión anticipada del navegador que no
+    # envía nada no debe bloquear las siguientes peticiones.
+    daemon_threads = True
+
+
 if __name__ == "__main__":
     print("Pruebas DOM: http://127.0.0.1:8877/__pruebas/", flush=True)
-    make_server("127.0.0.1", 8877, pruebas).serve_forever()
+    make_server("127.0.0.1", 8877, pruebas, server_class=ServidorConHilos).serve_forever()
