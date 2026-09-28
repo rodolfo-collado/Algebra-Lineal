@@ -64,7 +64,7 @@
                 </div>
             </fieldset>
 
-            <fieldset id="matrix-fields" data-perfil="numerico" class="input-mode" hidden disabled>
+            <fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="{{ celdas_maximas }}" class="input-mode" hidden disabled>
                 <legend class="sr-only">Matriz aumentada</legend>
                 <div class="structure-controls" role="group" aria-label="Estructura de la matriz">
                     <div class="dimension-field">
@@ -92,15 +92,17 @@
                 </div>
                 <p class="field-help">
                     La última columna corresponde a los términos independientes.
+                    Hasta {{ form.ecuaciones.field.max_value }} ecuaciones,
+                    {{ form.variables.field.max_value }} variables y {{ celdas_maximas }} celdas en total.
                 </p>
                 <div id="matrix-grid-wrapper" class="matrix-grid-wrapper" hidden>
                     <div class="matrix-grid-frame">
                         <div id="matrix-grid" class="matrix-grid" role="grid" aria-label="Matriz aumentada"></div>
                     </div>
-                    <p id="matrix-grid-help" class="field-help" aria-live="polite">
-                        Completa todas las celdas con números, enteros o fracciones.
-                    </p>
                 </div>
+                <p id="matrix-grid-help" class="field-help" aria-live="polite">
+                    Completa todas las celdas con números, enteros o fracciones.
+                </p>
             </fieldset>
             {% include "calculadora/components/math_keyboard.html" %}
             <noscript><p class="field-help">Para editar la cuadrícula de una matriz, activa JavaScript. Puedes resolver y comparar métodos usando el sistema escrito como texto.</p></noscript>

@@ -185,3 +185,16 @@ La revisión de navegador debe incluir cambio de formato después del cálculo,
 precisiones, volver al exacto, navegación entre módulos, ambos temas, drawer,
 Escape/foco, búsqueda y scroll local de matrices en 375 px, tablet, 1100×760
 y escritorio amplio. Los controles numéricos no realizan peticiones de cálculo.
+
+## Presupuesto de entrada de Sistemas
+
+`uv run python -m unittest tests.test_presupuesto_sistemas -v` comprueba el
+rechazo antes de reservar estructuras por GET/POST, el máximo real de campos
+con CSRF, ambos motores y la protección mínima del texto. Consulta
+[presupuesto, auditoría y mediciones](presupuesto-sistemas.md).
+
+En `/sistemas/`, verifica manualmente: una matriz 2×2; escribir dimensiones
+100000×100000 conservando las seis celdas; rechazar 11 ecuaciones y 10 variables
+(121 celdas); aceptar 12 y 9 (120); botones +/− en los límites; recuperación
+tras corregir dimensiones; GET manipulado sin cuadrícula; resolver y comparar,
+plegar procedimiento y alternar Exacto/Decimal.
