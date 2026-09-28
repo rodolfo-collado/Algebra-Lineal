@@ -66,7 +66,8 @@ def operar_vectores(operacion, vectores):
         raise ValueError("Selecciona suma o resta de vectores.")
     vectores = list(vectores)
     exigir_aridad(len(vectores), ARIDAD_VECTORES[operacion])
-    nombres = ["u", "v"] if len(vectores) == 2 else nombres_generadores(len(vectores))
+    # Los mismos nombres que la interfaz (u, v, v3, …); v1, v2, … son de la combinación lineal.
+    nombres = ["u", "v", *(f"v{indice}" for indice in range(3, len(vectores) + 1))]
     _exigir(*validar_misma_dimension(vectores, nombres, "sumar" if operacion == "suma" else "restar"))
     resultado = convertir_vector_a_fracciones(vectores[0])
     signo = 1 if operacion == "suma" else -1

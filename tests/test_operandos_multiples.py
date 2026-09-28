@@ -16,7 +16,7 @@ from django.utils.html import strip_tags
 
 from backend.matrices import producto_punto, resolver_coleccion_matrices, resolver_operacion_matrices
 from backend.operandos import CELDAS_MAXIMAS, OPERANDOS_MAXIMOS, nombre_matriz
-from backend.vectores import operar_vectores
+from backend.vectores import evaluar_combinacion_lineal, operar_vectores
 from frontend.web.calculadora.forms import VectoresForm
 from frontend.web.calculadora.forms_matrices import MatricesForm
 from frontend.web.calculadora.opciones_matrices import configuracion_operandos
@@ -66,6 +66,20 @@ class PruebasColecciones(SimpleTestCase):
             for vectores in ([], [[1]], [[1], [2], [3, 4]], [[1], [2], [True]], [[1], [2], []]):
                 with self.subTest(op=op, vectores=vectores), self.assertRaises(ValueError):
                     operar_vectores(op, vectores)
+
+    def test_errores_de_suma_y_resta_nombran_los_vectores_como_la_interfaz(self):
+        self.assertEqual(nombres_vectores("suma", 4), ("u", "v", "v3", "v4"))
+        for operacion, verbo in (("suma", "sumar"), ("resta", "restar")):
+            with self.subTest(operacion=operacion):
+                with self.assertRaises(ValueError) as dimension:
+                    operar_vectores(operacion, [[1], [2], [3, 4], [5]])
+                self.assertEqual(str(dimension.exception), f"No se pueden {verbo} vectores de distinta dimensión: "
+                                                           "u tiene 1, v tiene 1, v3 tiene 2, v4 tiene 1 componentes.")
+                with self.assertRaisesRegex(ValueError, "^El vector v no tiene componentes.$"):
+                    operar_vectores(operacion, [[1], [], [3]])
+        # La combinación lineal conserva v1, v2, … y el objetivo b.
+        with self.assertRaisesRegex(ValueError, "v1 tiene 1, v2 tiene 2, b tiene 1 componentes"):
+            evaluar_combinacion_lineal([[1], [1, 2]], [1])
 
     def test_producto_punto_sigue_binario(self):
         self.assertEqual(producto_punto([1, 2], [3, 4]), 11)
