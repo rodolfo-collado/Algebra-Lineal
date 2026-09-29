@@ -1,4 +1,4 @@
-"""Contratos de la identidad visual y la guía educativa estática."""
+"""Contratos de la identidad visual."""
 
 import os
 import re
@@ -14,12 +14,6 @@ django.setup()
 from django.test import SimpleTestCase
 from django.urls import reverse
 
-from frontend.web.calculadora.guias import (
-    GUIA_COLUMNAS_PIVOTE,
-    GUIA_INCONSISTENTE,
-    GUIA_METODO_GAUSS,
-    guias_para_resultado,
-)
 from scripts.sync_brand_mark import TARGET, header_mark
 
 
@@ -33,45 +27,6 @@ def css_combinado():
     for archivo in sorted(STYLES.glob("*.css")):
         partes.append(archivo.read_text(encoding="utf-8"))
     return "\n".join(partes)
-
-
-class PruebasGuiasEducativas(unittest.TestCase):
-    def test_seleccion_segun_resultado(self):
-        guias = guias_para_resultado(
-            metodo="gauss",
-            clasificacion_clave="unica",
-            columnas_pivote=(1, 2),
-        )
-        self.assertEqual(guias[0], GUIA_METODO_GAUSS)
-        self.assertIn(GUIA_COLUMNAS_PIVOTE, guias)
-        self.assertEqual(guias[-1].tipo, "por-que")
-
-    def test_inconsistente_incluye_pista(self):
-        guias = guias_para_resultado(
-            metodo="gauss_jordan",
-            clasificacion_clave="inconsistente",
-            columnas_pivote=(),
-        )
-        self.assertIn(GUIA_INCONSISTENTE, guias)
-        self.assertTrue(all(guia.contenido for guia in guias))
-
-    def test_columnas_pivote_no_afirma_libres_sin_consistencia(self):
-        """Evita afirmar variables libres de forma incondicional (p. ej. inconsistente)."""
-        self.assertIn("En un sistema consistente", GUIA_COLUMNAS_PIVOTE.contenido)
-        afirmacion_incondicional = (
-            "Las columnas sin pivote corresponden a variables libres."
-        )
-        self.assertNotIn(afirmacion_incondicional, GUIA_COLUMNAS_PIVOTE.contenido)
-
-        guias = guias_para_resultado(
-            metodo="gauss",
-            clasificacion_clave="inconsistente",
-            columnas_pivote=(1,),
-        )
-        self.assertIn(GUIA_COLUMNAS_PIVOTE, guias)
-        self.assertIn(GUIA_INCONSISTENTE, guias)
-        for guia in guias:
-            self.assertNotIn(afirmacion_incondicional, guia.contenido)
 
 
 class PruebasIdentidadVisual(SimpleTestCase):
@@ -143,13 +98,13 @@ class PruebasIdentidadVisual(SimpleTestCase):
                 self.assertIn(variable, oscuro)
         self.assertIn("--nav-width", claro)
 
-    def test_sistemas_renderiza_guia_y_sin_cdn(self):
+    def test_sistemas_renderiza_sin_guias_ni_cdn(self):
         respuesta = self.client.post(
             "/sistemas/",
             {"sistema": "x1=1;x2=2", "metodo": "gauss"},
         )
-        self.assertContains(respuesta, 'aria-label="Guía de concepto"')
-        self.assertContains(respuesta, "concept-guide")
+        self.assertNotContains(respuesta, "Guía de concepto")
+        self.assertNotContains(respuesta, "concept-guide")
         self.assertContains(respuesta, "pivot-chip")
         self.assertNotContains(respuesta, "fonts.googleapis.com")
         self.assertNotContains(respuesta, "cdn.jsdelivr.net")

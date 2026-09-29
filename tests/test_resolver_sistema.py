@@ -34,11 +34,17 @@ TODOS = list(BLOQUES_PREDETERMINADOS)
 
 
 def seccion_resultado(respuesta):
-    """Texto plano solo del resultado: el formulario también nombra los bloques."""
+    """Texto plano solo de section#resultado: el formulario y las exploraciones también nombran los bloques."""
     html = respuesta.content.decode("utf-8")
     if 'id="resultado"' not in html:
         return ""
-    return " ".join(strip_tags(html[html.index('id="resultado"'):]).split())
+    inicio = html.rindex("<section", 0, html.index('id="resultado"'))
+    profundidad = 0
+    for marca in re.finditer(r"<(/?)section\b[^>]*>", html[inicio:]):
+        profundidad += -1 if marca.group(1) else 1
+        if not profundidad:
+            return " ".join(strip_tags(html[inicio:inicio + marca.end()]).split())
+    raise AssertionError("section#resultado sin cerrar")
 
 
 class PruebasNavegacionUnificada(SimpleTestCase):
@@ -192,7 +198,7 @@ class PruebasMetodos(SimpleTestCase):
         for presente in ("Matriz escalonada", "Sustitución regresiva", "Columnas pivote: C1, C2", "Consistente de solución única", "x1 = 2", "x2 = 1"):
             self.assertIn(presente, texto)
         self.assertNotIn("Matriz reducida", texto)
-        self.assertNotIn("Gauss-Jordan", texto.split("Entender este resultado")[0])
+        self.assertNotIn("Gauss-Jordan", texto)
 
     def test_seleccion_gauss_jordan(self):
         respuesta, metodos = self.resolver("gauss_jordan")
@@ -224,10 +230,6 @@ class PruebasMetodos(SimpleTestCase):
         # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
         self.assertEqual(html.count(' pivot"'), 8)
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
-        # Las guías de los dos métodos quedan plegadas después del resultado.
-        self.assertContains(respuesta, "Gauss se detiene en forma escalonada")
-        self.assertContains(respuesta, "Gauss-Jordan reduce por completo")
-        self.assertEqual(html.count('class="concept-guide"'), 4)
         ids = re.findall(r' id="([^"]+)"', html)
         self.assertEqual(len(ids), len(set(ids)))
 
@@ -319,9 +321,9 @@ class PruebasBloquesDelResultado(SimpleTestCase):
         self.assertContains(con, 'data-kind="inconsistente"')
         self.assertIn("Clasificación Inconsistente", seccion_resultado(con))
         self.assertNotContains(sin, 'class="classification"')
-        self.assertNotIn("Clasificación", seccion_resultado(sin).split("Entender este resultado")[0])
+        self.assertNotIn("Clasificación", seccion_resultado(sin))
         # La justificación matemática pertenece a la solución y sigue visible.
-        self.assertIn("representa una contradicción", seccion_resultado(sin).lower().replace("[0 0 | 5]", ""))
+        self.assertIn("que equivale a 0 = 1. Como esta igualdad es imposible", seccion_resultado(sin))
 
     def test_mostrar_u_ocultar_columnas_pivote(self):
         con = self.resolver(["pivotes"], metodo="gauss_jordan")
@@ -329,11 +331,9 @@ class PruebasBloquesDelResultado(SimpleTestCase):
         self.assertIn("Columnas pivote: C1, C2", seccion_resultado(con))
         self.assertContains(con, 'class="pivot-chip"')
         self.assertContains(con, ' pivot"')
-        self.assertContains(con, "Una columna pivote indica una variable determinada")
         self.assertNotIn("Columnas pivote", seccion_resultado(sin))
         self.assertNotContains(sin, 'class="pivot-chip"')
         self.assertNotContains(sin, ' pivot"')
-        self.assertNotContains(sin, "Una columna pivote indica una variable determinada")
 
     def test_mostrar_u_ocultar_sistema_resultante(self):
         con = seccion_resultado(self.resolver(["sistema-resultante"], sistema=INFINITAS))
@@ -357,25 +357,17 @@ class PruebasBloquesDelResultado(SimpleTestCase):
                         self.assertNotRegex(resultado, r'<ol class="steps">\s*</ol>')
                         self.assertIn("Solución", strip_tags(resultado))
 
-    def test_guias_plegadas_despues_del_resultado(self):
-        pagina = self.client.get("/sistemas/")
-        self.assertNotContains(pagina, "Entender este resultado")
-        respuesta = self.resolver(TODOS)
-        html = respuesta.content.decode("utf-8")
-        apertura = '<details class="insight" id="entender-resultado">'
-        self.assertEqual(html.count(apertura), 1)
-        inicio_insight = html.index(apertura)
-        self.assertLess(html.index("x1 = 2"), inicio_insight)
-        self.assertEqual(html.count('class="concept-guide"'), html.count('class="concept-guide"', inicio_insight))
-        self.assertEqual(html.count('class="concept-guide"'), 3)
-
-    def test_sin_guias_no_quedan_contenedores_vacios(self):
-        with patch("frontend.web.calculadora.views.guias_para_resultado", return_value=()):
-            respuesta = self.resolver(TODOS)
-        for ausente in ("entender-resultado", "concept-guides", 'class="related"', "related-title"):
-            self.assertNotContains(respuesta, ausente)
-        for presente in ("Resultado final", "Ver procedimiento", "Operaciones por filas", "x1 = 2"):
-            self.assertContains(respuesta, presente)
+    def test_sin_entender_este_resultado(self):
+        """P25.1: las guías plegadas desaparecen sin dejar otra sección en su lugar."""
+        for metodo in ("gauss", "gauss_jordan", "comparar"):
+            for sistema in (UNICA, INFINITAS, INCONSISTENTE):
+                with self.subTest(metodo=metodo, sistema=sistema):
+                    respuesta = self.resolver(TODOS, metodo=metodo, sistema=sistema)
+                    for ausente in ("Entender este resultado", "entender-resultado", "concept-guide", "insight",
+                                    'class="related"', "related-title"):
+                        self.assertNotContains(respuesta, ausente)
+                    for presente in ("Resultado final", "Ver procedimiento", "Operaciones por filas", "Solución"):
+                        self.assertContains(respuesta, presente)
 
     def test_entrada_invalida_muestra_el_error_sin_resultado(self):
         respuesta = self.client.post("/sistemas/", {"sistema": "x1+=1", "metodo": "comparar", "mostrar_definido": "1"})

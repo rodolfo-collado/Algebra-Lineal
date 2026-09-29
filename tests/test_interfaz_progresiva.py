@@ -401,7 +401,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
         orden = ("Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
-                 "Columnas pivote:", "Entender este resultado", "Ver procedimiento", "Matriz inicial",
+                 "Columnas pivote:", "Ver procedimiento", "Matriz inicial",
                  "Operaciones por filas", "Paso 1", "Matriz reducida")
         posiciones = []
         for fragmento in orden:
@@ -473,7 +473,6 @@ class PruebasExplorar(SimpleTestCase):
              "Plantear un sistema como ecuación matricial Ax = b"],
         )
         html = respuesta.content.decode("utf-8")
-        self.assertLess(html.index("Entender este resultado"), html.index('id="explore-title"'))
         self.assertLess(html.index('id="procedimiento"'), html.index('id="explore-title"'))
         for href, _ in enlaces:
             destino = urlsplit(href)

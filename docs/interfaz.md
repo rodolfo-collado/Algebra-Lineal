@@ -49,7 +49,7 @@ static/calculadora/
     ├── shell.css           # header, cajón de navegación, breadcrumbs, layout
     ├── components.css      # herramienta, paneles, botones, buscador, inicio por temas,
     │                       # relacionadas, explorar, desplegables, teclado, controles de
-    │                       # estructura, guías, matrices
+    │                       # estructura, matrices
     └── modules.css         # formularios y resultados de sistemas, bases, vectores y matrices
 ```
 
@@ -249,9 +249,8 @@ matriz inicial, las operaciones por filas (`_procedimiento_metodo.html` con
 `_pasos.html`), la matriz final con sus pivotes, el sistema resultante y la
 sustitución regresiva (`_bloques_metodo.html`); al comparar, un sub-bloque
 cerrado por método y la matriz inicial una vez. Antes, el panel «Resultado
-final» muestra la clasificación, la solución, las columnas pivote
-(`_pivotes.html`, la lectura directa de la matriz final) y las guías plegadas
-(«Entender este resultado»). Si «Procedimiento» está desmarcado no hay
+final» muestra la clasificación, la solución y las columnas pivote
+(`_pivotes.html`, la lectura directa de la matriz final). Si «Procedimiento» está desmarcado no hay
 desplegable y la matriz final se muestra en el panel final, para que siga
 visible sin repetirse; al comparar, cada matriz final y sistema resultante
 nombran su método («Matriz escalonada · Gauss»).
@@ -488,18 +487,11 @@ El servidor rechaza campos ajenos o repetidos y direcciones inexistentes con
 un mensaje propio. Conversión de bases y esta herramienta se sugieren entre sí
 tras convertir.
 
-## Guía educativa
-
-`frontend/web/calculadora/guias.py` define mensajes estáticos (`GuiaConcepto`)
-para acompañar resultados. No es IA, no hace llamadas externas y no genera
-matemática nueva: solo selecciona textos conceptuales según método y
-clasificación. El parcial `components/concept_guide.html` los renderiza.
-
 ## Cómo añadir una herramienta
 
 Sigue el flujo de [Desarrollo](desarrollo.md#añadir-una-herramienta).
 En presentación, reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`,
-`.disclosure`, `{% disclosure %}`, `.concept-guide`, `components/explore.html`,
+`.disclosure`, `{% disclosure %}`, `components/explore.html`,
 el teclado contextual y los tokens compartidos, y sigue el patrón Entrada →
 Resultado → Procedimiento plegable. Si muestra
 matrices, usa `components/matriz.html`; para sistemas aumentados, `matrix.html`.
