@@ -272,7 +272,7 @@ def conversion_bases(request):
 
 @require_http_methods(["GET", "POST"])
 def conversion_romanos(request):
-    """Decimal ↔ romano: una dirección, un número, un resultado y su descomposición."""
+    """Arábigo ↔ romano: una dirección, un número, un resultado y su descomposición."""
     form = ConversionRomanosForm(request.POST or None)
     resultado = None
     if request.method == "POST" and form.is_valid():

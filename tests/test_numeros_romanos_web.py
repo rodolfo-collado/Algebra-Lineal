@@ -35,7 +35,7 @@ def texto_de(respuesta, marca, etiqueta):
 def resultado_de(respuesta):
     """(origen, resultado, nombre) tal como se leen en el panel Resultado."""
     seccion = texto_de(respuesta, "panel-final", "section")
-    return re.fullmatch(r"Resultado Número de origen: (\S+) = (\S+) (Romano|Decimal)", seccion).groups()
+    return re.fullmatch(r"Resultado Número de origen: (\S+) = (\S+) (Romano|Arábigo)", seccion).groups()
 
 
 def procedimiento_de(respuesta):
@@ -61,7 +61,8 @@ class PruebasRegistro(SimpleTestCase):
         # No es una base posicional: Bases numéricas conserva solo su herramienta.
         self.assertEqual(catalogo.herramientas_de(catalogo.BASES_NUMERICAS), (catalogo.CONVERSION_BASES,))
         self.assertEqual(catalogo.herramientas_de(catalogo.NUMERACION_ROMANA), (self.herramienta,))
-        for clave in ("romano", "romanos", "números romanos", "numeración romana", "decimal a romano", "romano a decimal"):
+        for clave in ("romano", "romanos", "números romanos", "numeración romana", "arábigo a romano", "romano a arábigo",
+                      "decimal a romano", "romano a decimal"):
             self.assertIn(clave, self.herramienta.palabras_clave)
 
     def test_relacion_en_ambos_sentidos_con_conversion_de_bases(self):
@@ -75,7 +76,7 @@ class PruebasRegistro(SimpleTestCase):
         self.assertIn("numeracion-romana", Documento(respuesta).ids)
         inicio_tema = html.index('id="numeracion-romana"')
         tema = html[inicio_tema:html.index("</details>", inicio_tema)]
-        for texto in ("Numeración romana", "Conversión entre números decimales y romanos.", f'href="{RUTA}"',
+        for texto in ("Numeración romana", "Conversión entre números arábigos y romanos.", f'href="{RUTA}"',
                       "Conversión de números romanos", self.herramienta.descripcion):
             self.assertIn(texto, tema)
         # El tema va después de Bases numéricas, dentro del área Sistemas numéricos.
@@ -84,8 +85,9 @@ class PruebasRegistro(SimpleTestCase):
         self.assertContains(respuesta, "Representación de números en distintas bases y en numeración romana.")
 
     def test_busqueda(self):
-        for consulta in ("romano", "Romanos", "números romanos", "numeracion romana", "decimal a romano",
-                         "romano a decimal"):
+        # «decimal» ya no se muestra, pero sigue encontrando la herramienta en el buscador.
+        for consulta in ("romano", "Romanos", "números romanos", "numeracion romana", "arábigo a romano",
+                         "romano a arabigo", "decimal a romano", "romano a decimal"):
             with self.subTest(consulta=consulta):
                 self.assertEqual(catalogo.buscar_herramientas(consulta)[0], self.herramienta)
                 respuesta = self.client.get("/", {"q": consulta})
@@ -120,8 +122,8 @@ class PruebasFormulario(SimpleTestCase):
         self.assertEqual([(r["type"], r["value"]) for r in radios], [("radio", "decimal_a_romano"), ("radio", "romano_a_decimal")])
         self.assertEqual([r["value"] for r in radios if "checked" in r], ["decimal_a_romano"])
         self.assertRegex(html, r'<legend>Dirección</legend>\s*<div class="segmented">')
-        self.assertIn("<span>Decimal → romano</span>", html)
-        self.assertIn("<span>Romano → decimal</span>", html)
+        self.assertIn("<span>Arábigo → romano</span>", html)
+        self.assertIn("<span>Romano → arábigo</span>", html)
         (numero,) = [c for c in documento.controles if c.get("name") == "numero"]
         self.assertEqual(numero["type"], "text")
         self.assertEqual(numero["maxlength"], "15")
@@ -163,7 +165,7 @@ class PruebasConversionWeb(SimpleTestCase):
                 respuesta = self.convertir("decimal_a_romano", numero)
                 self.assertEqual(respuesta.status_code, 200)
                 self.assertEqual(resultado_de(respuesta), (str(int(numero)), esperado, "Romano"))
-                self.assertContains(respuesta, '<h2 id="results-title">Decimal → romano</h2>', html=True)
+                self.assertContains(respuesta, '<h2 id="results-title">Arábigo → romano</h2>', html=True)
 
     def test_romano_a_decimal_y_minusculas(self):
         casos = (("I", "I", "1"), ("MCMLXIII", "MCMLXIII", "1963"), ("mcmlxiii", "MCMLXIII", "1963"),
@@ -172,8 +174,8 @@ class PruebasConversionWeb(SimpleTestCase):
             with self.subTest(numero=numero):
                 respuesta = self.convertir("romano_a_decimal", numero)
                 self.assertEqual(respuesta.status_code, 200)
-                self.assertEqual(resultado_de(respuesta), (origen, esperado, "Decimal"))
-                self.assertContains(respuesta, '<h2 id="results-title">Romano → decimal</h2>', html=True)
+                self.assertEqual(resultado_de(respuesta), (origen, esperado, "Arábigo"))
+                self.assertContains(respuesta, '<h2 id="results-title">Romano → arábigo</h2>', html=True)
 
     def test_procedimiento_plegado_y_despues_un_solo_resultado(self):
         for direccion, numero in (("decimal_a_romano", "1963"), ("romano_a_decimal", "MCMLXIII")):
@@ -220,7 +222,7 @@ class PruebasConversionWeb(SimpleTestCase):
         resultado = convertir_romanos(direccion="decimal_a_romano", numero="944")
         self.assertEqual(
             {clave: resultado[clave] for clave in ("titulo", "origen", "resultado", "nombre_resultado", "descomposicion")},
-            {"titulo": "Decimal → romano", "origen": "944", "resultado": "CMXLIV", "nombre_resultado": "Romano",
+            {"titulo": "Arábigo → romano", "origen": "944", "resultado": "CMXLIV", "nombre_resultado": "Romano",
              "descomposicion": "900 + 40 + 4"},
         )
         self.assertEqual(
@@ -231,6 +233,7 @@ class PruebasConversionWeb(SimpleTestCase):
         )
         inverso = convertir_romanos(direccion="romano_a_decimal", numero="lviii")
         self.assertEqual((inverso["origen"], inverso["resultado"], inverso["suma"]), ("LVIII", "58", "50 + 5 + 1 + 1 + 1"))
+        self.assertEqual((inverso["titulo"], inverso["nombre_resultado"]), ("Romano → arábigo", "Arábigo"))
         self.assertEqual([fila["detalle"] for fila in inverso["filas"]], ["", "", "", "", ""])
         for valor in (*resultado.values(), *inverso.values()):
             self.assertNotIn("<", str(valor))
@@ -288,7 +291,7 @@ class PruebasErroresWeb(SimpleTestCase):
         # El tope es inclusivo: la escritura más larga del intervalo cabe.
         self.assertEqual(
             resultado_de(self.client.post(RUTA, {"direccion": "romano_a_decimal", "numero": "MMMDCCCLXXXVIII"})),
-            ("MMMDCCCLXXXVIII", "3888", "Decimal"),
+            ("MMMDCCCLXXXVIII", "3888", "Arábigo"),
         )
         self.assertEqual(ConversionRomanosForm.base_fields["numero"].max_length, 15)
 
@@ -299,7 +302,7 @@ class PruebasErroresWeb(SimpleTestCase):
             ({"direccion": "decimal_a_romano", "numero": ["12", "13"]}, "hay campos repetidos"),
             ({"direccion": ["decimal_a_romano", "romano_a_decimal"], "numero": "12"}, "hay campos repetidos"),
             ({"direccion": ["decimal_a_romano", "decimal_a_romano"], "numero": "12"}, "hay campos repetidos"),
-            ({"direccion": "hexadecimal", "numero": "12"}, "Elige una dirección válida: Decimal → romano o Romano → decimal."),
+            ({"direccion": "hexadecimal", "numero": "12"}, "Elige una dirección válida: Arábigo → romano o Romano → arábigo."),
             ({"direccion": "", "numero": "12"}, "Elige la dirección de la conversión."),
             ({"numero": "12"}, "Elige la dirección de la conversión."),
             ({"direccion": "<script>alert(1)</script>", "numero": "12"}, "Elige una dirección válida"),
@@ -345,3 +348,31 @@ class PruebasRelacionadas(SimpleTestCase):
         for respuesta in (self.client.get(RUTA), self.client.get("/bases/conversion/"),
                           self.client.post(RUTA, {"direccion": "romano_a_decimal", "numero": "IIII"})):
             self.assertNotContains(respuesta, "related-list")
+
+
+class PruebasTerminologia(SimpleTestCase):
+    """P26.1: la herramienta habla de números arábigos, no decimales.
+
+    «Decimal» sigue siendo correcto en Exacto/Decimal y en Conversión de bases,
+    que esta página sugiere tras convertir: se prohíben las direcciones
+    antiguas, no la palabra.
+    """
+
+    DIRECCIONES_ANTIGUAS = re.compile(r"decimal\s*[→↔]\s*romano|romano\s*[→↔]\s*decimal", re.IGNORECASE)
+
+    def test_la_pagina_no_vuelve_a_mostrar_decimal_romano(self):
+        respuestas = {
+            "sin enviar": self.client.get(RUTA),
+            "arábigo → romano": self.client.post(RUTA, {"direccion": "decimal_a_romano", "numero": "1963"}),
+            "romano → arábigo": self.client.post(RUTA, {"direccion": "romano_a_decimal", "numero": "MCMLXIII"}),
+            "dirección manipulada": self.client.post(RUTA, {"direccion": "hexadecimal", "numero": "12"}),
+        }
+        for caso, respuesta in respuestas.items():
+            with self.subTest(caso=caso):
+                html = respuesta.content.decode("utf-8")
+                self.assertEqual(self.DIRECCIONES_ANTIGUAS.findall(html), [])
+                self.assertIn("<span>Arábigo → romano</span>", html)
+                self.assertIn("<span>Romano → arábigo</span>", html)
+                entradilla = texto_de(respuesta, 'class="tool-lead"', "p")
+                self.assertIn("números arábigos y romanos", entradilla)
+                self.assertNotIn("decimal", entradilla.lower())

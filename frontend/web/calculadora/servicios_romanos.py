@@ -1,4 +1,4 @@
-"""Presentación de la conversión entre decimal y romano para la interfaz web."""
+"""Presentación de la conversión entre arábigo y romano para la interfaz web."""
 
 from backend.sistemas_numericos import decimal_a_romano, romano_a_decimal
 
@@ -22,7 +22,7 @@ def convertir_romanos(*, direccion: str, numero: str) -> dict:
         grupos = conversion.grupos
         return {
             "direccion": direccion,
-            "titulo": "Decimal → romano",
+            "titulo": "Arábigo → romano",
             "origen": str(conversion.valor),
             "resultado": conversion.resultado,
             "nombre_resultado": "Romano",
@@ -38,10 +38,10 @@ def convertir_romanos(*, direccion: str, numero: str) -> dict:
     lecturas = conversion.lecturas
     return {
         "direccion": direccion,
-        "titulo": "Romano → decimal",
+        "titulo": "Romano → arábigo",
         "origen": conversion.texto_normalizado,
         "resultado": str(conversion.resultado),
-        "nombre_resultado": "Decimal",
+        "nombre_resultado": "Arábigo",
         "suma": " + ".join(str(lectura.valor) for lectura in lecturas) if len(lecturas) > 1 else "",
         "filas": tuple(
             {"valor": lectura.valor, "simbolos": lectura.simbolos, "detalle": como_se_forma((lectura,))}
