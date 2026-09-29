@@ -56,6 +56,7 @@
                     <p class="field-help">
                         Escribe una ecuación por línea o sepáralas con <code>;</code>.
                         Las variables son <code>x1</code>, <code>x2</code>, …; se admiten fracciones como <code>1/2</code>.
+                        Puedes dejar términos a ambos lados del <code>=</code>, como <code>x1 - 6 = -x2</code>.
                     </p>
                     {{ form.sistema }}
                     {% for error in form.sistema.errors %}
@@ -143,7 +144,7 @@
 
 {% block tool_result %}
     {% if resultados %}
-        {% comment %}Entrada → resultado → procedimiento plegable. El panel final dice qué se obtuvo (clasificación, solución, pivotes) una sola vez; el procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución). Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+        {% comment %}Entrada → procedimiento plegable → resultado. El procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución); el panel final, fuera del desplegable, dice qué se obtuvo (clasificación, solución, pivotes) una sola vez. Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
         {% numeric_results %}
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
@@ -151,6 +152,36 @@
                 <h2 id="results-title">{{ titulo_resultado }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}
+
+            {% if "procedimiento" in mostrar %}
+                {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                    {% if resultado.reescritas %}
+                        {% comment %}Solo las ecuaciones que no estaban en forma estándar: esa forma es su fila de la matriz inicial. La normalización se hace por coeficientes, así que se muestra el antes y el después, sin inventar pasos intermedios.{% endcomment %}
+                        <div class="final-block">
+                            <h4 class="final-label">Forma estándar</h4>
+                            <p class="procedure-lead">Cada ecuación se reescribe con las variables a la izquierda y un solo número a la derecha: los términos semejantes se suman y un término que cruza el signo = cambia de signo. Si todas las variables estaban a la derecha, basta intercambiar los lados.</p>
+                            <ul class="equations">
+                                {% for ecuacion in resultado.reescritas %}
+                                    <li><span class="muted">Ecuación {{ ecuacion.numero }}:</span> <code>{{ ecuacion.original }}</code> <span aria-hidden="true">→</span><span class="sr-only">, en forma estándar,</span> <code>{{ ecuacion.estandar }}</code></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    <div class="final-block">
+                        <h4 class="final-label">Matriz inicial</h4>
+                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                    </div>
+                    {% for resultado in resultados %}
+                        {% if comparando %}
+                            {% disclosure titulo=resultado.metodo nivel=4 clase="disclosure-nested" %}
+                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                            {% enddisclosure %}
+                        {% else %}
+                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                        {% endif %}
+                    {% endfor %}
+                {% enddisclosure %}
+            {% endif %}
 
             <section class="panel panel-final" aria-labelledby="final-title">
                 <h3 id="final-title" class="panel-title">Resultado final</h3>
@@ -170,37 +201,7 @@
                         {% include "calculadora/modules/sistemas/_bloques_metodo.html" with con_metodo=comparando %}
                     {% endfor %}
                 {% endif %}
-                {% if guias %}
-                    {# Contenido educativo en segundo plano: no compite con el resultado. #}
-                    <details class="insight" id="entender-resultado">
-                        <summary class="insight-summary">
-                            <svg class="insight-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                                <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            Entender este resultado
-                        </summary>
-                        {% include "calculadora/components/concept_guide.html" %}
-                    </details>
-                {% endif %}
             </section>
-
-            {% if "procedimiento" in mostrar %}
-                {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                    <div class="final-block">
-                        <h4 class="final-label">Matriz inicial</h4>
-                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
-                    </div>
-                    {% for resultado in resultados %}
-                        {% if comparando %}
-                            {% disclosure titulo=resultado.metodo nivel=4 clase="disclosure-nested" %}
-                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
-                            {% enddisclosure %}
-                        {% else %}
-                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
-                        {% endif %}
-                    {% endfor %}
-                {% enddisclosure %}
-            {% endif %}
         </section>
         {% endnumeric_results %}
     {% endif %}

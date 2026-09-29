@@ -48,7 +48,7 @@
 
 {% block tool_result %}
 {% if resultado %}
-    {% comment %}Entrada → resultado (clasificación y solución, una vez) → procedimiento plegable (equivalencias y eliminación) → comprobación e interpretación plegadas, que aportan información distinta del procedimiento. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+    {% comment %}Entrada → procedimiento plegable (equivalencias y eliminación) → resultado (clasificación y solución, una vez) → comprobación e interpretación plegadas, que parten de la solución y aportan información distinta del procedimiento. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
     {% numeric_results %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
@@ -56,6 +56,12 @@
             <h2 id="results-title">{{ resultado.forma }}</h2>
         </header>
         {% include "calculadora/components/numeric_format.html" %}
+
+        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+            <p class="stage-chain">Ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada → {{ resultado.titulo_metodo }} → conjunto solución</p>
+            {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
+            {% include "calculadora/modules/ecuaciones/_metodos.html" %}
+        {% enddisclosure %}
 
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
@@ -88,12 +94,6 @@
                 {% endif %}
             </div>
         </section>
-
-        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-            <p class="stage-chain">Ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada → {{ resultado.titulo_metodo }} → conjunto solución</p>
-            {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
-            {% include "calculadora/modules/ecuaciones/_metodos.html" %}
-        {% enddisclosure %}
 
         {% if resultado.comprobacion %}
             {% disclosure titulo="Comprobar solución" id="comprobacion" clase="disclosure-procedure" %}

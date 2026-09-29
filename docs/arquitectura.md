@@ -30,7 +30,7 @@ flowchart TD
 | `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, bases y numeración romana. |
 | `frontend/terminal/` | `menu.py` coordina; `opciones.py` ejecuta opciones; `entradas.py` lee; `salida.py` presenta; `consola.py` maneja color, pausas y limpieza. |
 | `frontend/web/algebra_web/` | Configuración Django, rutas raíz y entradas WSGI/ASGI. |
-| `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, guías, exploraciones, templates y recursos locales. |
+| `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, exploraciones, templates y recursos locales. |
 | `desktop.py` | Servidor local y ciclo de vida de la ventana nativa. |
 | `AlgebraLineal.spec` | PyInstaller: Python, dependencias, templates, recursos e icono en una carpeta `onedir`, sin consola (`windowed`). |
 | `installer/AlgebraLineal.iss` | Inno Setup: empaqueta esa carpeta, accesos directos, prerrequisito WebView2 y desinstalación. |
@@ -66,7 +66,7 @@ planteamiento y conclusión de la combinación lineal).
 templates/calculadora/
 ├── base.html                 # header, cajón de navegación, breadcrumbs y contenido
 ├── layouts/herramienta.html  # estructura común de una herramienta
-├── components/               # cajón, buscador, breadcrumbs, relacionadas, explorar, teclado, matrices, vectores, guías, formato numérico
+├── components/               # cajón, buscador, breadcrumbs, relacionadas, explorar, teclado, matrices, vectores, formato numérico
 ├── pages/                    # inicio.html y _area.html (un área plegable con sus temas)
 ├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal

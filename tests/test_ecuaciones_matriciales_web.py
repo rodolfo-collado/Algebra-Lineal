@@ -257,13 +257,13 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         html, doc, texto = self.resolver(datos_ecuacion(a=[["1/2", "1/3"], ["-3/4", 2]], b=["5/6", "5/4"], metodo="comparar"))
         self.assertEqual(doc.tablas["Vector solución x"], [["1"], ["1"]])
 
-    def test_resultado_antes_del_procedimiento_plegado_y_cadena_de_equivalencias(self):
+    def test_procedimiento_plegado_antes_del_resultado_y_cadena_de_equivalencias(self):
         html, doc, texto = self.resolver(datos_ecuacion(*UNICA))
-        # El resultado va primero; después, un «Ver procedimiento» cerrado con las equivalencias y la eliminación.
+        # Primero, un «Ver procedimiento» cerrado con las equivalencias y la eliminación; después, el resultado.
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
+        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
         self.assertLess(texto.index("Ver procedimiento"), texto.index("1 · Ecuación matricial"))
-        self.assertLess(texto.index("Resultado Ax = b"), texto.index("Eliminación por Gauss-Jordan"))
+        self.assertLess(texto.index("Eliminación por Gauss-Jordan"), texto.index("Resultado Ax = b"))
         for etapa in ("1 · Ecuación matricial", "2 · Ecuación vectorial", "3 · Sistema equivalente", "4 · Matriz aumentada"):
             self.assertIn(etapa, texto)
         self.assertLess(texto.index("1 · Ecuación matricial"), texto.index("2 · Ecuación vectorial"))

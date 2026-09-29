@@ -75,17 +75,32 @@ sin JavaScript y nombres de controles POST. Los helpers distinguen los
 formularios de cálculo del buscador y excluyen los controles inertes de `template`.
 Las suites web de cada herramienta conservan sus pruebas de POST y resultados.
 
-Para el procedimiento plegable P18, `uv run python -m unittest
+Para las ecuaciones en forma libre (P25.2), `uv run python -m unittest
+tests.test_parser_sistemas tests.test_expresiones tests.test_presupuesto_sistemas
+tests.test_resolver_sistema -v` comprueba que las formas equivalentes de una
+ecuación dan la misma representación; constantes y variables en ambos lados,
+variables repetidas, términos desordenados, signos, coeficientes implícitos,
+fracciones, decimales, espacios, ceros y variables ausentes; el rechazo de lo
+no lineal y de la sintaxis inválida con su motivo; que `normalizar_igualdad`
+funciona sin la sintaxis de sistemas; que los literales de ambos lados y los
+valores agrupados respetan el presupuesto antes de `Fraction` o de construir
+filas; la separación por `;`, `\n` y `\r\n` con líneas vacías y ecuaciones
+que siguen en la línea siguiente; y, en la web, el bloque «Forma estándar» del
+procedimiento, una ecuación por línea tal como la envía el navegador,
+Exacto/Decimal y los errores en el campo del sistema.
+
+Para el procedimiento plegable (P18 y P25.1), `uv run python -m unittest
 tests.test_procedimiento_plegable -v` comprueba con un parser HTML
-estructural que en Sistemas, Vectores, Matrices y Ax = b hay un único «Ver
+estructural que en todas las herramientas con resultado hay un único «Ver
 procedimiento» (`details` nativo, cerrado, con su título como encabezado)
-después del único panel de resultado, que queda fuera de él; que el
+antes del único panel de resultado, que queda fuera de él; que el
 procedimiento conserva los pasos, equivalencias, desarrollos y métodos; que la
 clasificación, la solución, los coeficientes y la matriz obtenida aparecen una
 sola vez; que el ancla `#resultado` y la jerarquía de encabezados se
-mantienen; que sin JavaScript todo el contenido está en el HTML; y que Inicio
-y Conversión de bases no cambian. Las suites de cada herramienta se adaptaron
-al orden Entrada → Resultado → Procedimiento plegable.
+mantienen; que sin JavaScript todo el contenido está en el HTML; que ninguna
+herramienta muestra «Entender este resultado»; y que Inicio no cambia. Las
+suites de cada herramienta comprueban el orden Entrada → Procedimiento
+plegable → Resultado.
 
 Para P19, `uv run python -m unittest tests.test_microinteracciones -v` comprueba
 tokens breves, propiedades de transición explícitas, ausencia de retardos y bucles,

@@ -2,8 +2,10 @@
 
 import os
 import re
+from html import unescape
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+from urllib.parse import parse_qs, urlsplit
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
 
@@ -23,6 +25,7 @@ from frontend.web.calculadora.opciones_sistemas import (
     RUTAS_ANTIGUAS,
 )
 from frontend.web.calculadora.servicios import resolver_entrada_web
+from tests.ayudas import elemento_html
 from tests.test_columnas_pivote import CASOS
 from tests.test_navegacion import PSEUDO_HERRAMIENTAS, Documento
 from tests.test_web import datos_matriz
@@ -34,11 +37,11 @@ TODOS = list(BLOQUES_PREDETERMINADOS)
 
 
 def seccion_resultado(respuesta):
-    """Texto plano solo del resultado: el formulario también nombra los bloques."""
+    """Texto plano solo de section#resultado: el formulario y las exploraciones también nombran los bloques."""
     html = respuesta.content.decode("utf-8")
     if 'id="resultado"' not in html:
         return ""
-    return " ".join(strip_tags(html[html.index('id="resultado"'):]).split())
+    return " ".join(strip_tags(elemento_html(html, html.index('id="resultado"'), "section")).split())
 
 
 class PruebasNavegacionUnificada(SimpleTestCase):
@@ -192,7 +195,7 @@ class PruebasMetodos(SimpleTestCase):
         for presente in ("Matriz escalonada", "Sustitución regresiva", "Columnas pivote: C1, C2", "Consistente de solución única", "x1 = 2", "x2 = 1"):
             self.assertIn(presente, texto)
         self.assertNotIn("Matriz reducida", texto)
-        self.assertNotIn("Gauss-Jordan", texto.split("Entender este resultado")[0])
+        self.assertNotIn("Gauss-Jordan", texto)
 
     def test_seleccion_gauss_jordan(self):
         respuesta, metodos = self.resolver("gauss_jordan")
@@ -215,19 +218,15 @@ class PruebasMetodos(SimpleTestCase):
         self.assertLess(texto.index("Matriz escalonada"), texto.index("Matriz reducida"))
         self.assertEqual(texto.count("Sustitución regresiva"), 1)
         # Pivotes, clasificación y solución son comunes: aparecen una sola vez, en el resultado
-        # que precede al procedimiento plegado.
+        # que sigue al procedimiento plegado.
         self.assertEqual(texto.count("Columnas pivote:"), 1)
         self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count('class="classification"'), 1)
         self.assertEqual(texto.count("Solución x1 = 2 x2 = 1"), 1)
-        self.assertLess(texto.index("Resultado final"), texto.index("Matriz escalonada"))
+        self.assertLess(texto.index("Matriz escalonada"), texto.index("Resultado final"))
         # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
         self.assertEqual(html.count(' pivot"'), 8)
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
-        # Las guías de los dos métodos quedan plegadas después del resultado.
-        self.assertContains(respuesta, "Gauss se detiene en forma escalonada")
-        self.assertContains(respuesta, "Gauss-Jordan reduce por completo")
-        self.assertEqual(html.count('class="concept-guide"'), 4)
         ids = re.findall(r' id="([^"]+)"', html)
         self.assertEqual(len(ids), len(set(ids)))
 
@@ -319,9 +318,9 @@ class PruebasBloquesDelResultado(SimpleTestCase):
         self.assertContains(con, 'data-kind="inconsistente"')
         self.assertIn("Clasificación Inconsistente", seccion_resultado(con))
         self.assertNotContains(sin, 'class="classification"')
-        self.assertNotIn("Clasificación", seccion_resultado(sin).split("Entender este resultado")[0])
+        self.assertNotIn("Clasificación", seccion_resultado(sin))
         # La justificación matemática pertenece a la solución y sigue visible.
-        self.assertIn("representa una contradicción", seccion_resultado(sin).lower().replace("[0 0 | 5]", ""))
+        self.assertIn("que equivale a 0 = 1. Como esta igualdad es imposible", seccion_resultado(sin))
 
     def test_mostrar_u_ocultar_columnas_pivote(self):
         con = self.resolver(["pivotes"], metodo="gauss_jordan")
@@ -329,11 +328,9 @@ class PruebasBloquesDelResultado(SimpleTestCase):
         self.assertIn("Columnas pivote: C1, C2", seccion_resultado(con))
         self.assertContains(con, 'class="pivot-chip"')
         self.assertContains(con, ' pivot"')
-        self.assertContains(con, "Una columna pivote indica una variable determinada")
         self.assertNotIn("Columnas pivote", seccion_resultado(sin))
         self.assertNotContains(sin, 'class="pivot-chip"')
         self.assertNotContains(sin, ' pivot"')
-        self.assertNotContains(sin, "Una columna pivote indica una variable determinada")
 
     def test_mostrar_u_ocultar_sistema_resultante(self):
         con = seccion_resultado(self.resolver(["sistema-resultante"], sistema=INFINITAS))
@@ -357,28 +354,160 @@ class PruebasBloquesDelResultado(SimpleTestCase):
                         self.assertNotRegex(resultado, r'<ol class="steps">\s*</ol>')
                         self.assertIn("Solución", strip_tags(resultado))
 
-    def test_guias_plegadas_despues_del_resultado(self):
-        pagina = self.client.get("/sistemas/")
-        self.assertNotContains(pagina, "Entender este resultado")
-        respuesta = self.resolver(TODOS)
-        html = respuesta.content.decode("utf-8")
-        apertura = '<details class="insight" id="entender-resultado">'
-        self.assertEqual(html.count(apertura), 1)
-        inicio_insight = html.index(apertura)
-        self.assertLess(html.index("x1 = 2"), inicio_insight)
-        self.assertEqual(html.count('class="concept-guide"'), html.count('class="concept-guide"', inicio_insight))
-        self.assertEqual(html.count('class="concept-guide"'), 3)
-
-    def test_sin_guias_no_quedan_contenedores_vacios(self):
-        with patch("frontend.web.calculadora.views.guias_para_resultado", return_value=()):
-            respuesta = self.resolver(TODOS)
-        for ausente in ("entender-resultado", "concept-guides", 'class="related"', "related-title"):
-            self.assertNotContains(respuesta, ausente)
-        for presente in ("Resultado final", "Ver procedimiento", "Operaciones por filas", "x1 = 2"):
-            self.assertContains(respuesta, presente)
+    def test_sin_entender_este_resultado(self):
+        """P25.1: las guías plegadas desaparecen sin dejar otra sección en su lugar."""
+        for metodo in ("gauss", "gauss_jordan", "comparar"):
+            for sistema in (UNICA, INFINITAS, INCONSISTENTE):
+                with self.subTest(metodo=metodo, sistema=sistema):
+                    respuesta = self.resolver(TODOS, metodo=metodo, sistema=sistema)
+                    for ausente in ("Entender este resultado", "entender-resultado", "concept-guide", "insight",
+                                    'class="related"', "related-title"):
+                        self.assertNotContains(respuesta, ausente)
+                    for presente in ("Resultado final", "Ver procedimiento", "Operaciones por filas", "Solución"):
+                        self.assertContains(respuesta, presente)
 
     def test_entrada_invalida_muestra_el_error_sin_resultado(self):
         respuesta = self.client.post("/sistemas/", {"sistema": "x1+=1", "metodo": "comparar", "mostrar_definido": "1"})
         self.assertContains(respuesta, "Formato de sistema inválido")
         self.assertNotContains(respuesta, "Traceback")
         self.assertNotContains(respuesta, 'id="resultado"')
+
+
+class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
+    """P25.2 en la web: la forma libre se resuelve y el procedimiento explica la forma estándar."""
+
+    LIBRE = "x1 - 6 = -x2; x2 = x1 - 2"
+    NORMAL = "x1 + x2 = 6; -x1 + x2 = -2"
+
+    def resolver(self, sistema, metodo="gauss_jordan", mostrar=TODOS):
+        return self.client.post("/sistemas/", {
+            "sistema": sistema, "metodo": metodo, "mostrar_definido": "1", "mostrar": mostrar,
+        })
+
+    def bloque(self, respuesta, marca, etiqueta):
+        html = respuesta.content.decode("utf-8")
+        if marca not in html:
+            return ""
+        return " ".join(strip_tags(elemento_html(html, html.index(marca), etiqueta)).split())
+
+    def test_se_resuelve_igual_que_la_forma_normalizada(self):
+        libre, normal = self.resolver(self.LIBRE), self.resolver(self.NORMAL)
+        self.assertEqual(libre.status_code, 200)
+        resultado = self.bloque(libre, "panel-final", "section")
+        self.assertIn("Consistente de solución única Solución x1 = 4 x2 = 2", resultado)
+        self.assertEqual(resultado, self.bloque(normal, "panel-final", "section"))
+        for respuesta in (libre, normal):
+            self.assertIn("Matriz inicial 1 1 6 -1 1 -2", self.bloque(respuesta, 'id="procedimiento"', "details"))
+        # La entrada escrita se conserva tal cual en el formulario.
+        self.assertContains(libre, "x1 - 6 = -x2; x2 = x1 - 2</textarea>")
+
+    def test_el_procedimiento_muestra_la_forma_estandar_antes_de_la_matriz_inicial(self):
+        respuesta = self.resolver(self.LIBRE)
+        procedimiento = self.bloque(respuesta, 'id="procedimiento"', "details")
+        self.assertIn("Forma estándar", procedimiento)
+        self.assertIn("Ecuación 1: x1 - 6 = -x2 →, en forma estándar, x1 + x2 = 6", procedimiento)
+        self.assertIn("Ecuación 2: x2 = x1 - 2 →, en forma estándar, -x1 + x2 = -2", procedimiento)
+        self.assertLess(procedimiento.index("Forma estándar"), procedimiento.index("Matriz inicial"))
+        self.assertIn("un término que cruza el signo = cambia de signo", procedimiento)
+        # El resultado no repite la normalización y el desplegable sigue cerrado.
+        self.assertNotIn("Forma estándar", self.bloque(respuesta, "panel-final", "section"))
+        self.assertRegex(respuesta.content.decode("utf-8"), r'<details class="disclosure disclosure-procedure" id="procedimiento">')
+
+    def test_solo_aparecen_las_ecuaciones_que_cambiaron(self):
+        procedimiento = self.bloque(self.resolver("x1 + x2 = 6; 6 = x1 - x2"), 'id="procedimiento"', "details")
+        self.assertIn("Ecuación 2: 6 = x1 - x2 →, en forma estándar, x1 - x2 = 6", procedimiento)
+        self.assertNotIn("Ecuación 1", procedimiento)
+
+    def test_sin_pasos_redundantes_si_ya_esta_normalizada(self):
+        for sistema in (self.NORMAL, UNICA, "x2 + x1 = 3; x1 + x1 - x2 = 3"):
+            with self.subTest(sistema=sistema):
+                respuesta = self.resolver(sistema)
+                self.assertContains(respuesta, "Matriz inicial")
+                self.assertNotContains(respuesta, "Forma estándar")
+        matriz = self.client.post("/sistemas/", datos_matriz([[1, 1, 6], [-1, 1, -2]], "gauss"))
+        self.assertNotContains(matriz, "Forma estándar")
+
+    def test_comparar_muestra_la_forma_estandar_una_vez(self):
+        procedimiento = self.bloque(self.resolver(self.LIBRE, "comparar"), 'id="procedimiento"', "details")
+        self.assertEqual(procedimiento.count("Forma estándar"), 1)
+        self.assertEqual(procedimiento.count("Matriz inicial"), 1)
+        self.assertLess(procedimiento.index("Forma estándar"), procedimiento.index("Gauss-Jordan"))
+
+    def test_sin_procedimiento_no_hay_forma_estandar_y_el_resultado_sigue(self):
+        respuesta = self.resolver(self.LIBRE, mostrar=["clasificacion"])
+        self.assertNotContains(respuesta, "Forma estándar")
+        self.assertIn("Solución x1 = 4 x2 = 2", seccion_resultado(respuesta))
+
+    def test_exacto_y_decimal_llegan_a_la_forma_estandar(self):
+        html = self.resolver("1/2x1 + 1 = x2; x1 = 2").content.decode("utf-8")
+        bloque = unescape(elemento_html(html, html.index("Forma estándar"), "div"))
+        self.assertIn("1/2x1 - x2 = -1", strip_tags(bloque))
+        self.assertIn("0.5x1 - x2 = -1", bloque)
+        self.assertIn("data-numeric", bloque)
+
+    def test_no_lineal_se_rechaza_en_el_campo_del_sistema(self):
+        for sistema, motivo in (("x1*x2 = 5", "multiplica dos variables"), ("x1^2 = 4; x2 = 1", "potencia"),
+                                ("sin(x1) = 0", "no forma parte de una ecuación lineal")):
+            with self.subTest(sistema=sistema):
+                respuesta = self.resolver(sistema)
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertRegex(respuesta.content.decode("utf-8"), rf'<p class="field-error" role="alert">Formato de sistema inválido: [^<]*{re.escape(motivo)}')
+                self.assertNotContains(respuesta, 'id="resultado"')
+                self.assertNotContains(respuesta, "Traceback")
+
+    def test_las_exploraciones_conservan_la_forma_libre(self):
+        html = self.resolver(self.LIBRE, "gauss").content.decode("utf-8")
+        enlace = unescape(re.search(r'<a class="explore-link" href="([^"]+)"', html).group(1))
+        self.assertEqual(parse_qs(urlsplit(enlace).query)["sistema"], [self.LIBRE])
+        self.assertContains(self.client.get(enlace), "x1 - 6 = -x2; x2 = x1 - 2</textarea>")
+
+
+class PruebasUnaEcuacionPorLineaWeb(SimpleTestCase):
+    """La ayuda promete «una ecuación por línea»; el navegador envía los saltos del textarea como \r\n."""
+
+    CON_PUNTO_Y_COMA = "x1 - 6 = -x2; 2x1 + x2 = 8"
+
+    def resolver(self, sistema, metodo="gauss_jordan"):
+        return self.client.post("/sistemas/", {
+            "sistema": sistema, "metodo": metodo, "mostrar_definido": "1", "mostrar": TODOS,
+        })
+
+    def test_una_por_linea_resuelve_lo_mismo_que_con_punto_y_coma(self):
+        esperado = seccion_resultado(self.resolver(self.CON_PUNTO_Y_COMA))
+        self.assertIn("Solución x1 = 2 x2 = 4", esperado)
+        self.assertIn("Ecuación 1: x1 - 6 = -x2 →, en forma estándar, x1 + x2 = 6", esperado)
+        for sistema in (
+            "x1 - 6 = -x2\r\n2x1 + x2 = 8",
+            "x1 - 6 = -x2\n2x1 + x2 = 8",
+            "\r\nx1 - 6 = -x2\r\n\r\n  \r\n2x1 + x2 = 8\r\n",
+        ):
+            with self.subTest(sistema=sistema):
+                respuesta = self.resolver(sistema)
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertEqual(seccion_resultado(respuesta), esperado)
+
+    def test_la_ayuda_coincide_con_lo_que_acepta_el_parser(self):
+        self.assertContains(self.client.get("/sistemas/"), "Escribe una ecuación por línea o sepáralas con <code>;</code>.")
+        # Las ecuaciones del marcador de posición, una por línea, con ';' o sin él.
+        for metodo in ("gauss", "gauss_jordan", "comparar"):
+            with self.subTest(metodo=metodo):
+                sin = seccion_resultado(self.resolver("x1+2x2-x3=4\r\n2x1-x2+3x3=7\r\nx1+x2+x3=6", metodo))
+                con = seccion_resultado(self.resolver("x1+2x2-x3=4;\r\n2x1-x2+3x3=7;\r\nx1+x2+x3=6", metodo))
+                self.assertEqual(sin, con)
+                self.assertIn("Consistente de solución única", sin)
+
+    def test_una_ecuacion_individual_y_una_partida_en_dos_lineas_siguen_igual(self):
+        esperado = seccion_resultado(self.resolver("x1 + x2 = 6"))
+        for sistema in ("x1 + x2 = 6\r\n", "x1 + x2\r\n= 6"):
+            with self.subTest(sistema=sistema):
+                self.assertEqual(seccion_resultado(self.resolver(sistema)), esperado)
+
+    def test_demasiadas_lineas_se_rechazan_antes_del_motor(self):
+        motor = Mock(side_effect=AssertionError("motor"))
+        with patch.dict("frontend.web.calculadora.servicios._RESOLVERS",
+                        {"gauss_jordan": ("Gauss-Jordan", motor, "matriz_reducida", "Matriz reducida")}):
+            respuesta = self.resolver("\r\n".join(["x1 = 1"] * 13))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Indica entre 1 y 12 ecuaciones.")
+        self.assertNotContains(respuesta, 'id="resultado"')
+        motor.assert_not_called()

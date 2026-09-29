@@ -119,7 +119,7 @@ class PruebasDeterminacion(SimpleTestCase):
             self.assertIn(fragmento, texto, fragmento)
         self.assertNotIn("valores dados", texto)
         self.assertNotIn("x1 = 1", texto)
-        self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
+        self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertEqual(html.count('id="numeric-mode"'), 1)
 

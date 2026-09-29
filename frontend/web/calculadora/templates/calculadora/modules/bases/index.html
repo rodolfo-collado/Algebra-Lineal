@@ -1,5 +1,5 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% load static %}
+{% load static componentes %}
 
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title" data-conversion-bases>
@@ -65,11 +65,16 @@
 
 {% block tool_result %}
     {% if resultado %}
+        {% comment %}Entrada → procedimiento plegable → resultado, como las demás herramientas.{% endcomment %}
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">Conversión</p>
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
+
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                {% include "calculadora/modules/bases/_procedimiento.html" %}
+            {% enddisclosure %}
 
             <section class="panel panel-final" aria-labelledby="results-final-title">
                 <h3 id="results-final-title" class="panel-title">Resultado</h3>
@@ -89,11 +94,6 @@
                         {% endfor %}
                     </ul>
                 </div>
-            </section>
-
-            <section class="panel" aria-labelledby="procedure-title">
-                <h3 id="procedure-title" class="panel-title">Procedimiento</h3>
-                {% include "calculadora/modules/bases/_procedimiento.html" %}
             </section>
         </section>
     {% endif %}
