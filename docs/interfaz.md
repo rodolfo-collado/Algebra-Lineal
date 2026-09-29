@@ -249,6 +249,8 @@ sus casillas y predeterminados (todo activo) y se despliegan solas cuando lo
 elegido difiere de lo predeterminado (`opciones_abiertas`).
 
 Tras resolver, «Ver procedimiento» (`#procedimiento`, cerrado) reúne la
+forma estándar de las ecuaciones escritas con términos en ambos lados (solo si
+alguna cambió: `resultado.reescritas`, que da `analizar_sistema`), la
 matriz inicial, las operaciones por filas (`_procedimiento_metodo.html` con
 `_pasos.html`), la matriz final con sus pivotes, el sistema resultante y la
 sustitución regresiva (`_bloques_metodo.html`); al comparar, un sub-bloque

@@ -208,7 +208,11 @@ frontend. Reglas:
   entendible;
 - el frontend atrapa ese `ValueError` y lo muestra con las utilidades de consola;
 - la interpretación se hace con `re`, nunca con `eval`, `exec` ni librerías
-  algebraicas externas.
+  algebraicas externas;
+- el parser solo lee la sintaxis de cada lado del `=`; agrupar términos y pasar
+  la igualdad a la forma estándar lo hacen `expresion_desde_terminos` y
+  `normalizar_igualdad` de `backend/expresiones.py`, que otro parser de
+  ecuaciones lineales puede reutilizar tal cual.
 
 La conversión de texto a número está centralizada en `convertir_a_numero`. Si hace
 falta leer un número en otro sitio, reutilízala en vez de escribir otro parser.

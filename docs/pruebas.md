@@ -75,6 +75,18 @@ sin JavaScript y nombres de controles POST. Los helpers distinguen los
 formularios de cálculo del buscador y excluyen los controles inertes de `template`.
 Las suites web de cada herramienta conservan sus pruebas de POST y resultados.
 
+Para las ecuaciones en forma libre (P25.2), `uv run python -m unittest
+tests.test_parser_sistemas tests.test_expresiones tests.test_presupuesto_sistemas
+tests.test_resolver_sistema -v` comprueba que las formas equivalentes de una
+ecuación dan la misma representación; constantes y variables en ambos lados,
+variables repetidas, términos desordenados, signos, coeficientes implícitos,
+fracciones, decimales, espacios, ceros y variables ausentes; el rechazo de lo
+no lineal y de la sintaxis inválida con su motivo; que `normalizar_igualdad`
+funciona sin la sintaxis de sistemas; que los literales de ambos lados y los
+valores agrupados respetan el presupuesto antes de `Fraction` o de construir
+filas; y, en la web, el bloque «Forma estándar» del procedimiento, Exacto/Decimal
+y los errores en el campo del sistema.
+
 Para el procedimiento plegable (P18 y P25.1), `uv run python -m unittest
 tests.test_procedimiento_plegable -v` comprueba con un parser HTML
 estructural que en todas las herramientas con resultado hay un único «Ver

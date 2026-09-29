@@ -135,13 +135,13 @@ exponente y sin `10**n`.
 
 El signo, el punto y la barra no cuentan. `1_000` sigue aceptándose si no pasa
 de 100 dígitos, porque `Fraction` ya lo leía; no es sintaxis educativa. Un
-denominador cero conserva el error de antes.
+denominador cero sigue siendo un error con mensaje propio.
 
 `convertir_a_numero` no cambia: la usan Vectores, Matrices, expresiones y la
 consola. El tope vive en `backend/presupuesto_sistemas.py` y solo se aplica a
 Resolver un sistema:
 
-- texto: `parsear_sistema(..., limitar_entrada=True)`, desde `resolver_entrada_web`;
+- texto: `analizar_sistema(..., limitar_entrada=True)`, desde `resolver_entrada_web`;
 - matriz: `SistemaForm` valida cada celda y después llama a `convertir_a_numero`.
 
 El parser de consola sigue sin ese modo.
@@ -152,3 +152,26 @@ dígitos.
 
 Pendiente fuera de este incremento: no hay control de concurrencia de
 peticiones. Este presupuesto no es una garantía universal de tiempo de cálculo.
+
+## Ecuaciones en forma libre (P25.2)
+
+Con términos en ambos lados del `=`, los dos lados pasan por las mismas
+comprobaciones: cada literal (coeficiente, número o índice de variable) se
+inspecciona como texto antes de `Fraction` o `int`, a la izquierda y a la
+derecha. Un lado que es un solo número conserva el contrato de siempre (`5.`,
+`1_000` y, solo en consola, `1e2`); dentro de una suma no se admite notación
+científica.
+
+Agrupar términos semejantes o pasarlos de un lado a otro puede sumar literales
+que caben uno a uno, pero no juntos: `1/p x1 + 1/q x1` con denominadores de 100
+cifras da uno de 200. Con variables repetidas eso ya era posible antes de P25.2.
+Por eso, después de normalizar y antes de construir filas,
+`validar_valor_agrupado` exige que cada coeficiente y cada término
+independiente quepan en lo que produce un solo literal admitido (numerador
+menor que 10²⁰⁰ y denominador hasta 10¹⁰⁰). Si no, el mensaje es «Al agrupar
+los términos queda un número demasiado grande para esta herramienta.». Así la
+matriz de un sistema escrito tiene las mismas cotas que la escrita celda por
+celda: con celdas máximas en 12 × 9, Gauss-Jordan termina en menos de una décima de
+segundo y sus valores quedan por debajo del límite de 4300 dígitos con que
+Python convierte enteros a texto. Sin esta cota, una suma de 40 fracciones
+llegaba a ese límite y el error aparecía en inglés.

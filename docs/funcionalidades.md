@@ -57,8 +57,25 @@ que produce esta matriz aumentada:
 
 Las variables son `x1`, `x2`, `x3`, … con índice desde 1. Se admiten espacios
 libres, coeficientes implícitos (`x1` vale `1x1` y `-x2` vale `-1x2`), variables
-ausentes (valen cero), enteros, fracciones (`1/2x1`) y decimales (`0.5x1`). El
-lado derecho del `=` debe ser un número.
+ausentes (valen cero), enteros, fracciones (`1/2x1`) y decimales (`0.5x1`).
+
+Los términos y las constantes pueden ir en cualquiera de los dos lados del `=`;
+no hace falta despejar ni ordenar antes de escribir. PyGebra normaliza cada
+ecuación a la forma estándar `a1x1 + … + anxn = b`:
+
+```text
+x1 - 6 = -x2       →  x1 + x2 = 6
+2x1 + 3 = x2 - 5   →  2x1 - x2 = -8
+6 = x1 + x2        →  x1 + x2 = 6
+x1 + x1 + x2 = 6   →  2x1 + x2 = 6
+```
+
+Las variables quedan a la izquierda y el número a la derecha, sumando los
+términos semejantes; si todas las variables estaban a la derecha, se
+intercambian los lados. Una ecuación que ya estaba en esa forma produce
+exactamente la misma fila que antes. Una ecuación sin variables (`3 = 5`) y las
+expresiones no lineales (`x1*x2`, `x1^2`, `1/x1`, `sqrt(x1)`, `sin(x1)`) se
+rechazan con un mensaje que explica el motivo.
 
 El ingreso manual pide la cantidad de variables y de ecuaciones, y luego cada
 coeficiente y cada término independiente. Ambas formas producen exactamente la
@@ -294,7 +311,10 @@ esperan plegadas bajo «Opciones de resultado». Tras resolver, la página lee
 Entrada → «Ver procedimiento» (plegado: matriz inicial, operaciones por filas,
 matriz final, sistema resultante y sustitución regresiva) → Resultado final
 (clasificación, solución y columnas pivote), siempre visible y una sola vez;
-si «Procedimiento» se desmarca, la matriz final pasa al resultado.
+si «Procedimiento» se desmarca, la matriz final pasa al resultado. Si alguna
+ecuación se escribió con términos en ambos lados, el procedimiento empieza por
+su forma estándar (`x1 - 6 = -x2 → x1 + x2 = 6`), antes de la matriz inicial;
+las que ya estaban normalizadas no repiten ese paso.
 «También puedes explorar» ofrece el mismo sistema con el otro método o
 comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve
 la misma entrada con los dos métodos y pliega cada procedimiento en su propio
