@@ -227,7 +227,10 @@ longitud) antes de volver a convertir y el procedimiento de 1963 ↔ MCMLXIII.
 En la web: ruta, catálogo, Inicio, búsqueda, breadcrumbs, cajón, un único
 resultado con «Ver procedimiento» plegado, límites, contrato HTTP estricto
 (campos ajenos o repetidos y dirección manipulada) y contenido escapado, sin
-traceback ni HTTP 500.
+traceback ni HTTP 500. La página dice Arábigo → romano y Romano → arábigo, y
+una regresión impide que vuelva a mostrar «Decimal → romano» o
+«Romano → decimal»; «decimal» no se prohíbe en general porque sigue siendo
+correcto en Exacto/Decimal y en Conversión de bases.
 
 En `/romanos/conversion/`, verifica manualmente 1963 ↔ MCMLXIII en ambas
 direcciones, una entrada en minúsculas, un error de canonicidad (`IIII`), el

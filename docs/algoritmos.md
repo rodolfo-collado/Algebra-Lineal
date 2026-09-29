@@ -245,12 +245,12 @@ La numeración romana no es posicional, así que `romanos.py` no reutiliza la
 conversión de bases. Ambos sentidos comparten una sola tabla canónica
 descendente: M, CM, D, CD, C, XC, L, XL, X, IX, V, IV e I.
 
-- **Decimal → romano:** `divmod` separa millares, centenas, decenas y unidades;
+- **Arábigo → romano:** `divmod` separa millares, centenas, decenas y unidades;
   cada parte recorre la tabla de mayor a menor y usa cada entrada mientras
   quepa. `GrupoRomano` guarda la parte, su escritura y las entradas usadas
   (60 → L y X), de modo que el procedimiento muestra `1963 = 1000 + 900 + 60 + 3`
   sin una cadena de `if` por número.
-- **Romano → decimal:** tras recortar, validar caracteres ASCII y pasar a
+- **Romano → arábigo:** tras recortar, validar caracteres ASCII y pasar a
   mayúsculas, se lee de izquierda a derecha; un par que resta se reconoce
   antes que sus dos símbolos por separado y cada lectura es una entrada de la
   misma tabla (`SimboloRomano`).

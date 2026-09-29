@@ -83,7 +83,7 @@ numéricos sigue en Resolver Ax = b.
 - Divisiones sucesivas y expansión posicional con pasos visibles.
 - Conversión entre bases no decimales mostrando el paso intermedio por decimal,
   calculado una sola vez y compartido por todos los destinos.
-- Conversión entre decimal y números romanos, del 1 al 3999, en ambos sentidos.
+- Conversión entre números arábigos y romanos, del 1 al 3999, en ambos sentidos.
 
 Los formatos de entrada, límites de interfaz y ejemplos completos están en
 la [guía de funcionalidades](docs/funcionalidades.md).
