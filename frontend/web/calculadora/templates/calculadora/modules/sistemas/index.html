@@ -56,6 +56,7 @@
                     <p class="field-help">
                         Escribe una ecuación por línea o sepáralas con <code>;</code>.
                         Las variables son <code>x1</code>, <code>x2</code>, …; se admiten fracciones como <code>1/2</code>.
+                        Puedes dejar términos a ambos lados del <code>=</code>, como <code>x1 - 6 = -x2</code>.
                     </p>
                     {{ form.sistema }}
                     {% for error in form.sistema.errors %}
@@ -154,6 +155,18 @@
 
             {% if "procedimiento" in mostrar %}
                 {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                    {% if resultado.reescritas %}
+                        {% comment %}Solo las ecuaciones que no estaban en forma estándar: esa forma es su fila de la matriz inicial. La normalización se hace por coeficientes, así que se muestra el antes y el después, sin inventar pasos intermedios.{% endcomment %}
+                        <div class="final-block">
+                            <h4 class="final-label">Forma estándar</h4>
+                            <p class="procedure-lead">Cada ecuación se reescribe con las variables a la izquierda y un solo número a la derecha: los términos semejantes se suman y un término que cruza el signo = cambia de signo. Si todas las variables estaban a la derecha, basta intercambiar los lados.</p>
+                            <ul class="equations">
+                                {% for ecuacion in resultado.reescritas %}
+                                    <li><span class="muted">Ecuación {{ ecuacion.numero }}:</span> <code>{{ ecuacion.original }}</code> <span aria-hidden="true">→</span><span class="sr-only">, en forma estándar,</span> <code>{{ ecuacion.estandar }}</code></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
                     <div class="final-block">
                         <h4 class="final-label">Matriz inicial</h4>
                         {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}

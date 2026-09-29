@@ -3,7 +3,7 @@
 from fractions import Fraction
 
 from .presentacion_numerica import formatear_exacto
-from backend.parser_sistemas import parsear_sistema
+from backend.parser_sistemas import analizar_sistema
 from backend.presupuesto_sistemas import validar_dimensiones
 from backend.sistemas import (
     INCONSISTENTE,
@@ -76,11 +76,12 @@ def resolver_entrada_web(
 ):
     """Converge cualquier entrada web en una matriz y delega al backend.
 
-    El texto pasa por el parser con presupuesto numérico. La matriz llega ya
-    validada: SistemaForm revisa cada celda antes de convertirla.
+    El texto pasa por el parser con presupuesto numérico; las ecuaciones que
+    hubo que llevar a la forma estándar acompañan al procedimiento. La matriz
+    llega ya validada: SistemaForm revisa cada celda antes de convertirla.
     """
     if tipo_entrada == "sistema":
-        matriz_inicial = parsear_sistema(texto or "", limitar_entrada=True)
+        matriz_inicial, reescritas = analizar_sistema(texto or "", limitar_entrada=True)
     elif tipo_entrada == "matriz":
         if matriz_aumentada is None:
             raise ValueError("La matriz aumentada no está completa.")
@@ -95,7 +96,10 @@ def resolver_entrada_web(
     except KeyError:
         raise ValueError("Selecciona un método de resolución válido.") from None
 
-    return presentar_resolucion(resolver(matriz_inicial), metodo, matriz_inicial)
+    presentado = presentar_resolucion(resolver(matriz_inicial), metodo, matriz_inicial)
+    if tipo_entrada == "sistema":
+        presentado["reescritas"] = reescritas
+    return presentado
 
 
 def presentar_resolucion(resultado, metodo, matriz_inicial):

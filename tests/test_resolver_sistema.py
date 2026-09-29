@@ -2,8 +2,10 @@
 
 import os
 import re
+from html import unescape
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
 
@@ -369,3 +371,92 @@ class PruebasBloquesDelResultado(SimpleTestCase):
         self.assertContains(respuesta, "Formato de sistema inválido")
         self.assertNotContains(respuesta, "Traceback")
         self.assertNotContains(respuesta, 'id="resultado"')
+
+
+class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
+    """P25.2 en la web: la forma libre se resuelve y el procedimiento explica la forma estándar."""
+
+    LIBRE = "x1 - 6 = -x2; x2 = x1 - 2"
+    NORMAL = "x1 + x2 = 6; -x1 + x2 = -2"
+
+    def resolver(self, sistema, metodo="gauss_jordan", mostrar=TODOS):
+        return self.client.post("/sistemas/", {
+            "sistema": sistema, "metodo": metodo, "mostrar_definido": "1", "mostrar": mostrar,
+        })
+
+    def bloque(self, respuesta, marca, etiqueta):
+        html = respuesta.content.decode("utf-8")
+        if marca not in html:
+            return ""
+        return " ".join(strip_tags(elemento_html(html, html.index(marca), etiqueta)).split())
+
+    def test_se_resuelve_igual_que_la_forma_normalizada(self):
+        libre, normal = self.resolver(self.LIBRE), self.resolver(self.NORMAL)
+        self.assertEqual(libre.status_code, 200)
+        resultado = self.bloque(libre, "panel-final", "section")
+        self.assertIn("Consistente de solución única Solución x1 = 4 x2 = 2", resultado)
+        self.assertEqual(resultado, self.bloque(normal, "panel-final", "section"))
+        for respuesta in (libre, normal):
+            self.assertIn("Matriz inicial 1 1 6 -1 1 -2", self.bloque(respuesta, 'id="procedimiento"', "details"))
+        # La entrada escrita se conserva tal cual en el formulario.
+        self.assertContains(libre, "x1 - 6 = -x2; x2 = x1 - 2</textarea>")
+
+    def test_el_procedimiento_muestra_la_forma_estandar_antes_de_la_matriz_inicial(self):
+        respuesta = self.resolver(self.LIBRE)
+        procedimiento = self.bloque(respuesta, 'id="procedimiento"', "details")
+        self.assertIn("Forma estándar", procedimiento)
+        self.assertIn("Ecuación 1: x1 - 6 = -x2 →, en forma estándar, x1 + x2 = 6", procedimiento)
+        self.assertIn("Ecuación 2: x2 = x1 - 2 →, en forma estándar, -x1 + x2 = -2", procedimiento)
+        self.assertLess(procedimiento.index("Forma estándar"), procedimiento.index("Matriz inicial"))
+        self.assertIn("un término que cruza el signo = cambia de signo", procedimiento)
+        # El resultado no repite la normalización y el desplegable sigue cerrado.
+        self.assertNotIn("Forma estándar", self.bloque(respuesta, "panel-final", "section"))
+        self.assertRegex(respuesta.content.decode("utf-8"), r'<details class="disclosure disclosure-procedure" id="procedimiento">')
+
+    def test_solo_aparecen_las_ecuaciones_que_cambiaron(self):
+        procedimiento = self.bloque(self.resolver("x1 + x2 = 6; 6 = x1 - x2"), 'id="procedimiento"', "details")
+        self.assertIn("Ecuación 2: 6 = x1 - x2 →, en forma estándar, x1 - x2 = 6", procedimiento)
+        self.assertNotIn("Ecuación 1", procedimiento)
+
+    def test_sin_pasos_redundantes_si_ya_esta_normalizada(self):
+        for sistema in (self.NORMAL, UNICA, "x2 + x1 = 3; x1 + x1 - x2 = 3"):
+            with self.subTest(sistema=sistema):
+                respuesta = self.resolver(sistema)
+                self.assertContains(respuesta, "Matriz inicial")
+                self.assertNotContains(respuesta, "Forma estándar")
+        matriz = self.client.post("/sistemas/", datos_matriz([[1, 1, 6], [-1, 1, -2]], "gauss"))
+        self.assertNotContains(matriz, "Forma estándar")
+
+    def test_comparar_muestra_la_forma_estandar_una_vez(self):
+        procedimiento = self.bloque(self.resolver(self.LIBRE, "comparar"), 'id="procedimiento"', "details")
+        self.assertEqual(procedimiento.count("Forma estándar"), 1)
+        self.assertEqual(procedimiento.count("Matriz inicial"), 1)
+        self.assertLess(procedimiento.index("Forma estándar"), procedimiento.index("Gauss-Jordan"))
+
+    def test_sin_procedimiento_no_hay_forma_estandar_y_el_resultado_sigue(self):
+        respuesta = self.resolver(self.LIBRE, mostrar=["clasificacion"])
+        self.assertNotContains(respuesta, "Forma estándar")
+        self.assertIn("Solución x1 = 4 x2 = 2", seccion_resultado(respuesta))
+
+    def test_exacto_y_decimal_llegan_a_la_forma_estandar(self):
+        html = self.resolver("1/2x1 + 1 = x2; x1 = 2").content.decode("utf-8")
+        bloque = unescape(elemento_html(html, html.index("Forma estándar"), "div"))
+        self.assertIn("1/2x1 - x2 = -1", strip_tags(bloque))
+        self.assertIn("0.5x1 - x2 = -1", bloque)
+        self.assertIn("data-numeric", bloque)
+
+    def test_no_lineal_se_rechaza_en_el_campo_del_sistema(self):
+        for sistema, motivo in (("x1*x2 = 5", "multiplica dos variables"), ("x1^2 = 4; x2 = 1", "potencia"),
+                                ("sin(x1) = 0", "no forma parte de una ecuación lineal")):
+            with self.subTest(sistema=sistema):
+                respuesta = self.resolver(sistema)
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertRegex(respuesta.content.decode("utf-8"), rf'<p class="field-error" role="alert">Formato de sistema inválido: [^<]*{re.escape(motivo)}')
+                self.assertNotContains(respuesta, 'id="resultado"')
+                self.assertNotContains(respuesta, "Traceback")
+
+    def test_las_exploraciones_conservan_la_forma_libre(self):
+        html = self.resolver(self.LIBRE, "gauss").content.decode("utf-8")
+        enlace = unescape(re.search(r'<a class="explore-link" href="([^"]+)"', html).group(1))
+        self.assertEqual(parse_qs(urlsplit(enlace).query)["sistema"], [self.LIBRE])
+        self.assertContains(self.client.get(enlace), "x1 - 6 = -x2; x2 = x1 - 2</textarea>")
