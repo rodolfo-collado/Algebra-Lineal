@@ -4,7 +4,7 @@ import os
 import re
 from html import unescape
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlsplit
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
@@ -460,3 +460,54 @@ class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
         enlace = unescape(re.search(r'<a class="explore-link" href="([^"]+)"', html).group(1))
         self.assertEqual(parse_qs(urlsplit(enlace).query)["sistema"], [self.LIBRE])
         self.assertContains(self.client.get(enlace), "x1 - 6 = -x2; x2 = x1 - 2</textarea>")
+
+
+class PruebasUnaEcuacionPorLineaWeb(SimpleTestCase):
+    """La ayuda promete «una ecuación por línea»; el navegador envía los saltos del textarea como \r\n."""
+
+    CON_PUNTO_Y_COMA = "x1 - 6 = -x2; 2x1 + x2 = 8"
+
+    def resolver(self, sistema, metodo="gauss_jordan"):
+        return self.client.post("/sistemas/", {
+            "sistema": sistema, "metodo": metodo, "mostrar_definido": "1", "mostrar": TODOS,
+        })
+
+    def test_una_por_linea_resuelve_lo_mismo_que_con_punto_y_coma(self):
+        esperado = seccion_resultado(self.resolver(self.CON_PUNTO_Y_COMA))
+        self.assertIn("Solución x1 = 2 x2 = 4", esperado)
+        self.assertIn("Ecuación 1: x1 - 6 = -x2 →, en forma estándar, x1 + x2 = 6", esperado)
+        for sistema in (
+            "x1 - 6 = -x2\r\n2x1 + x2 = 8",
+            "x1 - 6 = -x2\n2x1 + x2 = 8",
+            "\r\nx1 - 6 = -x2\r\n\r\n  \r\n2x1 + x2 = 8\r\n",
+        ):
+            with self.subTest(sistema=sistema):
+                respuesta = self.resolver(sistema)
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertEqual(seccion_resultado(respuesta), esperado)
+
+    def test_la_ayuda_coincide_con_lo_que_acepta_el_parser(self):
+        self.assertContains(self.client.get("/sistemas/"), "Escribe una ecuación por línea o sepáralas con <code>;</code>.")
+        # Las ecuaciones del marcador de posición, una por línea, con ';' o sin él.
+        for metodo in ("gauss", "gauss_jordan", "comparar"):
+            with self.subTest(metodo=metodo):
+                sin = seccion_resultado(self.resolver("x1+2x2-x3=4\r\n2x1-x2+3x3=7\r\nx1+x2+x3=6", metodo))
+                con = seccion_resultado(self.resolver("x1+2x2-x3=4;\r\n2x1-x2+3x3=7;\r\nx1+x2+x3=6", metodo))
+                self.assertEqual(sin, con)
+                self.assertIn("Consistente de solución única", sin)
+
+    def test_una_ecuacion_individual_y_una_partida_en_dos_lineas_siguen_igual(self):
+        esperado = seccion_resultado(self.resolver("x1 + x2 = 6"))
+        for sistema in ("x1 + x2 = 6\r\n", "x1 + x2\r\n= 6"):
+            with self.subTest(sistema=sistema):
+                self.assertEqual(seccion_resultado(self.resolver(sistema)), esperado)
+
+    def test_demasiadas_lineas_se_rechazan_antes_del_motor(self):
+        motor = Mock(side_effect=AssertionError("motor"))
+        with patch.dict("frontend.web.calculadora.servicios._RESOLVERS",
+                        {"gauss_jordan": ("Gauss-Jordan", motor, "matriz_reducida", "Matriz reducida")}):
+            respuesta = self.resolver("\r\n".join(["x1 = 1"] * 13))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Indica entre 1 y 12 ecuaciones.")
+        self.assertNotContains(respuesta, 'id="resultado"')
+        motor.assert_not_called()

@@ -322,6 +322,81 @@ class PruebasEcuacionesEnFormaLibre(unittest.TestCase):
         self.assertEqual(libre["solucion_general"], normal["solucion_general"])
 
 
+class PruebasSeparacionPorLineas(unittest.TestCase):
+    """Una ecuación por línea: ';', '\\n' y '\\r\\n' separan; las líneas vacías no cuentan."""
+
+    CON_PUNTO_Y_COMA = "x1 - 6 = -x2; 2x1 + x2 = 8"
+
+    def test_una_por_linea_es_el_mismo_sistema_que_con_punto_y_coma(self):
+        esperado = analizar_sistema(self.CON_PUNTO_Y_COMA)
+        self.assertEqual(esperado[0], [[1, 1, 6], [2, 1, 8]])
+        for texto in ("x1 - 6 = -x2\n2x1 + x2 = 8", "x1 - 6 = -x2\n2x1 + x2 = 8\n"):
+            with self.subTest(texto=texto):
+                self.assertEqual(analizar_sistema(texto), esperado)
+                self.assertEqual(parsear_sistema(texto, limitar_entrada=True), esperado[0])
+
+    def test_saltos_de_windows(self):
+        texto = "x1 - 6 = -x2\r\n2x1 + x2 = 8\r\n"
+        self.assertEqual(analizar_sistema(texto), analizar_sistema(self.CON_PUNTO_Y_COMA))
+        # El \r no llega a las ecuaciones reescritas.
+        self.assertEqual(analizar_sistema(texto)[1][0]["original"], "x1 - 6 = -x2")
+
+    def test_varias_lineas(self):
+        texto = "x1 + x2 + x3 = 6\nx1 - x2 = 0\n2x3 = x1 + 4\nx4 = 1"
+        self.assertEqual(
+            parsear_sistema(texto),
+            parsear_sistema("x1 + x2 + x3 = 6; x1 - x2 = 0; 2x3 = x1 + 4; x4 = 1"),
+        )
+        self.assertEqual(len(parsear_sistema(texto)), 4)
+
+    def test_las_lineas_vacias_se_ignoran(self):
+        esperado = analizar_sistema(self.CON_PUNTO_Y_COMA)
+        for texto in (
+            "x1 - 6 = -x2\n\n2x1 + x2 = 8",
+            "\n\nx1 - 6 = -x2\n  \t \n\n2x1 + x2 = 8\n\n",
+            "x1 - 6 = -x2\r\n\r\n\r\n2x1 + x2 = 8",
+        ):
+            with self.subTest(texto=texto):
+                self.assertEqual(analizar_sistema(texto), esperado)
+
+    def test_combinacion_de_punto_y_coma_y_saltos(self):
+        esperado = parsear_sistema("x1 = 1; x2 = 2; x3 = 3")
+        for texto in (
+            "x1 = 1; x2 = 2\nx3 = 3",
+            "x1 = 1;\nx2 = 2;\nx3 = 3",       # el teclado inserta ';' y salto de línea
+            "x1 = 1;\r\nx2 = 2;\r\n\r\nx3 = 3",
+            "x1 = 1\n;x2 = 2\nx3 = 3",
+        ):
+            with self.subTest(texto=texto):
+                self.assertEqual(parsear_sistema(texto), esperado)
+        # La numeración de las reescritas cuenta ecuaciones, no tramos entre ';'.
+        _, reescritas = analizar_sistema("x1 = 1; x2 = 2\n6 = x3")
+        self.assertEqual(reescritas, [{"numero": 3, "original": "6 = x3", "estandar": "x3 = 6"}])
+
+    def test_una_ecuacion_individual_sigue_igual(self):
+        for texto in ("x1 - 6 = -x2", "x1 - 6 = -x2\n", "\r\n  x1 - 6 = -x2  \r\n", "\n\nx1 - 6 = -x2\n\n"):
+            with self.subTest(texto=texto):
+                self.assertEqual(analizar_sistema(texto), analizar_sistema("x1 - 6 = -x2"))
+
+    def test_una_ecuacion_puede_seguir_en_la_linea_siguiente(self):
+        # Un salto solo separa si las dos líneas traen su '='; así siguen valiendo
+        # las ecuaciones partidas en varias líneas, que ya se aceptaban.
+        for texto in ("x1 + x2\n= 6", "x1 + x2 =\n6", "x1 +\r\nx2 = 6", "x1 + x2\n\n= 6", "x1 = 6\n- x2"):
+            with self.subTest(texto=texto):
+                self.assertEqual(parsear_sistema(texto), [[1, 1, 6]])
+        self.assertEqual(parsear_sistema("x1 + x2\n= 6\nx1 - x2 = 0"), [[1, 1, 6], [1, -1, 0]])
+
+    def test_los_errores_de_punto_y_coma_no_cambian(self):
+        for texto in ("x1 = 2;", "; x1 = 2", "x1 = 2;; x2 = 3", "x1 = 2;\n\n;x2 = 3", "x1 = 2;\n"):
+            with self.subTest(texto=texto):
+                with self.assertRaisesRegex(ValueError, "ninguna puede quedar vacía"):
+                    parsear_sistema(texto)
+        with self.assertRaisesRegex(ValueError, "único signo '='"):
+            parsear_sistema("x1 = 2 = 3")
+        with self.assertRaisesRegex(ValueError, "términos a ambos lados"):
+            parsear_sistema("x1 = 1\n= 5")
+
+
 class PruebasAnalizarSistema(unittest.TestCase):
     def test_solo_se_reescriben_las_ecuaciones_que_no_estaban_en_forma_estandar(self):
         matriz, reescritas = analizar_sistema("x1 + x2 = 6; x1 -  6 = -x2; 6=x1+x2")

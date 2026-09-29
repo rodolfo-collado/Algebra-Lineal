@@ -251,6 +251,18 @@ class PruebasPresupuestoTexto(SimpleTestCase):
                     parsear_sistema(texto, limitar_entrada=True)
             analizar.assert_not_called()
 
+    def test_saltos_de_linea_cuentan_ecuaciones_antes_de_analizarlas(self):
+        with patch("backend.parser_sistemas._leer_ecuacion") as analizar:
+            for separador in ("\n", "\r\n", "\n\n", ";\n"):
+                texto = separador.join(["x1=1"] * (ECUACIONES_MAXIMAS + 1))
+                with self.subTest(separador=separador), self.assertRaisesRegex(
+                    ValueError, f"entre 1 y {ECUACIONES_MAXIMAS} ecuaciones"
+                ):
+                    parsear_sistema(texto, limitar_entrada=True)
+            analizar.assert_not_called()
+        maximo = "\r\n".join(["x9=1"] * ECUACIONES_MAXIMAS)
+        self.assertEqual(sum(map(len, parsear_sistema(maximo, limitar_entrada=True))), CELDAS_MAXIMAS)
+
     def test_indice_textual_absurdo_no_reserva_una_fila_ni_invoca_motor(self):
         for texto in ("x100000=1", "x999999999999999999999999999=1", ";".join(["x10=1"] * 11)):
             with self.subTest(texto=texto):

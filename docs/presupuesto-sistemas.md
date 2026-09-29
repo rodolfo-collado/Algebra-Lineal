@@ -155,6 +155,9 @@ peticiones. Este presupuesto no es una garantía universal de tiempo de cálculo
 
 ## Ecuaciones en forma libre (P25.2)
 
+La cantidad de ecuaciones se comprueba antes de analizarlas también cuando
+las separan saltos de línea en vez de `;`.
+
 Con términos en ambos lados del `=`, los dos lados pasan por las mismas
 comprobaciones: cada literal (coeficiente, número o índice de variable) se
 inspecciona como texto antes de `Fraction` o `int`, a la izquierda y a la

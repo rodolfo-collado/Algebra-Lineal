@@ -36,6 +36,7 @@ _TERMINO = re.compile(rf"([+-])({_LITERAL})?x([1-9]\d*)")
 _CONSTANTE = re.compile(rf"[+-](?:{_LITERAL})")
 _TERMINOS_CON_SIGNO = re.compile(r"[+-][^+-]+")
 _ESPACIOS = re.compile(r"\s+")
+_SALTO_DE_LINEA = re.compile(r"\r?\n")
 _VARIABLE = re.compile(r"x\d+")
 _FUNCION = re.compile(r"[A-Za-z]{2,}(?=\()")
 
@@ -207,11 +208,32 @@ def parsear_ecuacion(ecuacion, *, limitar_entrada=False):
     return coeficientes, termino_independiente
 
 
+def _separar_lineas(tramo):
+    """Las ecuaciones de un tramo entre ';': una por línea, sin las líneas vacías.
+
+    Un salto de línea separa solo si la ecuación en curso ya tiene su '=' y la
+    línea siguiente trae el suyo. Si no, la ecuación sigue en esa línea, como
+    hasta ahora: 'x1 + x2' y '= 6' en dos líneas siguen siendo una ecuación.
+    """
+    ecuaciones = []
+    lineas, con_igual = [], False
+    for linea in _SALTO_DE_LINEA.split(tramo):
+        if not linea.strip():
+            continue
+        if con_igual and "=" in linea:
+            ecuaciones.append("\n".join(lineas))
+            lineas, con_igual = [], False
+        lineas.append(linea)
+        con_igual = con_igual or "=" in linea
+    ecuaciones.append("\n".join(lineas))
+    return [ecuacion.strip() for ecuacion in ecuaciones]
+
+
 def _leer_sistema(texto, limitar_entrada):
     """Las ecuaciones escritas, su lectura y la matriz aumentada que producen.
 
-    Las ecuaciones se separan con ';' y la cantidad de variables la marca el
-    mayor indice que aparece en todo el sistema.
+    Las ecuaciones se separan con ';' o con saltos de línea (\\n o \\r\\n) y la
+    cantidad de variables la marca el mayor indice que aparece en todo el sistema.
     La entrada web activa el presupuesto antes de dividir texto, reservar filas
     o convertir literales. Los consumidores de consola conservan su contrato.
     """
@@ -223,13 +245,17 @@ def _leer_sistema(texto, limitar_entrada):
     if limitar_entrada:
         validar_dimensiones(texto.count(SEPARADOR_ECUACIONES) + 1, 1)
 
-    # Separación de las ecuaciones
-    ecuaciones = [parte.strip() for parte in texto.split(SEPARADOR_ECUACIONES)]
-    if any(not ecuacion for ecuacion in ecuaciones):
+    # Separación de las ecuaciones: ';' y, dentro de cada tramo, los saltos de línea.
+    tramos = [parte.strip() for parte in texto.split(SEPARADOR_ECUACIONES)]
+    if any(not tramo for tramo in tramos):
         raise ValueError(
             f"{_PREFIJO_ERROR}: las ecuaciones se separan con un único ';' y "
             "ninguna puede quedar vacía."
         )
+    ecuaciones = [ecuacion for tramo in tramos for ecuacion in _separar_lineas(tramo)]
+    if limitar_entrada:
+        # También cuentan las ecuaciones que solo separa un salto de línea.
+        validar_dimensiones(len(ecuaciones), 1)
 
     try:
         analizadas = [

@@ -55,6 +55,24 @@ que produce esta matriz aumentada:
 [  0   1   1   3 ]
 ```
 
+En la web también se puede escribir una ecuación por línea: un salto de línea
+(`\n` o `\r\n`, el que envía el navegador) separa ecuaciones igual que `;`, y
+las líneas vacías se ignoran. Estos dos textos son el mismo sistema:
+
+```text
+x1 - 6 = -x2
+2x1 + x2 = 8
+```
+
+```text
+x1 - 6 = -x2; 2x1 + x2 = 8
+```
+
+Un salto de línea solo separa si la línea anterior ya tiene su `=` y la
+siguiente trae el suyo; así una ecuación larga puede seguir en la línea
+siguiente (`x1 + x2` y `= 6` en dos líneas siguen siendo una ecuación), como
+hasta ahora. Un `;` sin ecuación (`x1 = 2;;`) sigue siendo un error.
+
 Las variables son `x1`, `x2`, `x3`, … con índice desde 1. Se admiten espacios
 libres, coeficientes implícitos (`x1` vale `1x1` y `-x2` vale `-1x2`), variables
 ausentes (valen cero), enteros, fracciones (`1/2x1`) y decimales (`0.5x1`).

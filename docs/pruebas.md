@@ -84,8 +84,10 @@ fracciones, decimales, espacios, ceros y variables ausentes; el rechazo de lo
 no lineal y de la sintaxis inválida con su motivo; que `normalizar_igualdad`
 funciona sin la sintaxis de sistemas; que los literales de ambos lados y los
 valores agrupados respetan el presupuesto antes de `Fraction` o de construir
-filas; y, en la web, el bloque «Forma estándar» del procedimiento, Exacto/Decimal
-y los errores en el campo del sistema.
+filas; la separación por `;`, `\n` y `\r\n` con líneas vacías y ecuaciones
+que siguen en la línea siguiente; y, en la web, el bloque «Forma estándar» del
+procedimiento, una ecuación por línea tal como la envía el navegador,
+Exacto/Decimal y los errores en el campo del sistema.
 
 Para el procedimiento plegable (P18 y P25.1), `uv run python -m unittest
 tests.test_procedimiento_plegable -v` comprueba con un parser HTML
