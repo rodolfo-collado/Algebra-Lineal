@@ -74,7 +74,7 @@ templates/calculadora/
 ├── modules/expresiones/      # símbolos, expresión o igualdad, y procedimiento por nodos
 ├── modules/ecuaciones/       # Ax = b: entrada, equivalencias y eliminación reutilizada
 ├── modules/bases/            # index.html y procedimiento de la conversión
-└── modules/romanos/          # decimal ↔ romano: resultado y procedimiento plegable
+└── modules/romanos/          # arábigo ↔ romano: resultado y procedimiento plegable
 ```
 
 La presentación numérica compartida vive en `presentacion_numerica.py`.

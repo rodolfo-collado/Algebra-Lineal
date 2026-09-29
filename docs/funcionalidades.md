@@ -295,13 +295,13 @@ caracteres.
 
 La herramienta **Conversión de números romanos** (`/romanos/conversion/`) tiene
 su propio tema, **Numeración romana**, porque no es un sistema posicional de
-base n. Se elige la dirección (**Decimal → romano** o **Romano → decimal**), se
+base n. Se elige la dirección (**Arábigo → romano** o **Romano → arábigo**), se
 escribe un número y se obtiene un único resultado, precedido del procedimiento plegado:
 
-- **Decimal → romano:** el número se separa por órdenes decimales y cada parte
+- **Arábigo → romano:** el número se separa por órdenes decimales y cada parte
   se escribe con la tabla romana: `1963 = 1000 + 900 + 60 + 3`, con `1000 → M`,
   `900 → CM`, `60 → LX` y `3 → III`, así que `1963 = MCMLXIII`.
-- **Romano → decimal:** se lee de izquierda a derecha reconociendo las restas
+- **Romano → arábigo:** se lee de izquierda a derecha reconociendo las restas
   IV, IX, XL, XC, CD y CM: `MCMLXIII = 1000 + 900 + 50 + 10 + 1 + 1 + 1 = 1963`.
 
 Se usa la notación moderna convencional del 1 al 3999, solo con I, V, X, L, C,

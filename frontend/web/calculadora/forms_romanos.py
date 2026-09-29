@@ -1,4 +1,4 @@
-"""Formulario de la conversión entre números decimales y romanos."""
+"""Formulario de la conversión entre números arábigos y romanos."""
 
 from django import forms
 
@@ -13,9 +13,10 @@ class ConversionRomanosForm(forms.Form):
     backend al convertir; aquí solo se acota su longitud.
     """
 
+    # Los valores conservan los nombres del backend; la interfaz dice «arábigo».
     DIRECCIONES = (
-        ("decimal_a_romano", "Decimal → romano"),
-        ("romano_a_decimal", "Romano → decimal"),
+        ("decimal_a_romano", "Arábigo → romano"),
+        ("romano_a_decimal", "Romano → arábigo"),
     )
     CAMPOS_PERMITIDOS = frozenset({"csrfmiddlewaretoken", "direccion", "numero"})
 
@@ -26,7 +27,7 @@ class ConversionRomanosForm(forms.Form):
         widget=forms.RadioSelect,
         error_messages={
             "required": "Elige la dirección de la conversión.",
-            "invalid_choice": "Elige una dirección válida: Decimal → romano o Romano → decimal.",
+            "invalid_choice": "Elige una dirección válida: Arábigo → romano o Romano → arábigo.",
         },
     )
     numero = forms.CharField(

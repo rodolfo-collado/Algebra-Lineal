@@ -483,10 +483,12 @@ La selección multidestino de P16 mantiene sus controles y su contrato POST.
 ## Conversión de números romanos
 
 `/romanos/conversion/` (`ConversionRomanosForm`, `servicios_romanos.py`,
-`modules/romanos/`) pide la dirección con un `.segmented` (Decimal → romano o
-Romano → decimal) y un único campo de hasta 15 caracteres, descrito por su
+`modules/romanos/`) pide la dirección con un `.segmented` (Arábigo → romano o
+Romano → arábigo) y un único campo de hasta 15 caracteres, descrito por su
 ayuda (`aria-describedby`). No tiene teclado matemático ni selector Exacto /
 Decimal: trabaja con enteros y símbolos romanos, y no necesita JavaScript.
+Los valores enviados (`decimal_a_romano` y `romano_a_decimal`) llevan el
+nombre de las funciones del backend; lo que se lee siempre es «arábigo».
 Sigue Entrada → Procedimiento plegable → Resultado: `{% disclosure %}` guarda
 la descomposición por órdenes decimales o la lectura de izquierda a derecha,
 con la suma o la resta de cada fila entre paréntesis, y el panel final

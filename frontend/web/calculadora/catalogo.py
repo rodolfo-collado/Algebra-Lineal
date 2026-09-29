@@ -132,7 +132,7 @@ BASES_NUMERICAS = Categoria(
 # Aparte de las bases: la numeración romana no es un sistema posicional.
 NUMERACION_ROMANA = Categoria(
     "numeracion-romana", "Numeración romana", SISTEMAS_NUMERICOS,
-    "Conversión entre números decimales y romanos.",
+    "Conversión entre números arábigos y romanos.",
 )
 LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.")
 CATEGORIAS = (SISTEMAS_ECUACIONES, VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, LIMITES)
@@ -200,11 +200,13 @@ CONVERSION_ROMANOS = Herramienta(
     id="conversion-romanos",
     nombre="Conversión de números romanos",
     categoria=NUMERACION_ROMANA,
-    descripcion="Convierte entre decimal y romano, del 1 al 3999, con la descomposición paso a paso.",
+    descripcion="Convierte entre números arábigos y romanos, del 1 al 3999, con la descomposición paso a paso.",
     estado="disponible",
     route_name="calculadora:conversion-romanos",
     palabras_clave=(
         "romano", "romanos", "números romanos", "numeración romana",
+        "arábigo a romano", "romano a arábigo",
+        # Solo para el buscador (no se muestran): quien escriba «decimal» también la encuentra.
         "decimal a romano", "romano a decimal",
     ),
     relacionadas=("conversion-bases",),
