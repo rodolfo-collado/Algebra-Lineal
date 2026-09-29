@@ -1,10 +1,11 @@
-"""P18: procedimiento plegable y resultado único.
+"""P18 y P25.1: procedimiento plegable y resultado único.
 
-Tras resolver, cada herramienta principal lee Entrada → Resultado (panel
-visible, una sola vez) → «Ver procedimiento» (details cerrado). Se prueba la
-estructura semántica (details/summary nativos, orden en el DOM, un solo panel
-final) y que el contenido educativo sigue presente, sin depender de clases
-decorativas ni de cadenas exactas del HTML más allá de los textos matemáticos.
+Tras resolver, cada herramienta lee Entrada → «Ver procedimiento» (details
+cerrado) → Resultado (panel visible, una sola vez, fuera del details). Se
+prueba la estructura semántica (details/summary nativos, orden en el DOM, un
+solo panel final) y que el contenido educativo sigue presente, sin depender de
+clases decorativas ni de cadenas exactas del HTML más allá de los textos
+matemáticos.
 """
 
 import os
@@ -23,11 +24,16 @@ from django.test import SimpleTestCase
 from django.utils.html import strip_tags
 
 from frontend.web.calculadora.opciones_sistemas import BLOQUES_PREDETERMINADOS
+from tests.ayudas import elemento_html
 from tests.test_ecuaciones_matriciales_web import INCONSISTENTE as AXB_INCONSISTENTE
 from tests.test_ecuaciones_matriciales_web import INFINITAS as AXB_INFINITAS
 from tests.test_ecuaciones_matriciales_web import RUTA as RUTA_ECUACIONES
 from tests.test_ecuaciones_matriciales_web import UNICA as AXB_UNICA
 from tests.test_ecuaciones_matriciales_web import datos_ecuacion
+from tests.test_expresiones_lineales_web import PRINCIPAL
+from tests.test_expresiones_lineales_web import datos as datos_lineales
+from tests.test_expresiones_matriciales_web import EJEMPLO, datos_expresion
+from tests.test_expresiones_matriciales_web import RUTA as RUTA_EXPRESIONES
 from tests.test_matrices_web import RUTA as RUTA_MATRICES
 from tests.test_matrices_web import Contenido, datos_matrices
 from tests.test_multiplicacion_matrices_web import datos_matriz_vector, datos_producto
@@ -163,23 +169,15 @@ class PruebasComponenteDisclosure(SimpleTestCase):
 
 
 def partes(html):
-    """Texto educativo y resultado separados por sus contenedores, sin mezclar extras."""
-    inicio = html.index('id="procedimiento"')
-    panel = html.index("panel-final")
-    # El procedimiento principal puede contener otros details: contar su cierre real.
-    profundidad = 1
-    fin = inicio
-    for marca in re.finditer(r"</?details\b[^>]*>", html[inicio:]):
-        profundidad += -1 if marca.group().startswith("</") else 1
-        if profundidad == 0:
-            fin = inicio + marca.end()
-            break
+    """Texto educativo y resultado, cada uno solo de su contenedor (el procedimiento puede anidar otros details)."""
     limpiar = lambda trozo: " ".join(strip_tags(trozo).split())
-    return limpiar(html[inicio:fin]), limpiar(html[panel:inicio])
+    procedimiento = elemento_html(html, html.index('id="procedimiento"'), "details")
+    resultado = elemento_html(html, html.index("panel-final"), "section")
+    return limpiar(procedimiento), limpiar(resultado)
 
 
 def comprobar_estructura(caso, html):
-    """Contrato común: un solo «Ver procedimiento» cerrado, después del único panel final, que queda fuera de él."""
+    """Contrato común: un solo «Ver procedimiento» cerrado y, después, el único panel final, fuera de él."""
     estructura = Estructura(html)
     principal = estructura.principal()
     caso.assertEqual(principal["id"], "procedimiento")
@@ -187,7 +185,7 @@ def comprobar_estructura(caso, html):
     caso.assertEqual(principal["encabezado"], "h3")
     caso.assertEqual(len(estructura.paneles_finales), 1, "un solo resultado canónico")
     caso.assertEqual(estructura.paneles_finales[0]["dentro"], 0, "el resultado no vive dentro del details")
-    caso.assertLess(estructura.indice("panel-final"), estructura.indice("details", id="procedimiento"))
+    caso.assertLess(estructura.indice("details", id="procedimiento"), estructura.indice("panel-final"))
     caso.assertEqual(html.count('id="procedimiento"'), 1)
     for anidado in estructura.details:
         if "procedure-group" not in anidado["clases"]:
@@ -200,7 +198,7 @@ class PruebasSistemas(SimpleTestCase):
         datos = datos or {"sistema": sistema}
         return self.client.post("/sistemas/", {**datos, "metodo": metodo, "mostrar_definido": "1", "mostrar": mostrar}).content.decode("utf-8")
 
-    def test_resultado_antes_del_procedimiento_cerrado_en_todos_los_casos(self):
+    def test_procedimiento_cerrado_antes_del_resultado_en_todos_los_casos(self):
         for metodo in ("gauss", "gauss_jordan", "comparar"):
             for sistema in (UNICA, INFINITAS, INCONSISTENTE):
                 for tipo in ("texto", "matriz"):
@@ -442,7 +440,7 @@ class PruebasEcuacionMatricial(SimpleTestCase):
 
 
 class PruebasTransversales(SimpleTestCase):
-    """Contratos comunes a las cuatro herramientas y lo que P18 no toca."""
+    """Contratos comunes a las herramientas con resultado y lo que no se toca."""
 
     def respuestas(self):
         return (
@@ -487,18 +485,47 @@ class PruebasTransversales(SimpleTestCase):
                 self.assertEqual(seccion.count("<details"), seccion.count("</details>"))
                 self.assertEqual(seccion.count("<details"), seccion.count("<summary"))
 
-    def test_inicio_y_conversion_de_bases_no_cambian(self):
+    def todas(self):
+        """Cada herramienta con resultado y cada modo de presentación, incluidos los que no usan Exacto/Decimal."""
+        return (
+            *(caso for caso in self.respuestas() if "procedimiento" in caso[1].get("mostrar", ["procedimiento"])),
+            (RUTA_EXPRESIONES, datos_expresion("A(u + v)", EJEMPLO)),
+            (RUTA_EXPRESIONES, datos_expresion("A(u + v) = Au + Av", EJEMPLO)),
+            (RUTA_EXPRESIONES, datos_lineales("Ax = b", PRINCIPAL)),
+            ("/bases/conversion/", {"numero": "13", "base_origen": "10", "bases_destino": ["2", "16"]}),
+            ("/bases/conversion/", {"numero": "1A", "base_origen": "16", "bases_destino": ["2", "10"]}),
+            ("/romanos/conversion/", {"direccion": "decimal_a_romano", "numero": "1963"}),
+            ("/romanos/conversion/", {"direccion": "romano_a_decimal", "numero": "MCMLXIII"}),
+        )
+
+    def test_todas_leen_procedimiento_cerrado_y_despues_el_resultado(self):
+        """P25.1: el resultado sigue al procedimiento y queda visible con el desplegable cerrado."""
+        for ruta, datos in self.todas():
+            with self.subTest(ruta=ruta, entrada=datos.get("expresion") or datos.get("numero") or datos.get("operacion")):
+                html = self.client.post(ruta, datos).content.decode("utf-8")
+                estructura = Estructura(html)
+                procedimiento = next(d for d in estructura.details if d["id"] == "procedimiento")
+                self.assertFalse(procedimiento["open"])
+                self.assertEqual(procedimiento["nivel"], 0)
+                self.assertEqual(procedimiento["encabezado"], "h3")
+                self.assertEqual(len(estructura.paneles_finales), 1)
+                self.assertEqual(estructura.paneles_finales[0]["dentro"], 0, "el resultado no vive dentro del details")
+                self.assertLess(estructura.indice("details", id="procedimiento"), estructura.indice("panel-final"))
+                self.assertNotIn("Entender este resultado", html)
+
+    def test_inicio_no_cambia_y_bases_sigue_el_patron_comun(self):
         inicio = self.client.get("/").content.decode("utf-8")
         self.assertNotIn("disclosure-procedure", inicio)
         self.assertNotIn('id="procedimiento"', inicio)
         bases = self.client.post("/bases/conversion/", {"numero": "13", "base_origen": "10", "bases_destino": ["2", "16"]}).content.decode("utf-8")
-        self.assertNotIn("disclosure-procedure", bases)
-        self.assertNotIn('id="procedimiento"', bases)
-        texto = texto_resultado(bases)
-        # Conversión de bases conserva su presentación de P16: resultado y después el procedimiento compartido.
-        self.assertLess(texto.index("Resultado Número de origen"), texto.index("Procedimiento"))
-        self.assertIn("1101", texto)
-        self.assertIn("D", texto)
+        comprobar_estructura(self, bases)
+        procedimiento, resultado = partes(bases)
+        # El procedimiento compartido de P16 no cambia: solo pasa a estar plegado y antes del resultado.
+        for etapa in ("Etapa 1 · Decimal → binario", "Etapa 2 · Decimal → hexadecimal", "Divisiones sucesivas entre 2"):
+            self.assertIn(etapa, procedimiento)
+            self.assertNotIn(etapa, resultado)
+        self.assertIn("Resultado Número de origen: 13₁₀ = 1101₂ Binario = D₁₆ Hexadecimal", resultado)
+        self.assertNotIn(">Procedimiento<", bases)
 
 
 class PruebasComparacionSinProcedimiento(SimpleTestCase):

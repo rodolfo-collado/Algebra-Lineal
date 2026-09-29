@@ -60,7 +60,7 @@
 
 {% block tool_result %}
 {% if resultado %}
-    {% comment %}Entrada → resultado → procedimiento plegable: la matriz obtenida se presenta una sola vez, en el panel final. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+    {% comment %}Entrada → procedimiento plegable → resultado: la matriz obtenida se presenta una sola vez, en el panel final, fuera del desplegable. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
     {% numeric_results %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
@@ -68,6 +68,14 @@
             <h2 id="results-title">{{ resultado.expresion }}</h2>
         </header>
         {% include "calculadora/components/numeric_format.html" %}
+
+        {% if resultado.etapas %}
+            {% include "calculadora/modules/matrices/_cadena.html" %}
+        {% elif resultado.metodos %}
+            {% include "calculadora/modules/matrices/_producto.html" %}
+        {% else %}
+            {% include "calculadora/modules/matrices/_procedimiento.html" %}
+        {% endif %}
 
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
@@ -77,14 +85,6 @@
             </div>
             {% if resultado.metodos %}<p class="field-help">{{ resultado.forma }} {{ resultado.ayuda }}</p>{% endif %}
         </section>
-
-        {% if resultado.etapas %}
-            {% include "calculadora/modules/matrices/_cadena.html" %}
-        {% elif resultado.metodos %}
-            {% include "calculadora/modules/matrices/_producto.html" %}
-        {% else %}
-            {% include "calculadora/modules/matrices/_procedimiento.html" %}
-        {% endif %}
     </section>
     {% endnumeric_results %}
 {% endif %}

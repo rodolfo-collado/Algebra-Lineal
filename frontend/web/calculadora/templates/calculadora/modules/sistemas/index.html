@@ -143,7 +143,7 @@
 
 {% block tool_result %}
     {% if resultados %}
-        {% comment %}Entrada → resultado → procedimiento plegable. El panel final dice qué se obtuvo (clasificación, solución, pivotes) una sola vez; el procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución). Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+        {% comment %}Entrada → procedimiento plegable → resultado. El procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución); el panel final, fuera del desplegable, dice qué se obtuvo (clasificación, solución, pivotes) una sola vez. Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
         {% numeric_results %}
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
@@ -151,6 +151,24 @@
                 <h2 id="results-title">{{ titulo_resultado }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}
+
+            {% if "procedimiento" in mostrar %}
+                {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                    <div class="final-block">
+                        <h4 class="final-label">Matriz inicial</h4>
+                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                    </div>
+                    {% for resultado in resultados %}
+                        {% if comparando %}
+                            {% disclosure titulo=resultado.metodo nivel=4 clase="disclosure-nested" %}
+                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                            {% enddisclosure %}
+                        {% else %}
+                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                        {% endif %}
+                    {% endfor %}
+                {% enddisclosure %}
+            {% endif %}
 
             <section class="panel panel-final" aria-labelledby="final-title">
                 <h3 id="final-title" class="panel-title">Resultado final</h3>
@@ -171,24 +189,6 @@
                     {% endfor %}
                 {% endif %}
             </section>
-
-            {% if "procedimiento" in mostrar %}
-                {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                    <div class="final-block">
-                        <h4 class="final-label">Matriz inicial</h4>
-                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
-                    </div>
-                    {% for resultado in resultados %}
-                        {% if comparando %}
-                            {% disclosure titulo=resultado.metodo nivel=4 clase="disclosure-nested" %}
-                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
-                            {% enddisclosure %}
-                        {% else %}
-                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
-                        {% endif %}
-                    {% endfor %}
-                {% enddisclosure %}
-            {% endif %}
         </section>
         {% endnumeric_results %}
     {% endif %}

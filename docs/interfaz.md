@@ -175,30 +175,34 @@ herramientas relacionadas y «También puedes explorar». Cada bloque es opciona
 {% block tool_result %}…{% endblock %}
 ```
 
-### Entrada → Resultado → Procedimiento plegable
+### Entrada → Procedimiento plegable → Resultado
 
-Tras resolver, las herramientas principales (Resolver un sistema, Operaciones
-con vectores, Operaciones con matrices y Resolver Ax = b) siguen un mismo
-patrón dentro de `section#resultado`:
+Tras resolver, todas las herramientas con resultado (Resolver un sistema,
+Operaciones con vectores, Operaciones con matrices, Expresiones matriciales,
+Resolver Ax = b, Conversión de bases y Conversión de números romanos) siguen
+un mismo patrón dentro de `section#resultado`:
 
 ```html
 <header class="results-heading">…<h2 id="results-title">…</h2></header>
-<section class="panel panel-final"><h3>Resultado</h3> …</section>
 <details class="disclosure disclosure-procedure" id="procedimiento">
     <summary><h3>Ver procedimiento</h3></summary> …
 </details>
+<section class="panel panel-final"><h3>Resultado</h3> …</section>
 ```
 
 El procedimiento nace cerrado, también después de resolver, y se abre con
-ratón, teclado o sin JavaScript. Explica *cómo* se llega (matrices
-intermedias, operaciones, matriz final, equivalencias, desarrollo componente
-a componente); el panel final dice *qué* se obtuvo. **El resultado se
-presenta una sola vez: el procedimiento explica cómo se obtiene, pero no
-crea un segundo resultado.** Una cadena puede terminar en la matriz o el
-vector obtenido (`= (5, 7, 9)`), pero no hay otro bloque «Resultado»,
-clasificación, solución o coeficientes dentro del procedimiento. Al comparar
-métodos, cada uno es un sub-bloque cerrado (`disclosure-nested`) y el
-resultado común aparece una vez. Conversión de bases e Inicio conservan su
+ratón, teclado o sin JavaScript. Se puede ignorar: el resultado va justo
+después, fuera del `details`, así que se ve igual con el procedimiento abierto
+o cerrado. El orden se decide en el HTML, no con CSS: el lector de pantalla y
+el foco del teclado recorren lo mismo que se ve. El procedimiento explica
+*cómo* se llega (matrices intermedias, operaciones, matriz final,
+equivalencias, desarrollo componente a componente); el panel final dice *qué*
+se obtuvo. **El resultado se presenta una sola vez: el procedimiento explica
+cómo se obtiene, pero no crea un segundo resultado.** Una cadena puede
+terminar en la matriz o el vector obtenido (`= (5, 7, 9)`), pero no hay otro
+bloque «Resultado», clasificación, solución o coeficientes dentro del
+procedimiento. Al comparar métodos, cada uno es un sub-bloque cerrado
+(`disclosure-nested`) y el resultado común aparece una vez. Inicio conserva su
 presentación. No se guardan preferencias de apertura.
 
 `components/related_tools.html` muestra las relacionadas como enlaces
@@ -248,12 +252,12 @@ Tras resolver, «Ver procedimiento» (`#procedimiento`, cerrado) reúne la
 matriz inicial, las operaciones por filas (`_procedimiento_metodo.html` con
 `_pasos.html`), la matriz final con sus pivotes, el sistema resultante y la
 sustitución regresiva (`_bloques_metodo.html`); al comparar, un sub-bloque
-cerrado por método y la matriz inicial una vez. Antes, el panel «Resultado
-final» muestra la clasificación, la solución y las columnas pivote
-(`_pivotes.html`, la lectura directa de la matriz final). Si «Procedimiento» está desmarcado no hay
-desplegable y la matriz final se muestra en el panel final, para que siga
-visible sin repetirse; al comparar, cada matriz final y sistema resultante
-nombran su método («Matriz escalonada · Gauss»).
+cerrado por método y la matriz inicial una vez. Después, el panel
+«Resultado final» muestra la clasificación, la solución y las columnas pivote
+(`_pivotes.html`, la lectura directa de la matriz final). Si «Procedimiento»
+está desmarcado no hay desplegable y la matriz final se muestra en el panel
+final, para que siga visible sin repetirse; al comparar, cada matriz final y
+sistema resultante nombran su método («Matriz escalonada · Gauss»).
 
 `exploraciones.py` construye «También puedes explorar» tras resolver: el
 mismo sistema con el otro método o comparando, los bloques que se dejaron sin
@@ -390,8 +394,9 @@ el tipo o las dimensiones se ajustan en ese símbolo. Con JavaScript,
 **Aplicar** pide al servidor la estructura nueva antes de calcular. El cálculo
 no añade una opción a `CONFIGURACION`.
 
-El resultado va primero. **Ver procedimiento** lista los nodos de abajo hacia
-arriba y cada uno puede pedirse solo con **Calcular solo esta parte**. El
+**Ver procedimiento** va primero, plegado, y lista los nodos de abajo hacia
+arriba; cada uno puede pedirse solo con **Calcular solo esta parte**. El
+resultado va después. El
 selector Exacto/Decimal es el de las demás herramientas de álgebra.
 
 Si el texto trae un solo `=`, la misma página muestra el lado izquierdo, el
@@ -436,11 +441,11 @@ Resolver un sistema, y `modules/ecuaciones/_metodos.html` incluye
 (`mostrar`) y las columnas pivote una vez. «Ver procedimiento» reúne
 `_equivalencias.html` (ecuación matricial, ecuación vectorial con las
 columnas de A, sistema equivalente y `[A | b]` con `matrix.html`) y la
-eliminación (un sub-bloque cerrado por método al comparar); antes, el panel
-Resultado (`.classification` con `data-kind` y la solución, conjunto solución
-o contradicción) se muestra una vez, y después van plegados «Comprobar
-solución» (`A · x = b`) e «Interpretar Ax = b» (combinación lineal de las
-columnas de A).
+eliminación (un sub-bloque cerrado por método al comparar); después, el
+panel Resultado (`.classification` con `data-kind` y la solución, conjunto
+solución o contradicción) se muestra una vez, y tras él van plegados
+«Comprobar solución» (`A · x = b`) e «Interpretar Ax = b» (combinación lineal
+de las columnas de A), que parten de la solución.
 
 ## Conversión de bases
 
@@ -458,7 +463,8 @@ bases.
 
 El resultado (`.base-results`) escribe el origen una sola vez y, debajo, una
 escritura por destino con el nombre de su base, en el orden de las casillas.
-El procedimiento (`_procedimiento.html`) aplica el
+Va después de «Ver procedimiento», plegado con `{% disclosure %}` como en las
+demás herramientas. El procedimiento (`_procedimiento.html`) aplica el
 [principio de no repetición](#principio-solo-la-información-que-pide-cada-acción):
 si el origen no es decimal, la ruta `origen → decimal intermedio → ramas`
 (`.stage-route`) y la Etapa 1 (expansión posicional) aparecen una vez y cada
@@ -479,10 +485,10 @@ La selección multidestino de P16 mantiene sus controles y su contrato POST.
 Romano → decimal) y un único campo de hasta 15 caracteres, descrito por su
 ayuda (`aria-describedby`). No tiene teclado matemático ni selector Exacto /
 Decimal: trabaja con enteros y símbolos romanos, y no necesita JavaScript.
-Sigue Entrada → Resultado → Procedimiento plegable: el panel final reutiliza
-`.base-results` (el origen una vez y, debajo, la escritura obtenida) y
-`{% disclosure %}` guarda la descomposición por órdenes decimales o la lectura
-de izquierda a derecha, con la suma o la resta de cada fila entre paréntesis.
+Sigue Entrada → Procedimiento plegable → Resultado: `{% disclosure %}` guarda
+la descomposición por órdenes decimales o la lectura de izquierda a derecha,
+con la suma o la resta de cada fila entre paréntesis, y el panel final
+reutiliza `.base-results` (el origen una vez y, debajo, la escritura obtenida).
 El servidor rechaza campos ajenos o repetidos y direcciones inexistentes con
 un mensaje propio. Conversión de bases y esta herramienta se sugieren entre sí
 tras convertir.
@@ -493,7 +499,7 @@ Sigue el flujo de [Desarrollo](desarrollo.md#añadir-una-herramienta).
 En presentación, reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`,
 `.disclosure`, `{% disclosure %}`, `components/explore.html`,
 el teclado contextual y los tokens compartidos, y sigue el patrón Entrada →
-Resultado → Procedimiento plegable. Si muestra
+Procedimiento plegable → Resultado. Si muestra
 matrices, usa `components/matriz.html`; para sistemas aumentados, `matrix.html`.
 Ambos admiten `columnas_pivote`. No copies el `<head>`, header, sidebar o selector
 de tema: extiende el layout común.

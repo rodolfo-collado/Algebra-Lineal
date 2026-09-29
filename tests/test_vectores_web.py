@@ -275,10 +275,10 @@ class PruebasOperacionesWeb(SimpleTestCase):
         respuesta = self.client.post(RUTA, datos_vectores("suma", u=[1, 2, 3], v=[4, 5, 6]))
         texto = seccion_resultado(respuesta)
         self.assertIn("Resultado u + v = (5, 7, 9)", texto)
-        # El desarrollo va plegado después del resultado y sustituye los vectores en la propia cadena.
+        # El desarrollo va plegado antes del resultado y sustituye los vectores en la propia cadena.
         self.assertIn("Ver procedimiento Componente a componente u + v = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)", texto)
         self.assertNotIn("Vectores de entrada", texto)
-        self.assertLess(texto.index("Resultado u + v"), texto.index("Ver procedimiento"))
+        self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado u + v"))
         self.assertContains(respuesta, 'class="vector vector-result"')
         self.assertContains(respuesta, 'class="panel panel-final"')
 
@@ -346,8 +346,8 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         self.assertIn("c1 = 3 c2 = 4 Cada vector generador es una columna y b es la columna aumentada", texto)
         self.assertIn("3 · Gauss-Jordan No fue necesario realizar operaciones por filas.", texto)
         self.assertIn("4 · Lectura de la matriz El sistema es consistente de solución única.", texto)
-        # Procedimiento plegado después; la conclusión y los coeficientes solo en el resultado.
-        self.assertLess(texto.index("Resultado Sí:"), texto.index("Ver procedimiento"))
+        # Procedimiento plegado antes; la conclusión y los coeficientes solo en el resultado.
+        self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado Sí:"))
         self.assertEqual(texto.count("c1 = 3 c2 = 4"), 2)  # sistema equivalente y coeficientes
         self.assertContains(respuesta, 'data-kind="unica"')
         # Habla de coeficientes c, no de variables x.

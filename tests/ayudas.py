@@ -1,4 +1,4 @@
-"""Utilidades compartidas por las pruebas de la interfaz de terminal."""
+"""Utilidades compartidas por las pruebas: salida de terminal y HTML de resultados."""
 
 import io
 import re
@@ -26,3 +26,14 @@ def capturar_con_resultado(funcion, *argumentos):
         resultado = funcion(*argumentos)
 
     return resultado, buffer.getvalue()
+
+
+def elemento_html(html, posicion, etiqueta):
+    """El elemento `etiqueta` que abre antes de `posicion`, hasta su cierre real aunque anide otros iguales."""
+    inicio = html.rindex(f"<{etiqueta}", 0, posicion)
+    profundidad = 0
+    for marca in re.finditer(rf"<(/?){etiqueta}\b[^>]*>", html[inicio:]):
+        profundidad += -1 if marca.group(1) else 1
+        if not profundidad:
+            return html[inicio:inicio + marca.end()]
+    raise AssertionError(f"<{etiqueta}> sin cerrar")

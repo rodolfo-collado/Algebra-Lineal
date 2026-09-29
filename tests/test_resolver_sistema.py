@@ -23,6 +23,7 @@ from frontend.web.calculadora.opciones_sistemas import (
     RUTAS_ANTIGUAS,
 )
 from frontend.web.calculadora.servicios import resolver_entrada_web
+from tests.ayudas import elemento_html
 from tests.test_columnas_pivote import CASOS
 from tests.test_navegacion import PSEUDO_HERRAMIENTAS, Documento
 from tests.test_web import datos_matriz
@@ -38,13 +39,7 @@ def seccion_resultado(respuesta):
     html = respuesta.content.decode("utf-8")
     if 'id="resultado"' not in html:
         return ""
-    inicio = html.rindex("<section", 0, html.index('id="resultado"'))
-    profundidad = 0
-    for marca in re.finditer(r"<(/?)section\b[^>]*>", html[inicio:]):
-        profundidad += -1 if marca.group(1) else 1
-        if not profundidad:
-            return " ".join(strip_tags(html[inicio:inicio + marca.end()]).split())
-    raise AssertionError("section#resultado sin cerrar")
+    return " ".join(strip_tags(elemento_html(html, html.index('id="resultado"'), "section")).split())
 
 
 class PruebasNavegacionUnificada(SimpleTestCase):
@@ -221,12 +216,12 @@ class PruebasMetodos(SimpleTestCase):
         self.assertLess(texto.index("Matriz escalonada"), texto.index("Matriz reducida"))
         self.assertEqual(texto.count("Sustitución regresiva"), 1)
         # Pivotes, clasificación y solución son comunes: aparecen una sola vez, en el resultado
-        # que precede al procedimiento plegado.
+        # que sigue al procedimiento plegado.
         self.assertEqual(texto.count("Columnas pivote:"), 1)
         self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count('class="classification"'), 1)
         self.assertEqual(texto.count("Solución x1 = 2 x2 = 1"), 1)
-        self.assertLess(texto.index("Resultado final"), texto.index("Matriz escalonada"))
+        self.assertLess(texto.index("Matriz escalonada"), texto.index("Resultado final"))
         # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
         self.assertEqual(html.count(' pivot"'), 8)
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)

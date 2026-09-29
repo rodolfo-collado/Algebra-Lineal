@@ -237,8 +237,8 @@ genera una segunda etapa. Si el origen ya es decimal, no hay etapa intermedia.
 
 En hexadecimal los residuos y dígitos `10`–`15` se escriben `A`–`F`; la entrada
 acepta minúsculas y el resultado se normaliza a mayúsculas. El procedimiento
-muestra esa sustitución (`10 → A`, `A = 10`) y siempre queda visible junto al
-resultado. Se admite un punto decimal (`.31` como `0.31`, `5.` como `5`) y un
+muestra esa sustitución (`10 → A`, `A = 10`) y va plegado bajo «Ver
+procedimiento», antes del resultado. Se admite un punto decimal (`.31` como `0.31`, `5.` como `5`) y un
 único `-` al inicio. El signo se conserva y el algoritmo trabaja sobre la
 magnitud, así que `-13₁₀` es `-1101₂`: no es complemento a dos. El cero negativo
 (`-0`, `-0.0`) se escribe `0`. Los dígitos inválidos para la base elegida, la
@@ -261,7 +261,7 @@ caracteres.
 La herramienta **Conversión de números romanos** (`/romanos/conversion/`) tiene
 su propio tema, **Numeración romana**, porque no es un sistema posicional de
 base n. Se elige la dirección (**Decimal → romano** o **Romano → decimal**), se
-escribe un número y se obtiene un único resultado, con el procedimiento plegado:
+escribe un número y se obtiene un único resultado, precedido del procedimiento plegado:
 
 - **Decimal → romano:** el número se separa por órdenes decimales y cada parte
   se escribe con la tabla romana: `1963 = 1000 + 900 + 60 + 3`, con `1000 → M`,
@@ -291,9 +291,10 @@ Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
 
 La matriz final y la solución se muestran siempre. Las casillas de Mostrar
 esperan plegadas bajo «Opciones de resultado». Tras resolver, la página lee
-Entrada → Resultado final (clasificación, solución y columnas pivote),
-siempre visible y una sola vez → «Ver procedimiento» (plegado: matriz inicial,
-operaciones por filas, matriz final, sistema resultante y sustitución regresiva); si «Procedimiento» se desmarca, la matriz final pasa al resultado.
+Entrada → «Ver procedimiento» (plegado: matriz inicial, operaciones por filas,
+matriz final, sistema resultante y sustitución regresiva) → Resultado final
+(clasificación, solución y columnas pivote), siempre visible y una sola vez;
+si «Procedimiento» se desmarca, la matriz final pasa al resultado.
 «También puedes explorar» ofrece el mismo sistema con el otro método o
 comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve
 la misma entrada con los dos métodos y pliega cada procedimiento en su propio
@@ -368,7 +369,7 @@ columna, cambiando solo la validación y la explicación. Los productos
 columna. `forms_matrices.py` valida dimensiones, método, campos y números con
 el parser común; `opciones_matrices.py` centraliza la configuración y
 `servicios_matrices.py` adapta los datos a presentación. El procedimiento va
-plegado después del resultado: la regla por entrada y una sola cadena
+plegado antes del resultado: la regla por entrada y una sola cadena
 `A + B = [A] + [B] = [desarrollo] = [C]`; la traspuesta explica el intercambio
 de filas/columnas y de dimensiones. La matriz obtenida se presenta una vez,
 en el panel Resultado.
@@ -396,8 +397,8 @@ ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
 Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
 `matrices.py`. El método se elige como en Resolver un sistema (Gauss,
 Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
-sola vez y los dos procedimientos plegados). El resultado aparece primero, siempre visible, y el procedimiento va
-plegado después:
+sola vez y los dos procedimientos plegados). El procedimiento va plegado
+primero y el resultado después, siempre visible:
 
 - solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
   `x2 = 2`, el vector columna x y la comprobación `A · x = b` calculada con
@@ -416,7 +417,8 @@ matricial, ecuación vectorial con las columnas de A, sistema equivalente
 eliminación con los mismos bloques de Resolver un sistema: operaciones por
 filas, matriz escalonada o reducida con sus pivotes, columnas pivote, sistema
 resultante y sustitución regresiva. La comprobación `A · x = b` y la
-interpretación van en sus propios bloques plegados después del resultado. `EcuacionMatricialForm`
+interpretación van en sus propios bloques plegados después del resultado.
+`EcuacionMatricialForm`
 (`forms_ecuaciones.py`) comparte con `MatricesForm` la base `FormularioCeldas`
 —celdas, parser y comprobaciones del POST— y exige que b tenga exactamente
 una componente por fila de A; x nunca viaja en el POST. Con JavaScript los

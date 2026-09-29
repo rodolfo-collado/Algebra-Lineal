@@ -1,6 +1,6 @@
 """Divulgación progresiva: Inicio por temas, menú bajo demanda, teclado y opciones plegados,
-procedimiento plegable después del resultado (P18) y conexiones «También puedes explorar». Contratos HTML, POST y de los
-scripts locales, sin depender de clases decorativas."""
+procedimiento plegable antes del resultado (P18, P25.1) y conexiones «También puedes explorar». Contratos HTML, POST y de
+los scripts locales, sin depender de clases decorativas."""
 
 import os
 import re
@@ -25,6 +25,7 @@ from frontend.web.calculadora.exploraciones import exploraciones_sistema
 from frontend.web.calculadora.forms import SistemaForm
 from frontend.web.calculadora.opciones_sistemas import BLOQUES, BLOQUES_PREDETERMINADOS, METODO_PREDETERMINADO, METODOS
 from frontend.web.calculadora.servicios import resolver_entrada_web
+from tests.ayudas import elemento_html
 from tests.test_navegacion import Documento, disponibles
 from tests.test_resolver_sistema import UNICA, seccion_resultado
 from tests.test_teclado import Pagina
@@ -394,15 +395,15 @@ class PruebasFormularioProgresivo(SimpleTestCase):
 
 
 class PruebasProcedimientoPlegable(SimpleTestCase):
-    """Entrada → Resultado final, una sola vez → «Ver procedimiento» (details cerrado)."""
+    """Entrada → «Ver procedimiento» (details cerrado) → Resultado final, una sola vez y fuera del details."""
 
-    def test_el_resultado_precede_al_procedimiento_plegado(self):
+    def test_el_procedimiento_plegado_precede_al_resultado(self):
         respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
-        orden = ("Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
-                 "Columnas pivote:", "Ver procedimiento", "Matriz inicial",
-                 "Operaciones por filas", "Paso 1", "Matriz reducida")
+        orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1", "Matriz reducida",
+                 "Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
+                 "Columnas pivote:")
         posiciones = []
         for fragmento in orden:
             posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
@@ -413,8 +414,9 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         self.assertNotIn('href="#procedimiento"', html)
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertLess(html.index('id="resultado"'), html.index('id="procedimiento"'))
-        # El resultado queda fuera del details: se ve sin abrir el procedimiento.
-        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
+        # El resultado queda después y fuera del details: se ve sin abrir el procedimiento.
+        detalle = elemento_html(html, html.index('id="procedimiento"'), "details")
+        self.assertLess(html.index(detalle) + len(detalle), html.index('id="final-title"'))
 
     def test_sin_procedimiento_no_hay_desplegable_y_la_matriz_final_sigue_en_el_resultado(self):
         respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "pivotes"]})
@@ -430,10 +432,10 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         html = respuesta.content.decode("utf-8")
         # El título «Gauss y Gauss-Jordan» va antes; el orden se mide desde el desplegable.
         texto = seccion_resultado(respuesta)
-        texto = texto[texto.index("Resultado final"):]
-        orden = ("Resultado final", "Clasificación", "Solución x1 = 2 x2 = 1", "Columnas pivote:",
-                 "Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas", "Matriz escalonada",
-                 "Gauss-Jordan", "Matriz reducida")
+        texto = texto[texto.index("Ver procedimiento"):]
+        orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas", "Matriz escalonada",
+                 "Gauss-Jordan", "Matriz reducida", "Resultado final", "Clasificación", "Solución x1 = 2 x2 = 1",
+                 "Columnas pivote:")
         posiciones = []
         for fragmento in orden:
             posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
