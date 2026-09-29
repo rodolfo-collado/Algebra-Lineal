@@ -16,6 +16,7 @@ from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_expresiones import ExpresionMatricialForm
 from .forms_matrices import MatricesForm
+from .forms_romanos import ConversionRomanosForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
 from .servicios_ecuaciones import resolver_ecuacion_web
@@ -32,6 +33,7 @@ from .opciones_sistemas import (
 from .opciones_vectores import AYUDAS, texto_boton
 from .servicios import resolver_entrada_web
 from .servicios_bases import convertir_entrada
+from .servicios_romanos import convertir_romanos
 from .servicios_vectores import operar_vectores
 from .teclados import PERFILES_BASE, perfiles_para
 
@@ -274,3 +276,18 @@ def conversion_bases(request):
             "base_entrada_activa": base_entrada,
         },
     )
+
+
+@require_http_methods(["GET", "POST"])
+def conversion_romanos(request):
+    """Decimal ↔ romano: una dirección, un número, un resultado y su descomposición."""
+    form = ConversionRomanosForm(request.POST or None)
+    resultado = None
+    if request.method == "POST" and form.is_valid():
+        try:
+            resultado = convertir_romanos(
+                direccion=form.cleaned_data["direccion"], numero=form.cleaned_data["numero"],
+            )
+        except ValueError as error:
+            form.add_error("numero", str(error))
+    return render(request, "calculadora/modules/romanos/index.html", {"form": form, "resultado": resultado})

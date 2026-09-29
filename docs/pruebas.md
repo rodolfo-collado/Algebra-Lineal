@@ -40,7 +40,8 @@ desktop, el registro de herramientas, la navegación, el buscador, los
 breadcrumbs, el teclado matemático, las opciones de Resolver un sistema
 —método, comparación, bloques del resultado y rutas antiguas—, la conversión de
 bases —resultados, pasos del procedimiento, mensajes de error, conversiones a
-varias bases con el decimal calculado una sola vez y su integración web—, las
+varias bases con el decimal calculado una sola vez y su integración web—, la
+numeración romana —ambos sentidos, canonicidad e integración web—, las
 operaciones con vectores —suma, resta, escalar, combinación lineal
 con solución única, infinitas o inconsistente, dimensión arbitraria, fracciones
 exactas, la reutilización del motor de sistemas, la estructura dinámica del
@@ -198,3 +199,21 @@ En `/sistemas/`, verifica manualmente: una matriz 2×2; escribir dimensiones
 (121 celdas); aceptar 12 y 9 (120); botones +/− en los límites; recuperación
 tras corregir dimensiones; GET manipulado sin cuadrícula; resolver y comparar,
 plegar procedimiento y alternar Exacto/Decimal.
+
+## Numeración romana
+
+`uv run python -m unittest tests.test_numeros_romanos tests.test_numeros_romanos_web -v`
+cubre ambos sentidos con los casos de referencia (1, 3, 4, 9, 14, 40, 44, 58,
+90, 400, 944, 1963, 2026 y 3999), la ida y vuelta exhaustiva de 1 a 3999 y que,
+de todas las cadenas de hasta cuatro símbolos, solo se acepten las canónicas.
+También comprueba las minúsculas, los rechazos (0, negativos, 4000, fracciones,
+IIII, VV, IC, IL, VX, IIV, XM, MMMM, IVIV, símbolos ajenos, espacios internos y
+longitud) antes de volver a convertir y el procedimiento de 1963 ↔ MCMLXIII.
+En la web: ruta, catálogo, Inicio, búsqueda, breadcrumbs, cajón, un único
+resultado con «Ver procedimiento» plegado, límites, contrato HTTP estricto
+(campos ajenos o repetidos y dirección manipulada) y contenido escapado, sin
+traceback ni HTTP 500.
+
+En `/romanos/conversion/`, verifica manualmente 1963 ↔ MCMLXIII en ambas
+direcciones, una entrada en minúsculas, un error de canonicidad (`IIII`), el
+procedimiento plegado y abierto, 390 px y escritorio, y ambos temas.

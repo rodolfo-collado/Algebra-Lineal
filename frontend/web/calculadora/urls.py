@@ -17,4 +17,5 @@ urlpatterns = [
     path("matrices/expresiones/", views.expresiones_matriciales, name="expresiones-matriciales"),
     path("matrices/ecuaciones/", views.ecuaciones_matriciales, name="ecuaciones-matriciales"),
     path("bases/conversion/", views.conversion_bases, name="conversion-bases"),
+    path("romanos/conversion/", views.conversion_romanos, name="conversion-romanos"),
 ]

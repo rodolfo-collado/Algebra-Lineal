@@ -108,7 +108,7 @@ ALGEBRA_LINEAL = Area(
 )
 SISTEMAS_NUMERICOS = Area(
     "sistemas-numericos", "Sistemas numéricos",
-    "Representación de números en distintas bases.",
+    "Representación de números en distintas bases y en numeración romana.",
 )
 CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.")
 AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, CALCULO)
@@ -129,8 +129,13 @@ BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
     "Conversión entre binario, octal, decimal y hexadecimal.",
 )
+# Aparte de las bases: la numeración romana no es un sistema posicional.
+NUMERACION_ROMANA = Categoria(
+    "numeracion-romana", "Numeración romana", SISTEMAS_NUMERICOS,
+    "Conversión entre números decimales y romanos.",
+)
 LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.")
-CATEGORIAS = (SISTEMAS_ECUACIONES, VECTORES, MATRICES, BASES_NUMERICAS, LIMITES)
+CATEGORIAS = (SISTEMAS_ECUACIONES, VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, LIMITES)
 
 
 # Única herramienta de la categoría: método a elegir (o comparar los dos) y
@@ -187,8 +192,23 @@ CONVERSION_BASES = Herramienta(
         "binario", "decimal", "octal", "hexadecimal", "bases", "conversión",
         "sistemas numéricos", "conversión de bases", "base",
     ),
-    relacionadas=(),
+    relacionadas=("conversion-romanos",),
     invitacion="Convertir entre bases numéricas",
+)
+
+CONVERSION_ROMANOS = Herramienta(
+    id="conversion-romanos",
+    nombre="Conversión de números romanos",
+    categoria=NUMERACION_ROMANA,
+    descripcion="Convierte entre decimal y romano, del 1 al 3999, con la descomposición paso a paso.",
+    estado="disponible",
+    route_name="calculadora:conversion-romanos",
+    palabras_clave=(
+        "romano", "romanos", "números romanos", "numeración romana",
+        "decimal a romano", "romano a decimal",
+    ),
+    relacionadas=("conversion-bases",),
+    invitacion="Convertir números romanos",
 )
 
 # La operación (suma, resta, escalar, traspuesta, AB o Ax) y, en los productos,
@@ -245,6 +265,7 @@ HERRAMIENTAS = (
     EXPRESIONES_MATRICIALES,
     ECUACIONES_MATRICIALES,
     CONVERSION_BASES,
+    CONVERSION_ROMANOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",
                 palabras_clave=("límite", "función", "tiende a")),
