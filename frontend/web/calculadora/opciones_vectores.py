@@ -18,7 +18,7 @@ AYUDAS = {
     "suma": "Suma dos o más vectores componente a componente.",
     "resta": "Resta dos o más vectores en el orden indicado, componente a componente.",
     "escalar": "k·u multiplica cada componente de u por el escalar k.",
-    "combinacion": "¿Existen c1, …, ck tales que c1·v1 + … + ck·vk = b?",
+    "combinacion": "¿Existen x1, …, xk tales que x1·v1 + … + xk·vk = b?",
 }
 
 # La dimensión conserva su límite de interfaz; la cantidad depende de la operación.

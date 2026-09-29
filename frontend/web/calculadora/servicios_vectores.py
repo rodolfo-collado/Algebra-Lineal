@@ -115,7 +115,7 @@ def igualdad_combinacion(coeficientes, generadores, objetivo):
 
 
 def planteamiento(nombres, generadores, objetivo):
-    """c1(1, 0) + c2(0, 1) = (3, 4)."""
+    """x1(1, 0) + x2(0, 1) = (3, 4)."""
     terminos = " + ".join(
         f"{NOMBRE_COEFICIENTE}{indice}{texto_vector(vector)}"
         for indice, vector in enumerate(generadores, start=1)

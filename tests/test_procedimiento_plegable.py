@@ -298,8 +298,8 @@ class PruebasVectores(SimpleTestCase):
 
     def test_combinacion_lineal_conserva_las_etapas_sin_duplicar_la_conclusion(self):
         casos = (
-            (combinacion([[1, 2], [3, 4]], [-1, 0]), "Sí: b es combinación lineal de v1 y v2.", "c1 = 2"),
-            (combinacion([[1, 2], [2, 4]], [3, 6]), "Sí: b es combinación lineal de v1 y v2.", "c1 = 3 - 2c2"),
+            (combinacion([[1, 2], [3, 4]], [-1, 0]), "Sí: b es combinación lineal de v1 y v2.", "x1 = 2"),
+            (combinacion([[1, 2], [2, 4]], [3, 6]), "Sí: b es combinación lineal de v1 y v2.", "x1 = 3 - 2x2"),
             (combinacion([[1, 2], [2, 4]], [3, 7]), "No: b no es combinación lineal de v1 y v2.", "0 = 1"),
         )
         for datos, conclusion, linea in casos:
