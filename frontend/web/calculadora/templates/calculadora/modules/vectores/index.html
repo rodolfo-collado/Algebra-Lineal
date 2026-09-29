@@ -96,7 +96,7 @@
 
 {% block tool_result %}
     {% if resultado %}
-        {% comment %}Entrada → resultado (una sola vez) → procedimiento plegable. numeric_results prepara la vista exacta/decimal de todo el bloque sin recalcular.{% endcomment %}
+        {% comment %}Entrada → procedimiento plegable → resultado (una sola vez). numeric_results prepara la vista exacta/decimal de todo el bloque sin recalcular.{% endcomment %}
         {% numeric_results %}
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">

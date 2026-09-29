@@ -126,13 +126,51 @@ usa esa misma pieza para traducir matrices a ecuaciones y para construir el
 conjunto solución, de modo que Gauss y Gauss-Jordan comparten la interpretación
 entera.
 
-`parser_sistemas.py` queda fuera de esa cadena porque no depende de ningún otro
-módulo del proyecto: recibe texto y devuelve una matriz, o lanza `ValueError`. Eso
-permitirá reutilizarlo tal cual desde otra interfaz.
-
 El backend no usa `input()` ni `print()` y no depende del frontend. Los servicios
 web formatean los datos para templates; la terminal agrega títulos y colores.
 Las reglas para mantener esta separación están en [CONTRIBUTING](../CONTRIBUTING.md).
+
+### Ecuaciones escritas: parsear, representar y normalizar
+
+`parser_sistemas.py` recibe texto y devuelve una matriz, o lanza `ValueError`;
+no depende de ninguna interfaz. Cada ecuación pasa por tres etapas:
+
+1. **Parsear.** Cada lado del `=` se lee por separado como una lista de
+   términos `(variable, coeficiente)`; un número lleva la variable `None`. Es
+   la única etapa que conoce la sintaxis de sistemas (`2x1`, `-x2`, `1/2`).
+2. **Representar.** `expresion_desde_terminos` (en `expresiones.py`) agrupa los
+   términos semejantes de cada lado en una expresión: constante y un
+   coeficiente por variable.
+3. **Normalizar.** `normalizar_igualdad` resta los dos lados: un término que
+   cruza el signo igual cambia de signo, así que `izquierda − derecha` deja las
+   variables a la izquierda y el número a la derecha. Si solo el lado derecho
+   tenía variables, antes se leen los lados al revés (`a = b` equivale a
+   `b = a`), para no cambiar signos sin necesidad.
+
+```mermaid
+flowchart LR
+    T["x1 - 6 = -x2"] --> P["Parsear cada lado<br>(1, 1), (None, -6) · (2, -1)"]
+    P --> R["Representar<br>x1 - 6 · -x2"]
+    R --> N["Normalizar<br>x1 + x2 = 6"]
+    N --> F["Fila [1, 1 | 6]"]
+```
+
+Así `x1 + x2 = 6`, `x1 - 6 = -x2`, `6 = x1 + x2` y `x2 = 6 - x1` producen la
+misma fila. Lo que ya estaba en forma estándar (solo variables a la izquierda y
+un número a la derecha) produce exactamente la fila de siempre, porque la resta
+no cambia nada. No se simulan despejes: la forma estándar sale de los
+coeficientes, y el procedimiento muestra solo el antes y el después.
+
+Las etapas 2 y 3 no conocen la sintaxis ni la letra de las variables. Otro
+parser de ecuaciones lineales, por ejemplo uno con coeficientes `c1, c2`, solo
+tiene que escribir su etapa 1 y entregar términos. `FormaLineal`, de
+`expresiones_matriciales`, es la misma idea con variables por nombre: allí la
+igualdad se analiza lado a lado y el mismo paso de restar formas serviría si
+esa herramienta admitiera constantes a ambos lados.
+
+El parser es de álgebra lineal, no un sistema de álgebra computacional. Un
+término que multiplica o divide variables, las eleva a una potencia o usa una
+función (`x1*x2`, `x1x2`, `x1^2`, `1/x1`, `sqrt(x1)`) se rechaza con su motivo.
 
 ## Conversión de bases
 

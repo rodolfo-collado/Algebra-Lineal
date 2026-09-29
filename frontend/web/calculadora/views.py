@@ -22,7 +22,6 @@ from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
 from .servicios_ecuaciones import resolver_ecuacion_web
 from .servicios_expresiones import evaluar_expresion_web
 from .servicios_matrices import operar_matrices
-from .guias import guias_para_resultado
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
     METODO_PREDETERMINADO,
@@ -58,7 +57,6 @@ def sistemas(request):
     form = SistemaForm(request.POST or None, initial=inicial)
     resultados = []
     mostrar = frozenset(BLOQUES_PREDETERMINADOS)
-    guias = ()
     exploraciones = ()
 
     if request.method == "POST" and form.is_valid():
@@ -76,11 +74,6 @@ def sistemas(request):
                 )
                 for nombre_metodo in metodos_a_resolver(metodo)
             ]
-            guias = guias_para_resultado(
-                metodo=metodo,
-                clasificacion_clave=resultados[0]["clasificacion_clave"],
-                columnas_pivote=resultados[0]["columnas_pivote"] if "pivotes" in mostrar else None,
-            )
             exploraciones = exploraciones_sistema(form.pares_de_entrada(), metodo, mostrar)
         except ValueError as error:
             resultados = []
@@ -111,7 +104,6 @@ def sistemas(request):
             "celdas_maximas": CELDAS_MAXIMAS,
             # Las opciones se despliegan solas cuando difieren de lo predeterminado.
             "opciones_abiertas": set(form.bloques_elegidos()) != set(BLOQUES_PREDETERMINADOS),
-            "guias": guias,
             "exploraciones": exploraciones,
             "perfiles_teclado": perfiles_para("sistema", "numerico"),
         },

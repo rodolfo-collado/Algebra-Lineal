@@ -120,7 +120,7 @@ class PruebasCalculo(SimpleTestCase):
                 texto = str(Texto(html))
                 for fragmento in fragmentos:
                     self.assertIn(fragmento, texto)
-                self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
+                self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
                 self.assertIn('name="nodo" value="0.1"', html)
 
     def test_subexpresion_por_el_identificador_del_nodo(self):
@@ -235,7 +235,9 @@ class PruebasIgualdadWeb(SimpleTestCase):
             self.assertIn(fragmento, texto)
         self.assertNotIn("Verdadero", texto)
         self.assertNotIn("demostr", texto)
-        self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
+        # El procedimiento de cada lado va plegado antes; los dos valores y el veredicto forman el resultado.
+        self.assertLess(html.index('id="procedimiento"'), html.index('id="lado-izquierdo-title"'))
+        self.assertLess(html.index('id="lado-derecho-title"'), html.index("panel-final"))
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertEqual(html.count('id="numeric-mode"'), 1)
         self.assertIn('name="nodo" value="izq:0.1"', html)

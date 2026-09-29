@@ -6,10 +6,12 @@ from fractions import Fraction
 from backend.expresiones import (
     crear_expresion,
     expresion_de_variable,
+    expresion_desde_terminos,
     formatear_ecuacion,
     formatear_expresion,
     formatear_termino,
     multiplicar_expresion,
+    normalizar_igualdad,
     restar_expresiones,
 )
 
@@ -85,6 +87,63 @@ class PruebasAritmetica(unittest.TestCase):
 
         self.assertNotIsInstance(expresion["constante"], float)
         self.assertNotIsInstance(expresion["coeficientes"][1], float)
+
+
+class PruebasRepresentarYNormalizar(unittest.TestCase):
+    """La base que comparten los parsers de ecuaciones: términos → expresión → forma estándar."""
+
+    def test_los_terminos_semejantes_se_agrupan(self):
+        expresion = expresion_desde_terminos(
+            [(1, Fraction(2)), (None, Fraction(3)), (1, Fraction(-1)), (None, Fraction(1, 2))]
+        )
+
+        self.assertEqual(expresion, crear_expresion(Fraction(7, 2), {1: 1}))
+        self.assertEqual(expresion_desde_terminos([]), crear_expresion())
+        self.assertEqual(expresion_desde_terminos([(2, Fraction(1)), (2, Fraction(-1))]), crear_expresion())
+
+    def test_normalizar_pasa_las_variables_a_la_izquierda(self):
+        # x1 - 6 = -x2  →  x1 + x2 = 6
+        expresion, termino = normalizar_igualdad(crear_expresion(-6, {1: 1}), crear_expresion(0, {2: -1}))
+
+        self.assertEqual(expresion, crear_expresion(0, {1: 1, 2: 1}))
+        self.assertEqual(termino, 6)
+        self.assertIsInstance(termino, Fraction)
+
+    def test_si_solo_la_derecha_tiene_variables_se_intercambian_los_lados(self):
+        # 6 = x1 + x2  →  x1 + x2 = 6, no -x1 - x2 = -6
+        expresion, termino = normalizar_igualdad(crear_expresion(6), crear_expresion(0, {1: 1, 2: 1}))
+
+        self.assertEqual(formatear_ecuacion(expresion, termino), "x1 + x2 = 6")
+
+    def test_la_forma_estandar_ya_normalizada_no_cambia(self):
+        izquierda = crear_expresion(0, {1: -1, 2: 4})
+
+        self.assertEqual(normalizar_igualdad(izquierda, crear_expresion(7)), (izquierda, 7))
+
+    def test_formas_equivalentes_dan_la_misma_forma_estandar(self):
+        x1_mas_x2 = crear_expresion(0, {1: 1, 2: 1})
+        formas = (
+            (x1_mas_x2, crear_expresion(6)),                              # x1 + x2 = 6
+            (crear_expresion(-6, {1: 1}), crear_expresion(0, {2: -1})),   # x1 - 6 = -x2
+            (crear_expresion(6), x1_mas_x2),                              # 6 = x1 + x2
+            (crear_expresion(0, {2: 1}), crear_expresion(6, {1: -1})),    # x2 = 6 - x1
+        )
+        for izquierda, derecha in formas:
+            with self.subTest(izquierda=izquierda, derecha=derecha):
+                self.assertEqual(normalizar_igualdad(izquierda, derecha), (x1_mas_x2, 6))
+
+    def test_una_igualdad_que_se_cancela_queda_como_fila_nula_o_contradiccion(self):
+        self.assertEqual(normalizar_igualdad(crear_expresion(0, {1: 1}), crear_expresion(0, {1: 1})), (crear_expresion(), 0))
+        self.assertEqual(normalizar_igualdad(crear_expresion(0, {1: 1}), crear_expresion(1, {1: 1})), (crear_expresion(), 1))
+
+    def test_no_depende_de_la_sintaxis_ni_de_la_letra(self):
+        # Otra herramienta (p. ej. coeficientes c1, c2 de una combinación lineal) reutiliza lo mismo.
+        expresion, termino = normalizar_igualdad(
+            expresion_desde_terminos([(1, Fraction(3)), (None, Fraction(1))]),
+            expresion_desde_terminos([(2, Fraction(1, 2)), (None, Fraction(4))]),
+        )
+
+        self.assertEqual(formatear_ecuacion(expresion, termino, "c"), "3c1 - 1/2c2 = 3")
 
 
 class PruebasFormatoDeTerminos(unittest.TestCase):

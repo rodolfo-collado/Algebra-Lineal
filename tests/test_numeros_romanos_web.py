@@ -16,6 +16,7 @@ from django.utils.html import strip_tags
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.forms_romanos import ConversionRomanosForm
 from frontend.web.calculadora.servicios_romanos import convertir_romanos
+from tests.ayudas import elemento_html
 from tests.test_navegacion import Documento
 from tests.test_procedimiento_plegable import Estructura
 
@@ -26,16 +27,19 @@ def texto_plano(respuesta):
     return " ".join(strip_tags(respuesta.content.decode("utf-8")).split())
 
 
+def texto_de(respuesta, marca, etiqueta):
+    html = respuesta.content.decode("utf-8")
+    return " ".join(strip_tags(elemento_html(html, html.index(marca), etiqueta)).split())
+
+
 def resultado_de(respuesta):
     """(origen, resultado, nombre) tal como se leen en el panel Resultado."""
-    texto = texto_plano(respuesta)
-    seccion = texto[texto.index("Resultado Número de origen: "):texto.index(" Ver procedimiento")]
+    seccion = texto_de(respuesta, "panel-final", "section")
     return re.fullmatch(r"Resultado Número de origen: (\S+) = (\S+) (Romano|Decimal)", seccion).groups()
 
 
 def procedimiento_de(respuesta):
-    texto = texto_plano(respuesta)
-    return texto[texto.index("Ver procedimiento"):]
+    return texto_de(respuesta, 'id="procedimiento"', "details")
 
 
 class PruebasRegistro(SimpleTestCase):
@@ -171,7 +175,7 @@ class PruebasConversionWeb(SimpleTestCase):
                 self.assertEqual(resultado_de(respuesta), (origen, esperado, "Decimal"))
                 self.assertContains(respuesta, '<h2 id="results-title">Romano → decimal</h2>', html=True)
 
-    def test_un_solo_resultado_y_procedimiento_plegado_despues(self):
+    def test_procedimiento_plegado_y_despues_un_solo_resultado(self):
         for direccion, numero in (("decimal_a_romano", "1963"), ("romano_a_decimal", "MCMLXIII")):
             with self.subTest(direccion=direccion):
                 html = self.convertir(direccion, numero).content.decode("utf-8")
@@ -185,7 +189,7 @@ class PruebasConversionWeb(SimpleTestCase):
                 self.assertFalse(procedimiento["open"])
                 self.assertEqual(procedimiento["encabezado"], "h3")
                 self.assertEqual(len(estructura.details), 1)
-                self.assertLess(estructura.indice("panel-final"), estructura.indice("details", id="procedimiento"))
+                self.assertLess(estructura.indice("details", id="procedimiento"), estructura.indice("panel-final"))
 
     def test_procedimiento_decimal_a_romano_agrupado(self):
         texto = procedimiento_de(self.convertir("decimal_a_romano", "1963"))

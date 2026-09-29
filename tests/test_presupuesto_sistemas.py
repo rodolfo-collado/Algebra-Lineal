@@ -24,6 +24,7 @@ from backend.presupuesto_sistemas import (
     LONGITUD_SISTEMA_MAXIMA,
     MENSAJE_NOTACION_CIENTIFICA,
     MENSAJE_NUMERO_GRANDE,
+    MENSAJE_VALOR_AGRUPADO_GRANDE,
     VARIABLES_MAXIMAS,
     dimensiones_admitidas,
 )
@@ -244,11 +245,23 @@ class PruebasPresupuestoTexto(SimpleTestCase):
         self.assertNotIn("sistema", SistemaForm.inicial_desde(respuesta.wsgi_request.GET))
 
     def test_parser_limita_texto_y_ecuaciones_antes_de_analizarlas(self):
-        with patch("backend.parser_sistemas.parsear_ecuacion") as analizar:
+        with patch("backend.parser_sistemas._leer_ecuacion") as analizar:
             for texto in ("x1=1" * LONGITUD_SISTEMA_MAXIMA, ";".join(["x1=1"] * (ECUACIONES_MAXIMAS + 1))):
                 with self.subTest(longitud=len(texto)), self.assertRaises(ValueError):
                     parsear_sistema(texto, limitar_entrada=True)
             analizar.assert_not_called()
+
+    def test_saltos_de_linea_cuentan_ecuaciones_antes_de_analizarlas(self):
+        with patch("backend.parser_sistemas._leer_ecuacion") as analizar:
+            for separador in ("\n", "\r\n", "\n\n", ";\n"):
+                texto = separador.join(["x1=1"] * (ECUACIONES_MAXIMAS + 1))
+                with self.subTest(separador=separador), self.assertRaisesRegex(
+                    ValueError, f"entre 1 y {ECUACIONES_MAXIMAS} ecuaciones"
+                ):
+                    parsear_sistema(texto, limitar_entrada=True)
+            analizar.assert_not_called()
+        maximo = "\r\n".join(["x9=1"] * ECUACIONES_MAXIMAS)
+        self.assertEqual(sum(map(len, parsear_sistema(maximo, limitar_entrada=True))), CELDAS_MAXIMAS)
 
     def test_indice_textual_absurdo_no_reserva_una_fila_ni_invoca_motor(self):
         for texto in ("x100000=1", "x999999999999999999999999999=1", ";".join(["x10=1"] * 11)):
@@ -373,19 +386,22 @@ class PruebasLiteralesSistemas(SimpleTestCase):
             with self.subTest(nombre=nombre):
                 self.assert_rechazo_textual(texto, MENSAJE_NUMERO_GRANDE)
 
-    def test_denominador_cero_conserva_su_mensaje(self):
+    def test_denominador_cero_tiene_mensaje_propio(self):
         with self.assertRaises(ValueError) as coeficiente:
             parsear_sistema("1/0x1=2", limitar_entrada=True)
         self.assertEqual(
             str(coeficiente.exception),
             "Formato de sistema inválido: un coeficiente no puede tener denominador cero.",
         )
-        with self.assertRaises(ValueError) as independiente:
-            parsear_sistema("x1=1/0", limitar_entrada=True)
-        self.assertEqual(
-            str(independiente.exception),
-            "Formato de sistema inválido: el término independiente debe ser un número.",
-        )
+        # P25.2: el lado derecho ya no es solo un término independiente, así que
+        # el mensaje nombra el problema en cualquier lado.
+        for texto in ("x1=1/0", "1/0 = x1", "x1 + 1/0 = x2"):
+            with self.subTest(texto=texto), self.assertRaises(ValueError) as independiente:
+                parsear_sistema(texto, limitar_entrada=True)
+            self.assertEqual(
+                str(independiente.exception),
+                "Formato de sistema inválido: un número no puede tener denominador cero.",
+            )
         datos = datos_matriz([["1/0", 1]])
         respuesta = self.client.post("/sistemas/", datos)
         self.assertEqual(respuesta.status_code, 200)
@@ -407,11 +423,11 @@ class PruebasLiteralesSistemas(SimpleTestCase):
         for texto in casos:
             with self.subTest(texto=texto):
                 self.assert_rechazo_textual(texto, MENSAJE_NOTACION_CIENTIFICA)
-        for texto in ("x1=test", "x1=hello", "x1=e10"):
+        for texto in ("x1=test", "x1=hello", "x1=e10", "e10 = x1", "x1 = x2 + e10"):
             with self.subTest(texto=texto):
                 with self.assertRaises(ValueError) as contexto:
                     parsear_sistema(texto, limitar_entrada=True)
-                self.assertIn("término independiente", str(contexto.exception))
+                self.assertIn("no es un número ni una variable xN", str(contexto.exception))
                 self.assertNotIn("científica", str(contexto.exception))
 
     def test_texto_extremo_responde_200_sin_motor(self):
@@ -489,3 +505,93 @@ class PruebasLiteralesSistemas(SimpleTestCase):
         self.assertEqual(convertir_a_numero("1e2"), 100)
         self.assertEqual(convertir_a_numero("1_000"), 1000)
         self.assertEqual(parsear_sistema("x1=1_000", limitar_entrada=True), [[1, 1000]])
+
+
+# Dos denominadores de 100 cifras sin factores comunes: cada literal cabe, su suma no.
+P, Q = 10**99 + 1, 10**99 + 3
+
+
+class PruebasPresupuestoFormaLibre(SimpleTestCase):
+    """P25.2: normalizar no reabre entradas caras; cada literal se revisa en ambos lados."""
+
+    def assert_rechazo(self, texto, fragmento, vigilar_fraction=True):
+        """Se rechaza antes de construir filas y, si se vigila, antes de convertir un literal caro."""
+        fraction = _fraction_vigilada if vigilar_fraction else Fraction
+        with patch("backend.parser_sistemas.Fraction", fraction), \
+             patch("backend.parser_sistemas._simplificar", side_effect=AssertionError("construcción")):
+            with self.assertRaises(ValueError) as contexto:
+                parsear_sistema(texto, limitar_entrada=True)
+        self.assertIn(fragmento, str(contexto.exception))
+
+    def test_literales_extremos_en_cualquier_lado_no_llegan_a_fraction(self):
+        largo = "9" * (DIGITOS_MAXIMOS + 1)
+        casos = {
+            "constante a la izquierda": f"x1 + {largo} = x2",
+            "lado izquierdo sin variables": f"{largo} = x1",
+            "fracción a la derecha": f"x1 = x2 - {largo}/2",
+            "decimal a la derecha": f"x1 = x2 + 0.{largo}",
+            "coeficiente a la derecha": f"x1 = {largo}x2",
+            "guion bajo con variables": "x1 = x2 + 1_" + "0" * DIGITOS_MAXIMOS,
+            "índice de variable": f"x1 = x{largo}",
+        }
+        for nombre, texto in casos.items():
+            with self.subTest(nombre=nombre):
+                self.assert_rechazo(texto, MENSAJE_NUMERO_GRANDE)
+
+    def test_notacion_cientifica_en_cualquier_lado(self):
+        for texto in ("x1 = x2 + 1e5", "x1 + 1e1000000000 = x2", "1E-1000000000 = x1", "x1 = 2e3x2", "x1 - 1 e 9 = x2"):
+            with self.subTest(texto=texto):
+                self.assert_rechazo(texto, MENSAJE_NOTACION_CIENTIFICA)
+
+    def test_agrupar_terminos_no_supera_lo_que_admite_un_literal(self):
+        for texto in (
+            f"1/{P}x1 + 1/{Q}x1 = 1",   # variables repetidas: ya era posible antes de P25.2
+            f"x1 = 1/{P} + 1/{Q}",
+            f"x1 + 1/{P} = 1/{Q}",
+            f"1/{P}x1 = 1/{Q}x2 - 1/{Q}x1",
+        ):
+            with self.subTest(texto=texto[:40]):
+                # Cada literal cabe (Fraction sí se llama); lo que no cabe es su suma.
+                self.assert_rechazo(texto, MENSAJE_VALOR_AGRUPADO_GRANDE, vigilar_fraction=False)
+
+    def test_valores_en_el_limite_de_un_literal_se_admiten(self):
+        tope = "9" * DIGITOS_MAXIMOS
+        self.assertEqual(
+            parsear_sistema(f"{tope}.{tope}x1 = 1", limitar_entrada=True),
+            [[Fraction(int(tope + tope), 10**DIGITOS_MAXIMOS), 1]],
+        )
+        self.assertEqual(parsear_sistema(f"x1 + 1/{P} = 2/{P}", limitar_entrada=True), [[1, Fraction(1, P)]])
+        self.assertEqual(parsear_sistema("1/3x1 + 1/7x1 = 1/2", limitar_entrada=True), [[Fraction(10, 21), Fraction(1, 2)]])
+
+    def test_dimensiones_de_la_forma_libre_antes_de_construir_filas(self):
+        self.assert_rechazo(f"x1 = x{VARIABLES_MAXIMAS + 1}", f"Indica entre 1 y {VARIABLES_MAXIMAS} variables")
+        self.assert_rechazo("x10 = x1; " * 10 + "x10 = x1", f"hasta {CELDAS_MAXIMAS} celdas")
+        with patch("backend.parser_sistemas._leer_ecuacion") as analizar, self.assertRaises(ValueError):
+            parsear_sistema(";".join(["x1 - 1 = x2"] * (ECUACIONES_MAXIMAS + 1)), limitar_entrada=True)
+        analizar.assert_not_called()
+
+    def test_web_responde_200_con_mensaje_propio_y_sin_motor(self):
+        motor = Mock(side_effect=AssertionError("motor"))
+        casos = {
+            f"x1 = 1/{P} + 1/{Q}": MENSAJE_VALOR_AGRUPADO_GRANDE,
+            "x1 + 1e1000000000 = x2": MENSAJE_NOTACION_CIENTIFICA,
+            "x1*x2 = 5": "deja de ser lineal",
+        }
+        for texto, fragmento in casos.items():
+            with self.subTest(texto=texto[:32]), patch.dict(
+                "frontend.web.calculadora.servicios._RESOLVERS", {"gauss": ("Gauss", motor, "", "")}
+            ):
+                respuesta = self.client.post("/sistemas/", {"metodo": "gauss", "sistema": texto})
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertContains(respuesta, fragmento)
+                self.assertNotContains(respuesta, 'id="resultado"')
+                self.assertNotContains(respuesta, "Exceeds the limit")
+                motor.assert_not_called()
+
+    def test_consola_conserva_su_contrato_sin_presupuesto(self):
+        self.assertEqual(parsear_sistema(f"1/{P}x1 + 1/{Q}x1 = 1"), [[Fraction(P + Q, P * Q), 1]])
+        # Un lado que es un solo número conserva el contrato de siempre, también a la izquierda.
+        self.assertEqual(parsear_sistema("1e2 = x1 - x2"), [[1, -1, 100]])
+        # Dentro de una suma no se añade notación científica, ni siquiera en consola.
+        with self.assertRaisesRegex(ValueError, "«1e2» no es un número ni una variable xN"):
+            parsear_sistema("x1 - 1e2 = x2")

@@ -145,7 +145,7 @@ class PruebasIntegracionNumerica(SimpleTestCase):
                 for valor in valores.valores:
                     self.assertEqual(set(valor["decimales"]), {"2", "4", "6", "8"})
                     self.assertIn(valor["exacto"], strip_tags(html))
-                self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
+                self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
 
     def test_bases_entrada_y_errores_no_reciben_selector(self):
         for ruta in ("/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/bases/conversion/"):

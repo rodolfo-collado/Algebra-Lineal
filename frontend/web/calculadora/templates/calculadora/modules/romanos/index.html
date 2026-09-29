@@ -42,28 +42,12 @@
 
 {% block tool_result %}
     {% if resultado %}
-        {% comment %}Entrada → resultado (una sola vez) → procedimiento plegable. Las filas y las igualdades llegan como datos del servicio; la plantilla no calcula.{% endcomment %}
+        {% comment %}Entrada → procedimiento plegable → resultado (una sola vez). Las filas y las igualdades llegan como datos del servicio; la plantilla no calcula.{% endcomment %}
         <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">Conversión</p>
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
-
-            <section class="panel panel-final" aria-labelledby="results-final-title">
-                <h3 id="results-final-title" class="panel-title">Resultado</h3>
-                <div class="base-results">
-                    <p class="base-results-origin">
-                        <span class="sr-only">Número de origen: </span><span class="base-numeral">{{ resultado.origen }}</span>
-                    </p>
-                    <ul class="base-results-list">
-                        <li class="base-result">
-                            <span class="base-equals" aria-hidden="true">=</span>
-                            <span class="base-numeral base-numeral-result">{{ resultado.resultado }}</span>
-                            <span class="base-result-name">{{ resultado.nombre_resultado }}</span>
-                        </li>
-                    </ul>
-                </div>
-            </section>
 
             {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
                 {% if resultado.direccion == "decimal_a_romano" %}
@@ -120,6 +104,22 @@
                     {% endif %}
                 {% endif %}
             {% enddisclosure %}
+
+            <section class="panel panel-final" aria-labelledby="results-final-title">
+                <h3 id="results-final-title" class="panel-title">Resultado</h3>
+                <div class="base-results">
+                    <p class="base-results-origin">
+                        <span class="sr-only">Número de origen: </span><span class="base-numeral">{{ resultado.origen }}</span>
+                    </p>
+                    <ul class="base-results-list">
+                        <li class="base-result">
+                            <span class="base-equals" aria-hidden="true">=</span>
+                            <span class="base-numeral base-numeral-result">{{ resultado.resultado }}</span>
+                            <span class="base-result-name">{{ resultado.nombre_resultado }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </section>
         </section>
     {% endif %}
 {% endblock %}

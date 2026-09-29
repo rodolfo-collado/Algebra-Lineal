@@ -42,6 +42,8 @@ herramientas educativas sin rehacer los algoritmos ni la navegación.
 ### Sistemas de ecuaciones
 
 - Entrada como ecuaciones escritas o matriz aumentada editable.
+- Ecuaciones con términos a ambos lados del `=`, como `x1 - 6 = -x2`,
+  `2x1 + 3 = x2 - 5` o `6 = x1 + x2`: PyGebra las normaliza automáticamente.
 - Gauss, Gauss-Jordan o comparación de ambos procedimientos.
 - Clasificación, columnas pivote y variables libres.
 - Solución exacta, solución general o evidencia de la contradicción.

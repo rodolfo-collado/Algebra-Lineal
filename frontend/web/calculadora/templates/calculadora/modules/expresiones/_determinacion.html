@@ -4,13 +4,6 @@
     <h2 id="results-title">{{ resultado.texto }}</h2>
 </header>
 {% include "calculadora/components/numeric_format.html" %}
-<section class="panel panel-final" aria-labelledby="final-title">
-    <h3 id="final-title" class="panel-title">{{ resultado.nombre }} =</h3>
-    <p class="equality-message">Esta matriz hace que la igualdad se cumpla para todos los valores de {{ resultado.variables_texto }}, no solo para unos valores de prueba.</p>
-    <div class="matrix-equation">
-        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta=resultado.nombre only %}
-    </div>
-</section>
 {% disclosure titulo="Cómo se obtuvo" id="procedimiento" clase="disclosure-procedure" %}
     <ol class="expression-steps">
         <li>
@@ -45,3 +38,10 @@
         </li>
     </ol>
 {% enddisclosure %}
+<section class="panel panel-final" aria-labelledby="final-title">
+    <h3 id="final-title" class="panel-title">{{ resultado.nombre }} =</h3>
+    <p class="equality-message">Esta matriz hace que la igualdad se cumpla para todos los valores de {{ resultado.variables_texto }}, no solo para unos valores de prueba.</p>
+    <div class="matrix-equation">
+        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta=resultado.nombre only %}
+    </div>
+</section>

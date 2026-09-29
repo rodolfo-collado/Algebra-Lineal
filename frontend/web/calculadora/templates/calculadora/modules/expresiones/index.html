@@ -38,6 +38,7 @@
 
 {% block tool_result %}
 {% if resultado %}
+    {% comment %}Entrada → procedimiento plegable → resultado en los tres modos. En una igualdad, el valor de cada lado y el veredicto forman el resultado.{% endcomment %}
     {% numeric_results %}
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
         {% if resultado.modo == "determinacion" %}
@@ -48,6 +49,12 @@
                 <h2 id="results-title">{{ resultado.texto }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                <h4 class="stage-title">Lado izquierdo</h4>
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos %}
+                <h4 class="stage-title">Lado derecho</h4>
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos %}
+            {% enddisclosure %}
             <div class="equality-sides">
                 {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.izquierda titulo="Lado izquierdo" identificador="lado-izquierdo" %}
                 {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.derecha titulo="Lado derecho" identificador="lado-derecho" %}
@@ -56,18 +63,15 @@
                 <h3 id="final-title" class="panel-title equality-verdict equality-verdict-{{ resultado.veredicto }}">{{ resultado.titulo }}</h3>
                 <p class="equality-message">{{ resultado.mensaje }}</p>
             </section>
-            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                <h4 class="stage-title">Lado izquierdo</h4>
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos %}
-                <h4 class="stage-title">Lado derecho</h4>
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos %}
-            {% enddisclosure %}
         {% else %}
             <header class="results-heading">
                 <p class="section-kicker">{% if resultado.parcial %}Subexpresión{% else %}Expresión{% endif %} · {{ resultado.dimensiones }}</p>
                 <h2 id="results-title">{{ resultado.texto }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos %}
+            {% enddisclosure %}
             <section class="panel panel-final" aria-labelledby="final-title">
                 <h3 id="final-title" class="panel-title">Resultado</h3>
                 <div class="matrix-equation">
@@ -77,9 +81,6 @@
                     {% endif %}
                 </div>
             </section>
-            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos %}
-            {% enddisclosure %}
         {% endif %}
     </section>
     {% endnumeric_results %}

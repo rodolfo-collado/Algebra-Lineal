@@ -19,6 +19,7 @@ from django.utils.html import strip_tags
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.forms import ConversionBasesForm
 from frontend.web.calculadora.servicios_bases import convertir_entrada, enumerar, titulo_conversion
+from tests.ayudas import elemento_html
 from tests.test_interfaz_progresiva import Formulario
 from tests.test_navegacion import Documento
 from tests.test_teclado import Pagina
@@ -34,8 +35,8 @@ def texto_plano(respuesta):
 
 def resultados_de(respuesta):
     """(origen, [(escritura, base), …]) tal como los lee el panel Resultado, en su orden."""
-    texto = texto_plano(respuesta)
-    seccion = texto[texto.index("Resultado Número de origen: "):texto.index(" Procedimiento")]
+    html = respuesta.content.decode("utf-8")
+    seccion = " ".join(strip_tags(elemento_html(html, html.index("panel-final"), "section")).split())
     origen = seccion.split("Número de origen: ")[1].split(" ")[0]
     escrituras = re.findall(rf"= (\S+) ({'|'.join(NOMBRES)})", seccion)
     return origen, escrituras
@@ -216,7 +217,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
                         resultados_de(respuesta),
                         (f"{numero}{subindices[origen]}", [(f"{esperado}{subindices[destino]}", nombres[destino])]),
                     )
-                    self.assertContains(respuesta, "Procedimiento")
+                    self.assertContains(respuesta, "Ver procedimiento")
 
     def test_cada_origen_a_todas_las_demas_bases(self):
         escrituras = {2: "11010", 8: "32", 10: "26", 16: "1A"}
@@ -296,8 +297,8 @@ class PruebasConversionBasesWeb(SimpleTestCase):
                 self.assertNotContains(respuesta, "<script>alert")
                 self.assertNotContains(respuesta, "<b>x</b>")
         # El tope es inclusivo y las casillas repetidas legítimas (una por base) siguen valiendo.
-        self.assertContains(self.convertir("1" * 128, 2, 10), "Procedimiento")
-        self.assertContains(self.convertir("13", 10, (2, 8, 16)), "Procedimiento")
+        self.assertContains(self.convertir("1" * 128, 2, 10), "Ver procedimiento")
+        self.assertContains(self.convertir("13", 10, (2, 8, 16)), "Ver procedimiento")
 
     def test_decimal_a_binario_en_una_etapa(self):
         respuesta = self.convertir("13", 10, 2)
