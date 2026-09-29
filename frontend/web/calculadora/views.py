@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from backend.sistemas_numericos import NOMBRES_BASE
+from backend.presupuesto_sistemas import CELDAS_MAXIMAS, dimensiones_admitidas
 
 from . import catalogo
 from .exploraciones import exploraciones_sistema
@@ -15,6 +16,7 @@ from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_expresiones import ExpresionMatricialForm
 from .forms_matrices import MatricesForm
+from .forms_romanos import ConversionRomanosForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
 from .servicios_ecuaciones import resolver_ecuacion_web
@@ -31,6 +33,7 @@ from .opciones_sistemas import (
 from .opciones_vectores import AYUDAS, texto_boton
 from .servicios import resolver_entrada_web
 from .servicios_bases import convertir_entrada
+from .servicios_romanos import convertir_romanos
 from .servicios_vectores import operar_vectores
 from .teclados import PERFILES_BASE, perfiles_para
 
@@ -87,7 +90,9 @@ def sistemas(request):
                 form.add_error("sistema", str(error))
 
     matrix_values = form.valores_matriz_ingresados()
-    if not matrix_values and "ecuaciones" in inicial and "variables" in inicial:
+    if request.method == "GET" and dimensiones_admitidas(
+        inicial.get("ecuaciones"), inicial.get("variables")
+    ):
         matrix_values = SistemaForm.valores_matriz_desde(
             request.GET, inicial["ecuaciones"], inicial["variables"]
         )
@@ -103,6 +108,7 @@ def sistemas(request):
             "mostrar": mostrar,
             "titulo_resultado": titulo_resultado(form.cleaned_data["metodo"]) if resultados else None,
             "matrix_values": matrix_values,
+            "celdas_maximas": CELDAS_MAXIMAS,
             # Las opciones se despliegan solas cuando difieren de lo predeterminado.
             "opciones_abiertas": set(form.bloques_elegidos()) != set(BLOQUES_PREDETERMINADOS),
             "guias": guias,
@@ -270,3 +276,18 @@ def conversion_bases(request):
             "base_entrada_activa": base_entrada,
         },
     )
+
+
+@require_http_methods(["GET", "POST"])
+def conversion_romanos(request):
+    """Decimal ↔ romano: una dirección, un número, un resultado y su descomposición."""
+    form = ConversionRomanosForm(request.POST or None)
+    resultado = None
+    if request.method == "POST" and form.is_valid():
+        try:
+            resultado = convertir_romanos(
+                direccion=form.cleaned_data["direccion"], numero=form.cleaned_data["numero"],
+            )
+        except ValueError as error:
+            form.add_error("numero", str(error))
+    return render(request, "calculadora/modules/romanos/index.html", {"form": form, "resultado": resultado})

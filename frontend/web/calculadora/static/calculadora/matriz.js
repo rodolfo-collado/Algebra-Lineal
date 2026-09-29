@@ -29,10 +29,30 @@
     }
 
     const initialValues = JSON.parse(initialValuesElement.textContent);
+    const maxCells = Number(matrixFields.dataset.maxCeldas);
+    let renderedRows = 0;
+    let renderedVariables = 0;
 
     function dimensionValue(input) {
         const value = Number(input.value);
-        return Number.isInteger(value) && value > 0 ? value : 0;
+        return /^\d+$/.test(input.value) && Number.isSafeInteger(value) ? value : 0;
+    }
+
+    function dimensionAllowed(input, value) {
+        return Number.isSafeInteger(value) && value >= Number(input.min) &&
+            value <= Number(input.max);
+    }
+
+    function matrixError(rows, variables) {
+        if (!dimensionAllowed(equationsInput, rows) || !dimensionAllowed(variablesInput, variables)) {
+            return `Indica entre ${equationsInput.min} y ${equationsInput.max} ecuaciones ` +
+                `y entre ${variablesInput.min} y ${variablesInput.max} variables enteras.`;
+        }
+        if (!Number.isSafeInteger(maxCells) || maxCells < 1 || rows * (variables + 1) > maxCells) {
+            return `La matriz aumentada admite hasta ${maxCells} celdas ` +
+                "(ecuaciones × (variables + 1)). Reduce las dimensiones.";
+        }
+        return "";
     }
 
     function currentValues() {
@@ -79,16 +99,19 @@
     function renderMatrix() {
         const rows = dimensionValue(equationsInput);
         const variables = dimensionValue(variablesInput);
-        const values = currentValues();
-
-        matrixGrid.replaceChildren();
-        if (!rows || !variables) {
-            matrixWrapper.hidden = true;
-            matrixHelp.textContent =
-                "Indica un número positivo de ecuaciones y variables para generar la cuadrícula.";
+        const error = matrixError(rows, variables);
+        // Validar antes de leer/copiar celdas, borrar la cuadrícula o crear nodos.
+        // Una dimensión transitoria inválida conserva la última entrada válida.
+        if (error) {
+            matrixWrapper.hidden = !matrixGrid.childElementCount;
+            matrixHelp.textContent = error;
             return;
         }
 
+        const values = currentValues();
+        matrixGrid.replaceChildren();
+        renderedRows = rows;
+        renderedVariables = variables;
         matrixWrapper.hidden = false;
         matrixHelp.textContent =
             "Completa todas las celdas con números, enteros o fracciones.";
@@ -181,10 +204,20 @@
         stepper.querySelectorAll("button[data-paso]").forEach((button) => {
             button.hidden = false;
             button.addEventListener("click", () => {
-                const siguiente = Math.max(
-                    1,
+                const siguiente = Math.min(Number(dimensionInput.max), Math.max(
+                    Number(dimensionInput.min),
                     dimensionValue(dimensionInput) + Number(button.dataset.paso)
-                );
+                ));
+                const rows = dimensionInput === equationsInput ? siguiente : dimensionValue(equationsInput);
+                const variables = dimensionInput === variablesInput ? siguiente : dimensionValue(variablesInput);
+                // Se permite completar una dimensión que todavía está vacía.
+                if (rows && variables) {
+                    const error = matrixError(rows, variables);
+                    if (error) {
+                        matrixHelp.textContent = error;
+                        return;
+                    }
+                }
                 dimensionInput.value = String(siguiente);
                 dimensionInput.dispatchEvent(new Event("input", { bubbles: true }));
             });
@@ -207,8 +240,8 @@
             return;
         }
 
-        const rows = dimensionValue(equationsInput);
-        const columns = dimensionValue(variablesInput) + 1;
+        const rows = renderedRows;
+        const columns = renderedVariables + 1;
         const row = Number(match[1]) + delta[0];
         const column = Number(match[2]) + delta[1];
         if (row < 0 || column < 0 || row >= rows || column >= columns) {
@@ -217,6 +250,17 @@
 
         event.preventDefault();
         focusCell(row, column);
+    });
+
+    equationsInput.form.addEventListener("submit", (event) => {
+        if (matrixFields.disabled) {
+            return;
+        }
+        const error = matrixError(dimensionValue(equationsInput), dimensionValue(variablesInput));
+        if (error) {
+            event.preventDefault();
+            matrixHelp.textContent = error;
+        }
     });
 
     setInputMode();

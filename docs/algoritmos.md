@@ -200,3 +200,28 @@ procedimiento; no sustituye la detección de ciclos.
 No se usan `bin`, `oct`, `hex` ni `int(texto, base)` para resolver la conversión.
 Las pruebas AST comprueban esta restricción y los ejemplos se conservan en
 [Sistemas numéricos](funcionalidades.md#sistemas-numéricos).
+
+## Numeración romana
+
+La numeración romana no es posicional, así que `romanos.py` no reutiliza la
+conversión de bases. Ambos sentidos comparten una sola tabla canónica
+descendente: M, CM, D, CD, C, XC, L, XL, X, IX, V, IV e I.
+
+- **Decimal → romano:** `divmod` separa millares, centenas, decenas y unidades;
+  cada parte recorre la tabla de mayor a menor y usa cada entrada mientras
+  quepa. `GrupoRomano` guarda la parte, su escritura y las entradas usadas
+  (60 → L y X), de modo que el procedimiento muestra `1963 = 1000 + 900 + 60 + 3`
+  sin una cadena de `if` por número.
+- **Romano → decimal:** tras recortar, validar caracteres ASCII y pasar a
+  mayúsculas, se lee de izquierda a derecha; un par que resta se reconoce
+  antes que sus dos símbolos por separado y cada lectura es una entrada de la
+  misma tabla (`SimboloRomano`).
+
+Obtener un valor no basta. Se exige que los valores leídos no aumenten, que la
+suma no pase de 3999 y que la escritura canónica de esa suma coincida con la
+entrada normalizada: `IIII` suma 4, pero su forma canónica es `IV`. Solo en
+orden descendente se sugiere la forma correcta; `IC` se rechaza explicando la
+regla, porque sugerir `CI` sería engañoso. La longitud (como máximo 15
+símbolos, los de `MMMDCCCLXXXVIII`) y los caracteres se comprueban antes de leer
+o reconvertir. La entrada decimal se lee cifra a cifra con `digito_a_valor`,
+sin `int(texto)`.

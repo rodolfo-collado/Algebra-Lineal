@@ -13,8 +13,7 @@ from backend.vectores import (
     NOMBRE_COEFICIENTE,
     evaluar_combinacion_lineal,
     multiplicar_escalar,
-    restar_vectores,
-    sumar_vectores,
+    operar_vectores as calcular_vectores,
 )
 
 from .opciones_vectores import NOMBRE_ESCALAR, NOMBRE_OBJETIVO, etiqueta_operacion
@@ -50,14 +49,6 @@ def _con_parentesis(valor, tambien_fracciones=False):
     return texto
 
 
-def desarrollo_suma(u, v):
-    return [f"{numero(a)} + {_con_parentesis(b)}" for a, b in zip(u, v)]
-
-
-def desarrollo_resta(u, v):
-    return [f"{numero(a)} - {_con_parentesis(b)}" for a, b in zip(u, v)]
-
-
 def desarrollo_escalar(escalar, u):
     factor = _con_parentesis(escalar, tambien_fracciones=True)
     return [f"{factor}·{_con_parentesis(a, tambien_fracciones=True)}" for a in u]
@@ -79,16 +70,14 @@ def _operacion_componente_a_componente(entrada):
         expresion = f"{NOMBRE_ESCALAR}·u"
         sustitucion = f"{_con_parentesis(escalar, tambien_fracciones=True)}·{texto_vector(u)}"
     else:
-        u, v = vectores["u"], vectores["v"]
-        if operacion == "suma":
-            resultado = sumar_vectores(u, v)
-            desarrollo = desarrollo_suma(u, v)
-            expresion = "u + v"
-        else:
-            resultado = restar_vectores(u, v)
-            desarrollo = desarrollo_resta(u, v)
-            expresion = "u − v"
-        sustitucion = f"{texto_vector(u)} {expresion[2]} {texto_vector(v)}"
+        coleccion = list(vectores.values())
+        resultado = calcular_vectores(operacion, coleccion)
+        simbolo = "+" if operacion == "suma" else "−"
+        expresion = f" {simbolo} ".join(vectores)
+        sustitucion = f" {simbolo} ".join(texto_vector(v) for v in coleccion)
+        signo = "+" if operacion == "suma" else "-"
+        desarrollo = [f" {signo} ".join(numero(c) if i == 0 else _con_parentesis(c)
+                      for i, c in enumerate(componentes)) for componentes in zip(*coleccion)]
 
     return {
         "operacion": operacion,

@@ -1,19 +1,5 @@
 {% load componentes %}
 {% comment %}AB y Ax: las lecturas del mismo producto, plegadas. Con un método, su desarrollo va directo; al comparar, cada método es un sub-bloque cerrado. El producto se presenta una sola vez, en el panel final.{% endcomment %}
 {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-    {% for metodo in resultado.metodos %}
-        {% if resultado.comparando %}
-            {% disclosure titulo=metodo.titulo nivel=4 clase="disclosure-nested" %}
-                {% if metodo.clave == "fila_columna" %}
-                    {% include "calculadora/modules/matrices/_producto_fila_columna.html" %}
-                {% else %}
-                    {% include "calculadora/modules/matrices/_producto_columnas.html" %}
-                {% endif %}
-            {% enddisclosure %}
-        {% elif metodo.clave == "fila_columna" %}
-            {% include "calculadora/modules/matrices/_producto_fila_columna.html" %}
-        {% else %}
-            {% include "calculadora/modules/matrices/_producto_columnas.html" %}
-        {% endif %}
-    {% endfor %}
+    {% include "calculadora/modules/matrices/_metodos_producto.html" %}
 {% enddisclosure %}

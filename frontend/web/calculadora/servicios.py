@@ -4,6 +4,7 @@ from fractions import Fraction
 
 from .presentacion_numerica import formatear_exacto
 from backend.parser_sistemas import parsear_sistema
+from backend.presupuesto_sistemas import validar_dimensiones
 from backend.sistemas import (
     INCONSISTENTE,
     SOLUCION_UNICA,
@@ -73,15 +74,21 @@ def adaptar_sustitucion(pasos):
 def resolver_entrada_web(
     tipo_entrada, metodo, *, texto=None, matriz_aumentada=None
 ):
-    """Converge cualquier entrada web en una matriz y delega al backend."""
+    """Converge cualquier entrada web en una matriz y delega al backend.
+
+    El texto pasa por el parser con presupuesto numérico. La matriz llega ya
+    validada: SistemaForm revisa cada celda antes de convertirla.
+    """
     if tipo_entrada == "sistema":
-        matriz_inicial = parsear_sistema(texto or "")
+        matriz_inicial = parsear_sistema(texto or "", limitar_entrada=True)
     elif tipo_entrada == "matriz":
         if matriz_aumentada is None:
             raise ValueError("La matriz aumentada no está completa.")
         matriz_inicial = matriz_aumentada
     else:
         raise ValueError("Selecciona un tipo de entrada válido.")
+
+    validar_dimensiones(len(matriz_inicial), len(matriz_inicial[0]) - 1 if matriz_inicial else 0)
 
     try:
         _, resolver, _, _ = _RESOLVERS[metodo]

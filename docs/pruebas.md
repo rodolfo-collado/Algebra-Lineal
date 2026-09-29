@@ -11,6 +11,25 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`
+cubre aridad, colecciones exactas, dimensiones consecutivas, cadenas de tres y
+cuatro matrices, ambos procedimientos, validación estricta del POST y el
+presupuesto de entrada: hasta 50 operandos y 900 celdas en total, comprobados
+antes de construir el formulario y dentro del límite de campos por envío de
+Django. Las pruebas anteriores de dos operandos y operaciones unarias siguen en
+la suite.
+
+Para comprobar los controles en un DOM real, ejecuta
+`uv run python -m tests.operandos_browser` y abre
+`http://127.0.0.1:8877/__pruebas/`. Los diecisiete casos usan la aplicación
+Django y los scripts de producción: añadir/quitar operandos, eliminar uno
+intermedio (también en un producto, donde las columnas se desplazan, y rechazar
+sin cambios la eliminación que excedería el presupuesto), preservar valores y
+orden, mínimos por operación, cambios a unarias y Ax, cantidades mayores de diez,
+los topes del presupuesto (50 operandos, 900 celdas y una cantidad manipulada) y
+los tres modos de presentación del producto.
+Este ejecutor local no añade dependencias ni se lanza en `unittest discover`.
+
 Las de `tests/` cubren las reglas matemáticas del backend (validaciones, matrices
 rectangulares, pivotes, escalonamiento, sustitución regresiva y clasificación de
 sistemas), las expresiones lineales y su formato, la traducción de una matriz a
@@ -21,7 +40,8 @@ desktop, el registro de herramientas, la navegación, el buscador, los
 breadcrumbs, el teclado matemático, las opciones de Resolver un sistema
 —método, comparación, bloques del resultado y rutas antiguas—, la conversión de
 bases —resultados, pasos del procedimiento, mensajes de error, conversiones a
-varias bases con el decimal calculado una sola vez y su integración web—, las
+varias bases con el decimal calculado una sola vez y su integración web—, la
+numeración romana —ambos sentidos, canonicidad e integración web—, las
 operaciones con vectores —suma, resta, escalar, combinación lineal
 con solución única, infinitas o inconsistente, dimensión arbitraria, fracciones
 exactas, la reutilización del motor de sistemas, la estructura dinámica del
@@ -166,3 +186,34 @@ La revisión de navegador debe incluir cambio de formato después del cálculo,
 precisiones, volver al exacto, navegación entre módulos, ambos temas, drawer,
 Escape/foco, búsqueda y scroll local de matrices en 375 px, tablet, 1100×760
 y escritorio amplio. Los controles numéricos no realizan peticiones de cálculo.
+
+## Presupuesto de entrada de Sistemas
+
+`uv run python -m unittest tests.test_presupuesto_sistemas -v` comprueba el
+rechazo antes de reservar estructuras por GET/POST, el máximo real de campos
+con CSRF, ambos motores y la protección mínima del texto. Consulta
+[presupuesto, auditoría y mediciones](presupuesto-sistemas.md).
+
+En `/sistemas/`, verifica manualmente: una matriz 2×2; escribir dimensiones
+100000×100000 conservando las seis celdas; rechazar 11 ecuaciones y 10 variables
+(121 celdas); aceptar 12 y 9 (120); botones +/− en los límites; recuperación
+tras corregir dimensiones; GET manipulado sin cuadrícula; resolver y comparar,
+plegar procedimiento y alternar Exacto/Decimal.
+
+## Numeración romana
+
+`uv run python -m unittest tests.test_numeros_romanos tests.test_numeros_romanos_web -v`
+cubre ambos sentidos con los casos de referencia (1, 3, 4, 9, 14, 40, 44, 58,
+90, 400, 944, 1963, 2026 y 3999), la ida y vuelta exhaustiva de 1 a 3999 y que,
+de todas las cadenas de hasta cuatro símbolos, solo se acepten las canónicas.
+También comprueba las minúsculas, los rechazos (0, negativos, 4000, fracciones,
+IIII, VV, IC, IL, VX, IIV, XM, MMMM, IVIV, símbolos ajenos, espacios internos y
+longitud) antes de volver a convertir y el procedimiento de 1963 ↔ MCMLXIII.
+En la web: ruta, catálogo, Inicio, búsqueda, breadcrumbs, cajón, un único
+resultado con «Ver procedimiento» plegado, límites, contrato HTTP estricto
+(campos ajenos o repetidos y dirección manipulada) y contenido escapado, sin
+traceback ni HTTP 500.
+
+En `/romanos/conversion/`, verifica manualmente 1963 ↔ MCMLXIII en ambas
+direcciones, una entrada en minúsculas, un error de canonicidad (`IIII`), el
+procedimiento plegado y abierto, 390 px y escritorio, y ambos temas.

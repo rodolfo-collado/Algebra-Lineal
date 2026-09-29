@@ -1,0 +1,16 @@
+{% load componentes %}
+    {% for metodo in resultado.metodos %}
+        {% if resultado.comparando %}
+            {% disclosure titulo=metodo.titulo nivel=4 clase="disclosure-nested" %}
+                {% if metodo.clave == "fila_columna" %}
+                    {% include "calculadora/modules/matrices/_producto_fila_columna.html" %}
+                {% else %}
+                    {% include "calculadora/modules/matrices/_producto_columnas.html" %}
+                {% endif %}
+            {% enddisclosure %}
+        {% elif metodo.clave == "fila_columna" %}
+            {% include "calculadora/modules/matrices/_producto_fila_columna.html" %}
+        {% else %}
+            {% include "calculadora/modules/matrices/_producto_columnas.html" %}
+        {% endif %}
+    {% endfor %}

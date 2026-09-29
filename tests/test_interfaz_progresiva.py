@@ -367,7 +367,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
     def test_cambiar_el_modo_de_entrada_no_pierde_su_comportamiento(self):
         pagina = self.client.get("/sistemas/").content.decode("utf-8")
         self.assertRegex(pagina, r'<fieldset id="system-fields" data-perfil="sistema" class="input-mode">')
-        self.assertRegex(pagina, r'<fieldset id="matrix-fields" data-perfil="numerico" class="input-mode" hidden disabled>')
+        self.assertRegex(pagina, r'<fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="\d+" class="input-mode" hidden disabled>')
         # El modo matricial sigue enviando sus celdas y resolviendo igual que el texto.
         matriz = self.client.post("/sistemas/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss_jordan"))
         texto = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss_jordan"})

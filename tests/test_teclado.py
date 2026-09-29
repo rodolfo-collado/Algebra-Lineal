@@ -57,7 +57,7 @@ CONTROLES = {
     },
     "/matrices/operaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_B_0_0",
-        "celda_B_0_1", "celda_B_1_0", "celda_B_1_1", "columnas", "columnas_b", "csrfmiddlewaretoken",
+        "celda_B_0_1", "celda_B_1_0", "celda_B_1_1", "columnas", "columnas_b", "csrfmiddlewaretoken", "cantidad",
         "filas", "metodo", "operacion",
     },
     "/matrices/ecuaciones/": {
