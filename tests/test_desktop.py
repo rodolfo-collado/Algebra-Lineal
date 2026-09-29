@@ -387,7 +387,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertEqual(respuesta.status, 200)
                 combinacion = respuesta.read().decode("utf-8")
             self.assertIn("b es combinación lineal de v1 y v2", combinacion)
-            self.assertIn("c1 = 3", combinacion)
+            self.assertIn("x1 = 3", combinacion)
             self.assertIn("(3, 4) = 3(1, 0) + 4(0, 1)", combinacion)
 
             # P13A viaja por la pila desktop real, con CSRF y recursos locales.

@@ -137,7 +137,7 @@ class PruebasRepresentarYNormalizar(unittest.TestCase):
         self.assertEqual(normalizar_igualdad(crear_expresion(0, {1: 1}), crear_expresion(1, {1: 1})), (crear_expresion(), 1))
 
     def test_no_depende_de_la_sintaxis_ni_de_la_letra(self):
-        # Otra herramienta (p. ej. coeficientes c1, c2 de una combinación lineal) reutiliza lo mismo.
+        # La letra solo interviene al formatear: otro parser con otra notación reutiliza lo mismo.
         expresion, termino = normalizar_igualdad(
             expresion_desde_terminos([(1, Fraction(3)), (None, Fraction(1))]),
             expresion_desde_terminos([(2, Fraction(1, 2)), (None, Fraction(4))]),

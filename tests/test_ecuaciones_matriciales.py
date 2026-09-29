@@ -115,7 +115,7 @@ class PruebasMatrizAumentada(unittest.TestCase):
         self.assertEqual(matriz_aumentada_de_ax_b([[1], [2], [3]], [4, 5, 6]), [[1, 4], [2, 5], [3, 6]])
 
     def test_coincide_con_la_matriz_de_la_combinacion_lineal_de_vectores(self):
-        # Ax = b y c1·a1 + … + cn·an = b son la misma ecuación: misma matriz aumentada.
+        # Ax = b y x1·a1 + … + xn·an = b son la misma ecuación: misma matriz aumentada.
         from backend.vectores import matriz_de_combinacion
         a, b = [[1, 0, 1], [0, 1, 1]], [2, 3]
         self.assertEqual(matriz_aumentada_de_ax_b(a, b), matriz_de_combinacion([list(c) for c in columnas_de(a)], b))

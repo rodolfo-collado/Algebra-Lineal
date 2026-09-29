@@ -215,7 +215,7 @@ class PruebasEquivalenciaMetodos(unittest.TestCase):
                 self.assertEqual([list(col["resultado"]) for col in calculo["columnas"]], trasponer_matriz(resultado))
 
     def test_cada_columna_es_la_combinacion_lineal_de_las_columnas_de_a(self):
-        # El módulo de vectores calcula c1·v1 + … + cn·vn por su cuenta; debe coincidir.
+        # El módulo de vectores calcula x1·v1 + … + xn·vn por su cuenta; debe coincidir.
         for m, n, p, a, b in self.casos():
             calculo = resolver_operacion_matrices("producto", a, b)
             for col in calculo["columnas"]:

@@ -1,8 +1,8 @@
 """Expresiones lineales exactas: una constante mas coeficientes por variable.
 
-Las variables se numeran como x1, x2, ... igual que en el resto del proyecto.
-Al formatear se puede elegir otra letra (c1, c2, ... para los coeficientes de
-una combinacion lineal); la aritmetica no cambia. Esta se hace siempre sobre
+Las variables se numeran como x1, x2, ... igual que en el resto del proyecto,
+incluidos los coeficientes buscados en una combinacion lineal. Al formatear se
+puede elegir otra letra; la aritmetica no cambia. Esta se hace siempre sobre
 `Fraction`; el texto se genera solo al final, nunca durante el calculo.
 
 Tambien es la representacion comun de los parsers de ecuaciones lineales:

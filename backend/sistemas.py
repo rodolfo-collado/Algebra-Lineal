@@ -103,7 +103,7 @@ def ecuaciones_de_matriz(matriz_aumentada, nombre_variable=NOMBRE_VARIABLE):
 
     Las filas nulas y las contradictorias tambien se traducen, porque son
     parte del sistema resultante: 0 = 0 y 0 = 3 se leen igual que el resto.
-    `nombre_variable` es la letra de las incognitas (x1, x2, ... o c1, c2, ...).
+    `nombre_variable` es la letra de las incognitas (x1, x2, ... por defecto).
     """
     es_valida, mensaje = validar_matriz_aumentada(matriz_aumentada)
     if not es_valida:

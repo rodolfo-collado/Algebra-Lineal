@@ -217,18 +217,18 @@ componentes (de 1 a 10). No hay campos `x`, `y`, `z` ni sintaxis de listas.
   `3(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)`.
 - **Combinación lineal** pregunta si `b` es combinación lineal de `v1 … vk`
   (de 1 a 6 vectores, con **+/− vector**). No hay un segundo algoritmo de
-  eliminación: `c1·v1 + … + ck·vk = b` se escribe como la matriz aumentada
+  eliminación: `x1·v1 + … + xk·vk = b` se escribe como la matriz aumentada
   `[v1 v2 … vk | b]` —cada generador es una columna y `b` la columna
   aumentada— y se resuelve con el Gauss-Jordan de `backend/sistemas.py`. La
   clasificación del sistema decide la respuesta:
-  - solución única: **sí**, y se muestran `c1, c2, …` y la igualdad
+  - solución única: **sí**, y se muestran `x1, x2, …` y la igualdad
     `(3, 4) = 3(1, 0) + 4(0, 1)`;
   - soluciones infinitas: **sí**, con la solución general en función de los
     coeficientes libres y una combinación concreta (libres en cero);
   - inconsistente: **no**, porque el sistema asociado no tiene solución.
 
 El procedimiento, plegado bajo «Ver procedimiento», habla el lenguaje del
-ejercicio —coeficientes `c1, c2, …`, no variables `x1, x2, …`—: planteamiento,
+ejercicio —los coeficientes son las incógnitas `x1, x2, …`—: planteamiento,
 sistema equivalente, matriz aumentada, operaciones por filas, matriz reducida
 y lectura de la matriz; la conclusión y los coeficientes solo aparecen en el
 resultado. En suma, resta y escalar el desarrollo es una sola cadena,

@@ -18,13 +18,15 @@ from backend.operandos import ARIDAD_VECTORES, exigir_aridad
 from backend.matrices import validar_vector
 from backend.sistemas import (
     INCONSISTENTE,
+    NOMBRE_VARIABLE,
     SOLUCION_UNICA,
     ecuaciones_de_matriz,
     resolver_sistema_gauss_jordan,
 )
 
-# Los escalares buscados en una combinacion lineal se llaman c1, c2, ..., ck.
-NOMBRE_COEFICIENTE = "c"
+# Los escalares buscados en una combinacion lineal son las incognitas del
+# sistema asociado y se llaman igual que en cualquier sistema: x1, x2, ..., xk.
+NOMBRE_COEFICIENTE = NOMBRE_VARIABLE
 
 
 def dimension(vector):
@@ -105,7 +107,7 @@ def multiplicar_escalar(escalar, v):
 
 
 def combinar(coeficientes, generadores):
-    """Evalua c1·v1 + c2·v2 + ... + ck·vk con las operaciones de este modulo.
+    """Evalua x1·v1 + x2·v2 + ... + xk·vk con las operaciones de este modulo.
 
     Sirve para comprobar una combinacion ya calculada: el resultado debe
     coincidir con el vector objetivo.
@@ -127,7 +129,7 @@ def nombres_generadores(cantidad):
 
 
 def validar_combinacion(generadores, objetivo):
-    """Devuelve (es_valida, mensaje) para plantear c1·v1 + ... + ck·vk = b."""
+    """Devuelve (es_valida, mensaje) para plantear x1·v1 + ... + xk·vk = b."""
     if not generadores:
         return False, "Hace falta al menos un vector generador para plantear la combinación."
 
@@ -138,10 +140,10 @@ def validar_combinacion(generadores, objetivo):
 
 
 def matriz_de_combinacion(generadores, objetivo):
-    """Escribe c1·v1 + ... + ck·vk = b como la matriz aumentada [v1 v2 ... vk | b].
+    """Escribe x1·v1 + ... + xk·vk = b como la matriz aumentada [v1 v2 ... vk | b].
 
     La igualdad vectorial es un sistema con una ecuacion por componente: la
-    fila i es v1[i]·c1 + v2[i]·c2 + ... + vk[i]·ck = b[i]. Por eso cada vector
+    fila i es v1[i]·x1 + v2[i]·x2 + ... + vk[i]·xk = b[i]. Por eso cada vector
     generador ocupa una columna y el objetivo, la columna aumentada.
     """
     _exigir(*validar_combinacion(generadores, objetivo))
