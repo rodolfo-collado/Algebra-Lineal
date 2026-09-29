@@ -127,8 +127,8 @@ class PruebasCombinacionLineal(unittest.TestCase):
         self.assertTrue(resultado["es_combinacion"])
         self.assertEqual(resultado["coeficientes"], [3, 4])
         self.assertIsNone(resultado["coeficientes_particulares"])
-        self.assertEqual(resultado["solucion_general"], ["c1 = 3", "c2 = 4"])
-        self.assertEqual(resultado["ecuaciones"], ["c1 = 3", "c2 = 4"])
+        self.assertEqual(resultado["solucion_general"], ["x1 = 3", "x2 = 4"])
+        self.assertEqual(resultado["ecuaciones"], ["x1 = 3", "x2 = 4"])
         self.assertEqual(resultado["verificacion"], [3, 4])
         self.assertEqual(resultado["nombres"], ["v1", "v2"])
         self.assertEqual(resultado["pasos"], [])
@@ -161,17 +161,17 @@ class PruebasCombinacionLineal(unittest.TestCase):
         self.assertEqual(resultado["clasificacion"], SOLUCIONES_INFINITAS)
         self.assertTrue(resultado["es_combinacion"])
         self.assertIsNone(resultado["coeficientes"])
-        self.assertEqual(resultado["solucion_general"], ["c1 = 3 - 2c2", "c2 es libre"])
+        self.assertEqual(resultado["solucion_general"], ["x1 = 3 - 2x2", "x2 es libre"])
         self.assertEqual(resultado["variables_libres"], [2])
         self.assertEqual(resultado["coeficientes_particulares"], [3, 0])
         self.assertEqual(resultado["verificacion"], [3, 6])
-        self.assertIn("c2 no tiene pivote", " ".join(resultado["justificacion"]))
+        self.assertIn("x2 no tiene pivote", " ".join(resultado["justificacion"]))
 
     def test_infinitas_con_tres_generadores_dependientes(self):
         generadores = [[1, 0, 1], [0, 1, 1], [1, 1, 2]]
         resultado = evaluar_combinacion_lineal(generadores, [2, 3, 5])
         self.assertEqual(resultado["clasificacion"], SOLUCIONES_INFINITAS)
-        self.assertEqual(resultado["solucion_general"], ["c1 = 2 - c3", "c2 = 3 - c3", "c3 es libre"])
+        self.assertEqual(resultado["solucion_general"], ["x1 = 2 - x3", "x2 = 3 - x3", "x3 es libre"])
         self.assertEqual(resultado["coeficientes_particulares"], [2, 3, 0])
         self.assertEqual(combinar([1, 2, 1], generadores), [2, 3, 5])
         self.assertEqual(combinar(resultado["coeficientes_particulares"], generadores), [2, 3, 5])
@@ -197,14 +197,14 @@ class PruebasCombinacionLineal(unittest.TestCase):
         resultado = evaluar_combinacion_lineal(generadores, [4, 5, 6])
         self.assertEqual(resultado["clasificacion"], SOLUCION_UNICA)
         self.assertEqual(combinar(resultado["coeficientes"], generadores), [4, 5, 6])
-        self.assertEqual(resultado["ecuaciones"], ["c1 + c3 = 4", "c2 + c3 = 5", "2c1 + 3c2 = 6"])
+        self.assertEqual(resultado["ecuaciones"], ["x1 + x3 = 4", "x2 + x3 = 5", "2x1 + 3x2 = 6"])
 
     def test_fracciones_exactas_en_componentes_y_coeficientes(self):
         resultado = evaluar_combinacion_lineal([[F(1, 2), 0], [0, F(1, 3)]], [1, 1])
         self.assertEqual(resultado["coeficientes"], [2, 3])
         resultado = evaluar_combinacion_lineal([[2, 0], [0, 3]], [1, 1])
         self.assertEqual(resultado["coeficientes"], [F(1, 2), F(1, 3)])
-        self.assertEqual(resultado["solucion_general"], ["c1 = 1/2", "c2 = 1/3"])
+        self.assertEqual(resultado["solucion_general"], ["x1 = 1/2", "x2 = 1/3"])
         self.assertEqual(resultado["verificacion"], [1, 1])
 
     def test_un_solo_generador(self):
@@ -228,7 +228,7 @@ class PruebasReutilizacionDelMotorDeSistemas(unittest.TestCase):
         motor.assert_called_once()
         matriz, nombre = motor.call_args.args
         self.assertEqual(matriz, [[1, 3, 5], [2, 4, 6]])
-        self.assertEqual(nombre, "c")
+        self.assertEqual(nombre, "x")
         self.assertEqual(resultado["coeficientes"], [-1, 2])
         self.assertEqual(combinar([-1, 2], [[1, 2], [3, 4]]), [5, 6])
 
@@ -248,11 +248,8 @@ class PruebasReutilizacionDelMotorDeSistemas(unittest.TestCase):
                 self.assertEqual(combinacion["columnas_pivote"], sistema["columnas_pivote"])
                 self.assertEqual(combinacion["matriz_reducida"], sistema["matriz_reducida"])
                 self.assertEqual(combinacion["pasos"], sistema["pasos"])
-                # Misma solución, solo cambia la letra de las incógnitas.
-                self.assertEqual(
-                    combinacion["solucion_general"],
-                    [linea.replace("x", "c") for linea in sistema["solucion_general"]],
-                )
+                # Misma solución escrita con las mismas incógnitas x1, x2, …
+                self.assertEqual(combinacion["solucion_general"], sistema["solucion_general"])
                 self.assertEqual(combinacion["es_combinacion"], sistema["clasificacion"] != INCONSISTENTE)
                 if sistema["clasificacion"] == SOLUCION_UNICA:
                     self.assertEqual(combinacion["coeficientes"], sistema["soluciones"])

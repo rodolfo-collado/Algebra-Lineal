@@ -63,7 +63,7 @@ flowchart LR
 
 `ecuaciones_matriciales.py` construye `[A | b]` y llama al motor de sistemas.
 `vectores.py` hace lo mismo para preguntar si b es combinación de sus generadores,
-nombrando las incógnitas `c1`, `c2`, etc. Solución única o infinitas significa que
+nombrando las incógnitas `x1`, `x2`, etc. Solución única o infinitas significa que
 sí existe esa combinación; una contradicción significa que no. En combinación
 lineal con infinitas soluciones se puede mostrar una combinación concreta fijando
 los coeficientes libres en cero. No se añade otro algoritmo de eliminación.
@@ -82,9 +82,9 @@ sistemas  →  expresiones   →  matrices
 ```
 
 `vectores.py` no escalona nada por su cuenta: escribe la combinación lineal
-como matriz aumentada y llama a `resolver_sistema_gauss_jordan`, pidiéndole
-que nombre las incógnitas `c1, c2, …`. Gauss y Gauss-Jordan siguen escribiendo
-`x1, x2, …` por defecto. La validación de un vector vive en `matrices.py`,
+como matriz aumentada y llama a `resolver_sistema_gauss_jordan`, que escribe
+las incógnitas `x1, x2, …` como en cualquier sistema. La validación de un
+vector vive en `matrices.py`,
 junto al producto punto, porque las filas y columnas de una matriz también son
 vectores; `vectores.py` la importa de ahí. Los productos `AB` y `Ax` no
 dependen de `vectores.py`: la explicación por columnas es la misma combinación
@@ -162,7 +162,7 @@ no cambia nada. No se simulan despejes: la forma estándar sale de los
 coeficientes, y el procedimiento muestra solo el antes y el después.
 
 Las etapas 2 y 3 no conocen la sintaxis ni la letra de las variables. Otro
-parser de ecuaciones lineales, por ejemplo uno con coeficientes `c1, c2`, solo
+parser de ecuaciones lineales, aunque lea otra sintaxis de entrada, solo
 tiene que escribir su etapa 1 y entregar términos. `FormaLineal`, de
 `expresiones_matriciales`, es la misma idea con variables por nombre: allí la
 igualdad se analiza lado a lado y el mismo paso de restar formas serviría si

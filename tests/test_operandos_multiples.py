@@ -151,7 +151,7 @@ class PruebasWebColecciones(SimpleTestCase):
     def test_combinacion_reutiliza_coleccion_sin_maximo(self):
         respuesta = self.client.post(VECTORES, combinacion([[1, 0]] * 12, [3, 0]))
         self.assertContains(respuesta, 'id="resultado"')
-        self.assertContains(respuesta, "c12")
+        self.assertContains(respuesta, "x12")
 
     def test_matrices_suma_resta_elemento_a_elemento(self):
         for op, esperado in (("suma", [["12", "15"]]), ("resta", [["-10", "-11"]])):
@@ -350,7 +350,7 @@ class PruebasPresupuesto(SimpleTestCase):
             with self.subTest(generadores=cantidad):
                 html = self.post(VECTORES, combinacion([[1, 0]] * cantidad, [3, 0]))
                 self.assertIn('id="resultado"', html)
-                self.assertIn(f"c{cantidad}", strip_tags(html))
+                self.assertIn(f"x{cantidad}", strip_tags(html))
         form = VectoresForm(combinacion([[1, 0]] * (OPERANDOS_MAXIMOS + 1), [3, 0]))
         self.assertFalse(form.is_valid())
         self.assertEqual(form.errors["vectores"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} vectores por operación."])

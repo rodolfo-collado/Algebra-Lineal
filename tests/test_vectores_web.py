@@ -31,6 +31,8 @@ from tests.test_teclado import Pagina
 RAIZ = Path(__file__).resolve().parents[1]
 STATIC = RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 RUTA = "/vectores/operaciones/"
+# c1, C2, c₃ o el 3c2 de «x1 + 3c2»: la notación que las incógnitas de la combinación ya no usan.
+INCOGNITA_C = r"(?<![A-Za-z_])[cC][0-9₀-₉]"
 
 
 def datos_vectores(operacion, dimension=None, escalar=None, vectores=None, **componentes):
@@ -339,27 +341,27 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         respuesta = self.client.post(RUTA, combinacion([[1, 0], [0, 1]], [3, 4]))
         texto = seccion_resultado(respuesta)
         self.assertIn("Resultado Sí: b es combinación lineal de v1 y v2. Existe una única combinación.", texto)
-        self.assertIn("Coeficientes c1 = 3 c2 = 4", texto)
+        self.assertIn("Coeficientes x1 = 3 x2 = 4", texto)
         self.assertIn("b como combinación lineal (3, 4) = 3(1, 0) + 4(0, 1)", texto)
-        self.assertIn("1 · Planteamiento Buscamos c1 y c2 tales que: c1(1, 0) + c2(0, 1) = (3, 4)", texto)
+        self.assertIn("1 · Planteamiento Buscamos x1 y x2 tales que: x1(1, 0) + x2(0, 1) = (3, 4)", texto)
         self.assertIn("2 · Sistema equivalente", texto)
-        self.assertIn("c1 = 3 c2 = 4 Cada vector generador es una columna y b es la columna aumentada", texto)
+        self.assertIn("x1 = 3 x2 = 4 Cada vector generador es una columna y b es la columna aumentada", texto)
         self.assertIn("3 · Gauss-Jordan No fue necesario realizar operaciones por filas.", texto)
         self.assertIn("4 · Lectura de la matriz El sistema es consistente de solución única.", texto)
         # Procedimiento plegado antes; la conclusión y los coeficientes solo en el resultado.
         self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado Sí:"))
-        self.assertEqual(texto.count("c1 = 3 c2 = 4"), 2)  # sistema equivalente y coeficientes
+        self.assertEqual(texto.count("x1 = 3 x2 = 4"), 2)  # sistema equivalente y coeficientes
         self.assertContains(respuesta, 'data-kind="unica"')
-        # Habla de coeficientes c, no de variables x.
-        self.assertNotRegex(texto, r"\bx[1-9]")
+        # Las incógnitas son x1, x2, … como en Resolver un sistema, no c1, c2, …
+        self.assertNotRegex(texto, INCOGNITA_C)
         self.assertNotIn("Entender este resultado", texto)
 
     def test_solucion_unica_con_eliminacion_y_coeficiente_negativo(self):
         texto = seccion_resultado(self.client.post(RUTA, combinacion([[1, 2], [3, 4]], [-1, 0])))
-        self.assertIn("Coeficientes c1 = 2 c2 = -1", texto)
+        self.assertIn("Coeficientes x1 = 2 x2 = -1", texto)
         self.assertIn("(-1, 0) = 2(1, 2) - (3, 4)", texto)
         self.assertIn("Paso 1", texto)
-        self.assertIn("c1 + 3c2 = -1 2c1 + 4c2 = 0", texto)
+        self.assertIn("x1 + 3x2 = -1 2x1 + 4x2 = 0", texto)
         self.assertIn("Matriz reducida", texto)
 
     def test_no_es_combinacion_lineal(self):
@@ -376,30 +378,30 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         respuesta = self.client.post(RUTA, combinacion([[1, 2], [2, 4]], [3, 6]))
         texto = seccion_resultado(respuesta)
         self.assertIn("Sí: b es combinación lineal de v1 y v2. Existen infinitas combinaciones posibles.", texto)
-        self.assertIn("Solución general c1 = 3 - 2c2 c2 es libre", texto)
-        self.assertIn("Por ejemplo, con c2 = 0: (3, 6) = 3(1, 2) + 0(2, 4)", texto)
-        self.assertIn("La variable c2 no tiene pivote, por lo que es libre.", texto)
+        self.assertIn("Solución general x1 = 3 - 2x2 x2 es libre", texto)
+        self.assertIn("Por ejemplo, con x2 = 0: (3, 6) = 3(1, 2) + 0(2, 4)", texto)
+        self.assertIn("La variable x2 no tiene pivote, por lo que es libre.", texto)
         self.assertContains(respuesta, 'data-kind="infinitas"')
         self.assertNotIn("No:", texto)
 
     def test_mas_de_dos_generadores_y_dimension_mayor(self):
         texto = seccion_resultado(self.client.post(RUTA, combinacion([[1, 0, 2], [0, 1, 3], [1, 1, 0]], [4, 5, 6])))
-        self.assertIn("Buscamos c1, c2 y c3 tales que: c1(1, 0, 2) + c2(0, 1, 3) + c3(1, 1, 0) = (4, 5, 6)", texto)
-        self.assertIn("c1 + c3 = 4 c2 + c3 = 5 2c1 + 3c2 = 6", texto)
+        self.assertIn("Buscamos x1, x2 y x3 tales que: x1(1, 0, 2) + x2(0, 1, 3) + x3(1, 1, 0) = (4, 5, 6)", texto)
+        self.assertIn("x1 + x3 = 4 x2 + x3 = 5 2x1 + 3x2 = 6", texto)
         self.assertIn("Sí: b es combinación lineal de v1, v2 y v3.", texto)
 
         generadores = [[1, 0, 0, 0, 1], [0, 1, 0, 0, 1], [0, 0, 1, 0, 1], [0, 0, 0, 1, 1]]
         texto = seccion_resultado(self.client.post(RUTA, combinacion(generadores, [1, 2, 3, 4, 10])))
-        self.assertIn("Coeficientes c1 = 1 c2 = 2 c3 = 3 c4 = 4", texto)
+        self.assertIn("Coeficientes x1 = 1 x2 = 2 x3 = 3 x4 = 4", texto)
         self.assertIn("(1, 2, 3, 4, 10) = (1, 0, 0, 0, 1) + 2(0, 1, 0, 0, 1) + 3(0, 0, 1, 0, 1) + 4(0, 0, 0, 1, 1)", texto)
         self.assertIn("cada una de las 5 componentes", texto)
 
     def test_fracciones_en_componentes_y_coeficientes(self):
         texto = seccion_resultado(self.client.post(RUTA, combinacion([[2, 0], [0, 3]], [1, 1])))
-        self.assertIn("Coeficientes c1 = 1/2 c2 = 1/3", texto)
+        self.assertIn("Coeficientes x1 = 1/2 x2 = 1/3", texto)
         self.assertIn("(1, 1) = 1/2(2, 0) + 1/3(0, 3)", texto)
         texto = seccion_resultado(self.client.post(RUTA, combinacion([["1/2", 0], [0, "1/3"]], [1, 1])))
-        self.assertIn("Coeficientes c1 = 2 c2 = 3", texto)
+        self.assertIn("Coeficientes x1 = 2 x2 = 3", texto)
         self.assertNotIn("0.5", texto)
 
     def test_reutiliza_el_motor_de_sistemas_sin_pasar_por_su_interfaz(self):
@@ -410,7 +412,7 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         self.assertEqual(motor.call_args.args[0], [[1, 3, 5], [2, 4, 6]])
         sistemas_web.assert_not_called()
         texto = seccion_resultado(respuesta)
-        self.assertIn("Coeficientes c1 = -1 c2 = 2", texto)
+        self.assertIn("Coeficientes x1 = -1 x2 = 2", texto)
         self.assertIn("(5, 6) = -(1, 2) + 2(3, 4)", texto)
         # La matriz reducida resalta las columnas pivote igual que en Resolver un sistema.
         self.assertContains(respuesta, ' pivot"')
@@ -418,8 +420,8 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
     def test_un_solo_generador(self):
         texto = seccion_resultado(self.client.post(RUTA, combinacion([[2, 4]], [1, 2])))
         self.assertIn("Sí: b es combinación lineal de v1.", texto)
-        self.assertIn("Coeficientes c1 = 1/2", texto)
-        self.assertIn("Buscamos c1 tales que", texto)
+        self.assertIn("Coeficientes x1 = 1/2", texto)
+        self.assertIn("Buscamos x1 tales que", texto)
 
     def test_dimensiones_incompatibles_se_rechazan_antes_de_resolver(self):
         datos = combinacion([[1, 2], [1, 2]], [4, 5])
@@ -434,13 +436,21 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         entrada = {"operacion": "combinacion", "dimension": 2, "nombres": ("v1", "v2", "b"),
                    "vectores": {"v1": [1, 0], "v2": [0, 1], "b": [3, 4]}, "escalar": None}
         resultado = operar_vectores(entrada)
-        self.assertEqual(resultado["coeficientes"], [("c1", "3"), ("c2", "4")])
-        self.assertEqual(resultado["planteamiento"], "c1(1, 0) + c2(0, 1) = (3, 4)")
+        self.assertEqual(resultado["coeficientes"], [("x1", "3"), ("x2", "4")])
+        self.assertEqual(resultado["planteamiento"], "x1(1, 0) + x2(0, 1) = (3, 4)")
         self.assertEqual(resultado["igualdad"], "(3, 4) = 3(1, 0) + 4(0, 1)")
         self.assertEqual(resultado["matriz_aumentada"], [["1", "0", "3"], ["0", "1", "4"]])
         self.assertEqual(resultado["clasificacion_clave"], "unica")
         for valor in (resultado["conclusion"], resultado["igualdad"], *resultado["ecuaciones"]):
             self.assertNotIn("<", valor)
+
+    def test_ayuda_procedimiento_y_resultado_nombran_x1_x2_y_nunca_c1_c2(self):
+        for generadores, objetivo in (([[1, 0], [0, 1]], [3, 4]), ([[1, 2], [2, 4]], [3, 6]), ([[1, 2], [2, 4]], [3, 7])):
+            with self.subTest(objetivo=objetivo):
+                texto = strip_tags(self.client.post(RUTA, combinacion(generadores, objetivo)).content.decode("utf-8"))
+                self.assertIn("¿Existen x1, …, xk tales que x1·v1 + … + xk·vk = b?", texto)
+                self.assertIn("Buscamos x1 y x2 tales que", texto)
+                self.assertNotRegex(texto, INCOGNITA_C)
 
 
 class PruebasValidacionWeb(SimpleTestCase):
