@@ -12,9 +12,9 @@ from backend.presupuesto_sistemas import (
     LONGITUD_SISTEMA_MAXIMA,
     dimensiones_admitidas,
     validar_dimensiones,
-    validar_literal_numerico,
     validar_longitud_sistema,
 )
+from backend.seguridad_numerica import validar_literal_numerico
 
 from .opciones_sistemas import BLOQUES, BLOQUES_PREDETERMINADOS, METODO_PREDETERMINADO, METODOS
 from .opciones_vectores import (
@@ -605,7 +605,7 @@ class VectoresForm(forms.Form):
                     errores.append(f"Falta {self._etiqueta(nombre, indice)}.")
                     continue
                 try:
-                    componentes.append(convertir_a_numero(texto))
+                    componentes.append(convertir_a_numero(texto, limitar_entrada=True))
                 except ValueError as error:
                     errores.append(f"En {self._etiqueta(nombre, indice)}: {error}")
             vectores[nombre] = componentes
@@ -617,7 +617,7 @@ class VectoresForm(forms.Form):
                 self.add_error("escalar", "Ingresa el escalar k.")
             else:
                 try:
-                    escalar = convertir_a_numero(texto)
+                    escalar = convertir_a_numero(texto, limitar_entrada=True)
                 except ValueError as error:
                     self.add_error("escalar", f"El escalar: {error}")
 

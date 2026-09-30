@@ -20,10 +20,10 @@ from backend.expresiones import (
 )
 from backend.presupuesto_sistemas import (
     validar_dimensiones,
-    validar_literal_numerico,
     validar_longitud_sistema,
     validar_valor_agrupado,
 )
+from backend.seguridad_numerica import validar_literal_numerico
 
 SEPARADOR_ECUACIONES = ";"
 
@@ -50,8 +50,10 @@ def _simplificar(numero):
     return numero
 
 
-def convertir_a_numero(texto):
-    """Convierte enteros, negativos, fracciones y decimales a un valor exacto."""
+def convertir_a_numero(texto, *, limitar_entrada=False):
+    """Convierte a un valor exacto; la web activa la inspección previa de literales."""
+    if limitar_entrada:
+        validar_literal_numerico(texto)
     try:
         numero = Fraction(_ESPACIOS.sub("", texto))
     except (ValueError, ZeroDivisionError):

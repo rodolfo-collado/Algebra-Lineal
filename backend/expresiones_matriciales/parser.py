@@ -139,7 +139,7 @@ class Parser:
         if token.tipo == "numero":
             self.avanzar()
             try:
-                valor = Fraction(convertir_a_numero(token.valor))
+                valor = Fraction(convertir_a_numero(token.valor, limitar_entrada=True))
             except ValueError as error:
                 raise ValueError(str(error)) from None
             return Numero(token.valor, token.inicio, token.fin, valor)
