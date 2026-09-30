@@ -28,6 +28,8 @@
   cálculo y procedimiento, tamaño de los números, referencias calibrables y
   benchmark. El presupuesto de entrada de Resolver un sistema sigue en
   [su propio documento](presupuesto-sistemas.md).
+- [Protección numérica común](seguridad-numerica.md): inspección de literales
+  antes de convertir, crecimiento exacto acotado y errores controlados.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   política de tags, CD y checksums.
 

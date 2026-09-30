@@ -181,11 +181,13 @@ comprueba sin mirar segundos.
   de usar las categorías para pedir confirmaciones.
 - Una página tiene además un costo fijo, de unas centésimas de segundo, que el
   modelo no cuenta. No cambia la categoría de nada.
-- Pendiente fuera de este incremento: Python no convierte a texto enteros de más
+- Hallazgo fuera del alcance original de P26.2: Python no convierte a texto enteros de más
   de 4300 cifras. Con fracciones de 100 cifras, dentro del presupuesto de
   literales de Sistemas, un sistema 6×6 alcanza ese límite durante la
   eliminación y el error se muestra en inglés. Es un límite de representación,
-  no un costo, y la estimación no lo corrige.
+  no un costo, y la estimación no lo corrige. P26.2.1 lo resuelve por separado en
+  [Protección numérica común](seguridad-numerica.md), sin cambiar categorías,
+  referencias, dimensiones ni fórmulas de costo.
 
 ## Integración actual
 
