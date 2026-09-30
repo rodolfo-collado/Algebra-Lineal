@@ -10,7 +10,8 @@ from fractions import Fraction
 
 from backend.operandos import ARIDAD_MATRICES, exigir_aridad, nombre_matriz
 from backend.seguridad_numerica import (
-    multiplicar_exacto, sumar_exacto, validar_literal_numerico, validar_valor_exacto,
+    multiplicar_exacto, sumar_exacto, validar_literal_numerico,
+    validar_matriz_exacta, validar_valor_exacto,
 )
 
 
@@ -137,6 +138,50 @@ def dimensiones(matriz):
     """Dimensiones (filas, columnas) de una matriz válida."""
     _exigir_matriz(matriz)
     return len(matriz), len(matriz[0])
+
+
+def matriz_identidad(orden):
+    """Identidad de orden positivo, con filas independientes y valores exactos."""
+    if type(orden) is not int or orden < 1:
+        raise ValueError("El orden de la identidad debe ser un entero positivo.")
+    return [
+        [Fraction(1 if fila == columna else 0) for columna in range(orden)]
+        for fila in range(orden)
+    ]
+
+
+def aumentar_matrices(izquierda, derecha):
+    """Construye [A | B] con igual número de filas y cualquier ancho por bloque.
+
+    Devuelve filas nuevas de Fraction; no interpreta el aumento como un sistema.
+    Valida ambos bloques antes de copiar sus valores.
+    """
+    filas_izquierda, _ = dimensiones(izquierda)
+    filas_derecha, _ = dimensiones(derecha)
+    if filas_izquierda != filas_derecha:
+        raise ValueError("Los bloques de una matriz aumentada deben tener la misma cantidad de filas.")
+    validar_matriz_exacta(izquierda)
+    validar_matriz_exacta(derecha)
+    return [
+        [Fraction(valor) for valor in fila_izquierda]
+        + [Fraction(valor) for valor in fila_derecha]
+        for fila_izquierda, fila_derecha in zip(izquierda, derecha)
+    ]
+
+
+def separar_bloques(matriz, columnas_izquierda):
+    """Devuelve (A, B) con copias exactas; el corte deja ambos bloques no vacíos."""
+    _, columnas = dimensiones(matriz)
+    if type(columnas_izquierda) is not int or not 1 <= columnas_izquierda < columnas:
+        raise ValueError("El corte debe ser un entero que deje columnas en ambos bloques.")
+    validar_matriz_exacta(matriz)
+    izquierda = [
+        [Fraction(valor) for valor in fila[:columnas_izquierda]] for fila in matriz
+    ]
+    derecha = [
+        [Fraction(valor) for valor in fila[columnas_izquierda:]] for fila in matriz
+    ]
+    return izquierda, derecha
 
 
 def _operar_entradas(a, b, signo):

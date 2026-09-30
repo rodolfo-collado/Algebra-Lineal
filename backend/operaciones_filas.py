@@ -60,7 +60,7 @@ def normalizar_fila(matriz, pasos, fila, pivote):
 
 
 def eliminar_en_columna(matriz, pasos, fila_pivote, columna, filas_objetivo):
-    """Hace cero la columna en las filas indicadas usando la fila del pivote."""
+    """Hace cero la columna operando toda la fila, incluidos bloques aumentados."""
     validar_matriz_exacta(matriz)
     for fila in filas_objetivo:
         factor = matriz[fila][columna]
