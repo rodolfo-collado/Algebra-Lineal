@@ -5,10 +5,11 @@ Ninguna prueba mide segundos: las referencias de tiempo solo se comparan entre s
 
 import os
 import random
+import re
 from contextlib import ExitStack
 from fractions import Fraction
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
 
@@ -17,6 +18,7 @@ import django
 django.setup()
 
 from django.conf import settings
+from django.test import SimpleTestCase
 
 from backend import presupuesto_computacional as presupuesto
 from backend.gauss import aplicar_gauss
@@ -39,11 +41,15 @@ from backend.presupuesto_sistemas import (
     DIGITOS_MAXIMOS,
     ECUACIONES_MAXIMAS,
     LONGITUD_SISTEMA_MAXIMA,
+    MENSAJE_NOTACION_CIENTIFICA,
     VARIABLES_MAXIMAS,
     validar_dimensiones,
 )
 from frontend.web.calculadora.opciones_matrices import DIMENSION_MAXIMA as DIMENSION_MATRICES
 from frontend.web.calculadora.opciones_vectores import DIMENSION_MAXIMA as DIMENSION_VECTORES
+from frontend.web.calculadora.servicios import estimar_entrada_web
+from frontend.web.calculadora.servicios_ecuaciones import estimar_ecuacion_web
+from tests.test_ecuaciones_matriciales_web import RUTA as RUTA_ECUACIONES, datos_ecuacion
 
 
 def costos(estimacion):
@@ -270,3 +276,60 @@ class PruebasLimites(TestCase):
         validar_dimensiones(12, 9)
         with self.assertRaisesRegex(ValueError, f"hasta {CELDAS_SISTEMAS} celdas"):
             validar_dimensiones(11, 10)
+
+
+class PruebasIntegracionServicios(SimpleTestCase):
+    def test_sistemas_estima_la_entrada_sin_resolverla(self):
+        motor = Mock(side_effect=AssertionError("motor"))
+        resolvers = {"gauss": ("Gauss", motor, "", ""), "gauss_jordan": ("Gauss-Jordan", motor, "", "")}
+        matriz = [[1, 1, 3], [1, -1, 1]]
+        with patch.dict("frontend.web.calculadora.servicios._RESOLVERS", resolvers):
+            texto = estimar_entrada_web("sistema", "gauss_jordan", texto="x1 + x2 = 3; x1 - x2 = 1")
+            ambos = estimar_entrada_web("matriz", "comparar", matriz_aumentada=matriz)
+        motor.assert_not_called()
+        # Los pivotes solo se buscan en los coeficientes, como en los motores.
+        perfil = perfil_numerico(matriz)
+        jordan = estimar_gauss_jordan(2, 3, columnas_pivote=2, perfil=perfil)
+        self.assertEqual((texto.operacion, texto.partes), ("gauss_jordan", (jordan,)))
+        self.assertEqual((ambos.operacion, ambos.partes), ("comparar", (estimar_gauss(2, 3, columnas_pivote=2, perfil=perfil), jordan)))
+
+    def test_la_estimacion_respeta_el_presupuesto_de_entrada(self):
+        # Las mismas protecciones y mensajes que al resolver, antes de cualquier cuenta.
+        with self.assertRaisesRegex(ValueError, f"hasta {CELDAS_SISTEMAS} celdas"):
+            estimar_entrada_web("matriz", "gauss", matriz_aumentada=[[1] * 11 for _ in range(11)])
+        with self.assertRaisesRegex(ValueError, re.escape(MENSAJE_NOTACION_CIENTIFICA)):
+            estimar_entrada_web("sistema", "gauss", texto="x1 = 1e5")
+        with self.assertRaisesRegex(ValueError, "método"):
+            estimar_entrada_web("matriz", "cramer", matriz_aumentada=[[1, 2]])
+
+    def test_ax_b_suma_la_reduccion_y_la_comprobacion_de_cada_metodo(self):
+        entrada = {"a": [[2, 1], [1, 3], [0, 1]], "b": [1, 2, Fraction(1, 2)], "metodo": "comparar"}
+        with patch(
+            "frontend.web.calculadora.servicios_ecuaciones.resolver_ecuacion_matricial",
+            side_effect=AssertionError("motor"),
+        ) as resolver:
+            estimacion = estimar_ecuacion_web(entrada)
+        resolver.assert_not_called()
+        perfil = perfil_numerico(entrada["a"], [entrada["b"]])
+        self.assertEqual(perfil.bits_denominador, 1)
+        comprobacion = estimar_producto(3, 2, 1, perfil=perfil)
+        self.assertEqual(estimacion.operacion, "comparar")
+        self.assertEqual(estimacion.partes, (
+            estimar_gauss(3, 3, columnas_pivote=2, perfil=perfil), comprobacion,
+            estimar_gauss_jordan(3, 3, columnas_pivote=2, perfil=perfil), comprobacion,
+        ))
+        self.assertLess(estimar_ecuacion_web({**entrada, "metodo": "gauss_jordan"}).calculo, estimacion.calculo)
+
+    @patch.object(presupuesto, "REFERENCIA_UMBRALES", (0, 0, 0))
+    def test_un_costo_alto_no_impide_resolver(self):
+        """P26.2 solo consulta la estimación: nada rechaza una entrada válida por su costo."""
+        sistema = "x1 + x2 = 3; x1 - x2 = 1"
+        self.assertEqual(categoria(estimar_entrada_web("sistema", "comparar", texto=sistema)), Categoria.MUY_PESADA)
+        respuesta = self.client.post("/sistemas/", {"sistema": sistema, "metodo": "comparar"})
+        self.assertContains(respuesta, 'id="resultado"')
+        self.assertContains(respuesta, "x1 = 2")
+
+        entrada = {"a": [[1, 1], [1, -1]], "b": [5, 1], "metodo": "comparar"}
+        self.assertEqual(categoria(estimar_ecuacion_web(entrada)), Categoria.MUY_PESADA)
+        respuesta = self.client.post(RUTA_ECUACIONES, datos_ecuacion(a=entrada["a"], b=entrada["b"], metodo="comparar"))
+        self.assertContains(respuesta, 'id="resultado"')
