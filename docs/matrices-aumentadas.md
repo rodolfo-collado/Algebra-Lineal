@@ -88,7 +88,9 @@ En el ejemplo, la izquierda es `I_2` y la derecha es
 `[[-3, 2], [5/2, -3/2]]`, con fracciones exactas. Para `A` cuadrada, si
 `len(pivotes) < n`, la izquierda no llegó a `I_n`; compararla exactamente con
 la identidad aporta la misma evidencia. No se calculan determinantes. P26.4
-interpretará el bloque derecho y definirá el mensaje de una matriz singular.
+compone exactamente este flujo en `backend/matriz_inversa.py`, interpreta el
+bloque derecho y define el mensaje de una matriz sin inversa: consulta
+[Matriz inversa](matriz-inversa.md).
 
 ## Presentación y procedimiento
 
@@ -119,5 +121,6 @@ valida ambas matrices. El crecimiento extremo conserva el mensaje controlado
 «El cálculo produjo números demasiado grandes para mostrarlos de forma
 segura», sin caminos alternativos de aritmética sin validar.
 
-P26.4 reutilizará las primitivas, reducción, pivotes, corte presentacional y
-presupuesto para el módulo de Matriz inversa y su calibración.
+P26.4 reutiliza las primitivas, la reducción, los pivotes, el corte
+presentacional y el presupuesto en el módulo de
+[Matriz inversa](matriz-inversa.md).

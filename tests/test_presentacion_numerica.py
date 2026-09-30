@@ -124,6 +124,9 @@ class PruebasIntegracionNumerica(SimpleTestCase):
             ("/matrices/operaciones/", datos_matriz_vector(a=[[1, 0]], x=["1/3", "1/2"], metodo="comparar")),
             ("/matrices/ecuaciones/", datos_ecuacion([[3, 0], [0, 2]], [1, 1], metodo="comparar")),
             ("/matrices/ecuaciones/", datos_ecuacion([[3, 1]], [1])),
+            ("/matrices/inversa/", {"orden": "1", "metodo": "gauss_jordan", "celda_A_0_0": "3"}),
+            ("/matrices/inversa/", {"orden": "2", "metodo": "directo_2x2", "celda_A_0_0": "3", "celda_A_0_1": "0",
+                                    "celda_A_1_0": "0", "celda_A_1_1": "1"}),
             ("/matrices/expresiones/", {
                 "expresion": "(1/3)*A", "cantidad": "1", "nombre_0": "A", "tipo_0": "matriz",
                 "filas_0": "1", "columnas_0": "1", "celda_0_0_0": "1",
@@ -148,7 +151,7 @@ class PruebasIntegracionNumerica(SimpleTestCase):
                 self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
 
     def test_bases_entrada_y_errores_no_reciben_selector(self):
-        for ruta in ("/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/bases/conversion/"):
+        for ruta in ("/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
             self.assertNotContains(self.client.get(ruta), "data-numeric-controls")
         self.assertNotContains(self.client.post("/sistemas/", {"sistema": "x1+=1"}), "data-numeric-controls")
         conversion = self.client.post("/bases/conversion/", {

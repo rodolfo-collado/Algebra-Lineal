@@ -265,6 +265,37 @@ la opción Comparar ambos y el texto completo del panel final de Django para
 ambas entradas. La preparación de `[A | I]` y su contrato se describen en
 [Matrices aumentadas por bloques](matrices-aumentadas.md).
 
+## Matriz inversa
+
+```bash
+uv run python -m unittest tests.test_matriz_inversa tests.test_matriz_inversa_web -v
+```
+
+`test_matriz_inversa` cubre Gauss-Jordan sobre `[A | I]` y la regla 2×2 con los
+ejemplos del profesor (2×2, 3×3 con intercambio de filas, singular y 1×1),
+que ambos métodos coincidan en enteros, negativos, fracciones, intercambios y
+400 matrices 2×2 aleatorias, `A · A⁻¹ = I` como comprobación de las pruebas,
+la validación (no cuadrada, vacía, valores no exactos y método 2×2 fuera de
+2×2), que se reutilice el motor con `columnas_pivote=n`, que la regla 2×2 no lo
+use, que la cota del presupuesto acote los pasos reales y el error controlado
+ante números demasiado grandes.
+
+`test_matriz_inversa_web` cubre catálogo, Inicio, menú, migas y buscador; el
+GET con Gauss-Jordan predeterminado y sin fórmulas en los controles; el radio
+2×2 activo solo en 2×2; Aplicar; los POST válidos y manipulados (método 2×2 en
+otra dimensión, métodos inválidos, celdas de más o de menos, campos repetidos,
+HTML y CSRF); el separador en todas las matrices del procedimiento; el
+procedimiento antes del único resultado; Exacto / Decimal; y la confirmación.
+Para esta última se fuerzan la categoría y el intervalo con `patch`, sin
+matrices enormes ni segundos reales: el aviso no calcula ni parece un error;
+Continuar calcula con la firma de la misma entrada; Cancelar redibuja; una
+firma de otra matriz o inventada vuelve a preguntar; y la regla 2×2 nunca
+pregunta.
+
+En el navegador, verifica manualmente la 2×2 del profesor por ambos métodos,
+la 3×3, una singular, una 10×10 de enteros (que hoy pide confirmación: prueba
+Cancelar y Continuar), 375 px y escritorio, y ambos temas.
+
 ## Numeración romana
 
 `uv run python -m unittest tests.test_numeros_romanos tests.test_numeros_romanos_web -v`

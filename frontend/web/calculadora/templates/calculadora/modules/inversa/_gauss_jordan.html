@@ -1,0 +1,21 @@
+{% comment %}Gauss-Jordan sobre [A | I] dentro de «Ver procedimiento»: colocar la identidad junto a A, las operaciones por filas que registró el motor (_pasos.html de Resolver un sistema; resultado.columnas_izquierda = n conserva el separador antes, después y al final) y la lectura de la matriz final. La conclusión solo aparece en el resultado.{% endcomment %}
+<div class="procedure-stage">
+    <h4 class="stage-title">1 · Colocar la identidad junto a A</h4>
+    <p class="procedure-lead">La matriz identidad I tiene 1 en la diagonal y 0 en el resto. Se escribe a la derecha de A, separada por una línea: [A | I].</p>
+    <div class="matrix-operand">
+        <span class="muted">[A | I]</span>
+        {% include "calculadora/components/matrix.html" with matriz=resultado.aumentada etiqueta="Matriz A junto a la identidad" columnas_izquierda=resultado.columnas_izquierda %}
+    </div>
+</div>
+
+<div class="procedure-stage">
+    <h4 class="stage-title">2 · Operaciones por filas</h4>
+    <p class="procedure-lead">Se aplican operaciones por filas a toda la matriz hasta convertir el lado izquierdo en la identidad. Cada operación cambia también el lado derecho.</p>
+    {% include "calculadora/modules/sistemas/_pasos.html" %}
+</div>
+
+<div class="procedure-stage">
+    <h4 class="stage-title">3 · Matriz final</h4>
+    <p class="procedure-lead">{{ resultado.lectura }}</p>
+    {% include "calculadora/components/matrix.html" with matriz=resultado.final etiqueta="Matriz final" columnas_izquierda=resultado.columnas_izquierda %}
+</div>

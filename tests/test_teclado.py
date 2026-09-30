@@ -42,6 +42,7 @@ HERRAMIENTAS = {
     "/matrices/operaciones/": {"numerico"},
     "/matrices/expresiones/": {"numerico"},
     "/matrices/ecuaciones/": {"numerico"},
+    "/matrices/inversa/": {"numerico"},
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
 }
 
@@ -67,6 +68,11 @@ CONTROLES = {
     "/matrices/expresiones/": {
         "ajustar", "agregar", "cantidad", "celda_0_0_0", "celda_0_0_1", "celda_0_1_0", "celda_0_1_1",
         "columnas_0", "csrfmiddlewaretoken", "eliminar", "expresion", "filas_0", "nombre_0", "tipo_0",
+    },
+    # «confirmacion» solo aparece en el aviso de un cálculo largo, nunca en el GET.
+    "/matrices/inversa/": {
+        "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "csrfmiddlewaretoken",
+        "metodo", "orden",
     },
     "/bases/conversion/": {"base_origen", "bases_destino", "csrfmiddlewaretoken", "numero"},
 }
@@ -365,6 +371,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         for ruta, atributo, valor, formulario in (
             ("/matrices/operaciones/", "data-matrix-list", "", "matrices-form"),
             ("/matrices/ecuaciones/", "data-equation-entry", "", "ecuacion-form"),
+            ("/matrices/inversa/", "data-inverse-entry", "", "inversa-form"),
             ("/vectores/operaciones/", "id", "vector-list", "vectores-form"),
         ):
             with self.subTest(ruta=ruta):

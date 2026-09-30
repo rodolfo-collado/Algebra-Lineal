@@ -33,7 +33,7 @@
     white-space: normal;
 }
 
-[data-matrices] .errorlist {
+:is([data-matrices], [data-inversa]) .errorlist {
     margin: 0.4rem 0 0;
     padding-left: 1rem;
     color: var(--color-danger);
@@ -41,7 +41,7 @@
     overflow-wrap: anywhere;
 }
 
-[data-matrices] [aria-invalid="true"] { border-color: var(--color-danger); }
+:is([data-matrices], [data-inversa]) [aria-invalid="true"] { border-color: var(--color-danger); }
 
 .matrix-scalar {
     display: flex;
