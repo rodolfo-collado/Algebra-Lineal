@@ -80,6 +80,10 @@ influye. Por eso no se reutiliza el presupuesto de 900 celdas de matrices.
 Estas medidas justifican un techo educativo conservador, no una garantía de
 tiempo o memoria para cualquier coeficiente o equipo.
 
+El modelo general de costo —cálculo frente a procedimiento, tamaño de los
+números y referencias calibrables—, y un benchmark que reproduce estas
+mediciones, están en [Presupuesto computacional](presupuesto-computacional.md).
+
 ## Campos reales de Django
 
 El peor formulario normal de matriz envía **130 campos**:
