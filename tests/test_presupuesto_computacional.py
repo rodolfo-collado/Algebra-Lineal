@@ -49,6 +49,7 @@ from frontend.web.calculadora.opciones_matrices import DIMENSION_MAXIMA as DIMEN
 from frontend.web.calculadora.opciones_vectores import DIMENSION_MAXIMA as DIMENSION_VECTORES
 from frontend.web.calculadora.servicios import estimar_entrada_web
 from frontend.web.calculadora.servicios_ecuaciones import estimar_ecuacion_web
+from scripts.benchmark_presupuesto import matriz as matriz_benchmark
 from tests.test_ecuaciones_matriciales_web import RUTA as RUTA_ECUACIONES, datos_ecuacion
 
 
@@ -333,3 +334,13 @@ class PruebasIntegracionServicios(SimpleTestCase):
         self.assertEqual(categoria(estimar_ecuacion_web(entrada)), Categoria.MUY_PESADA)
         respuesta = self.client.post(RUTA_ECUACIONES, datos_ecuacion(a=entrada["a"], b=entrada["b"], metodo="comparar"))
         self.assertContains(respuesta, 'id="resultado"')
+
+
+class PruebasBenchmark(TestCase):
+    def test_las_entradas_del_benchmark_son_deterministas(self):
+        """CI no ejecuta el benchmark; solo se comprueba que sus entradas se repiten."""
+        for digitos in (0, 10):
+            with self.subTest(digitos=digitos):
+                entrada = matriz_benchmark(4, 5, digitos)
+                self.assertEqual(entrada, matriz_benchmark(4, 5, digitos))
+                self.assertEqual((len(entrada), len(entrada[0])), (4, 5))
