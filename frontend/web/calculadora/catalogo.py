@@ -123,7 +123,7 @@ VECTORES = Categoria(
 )
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones con matrices rectangulares, los productos AB y Ax, y la ecuación matricial Ax = b.",
+    "Operaciones con matrices rectangulares, los productos AB y Ax, la ecuación matricial Ax = b y la matriz inversa.",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -260,12 +260,30 @@ EXPRESIONES_MATRICIALES = Herramienta(
     invitacion="Evaluar una expresión matricial",
 )
 
+# Solo para matrices cuadradas. El método (Gauss-Jordan o la regla 2×2) se elige
+# dentro; las palabras clave evitan «gauss» y «pivote», que llevan a Resolver un sistema.
+MATRIZ_INVERSA = Herramienta(
+    id="matriz-inversa",
+    nombre="Matriz inversa",
+    categoria=MATRICES,
+    descripcion="Calcula la inversa de una matriz cuadrada y muestra el procedimiento paso a paso.",
+    estado="disponible",
+    route_name="calculadora:matriz-inversa",
+    palabras_clave=(
+        "inversa", "matriz inversa", "inversa de una matriz", "a⁻¹", "a^-1", "invertible",
+        "no invertible", "matriz singular", "matriz identidad", "identidad", "matriz cuadrada", "2x2", "2×2",
+    ),
+    relacionadas=("operaciones-matrices", "ecuaciones-matriciales"),
+    invitacion="Calcular la inversa de una matriz",
+)
+
 HERRAMIENTAS = (
     SISTEMAS,
     OPERACIONES_VECTORES,
     OPERACIONES_MATRICES,
     EXPRESIONES_MATRICIALES,
     ECUACIONES_MATRICIALES,
+    MATRIZ_INVERSA,
     CONVERSION_BASES,
     CONVERSION_ROMANOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,

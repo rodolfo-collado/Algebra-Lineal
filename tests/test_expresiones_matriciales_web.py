@@ -70,7 +70,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual(herramienta.categoria, catalogo.MATRICES)
         self.assertEqual(
             catalogo.herramientas_de(catalogo.MATRICES),
-            (catalogo.OPERACIONES_MATRICES, herramienta, catalogo.ECUACIONES_MATRICIALES),
+            (catalogo.OPERACIONES_MATRICES, herramienta, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA),
         )
         self.assertEqual(
             set(herramienta.relacionadas),

@@ -1,0 +1,83 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static componentes numeros %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-labelledby="workspace-title" data-inversa>
+    <h2 id="workspace-title" class="sr-only">Entrada</h2>
+    <form id="inversa-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+        {% csrf_token %}
+        {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
+        {% if confirmacion %}{% include "calculadora/modules/inversa/_confirmacion.html" %}{% endif %}
+        <section class="workspace-section" id="inverse-fields" data-perfil="numerico" aria-labelledby="inverse-title">
+            <h3 class="section-title" id="inverse-title">Matriz de entrada</h3>
+            <p class="field-help">Solo una matriz cuadrada puede tener inversa: A tiene tantas filas como columnas.</p>
+            <div class="structure-controls structure-controls-matrices" role="group" aria-label="Tamaño de A">
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.orden quitar="Quitar una fila y una columna de A" agregar="Agregar una fila y una columna de A" %}
+            </div>
+            <p class="field-help" data-inverse-shape aria-live="polite">{{ form.forma_texto }}. De {{ form.orden.field.min_value }} a {{ form.orden.field.max_value }} filas y columnas.</p>
+            <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
+            <noscript><p class="field-help">Cambia el número de filas y columnas y pulsa <strong>Aplicar</strong> antes de calcular. Se conservan las celdas que siguen en la matriz.</p></noscript>
+            <div class="matrix-entry-list" data-inverse-entry>
+                {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.0.nombre filas=form.matrices.0.filas vector=False only %}
+            </div>
+            <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos.</p>
+            {% include "calculadora/components/math_keyboard.html" %}
+        </section>
+        <section class="workspace-section">
+            <fieldset class="choice-fieldset">
+                <legend>{{ form.metodo.label }}</legend>
+                <div class="option-list">
+                    {% for radio in form.metodo %}<label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                {{ form.metodo.errors }}
+                <p class="field-help option-help">Gauss-Jordan sirve para cualquier matriz cuadrada. El método para matrices 2×2 usa una regla directa que solo existe para ese tamaño.</p>
+            </fieldset>
+        </section>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular inversa</button></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+    {% comment %}Entrada → procedimiento plegable del método elegido → resultado, una sola vez y al final. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+    {% numeric_results %}
+    <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        <header class="results-heading">
+            <p class="section-kicker">Matriz inversa · {{ resultado.titulo_metodo }}</p>
+            <h2 id="results-title">Inversa de A ({{ resultado.forma }})</h2>
+        </header>
+        {% include "calculadora/components/numeric_format.html" %}
+
+        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+            {% if resultado.metodo == "gauss_jordan" %}
+                {% include "calculadora/modules/inversa/_gauss_jordan.html" %}
+            {% else %}
+                {% include "calculadora/modules/inversa/_metodo_2x2.html" %}
+            {% endif %}
+        {% enddisclosure %}
+
+        <section class="panel panel-final" aria-labelledby="final-title">
+            <h3 id="final-title" class="panel-title">Resultado</h3>
+            {% if resultado.invertible %}
+                <div class="matrix-equation" tabindex="0" role="region" aria-label="Inversa de A">
+                    <span class="matrix-expression">A⁻¹ =</span>
+                    {% include "calculadora/components/matriz.html" with matriz=resultado.inversa etiqueta="Matriz inversa de A" only %}
+                </div>
+            {% else %}
+                <p class="classification-value">La matriz no tiene inversa.</p>
+                <p class="muted inverse-reason">{{ resultado.explicacion }}</p>
+            {% endif %}
+        </section>
+    </section>
+    {% endnumeric_results %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'calculadora/numeros.js' %}" defer></script>
+<template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
+<template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
+<script src="{% static 'calculadora/inversa.js' %}" defer></script>
+<script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}

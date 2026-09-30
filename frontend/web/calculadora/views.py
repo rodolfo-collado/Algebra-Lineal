@@ -15,12 +15,14 @@ from .exploraciones import exploraciones_sistema
 from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_expresiones import ExpresionMatricialForm
+from .forms_inversa import InversaForm
 from .forms_matrices import MatricesForm
 from .forms_romanos import ConversionRomanosForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
 from .servicios_ecuaciones import resolver_ecuacion_web
 from .servicios_expresiones import evaluar_expresion_web
+from .servicios_inversa import calcular_inversa_web, confirmacion_pendiente
 from .servicios_matrices import operar_matrices
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
@@ -215,6 +217,34 @@ def ecuaciones_matriciales(request):
         "form": form, "resultado": resultado, "ayuda_metodos": AYUDA_METODOS_ECUACION,
         # El procedimiento reutiliza los bloques de Resolver un sistema, todos visibles.
         "mostrar": frozenset(BLOQUES_PREDETERMINADOS), "perfiles_teclado": perfiles_para("numerico"),
+    })
+
+
+@require_http_methods(["GET", "POST"])
+def matriz_inversa(request):
+    """Matriz inversa: Gauss-Jordan sobre [A | I] o, si A es 2×2, la regla directa.
+
+    Un cálculo que se estima largo no se ejecuta hasta que el usuario confirma;
+    el aviso conserva la matriz y el método porque vive dentro del mismo formulario.
+    """
+    ajustar = request.method == "POST" and "ajustar" in request.POST
+    form = InversaForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
+    resultado = confirmacion = None
+    if request.method == "POST" and form.is_valid():
+        if ajustar:
+            # «Aplicar» sin JavaScript y «Cancelar» del aviso: redibujan con lo escrito, sin calcular.
+            form = InversaForm(initial=form.iniciales())
+        else:
+            entrada = form.cleaned_data["entrada"]
+            confirmacion = confirmacion_pendiente(entrada, form.cleaned_data["confirmacion"])
+            if confirmacion is None:
+                try:
+                    resultado = calcular_inversa_web(entrada)
+                except ValueError as error:
+                    form.add_error(None, str(error))
+    return render(request, "calculadora/modules/inversa/index.html", {
+        "form": form, "resultado": resultado, "confirmacion": confirmacion,
+        "perfiles_teclado": perfiles_para("numerico"),
     })
 
 
