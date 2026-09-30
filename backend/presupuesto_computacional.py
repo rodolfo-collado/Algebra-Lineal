@@ -108,8 +108,10 @@ def _reduccion(operacion, filas, columnas, columnas_pivote, perfil, hacia_arriba
         raise ValueError("Las columnas con pivote no pueden superar las columnas de la matriz.")
 
     # Peor caso denso: cada columna admitida tiene pivote distinto de 1 y ninguna
-    # entrada que eliminar vale cero. Un intercambio no añade pasos: la fila que
-    # baja trae un cero en esa columna y ya no hay que eliminarla.
+    # entrada que eliminar vale cero. Un intercambio sí registra un paso, pero solo
+    # hace falta si la fila que estaba en la posición del pivote tenía 0 en esa
+    # columna; al bajar, esa fila no necesita eliminación en esa columna. El
+    # intercambio sustituye a una eliminación ya contada, así que la cota no crece.
     pivotes = min(filas, columnas_pivote)
     eliminaciones = pivotes * (filas - 1) - pivotes * (pivotes - 1) // 2
     if hacia_arriba:
@@ -131,15 +133,21 @@ def _reduccion(operacion, filas, columnas, columnas_pivote, perfil, hacia_arriba
 
 
 def estimar_gauss(filas, columnas, *, columnas_pivote=None, perfil=None):
-    """Escalonar como `aplicar_gauss`, sin escalonar. Solo elimina hacia abajo."""
+    """Costo de `aplicar_gauss`, sin ejecutarlo.
+
+    Gauss solo elimina hacia abajo y deja una forma escalonada; no hace la
+    eliminación hacia arriba de Gauss-Jordan.
+    """
     return _reduccion("gauss", filas, columnas, columnas_pivote, perfil, hacia_arriba=False)
 
 
 def estimar_gauss_jordan(filas, columnas, *, columnas_pivote=None, perfil=None):
-    """Reducir como `aplicar_gauss_jordan`: el escalonamiento más la eliminación hacia arriba.
+    """Costo de `aplicar_gauss_jordan`, sin ejecutarlo.
 
-    Sirve igual para [A | b] (columnas_pivote = variables) que para aumentos de
-    varias columnas como [A | I] (columnas_pivote = columnas de A).
+    Parte del escalonamiento de Gauss y añade la eliminación hacia arriba, hasta
+    la forma escalonada reducida. Sirve igual para [A | b] (columnas_pivote =
+    variables) que para aumentos de varias columnas como [A | I] (columnas_pivote
+    = columnas de A).
     """
     return _reduccion("gauss_jordan", filas, columnas, columnas_pivote, perfil, hacia_arriba=True)
 

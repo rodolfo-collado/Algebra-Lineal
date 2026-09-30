@@ -65,11 +65,15 @@ eliminaciones:
 | Producto, m×n · n×p | m·p | 2·m·n·p | m·p·(3n + 1) + p·(m·n + m + n) + m·n |
 
 Normalizar divide toda la fila y eliminar multiplica y resta en cada columna.
-Un intercambio de filas no añade pasos: la fila que baja ya trae un cero en esa
-columna y no hay que eliminarla. Por eso la cota es exacta en el peor caso; las
-pruebas la comparan con los pasos reales de los motores en matrices cuadradas,
-rectangulares, con ceros y con intercambios. En el producto, el procedimiento
-son las evidencias de sus dos lecturas (fila por columna y por columnas).
+Un intercambio de filas sí registra un paso, pero no aumenta la cota. Solo hace
+falta si la fila que estaba en la posición del pivote tenía 0 en esa columna; al
+bajar tras el intercambio, esa fila no necesita una eliminación en esa columna.
+Así, el intercambio sustituye dentro de la cota a una eliminación que el peor
+caso denso ya había contado. La cota vale también con intercambios y se alcanza
+en el peor caso; las pruebas la comparan con los pasos reales de los motores en
+matrices cuadradas, rectangulares, con ceros y con intercambios. En el producto,
+el procedimiento son las evidencias de sus dos lecturas (fila por columna y por
+columnas).
 
 ## Cálculo y procedimiento
 

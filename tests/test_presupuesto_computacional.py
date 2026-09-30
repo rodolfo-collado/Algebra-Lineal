@@ -217,7 +217,8 @@ class PruebasEstimaciones(TestCase):
                     with self.subTest(matriz=matriz, columnas_pivote=columnas_pivote, motor=motor.__name__):
                         _, pasos, _ = motor(matriz, columnas_pivote)
                         self.assertLessEqual(len(pasos), estimar(filas, columnas, columnas_pivote=columnas_pivote).pasos)
-        # La cota se alcanza aun con un intercambio: la fila que baja ya trae su cero.
+        # La cota se alcanza aun con un intercambio: ese paso sustituye a la
+        # eliminación que ya no necesita la fila que baja, porque tenía 0.
         _, pasos, _ = aplicar_gauss_jordan([[0, 2, 1], [3, 1, 2], [1, 1, 5]])
         self.assertEqual(len(pasos), estimar_gauss_jordan(3, 3).pasos)
 
