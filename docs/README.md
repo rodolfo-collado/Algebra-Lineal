@@ -24,6 +24,10 @@
 - [Guía de ejecución](ejecucion.md): requisitos, arranque web, terminal o
   escritorio y comprobaciones para usar el proyecto completo.
 - [Pruebas](pruebas.md): suite, Django, compilación, enlaces y smoke real Windows.
+- [Presupuesto computacional](presupuesto-computacional.md): límite frente a costo,
+  cálculo y procedimiento, tamaño de los números, referencias calibrables y
+  benchmark. El presupuesto de entrada de Resolver un sistema sigue en
+  [su propio documento](presupuesto-sistemas.md).
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   política de tags, CD y checksums.
 

@@ -215,6 +215,31 @@ En `/sistemas/`, verifica manualmente: una matriz 2×2; escribir dimensiones
 tras corregir dimensiones; GET manipulado sin cuadrícula; resolver y comparar,
 plegar procedimiento y alternar Exacto/Decimal.
 
+## Presupuesto computacional
+
+`uv run python -m unittest tests.test_presupuesto_computacional -v` comprueba
+que una operación pequeña estima menos que una mayor; que Gauss-Jordan y el
+producto crecen con cada dimensión; que racionales más complejos aumentan el
+factor, más en la aritmética que en el texto mostrado; que combinar
+estimaciones suma pasos, cálculo y procedimiento y conserva las partes; que
+cálculo y procedimiento se estiman por separado; que estimar no ejecuta ningún
+motor ni convierte números a texto (dimensiones de 10⁹ y enteros de casi un
+millón de cifras); que la cota acota los pasos reales de Gauss y Gauss-Jordan;
+que las categorías crecen con el tamaño y el tiempo es un intervalo
+recalibrable; que los límites estructurales no cambian; y que los servicios de
+Resolver un sistema y Ax = b estiman con el mismo presupuesto de entrada, sin
+resolver y sin rechazar nada por su costo. Ninguna prueba mide segundos.
+
+El benchmark es manual: no se lanza en `unittest discover` ni en CI.
+
+```bash
+uv run python -m scripts.benchmark_presupuesto
+uv run python -m scripts.benchmark_presupuesto --web
+```
+
+Consulta el modelo, las opciones y los resultados locales en
+[Presupuesto computacional](presupuesto-computacional.md#benchmark).
+
 ## Numeración romana
 
 `uv run python -m unittest tests.test_numeros_romanos tests.test_numeros_romanos_web -v`

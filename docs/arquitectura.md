@@ -27,14 +27,14 @@ flowchart TD
 
 | Ruta | Responsabilidad |
 | --- | --- |
-| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, bases y numeración romana. |
+| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, bases, numeración romana y presupuestos de entrada y de costo. |
 | `frontend/terminal/` | `menu.py` coordina; `opciones.py` ejecuta opciones; `entradas.py` lee; `salida.py` presenta; `consola.py` maneja color, pausas y limpieza. |
 | `frontend/web/algebra_web/` | Configuración Django, rutas raíz y entradas WSGI/ASGI. |
 | `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, exploraciones, templates y recursos locales. |
 | `desktop.py` | Servidor local y ciclo de vida de la ventana nativa. |
 | `AlgebraLineal.spec` | PyInstaller: Python, dependencias, templates, recursos e icono en una carpeta `onedir`, sin consola (`windowed`). |
 | `installer/AlgebraLineal.iss` | Inno Setup: empaqueta esa carpeta, accesos directos, prerrequisito WebView2 y desinstalación. |
-| `scripts/` | Build Windows, smoke de distribución, validación de tags de release y sincronización del símbolo del header. |
+| `scripts/` | Build Windows, smoke de distribución, validación de tags de release, sincronización del símbolo del header y benchmark del presupuesto computacional. |
 | `tests/` | Pruebas matemáticas, frontend, infraestructura, distribución y documentación. |
 | `assets/brand/` | Símbolo oficial de PyGebra: SVG canónico, PNG, favicon e icono de Windows. |
 | `pyproject.toml`, `uv.lock`, `.python-version` | Versión/dependencias declaradas, resolución bloqueada y Python de referencia. |
