@@ -109,7 +109,7 @@ class FormularioCeldas(forms.Form):
                 self.add_error(nombre, f"Completa {self.fields[nombre].label.lower()}.")
             else:
                 try:
-                    datos[nombre] = convertir_a_numero(texto)
+                    datos[nombre] = convertir_a_numero(texto, limitar_entrada=True)
                 except ValueError as error:
                     self.add_error(nombre, str(error))
 

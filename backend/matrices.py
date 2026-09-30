@@ -9,6 +9,9 @@ import random
 from fractions import Fraction
 
 from backend.operandos import ARIDAD_MATRICES, exigir_aridad, nombre_matriz
+from backend.seguridad_numerica import (
+    multiplicar_exacto, sumar_exacto, validar_literal_numerico, validar_valor_exacto,
+)
 
 
 def generar_matriz(cantidad_filas, cantidad_columnas):
@@ -39,7 +42,11 @@ def convertir_matriz_a_fracciones(matriz):
     for fila in matriz:
         nueva_fila = []
         for numero in fila:
-            nueva_fila.append(Fraction(numero))
+            if isinstance(numero, str):
+                validar_literal_numerico(numero)
+            else:
+                validar_valor_exacto(numero)
+            nueva_fila.append(validar_valor_exacto(Fraction(numero)))
         matriz_fracciones.append(nueva_fila)
 
     return matriz_fracciones
@@ -75,6 +82,7 @@ def validar_matriz_rectangular(matriz):
 
 
 def formatear_fraccion(numero):
+    validar_valor_exacto(numero)
     if numero.denominator == 1:
         return str(numero.numerator)
     return f"{numero.numerator}/{numero.denominator}"
@@ -139,7 +147,7 @@ def _operar_entradas(a, b, signo):
             f"A es {forma_a[0]}×{forma_a[1]} y B es {forma_b[0]}×{forma_b[1]}."
         )
     return [
-        [Fraction(x) + signo * Fraction(y) for x, y in zip(fila_a, fila_b)]
+        [sumar_exacto(x, signo * y) for x, y in zip(fila_a, fila_b)]
         for fila_a, fila_b in zip(a, b)
     ]
 
@@ -159,7 +167,7 @@ def multiplicar_escalar_matriz(escalar, matriz):
     _exigir_matriz(matriz)
     if isinstance(escalar, bool) or not isinstance(escalar, (int, Fraction)):
         raise ValueError("El escalar debe ser un número exacto.")
-    return [[Fraction(escalar) * Fraction(valor) for valor in fila] for fila in matriz]
+    return [[multiplicar_exacto(escalar, valor) for valor in fila] for fila in matriz]
 
 
 def trasponer_matriz(matriz):
@@ -190,7 +198,7 @@ def producto_punto(u, v):
 
     resultado = Fraction(0)
     for componente_u, componente_v in zip(u, v):
-        resultado += Fraction(componente_u) * Fraction(componente_v)
+        resultado = sumar_exacto(resultado, multiplicar_exacto(componente_u, componente_v))
 
     return resultado
 
@@ -240,7 +248,7 @@ def _pasos_producto(a, b, resultado):
     columnas_de_a = trasponer_matriz(a)
     columnas_de_b = trasponer_matriz(b)
     productos = [
-        [[Fraction(a[i][k]) * Fraction(b[k][j]) for k in range(comunes)] for j in range(len(columnas_de_b))]
+        [[multiplicar_exacto(a[i][k], b[k][j]) for k in range(comunes)] for j in range(len(columnas_de_b))]
         for i in range(filas_a)
     ]
     pasos = [

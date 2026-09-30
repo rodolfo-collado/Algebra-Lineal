@@ -16,6 +16,7 @@ from fractions import Fraction
 from backend.expresiones_matriciales.lexer import tokenizar
 from backend.expresiones_matriciales.nodos import Negacion, Numero, Producto, Resta, Simbolo, Suma
 from backend.expresiones_matriciales.parser import analizar
+from backend.seguridad_numerica import multiplicar_exacto, sumar_exacto
 
 NO_LINEAL = "La expresión deja de ser lineal porque multiplica dos cantidades simbólicas."
 _DIVISION = "La expresión deja de ser lineal porque divide por una cantidad simbólica."
@@ -101,15 +102,15 @@ def forma(constante=0, coeficientes=None):
 def sumar(izquierda, derecha):
     coeficientes = dict(izquierda.coeficientes)
     for variable, valor in derecha.coeficientes:
-        coeficientes[variable] = coeficientes.get(variable, Fraction(0)) + valor
-    return forma(izquierda.constante + derecha.constante, coeficientes)
+        coeficientes[variable] = sumar_exacto(coeficientes.get(variable, Fraction(0)), valor)
+    return forma(sumar_exacto(izquierda.constante, derecha.constante), coeficientes)
 
 
 def escalar(factor, expresion):
     factor = Fraction(factor)
     return forma(
-        expresion.constante * factor,
-        {variable: valor * factor for variable, valor in expresion.coeficientes},
+        multiplicar_exacto(expresion.constante, factor),
+        {variable: multiplicar_exacto(valor, factor) for variable, valor in expresion.coeficientes},
     )
 
 

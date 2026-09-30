@@ -15,6 +15,7 @@ from backend.gauss import aplicar_gauss
 from backend.gauss_jordan import aplicar_gauss_jordan
 from backend.matrices import formatear_fraccion, validar_matriz_rectangular
 from backend.operaciones_filas import texto_factor
+from backend.seguridad_numerica import dividir_exacto, multiplicar_exacto, restar_exacto, sumar_exacto
 
 SOLUCION_UNICA = "Consistente de solución única"
 SOLUCIONES_INFINITAS = "Consistente de soluciones infinitas"
@@ -413,11 +414,11 @@ def sustitucion_regresiva(matriz_escalonada, pivotes, cantidad_variables=None):
 
         acumulado = Fraction(0)
         for indice in range(columna + 1, cantidad_variables):
-            acumulado += fila_actual[indice] * soluciones[indice]
+            acumulado = sumar_exacto(acumulado, multiplicar_exacto(fila_actual[indice], soluciones[indice]))
 
-        soluciones[columna] = (
-            fila_actual[cantidad_variables] - acumulado
-        ) / fila_actual[columna]
+        soluciones[columna] = dividir_exacto(
+            restar_exacto(fila_actual[cantidad_variables], acumulado), fila_actual[columna]
+        )
         pasos.append({
             "variable": columna + 1,
             "expresion": expresion,

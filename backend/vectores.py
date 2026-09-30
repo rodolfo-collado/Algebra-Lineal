@@ -12,6 +12,7 @@ y se resuelve con el Gauss-Jordan del proyecto.
 
 from fractions import Fraction
 from backend.operandos import ARIDAD_VECTORES, exigir_aridad
+from backend.seguridad_numerica import multiplicar_exacto, sumar_exacto
 
 # La validación de un vector vive junto al producto punto, en backend.matrices,
 # porque las filas y columnas de una matriz también son vectores.
@@ -74,7 +75,7 @@ def operar_vectores(operacion, vectores):
     resultado = convertir_vector_a_fracciones(vectores[0])
     signo = 1 if operacion == "suma" else -1
     for vector in vectores[1:]:
-        resultado = [a + signo * Fraction(b) for a, b in zip(resultado, vector)]
+        resultado = [sumar_exacto(a, signo * b) for a, b in zip(resultado, vector)]
     return resultado
 
 
@@ -101,7 +102,7 @@ def multiplicar_escalar(escalar, v):
     factor = Fraction(escalar)
     resultado = []
     for componente in v:
-        resultado.append(factor * Fraction(componente))
+        resultado.append(multiplicar_exacto(factor, componente))
 
     return resultado
 

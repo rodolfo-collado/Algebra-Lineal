@@ -16,6 +16,7 @@ from fractions import Fraction
 
 from backend.matrices import resolver_operacion_matrices, validar_matriz, validar_vector
 from backend.vectores import multiplicar_escalar, restar_vectores, sumar_vectores
+from backend.seguridad_numerica import multiplicar_exacto, restar_exacto, sumar_exacto
 
 from backend.expresiones_matriciales.lineal import (
     Aplicacion,
@@ -431,7 +432,7 @@ def _operar(texto, izq, der, izq_texto, der_texto, tabla, es_suma):
             _no(texto, izq, der, izq_texto, der_texto, "Para sumar o restar vectores, ambos deben tener la misma dimensión.")
         resultado = (sumar_vectores if es_suma else restar_vectores)(izq.valor, der.valor)
         return Valor("vector", resultado, len(resultado), None), _detalle_vector(clave, izq.valor, der.valor, resultado)
-    resultado = izq.valor + der.valor if es_suma else izq.valor - der.valor
+    resultado = (sumar_exacto if es_suma else restar_exacto)(izq.valor, der.valor)
     return Valor("escalar", resultado), None
 
 
@@ -450,7 +451,7 @@ def _multiplicar(texto, izq, der, izq_texto, der_texto):
     if izq.tipo in _SIMBOLICOS or der.tipo in _SIMBOLICOS:
         return _producto_simbolico(texto, izq, der, izq_texto, der_texto, par)
     if par == ("escalar", "escalar"):
-        return Valor("escalar", izq.valor * der.valor), None
+        return Valor("escalar", multiplicar_exacto(izq.valor, der.valor)), None
     if par == ("escalar", "vector"):
         resultado = multiplicar_escalar(izq.valor, der.valor)
         return Valor("vector", resultado, len(resultado), None), _detalle_escalar_vector(izq.valor, der.valor, resultado)
