@@ -47,6 +47,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 TEMPLATES = RAIZ / "frontend" / "web" / "calculadora" / "templates" / "calculadora"
 TODOS = list(BLOQUES_PREDETERMINADOS)
 HERRAMIENTAS = ("/sistemas/", RUTA_VECTORES, RUTA_MATRICES, RUTA_ECUACIONES)
+RUTA_INVERSA = "/matrices/inversa/"
 # Los mismos tres sistemas de test_resolver_sistema escritos como matriz aumentada.
 MATRICES = {UNICA: [[1, 1, 3], [1, -1, 1]], INFINITAS: [[1, 1, 2], [2, 2, 4]], INCONSISTENTE: [[1, 1, 2], [2, 2, 5]]}
 
@@ -452,6 +453,9 @@ class PruebasTransversales(SimpleTestCase):
             (RUTA_MATRICES, datos_producto(metodo="comparar")),
             (RUTA_ECUACIONES, datos_ecuacion(*AXB_UNICA)),
             (RUTA_ECUACIONES, datos_ecuacion(*AXB_INFINITAS, metodo="comparar")),
+            # P26.4: los dos métodos de la matriz inversa, con inversa y sin ella.
+            *((RUTA_INVERSA, {"orden": "2", "metodo": metodo, **{f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(a) for j, v in enumerate(fila)}})
+              for metodo in ("gauss_jordan", "directo_2x2") for a in ([[3, 4], [5, 6]], [[1, 2], [2, 4]])),
         )
 
     def test_ancla_y_foco_del_resultado_se_conservan(self):

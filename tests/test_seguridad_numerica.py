@@ -57,6 +57,7 @@ def entradas_web(literal):
     yield vectores, combinacion([[1]], [literal])
     yield ecuaciones, datos_ecuacion(a=[[literal]], b=[1])
     yield ecuaciones, datos_ecuacion(a=[[1]], b=[literal])
+    yield "/matrices/inversa/", {"orden": "1", "metodo": "gauss_jordan", "celda_A_0_0": literal}
     for nombre, tipo, valor in (("A", "matriz", [[literal]]), ("u", "vector", [literal]), ("k", "escalar", literal)):
         yield expresiones, datos_expresion(nombre, [{"nombre": nombre, "tipo": tipo, "valor": valor}])
 
@@ -154,6 +155,9 @@ class PruebasEntradasWeb(SimpleTestCase):
                 with self.subTest(ruta=ruta, metodo=metodo):
                     self.assert_error_controlado(self.client.post(ruta, datos))
         self.assert_error_controlado(self.client.post("/vectores/operaciones/", combinacion(list(map(list, zip(*a))), b)))
+        # [A | I] crece igual: la inversa de A (6×6) también se detiene con el mensaje controlado.
+        from tests.test_matriz_inversa_web import datos_inversa
+        self.assert_error_controlado(self.client.post("/matrices/inversa/", datos_inversa(a)))
 
     def assert_error_controlado(self, respuesta):
         self.assertEqual(respuesta.status_code, 200)
