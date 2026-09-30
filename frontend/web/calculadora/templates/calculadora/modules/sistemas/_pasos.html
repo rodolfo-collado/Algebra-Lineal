@@ -1,4 +1,5 @@
 {% comment %}Operaciones por filas de un método, a partir de los pasos que registra el backend.{% endcomment %}
+{% firstof resultado.columnas_izquierda columnas_izquierda as corte_aumentado %}
 {% if resultado.pasos %}
     <ol class="steps">
         {% for paso in resultado.pasos %}
@@ -14,12 +15,12 @@
                     <div class="matrix-pair">
                         <div class="matrix-pair-item">
                             <p class="matrix-label">Antes</p>
-                            {% include "calculadora/components/matrix.html" with matriz=paso.antes etiqueta="Matriz antes del paso" %}
+                            {% include "calculadora/components/matrix.html" with matriz=paso.antes etiqueta="Matriz antes del paso" columnas_izquierda=corte_aumentado %}
                         </div>
                         <span class="matrix-pair-arrow" aria-hidden="true">→</span>
                         <div class="matrix-pair-item">
                             <p class="matrix-label">Después</p>
-                            {% include "calculadora/components/matrix.html" with matriz=paso.despues etiqueta="Matriz después del paso" %}
+                            {% include "calculadora/components/matrix.html" with matriz=paso.despues etiqueta="Matriz después del paso" columnas_izquierda=corte_aumentado %}
                         </div>
                     </div>
                 </article>

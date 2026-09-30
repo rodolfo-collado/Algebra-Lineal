@@ -240,6 +240,31 @@ uv run python -m scripts.benchmark_presupuesto --web
 Consulta el modelo, las opciones y los resultados locales en
 [Presupuesto computacional](presupuesto-computacional.md#benchmark).
 
+## Regresiones de Sistemas y bloques aumentados
+
+```bash
+uv run python -m unittest tests.test_matrices_bloques tests.test_gauss_jordan_bloques tests.test_presupuesto_bloques tests.test_matrices_aumentadas_web -v
+```
+
+Estas pruebas cubren las primitivas exactas, reducción de `[A | B]` y `[A | I]`,
+singularidad según pivotes, protección numérica, presupuesto y separación de
+bloques en todos los pasos del procedimiento.
+
+`uv run python -m unittest tests.test_regresion_sistemas_bloques -v` compara
+Sistemas con fixtures estáticas obtenidas del árbol Git original de `develop`
+tras el PR #60 (`79c04d999775387092771538fc3e668c8da47e2a`). Las expectativas
+almacenan una sola vez las partes comunes y el prefijo de pasos de los motores;
+las pruebas no ejecutan Git ni reproducen el algoritmo de eliminación.
+
+Los siete casos cubren solución única, infinitas, inconsistencia, una matriz
+rectangular, fracciones, intercambio de filas y una columna sin pivote. Se
+compara el resultado completo del backend (matrices, pivotes, clasificación,
+solución y sustitución), todos los pasos antes/operación/después, el parser y
+los servicios de entrada textual y aumentada. También se verifica `Ax = b`,
+la opción Comparar ambos y el texto completo del panel final de Django para
+ambas entradas. La preparación de `[A | I]` y su contrato se describen en
+[Matrices aumentadas por bloques](matrices-aumentadas.md).
+
 ## Numeración romana
 
 `uv run python -m unittest tests.test_numeros_romanos tests.test_numeros_romanos_web -v`

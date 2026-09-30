@@ -1,4 +1,4 @@
-{% comment %}Matriz genérica de valores o expresiones. Aumentada y pivotes son opcionales.{% endcomment %}
+{% comment %}Matriz genérica de valores o expresiones. columnas_izquierda separa bloques en un solo table; aumentada sin corte conserva la última columna de [A | b]. Los índices de columnas_pivote son de base uno. add:0 normaliza el entero si llega capturado por firstof.{% endcomment %}{% with columnas_izquierda=columnas_izquierda|add:0 %}
 <div class="matrix">
     <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
     <div class="matrix-scroll" tabindex="0" role="region" aria-label="{{ etiqueta|default:'Matriz' }}">
@@ -7,7 +7,7 @@
                 {% for fila in matriz %}
                     <tr>
                         {% for valor in fila %}
-                            <td class="{% if aumentada and forloop.last %}constant{% endif %}{% if columnas_pivote and forloop.counter in columnas_pivote %} pivot{% endif %}">{{ valor }}</td>
+                            <td class="{% if columnas_izquierda %}{% if forloop.counter0 == columnas_izquierda %}constant{% elif forloop.counter0 > columnas_izquierda %}augmented{% endif %}{% elif aumentada and forloop.last %}constant{% endif %}{% if columnas_pivote and forloop.counter in columnas_pivote %} pivot{% endif %}">{{ valor }}</td>
                         {% endfor %}
                     </tr>
                 {% endfor %}
@@ -15,4 +15,4 @@
         </table>
     </div>
     <span class="matrix-fence matrix-fence-end" aria-hidden="true"></span>
-</div>
+</div>{% endwith %}
