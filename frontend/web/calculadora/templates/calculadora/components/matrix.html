@@ -1,2 +1,2 @@
-{% comment %}Compatibilidad: los sistemas usan matrices aumentadas.{% endcomment %}
-{% include "calculadora/components/matriz.html" with matriz=matriz etiqueta=etiqueta aumentada=True columnas_pivote=columnas_pivote only %}
+{% comment %}Matriz aumentada por bloques. columnas_izquierda indica el corte; sin él se conserva [A | b].{% endcomment %}
+{% include "calculadora/components/matriz.html" with matriz=matriz etiqueta=etiqueta aumentada=True columnas_izquierda=columnas_izquierda columnas_pivote=columnas_pivote only %}

@@ -955,11 +955,15 @@ a.tool-link .tool-link-name {
     font-weight: 700;
 }
 
+.matrix-table td.constant,
+.matrix-table td.augmented {
+    background: var(--color-aug);
+    font-weight: 600;
+}
+
 .matrix-table td.constant {
     border-left: 2.5px solid var(--color-aug-strong);
-    background: var(--color-aug);
     padding-left: 0.9rem;
-    font-weight: 600;
 }
 
 @media (max-width: 760px) {
