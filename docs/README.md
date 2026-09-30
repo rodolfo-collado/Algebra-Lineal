@@ -30,6 +30,9 @@
   [su propio documento](presupuesto-sistemas.md).
 - [Protección numérica común](seguridad-numerica.md): inspección de literales
   antes de convertir, crecimiento exacto acotado y errores controlados.
+- [Matrices aumentadas por bloques](matrices-aumentadas.md): primitivas exactas,
+  contrato de Gauss-Jordan para `[A | B]`, preparación de `[A | I]` y separación
+  de bloques durante el procedimiento.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   política de tags, CD y checksums.
 
