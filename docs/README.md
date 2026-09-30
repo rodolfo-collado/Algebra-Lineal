@@ -33,6 +33,9 @@
 - [Matrices aumentadas por bloques](matrices-aumentadas.md): primitivas exactas,
   contrato de Gauss-Jordan para `[A | B]`, preparación de `[A | I]` y separación
   de bloques durante el procedimiento.
+- [Matriz inversa](matriz-inversa.md): Gauss-Jordan sobre `[A | I]`, la regla
+  de las matrices 2×2, matrices sin inversa y la confirmación antes de un
+  cálculo largo.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   política de tags, CD y checksums.
 

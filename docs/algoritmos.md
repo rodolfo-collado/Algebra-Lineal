@@ -61,6 +61,12 @@ flowchart LR
     C <--> D["Matriz aumentada [A | b]"]
 ```
 
+La matriz inversa usa el mismo motor con un aumento de varias columnas:
+`matriz_inversa.py` reduce `[A | I]` con `aplicar_gauss_jordan(...,
+columnas_pivote=n)` y lee el bloque derecho cuando el izquierdo llega a la
+identidad. Para 2×2 ofrece además la regla con `ad − bc`, un cálculo aparte y
+sin eliminación. Consulta [Matriz inversa](matriz-inversa.md).
+
 `ecuaciones_matriciales.py` construye `[A | b]` y llama al motor de sistemas.
 `vectores.py` hace lo mismo para preguntar si b es combinación de sus generadores,
 nombrando las incógnitas `x1`, `x2`, etc. Solución única o infinitas significa que

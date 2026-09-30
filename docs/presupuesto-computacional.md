@@ -157,10 +157,10 @@ código nombra como referencias:
 - `categoria(estimacion)`: `Categoria.NORMAL` (menos de 1 s), `PERCEPTIBLE`
   (menos de 3 s), `PESADA` (menos de 10 s) o `MUY_PESADA`.
 
-Las categorías son valores, no textos. La interfaz decidirá qué decir, por
+Las categorías son valores, no textos. La interfaz decide qué decir, por
 ejemplo «Esta operación puede tardar varios segundos. ¿Quieres continuar?», y no
-mostrará operaciones elementales, complejidad, bits ni memoria. Todavía nada
-muestra ese aviso.
+muestra operaciones elementales, complejidad, bits ni memoria. Desde P26.4,
+Matriz inversa muestra ese aviso (ver [Integración actual](#integración-actual)).
 
 Las mediciones históricas de [Costo observado](presupuesto-sistemas.md#costo-observado)
 caen dentro del intervalo de referencia (10×10: 2,46 s medidos, intervalo de
@@ -203,10 +203,21 @@ Los servicios pueden consultar la estimación antes de ejecutar:
   método, la reducción de [A | b] más el producto A·x de la comprobación, que se
   cuenta siempre porque antes de resolver no se sabe si la solución es única.
 
-Las vistas todavía no las llaman: no hay aviso, confirmación ni cambio en el
-flujo, y ninguna entrada válida se rechaza por su costo. Una prueba lo fija
-forzando que todo sea muy pesado y comprobando que ambas páginas siguen
-resolviendo.
+Las vistas de esas dos herramientas todavía no las llaman: no hay aviso,
+confirmación ni cambio en su flujo, y ninguna entrada válida se rechaza por su
+costo. Una prueba lo fija forzando que todo sea muy pesado y comprobando que
+ambas páginas siguen resolviendo.
+
+Matriz inversa (P26.4) es la primera integración visible.
+`servicios_inversa.estimar_inversa_web(entrada)` estima Gauss-Jordan sobre
+`[A | I]` con `estimar_gauss_jordan(n, 2 * n, columnas_pivote=n, perfil=perfil_numerico(a))`
+antes de ejecutar. Con `Categoria.PESADA` o `MUY_PESADA`, la vista no calcula:
+muestra un aviso con el intervalo de `intervalo_segundos` y espera a que el
+usuario pulse **Continuar**. El servidor exige una firma de esa misma entrada, así
+que la confirmación no sirve para otra matriz ni depende de JavaScript. La regla
+2×2 no se estima. Tampoco aquí se rechaza nada por su costo: la entrada sigue
+siendo válida y el usuario decide. Consulta
+[Matriz inversa](matriz-inversa.md#presupuesto-y-confirmación).
 
 ## Benchmark
 
@@ -299,8 +310,11 @@ escala depende del equipo.
 - P26.3, Gauss-Jordan con aumentos de varias columnas: `estimar_gauss_jordan(n, 2 * n, columnas_pivote=n)`
   ya describe [A | I]. Si el motor cambia lo que guarda cada paso, se actualiza
   la cuenta de valores del procedimiento.
-- P26.4, Matriz inversa: estimar antes de ejecutar, decidir con `categoria` y
-  recalibrar las referencias con la herramienta real.
+- P26.4, Matriz inversa: ya estima antes de ejecutar y decide con `categoria`.
+  El POST completo midió 1,7 s en 9×9 y 2,7 s en 10×10 con enteros, dentro del
+  intervalo; la referencia queda entre un 25 y un 35 % por encima. Las
+  referencias no se recalibraron; conviene hacerlo con `--web` y la herramienta
+  real en un equipo representativo.
 - P26.5, sistema por inversa: la composición de arriba; el texto se lee con el
   parser existente, como en `estimar_entrada_web`.
 - P26.6, renombrar Resolver un sistema: no cambia el presupuesto; los

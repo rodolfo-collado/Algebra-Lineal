@@ -466,6 +466,23 @@ misma estructura.
 Para las decisiones de presentación y accesibilidad, consulta [Interfaz](interfaz.md).
 La reutilización del cálculo se explica en [Algoritmos](algoritmos.md).
 
+## Matriz inversa
+
+**Matriz inversa** (`/matrices/inversa/`) recibe una matriz cuadrada A, de 1×1
+a 10×10, y calcula su inversa exacta. El método se elige en el formulario:
+
+- **Gauss-Jordan** (predeterminado, cualquier tamaño): coloca la identidad
+  junto a A, aplica operaciones por filas a `[A | I]` y, si el lado izquierdo
+  llega a la identidad, el derecho es `A⁻¹`.
+- **Método para matrices 2×2** (solo si A es 2×2): calcula `ad − bc` y, si no
+  es 0, intercambia a y d, cambia el signo de b y c y multiplica por
+  `1/(ad − bc)`.
+
+Si A no tiene inversa, el resultado lo dice con una explicación breve según el
+método. Un cálculo con Gauss-Jordan que se estima largo pide confirmación antes
+de ejecutarse. Los detalles, los ejemplos y la API están en
+[Matriz inversa](matriz-inversa.md).
+
 ## Expresiones matriciales
 
 **Expresiones matriciales** (`/matrices/expresiones/`) evalúa una expresión

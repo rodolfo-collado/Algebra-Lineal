@@ -449,6 +449,30 @@ solución o contradicción) se muestra una vez, y tras él van plegados
 «Comprobar solución» (`A · x = b`) e «Interpretar Ax = b» (combinación lineal
 de las columnas de A), que parten de la solución.
 
+## Matriz inversa
+
+`/matrices/inversa/` (`InversaForm` en `forms_inversa.py`,
+`servicios_inversa.py`, `modules/inversa/`) reutiliza `FormularioCeldas`,
+`_dimension.html` y las plantillas de celdas. Como A es cuadrada, un solo
+control, **Filas y columnas**, define su tamaño. `inversa.js` regenera la
+cuadrícula y desactiva el radio **Método para matrices 2×2** fuera de 2×2 (el
+servidor también lo desactiva y rechaza un envío manipulado). Los nombres de
+los métodos no llevan fórmulas; la regla `ad − bc` solo aparece dentro del
+procedimiento.
+
+El procedimiento de Gauss-Jordan reutiliza `modules/sistemas/_pasos.html` con
+`columnas_izquierda = n`, así que el separador de `[A | I]` se ve en todas las
+matrices. El resultado (`A⁻¹ =` o «La matriz no tiene inversa.») va al final y
+usa Exacto / Decimal.
+
+Cuando la estimación es pesada, el formulario muestra arriba un aviso
+(`_confirmacion.html`, `.confirmation`) en tonos neutros con acento verde,
+nunca con el estilo `.alert` de los errores: dice que la matriz es válida, el
+tiempo aproximado y pregunta si continuar. **Cancelar** reutiliza `ajustar`
+y **Continuar** envía una firma de la entrada que el servidor comprueba. En
+móvil, los dos botones ocupan cada uno su fila. Editar la matriz oculta el
+aviso. Consulta [Matriz inversa](matriz-inversa.md#presupuesto-y-confirmación).
+
 ## Conversión de bases
 
 `/bases/conversion/` (`ConversionBasesForm`, `servicios_bases.py`,
@@ -510,14 +534,14 @@ de tema: extiende el layout común.
 
 Hoy están disponibles las herramientas de sistemas de ecuaciones, las
 operaciones con vectores (incluida la combinación lineal), las operaciones con
-matrices (incluidos `AB` y `Ax`), Resolver Ax = b, la conversión de bases y la
-de números romanos.
+matrices (incluidos `AB` y `Ax`), Resolver Ax = b, la matriz inversa, la
+conversión de bases y la de números romanos.
 No agregues enlaces a pantallas que todavía no existen.
 
 ## Formato exacto y decimal
 
-Sistemas, Vectores (incluida combinación lineal), Matrices (incluidos AB y Ax)
-y Ax=b ofrecen un selector discreto junto al resultado. Exacto es el valor
+Sistemas, Vectores (incluida combinación lineal), Matrices (incluidos AB y Ax),
+Ax=b y Matriz inversa ofrecen un selector discreto junto al resultado. Exacto es el valor
 predeterminado y el contenido del HTML sin JavaScript. Decimal permite elegir
 un máximo de 2, 4, 6 u 8 decimales; el valor inicial es 4. Se recortan ceros
 finales: `7/2` → `3.5`, `4` → `4`, `1/3` → `0.3333`.

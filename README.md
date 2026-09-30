@@ -68,6 +68,8 @@ entrada para mantenerla legible.
 - Determinación de una matriz desconocida en `Ax = b`, cuando x es un vector simbólico y b un vector de expresiones lineales.
 - Procedimiento por filas o como combinación lineal de columnas.
 - Resolución de `Ax = b`, también con matrices rectangulares.
+- Matriz inversa de una matriz cuadrada, por Gauss-Jordan o, en 2×2, con la
+  regla directa del curso; si no existe, el resultado explica por qué.
 
 En el producto `Ax`, x es conocido. Resolver Ax = b busca x y explica la
 relación entre la ecuación matricial, el sistema y la matriz aumentada.

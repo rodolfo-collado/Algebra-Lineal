@@ -91,7 +91,11 @@ El launcher inicia Waitress en loopback y abre pywebview. Consulta
    `components/numeric_format.html` bajo el encabezado del resultado y carga
    `numeros.js` en `extra_js`. El selector Exacto / Decimal queda resuelto sin
    tocar el backend ni el servicio; consulta [Interfaz](interfaz.md#formato-exacto-y-decimal).
-7. Añade pruebas de rutas, navegación, búsqueda y comportamiento. Mantén la
+7. Si una entrada válida puede tardar varios segundos, estímala con
+   `presupuesto_computacional` antes de ejecutar y, con una categoría pesada,
+   pide confirmación como [Matriz inversa](matriz-inversa.md#presupuesto-y-confirmación):
+   un aviso dentro del formulario y una confirmación que el servidor comprueba.
+8. Añade pruebas de rutas, navegación, búsqueda y comportamiento. Mantén la
    matemática en `backend/` y la presentación en los templates del módulo.
 
 Las decisiones de componentes, accesibilidad y estilo están en

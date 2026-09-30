@@ -27,7 +27,7 @@ flowchart TD
 
 | Ruta | Responsabilidad |
 | --- | --- |
-| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, bases, numeración romana y presupuestos de entrada y de costo. |
+| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, matriz inversa, bases, numeración romana y presupuestos de entrada y de costo. |
 | `frontend/terminal/` | `menu.py` coordina; `opciones.py` ejecuta opciones; `entradas.py` lee; `salida.py` presenta; `consola.py` maneja color, pausas y limpieza. |
 | `frontend/web/algebra_web/` | Configuración Django, rutas raíz y entradas WSGI/ASGI. |
 | `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, exploraciones, templates y recursos locales. |
@@ -73,6 +73,7 @@ templates/calculadora/
 ├── modules/matrices/         # entrada rectangular, resultado y procedimientos
 ├── modules/expresiones/      # símbolos, expresión o igualdad, y procedimiento por nodos
 ├── modules/ecuaciones/       # Ax = b: entrada, equivalencias y eliminación reutilizada
+├── modules/inversa/          # matriz inversa: Gauss-Jordan sobre [A | I], regla 2×2 y aviso de espera
 ├── modules/bases/            # index.html y procedimiento de la conversión
 └── modules/romanos/          # arábigo ↔ romano: resultado y procedimiento plegable
 ```
