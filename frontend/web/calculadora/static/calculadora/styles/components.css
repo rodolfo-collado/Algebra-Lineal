@@ -1021,6 +1021,11 @@ a.tool-link .tool-link-name {
     .search-large .search-submit {
         margin: 0.45rem 0 0;
     }
+
+    /* Si Cancelar y Continuar no caben juntos, cada uno ocupa su fila completa. */
+    .confirmation-actions .btn {
+        flex: 1 1 auto;
+    }
 }
 
 /* —— Formato Exacto / Decimal: controles junto al resultado; sin JavaScript quedan ocultos y el HTML es exacto —— */
