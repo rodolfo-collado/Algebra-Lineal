@@ -23,16 +23,14 @@
             <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos.</p>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
-        <section class="workspace-section">
-            <fieldset class="choice-fieldset">
-                <legend>{{ form.metodo.label }}</legend>
-                <div class="option-list">
-                    {% for radio in form.metodo %}<label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
-                </div>
-                {{ form.metodo.errors }}
-                <p class="field-help option-help">Gauss-Jordan sirve para cualquier matriz cuadrada. El método para matrices 2×2 usa una regla directa que solo existe para ese tamaño.</p>
-            </fieldset>
+        <section class="workspace-section" data-inverse-method{% if not form.metodo_2x2_disponible %} hidden{% endif %}>
+            {% if form.metodo_2x2_disponible %}
+                {% include "calculadora/modules/inversa/_selector_metodo.html" %}
+            {% else %}
+                <input type="hidden" name="metodo" value="gauss_jordan">
+            {% endif %}
         </section>
+        {% if not form.metodo_2x2_disponible %}{{ form.metodo.errors }}{% endif %}
         <section class="workspace-section">
             <label class="option" for="{{ form.verificar.id_for_label }}">
                 {{ form.verificar }}<span>{{ form.verificar.label }}</span>
@@ -40,6 +38,29 @@
             <p class="field-help option-help" id="inverse-verification-help">{{ form.verificar.help_text }}</p>
             {{ form.verificar.errors }}
         </section>
+        <details class="disclosure workspace-section" data-inverse-function{% if form.funcion_adicional.value != "ninguna" %} open{% endif %}>
+            <summary class="disclosure-summary">
+                <svg class="disclosure-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <h3 class="disclosure-title">Aplicaciones y propiedades</h3>
+            </summary>
+            <div class="disclosure-body">
+                <fieldset class="choice-fieldset">
+                    <legend class="sr-only">{{ form.funcion_adicional.label }}</legend>
+                    <div class="option-list">
+                        {% for radio in form.funcion_adicional %}<label class="option" for="{{ radio.id_for_label }}">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                    </div>
+                    {{ form.funcion_adicional.errors }}
+                    <p class="field-help option-help">Primero se calcula A⁻¹. Puedes elegir una sola aplicación o propiedad adicional.</p>
+                    <noscript><p class="field-help">Elige una opción y pulsa <strong>Aplicar</strong> para mostrar la matriz B o el vector b cuando hagan falta.</p></noscript>
+                </fieldset>
+                <div class="matrix-entry-list" data-inverse-additional-entry data-perfil="numerico">
+                    {% for matriz in form.matrices|slice:"1:" %}
+                        {% include "calculadora/components/matriz_entrada.html" with nombre=matriz.nombre filas=matriz.filas vector=matriz.vector only %}
+                    {% endfor %}
+                </div>
+                <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
+            </div>
+        </details>
         <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular inversa</button></div>
     </form>
 </section>
@@ -52,7 +73,7 @@
     <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
             <p class="section-kicker">Matriz inversa · {{ resultado.titulo_metodo }}</p>
-            <h2 id="results-title">Inversa de A ({{ resultado.forma }})</h2>
+            <h2 id="results-title">{{ resultado.titulo }} ({{ resultado.forma }})</h2>
         </header>
         {% include "calculadora/components/numeric_format.html" %}
 
@@ -65,18 +86,25 @@
             {% if resultado.verificar_solicitado %}
                 {% include "calculadora/modules/inversa/_verificacion.html" %}
             {% endif %}
+            {% if resultado.funcion_adicional != "ninguna" %}
+                {% include "calculadora/modules/inversa/_adicional.html" %}
+            {% endif %}
         {% enddisclosure %}
 
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
-            {% if resultado.invertible %}
-                <div class="matrix-equation" tabindex="0" role="region" aria-label="Inversa de A">
-                    <span class="matrix-expression">A⁻¹ =</span>
-                    {% include "calculadora/components/matriz.html" with matriz=resultado.inversa etiqueta="Matriz inversa de A" only %}
+            {% if resultado.invertible and resultado.adicional.aplicable %}
+                <div class="matrix-equation" tabindex="0" role="region" aria-label="{{ resultado.etiqueta_final }}">
+                    <span class="matrix-expression">{{ resultado.expresion_final }} =</span>
+                    {% include "calculadora/components/matriz.html" with matriz=resultado.adicional.resultado etiqueta=resultado.etiqueta_final only %}
                 </div>
-            {% else %}
+            {% elif not resultado.invertible %}
                 <p class="classification-value">La matriz no tiene inversa.</p>
                 <p class="muted inverse-reason">{{ resultado.explicacion }}</p>
+                {% if resultado.funcion_adicional != "ninguna" %}<p class="muted inverse-reason">{{ resultado.adicional.motivo }}</p>{% endif %}
+            {% else %}
+                <p class="classification-value">La propiedad no puede aplicarse.</p>
+                <p class="muted inverse-reason">{{ resultado.adicional.motivo }}</p>
             {% endif %}
         </section>
     </section>
@@ -88,6 +116,7 @@
 <script src="{% static 'calculadora/numeros.js' %}" defer></script>
 <template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
 <template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
+<template id="inverse-method-template">{% include "calculadora/modules/inversa/_selector_metodo.html" with inerte=True %}</template>
 <script src="{% static 'calculadora/inversa.js' %}" defer></script>
 <script src="{% static 'calculadora/teclado.js' %}" defer></script>
 {% endblock %}

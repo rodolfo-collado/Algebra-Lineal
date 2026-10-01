@@ -1,0 +1,23 @@
+{% load componentes %}
+{% disclosure titulo=titulo nivel=5 %}
+    {% if inversion.metodo == "gauss_jordan" %}
+        <p class="procedure-lead">Se coloca la identidad junto a {{ inversion.nombre }} y se aplican las mismas operaciones por filas a ambos bloques.</p>
+        {% include "calculadora/components/matriz.html" with matriz=inversion.aumentada etiqueta="Matriz junto a la identidad" columnas_izquierda=inversion.columnas_izquierda only %}
+        {% include "calculadora/modules/sistemas/_pasos.html" with resultado=inversion %}
+        {% include "calculadora/components/matriz.html" with matriz=inversion.final etiqueta="Matriz final de la inversión adicional" columnas_izquierda=inversion.columnas_izquierda only %}
+        <p class="procedure-note">{{ inversion.lectura }}</p>
+    {% else %}
+        <p class="procedure-lead">Se aplica la misma regla 2×2 a {{ inversion.nombre }}:</p>
+        {% include "calculadora/components/matriz.html" with matriz=inversion.matriz etiqueta="Matriz de la inversión adicional" only %}
+        <p class="procedure-line">{{ inversion.ad_menos_bc }}</p>
+        {% if inversion.invertible %}
+            <p class="procedure-line">{{ inversion.factor }}</p>
+            <div class="matrix-equation" tabindex="0" role="region" aria-label="Regla 2×2 de la inversión adicional">
+                <span class="matrix-expression">{{ inversion.factor_operando }} ·</span>
+                {% include "calculadora/components/matriz.html" with matriz=inversion.intercambiada etiqueta="Matriz intercambiada de la inversión adicional" only %}
+                <span class="matrix-expression">=</span>
+                {% include "calculadora/components/matriz.html" with matriz=inversion.desarrollo etiqueta="Desarrollo de la inversión adicional" only %}
+            </div>
+        {% else %}<p class="procedure-note">Como ad − bc = 0, esta matriz no tiene inversa.</p>{% endif %}
+    {% endif %}
+{% enddisclosure %}

@@ -1,0 +1,13 @@
+<fieldset class="choice-fieldset">
+    <legend>{{ form.metodo.label }}</legend>
+    <div class="option-list">
+        {% if inerte %}
+            <label class="option" for="id_metodo_template_0"><input type="radio" name="metodo" value="gauss_jordan" id="id_metodo_template_0" checked><span>Gauss-Jordan</span></label>
+            <label class="option" for="id_metodo_template_1"><input type="radio" name="metodo" value="directo_2x2" id="id_metodo_template_1"><span>Método para matrices 2×2</span></label>
+        {% else %}
+            {% for radio in form.metodo %}<label class="option" for="{{ radio.id_for_label }}">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+        {% endif %}
+    </div>
+    {% if not inerte %}{{ form.metodo.errors }}{% endif %}
+    <p class="field-help option-help">Gauss-Jordan sirve para cualquier matriz cuadrada. El método para matrices 2×2 usa una regla directa que solo existe para ese tamaño.</p>
+</fieldset>
