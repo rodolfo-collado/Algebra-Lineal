@@ -69,6 +69,7 @@ def texto(html, desde='id="resultado"'):
 
 
 def radios(html):
+    html = re.sub(r"<template\b[^>]*>.*?</template>", "", html, flags=re.S)
     return {valor: atributos for valor, atributos in re.findall(r'<input type="radio" name="metodo" value="([^"]+)"([^>]*)>', html)}
 
 
@@ -148,7 +149,7 @@ class PruebasEntrada(SimpleTestCase):
     def test_el_selector_de_metodo_no_muestra_formulas(self):
         html = self.client.get(RUTA).content.decode()
         formulario = elemento_html(html, html.index('id="inversa-form"'), "form")
-        etiquetas = re.findall(r'<input type="radio"[^>]*>\s*<span>([^<]+)</span>', formulario)
+        etiquetas = re.findall(r'<input type="radio" name="metodo"[^>]*>\s*<span>([^<]+)</span>', formulario)
         self.assertEqual(etiquetas, ["Gauss-Jordan", "Método para matrices 2×2"])
         selector = elemento_html(formulario, formulario.index('<legend>Método</legend>'), "fieldset")
         for formula in ("ad − bc", "ad-bc", "1/(", "A⁻¹", "[A | I]", "determinante"):
@@ -160,9 +161,9 @@ class PruebasEntrada(SimpleTestCase):
                 # Aunque llegue el método 2×2, al cambiar de tamaño se vuelve a Gauss-Jordan.
                 html = self.client.post(RUTA, {"orden": str(orden), "metodo": "directo_2x2", "ajustar": "1"}).content.decode()
                 metodos = radios(html)
-                self.assertIn("disabled", metodos["directo_2x2"])
-                self.assertNotIn("checked", metodos["directo_2x2"])
-                self.assertIn("checked", metodos["gauss_jordan"])
+                self.assertEqual(metodos, {})
+                self.assertEqual(Contenido(html).campos["metodo"]["value"], "gauss_jordan")
+                self.assertNotIn('<legend>Método</legend>', html.split('<template')[0])
                 self.assertEqual(len([k for k in Contenido(html).campos if k.startswith("celda_A_")]), orden * orden)
                 self.assertIn(f"A es {orden}×{orden}.", html)
         html = self.client.post(RUTA, {"orden": "2", "metodo": "directo_2x2", "ajustar": "1"}).content.decode()
@@ -229,12 +230,13 @@ class PruebasResultado(SimpleTestCase):
         self.assertEqual(doc.tablas[TABLA_INVERSA], INVERSA_3X3)
         self.assertIn("Paso 1 F1 <-> F2", contenido)
         self.assertEqual(doc.tablas["Matriz final"], [["1", "0", "0", *INVERSA_3X3[0]], ["0", "1", "0", *INVERSA_3X3[1]], ["0", "0", "1", *INVERSA_3X3[2]]])
-        self.assertIn("El bloque derecho B es la inversa de A.", contenido)
+        self.assertIn("El bloque derecho es la inversa de A.", contenido)
 
     def test_uno_por_uno_sin_metodo_2x2(self):
         html, doc, _ = self.calcular([[4]])
         self.assertEqual(doc.tablas[TABLA_INVERSA], [["1/4"]])
-        self.assertIn("disabled", radios(html)["directo_2x2"])
+        self.assertEqual(radios(html), {})
+        self.assertEqual(Contenido(html).campos["metodo"]["value"], "gauss_jordan")
 
     def test_singular_con_ambos_metodos(self):
         casos = (
@@ -382,7 +384,7 @@ class PruebasVerificacion(SimpleTestCase):
             with self.subTest(esperado=esperado, enviado=datos.get("verificar")):
                 form = InversaForm(datos)
                 self.assertTrue(form.is_valid(), form.errors)
-                self.assertEqual(set(form.cleaned_data["entrada"]), {"a", "metodo", "verificar"})
+                self.assertEqual(set(form.cleaned_data["entrada"]), {"a", "metodo", "verificar", "funcion_adicional"})
                 self.assertIs(form.cleaned_data["entrada"]["verificar"], esperado)
 
     def test_sin_seleccionar_conserva_el_resultado_y_no_multiplica(self):
@@ -553,7 +555,11 @@ class PruebasVerificacion(SimpleTestCase):
                 self.assertEqual("checked" in doc.campos["verificar"], verificar)
                 self.assertEqual(doc.campos["celda_A_0_0"]["value"], "1/")
                 self.assertEqual(doc.campos["celda_A_1_1"]["value"], "6")
-                self.assertIn("checked", radios(html)[metodo_esperado])
+                if orden == 2:
+                    self.assertIn("checked", radios(html)[metodo_esperado])
+                else:
+                    self.assertEqual(radios(html), {})
+                    self.assertEqual(doc.campos["metodo"]["value"], metodo_esperado)
                 self.assertNotIn('id="resultado"', html)
                 self.assertNotIn('role="alert"', html)
 
@@ -682,7 +688,8 @@ class PruebasConfirmacion(SimpleTestCase):
         campos = Contenido(html).campos
         self.assertEqual({k: campos[k]["value"] for k in campos if k.startswith("celda_A_")},
                          {f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(PROFESOR_3X3) for j, v in enumerate(fila)})
-        self.assertIn("checked", radios(html)["gauss_jordan"])
+        self.assertEqual(radios(html), {})
+        self.assertEqual(campos["metodo"]["value"], "gauss_jordan")
 
     def test_continuar_calcula_sin_volver_a_preguntar(self):
         firma = self.firma_de(self.post(datos_inversa(PROFESOR_3X3)))
@@ -769,7 +776,8 @@ class PruebasConfirmacion(SimpleTestCase):
                 self.assertEqual("checked" in campos["verificar"], verificar)
                 self.assertEqual({k: campo["value"] for k, campo in campos.items() if k.startswith("celda_A_")},
                                  {f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(PROFESOR_3X3) for j, v in enumerate(fila)})
-                self.assertIn("checked", radios(html)["gauss_jordan"])
+                self.assertEqual(radios(html), {})
+                self.assertEqual(campos["metodo"]["value"], "gauss_jordan")
                 for ausente in ('id="resultado"', "data-confirmacion", 'role="alert"'):
                     self.assertNotIn(ausente, html)
 
@@ -801,10 +809,14 @@ class PruebasConfirmacion(SimpleTestCase):
                 self.assertIn("data-confirmacion", html)
                 self.assertNotIn('id="resultado"', html)
 
-    def test_verificar_no_cambia_el_presupuesto_ni_agrega_otra_confirmacion(self):
+    def test_verificar_suma_dos_productos_sin_agregar_otra_confirmacion(self):
         entrada = {"a": PROFESOR_3X3, "metodo": "gauss_jordan"}
-        self.assertEqual(estimar_inversa_web({**entrada, "verificar": False}),
-                         estimar_inversa_web({**entrada, "verificar": True}))
+        simple = estimar_inversa_web({**entrada, "verificar": False})
+        verificada = estimar_inversa_web({**entrada, "verificar": True})
+        self.assertGreater(verificada.calculo, simple.calculo)
+        self.assertGreater(verificada.procedimiento, simple.procedimiento)
+        self.assertEqual([parte.operacion for parte in verificada.partes],
+                         ["gauss_jordan", "producto", "producto"])
         for verificar in (False, True):
             with self.subTest(verificar=verificar):
                 extra = {"verificar": "on"} if verificar else {}
@@ -839,7 +851,9 @@ class PruebasConfirmacion(SimpleTestCase):
             estimacion = estimar_inversa_web(entrada)
         estimar.assert_called_once_with(3, 6, columnas_pivote=3, perfil=perfil_numerico(PROFESOR_3X3))
         self.assertEqual(estimacion, estimar_gauss_jordan(3, 6, columnas_pivote=3, perfil=perfil_numerico(PROFESOR_3X3)))
-        self.assertIsNone(estimar_inversa_web({"a": PROFESOR_2X2, "metodo": "directo_2x2"}))
+        directa = estimar_inversa_web({"a": PROFESOR_2X2, "metodo": "directo_2x2"})
+        self.assertGreater(directa.calculo, 0)
+        self.assertLess(directa.procedimiento, estimacion.procedimiento)
         # El orden importa: se estima (y se pregunta, si hace falta) antes de cualquier cálculo.
         orden = Mock()
         with patch(f"{SERVICIO}.estimar_gauss_jordan", wraps=estimar_gauss_jordan) as estimar, \
