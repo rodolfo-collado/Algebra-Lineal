@@ -59,7 +59,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
             patch.object(SistemaForm, "valores_matriz_desde") as reconstruir,
             patch(f"{VISTAS}.resolver_entrada_web") as resolver,
         ):
-            respuesta = self.client.post("/sistemas/", datos)
+            respuesta = self.client.post("/matrices/reduccion/", datos)
             self.assertEqual(respuesta.status_code, 200)
             self.assertRegex(respuesta.content.decode(), r'class="(?:field-error|alert error)"')
             for mock in (rangos, convertir, construir, reconstruir, resolver):
@@ -110,7 +110,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
                     patch(f"{FORMULARIOS}.range", create=True, side_effect=AssertionError("range")),
                 ):
                     datos = {"tipo_entrada": "matriz", "ecuaciones": filas, "variables": variables}
-                    respuesta = self.client.get("/sistemas/", datos)
+                    respuesta = self.client.get("/matrices/reduccion/", datos)
                     self.assertEqual(respuesta.status_code, 200)
                     self.assertContains(respuesta, 'id="matrix-initial-values" type="application/json">[]')
                     reconstruir.assert_not_called()
@@ -122,7 +122,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
         self.assertNotIn("ecuaciones", inicial)
         self.assertNotIn("variables", inicial)
         with patch.object(SistemaForm, "valores_matriz_desde") as reconstruir:
-            self.assertEqual(self.client.get("/sistemas/?" + consulta.urlencode()).status_code, 200)
+            self.assertEqual(self.client.get("/matrices/reduccion/?" + consulta.urlencode()).status_code, 200)
             reconstruir.assert_not_called()
 
     def test_vista_verifica_dimensiones_incluso_si_iniciales_no_fueran_seguros(self):
@@ -130,12 +130,12 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
             patch.object(SistemaForm, "inicial_desde", return_value={"ecuaciones": 100000, "variables": 100000}),
             patch.object(SistemaForm, "valores_matriz_desde") as reconstruir,
         ):
-            self.assertEqual(self.client.get("/sistemas/").status_code, 200)
+            self.assertEqual(self.client.get("/matrices/reduccion/").status_code, 200)
             reconstruir.assert_not_called()
 
     def test_get_adjunto_a_post_invalido_no_reconstruye_otra_matriz(self):
         with patch.object(SistemaForm, "valores_matriz_desde") as reconstruir:
-            respuesta = self.client.post("/sistemas/?ecuaciones=2&variables=2", {
+            respuesta = self.client.post("/matrices/reduccion/?ecuaciones=2&variables=2", {
                 "tipo_entrada": "matriz", "metodo": "gauss", "ecuaciones": 100000, "variables": 100000,
             })
             self.assertEqual(respuesta.status_code, 200)
@@ -147,7 +147,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
             patch.object(SistemaForm, "valores_matriz_desde", wraps=SistemaForm.valores_matriz_desde) as reconstruir,
             patch(f"{VISTAS}.resolver_entrada_web") as resolver,
         ):
-            respuesta = self.client.get("/sistemas/", datos)
+            respuesta = self.client.get("/matrices/reduccion/", datos)
             self.assertContains(respuesta, '[["1", "1", "3"], ["1", "-1", "1"]]')
             self.assertEqual(reconstruir.call_args.args[1:], (2, 2))
             resolver.assert_not_called()
@@ -160,7 +160,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
                 self.assertTrue(form.is_valid(), form.errors)
                 self.assertEqual(len(form.cleaned_data["matriz_aumentada"]), filas)
                 self.assertEqual(len(form.valores_matriz_ingresados()[0]), variables + 1)
-                respuesta = self.client.get("/sistemas/", datos)
+                respuesta = self.client.get("/matrices/reduccion/", datos)
                 self.assertContains(respuesta, f'name="ecuaciones" value="{filas}"')
 
     def test_gauss_gauss_jordan_y_comparar_resuelven_el_maximo(self):
@@ -168,7 +168,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
         self.assertEqual(sum(map(len, matriz)), CELDAS_MAXIMAS)
         for metodo in ("gauss", "gauss_jordan", "comparar"):
             with self.subTest(metodo=metodo):
-                respuesta = self.client.post("/sistemas/", datos_matriz(matriz, metodo))
+                respuesta = self.client.post("/matrices/reduccion/", datos_matriz(matriz, metodo))
                 self.assertContains(respuesta, 'id="resultado"')
                 self.assertContains(respuesta, "x9 = 1")
                 self.assertContains(respuesta, "Consistente de solución única")
@@ -187,7 +187,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
     @override_settings(DATA_UPLOAD_MAX_NUMBER_FIELDS=1000)
     def test_peor_post_real_con_csrf_y_todas_las_opciones_cabe_en_django(self):
         cliente = Client(enforce_csrf_checks=True)
-        html = cliente.get("/sistemas/?tipo_entrada=matriz&ecuaciones=12&variables=9&metodo=comparar").content.decode()
+        html = cliente.get("/matrices/reduccion/?tipo_entrada=matriz&ecuaciones=12&variables=9&metodo=comparar").content.decode()
         # Reproduce el cambio de fieldsets realizado por setInputMode(): todos
         # los controles reales, incluidos los campos repetidos mostrar y CSRF.
         html = html.replace('id="system-fields"', 'id="system-fields" disabled')
@@ -200,16 +200,16 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
         self.assertEqual(len(pares), 130)
         self.assertLess(len(pares), settings.DATA_UPLOAD_MAX_NUMBER_FIELDS)
         # urlencoded cuenta las cuatro apariciones de mostrar, no solo claves.
-        respuesta = cliente.post("/sistemas/", urlencode(pares), content_type="application/x-www-form-urlencoded")
+        respuesta = cliente.post("/matrices/reduccion/", urlencode(pares), content_type="application/x-www-form-urlencoded")
         self.assertContains(respuesta, "x9 = 1")
         self.assertEqual(sum(len(v) for _, v in respuesta.wsgi_request.POST.lists()), 130)
         # También se procesa con el mismo parser multipart que usa Client.post.
         datos = Formulario(html, "sistema-form").como_datos()
         datos.update(dict(celdas))
-        self.assertContains(cliente.post("/sistemas/", datos), "x9 = 1")
+        self.assertContains(cliente.post("/matrices/reduccion/", datos), "x9 = 1")
 
     def test_html_transmite_la_politica_al_navegador(self):
-        html = self.client.get("/sistemas/").content.decode()
+        html = self.client.get("/matrices/reduccion/").content.decode()
         self.assertIn(f'data-max-celdas="{CELDAS_MAXIMAS}"', html)
         self.assertRegex(html, rf'name="ecuaciones"[^>]*max="{ECUACIONES_MAXIMAS}"')
         self.assertRegex(html, rf'name="variables"[^>]*max="{VARIABLES_MAXIMAS}"')
@@ -227,20 +227,20 @@ class PruebasPresupuestoTexto(SimpleTestCase):
     def test_texto_educativo_sigue_funcionando_con_todos_los_metodos(self):
         for metodo in ("gauss", "gauss_jordan", "comparar"):
             with self.subTest(metodo=metodo):
-                respuesta = self.client.post("/sistemas/", {"sistema": "x1+x2=3;x1-x2=1", "metodo": metodo})
+                respuesta = self.client.post("/matrices/reduccion/", {"sistema": "x1+x2=3;x1-x2=1", "metodo": metodo})
                 self.assertContains(respuesta, "x1 = 2")
                 self.assertContains(respuesta, "x2 = 1")
 
     def test_texto_excesivo_y_espacios_no_llegan_al_servicio(self):
         for texto in ("x1=1" * (LONGITUD_SISTEMA_MAXIMA // 4 + 1), " " * LONGITUD_SISTEMA_MAXIMA + "x1=1"):
             with self.subTest(espacios=texto.startswith(" ")), patch(f"{VISTAS}.resolver_entrada_web") as resolver:
-                respuesta = self.client.post("/sistemas/", {"metodo": "gauss", "sistema": texto})
+                respuesta = self.client.post("/matrices/reduccion/", {"metodo": "gauss", "sistema": texto})
                 self.assertEqual(respuesta.status_code, 200)
                 self.assertContains(respuesta, str(LONGITUD_SISTEMA_MAXIMA))
                 resolver.assert_not_called()
 
     def test_get_ignora_texto_excesivo(self):
-        respuesta = self.client.get("/sistemas/", {"sistema": "x1=1" * LONGITUD_SISTEMA_MAXIMA})
+        respuesta = self.client.get("/matrices/reduccion/", {"sistema": "x1=1" * LONGITUD_SISTEMA_MAXIMA})
         self.assertEqual(respuesta.status_code, 200)
         self.assertNotIn("sistema", SistemaForm.inicial_desde(respuesta.wsgi_request.GET))
 
@@ -275,7 +275,7 @@ class PruebasPresupuestoTexto(SimpleTestCase):
                     construir.assert_not_called()
                 motor = Mock(side_effect=AssertionError("motor"))
                 with patch.dict("frontend.web.calculadora.servicios._RESOLVERS", {"gauss": ("Gauss", motor, "", "")}):
-                    respuesta = self.client.post("/sistemas/", {"metodo": "gauss", "sistema": texto})
+                    respuesta = self.client.post("/matrices/reduccion/", {"metodo": "gauss", "sistema": texto})
                     self.assertEqual(respuesta.status_code, 200)
                     self.assertNotContains(respuesta, 'id="resultado"')
                     motor.assert_not_called()
@@ -403,7 +403,7 @@ class PruebasLiteralesSistemas(SimpleTestCase):
                 "Formato de sistema inválido: un número no puede tener denominador cero.",
             )
         datos = datos_matriz([["1/0", 1]])
-        respuesta = self.client.post("/sistemas/", datos)
+        respuesta = self.client.post("/matrices/reduccion/", datos)
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "no es un número válido")
         self.assertNotContains(respuesta, "Traceback")
@@ -446,7 +446,7 @@ class PruebasLiteralesSistemas(SimpleTestCase):
             with self.subTest(texto=texto[:32]), patch(
                 "backend.parser_sistemas.Fraction", _fraction_vigilada
             ), patch.dict("frontend.web.calculadora.servicios._RESOLVERS", resolvers):
-                respuesta = self.client.post("/sistemas/", {"metodo": "gauss", "sistema": texto})
+                respuesta = self.client.post("/matrices/reduccion/", {"metodo": "gauss", "sistema": texto})
                 self.assertEqual(respuesta.status_code, 200)
                 self.assertNotContains(respuesta, "Traceback")
                 self.assertNotContains(respuesta, 'id="resultado"')
@@ -474,7 +474,7 @@ class PruebasLiteralesSistemas(SimpleTestCase):
             with self.subTest(nombre=nombre), patch(
                 f"{FORMULARIOS}.convertir_a_numero", vigil
             ), patch(f"{VISTAS}.resolver_entrada_web", side_effect=AssertionError("servicio")):
-                respuesta = self.client.post("/sistemas/", datos)
+                respuesta = self.client.post("/matrices/reduccion/", datos)
                 fragmento = (
                     MENSAJE_NOTACION_CIENTIFICA if "cientifico" in nombre else MENSAJE_NUMERO_GRANDE
                 )
@@ -581,7 +581,7 @@ class PruebasPresupuestoFormaLibre(SimpleTestCase):
             with self.subTest(texto=texto[:32]), patch.dict(
                 "frontend.web.calculadora.servicios._RESOLVERS", {"gauss": ("Gauss", motor, "", "")}
             ):
-                respuesta = self.client.post("/sistemas/", {"metodo": "gauss", "sistema": texto})
+                respuesta = self.client.post("/matrices/reduccion/", {"metodo": "gauss", "sistema": texto})
                 self.assertEqual(respuesta.status_code, 200)
                 self.assertContains(respuesta, fragmento)
                 self.assertNotContains(respuesta, 'id="resultado"')

@@ -44,7 +44,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         for metodo in ("gauss", "gauss_jordan"):
             for nombre, matriz, columnas, _ in CASOS:
                 with self.subTest(metodo=metodo, caso=nombre):
-                    respuesta = self.client.post("/sistemas/", datos_matriz(matriz, metodo))
+                    respuesta = self.client.post("/matrices/reduccion/", datos_matriz(matriz, metodo))
                     self.assertEqual(respuesta.status_code, 200)
                     texto = strip_tags(respuesta.content.decode("utf-8"))
                     esperado = ", ".join(f"C{c}" for c in columnas) or "Ninguna"
@@ -58,15 +58,16 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
             resultado = resolver_sistema_web("x1 + 2x2 + x3 = 4; x3 = 2", metodo)
             self.assertEqual(resultado["columnas_pivote"], [1, 3])
-            respuesta = self.client.post("/sistemas/", {"metodo": metodo, "sistema": "x1 + 2x2 + x3 = 4; x3 = 2"})
+            respuesta = self.client.post("/matrices/reduccion/", {"metodo": metodo, "sistema": "x1 + 2x2 + x3 = 4; x3 = 2"})
             self.assertIn("Columnas pivote: C1, C3", strip_tags(respuesta.content.decode("utf-8")))
 
     def test_get_renderiza_el_modulo_de_sistemas(self):
-        respuesta = self.client.get("/sistemas/")
+        respuesta = self.client.get("/matrices/reduccion/")
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "Álgebra Lineal")
-        self.assertContains(respuesta, "Sistemas de ecuaciones")
+        self.assertContains(respuesta, "Reducción por filas")
+        self.assertContains(respuesta, "Matrices")
         self.assertContains(respuesta, "Gauss-Jordan")
         self.assertContains(respuesta, 'id="theme-toggle"')
         self.assertContains(respuesta, "static/calculadora/styles.css")
@@ -74,7 +75,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         self.assertContains(respuesta, "static/calculadora/matriz.js")
 
     def test_muestra_los_dos_tipos_de_entrada(self):
-        respuesta = self.client.get("/sistemas/")
+        respuesta = self.client.get("/matrices/reduccion/")
 
         self.assertContains(respuesta, "Sistema de ecuaciones")
         self.assertContains(respuesta, "Matriz aumentada")
@@ -83,7 +84,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         self.assertContains(respuesta, 'type="radio"')
 
     def test_el_modulo_no_carga_recursos_remotos(self):
-        html = self.client.get("/sistemas/").content.decode("utf-8").lower()
+        html = self.client.get("/matrices/reduccion/").content.decode("utf-8").lower()
 
         for host in (
             "fonts.googleapis.com",
@@ -94,7 +95,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_procesa_una_solucion_unica(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {
                 "metodo": "gauss_jordan",
                 "sistema": "x1+x2=3;x1-x2=1",
@@ -109,7 +110,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_procesa_una_matriz_con_gauss(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             datos_matriz([[1, 1, 3], [1, -1, 1]], metodo="gauss"),
         )
 
@@ -121,7 +122,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_procesa_una_matriz_rectangular_con_gauss_jordan(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             datos_matriz(
                 [[1, 1, 3], [1, -1, 1], [2, 0, 4]],
                 metodo="gauss_jordan",
@@ -136,7 +137,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_procesa_soluciones_infinitas(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {
                 "metodo": "gauss_jordan",
                 "sistema": "x1+x2=2;2x1+2x2=4",
@@ -151,7 +152,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_procesa_una_matriz_rectangular_con_soluciones_infinitas(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             datos_matriz(
                 [[1, 1, 1, 6], [0, 1, 2, 5]],
                 metodo="gauss_jordan",
@@ -165,7 +166,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_procesa_un_sistema_inconsistente(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {
                 "metodo": "gauss",
                 "sistema": "x1+x2=2;2x1+2x2=5",
@@ -181,7 +182,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_procesa_una_matriz_inconsistente_con_contradiccion_no_final(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             datos_matriz([[0, 0, 4], [1, 1, 2]], metodo="gauss"),
         )
 
@@ -193,7 +194,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_matriz_con_fracciones_conserva_la_exactitud(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             datos_matriz(
                 [["1/2", 0, "1/2"], [0, "-2/3", "4/3"]],
                 metodo="gauss_jordan",
@@ -207,7 +208,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_muestra_un_error_de_entrada_sin_traceback(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {
                 "metodo": "gauss_jordan",
                 "sistema": "x1 + = 3",
@@ -220,7 +221,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_rechaza_un_sistema_vacio(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {"metodo": "gauss", "sistema": "   "},
         )
 
@@ -229,7 +230,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_muestra_error_para_una_celda_vacia(self):
         datos = datos_matriz([[1, "", 3]], metodo="gauss")
-        respuesta = self.client.post("/sistemas/", datos)
+        respuesta = self.client.post("/matrices/reduccion/", datos)
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "La celda fila 1, x2 no puede estar vacía.")
@@ -237,7 +238,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_muestra_error_para_una_celda_no_numerica(self):
         datos = datos_matriz([["hola", 1, 3]], metodo="gauss")
-        respuesta = self.client.post("/sistemas/", datos)
+        respuesta = self.client.post("/matrices/reduccion/", datos)
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "La celda fila 1, x1")
@@ -246,7 +247,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_muestra_error_para_un_denominador_cero(self):
         datos = datos_matriz([["1/0", 1, 3]], metodo="gauss")
-        respuesta = self.client.post("/sistemas/", datos)
+        respuesta = self.client.post("/matrices/reduccion/", datos)
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "La celda fila 1, x1")
@@ -255,7 +256,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_rechaza_dimensiones_cero(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {
                 "tipo_entrada": "matriz",
                 "metodo": "gauss",
@@ -271,7 +272,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
     def test_rechaza_dimensiones_negativas(self):
         datos = datos_matriz([[1, 2, 3]], metodo="gauss")
         datos["variables"] = "-1"
-        respuesta = self.client.post("/sistemas/", datos)
+        respuesta = self.client.post("/matrices/reduccion/", datos)
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "Debe haber al menos una variable.")
@@ -279,7 +280,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_rechaza_dimensiones_no_enteras(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {
                 "tipo_entrada": "matriz",
                 "metodo": "gauss",
@@ -294,7 +295,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
     def test_rechaza_una_cantidad_de_celdas_inconsistente(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {
                 "tipo_entrada": "matriz",
                 "metodo": "gauss",

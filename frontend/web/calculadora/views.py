@@ -1,7 +1,5 @@
 """Vistas HTTP de la interfaz web."""
 
-from urllib.parse import urlencode
-
 from django.http import Http404, HttpResponsePermanentRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -51,7 +49,7 @@ def inicio(request):
 
 @require_http_methods(["GET", "POST"])
 def sistemas(request):
-    """Resolver un sistema: método a elegir (o comparar los dos) y bloques del resultado."""
+    """Reducción por filas: método a elegir (o comparar los dos) y bloques del resultado."""
     # Las rutas antiguas (/sistemas/?metodo=gauss) y los enlaces de «También puedes
     # explorar» llegan por GET con el método, la entrada y los bloques ya preparados.
     inicial = {"metodo": METODO_PREDETERMINADO, **SistemaForm.inicial_desde(request.GET)}
@@ -112,15 +110,28 @@ def sistemas(request):
     )
 
 
-def sistemas_ruta_antigua(request, herramienta):
-    """Las cinco pseudo-herramientas de P10.1 hoy son opciones de Resolver un sistema."""
-    parametros = RUTAS_ANTIGUAS.get(herramienta)
+@require_http_methods(["GET", "POST"])
+def sistemas_ruta_antigua(request, herramienta=None):
+    """Marcadores históricos hacia Reducción por filas, sin perder entrada ni bloques.
+
+    GET usa 301. /sistemas/ procesa POST con la misma vista (clientes sin
+    seguimiento de redirects y benchmark histórico); los slugs usan 308.
+    Los parámetros explícitos prevalecen sobre el método sugerido por la ruta.
+    La validación de parámetros sigue en SistemaForm, en el destino canónico.
+    """
+    parametros = {} if herramienta is None else RUTAS_ANTIGUAS.get(herramienta)
     if parametros is None:
         raise Http404("No existe esa herramienta de sistemas.")
-    destino = reverse("calculadora:sistemas")
-    if parametros:
-        destino = f"{destino}?{urlencode(parametros)}"
-    return HttpResponsePermanentRedirect(destino)
+    if request.method == "POST" and herramienta is None:
+        return sistemas(request)
+    consulta = request.GET.copy()
+    for clave, valor in parametros.items():
+        if clave not in consulta:
+            consulta[clave] = valor
+    destino = reverse("calculadora:reduccion-filas")
+    if consulta:
+        destino = f"{destino}?{consulta.urlencode()}"
+    return HttpResponsePermanentRedirect(destino, preserve_request=request.method == "POST")
 
 
 @require_http_methods(["GET", "POST"])
@@ -200,7 +211,7 @@ def expresiones_matriciales(request):
 
 @require_http_methods(["GET", "POST"])
 def ecuaciones_matriciales(request):
-    """Resolver Ax = b: A y b conocidos; x se determina con los motores de Resolver un sistema."""
+    """Resolver Ax = b: A y b conocidos; x se determina con los motores de Reducción por filas."""
     ajustar = request.method == "POST" and "ajustar" in request.POST
     form = EcuacionMatricialForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
     resultado = None
@@ -215,7 +226,7 @@ def ecuaciones_matriciales(request):
                 form.add_error(None, str(error))
     return render(request, "calculadora/modules/ecuaciones/index.html", {
         "form": form, "resultado": resultado, "ayuda_metodos": AYUDA_METODOS_ECUACION,
-        # El procedimiento reutiliza los bloques de Resolver un sistema, todos visibles.
+        # El procedimiento reutiliza los bloques de Reducción por filas, todos visibles.
         "mostrar": frozenset(BLOQUES_PREDETERMINADOS), "perfiles_teclado": perfiles_para("numerico"),
     })
 

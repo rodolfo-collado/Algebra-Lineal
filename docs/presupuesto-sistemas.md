@@ -1,4 +1,8 @@
-# Presupuesto de entrada de Resolver un sistema
+# Presupuesto de entrada de Reducción por filas
+
+Desde P26.5, la herramienta pública está en Álgebra Lineal → Matrices y recibe
+Sistema de ecuaciones o Matriz aumentada. Conserva exactamente los límites de
+P26.2/P26.2.1; los nombres internos y las auditorías históricas se mantienen.
 
 La política estructural vive en `backend/presupuesto_sistemas.py`. Desde
 P26.2.1, la inspección común de literales vive en `backend/seguridad_numerica.py`,

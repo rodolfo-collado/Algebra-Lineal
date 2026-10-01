@@ -239,7 +239,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 html = respuesta.read().decode("utf-8")
                 self.assertEqual(respuesta.status, 200)
                 self.assertIn("Inicio · PyGebra", html)
-                self.assertIn('href="/sistemas/"', html)
+                self.assertIn('href="/matrices/reduccion/"', html)
 
             url_sistemas = f"{url}sistemas/"
             with cliente_http.open(url_sistemas, timeout=3.0) as respuesta:
@@ -294,11 +294,11 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                     self.assertEqual(respuesta.status, 200)
                     self.assertIn(marca, respuesta.read().decode("utf-8"))
 
-            # La ruta antigua de Gauss sigue abriendo Resolver un sistema con Gauss elegido.
+            # La ruta antigua de Gauss sigue abriendo Reducción por filas con Gauss elegido.
             with cliente_http.open(f"{url}sistemas/gauss/", timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
-                self.assertEqual(respuesta.url, f"{url}sistemas/?metodo=gauss")
-                self.assertIn("Resolver un sistema", respuesta.read().decode("utf-8"))
+                self.assertEqual(respuesta.url, f"{url}matrices/reduccion/?metodo=gauss")
+                self.assertIn("Reducción por filas", respuesta.read().decode("utf-8"))
 
             csrf = re.search(
                 rb'name="csrfmiddlewaretoken" value="([^"]+)"',

@@ -37,7 +37,7 @@ su sistema, el conjunto solución con variables libres, el parser de sistemas, l
 equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
 de Django —incluidas sus entradas textual y matricial—, la infraestructura
 desktop, el registro de herramientas, la navegación, el buscador, los
-breadcrumbs, el teclado matemático, las opciones de Resolver un sistema
+breadcrumbs, el teclado matemático, las opciones de Reducción por filas
 —método, comparación, bloques del resultado y rutas antiguas—, la conversión de
 bases —resultados, pasos del procedimiento, mensajes de error, conversiones a
 varias bases con el decimal calculado una sola vez y su integración web—, la
@@ -55,7 +55,7 @@ entre fila por columna y por columnas (también contra la combinación lineal de
 comparación con un solo resultado y POST manipulados—, la ecuación matricial
 `Ax = b` —matriz aumentada `[A | b]`, casos cuadrados y rectangulares con
 solución única, infinitas o inconsistente, fracciones, equivalencia exacta con
-Resolver un sistema y entre Gauss y Gauss-Jordan, comprobación `A · x = b`,
+Reducción por filas y entre Gauss y Gauss-Jordan, comprobación `A · x = b`,
 interpretación como combinación lineal, b derivado de las filas y x de las
 columnas, flujo Aplicar sin JavaScript y POST manipulados—, las expresiones
 matriciales —lexer, parser, árbol, tipos, dimensiones, procedimiento por nodo,
@@ -209,7 +209,7 @@ rechazo antes de reservar estructuras por GET/POST, el máximo real de campos
 con CSRF, ambos motores y la protección mínima del texto. Consulta
 [presupuesto, auditoría y mediciones](presupuesto-sistemas.md).
 
-En `/sistemas/`, verifica manualmente: una matriz 2×2; escribir dimensiones
+En `/matrices/reduccion/`, verifica manualmente: una matriz 2×2; escribir dimensiones
 100000×100000 conservando las seis celdas; rechazar 11 ecuaciones y 10 variables
 (121 celdas); aceptar 12 y 9 (120); botones +/− en los límites; recuperación
 tras corregir dimensiones; GET manipulado sin cuadrícula; resolver y comparar,
@@ -227,7 +227,7 @@ motor ni convierte números a texto (dimensiones de 10⁹ y enteros de casi un
 millón de cifras); que la cota acota los pasos reales de Gauss y Gauss-Jordan;
 que las categorías crecen con el tamaño y el tiempo es un intervalo
 recalibrable; que los límites estructurales no cambian; y que los servicios de
-Resolver un sistema y Ax = b estiman con el mismo presupuesto de entrada, sin
+Reducción por filas y Ax = b estiman con el mismo presupuesto de entrada, sin
 resolver y sin rechazar nada por su costo. Ninguna prueba mide segundos.
 
 El benchmark es manual: no se lanza en `unittest discover` ni en CI.
@@ -316,3 +316,34 @@ correcto en Exacto/Decimal y en Conversión de bases.
 En `/romanos/conversion/`, verifica manualmente 1963 ↔ MCMLXIII en ambas
 direcciones, una entrada en minúsculas, un error de canonicidad (`IIII`), el
 procedimiento plegado y abierto, 390 px y escritorio, y ambos temas.
+
+## Reorganización de Reducción por filas (P26.5)
+
+`tests/test_reduccion_filas.py` verifica la ubicación en Matrices, ausencia de
+la categoría pública Sistemas de ecuaciones, orden del catálogo, Inicio, menú,
+breadcrumbs, formulario canónico y todas las búsquedas nuevas e históricas.
+Comprueba las cinco rutas antiguas, consultas con casillas repetidas, entrada
+textual/matricial, método sugerido y explícito, POST raíz 200/slugs 308 con cuerpo intacto,
+errores de validación y CSRF. El resto de contratos web se ejecuta ahora sobre
+`/matrices/reduccion/`, conservando toda su cobertura.
+
+La referencia `tests/fixtures/reduccion_filas_p264.json` se capturó **antes de
+editar** desde `develop` en `1e69d3305f3c2ec519e9aac0a61407e6e780ef61` (P26.4).
+Guarda los resultados completos de Gauss/Gauss-Jordan y la normalización por
+ecuaciones. Las 60 combinaciones (10 casos × 3 métodos × 2 entradas) deben
+coincidir exactamente en matrices iniciales/finales, operaciones, sustitución,
+clasificación, pivotes, solución general, libres y contradicciones. «Comparar
+ambos» coteja ambos resultados contra esa referencia. Los hashes SHA-256 del
+texto completo de `section#resultado` capturado verifican también la salida
+matemática presentada; no se regeneran con el código bajo prueba.
+
+Casos: solución única, infinitas, inconsistencia, variable libre rectangular,
+intercambio de filas, fracciones, términos a ambos lados, variables a la derecha,
+ecuación despejada y matriz rectangular sobredeterminada.
+
+Para QA en navegador: comparar `x1+x2=6; x1-x2=2` con `[1,1,6; 1,-1,2]` en los
+tres métodos; probar `x1-6=-x2`, dependencia y contradicción. Revisar claro/oscuro,
+escritorio/móvil, teclado, Exacto/Decimal, procedimiento plegable, resultado final,
+buscador y marcadores antiguos. La entrada textual mantiene el flujo sin JS.
+El smoke de Windows exige el enlace canónico; no se renombran recursos ni se
+modifica la configuración de empaquetado.

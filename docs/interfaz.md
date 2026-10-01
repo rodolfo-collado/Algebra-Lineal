@@ -177,7 +177,7 @@ herramientas relacionadas y «También puedes explorar». Cada bloque es opciona
 
 ### Entrada → Procedimiento plegable → Resultado
 
-Tras resolver, todas las herramientas con resultado (Resolver un sistema,
+Tras resolver, todas las herramientas con resultado (Reducción por filas,
 Operaciones con vectores, Operaciones con matrices, Expresiones matriciales,
 Resolver Ax = b, Conversión de bases y Conversión de números romanos) siguen
 un mismo patrón dentro de `section#resultado`:
@@ -238,7 +238,7 @@ Acepta `nivel=4` (título como `h4`, para sub-bloques), `clase` y `abierto`.
 El título va dentro del `summary` como encabezado real, así que la
 jerarquía h2 → h3 → h4 se conserva y no hay botones dentro del `summary`.
 
-### Divulgación progresiva en Resolver un sistema
+### Divulgación progresiva en Reducción por filas
 
 La jerarquía del formulario es: Método y Tipo de entrada como selectores
 segmentados (`.segmented`, radios reales, una sola selección) con una pista
@@ -438,7 +438,7 @@ comprobación `A · x = Ax = b`, la interpretación como combinación lineal
 (`b = 3a₁ + 2a₂`, escrita con `combinacion_columnas` de
 `servicios_matrices.py`) y la cadena de equivalencias. La eliminación se
 presenta con `servicios.presentar_resolucion`, la misma adaptación de
-Resolver un sistema, y `modules/ecuaciones/_metodos.html` incluye
+Reducción por filas, y `modules/ecuaciones/_metodos.html` incluye
 `modules/sistemas/_procedimiento_metodo.html` con todos los bloques visibles
 (`mostrar`) y las columnas pivote una vez. «Ver procedimiento» reúne
 `_equivalencias.html` (ecuación matricial, ecuación vectorial con las

@@ -54,7 +54,32 @@ ruta resuelta, así que las vistas no arman la navegación a mano.
 El catálogo permite sumar áreas sin rehacer la navegación. Los módulos marcados
 «Próximamente» no se enlazan como herramientas disponibles.
 
-Resolver un sistema usa una sola vista: `opciones_sistemas.py`
+P26.5 sitúa **Reducción por filas** en **Álgebra Lineal → Matrices**, con ID
+`reduccion-filas`, ruta `/matrices/reduccion/` y nombre Django
+`calculadora:reduccion-filas`. La categoría pública Sistemas de ecuaciones se
+retira del registro; Inicio, menú, buscador y breadcrumbs cambian juntos.
+Matrices ordena sus herramientas así: Operaciones con matrices, Expresiones
+matriciales, Reducción por filas, Resolver Ax = b y Matriz inversa.
+
+Las dos entradas convergen en `[A | b]`: el parser existente convierte un
+sistema de ecuaciones y la cuadrícula entrega una matriz aumentada validada.
+Gauss y Gauss-Jordan siguen siendo métodos dentro de la herramienta;
+«Comparar ambos» conserva una sola interpretación común. `backend/sistemas.py`
+sigue clasificando y expresando las soluciones, incluidos pivotes, variables
+libres y contradicciones. Resolver Ax = b y Matriz inversa permanecen aparte.
+No se añade ni reescribe ningún algoritmo.
+
+Los nombres internos `views.sistemas`, `SistemaForm`, `opciones_sistemas.py`
+y `modules/sistemas/` se conservan para evitar renombres sin beneficio funcional;
+sus plantillas siguen incluidas por PyInstaller. Las cinco rutas históricas
+redirigen GET al destino canónico con 301, conservando toda la consulta,
+incluidas claves repetidas. POST a `/sistemas/` reutiliza la misma vista y
+devuelve 200, con navegación y formularios canónicos: conserva los clientes
+que no siguen redirecciones y el benchmark histórico, que no se modifica.
+POST a los cuatro slugs usa 308 con `preserve_request=True`, conservando cuerpo
+y método HTTP. La validación sigue a cargo de `SistemaForm`.
+
+Reducción por filas usa una sola vista: `opciones_sistemas.py`
 declara los métodos, los bloques del resultado, sus valores predeterminados y
 las rutas antiguas que redirigen a la herramienta. Operaciones con vectores
 hace lo mismo con `opciones_vectores.py` (operaciones, límites de dimensión y

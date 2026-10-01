@@ -70,23 +70,24 @@ class PruebasIdentidadVisual(SimpleTestCase):
         self.assertContains(respuesta, "home-hero")
         self.assertContains(respuesta, 'role="search"')
         self.assertContains(respuesta, "tool-link")
-        self.assertContains(respuesta, 'data-categoria="sistemas-ecuaciones"')
+        self.assertNotContains(respuesta, 'data-categoria="sistemas-ecuaciones"')
+        self.assertContains(respuesta, 'data-categoria="matrices"')
         ids = DocumentoIds(respuesta).ids
         for fragmento in (
             "algebra-lineal", "sistemas-numericos",
-            "sistemas-ecuaciones", "vectores", "matrices", "bases-numericas",
+            "vectores", "matrices", "bases-numericas",
         ):
             self.assertIn(fragmento, ids)
 
     def test_interfaz_en_espanol_sin_spanglish(self):
-        for ruta in ("/", "/sistemas/", "/bases/conversion/"):
+        for ruta in ("/", "/matrices/reduccion/", "/bases/conversion/"):
             html = self.client.get(ruta).content.decode("utf-8")
             with self.subTest(ruta=ruta):
                 for termino in ("Search tools", "Steps", "Related tools", "Coming soon", "Home"):
                     self.assertNotIn(f">{termino}<", html)
                 self.assertIn("Buscar herramientas", html)
         self.assertIn("Ver procedimiento", self.client.post(
-            "/sistemas/", {"sistema": "x1=1", "metodo": "gauss"},
+            "/matrices/reduccion/", {"sistema": "x1=1", "metodo": "gauss"},
         ).content.decode("utf-8"))
 
     def test_tokens_cubren_ambos_temas_para_los_componentes_nuevos(self):
@@ -100,7 +101,7 @@ class PruebasIdentidadVisual(SimpleTestCase):
 
     def test_sistemas_renderiza_sin_guias_ni_cdn(self):
         respuesta = self.client.post(
-            "/sistemas/",
+            "/matrices/reduccion/",
             {"sistema": "x1=1;x2=2", "metodo": "gauss"},
         )
         self.assertNotContains(respuesta, "Guía de concepto")

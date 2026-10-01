@@ -1,4 +1,4 @@
-"""Resolver un sistema como única herramienta: método, bloques a mostrar, comparación y rutas antiguas."""
+"""Reducción por filas como única herramienta: método, bloques a mostrar, comparación y rutas antiguas."""
 
 import os
 import re
@@ -47,7 +47,7 @@ def seccion_resultado(respuesta):
 class PruebasNavegacionUnificada(SimpleTestCase):
     def test_la_navegacion_no_lista_las_pseudo_herramientas(self):
         rutas = (
-            "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/",
+            "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/",
             "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/",
         )
         for ruta in ("/", *rutas):
@@ -69,11 +69,11 @@ class PruebasNavegacionUnificada(SimpleTestCase):
 
     def test_inicio_y_busqueda_llevan_a_resolver_un_sistema(self):
         inicio = self.client.get("/")
-        self.assertContains(inicio, 'href="/sistemas/"')
+        self.assertContains(inicio, 'href="/matrices/reduccion/"')
         # Cada tema del Inicio despliega sus herramientas; ya no hay chips de acceso rápido.
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
-            ["/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/",
+            ["/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/reduccion/", "/matrices/ecuaciones/",
              "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")
@@ -81,14 +81,14 @@ class PruebasNavegacionUnificada(SimpleTestCase):
             with self.subTest(consulta=consulta):
                 respuesta = self.client.get("/", {"q": consulta})
                 self.assertContains(respuesta, "1 herramienta coincide")
-                self.assertContains(respuesta, "Resolver un sistema")
+                self.assertContains(respuesta, "Reducción por filas")
 
     def test_rutas_antiguas_redirigen_a_resolver_un_sistema(self):
         destinos = {
-            "/sistemas/gauss/": "/sistemas/?metodo=gauss",
-            "/sistemas/gauss-jordan/": "/sistemas/?metodo=gauss_jordan",
-            "/sistemas/clasificacion/": "/sistemas/",
-            "/sistemas/columnas-pivote/": "/sistemas/",
+            "/sistemas/gauss/": "/matrices/reduccion/?metodo=gauss",
+            "/sistemas/gauss-jordan/": "/matrices/reduccion/?metodo=gauss_jordan",
+            "/sistemas/clasificacion/": "/matrices/reduccion/",
+            "/sistemas/columnas-pivote/": "/matrices/reduccion/",
         }
         for ruta, destino in destinos.items():
             with self.subTest(ruta=ruta):
@@ -99,28 +99,28 @@ class PruebasNavegacionUnificada(SimpleTestCase):
                 self.assertEqual(pagina.status_code, 200)
                 self.assertContains(pagina, 'id="sistema-form"')
         # Un envío a una ruta antigua tampoco produce un error: se redirige igual.
-        self.assertEqual(self.client.post("/sistemas/gauss/", {"sistema": "x1=1"}).status_code, 301)
+        self.assertEqual(self.client.post("/sistemas/gauss/", {"sistema": "x1=1"}).status_code, 308)
         for ruta in ("/sistemas/inexistente/", "/sistemas/sistemas/"):
             self.assertEqual(self.client.get(ruta).status_code, 404)
 
     def test_la_ruta_antigua_de_un_metodo_lo_deja_seleccionado(self):
         for metodo in ("gauss", "gauss_jordan"):
             with self.subTest(metodo=metodo):
-                pagina = self.client.get("/sistemas/", {"metodo": metodo})
+                pagina = self.client.get("/matrices/reduccion/", {"metodo": metodo})
                 marcados = [c["value"] for c in Documento(pagina).controles
                             if c.get("name") == "metodo" and "checked" in c]
                 self.assertEqual(marcados, [metodo])
         # Un método desconocido en la URL no rompe nada: queda el predeterminado.
-        pagina = self.client.get("/sistemas/", {"metodo": "otro"})
+        pagina = self.client.get("/matrices/reduccion/", {"metodo": "otro"})
         marcados = [c["value"] for c in Documento(pagina).controles if c.get("name") == "metodo" and "checked" in c]
         self.assertEqual(marcados, [METODO_PREDETERMINADO])
 
     def test_sin_herramientas_relacionadas(self):
         for respuesta in (
-            self.client.get("/sistemas/"),
-            self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss"}),
-            self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "comparar"}),
-            self.client.post("/sistemas/", {"sistema": "x1+=1", "metodo": "gauss"}),
+            self.client.get("/matrices/reduccion/"),
+            self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss"}),
+            self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "comparar"}),
+            self.client.post("/matrices/reduccion/", {"sistema": "x1+=1", "metodo": "gauss"}),
         ):
             for ausente in ("Herramientas relacionadas", "Continúa con este mismo sistema", 'class="related"', "formaction="):
                 self.assertNotContains(respuesta, ausente)
@@ -128,7 +128,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
 
 class PruebasFormularioResolver(SimpleTestCase):
     def test_metodo_y_mostrar_son_controles_compactos(self):
-        pagina = self.client.get("/sistemas/")
+        pagina = self.client.get("/matrices/reduccion/")
         documento = Documento(pagina)
         metodos = [c for c in documento.controles if c.get("name") == "metodo"]
         self.assertEqual([(c["type"], c["value"]) for c in metodos], [("radio", clave) for clave, _ in METODOS])
@@ -147,7 +147,7 @@ class PruebasFormularioResolver(SimpleTestCase):
         self.assertNotIn('class="choice"', html)
 
     def test_tipo_de_entrada_es_un_selector_segmentado(self):
-        pagina = self.client.get("/sistemas/")
+        pagina = self.client.get("/matrices/reduccion/")
         html = pagina.content.decode("utf-8")
         documento = Documento(pagina)
         tipos = [c for c in documento.controles if c.get("name") == "tipo_entrada"]
@@ -163,20 +163,20 @@ class PruebasFormularioResolver(SimpleTestCase):
         self.assertIn('[data-input-hint]', (Path(__file__).resolve().parents[1]
                        / "frontend/web/calculadora/static/calculadora/matriz.js").read_text(encoding="utf-8"))
 
-        matriz = self.client.post("/sistemas/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss"))
+        matriz = self.client.post("/matrices/reduccion/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss"))
         html = matriz.content.decode("utf-8")
         self.assertRegex(html, r'data-input-hint="matriz"\s*>\s*Ingresa los coeficientes')
         self.assertRegex(html, r'data-input-hint="sistema"\s+hidden>')
-        self.assertContains(pagina, ">Resolver</button>")
+        self.assertContains(pagina, ">Reducir</button>")
         self.assertContains(pagina, "La matriz final y la solución se muestran siempre.")
         self.assertNotContains(pagina, "tool-note")
 
     def test_metodos_alternativos_no_son_casillas(self):
-        documento = Documento(self.client.get("/sistemas/"))
+        documento = Documento(self.client.get("/matrices/reduccion/"))
         self.assertFalse(any(c.get("name") == "metodo" and c.get("type") == "checkbox" for c in documento.controles))
 
     def test_compartir_exige_csrf(self):
-        respuesta = Client(enforce_csrf_checks=True).post("/sistemas/", {"sistema": UNICA, "metodo": "gauss"})
+        respuesta = Client(enforce_csrf_checks=True).post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss"})
         self.assertEqual(respuesta.status_code, 403)
 
 
@@ -184,7 +184,7 @@ class PruebasMetodos(SimpleTestCase):
     def resolver(self, metodo, sistema=UNICA, mostrar=None):
         datos = {"sistema": sistema, "metodo": metodo, "mostrar_definido": "1", "mostrar": TODOS if mostrar is None else mostrar}
         with patch("frontend.web.calculadora.views.resolver_entrada_web", wraps=resolver_entrada_web) as resolver:
-            respuesta = self.client.post("/sistemas/", datos)
+            respuesta = self.client.post("/matrices/reduccion/", datos)
         return respuesta, [llamada.args[1] for llamada in resolver.call_args_list]
 
     def test_seleccion_gauss(self):
@@ -235,7 +235,7 @@ class PruebasMetodos(SimpleTestCase):
             with self.subTest(caso=nombre):
                 datos = datos_matriz(matriz, "comparar")
                 datos.update({"mostrar_definido": "1", "mostrar": TODOS})
-                texto = seccion_resultado(self.client.post("/sistemas/", datos))
+                texto = seccion_resultado(self.client.post("/matrices/reduccion/", datos))
                 esperado = ", ".join(f"C{c}" for c in columnas) or "Ninguna"
                 self.assertEqual(texto.count(f"Columnas pivote: {esperado}"), 1)
                 self.assertEqual(texto.count(clasificacion), 1)
@@ -268,7 +268,7 @@ class PruebasMetodos(SimpleTestCase):
         for metodo in ("gauss", "gauss_jordan"):
             for nombre, matriz, columnas, clasificacion in CASOS:
                 with self.subTest(metodo=metodo, caso=nombre):
-                    respuesta = self.client.post("/sistemas/", datos_matriz(matriz, metodo))
+                    respuesta = self.client.post("/matrices/reduccion/", datos_matriz(matriz, metodo))
                     texto = seccion_resultado(respuesta)
                     esperado = ", ".join(f"C{c}" for c in columnas) or "Ninguna"
                     self.assertIn(f"Columnas pivote: {esperado}", texto)
@@ -283,7 +283,7 @@ class PruebasMetodos(SimpleTestCase):
 
 class PruebasBloquesDelResultado(SimpleTestCase):
     def resolver(self, mostrar, metodo="gauss", sistema=UNICA):
-        return self.client.post("/sistemas/", {
+        return self.client.post("/matrices/reduccion/", {
             "sistema": sistema, "metodo": metodo, "mostrar_definido": "1", "mostrar": mostrar,
         })
 
@@ -367,7 +367,7 @@ class PruebasBloquesDelResultado(SimpleTestCase):
                         self.assertContains(respuesta, presente)
 
     def test_entrada_invalida_muestra_el_error_sin_resultado(self):
-        respuesta = self.client.post("/sistemas/", {"sistema": "x1+=1", "metodo": "comparar", "mostrar_definido": "1"})
+        respuesta = self.client.post("/matrices/reduccion/", {"sistema": "x1+=1", "metodo": "comparar", "mostrar_definido": "1"})
         self.assertContains(respuesta, "Formato de sistema inválido")
         self.assertNotContains(respuesta, "Traceback")
         self.assertNotContains(respuesta, 'id="resultado"')
@@ -380,7 +380,7 @@ class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
     NORMAL = "x1 + x2 = 6; -x1 + x2 = -2"
 
     def resolver(self, sistema, metodo="gauss_jordan", mostrar=TODOS):
-        return self.client.post("/sistemas/", {
+        return self.client.post("/matrices/reduccion/", {
             "sistema": sistema, "metodo": metodo, "mostrar_definido": "1", "mostrar": mostrar,
         })
 
@@ -424,7 +424,7 @@ class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
                 respuesta = self.resolver(sistema)
                 self.assertContains(respuesta, "Matriz inicial")
                 self.assertNotContains(respuesta, "Forma estándar")
-        matriz = self.client.post("/sistemas/", datos_matriz([[1, 1, 6], [-1, 1, -2]], "gauss"))
+        matriz = self.client.post("/matrices/reduccion/", datos_matriz([[1, 1, 6], [-1, 1, -2]], "gauss"))
         self.assertNotContains(matriz, "Forma estándar")
 
     def test_comparar_muestra_la_forma_estandar_una_vez(self):
@@ -468,7 +468,7 @@ class PruebasUnaEcuacionPorLineaWeb(SimpleTestCase):
     CON_PUNTO_Y_COMA = "x1 - 6 = -x2; 2x1 + x2 = 8"
 
     def resolver(self, sistema, metodo="gauss_jordan"):
-        return self.client.post("/sistemas/", {
+        return self.client.post("/matrices/reduccion/", {
             "sistema": sistema, "metodo": metodo, "mostrar_definido": "1", "mostrar": TODOS,
         })
 
@@ -487,7 +487,7 @@ class PruebasUnaEcuacionPorLineaWeb(SimpleTestCase):
                 self.assertEqual(seccion_resultado(respuesta), esperado)
 
     def test_la_ayuda_coincide_con_lo_que_acepta_el_parser(self):
-        self.assertContains(self.client.get("/sistemas/"), "Escribe una ecuación por línea o sepáralas con <code>;</code>.")
+        self.assertContains(self.client.get("/matrices/reduccion/"), "Escribe una ecuación por línea o sepáralas con <code>;</code>.")
         # Las ecuaciones del marcador de posición, una por línea, con ';' o sin él.
         for metodo in ("gauss", "gauss_jordan", "comparar"):
             with self.subTest(metodo=metodo):

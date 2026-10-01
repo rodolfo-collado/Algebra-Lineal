@@ -6,7 +6,7 @@ plantilla: el enunciado (Ax = b tiene solución única, infinitas o ninguna), el
 vector x, la comprobación A·x = b, la interpretación como combinación lineal de
 las columnas de A y la cadena de equivalencias que lleva de Ax = b a [A | b].
 El procedimiento de cada método se adapta con `servicios.presentar_resolucion`,
-las mismas piezas que usa Resolver un sistema.
+las mismas piezas que usa Reducción por filas.
 """
 
 from backend.ecuaciones_matriciales import resolver_ecuacion_matricial

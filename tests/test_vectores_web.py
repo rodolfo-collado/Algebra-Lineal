@@ -352,7 +352,7 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado Sí:"))
         self.assertEqual(texto.count("x1 = 3 x2 = 4"), 2)  # sistema equivalente y coeficientes
         self.assertContains(respuesta, 'data-kind="unica"')
-        # Las incógnitas son x1, x2, … como en Resolver un sistema, no c1, c2, …
+        # Las incógnitas son x1, x2, … como en Reducción por filas, no c1, c2, …
         self.assertNotRegex(texto, INCOGNITA_C)
         self.assertNotIn("Entender este resultado", texto)
 
@@ -414,7 +414,7 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         texto = seccion_resultado(respuesta)
         self.assertIn("Coeficientes x1 = -1 x2 = 2", texto)
         self.assertIn("(5, 6) = -(1, 2) + 2(3, 4)", texto)
-        # La matriz reducida resalta las columnas pivote igual que en Resolver un sistema.
+        # La matriz reducida resalta las columnas pivote igual que en Reducción por filas.
         self.assertContains(respuesta, ' pivot"')
 
     def test_un_solo_generador(self):

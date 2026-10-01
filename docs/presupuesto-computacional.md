@@ -6,7 +6,7 @@
 **válida** antes de ejecutarla. No rechaza nada: separa lo que la interfaz no
 puede recibir (un límite) de lo que simplemente tarda (un costo). El módulo no
 depende de Django ni de la interfaz. La historia, la auditoría y las mediciones
-del presupuesto de entrada de Resolver un sistema siguen en
+del presupuesto de entrada de Reducción por filas siguen en
 [Presupuesto de entrada de Sistemas](presupuesto-sistemas.md).
 
 ## Límite estructural y costo estimado
@@ -194,7 +194,7 @@ comprueba sin mirar segundos.
 Los servicios pueden consultar la estimación antes de ejecutar:
 
 - `servicios.estimar_entrada_web(tipo_entrada, metodo, *, texto=None, matriz_aumentada=None)`
-  estima Resolver un sistema. Lee la entrada con `_leer_entrada`, la misma
+  estima Reducción por filas. Lee la entrada con `_leer_entrada`, la misma
   función que usa `resolver_entrada_web`, así que el texto pasa por el parser con
   presupuesto y la matriz por `validar_dimensiones` antes de contar nada. Los
   pivotes se buscan solo en las columnas de coeficientes, como en los motores, y
@@ -239,7 +239,7 @@ uv run python -m scripts.benchmark_presupuesto --web
 | `--tamanos` | n de los sistemas n×(n + 1) y de los productos n×n · n×n. Por defecto 2, 4, 6, 8, 10 y 12. |
 | `--digitos` | Cifras del numerador y del denominador en la segunda serie. Por defecto 10. |
 | `--repeticiones` | Ejecuciones por caso; se informa la mediana. Por defecto 3. |
-| `--web` | Mide además el POST completo de «Comparar ambos» en Resolver un sistema; omite los tamaños fuera del presupuesto de entrada. |
+| `--web` | Mide además el POST completo de «Comparar ambos» en Reducción por filas; omite los tamaños fuera del presupuesto de entrada. |
 
 Cada fila muestra la operación, las dimensiones, los valores, la mediana, los
 pasos reales, la cota estimada y el factor numérico. «µs/unidad» divide la
@@ -305,7 +305,11 @@ escala depende del equipo.
    parece al de las demás. Si no, revisa la cuenta antes de tocar las referencias.
 6. En la interfaz, usa `categoria` o `intervalo_segundos`, nunca los números internos.
 
-## Próximos incrementos
+El benchmark histórico conserva su ruta POST `/sistemas/` y sus mediciones;
+P26.5 procesa ese POST con la misma vista y devuelve 200, sin redirección ni
+cambio de presupuesto. Los formularios y enlaces nuevos usan la ruta canónica.
+
+## Estado de incrementos
 
 - P26.3, Gauss-Jordan con aumentos de varias columnas: `estimar_gauss_jordan(n, 2 * n, columnas_pivote=n)`
   ya describe [A | I]. Si el motor cambia lo que guarda cada paso, se actualiza
@@ -315,9 +319,10 @@ escala depende del equipo.
   intervalo; la referencia queda entre un 25 y un 35 % por encima. Las
   referencias no se recalibraron; conviene hacerlo con `--web` y la herramienta
   real en un equipo representativo.
-- P26.5, sistema por inversa: la composición de arriba; el texto se lee con el
-  parser existente, como en `estimar_entrada_web`.
-- P26.6, renombrar Resolver un sistema: no cambia el presupuesto; los
-  identificadores de método se conservan.
-- P26.7, verificaciones: una `estimar_producto(n, n, n)` por cada una, sumada a
+- P26.5, Reducción por filas: reorganiza la herramienta bajo Matrices; no
+  cambia el presupuesto, los motores ni los identificadores de método.
+- P26.6, consolidación de Operaciones/Expresiones: queda fuera de P26.5.
+- Sistema por inversa: la composición de arriba sigue siendo una aplicación
+  futura; P26.5 no la implementa.
+- P26.8, verificaciones de inversa: una `estimar_producto(n, n, n)` por cada una, sumada a
   la estimación.
