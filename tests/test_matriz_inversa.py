@@ -1,15 +1,15 @@
-"""P26.4: matriz inversa por Gauss-Jordan sobre [A | I] y por la regla directa 2×2."""
+"""Matriz inversa por ambos métodos y P26.8: verificación exacta de ambos productos."""
 
 from fractions import Fraction
 from random import Random
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from backend.gauss_jordan import aplicar_gauss_jordan
-from backend.matrices import matriz_identidad, multiplicar_matrices
+from backend.matrices import matriz_identidad, multiplicar_matrices, resolver_operacion_matrices
 from backend.matriz_inversa import (
     DIRECTO_2X2, GAUSS_JORDAN, METODO_PREDETERMINADO, calcular_inversa,
-    inversa_gauss_jordan, inversa_metodo_2x2, validar_matriz_cuadrada,
+    inversa_gauss_jordan, inversa_metodo_2x2, validar_matriz_cuadrada, verificar_inversa,
 )
 from backend.presupuesto_computacional import estimar_gauss_jordan
 from backend.seguridad_numerica import BITS_MAXIMOS, MENSAJE_CALCULO_GRANDE
@@ -174,6 +174,9 @@ class PruebasConsistencia(unittest.TestCase):
                 directo = inversa_metodo_2x2(matriz)
                 self.assertTrue(gauss_jordan["invertible"])
                 self.assertEqual(gauss_jordan["inversa"], directo["inversa"])
+                verificacion = verificar_inversa(matriz, gauss_jordan["inversa"])
+                self.assertTrue(verificacion["verificada"])
+                self.assertEqual(verificacion, verificar_inversa(matriz, directo["inversa"]))
         # Los que exigen intercambio de filas lo hacen de verdad.
         self.assertEqual(inversa_gauss_jordan([[0, 2], [3, 4]])["pasos"][0]["operacion"], "F1 <-> F2")
 
@@ -186,6 +189,131 @@ class PruebasConsistencia(unittest.TestCase):
             with self.subTest(matriz=matriz):
                 self.assertEqual(gauss_jordan["invertible"], directo["invertible"])
                 self.assertEqual(gauss_jordan["inversa"], directo["inversa"])
+                if gauss_jordan["invertible"]:
+                    verificacion = verificar_inversa(matriz, gauss_jordan["inversa"])
+                    self.assertTrue(verificacion["verificada"])
+                    self.assertEqual(verificacion, verificar_inversa(matriz, directo["inversa"]))
+
+
+class PruebasVerificacion(unittest.TestCase):
+    def test_ejemplos_1x1_2x2_y_3x3_dan_ambos_productos_exactos(self):
+        casos = (
+            ([[4]], [[Fraction(1, 4)]]),
+            (PROFESOR_2X2, INVERSA_2X2),
+            (PROFESOR_3X3, INVERSA_3X3),
+        )
+        for matriz, inversa in casos:
+            with self.subTest(orden=len(matriz)):
+                verificacion = verificar_inversa(matriz, inversa)
+                identidad = matriz_identidad(len(matriz))
+                self.assertEqual(verificacion["identidad"], identidad)
+                self.assertEqual(len(verificacion["identidad"]), len(matriz))
+                self.assertTrue(all(len(fila) == len(matriz) for fila in verificacion["identidad"]))
+                for producto in ("a_por_inversa", "inversa_por_a"):
+                    self.assertEqual(verificacion[producto], identidad)
+                    self.assertTrue(verificacion[f"{producto}_es_identidad"])
+                    self.assertTrue(all(isinstance(valor, Fraction) for fila in verificacion[producto] for valor in fila))
+                    self.assertEqual(verificacion[f"detalles_{producto}"]["resultado"], identidad)
+                    self.assertEqual(verificacion[f"detalles_{producto}"]["operacion"], "producto")
+                self.assertTrue(verificacion["verificada"])
+
+    def test_fracciones_negativos_e_intercambios_de_filas(self):
+        for matriz in INVERTIBLES_2X2:
+            with self.subTest(matriz=matriz):
+                inversa = inversa_gauss_jordan(matriz)["inversa"]
+                verificacion = verificar_inversa(matriz, inversa)
+                self.assertEqual(verificacion["a_por_inversa"], matriz_identidad(2))
+                self.assertEqual(verificacion["inversa_por_a"], matriz_identidad(2))
+                self.assertTrue(verificacion["verificada"])
+
+    def test_reutiliza_dos_veces_el_producto_existente_y_una_identidad(self):
+        with (
+            patch("backend.matriz_inversa.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as motor,
+            patch("backend.matriz_inversa.matriz_identidad", wraps=matriz_identidad) as identidad,
+        ):
+            verificacion = verificar_inversa(PROFESOR_2X2, INVERSA_2X2)
+        self.assertEqual(motor.call_args_list, [
+            call("producto", a=PROFESOR_2X2, b=INVERSA_2X2),
+            call("producto", a=INVERSA_2X2, b=PROFESOR_2X2),
+        ])
+        identidad.assert_called_once_with(2)
+        self.assertTrue(verificacion["verificada"])
+
+    def test_usa_la_inversa_recibida_sin_volver_a_calcularla(self):
+        with (
+            patch("backend.matriz_inversa.calcular_inversa", side_effect=AssertionError("recalculó la inversa")),
+            patch("backend.matriz_inversa.inversa_gauss_jordan", side_effect=AssertionError("recalculó con Gauss-Jordan")),
+            patch("backend.matriz_inversa.inversa_metodo_2x2", side_effect=AssertionError("recalculó con el método directo")),
+            patch("backend.matriz_inversa.aplicar_gauss_jordan", side_effect=AssertionError("volvió a reducir")),
+        ):
+            self.assertTrue(verificar_inversa(PROFESOR_3X3, INVERSA_3X3)["verificada"])
+
+    def test_no_muta_ninguna_de_las_dos_entradas(self):
+        matriz = [fila[:] for fila in PROFESOR_3X3]
+        inversa = [fila[:] for fila in INVERSA_3X3]
+        copia_matriz = [fila[:] for fila in matriz]
+        copia_inversa = [fila[:] for fila in inversa]
+        verificacion = verificar_inversa(matriz, inversa)
+        self.assertEqual(matriz, copia_matriz)
+        self.assertEqual(inversa, copia_inversa)
+        # Tampoco deja el producto o la identidad compartiendo las filas de entrada.
+        verificacion["a_por_inversa"][0][0] = Fraction(17)
+        verificacion["identidad"][0][0] = Fraction(23)
+        self.assertEqual(matriz, copia_matriz)
+        self.assertEqual(inversa, copia_inversa)
+
+    def test_rechaza_entradas_incompatibles_antes_de_multiplicar(self):
+        casos = (
+            (PROFESOR_2X2, [[1]], "mismo orden"),
+            ([[1]], INVERSA_2X2, "mismo orden"),
+            ([[1, 2]], [[1]], "matriz cuadrada"),
+            ([[1]], [[1, 2]], "matriz cuadrada"),
+            ([], [[1]], "vacía"),
+            ([[1]], [], "vacía"),
+            (None, [[1]], "vacía"),
+            ([[1]], None, "vacía"),
+            ([[1, 2], [3]], INVERSA_2X2, "rectangular"),
+            (PROFESOR_2X2, [[1, 2], [3]], "rectangular"),
+            ([[0.5]], [[2]], "número exacto"),
+            ([[2]], [[0.5]], "número exacto"),
+            ([[1]], [[True]], "número exacto"),
+            ([["1"]], [[1]], "número exacto"),
+        )
+        for matriz, inversa, mensaje in casos:
+            with self.subTest(matriz=matriz, inversa=inversa):
+                with patch("backend.matriz_inversa.resolver_operacion_matrices") as motor:
+                    with self.assertRaisesRegex(ValueError, mensaje):
+                        verificar_inversa(matriz, inversa)
+                motor.assert_not_called()
+
+    def test_candidata_incorrecta_conserva_los_productos_reales(self):
+        verificacion = verificar_inversa(PROFESOR_2X2, matriz_identidad(2))
+        self.assertEqual(verificacion["a_por_inversa"], PROFESOR_2X2)
+        self.assertEqual(verificacion["inversa_por_a"], PROFESOR_2X2)
+        self.assertFalse(verificacion["a_por_inversa_es_identidad"])
+        self.assertFalse(verificacion["inversa_por_a_es_identidad"])
+        self.assertFalse(verificacion["verificada"])
+
+    def test_compara_cada_producto_y_no_presupone_el_segundo(self):
+        # Una regresión del motor debe poder distinguirse en cada sentido.
+        productos = [{"resultado": matriz_identidad(2)}, {"resultado": [[1, 0], [0, 2]]}]
+        with patch("backend.matriz_inversa.resolver_operacion_matrices", side_effect=productos) as motor:
+            verificacion = verificar_inversa(PROFESOR_2X2, INVERSA_2X2)
+        self.assertEqual(motor.call_count, 2)
+        self.assertTrue(verificacion["a_por_inversa_es_identidad"])
+        self.assertFalse(verificacion["inversa_por_a_es_identidad"])
+        self.assertFalse(verificacion["verificada"])
+        self.assertEqual(verificacion["inversa_por_a"], [[1, 0], [0, 2]])
+
+    def test_productos_con_crecimiento_excesivo_usan_la_seguridad_comun(self):
+        x = Fraction(1 << (BITS_MAXIMOS // 2 + 1))
+        with self.assertRaisesRegex(ValueError, MENSAJE_CALCULO_GRANDE):
+            verificar_inversa([[x]], [[x]])
+        enorme = 1 << BITS_MAXIMOS
+        for matriz, inversa in (([[enorme]], [[0]]), ([[0]], [[enorme]])):
+            with self.subTest(entrada="matriz" if matriz[0][0] else "inversa"):
+                with self.assertRaisesRegex(ValueError, MENSAJE_CALCULO_GRANDE):
+                    verificar_inversa(matriz, inversa)
 
 
 class PruebasValidacion(unittest.TestCase):

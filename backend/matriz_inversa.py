@@ -19,7 +19,10 @@ un mensaje legible.
 from fractions import Fraction
 
 from backend.gauss_jordan import aplicar_gauss_jordan
-from backend.matrices import aumentar_matrices, matriz_identidad, separar_bloques, validar_matriz
+from backend.matrices import (
+    aumentar_matrices, matriz_identidad, resolver_operacion_matrices,
+    separar_bloques, validar_matriz,
+)
 from backend.seguridad_numerica import (
     dividir_exacto, multiplicar_exacto, restar_exacto, validar_matriz_exacta,
 )
@@ -125,3 +128,38 @@ def calcular_inversa(a, metodo=METODO_PREDETERMINADO):
             "Selecciona un método válido: Gauss-Jordan o el método para matrices 2×2."
         ) from None
     return calcular(a)
+
+
+def verificar_inversa(a, inversa):
+    """Comprueba A·A⁻¹ = I y A⁻¹·A = I con la inversa recibida, sin recalcularla.
+
+    A y la candidata a inversa deben ser matrices cuadradas del mismo orden,
+    con enteros o Fraction. Ambos productos reutilizan el motor común y sus
+    operaciones exactas protegidas. No modifica ninguna entrada.
+
+    Devuelve `identidad`, los productos `a_por_inversa` e `inversa_por_a`,
+    las comparaciones exactas `a_por_inversa_es_identidad` e
+    `inversa_por_a_es_identidad` y `verificada` (ambas coincidieron). Conserva
+    la evidencia del motor en `detalles_a_por_inversa` y
+    `detalles_inversa_por_a`, sin exigir que la candidata sea correcta.
+    """
+    n = _orden(a)
+    if _orden(inversa) != n:
+        raise ValueError("A y su inversa deben ser matrices cuadradas del mismo orden.")
+    identidad = matriz_identidad(n)
+    producto_a_inversa = resolver_operacion_matrices("producto", a=a, b=inversa)
+    producto_inversa_a = resolver_operacion_matrices("producto", a=inversa, b=a)
+    a_por_inversa = producto_a_inversa["resultado"]
+    inversa_por_a = producto_inversa_a["resultado"]
+    a_por_inversa_es_identidad = a_por_inversa == identidad
+    inversa_por_a_es_identidad = inversa_por_a == identidad
+    return {
+        "identidad": identidad,
+        "a_por_inversa": a_por_inversa,
+        "inversa_por_a": inversa_por_a,
+        "a_por_inversa_es_identidad": a_por_inversa_es_identidad,
+        "inversa_por_a_es_identidad": inversa_por_a_es_identidad,
+        "verificada": a_por_inversa_es_identidad and inversa_por_a_es_identidad,
+        "detalles_a_por_inversa": producto_a_inversa,
+        "detalles_inversa_por_a": producto_inversa_a,
+    }

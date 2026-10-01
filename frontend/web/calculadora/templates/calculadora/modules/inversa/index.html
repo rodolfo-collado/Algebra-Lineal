@@ -33,6 +33,13 @@
                 <p class="field-help option-help">Gauss-Jordan sirve para cualquier matriz cuadrada. El método para matrices 2×2 usa una regla directa que solo existe para ese tamaño.</p>
             </fieldset>
         </section>
+        <section class="workspace-section">
+            <label class="option" for="{{ form.verificar.id_for_label }}">
+                {{ form.verificar }}<span>{{ form.verificar.label }}</span>
+            </label>
+            <p class="field-help option-help" id="inverse-verification-help">{{ form.verificar.help_text }}</p>
+            {{ form.verificar.errors }}
+        </section>
         <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular inversa</button></div>
     </form>
 </section>
@@ -54,6 +61,9 @@
                 {% include "calculadora/modules/inversa/_gauss_jordan.html" %}
             {% else %}
                 {% include "calculadora/modules/inversa/_metodo_2x2.html" %}
+            {% endif %}
+            {% if resultado.verificar_solicitado %}
+                {% include "calculadora/modules/inversa/_verificacion.html" %}
             {% endif %}
         {% enddisclosure %}
 

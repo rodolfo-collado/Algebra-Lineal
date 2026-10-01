@@ -70,7 +70,7 @@ CONTROLES = {
     # «confirmacion» solo aparece en el aviso de un cálculo largo, nunca en el GET.
     "/matrices/inversa/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "csrfmiddlewaretoken",
-        "metodo", "orden",
+        "metodo", "orden", "verificar",  # P26.8: comprobación opcional del resultado.
     },
     "/bases/conversion/": {"base_origen", "bases_destino", "csrfmiddlewaretoken", "numero"},
 }
