@@ -32,7 +32,8 @@ los archivos y accesos directos de Álgebra Lineal; conserva WebView2, que puede
 utilizado por otras aplicaciones.
 
 CI conserva builds temporales; el workflow de [releases](releases.md) publica
-la distribución estable después de validar un tag de `main`. El paquete no está
+la distribución estable al promover a `main`, tras validar el candidato y superar
+CI, build y smoke. GitHub Actions crea el tag automáticamente. El paquete no está
 firmado digitalmente: Windows puede mostrar el editor como desconocido.
 
 ## Construir el instalador
