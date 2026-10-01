@@ -109,4 +109,5 @@ implementación educativa descrita en [Algoritmos](algoritmos.md).
 Trabaja en `feature/*` desde el `develop` actualizado y abre un PR a `develop`.
 La promoción estable se realiza mediante otro PR de `develop` a `main`,
 conservando ambas historias. No uses reset ni force-push para igualarlas.
-El tag solo se crea después de esa promoción, siguiendo [Releases](releases.md).
+El merge a `main` dispara Release: valida el SHA del push, reutiliza CI y crea
+el tag y la release automáticamente al pasar los checks. Consulta [Releases](releases.md).

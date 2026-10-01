@@ -167,8 +167,8 @@ Para un cambio de packaging, las pruebas estáticas no sustituyen el build y
 la instalación real; para un cambio visual, tampoco sustituyen la revisión de UI.
 
 El workflow de release reutiliza CI: una prueba, build o smoke fallidos bloquean
-la publicación. La validación del tag puede comprobarse localmente y en pruebas
-sin crear tags en este repositorio; consulta [Releases](releases.md).
+la creación del tag y la publicación. La validación del candidato puede comprobarse
+localmente y en pruebas sin crear tags en este repositorio; consulta [Releases](releases.md).
 
 ## Rediseño PyGebra y presentación numérica
 

@@ -34,10 +34,9 @@
   contrato de Gauss-Jordan para `[A | B]`, preparación de `[A | I]` y separación
   de bloques durante el procedimiento.
 - [Matriz inversa](matriz-inversa.md): Gauss-Jordan sobre `[A | I]`, la regla
-  de las matrices 2×2, matrices sin inversa y la confirmación antes de un
-  cálculo largo.
+  2×2, verificación, propiedades y aplicación `x = A⁻¹b`.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
-  política de tags, CD y checksums.
+  publicación desde main con tag/release automáticos y checksums.
 
 La entrada para contribuir sigue siendo [CONTRIBUTING.md](../CONTRIBUTING.md).
 Estas guías describen el funcionamiento vigente; el historial de cambios y los

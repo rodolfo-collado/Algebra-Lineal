@@ -88,10 +88,12 @@ el [build y smoke Windows](docs/instalacion-windows.md).
 ## Integración continua
 
 `.github/workflows/ci.yml` ejecuta esas mismas verificaciones en cada pull request
-hacia `develop` o `main`, y en cada push a esas ramas. Incluye suite en
+hacia `develop` o `main`, y en cada push a `develop`. Incluye suite en
 Ubuntu y Windows, build del instalador y smoke real de instalación/desinstalación.
-El workflow de release reutiliza estas comprobaciones antes de publicar; consulta
-[Releases](docs/releases.md) para versión, tags y promoción estable.
+Las versiones se preparan antes de promover `develop → main` mediante PR.
+El merge a `main` autoriza la publicación: Release reutiliza CI y, si todo pasa,
+crea automáticamente el tag y la release. Consulta [Releases](docs/releases.md)
+para la política de versiones y reintentos.
 
 **Un PR no se fusiona si el CI está en rojo.** Si un check falla, corrígelo en la
 misma rama `feature/*` y espera una ejecución verde. No desactives un check para

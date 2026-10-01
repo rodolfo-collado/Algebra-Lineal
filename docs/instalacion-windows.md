@@ -5,7 +5,6 @@
 ## Instalar como usuario
 
 1. Descarga `AlgebraLineal-Setup-x.y.z.exe` desde la [última release estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest).
-   Si aún no hay releases publicadas, espera la primera publicación estable.
 2. Ejecuta el instalador: decide si quieres un acceso directo en el escritorio y
    pulsa **Instalar**.
 3. Abre **Álgebra Lineal** desde el menú Inicio o el acceso directo opcional del escritorio.
@@ -33,7 +32,8 @@ los archivos y accesos directos de Álgebra Lineal; conserva WebView2, que puede
 utilizado por otras aplicaciones.
 
 CI conserva builds temporales; el workflow de [releases](releases.md) publica
-la distribución estable después de validar un tag de `main`. El paquete no está
+la distribución estable al promover a `main`, tras validar el candidato y superar
+CI, build y smoke. GitHub Actions crea el tag automáticamente. El paquete no está
 firmado digitalmente: Windows puede mostrar el editor como desconocido.
 
 ## Construir el instalador

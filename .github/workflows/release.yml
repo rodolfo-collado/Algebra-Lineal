@@ -2,48 +2,49 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 permissions:
   contents: read
 
-# Serializar entregas; una nueva ejecución nunca interrumpe una publicación.
+# Cola sin sustituir promociones pendientes; no interrumpir una publicación.
 concurrency:
   group: release
+  queue: max
   cancel-in-progress: false
 
 jobs:
   validar:
-    name: Validar versión y origen del tag
+    name: Validar candidato de main
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      version: ${{ steps.tag.outputs.version }}
-      commit: ${{ steps.tag.outputs.commit }}
+      version: ${{ steps.candidato.outputs.version }}
+      tag: ${{ steps.candidato.outputs.tag }}
+      commit: ${{ steps.candidato.outputs.commit }}
     steps:
-      - name: Clonar el tag y su historia
+      - name: Clonar el SHA del push y los tags existentes
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Actualizar main y validar sin modificar la versión
-        id: tag
-        run: |
-          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
-          python3 scripts/validate_release.py
+      - name: Validar sin modificar versión ni refs
+        id: candidato
+        run: python3 scripts/validate_release.py
 
   comprobar:
     name: Validar y construir la distribución
     needs: validar
     permissions:
       contents: read
-    # Reutiliza suite Ubuntu/Windows, lock, Django, compileall, build y smoke.
+    # El workflow local y todos los checkouts usan el commit del evento.
     uses: ./.github/workflows/ci.yml
 
   publicar:
-    name: Publicar instalador y checksum
+    name: Crear tag y publicar instalador y checksum
     needs: [validar, comprobar]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -52,45 +53,92 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      TAG: ${{ github.ref_name }}
+      TAG: ${{ needs.validar.outputs.tag }}
       VERSION: ${{ needs.validar.outputs.version }}
       COMMIT: ${{ needs.validar.outputs.commit }}
     steps:
-      # Este job no ejecuta código del checkout ni el instalador.
+      # Este job solo ejecuta comandos del workflow; no hace checkout.
       - name: Descargar únicamente el artifact de esta ejecución
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: algebra-lineal-windows
           path: release-assets
 
-      - name: Verificar de nuevo main, tag y ausencia de release
+      - name: Revisar tags estables y ausencia de release
+        id: remoto
         shell: bash
         run: |
           set -euo pipefail
-          current_main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq '.object.sha')
-          current_tag=$(gh api "repos/$GH_REPO/commits/$TAG" --jq '.sha')
-          if [[ "$COMMIT" != "$current_main" || "$COMMIT" != "$current_tag" ]]; then
-            echo 'main o el tag cambió desde la validación; no se publicará.' >&2
-            exit 1
-          fi
-          # La consulta incluye borradores. Un error de API también detiene el job.
+          # Incluye drafts; cualquier error de API detiene la publicación.
           releases=$(gh api "repos/$GH_REPO/releases" --paginate --jq '.[].tag_name')
           if grep -Fxq -- "$TAG" <<< "$releases"; then
-            echo "Ya existe una release para $TAG; no se sobrescribe." >&2
+            echo "Ya existe una release o draft para $TAG; requiere revisión manual." >&2
             exit 1
           fi
+          refs=$(gh api "repos/$GH_REPO/git/matching-refs/tags/" --jq '.[].ref')
+          stable_versions=("$VERSION")
+          while IFS= read -r ref; do
+            if [[ "$ref" =~ ^refs/tags/v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+              stable_versions+=("${ref#refs/tags/v}")
+            fi
+          done <<< "$refs"
+          # sort -V compara componentes numéricos: 0.10.0 > 0.9.0.
+          latest=$(printf '%s\n' "${stable_versions[@]}" | sort -V | tail -n 1)
+          if [[ "$VERSION" != "$latest" ]]; then
+            echo "Versión regresiva frente a v$latest; no se publicará." >&2
+            exit 1
+          fi
+          if grep -Fxq -- "refs/tags/$TAG" <<< "$refs"; then
+            current_tag=$(gh api "repos/$GH_REPO/commits/refs/tags/$TAG" --jq '.sha')
+            if [[ "$COMMIT" != "$current_tag" ]]; then
+              echo "$TAG pertenece a otro commit; no se mueve." >&2
+              exit 1
+            fi
+            echo 'tag_exists=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'tag_exists=false' >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Generar SHA-256 y publicar con notas de GitHub
+      - name: Comprobar el instalador descargado
         shell: bash
         working-directory: release-assets
         run: |
           set -euo pipefail
           installer="AlgebraLineal-Setup-$VERSION.exe"
           test -f "$installer"
-          test "$(find . -type f | wc -l)" -eq 1
+          test ! -L "$installer"
+          test "$(find . -mindepth 1 | wc -l)" -eq 1
+
+      - name: Crear tag anotado en el SHA candidato
+        if: steps.remoto.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_object=$(gh api --method POST "repos/$GH_REPO/git/tags" \
+            -f tag="$TAG" -f message="PyGebra $TAG" -f object="$COMMIT" -f type=commit \
+            -f 'tagger[name]=github-actions[bot]' \
+            -f 'tagger[email]=41898282+github-actions[bot]@users.noreply.github.com' --jq '.sha')
+          # Solo creación; si otra ejecución creó la ref, falla sin moverla.
+          gh api --method POST "repos/$GH_REPO/git/refs" \
+            -f ref="refs/tags/$TAG" -f sha="$tag_object"
+
+      - name: Generar SHA-256 y publicar con notas de GitHub
+        shell: bash
+        working-directory: release-assets
+        run: |
+          set -euo pipefail
+          current_tag=$(gh api "repos/$GH_REPO/commits/refs/tags/$TAG" --jq '.sha')
+          test "$COMMIT" = "$current_tag"
+          installer="AlgebraLineal-Setup-$VERSION.exe"
           sha256sum "$installer" > SHA256SUMS.txt
           sha256sum --check SHA256SUMS.txt
-          # El borrador evita exponer una entrega incompleta si falla la carga.
+          # Crear primero el draft; publicar únicamente después de verificar la carga.
           gh release create "$TAG" "$installer" SHA256SUMS.txt \
-            --verify-tag --draft --title "Álgebra Lineal $TAG" --generate-notes
+            --verify-tag --draft --title "PyGebra $TAG" --generate-notes --target "$COMMIT"
+          assets=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          expected=$(printf '%s\n' "$installer" SHA256SUMS.txt | sort)
+          test "$(printf '%s\n' "$assets" | sort)" = "$expected"
+          gh release download "$TAG" --pattern "$installer" --pattern SHA256SUMS.txt --dir verified
+          cmp SHA256SUMS.txt verified/SHA256SUMS.txt
+          (cd verified && sha256sum --check SHA256SUMS.txt)
           gh release edit "$TAG" --draft=false --latest
