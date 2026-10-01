@@ -7,6 +7,7 @@
     <form id="expresiones-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
         {% csrf_token %}
         {{ form.cantidad }}{{ form.cantidad.errors }}
+        {% if not confirmacion %}{{ form.confirmacion }}{% endif %}
         {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
         <section class="workspace-section" id="expression-fields" data-perfil="numerico" aria-labelledby="simbolos-title">
             <h3 class="section-title" id="simbolos-title">Símbolos</h3>
@@ -53,6 +54,10 @@
             </fieldset>
         {% enddisclosure %}
         <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular</button></div>
+        {% if confirmacion %}
+            {% if form.cleaned_data.entrada.nodo %}<input type="hidden" name="nodo" value="{{ form.cleaned_data.entrada.nodo }}">{% endif %}
+            {% include "calculadora/components/confirmacion_costo.html" %}
+        {% endif %}
     </form>
 </section>
 {% endblock %}

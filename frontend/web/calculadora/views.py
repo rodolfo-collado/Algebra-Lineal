@@ -18,6 +18,7 @@ from .forms_romanos import ConversionRomanosForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .servicios_ecuaciones import resolver_ecuacion_web
 from .servicios_expresiones import evaluar_expresion_web
+from .presupuesto_expresiones import confirmacion_pendiente as confirmar_expresion
 from .servicios_inversa import calcular_inversa_web, confirmacion_pendiente
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
@@ -177,17 +178,21 @@ def operaciones_matrices(request):
     """
     accion = next((nombre for nombre in ("agregar", "eliminar", "ajustar") if nombre in request.POST), None)
     form = ExpresionMatricialForm(request.POST if request.method == "POST" else None, accion=accion)
-    resultado = None
+    resultado = confirmacion = None
     if request.method == "POST" and form.is_valid():
         if accion:
             form = ExpresionMatricialForm(initial=form.cleaned_data["estado"])
         else:
             try:
-                resultado = evaluar_expresion_web(form.cleaned_data["entrada"])
+                entrada = form.cleaned_data["entrada"]
+                confirmacion = confirmar_expresion(entrada, form.cleaned_data["confirmacion"])
+                if confirmacion is None:
+                    resultado = evaluar_expresion_web(entrada)
             except ValueError as error:
                 form.add_error("expresion", str(error))
     return render(request, "calculadora/modules/expresiones/index.html", {
-        "form": form, "resultado": resultado, "perfiles_teclado": perfiles_para("numerico"),
+        "form": form, "resultado": resultado, "confirmacion": confirmacion,
+        "perfiles_teclado": perfiles_para("numerico"),
     })
 
 

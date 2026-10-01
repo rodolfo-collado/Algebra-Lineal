@@ -41,6 +41,10 @@
     function ocultarResultado() {
         const resultado = document.getElementById("resultado");
         if (resultado) resultado.hidden = true;
+        const confirmacion = root.querySelector("[data-confirmacion]");
+        if (confirmacion) confirmacion.hidden = true;
+        const firma = root.querySelector('input[name="confirmacion"]');
+        if (firma) firma.value = "";
     }
 
     // Lo que cada símbolo dibuja y envía, con la misma regla que forms_expresiones.py.
@@ -310,6 +314,7 @@
             return;
         }
         reconstruir(card);
+        ocultarResultado();
     });
     lista.addEventListener("input", (event) => {
         const card = tarjeta(event.target);
@@ -331,6 +336,8 @@
         }
     });
     root.addEventListener("input", ocultarResultado);
+    root.addEventListener("change", ocultarResultado);
+    root.querySelector("[data-aplicar]").addEventListener("click", ocultarResultado);
 
     // Tab recorre todos los campos. Las flechas verticales cambian de fila dentro del
     // símbolo; las horizontales solo cambian de celda al llegar al extremo del texto.

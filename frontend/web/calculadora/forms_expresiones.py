@@ -119,6 +119,8 @@ def presupuesto_expresion(arbol, tamanos):
 class ExpresionMatricialForm(FormularioCeldas):
     """Un símbolo por bloque. Calcular exige las celdas de esa estructura; Aplicar, agregar y eliminar no."""
 
+    confirmacion = forms.CharField(required=False, strip=False, widget=forms.HiddenInput)
+
     expresion = forms.CharField(
         label="Expresión", required=False, max_length=400,
         widget=forms.Textarea(attrs={
@@ -400,7 +402,7 @@ class ExpresionMatricialForm(FormularioCeldas):
                 nombre in conocidos or nombre.startswith(("celda_", "filas_", "columnas_"))
                 for nombre in recibidos
             )
-        opcionales = {"nodo", "csrfmiddlewaretoken", "metodo"}
+        opcionales = {"nodo", "csrfmiddlewaretoken", "metodo", "confirmacion"}
         esperados = {"expresion", "cantidad"} | opcionales
         for simbolo in simbolos:
             indice, tipo = simbolo["indice"], simbolo["tipo"]
