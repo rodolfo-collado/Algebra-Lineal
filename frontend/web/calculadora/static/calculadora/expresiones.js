@@ -8,7 +8,14 @@
     const plantilla = document.getElementById("symbol-template");
     const celda = document.getElementById("expression-cell-template");
     const agregar = root.querySelector("[data-agregar]");
-    const maximo = 8;
+    const aviso = root.querySelector("[data-presupuesto]");
+    // Los mismos topes que aplica el servidor antes de construir el formulario.
+    const maximos = {
+        simbolos: Number(cantidad.dataset.operandosMaximos),
+        celdas: Number(cantidad.dataset.celdasMaximas),
+        campos: Number(cantidad.dataset.camposMaximos),
+    };
+    const DIMENSION = 2;
 
     function tarjeta(nodo) {
         return nodo.closest("[data-simbolo]");
@@ -29,6 +36,65 @@
             valores.set(`${input.dataset.fila}_${input.dataset.columna}`, input.value);
         });
         return valores;
+    }
+
+    function ocultarResultado() {
+        const resultado = document.getElementById("resultado");
+        if (resultado) resultado.hidden = true;
+        const confirmacion = root.querySelector("[data-confirmacion]");
+        if (confirmacion) confirmacion.hidden = true;
+        const firma = root.querySelector('input[name="confirmacion"]');
+        if (firma) firma.value = "";
+    }
+
+    // Lo que cada símbolo dibuja y envía, con la misma regla que forms_expresiones.py.
+    function forma(tipo, filas, columnas) {
+        if (tipo === "matriz_desconocida" || tipo === "vector_simbolico") return [0, 0];
+        if (tipo === "escalar") return [1, 1];
+        if (tipo === "vector" || tipo === "vector_lineal") return [filas, 1];
+        return [filas, columnas];
+    }
+
+    function camposEstructura(tipo) {
+        return 2 + (tipo !== "escalar") + (tipo === "matriz" || tipo === "matriz_desconocida");
+    }
+
+    function estructura(card) {
+        // Una dimensión aún inválida cuenta como la del servidor: la inicial.
+        return {
+            tipo: campo(card, "tipo").value,
+            filas: entero(campo(card, "filas")) || DIMENSION,
+            columnas: entero(campo(card, "columnas")) || DIMENSION,
+        };
+    }
+
+    // Mensaje si la estructura no cabe en el formulario; "" si cabe.
+    function presupuesto(estructuras) {
+        let celdas = 0;
+        let campos = 0;
+        estructuras.forEach(({ tipo, filas, columnas }) => {
+            const [alto, ancho] = forma(tipo, filas, columnas);
+            celdas += alto * ancho;
+            campos += alto * ancho + camposEstructura(tipo);
+        });
+        if (celdas > maximos.celdas) {
+            return `Los ${estructuras.length} símbolos sumarían ${celdas} celdas y la interfaz admite hasta ${maximos.celdas}: quita símbolos o reduce sus dimensiones.`;
+        }
+        if (campos > maximos.campos) {
+            return `Los ${estructuras.length} símbolos ocuparían ${campos} campos del formulario (nombre, tipo, dimensiones y celdas) y la interfaz admite hasta ${maximos.campos}: quita símbolos o reduce sus dimensiones.`;
+        }
+        return "";
+    }
+
+    function tarjetas() {
+        return [...lista.querySelectorAll("[data-simbolo]")];
+    }
+
+    // ¿Cabe el formulario si `card` pasa a tener `cambio`? Avisa y responde false si no.
+    function cabe(card, cambio) {
+        const mensaje = presupuesto(tarjetas().map(otra => (otra === card ? { ...estructura(otra), ...cambio } : estructura(otra))));
+        aviso.textContent = mensaje;
+        return !mensaje;
     }
 
     function ocultar(card, nombre) {
@@ -63,41 +129,48 @@
     }
 
     function nota(card) {
-        let aviso = card.querySelector("[data-nota]");
-        if (!aviso) {
-            aviso = document.createElement("p");
-            aviso.className = "field-help";
-            aviso.dataset.nota = "";
-            card.querySelector("[data-rejilla]").before(aviso);
+        let texto = card.querySelector("[data-nota]");
+        if (!texto) {
+            texto = document.createElement("p");
+            texto.className = "field-help";
+            texto.dataset.nota = "";
+            card.querySelector("[data-rejilla]").before(texto);
         }
-        return aviso;
+        return texto;
     }
 
     function actualizarNota(card, tipo, filas) {
-        const aviso = nota(card);
+        const texto = nota(card);
         const rejilla = card.querySelector("[data-rejilla]");
         const nombre = campo(card, "nombre").value || "x";
         if (tipo === "matriz_desconocida") {
-            aviso.hidden = false;
-            aviso.textContent = "Matriz desconocida: indica filas y columnas. Las entradas no se escriben; se determinan al comparar coeficientes.";
+            texto.hidden = false;
+            texto.textContent = "Matriz desconocida: indica filas y columnas. Las entradas no se escriben; se determinan al comparar coeficientes.";
             rejilla.hidden = true;
             return;
         }
         if (tipo === "vector_simbolico") {
             const componentes = Array.from({ length: filas }, (_, i) => `${nombre}${i + 1}`).join(", ");
-            aviso.hidden = false;
-            aviso.textContent = filas ? `Componentes independientes: ${componentes}.` : "Indica cuántas componentes independientes tiene.";
+            texto.hidden = false;
+            texto.textContent = filas ? `Componentes independientes: ${componentes}.` : "Indica cuántas componentes independientes tiene.";
             rejilla.hidden = true;
             return;
         }
         if (tipo === "vector_lineal") {
-            aviso.hidden = false;
-            aviso.textContent = "Cada componente es una expresión lineal, como 3x1 - 2x2.";
+            texto.hidden = false;
+            texto.textContent = "Cada componente es una expresión lineal, como 3x1 - 2x2.";
             rejilla.hidden = false;
             return;
         }
-        aviso.hidden = true;
+        texto.hidden = true;
         rejilla.hidden = false;
+    }
+
+    function etiquetaCelda(tipo, nombre, i, j) {
+        if (tipo === "escalar") return `Valor del escalar ${nombre}`;
+        if (tipo === "vector_lineal") return `Vector lineal ${nombre}, componente ${i + 1}`;
+        if (tipo === "vector") return `Vector ${nombre}, componente ${i + 1}`;
+        return `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
     }
 
     function reconstruir(card) {
@@ -134,19 +207,12 @@
                 for (let j = 0; j < ancho; j += 1) {
                     const copia = celda.content.cloneNode(true);
                     const input = copia.querySelector("input");
-                    const label = copia.querySelector("label");
                     input.dataset.fila = String(i);
                     input.dataset.columna = String(j);
                     input.value = guardado.get(`${i}_${j}`) || "";
                     input.classList.toggle("matrix-input-lineal", tipo === "vector_lineal");
                     input.placeholder = tipo === "vector_lineal" ? "3x1 - 2x2" : "";
-                    label.textContent = tipo === "escalar"
-                        ? `Valor del escalar ${nombre}`
-                        : tipo === "vector_lineal"
-                            ? `Vector lineal ${nombre}, componente ${i + 1}`
-                            : tipo === "vector"
-                                ? `Vector ${nombre}, componente ${i + 1}`
-                                : `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
+                    copia.querySelector("label").textContent = etiquetaCelda(tipo, nombre, i, j);
                     fila.append(copia);
                 }
                 cuerpo.append(fila);
@@ -157,7 +223,7 @@
     }
 
     function reindex() {
-        const cards = [...lista.querySelectorAll("[data-simbolo]")];
+        const cards = tarjetas();
         cards.forEach((card, i) => {
             const nombre = campo(card, "nombre");
             const tipo = campo(card, "tipo");
@@ -165,6 +231,7 @@
             nombre.id = `id_nombre_${i}`;
             tipo.name = `tipo_${i}`;
             tipo.id = `id_tipo_${i}`;
+            tipo.dataset.anterior = tipo.value;
             for (const clave of ["filas", "columnas"]) {
                 const input = campo(card, clave);
                 if (!input) continue;
@@ -180,47 +247,81 @@
             });
         });
         cantidad.value = String(cards.length);
-        if (agregar) agregar.disabled = cards.length >= maximo;
+        if (agregar) agregar.disabled = cards.length >= maximos.simbolos;
         const vacio = lista.querySelector("[data-vacio]");
         if (vacio) vacio.hidden = cards.length > 0;
+    }
+
+    // A … Z y después A1 … Z1: la misma regla que el servidor al agregar sin JavaScript.
+    function nombreLibre(usados) {
+        for (let sufijo = 0; ; sufijo += 1) {
+            for (const letra of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+                const nombre = letra + (sufijo ? String(sufijo) : "");
+                if (!usados.has(nombre)) return nombre;
+            }
+        }
     }
 
     root.addEventListener("click", (event) => {
         const paso = event.target.closest("[data-paso]");
         if (paso && root.contains(paso)) {
+            const card = tarjeta(paso);
             const input = paso.closest(".stepper").querySelector("input");
             const siguiente = Math.min(10, Math.max(1, (entero(input) || 1) + Number(paso.dataset.paso)));
+            // El paso es atómico: si no cabe, nada cambia y queda el aviso.
+            if (!cabe(card, { [input.dataset.campo]: siguiente })) return;
             input.value = String(siguiente);
-            reconstruir(tarjeta(paso));
+            reconstruir(card);
+            ocultarResultado();
             return;
         }
         const quitar = event.target.closest("[data-eliminar]");
         if (quitar && lista.contains(quitar)) {
             event.preventDefault();
             tarjeta(quitar).remove();
+            aviso.textContent = "";
             reindex();
+            ocultarResultado();
             return;
         }
         if (event.target.closest("[data-agregar]")) {
             event.preventDefault();
-            if (lista.querySelectorAll("[data-simbolo]").length >= maximo) return;
+            const actuales = tarjetas();
+            if (actuales.length >= maximos.simbolos) {
+                aviso.textContent = `La interfaz admite hasta ${maximos.simbolos} símbolos.`;
+                return;
+            }
+            const mensaje = presupuesto([...actuales.map(estructura), { tipo: "matriz", filas: DIMENSION, columnas: DIMENSION }]);
+            if (mensaje) {
+                aviso.textContent = `No se puede agregar otro símbolo: una matriz 2×2 más no cabe. ${mensaje}`;
+                return;
+            }
+            aviso.textContent = "";
             lista.append(plantilla.content.cloneNode(true));
             const nueva = lista.querySelector("[data-simbolo]:last-child");
-            const usados = new Set([...lista.querySelectorAll("[data-campo=nombre]")].slice(0, -1).map(input => input.value));
-            const letra = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").find(candidata => !usados.has(candidata)) || "S";
-            campo(nueva, "nombre").value = letra;
+            campo(nueva, "nombre").value = nombreLibre(new Set(actuales.map(card => campo(card, "nombre").value)));
             reconstruir(nueva);
+            ocultarResultado();
         }
     });
 
     lista.addEventListener("change", (event) => {
-        if (event.target.dataset.campo === "tipo") reconstruir(tarjeta(event.target));
+        if (event.target.dataset.campo !== "tipo") return;
+        const card = tarjeta(event.target);
+        if (!cabe(card, {})) {
+            // Otro tipo no cabe con estas dimensiones: se recupera el anterior.
+            event.target.value = event.target.dataset.anterior;
+            return;
+        }
+        reconstruir(card);
+        ocultarResultado();
     });
     lista.addEventListener("input", (event) => {
         const card = tarjeta(event.target);
         if (!card) return;
         if (event.target.dataset.campo === "filas" || event.target.dataset.campo === "columnas") {
-            reconstruir(card);
+            // Mientras se escribe no se corrige el número: si no cabe, la cuadrícula espera.
+            if (cabe(card, {})) reconstruir(card);
         }
         if (event.target.dataset.campo === "nombre") {
             const tipo = campo(card, "tipo").value;
@@ -230,17 +331,30 @@
             }
             card.querySelectorAll("[data-campo=celda]").forEach(input => {
                 const label = input.closest("td") && input.closest("td").querySelector("label");
-                if (!label) return;
-                const i = Number(input.dataset.fila);
-                const j = Number(input.dataset.columna);
-                label.textContent = tipo === "escalar"
-                    ? `Valor del escalar ${nombre}`
-                    : tipo === "vector_lineal"
-                        ? `Vector lineal ${nombre}, componente ${i + 1}`
-                        : tipo === "vector"
-                            ? `Vector ${nombre}, componente ${i + 1}`
-                            : `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
+                if (label) label.textContent = etiquetaCelda(tipo, nombre, Number(input.dataset.fila), Number(input.dataset.columna));
             });
+        }
+    });
+    root.addEventListener("input", ocultarResultado);
+    root.addEventListener("change", ocultarResultado);
+    root.querySelector("[data-aplicar]").addEventListener("click", ocultarResultado);
+
+    // Tab recorre todos los campos. Las flechas verticales cambian de fila dentro del
+    // símbolo; las horizontales solo cambian de celda al llegar al extremo del texto.
+    lista.addEventListener("keydown", (event) => {
+        const input = event.target;
+        if (input.dataset.campo !== "celda" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        const deltas = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+        const delta = deltas[event.key];
+        if (!delta || input.selectionStart !== input.selectionEnd) return;
+        if (event.key === "ArrowLeft" && input.selectionStart !== 0) return;
+        if (event.key === "ArrowRight" && input.selectionEnd !== input.value.length) return;
+        const fila = Number(input.dataset.fila) + delta[0];
+        const columna = Number(input.dataset.columna) + delta[1];
+        const destino = tarjeta(input).querySelector(`[data-campo="celda"][data-fila="${fila}"][data-columna="${columna}"]`);
+        if (destino) {
+            event.preventDefault();
+            destino.focus();
         }
     });
 

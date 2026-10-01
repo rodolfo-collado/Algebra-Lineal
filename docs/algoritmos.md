@@ -61,6 +61,12 @@ flowchart LR
     C <--> D["Matriz aumentada [A | b]"]
 ```
 
+La matriz inversa usa el mismo motor con un aumento de varias columnas:
+`matriz_inversa.py` reduce `[A | I]` con `aplicar_gauss_jordan(...,
+columnas_pivote=n)` y lee el bloque derecho cuando el izquierdo llega a la
+identidad. Para 2×2 ofrece además la regla con `ad − bc`, un cálculo aparte y
+sin eliminación. Consulta [Matriz inversa](matriz-inversa.md).
+
 `ecuaciones_matriciales.py` construye `[A | b]` y llama al motor de sistemas.
 `vectores.py` hace lo mismo para preguntar si b es combinación de sus generadores,
 nombrando las incógnitas `x1`, `x2`, etc. Solución única o infinitas significa que
@@ -96,11 +102,13 @@ de `matrices.py`, `matrices.py` no necesita importar `sistemas.py`.
 `expresiones_matriciales` no recalcula los productos numéricos. El parser arma
 un árbol; cada nodo llama a `sumar_matrices`, `restar_matrices`,
 `multiplicar_escalar_matriz`, `multiplicar_matrices`,
-`multiplicar_matriz_vector` o a las operaciones de `vectores.py`. El
-procedimiento de un producto es el que ya devuelve
-`resolver_operacion_matrices`. Una igualdad numérica no añade un nodo
-aritmético: son dos árboles de ese parser, evaluados por separado y comparados
-con `Fraction`.
+`multiplicar_matriz_vector`, `trasponer_matriz` o a las operaciones de
+`vectores.py`, siempre a través de `resolver_operacion_matrices` cuando hay
+matrices, así que el procedimiento de cada nodo es el que esa función ya
+devuelve. Desde P26.6 este motor es el de Operaciones con matrices: la
+traspuesta es un nodo postfijo (`Aᵀ` o `A^T`; `ABᵀ` es `A(Bᵀ)`) y no hay
+potencias. Una igualdad numérica no añade un nodo aritmético: son dos árboles
+de ese parser, evaluados por separado y comparados con `Fraction`.
 
 Si A se declaró desconocida y x es un vector simbólico, el producto `Ax` no
 pasa por Gauss. Cada componente del otro lado se normaliza a una forma lineal
@@ -245,12 +253,12 @@ La numeración romana no es posicional, así que `romanos.py` no reutiliza la
 conversión de bases. Ambos sentidos comparten una sola tabla canónica
 descendente: M, CM, D, CD, C, XC, L, XL, X, IX, V, IV e I.
 
-- **Decimal → romano:** `divmod` separa millares, centenas, decenas y unidades;
+- **Arábigo → romano:** `divmod` separa millares, centenas, decenas y unidades;
   cada parte recorre la tabla de mayor a menor y usa cada entrada mientras
   quepa. `GrupoRomano` guarda la parte, su escritura y las entradas usadas
   (60 → L y X), de modo que el procedimiento muestra `1963 = 1000 + 900 + 60 + 3`
   sin una cadena de `if` por número.
-- **Romano → decimal:** tras recortar, validar caracteres ASCII y pasar a
+- **Romano → arábigo:** tras recortar, validar caracteres ASCII y pasar a
   mayúsculas, se lee de izquierda a derecha; un par que resta se reconoce
   antes que sus dos símbolos por separado y cada lectura es una entrada de la
   misma tabla (`SimboloRomano`).

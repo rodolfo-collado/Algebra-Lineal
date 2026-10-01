@@ -115,7 +115,7 @@ El primer comando debe terminar con `System check identified no issues`; el
 segundo debe terminar con `OK`. Para una comprobación manual de la interfaz,
 inicia el servidor web y verifica que puedes:
 
-1. Resolver un sistema por Gauss o Gauss-Jordan.
+1. Reducción por filas por Gauss o Gauss-Jordan.
 2. Sumar o multiplicar matrices.
 3. Calcular una operación con vectores.
 4. Convertir un número entre bases.

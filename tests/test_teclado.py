@@ -37,17 +37,17 @@ STATIC = RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 
 # Cada herramienta declara solo los perfiles que usa; el registro no cambia por pantalla.
 HERRAMIENTAS = {
-    "/sistemas/": {"sistema", "numerico"},
+    "/matrices/reduccion/": {"sistema", "numerico"},
     "/vectores/operaciones/": {"numerico"},
     "/matrices/operaciones/": {"numerico"},
-    "/matrices/expresiones/": {"numerico"},
     "/matrices/ecuaciones/": {"numerico"},
+    "/matrices/inversa/": {"numerico"},
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
 }
 
-# Contrato HTTP de cada formulario tal como existía antes del teclado único: no debe cambiar.
+# Contrato HTTP de cada formulario: el teclado no agrega controles de envío.
 CONTROLES = {
-    "/sistemas/": {
+    "/matrices/reduccion/": {
         "csrfmiddlewaretoken", "ecuaciones", "metodo", "mostrar", "mostrar_definido", "sistema",
         "tipo_entrada", "variables",
     },
@@ -55,18 +55,22 @@ CONTROLES = {
         "ajustar", "csrfmiddlewaretoken", "dimension", "operacion", "u_0", "u_1", "u_2", "v_0", "v_1",
         "v_2", "vectores",
     },
+    # P26.6: Operaciones con matrices usa el formulario de símbolos (antes Expresiones) y suma la
+    # presentación de los productos. El contrato anterior de operación + celdas_A/B ya no existe.
     "/matrices/operaciones/": {
-        "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_B_0_0",
-        "celda_B_0_1", "celda_B_1_0", "celda_B_1_1", "columnas", "columnas_b", "csrfmiddlewaretoken", "cantidad",
-        "filas", "metodo", "operacion",
+        "ajustar", "agregar", "cantidad", "celda_0_0_0", "celda_0_0_1", "celda_0_1_0", "celda_0_1_1",
+        "celda_1_0_0", "celda_1_0_1", "celda_1_1_0", "celda_1_1_1", "columnas_0", "columnas_1",
+        "csrfmiddlewaretoken", "eliminar", "expresion", "filas_0", "filas_1", "metodo", "nombre_0",
+        "nombre_1", "tipo_0", "tipo_1", "confirmacion",  # P26.7
     },
     "/matrices/ecuaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",
         "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo",
     },
-    "/matrices/expresiones/": {
-        "ajustar", "agregar", "cantidad", "celda_0_0_0", "celda_0_0_1", "celda_0_1_0", "celda_0_1_1",
-        "columnas_0", "csrfmiddlewaretoken", "eliminar", "expresion", "filas_0", "nombre_0", "tipo_0",
+    # «confirmacion» solo aparece en el aviso de un cálculo largo, nunca en el GET.
+    "/matrices/inversa/": {
+        "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "csrfmiddlewaretoken",
+        "metodo", "orden", "verificar", "funcion_adicional",  # P26.8/P26.9: opciones cerradas.
     },
     "/bases/conversion/": {"base_origen", "bases_destino", "csrfmiddlewaretoken", "numero"},
 }
@@ -348,13 +352,13 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
                     self.assertIn(campo["perfil"], pagina.perfiles_publicados, campo)
 
     def test_sistemas_cambia_de_perfil_entre_el_texto_y_la_matriz_con_un_solo_componente(self):
-        pagina = self.pagina("/sistemas/")
+        pagina = self.pagina("/matrices/reduccion/")
         self.assertEqual(pagina.contenedores["system-fields"], "sistema")
         self.assertEqual(pagina.contenedores["matrix-fields"], "numerico")
         textarea = next(campo for campo in pagina.campos if campo["tag"] == "textarea")
         self.assertEqual((textarea["name"], textarea["perfil"]), ("sistema", "sistema"))
         # Las celdas las crea matriz.js dentro del contenedor numérico: heredan su perfil.
-        html = self.client.get("/sistemas/").content.decode("utf-8")
+        html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         self.assertRegex(html, r'id="matrix-fields"[^>]*data-perfil="numerico"')
         self.assertLess(html.index('id="matrix-fields"'), html.index('id="matrix-grid"'))
         # Un solo componente, fuera de ambos fieldsets: ocultar uno no oculta el teclado.
@@ -363,8 +367,9 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
 
     def test_las_celdas_dinamicas_nacen_dentro_del_contenedor_numerico(self):
         for ruta, atributo, valor, formulario in (
-            ("/matrices/operaciones/", "data-matrix-list", "", "matrices-form"),
+            ("/matrices/operaciones/", "data-simbolos", "", "expresiones-form"),
             ("/matrices/ecuaciones/", "data-equation-entry", "", "ecuacion-form"),
+            ("/matrices/inversa/", "data-inverse-entry", "", "inversa-form"),
             ("/vectores/operaciones/", "id", "vector-list", "vectores-form"),
         ):
             with self.subTest(ruta=ruta):
@@ -410,7 +415,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         self.assertNotContains(respuesta, "calculadora/teclado.js")
 
     def test_los_controles_de_estructura_van_aparte_del_teclado(self):
-        html = self.client.get("/sistemas/").content.decode("utf-8")
+        html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         estructura = [attrs for grupo, attrs in Botones(html).botones if grupo == "estructura"]
         self.assertEqual(
             sorted(boton["aria-label"] for boton in estructura),
@@ -427,7 +432,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
                 self.assertEqual(self.pagina(ruta).controles, controles)
 
     def test_sin_javascript_los_formularios_siguen_resolviendo(self):
-        respuesta = self.client.post("/sistemas/", {"metodo": "gauss", "sistema": "x1 + x2 = 3; x1 - x2 = 1"})
+        respuesta = self.client.post("/matrices/reduccion/", {"metodo": "gauss", "sistema": "x1 + x2 = 3; x1 - x2 = 1"})
         self.assertContains(respuesta, "x1 = 2")
         respuesta = self.client.post("/bases/conversion/", {"numero": "1010", "base_origen": "2", "bases_destino": ["10"]})
         self.assertContains(respuesta, "10")
@@ -435,7 +440,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         self.assertIn("hidden", Pagina(respuesta.content.decode("utf-8")).teclados[0])
 
     def test_las_teclas_nacen_de_plantillas_inertes_accesibles(self):
-        html = self.client.get("/sistemas/").content.decode("utf-8")
+        html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         tecla = re.search(r'<template id="math-key-template">(.*?)</template>', html, re.S).group(1)
         self.assertRegex(tecla, r'<button[^>]*type="button"')
         self.assertIn('class="math-key"', tecla)
@@ -478,7 +483,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         matriz = (STATIC / "matriz.js").read_text(encoding="utf-8")
         self.assertIn("data-estructura", matriz)
         self.assertIn("renderMatrix", matriz)
-        self.assertContains(self.client.get("/sistemas/"), "calculadora/matriz.js")
+        self.assertContains(self.client.get("/matrices/reduccion/"), "calculadora/matriz.js")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 """Evalúa un AST de abajo hacia arriba con las operaciones ya existentes.
 
-No hay otra suma ni otro producto numérico: cada nodo llama a
-`backend.matrices` o `backend.vectores`. El identificador de un nodo es su
+No hay otra suma, otro producto ni otra traspuesta numérica: cada nodo llama
+a `backend.matrices` o `backend.vectores`. El identificador de un nodo es su
 ruta en el árbol (`0`, `0.1`, `0.1.0`), estable para pedir una subexpresión.
 
 Una igualdad con valores numéricos compara esos valores. Si aparece una
@@ -16,6 +16,7 @@ from fractions import Fraction
 
 from backend.matrices import resolver_operacion_matrices, validar_matriz, validar_vector
 from backend.vectores import multiplicar_escalar, restar_vectores, sumar_vectores
+from backend.seguridad_numerica import multiplicar_exacto, restar_exacto, sumar_exacto
 
 from backend.expresiones_matriciales.lineal import (
     Aplicacion,
@@ -32,8 +33,9 @@ from backend.expresiones_matriciales.lineal import (
     sumar as sumar_formas,
     variables_simbolicas,
 )
-from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma
+from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma, Traspuesta
 from backend.expresiones_matriciales.parser import analizar_entrada, nombre_valido
+from backend.expresiones_matriciales.formas import inferir_producto, inferir_suma, inferir_traspuesta, rechazar as _no
 
 _RUTA_LADO = re.compile(r"^(izq|der):(\d+(?:\.\d+)*)$")
 
@@ -356,6 +358,8 @@ def _evaluar(nodo, entorno, ruta):
         detalle = None
     elif isinstance(nodo, Negacion):
         valor, detalle = _negar(hijos[0])
+    elif isinstance(nodo, Traspuesta):
+        valor, detalle = _trasponer(nodo.texto, hijos[0])
     elif isinstance(nodo, Suma):
         valor, detalle = _operar(nodo.texto, _valor(hijos[0]), _valor(hijos[1]), nodo.izquierda.texto, nodo.derecha.texto, _SUMA, True)
     elif isinstance(nodo, Resta):
@@ -378,28 +382,12 @@ def _negar(paso):
     return _multiplicar(f"(-1)·{paso.texto}", Valor("escalar", Fraction(-1)), _valor(paso), "-1", paso.texto)
 
 
-def describir(valor, texto):
-    if valor.tipo == "matriz":
-        return f"{texto} es {valor.filas}×{valor.columnas}"
-    if valor.tipo == "matriz_desconocida":
-        return f"{texto} es la matriz desconocida {valor.filas}×{valor.columnas}"
-    if valor.tipo == "vector":
-        sufijo = "" if valor.filas == 1 else "s"
-        return f"{texto} es un vector de {valor.filas} componente{sufijo}"
-    if valor.tipo == "vector_simbolico":
-        return f"{texto} es un vector simbólico de {valor.filas} componentes"
-    if valor.tipo == "vector_lineal":
-        sufijo = "" if valor.filas == 1 else "s"
-        return f"{texto} es un vector lineal de {valor.filas} componente{sufijo}"
-    if valor.tipo == "aplicacion":
-        return f"{texto} es el producto de una matriz desconocida"
-    return f"{texto} es un escalar"
-
-
-def _no(texto, izq, der, izq_texto, der_texto, porque):
-    raise ValueError(
-        f"No se puede calcular {texto}: {describir(izq, izq_texto)} y {describir(der, der_texto)}. {porque}"
-    )
+def _trasponer(texto, paso):
+    """La misma traspuesta exacta de Operaciones con matrices, con su evidencia por entrada."""
+    valor = _valor(paso)
+    inferir_traspuesta(texto, valor, paso.texto)
+    detalle = resolver_operacion_matrices("traspuesta", valor.valor)
+    return Valor("matriz", detalle["resultado"], valor.columnas, valor.filas), detalle
 
 
 _SIMBOLICOS = frozenset({"matriz_desconocida", "vector_simbolico", "vector_lineal", "aplicacion"})
@@ -415,23 +403,15 @@ def _operar(texto, izq, der, izq_texto, der_texto, tabla, es_suma):
         return Valor("vector_lineal", VectorLineal(componentes, variables), len(componentes), None), None
     if izq.tipo in _SIMBOLICOS or der.tipo in _SIMBOLICOS:
         _no(texto, izq, der, izq_texto, der_texto, "Solo se suman o restan vectores lineales entre sí. Una matriz desconocida no se suma.")
-    clave = tabla.get((izq.tipo, der.tipo))
-    if clave is None:
-        _no(
-            texto, izq, der, izq_texto, der_texto,
-            "Solo se pueden sumar o restar matrices con matrices, vectores con vectores o escalares con escalares.",
-        )
+    inferir_suma(texto, izq, der, izq_texto, der_texto)
+    clave = tabla[(izq.tipo, der.tipo)]
     if clave in ("suma", "resta"):
-        if (izq.filas, izq.columnas) != (der.filas, der.columnas):
-            _no(texto, izq, der, izq_texto, der_texto, "Para sumar o restar, ambas matrices deben tener las mismas dimensiones.")
         detalle = resolver_operacion_matrices("suma" if es_suma else "resta", izq.valor, der.valor)
         return Valor("matriz", detalle["resultado"], izq.filas, izq.columnas), detalle
     if clave in ("suma_vector", "resta_vector"):
-        if izq.filas != der.filas:
-            _no(texto, izq, der, izq_texto, der_texto, "Para sumar o restar vectores, ambos deben tener la misma dimensión.")
         resultado = (sumar_vectores if es_suma else restar_vectores)(izq.valor, der.valor)
         return Valor("vector", resultado, len(resultado), None), _detalle_vector(clave, izq.valor, der.valor, resultado)
-    resultado = izq.valor + der.valor if es_suma else izq.valor - der.valor
+    resultado = (sumar_exacto if es_suma else restar_exacto)(izq.valor, der.valor)
     return Valor("escalar", resultado), None
 
 
@@ -449,8 +429,9 @@ def _multiplicar(texto, izq, der, izq_texto, der_texto):
     par = (izq.tipo, der.tipo)
     if izq.tipo in _SIMBOLICOS or der.tipo in _SIMBOLICOS:
         return _producto_simbolico(texto, izq, der, izq_texto, der_texto, par)
+    inferir_producto(texto, izq, der, izq_texto, der_texto)
     if par == ("escalar", "escalar"):
-        return Valor("escalar", izq.valor * der.valor), None
+        return Valor("escalar", multiplicar_exacto(izq.valor, der.valor)), None
     if par == ("escalar", "vector"):
         resultado = multiplicar_escalar(izq.valor, der.valor)
         return Valor("vector", resultado, len(resultado), None), _detalle_escalar_vector(izq.valor, der.valor, resultado)
@@ -463,28 +444,13 @@ def _multiplicar(texto, izq, der, izq_texto, der_texto):
         detalle = resolver_operacion_matrices("escalar", matriz.valor, escalar=escalar.valor)
         return Valor("matriz", detalle["resultado"], matriz.filas, matriz.columnas), detalle
     if par == ("matriz", "matriz"):
-        if izq.columnas != der.filas:
-            _no(
-                texto, izq, der, izq_texto, der_texto,
-                "Para multiplicar matrices, las columnas de la primera deben coincidir con las filas de la segunda.",
-            )
         detalle = resolver_operacion_matrices("producto", izq.valor, der.valor)
         filas, columnas = detalle["dimensiones_resultado"]
         return Valor("matriz", detalle["resultado"], filas, columnas), detalle
     if par == ("matriz", "vector"):
-        if izq.columnas != der.filas:
-            _no(
-                texto, izq, der, izq_texto, der_texto,
-                "Para multiplicar una matriz por un vector, las columnas de la matriz deben coincidir con las componentes del vector.",
-            )
         detalle = resolver_operacion_matrices("matriz_vector", izq.valor, vector=der.valor)
         resultado = [fila[0] for fila in detalle["resultado"]]
         return Valor("vector", resultado, len(resultado), None), detalle
-    motivos = {
-        ("vector", "vector"): "El producto de dos vectores no está definido aquí; el producto punto no se infiere.",
-        ("vector", "matriz"): "El producto de un vector por una matriz no está definido en esta herramienta.",
-    }
-    _no(texto, izq, der, izq_texto, der_texto, motivos.get(par, "Esa combinación de tipos no tiene producto en esta herramienta."))
 
 
 def _producto_simbolico(texto, izq, der, izq_texto, der_texto, par):

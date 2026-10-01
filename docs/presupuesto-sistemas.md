@@ -1,6 +1,12 @@
-# Presupuesto de entrada de Resolver un sistema
+# Presupuesto de entrada de Reducción por filas
 
-La política vive en `backend/presupuesto_sistemas.py`. Se aplica a la interfaz
+Desde P26.5, la herramienta pública está en Álgebra Lineal → Matrices y recibe
+Sistema de ecuaciones o Matriz aumentada. Conserva exactamente los límites de
+P26.2/P26.2.1; los nombres internos y las auditorías históricas se mantienen.
+
+La política estructural vive en `backend/presupuesto_sistemas.py`. Desde
+P26.2.1, la inspección común de literales vive en `backend/seguridad_numerica.py`,
+reexportada por el módulo anterior para conservar compatibilidad. Se aplica a la interfaz
 web y a la aplicación desktop, que utiliza esas mismas vistas.
 
 | Límite | Valor | Motivo |
@@ -80,6 +86,10 @@ influye. Por eso no se reutiliza el presupuesto de 900 celdas de matrices.
 Estas medidas justifican un techo educativo conservador, no una garantía de
 tiempo o memoria para cualquier coeficiente o equipo.
 
+El modelo general de costo —cálculo frente a procedimiento, tamaño de los
+números y referencias calibrables—, y un benchmark que reproduce estas
+mediciones, están en [Presupuesto computacional](presupuesto-computacional.md).
+
 ## Campos reales de Django
 
 El peor formulario normal de matriz envía **130 campos**:
@@ -137,16 +147,20 @@ El signo, el punto y la barra no cuentan. `1_000` sigue aceptándose si no pasa
 de 100 dígitos, porque `Fraction` ya lo leía; no es sintaxis educativa. Un
 denominador cero sigue siendo un error con mensaje propio.
 
-`convertir_a_numero` no cambia: la usan Vectores, Matrices, expresiones y la
-consola. El tope vive en `backend/presupuesto_sistemas.py` y solo se aplica a
-Resolver un sistema:
+En el incremento original, `convertir_a_numero` no cambiaba: la usan Vectores, Matrices, expresiones y la
+consola. El tope vivía en `backend/presupuesto_sistemas.py` y solo se aplicaba a
+Resolver un sistema. Estos eran sus puntos de aplicación:
 
 - texto: `analizar_sistema(..., limitar_entrada=True)`, desde `resolver_entrada_web`;
 - matriz: `SistemaForm` valida cada celda y después llama a `convertir_a_numero`.
 
-El parser de consola sigue sin ese modo.
+Desde P26.2.1, la inspección está en `backend/seguridad_numerica.py` y el conversor
+ofrece `limitar_entrada=True`, activado por el resto de entradas web. Sistemas
+conserva los límites y comprobaciones anteriores, incluida la cota de términos
+agrupados. El parser de consola sigue sin ese modo por defecto. Consulta
+[Protección numérica común](seguridad-numerica.md) para la auditoría completa.
 
-La suite queda en **1112 pruebas**, 9 nuevas. Un `Fraction` vigilado falla si
+La suite del incremento original quedó en **1112 pruebas**, 9 nuevas. Un `Fraction` vigilado falla si
 el literal caro llega a convertirse; no se construyen enteros de millones de
 dígitos.
 
@@ -174,7 +188,12 @@ independiente quepan en lo que produce un solo literal admitido (numerador
 menor que 10²⁰⁰ y denominador hasta 10¹⁰⁰). Si no, el mensaje es «Al agrupar
 los términos queda un número demasiado grande para esta herramienta.». Así la
 matriz de un sistema escrito tiene las mismas cotas que la escrita celda por
-celda: con celdas máximas en 12 × 9, Gauss-Jordan termina en menos de una décima de
-segundo y sus valores quedan por debajo del límite de 4300 dígitos con que
-Python convierte enteros a texto. Sin esta cota, una suma de 40 fracciones
-llegaba a ese límite y el error aparecía en inglés.
+celda. En los casos medidos durante P25.2, con celdas máximas en 12 × 9,
+Gauss-Jordan terminaba en menos de una décima de segundo y los valores quedaban
+por debajo del límite de conversión textual. Sin esa cota, una suma de 40
+fracciones llegaba a ese límite y el error aparecía en inglés. P26.2 encontró
+otros sistemas con literales admitidos que sí lo superaban durante eliminación:
+la cota de agrupación no garantiza la seguridad de todos los intermedios.
+P26.2.1 añade la comprobación común de numerador/denominador entre operaciones,
+con el error «El cálculo produjo números demasiado grandes para mostrarlos de
+forma segura.», sin modificar este presupuesto estructural ni el estimador.

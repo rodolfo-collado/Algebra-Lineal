@@ -1,7 +1,5 @@
 """Vistas HTTP de la interfaz web."""
 
-from urllib.parse import urlencode
-
 from django.http import Http404, HttpResponsePermanentRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -15,13 +13,13 @@ from .exploraciones import exploraciones_sistema
 from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_expresiones import ExpresionMatricialForm
-from .forms_matrices import MatricesForm
+from .forms_inversa import InversaForm
 from .forms_romanos import ConversionRomanosForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
-from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
 from .servicios_ecuaciones import resolver_ecuacion_web
 from .servicios_expresiones import evaluar_expresion_web
-from .servicios_matrices import operar_matrices
+from .presupuesto_expresiones import confirmacion_pendiente as confirmar_expresion
+from .servicios_inversa import calcular_inversa_web, confirmacion_pendiente
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
     METODO_PREDETERMINADO,
@@ -49,7 +47,7 @@ def inicio(request):
 
 @require_http_methods(["GET", "POST"])
 def sistemas(request):
-    """Resolver un sistema: método a elegir (o comparar los dos) y bloques del resultado."""
+    """Reducción por filas: método a elegir (o comparar los dos) y bloques del resultado."""
     # Las rutas antiguas (/sistemas/?metodo=gauss) y los enlaces de «También puedes
     # explorar» llegan por GET con el método, la entrada y los bloques ya preparados.
     inicial = {"metodo": METODO_PREDETERMINADO, **SistemaForm.inicial_desde(request.GET)}
@@ -110,15 +108,28 @@ def sistemas(request):
     )
 
 
-def sistemas_ruta_antigua(request, herramienta):
-    """Las cinco pseudo-herramientas de P10.1 hoy son opciones de Resolver un sistema."""
-    parametros = RUTAS_ANTIGUAS.get(herramienta)
+@require_http_methods(["GET", "POST"])
+def sistemas_ruta_antigua(request, herramienta=None):
+    """Marcadores históricos hacia Reducción por filas, sin perder entrada ni bloques.
+
+    GET usa 301. /sistemas/ procesa POST con la misma vista (clientes sin
+    seguimiento de redirects y benchmark histórico); los slugs usan 308.
+    Los parámetros explícitos prevalecen sobre el método sugerido por la ruta.
+    La validación de parámetros sigue en SistemaForm, en el destino canónico.
+    """
+    parametros = {} if herramienta is None else RUTAS_ANTIGUAS.get(herramienta)
     if parametros is None:
         raise Http404("No existe esa herramienta de sistemas.")
-    destino = reverse("calculadora:sistemas")
-    if parametros:
-        destino = f"{destino}?{urlencode(parametros)}"
-    return HttpResponsePermanentRedirect(destino)
+    if request.method == "POST" and herramienta is None:
+        return sistemas(request)
+    consulta = request.GET.copy()
+    for clave, valor in parametros.items():
+        if clave not in consulta:
+            consulta[clave] = valor
+    destino = reverse("calculadora:reduccion-filas")
+    if consulta:
+        destino = f"{destino}?{consulta.urlencode()}"
+    return HttpResponsePermanentRedirect(destino, preserve_request=request.method == "POST")
 
 
 @require_http_methods(["GET", "POST"])
@@ -160,45 +171,47 @@ def operaciones_vectores(request):
 
 @require_http_methods(["GET", "POST"])
 def operaciones_matrices(request):
-    ajustar = request.method == "POST" and "ajustar" in request.POST
-    form = MatricesForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
-    resultado = None
-    if request.method == "POST" and form.is_valid():
-        if ajustar:
-            form = MatricesForm(initial=form.iniciales())
-        else:
-            try:
-                resultado = operar_matrices(form.cleaned_data["entrada"])
-            except ValueError as error:
-                form.add_error(None, str(error))
-    return render(request, "calculadora/modules/matrices/index.html", {
-        "form": form, "resultado": resultado, "opciones_matrices": OPCIONES_MATRICES,
-        "perfiles_teclado": perfiles_para("numerico"),
-    })
+    """Operaciones con matrices: símbolos definidos uno a uno y una expresión que los combina.
 
-
-@require_http_methods(["GET", "POST"])
-def expresiones_matriciales(request):
-    """Expresiones compuestas: los símbolos se definen uno a uno y el motor reutiliza las operaciones."""
+    A + B, 2A, AB, Ax, Aᵀ o A(B + C) - 2D usan el mismo flujo y el mismo motor de
+    expresiones, que reutiliza las operaciones exactas de backend.matrices.
+    """
     accion = next((nombre for nombre in ("agregar", "eliminar", "ajustar") if nombre in request.POST), None)
-    form = ExpresionMatricialForm(request.POST or None, accion=accion)
-    resultado = None
+    form = ExpresionMatricialForm(request.POST if request.method == "POST" else None, accion=accion)
+    resultado = confirmacion = None
     if request.method == "POST" and form.is_valid():
         if accion:
             form = ExpresionMatricialForm(initial=form.cleaned_data["estado"])
         else:
             try:
-                resultado = evaluar_expresion_web(form.cleaned_data["entrada"])
+                entrada = form.cleaned_data["entrada"]
+                confirmacion = confirmar_expresion(entrada, form.cleaned_data["confirmacion"])
+                if confirmacion is None:
+                    resultado = evaluar_expresion_web(entrada)
             except ValueError as error:
                 form.add_error("expresion", str(error))
     return render(request, "calculadora/modules/expresiones/index.html", {
-        "form": form, "resultado": resultado, "perfiles_teclado": perfiles_para("numerico"),
+        "form": form, "resultado": resultado, "confirmacion": confirmacion,
+        "perfiles_teclado": perfiles_para("numerico"),
     })
 
 
 @require_http_methods(["GET", "POST"])
+def expresiones_ruta_antigua(request):
+    """Expresiones matriciales dejó de ser una herramienta aparte: es Operaciones con matrices.
+
+    GET usa 301 y conserva la consulta. POST usa 308: el navegador reenvía el mismo
+    cuerpo, que el formulario unificado entiende tal cual (es el de expresiones).
+    """
+    destino = reverse("calculadora:operaciones-matrices")
+    if request.GET:
+        destino = f"{destino}?{request.GET.urlencode()}"
+    return HttpResponsePermanentRedirect(destino, preserve_request=request.method == "POST")
+
+
+@require_http_methods(["GET", "POST"])
 def ecuaciones_matriciales(request):
-    """Resolver Ax = b: A y b conocidos; x se determina con los motores de Resolver un sistema."""
+    """Resolver Ax = b: A y b conocidos; x se determina con los motores de Reducción por filas."""
     ajustar = request.method == "POST" and "ajustar" in request.POST
     form = EcuacionMatricialForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
     resultado = None
@@ -213,8 +226,36 @@ def ecuaciones_matriciales(request):
                 form.add_error(None, str(error))
     return render(request, "calculadora/modules/ecuaciones/index.html", {
         "form": form, "resultado": resultado, "ayuda_metodos": AYUDA_METODOS_ECUACION,
-        # El procedimiento reutiliza los bloques de Resolver un sistema, todos visibles.
+        # El procedimiento reutiliza los bloques de Reducción por filas, todos visibles.
         "mostrar": frozenset(BLOQUES_PREDETERMINADOS), "perfiles_teclado": perfiles_para("numerico"),
+    })
+
+
+@require_http_methods(["GET", "POST"])
+def matriz_inversa(request):
+    """Matriz inversa: Gauss-Jordan sobre [A | I] o, si A es 2×2, la regla directa.
+
+    Un cálculo que se estima largo no se ejecuta hasta que el usuario confirma;
+    el aviso conserva la matriz y el método porque vive dentro del mismo formulario.
+    """
+    ajustar = request.method == "POST" and "ajustar" in request.POST
+    form = InversaForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
+    resultado = confirmacion = None
+    if request.method == "POST" and form.is_valid():
+        if ajustar:
+            # «Aplicar» sin JavaScript y «Cancelar» del aviso: redibujan con lo escrito, sin calcular.
+            form = InversaForm(initial=form.iniciales())
+        else:
+            entrada = form.cleaned_data["entrada"]
+            confirmacion = confirmacion_pendiente(entrada, form.cleaned_data["confirmacion"])
+            if confirmacion is None:
+                try:
+                    resultado = calcular_inversa_web(entrada)
+                except ValueError as error:
+                    form.add_error(None, str(error))
+    return render(request, "calculadora/modules/inversa/index.html", {
+        "form": form, "resultado": resultado, "confirmacion": confirmacion,
+        "perfiles_teclado": perfiles_para("numerico"),
     })
 
 
@@ -272,7 +313,7 @@ def conversion_bases(request):
 
 @require_http_methods(["GET", "POST"])
 def conversion_romanos(request):
-    """Decimal ↔ romano: una dirección, un número, un resultado y su descomposición."""
+    """Arábigo ↔ romano: una dirección, un número, un resultado y su descomposición."""
     form = ConversionRomanosForm(request.POST or None)
     resultado = None
     if request.method == "POST" and form.is_valid():

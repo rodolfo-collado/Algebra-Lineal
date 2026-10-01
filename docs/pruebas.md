@@ -13,21 +13,24 @@ uv run python manage.py check
 
 Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`
 cubre aridad, colecciones exactas, dimensiones consecutivas, cadenas de tres y
-cuatro matrices, ambos procedimientos, validación estricta del POST y el
-presupuesto de entrada: hasta 50 operandos y 900 celdas en total, comprobados
-antes de construir el formulario y dentro del límite de campos por envío de
-Django. Las pruebas anteriores de dos operandos y operaciones unarias siguen en
-la suite.
+cuatro matrices como expresiones (`A + B + C`, `ABCD`), ambas lecturas del
+producto, validación estricta del POST y el presupuesto común de P26.6: hasta 50
+símbolos, 900 celdas y 990 campos de estructura y celdas, comprobados antes de
+construir el formulario y dentro del límite de campos por envío de Django, y en
+la expresión hasta 50 operandos, 49 operaciones y 900 entradas contando cada
+aparición (también cadenas de traspuestas y signos). Vectores conserva sus
+pruebas de 50 vectores.
 
 Para comprobar los controles en un DOM real, ejecuta
 `uv run python -m tests.operandos_browser` y abre
-`http://127.0.0.1:8877/__pruebas/`. Los diecisiete casos usan la aplicación
-Django y los scripts de producción: añadir/quitar operandos, eliminar uno
-intermedio (también en un producto, donde las columnas se desplazan, y rechazar
-sin cambios la eliminación que excedería el presupuesto), preservar valores y
-orden, mínimos por operación, cambios a unarias y Ax, cantidades mayores de diez,
-los topes del presupuesto (50 operandos, 900 celdas y una cantidad manipulada) y
-los tres modos de presentación del producto.
+`http://127.0.0.1:8877/__pruebas/`. Los quince casos usan la aplicación Django y
+los scripts de producción. En vectores: añadir/quitar, eliminar uno intermedio,
+mínimos por operación y el tope de 50. En Operaciones con matrices: agregar y
+eliminar símbolos conservando nombres y valores, una resta real de tres
+agrupada por la izquierda, nombres después de Z (A1, B1…), el tope de 50
+símbolos, el presupuesto de celdas que detiene Agregar, dimensiones, steppers y
+cambios de tipo que no caben y no cambian nada, flechas dentro de la cuadrícula,
+una cantidad manipulada y `ABCD` con las tres lecturas del producto.
 Este ejecutor local no añade dependencias ni se lanza en `unittest discover`.
 
 Las de `tests/` cubren las reglas matemáticas del backend (validaciones, matrices
@@ -37,7 +40,7 @@ su sistema, el conjunto solución con variables libres, el parser de sistemas, l
 equivalencia entre Gauss y Gauss-Jordan, el flujo de la terminal, la interfaz web
 de Django —incluidas sus entradas textual y matricial—, la infraestructura
 desktop, el registro de herramientas, la navegación, el buscador, los
-breadcrumbs, el teclado matemático, las opciones de Resolver un sistema
+breadcrumbs, el teclado matemático, las opciones de Reducción por filas
 —método, comparación, bloques del resultado y rutas antiguas—, la conversión de
 bases —resultados, pasos del procedimiento, mensajes de error, conversiones a
 varias bases con el decimal calculado una sola vez y su integración web—, la
@@ -46,19 +49,19 @@ operaciones con vectores —suma, resta, escalar, combinación lineal
 con solución única, infinitas o inconsistente, dimensión arbitraria, fracciones
 exactas, la reutilización del motor de sistemas, la estructura dinámica del
 formulario y los POST manipulados—, las operaciones con matrices —suma, resta,
-escalar y traspuesta en rectangulares, fracciones exactas, procedimiento por
-entrada, catálogo, selector, estructura dinámica, errores asociados a celdas
-y POST manipulados—, los productos `AB` y `Ax` —producto punto, dimensiones
+escalar y traspuesta en rectangulares escritas como expresiones, fracciones
+exactas, procedimiento por entrada, catálogo, estructura dinámica, errores
+asociados a celdas y POST manipulados—, los productos `AB` y `Ax` —producto punto, dimensiones
 compatibles e incompatibles, rectangulares, fracciones, equivalencia exacta
 entre fila por columna y por columnas (también contra la combinación lineal de
-`backend/vectores.py`), tercera dimensión, vector x, selector de método,
+`backend/vectores.py`), vector x con otro nombre, opción de presentación,
 comparación con un solo resultado y POST manipulados—, la ecuación matricial
 `Ax = b` —matriz aumentada `[A | b]`, casos cuadrados y rectangulares con
 solución única, infinitas o inconsistente, fracciones, equivalencia exacta con
-Resolver un sistema y entre Gauss y Gauss-Jordan, comprobación `A · x = b`,
+Reducción por filas y entre Gauss y Gauss-Jordan, comprobación `A · x = b`,
 interpretación como combinación lineal, b derivado de las filas y x de las
 columnas, flujo Aplicar sin JavaScript y POST manipulados—, las expresiones
-matriciales —lexer, parser, árbol, tipos, dimensiones, procedimiento por nodo,
+de Operaciones con matrices —lexer, parser, árbol, traspuesta, tipos, dimensiones, procedimiento por nodo,
 subexpresión, fracciones exactas, igualdades verdaderas y falsas, lados no
 comparables, rutas `izq`/`der`, regresión contra las primitivas, integración
 web, POST manipulado y formato Exacto/Decimal—, las formas lineales
@@ -164,8 +167,8 @@ Para un cambio de packaging, las pruebas estáticas no sustituyen el build y
 la instalación real; para un cambio visual, tampoco sustituyen la revisión de UI.
 
 El workflow de release reutiliza CI: una prueba, build o smoke fallidos bloquean
-la publicación. La validación del tag puede comprobarse localmente y en pruebas
-sin crear tags en este repositorio; consulta [Releases](releases.md).
+la creación del tag y la publicación. La validación del candidato puede comprobarse
+localmente y en pruebas sin crear tags en este repositorio; consulta [Releases](releases.md).
 
 ## Rediseño PyGebra y presentación numérica
 
@@ -209,11 +212,92 @@ rechazo antes de reservar estructuras por GET/POST, el máximo real de campos
 con CSRF, ambos motores y la protección mínima del texto. Consulta
 [presupuesto, auditoría y mediciones](presupuesto-sistemas.md).
 
-En `/sistemas/`, verifica manualmente: una matriz 2×2; escribir dimensiones
+En `/matrices/reduccion/`, verifica manualmente: una matriz 2×2; escribir dimensiones
 100000×100000 conservando las seis celdas; rechazar 11 ecuaciones y 10 variables
 (121 celdas); aceptar 12 y 9 (120); botones +/− en los límites; recuperación
 tras corregir dimensiones; GET manipulado sin cuadrícula; resolver y comparar,
 plegar procedimiento y alternar Exacto/Decimal.
+
+## Presupuesto computacional
+
+`uv run python -m unittest tests.test_presupuesto_computacional -v` comprueba
+que una operación pequeña estima menos que una mayor; que Gauss-Jordan y el
+producto crecen con cada dimensión; que racionales más complejos aumentan el
+factor, más en la aritmética que en el texto mostrado; que combinar
+estimaciones suma pasos, cálculo y procedimiento y conserva las partes; que
+cálculo y procedimiento se estiman por separado; que estimar no ejecuta ningún
+motor ni convierte números a texto (dimensiones de 10⁹ y enteros de casi un
+millón de cifras); que la cota acota los pasos reales de Gauss y Gauss-Jordan;
+que las categorías crecen con el tamaño y el tiempo es un intervalo
+recalibrable; que los límites estructurales no cambian; y que los servicios de
+Reducción por filas y Ax = b estiman con el mismo presupuesto de entrada, sin
+resolver y sin rechazar nada por su costo. Ninguna prueba mide segundos.
+
+El benchmark es manual: no se lanza en `unittest discover` ni en CI.
+
+```bash
+uv run python -m scripts.benchmark_presupuesto
+uv run python -m scripts.benchmark_presupuesto --web
+```
+
+Consulta el modelo, las opciones y los resultados locales en
+[Presupuesto computacional](presupuesto-computacional.md#benchmark).
+
+## Regresiones de Sistemas y bloques aumentados
+
+```bash
+uv run python -m unittest tests.test_matrices_bloques tests.test_gauss_jordan_bloques tests.test_presupuesto_bloques tests.test_matrices_aumentadas_web -v
+```
+
+Estas pruebas cubren las primitivas exactas, reducción de `[A | B]` y `[A | I]`,
+singularidad según pivotes, protección numérica, presupuesto y separación de
+bloques en todos los pasos del procedimiento.
+
+`uv run python -m unittest tests.test_regresion_sistemas_bloques -v` compara
+Sistemas con fixtures estáticas obtenidas del árbol Git original de `develop`
+tras el PR #60 (`79c04d999775387092771538fc3e668c8da47e2a`). Las expectativas
+almacenan una sola vez las partes comunes y el prefijo de pasos de los motores;
+las pruebas no ejecutan Git ni reproducen el algoritmo de eliminación.
+
+Los siete casos cubren solución única, infinitas, inconsistencia, una matriz
+rectangular, fracciones, intercambio de filas y una columna sin pivote. Se
+compara el resultado completo del backend (matrices, pivotes, clasificación,
+solución y sustitución), todos los pasos antes/operación/después, el parser y
+los servicios de entrada textual y aumentada. También se verifica `Ax = b`,
+la opción Comparar ambos y el texto completo del panel final de Django para
+ambas entradas. La preparación de `[A | I]` y su contrato se describen en
+[Matrices aumentadas por bloques](matrices-aumentadas.md).
+
+## Matriz inversa
+
+```bash
+uv run python -m unittest tests.test_matriz_inversa tests.test_matriz_inversa_web -v
+```
+
+`test_matriz_inversa` cubre Gauss-Jordan sobre `[A | I]` y la regla 2×2 con los
+ejemplos del profesor (2×2, 3×3 con intercambio de filas, singular y 1×1),
+que ambos métodos coincidan en enteros, negativos, fracciones, intercambios y
+400 matrices 2×2 aleatorias, `A · A⁻¹ = I` como comprobación de las pruebas,
+la validación (no cuadrada, vacía, valores no exactos y método 2×2 fuera de
+2×2), que se reutilice el motor con `columnas_pivote=n`, que la regla 2×2 no lo
+use, que la cota del presupuesto acote los pasos reales y el error controlado
+ante números demasiado grandes.
+
+`test_matriz_inversa_web` cubre catálogo, Inicio, menú, migas y buscador; el
+GET con Gauss-Jordan predeterminado y sin fórmulas en los controles; el radio
+2×2 activo solo en 2×2; Aplicar; los POST válidos y manipulados (método 2×2 en
+otra dimensión, métodos inválidos, celdas de más o de menos, campos repetidos,
+HTML y CSRF); el separador en todas las matrices del procedimiento; el
+procedimiento antes del único resultado; Exacto / Decimal; y la confirmación.
+Para esta última se fuerzan la categoría y el intervalo con `patch`, sin
+matrices enormes ni segundos reales: el aviso no calcula ni parece un error;
+Continuar calcula con la firma de la misma entrada; Cancelar redibuja; una
+firma de otra matriz o inventada vuelve a preguntar; y la regla 2×2 nunca
+pregunta.
+
+En el navegador, verifica manualmente la 2×2 del profesor por ambos métodos,
+la 3×3, una singular, una 10×10 de enteros (que hoy pide confirmación: prueba
+Cancelar y Continuar), 375 px y escritorio, y ambos temas.
 
 ## Numeración romana
 
@@ -227,8 +311,85 @@ longitud) antes de volver a convertir y el procedimiento de 1963 ↔ MCMLXIII.
 En la web: ruta, catálogo, Inicio, búsqueda, breadcrumbs, cajón, un único
 resultado con «Ver procedimiento» plegado, límites, contrato HTTP estricto
 (campos ajenos o repetidos y dirección manipulada) y contenido escapado, sin
-traceback ni HTTP 500.
+traceback ni HTTP 500. La página dice Arábigo → romano y Romano → arábigo, y
+una regresión impide que vuelva a mostrar «Decimal → romano» o
+«Romano → decimal»; «decimal» no se prohíbe en general porque sigue siendo
+correcto en Exacto/Decimal y en Conversión de bases.
 
 En `/romanos/conversion/`, verifica manualmente 1963 ↔ MCMLXIII en ambas
 direcciones, una entrada en minúsculas, un error de canonicidad (`IIII`), el
 procedimiento plegado y abierto, 390 px y escritorio, y ambos temas.
+
+## Reorganización de Reducción por filas (P26.5)
+
+`tests/test_reduccion_filas.py` verifica la ubicación en Matrices, ausencia de
+la categoría pública Sistemas de ecuaciones, orden del catálogo, Inicio, menú,
+breadcrumbs, formulario canónico y todas las búsquedas nuevas e históricas.
+Comprueba las cinco rutas antiguas, consultas con casillas repetidas, entrada
+textual/matricial, método sugerido y explícito, POST raíz 200/slugs 308 con cuerpo intacto,
+errores de validación y CSRF. El resto de contratos web se ejecuta ahora sobre
+`/matrices/reduccion/`, conservando toda su cobertura.
+
+La referencia `tests/fixtures/reduccion_filas_p264.json` se capturó **antes de
+editar** desde `develop` en `1e69d3305f3c2ec519e9aac0a61407e6e780ef61` (P26.4).
+Guarda los resultados completos de Gauss/Gauss-Jordan y la normalización por
+ecuaciones. Las 60 combinaciones (10 casos × 3 métodos × 2 entradas) deben
+coincidir exactamente en matrices iniciales/finales, operaciones, sustitución,
+clasificación, pivotes, solución general, libres y contradicciones. «Comparar
+ambos» coteja ambos resultados contra esa referencia. Los hashes SHA-256 del
+texto completo de `section#resultado` capturado verifican también la salida
+matemática presentada; no se regeneran con el código bajo prueba.
+
+Casos: solución única, infinitas, inconsistencia, variable libre rectangular,
+intercambio de filas, fracciones, términos a ambos lados, variables a la derecha,
+ecuación despejada y matriz rectangular sobredeterminada.
+
+Para QA en navegador: comparar `x1+x2=6; x1-x2=2` con `[1,1,6; 1,-1,2]` en los
+tres métodos; probar `x1-6=-x2`, dependencia y contradicción. Revisar claro/oscuro,
+escritorio/móvil, teclado, Exacto/Decimal, procedimiento plegable, resultado final,
+buscador y marcadores antiguos. La entrada textual mantiene el flujo sin JS.
+El smoke de Windows exige el enlace canónico; no se renombran recursos ni se
+modifica la configuración de empaquetado.
+
+## Operaciones con matrices unificada (P26.6)
+
+`tests/test_traspuesta_expresiones.py` cubre la traspuesta en el motor: `Aᵀ` y
+`A^T` como el mismo token y el mismo nodo, precedencia postfija (`ABᵀ` es `A(Bᵀ)`,
+`(AB)ᵀ` traspone el producto), segmentación de nombres (`AT`, `M1ᵀ`, ambigüedad),
+rechazo de `A^2` y `A^-1` sin interpretarlos, rutas estables (las expresiones sin
+traspuesta conservan las suyas), subexpresiones dentro y debajo de una
+traspuesta, identidades (`(AB)ᵀ = BᵀAᵀ`), tipos que no se trasponen (vectores,
+escalares, simbólicos) y la lista de expresiones del brief (`A+B` … `A(B+C)-2D`)
+con su asociatividad, contra las primitivas y sin reordenar productos.
+
+La referencia `tests/fixtures/operaciones_matrices_p265.json` se capturó **antes
+de editar** desde `develop` en `c5d241e7df2fb061a6f4eee34346c64b220d78a3`
+(P26.5): la salida completa del servicio anterior de Operaciones con matrices
+para 40 casos —suma y resta de 2, 3 y 4 matrices, fracciones, el orden de la
+resta, escalar entero, fraccionario y negativo, traspuesta cuadrada,
+rectangular, 1×n y n×1, `AB`, `ABC`, `ABCD`, rectangulares y `Ax` con las tres
+lecturas—. `tests/test_operaciones_matrices_unificadas.py` escribe cada POST
+antiguo como símbolos y expresión y exige el mismo resultado en los 40 casos;
+en los pasos de suma, resta, escalar y traspuesta, el mismo desarrollo, las
+mismas fórmulas, ayudas, factor y traslados; en `AB`, `ABC`, `ABCD` y `Ax`, cada
+lectura idéntica (títulos, fórmulas, cada igualdad, columnas, ensamble y grupos)
+y los mismos resultados intermedios. Tres o más sumas, que antes se escribían en
+una celda (`1 + 4 + 7`), se comparan entrada a entrada con los pasos del árbol.
+El mismo archivo prueba la ruta histórica (GET 301 con la consulta, POST 308
+con el mismo cuerpo y el mismo resultado, CSRF), el catálogo final, las
+búsquedas históricas, el procedimiento por nodos (`A(B + C)`, `(A + B)ᵀ`,
+`AB + C`) y las subexpresiones con traspuesta.
+
+Las suites anteriores de Operaciones con matrices (`test_matrices_web`,
+`test_multiplicacion_matrices_web`, `test_operandos_multiples`) y de Expresiones
+(`test_expresiones_matriciales_web`, `test_expresiones_lineales_web`) se ejecutan
+contra `/matrices/operaciones/`. El smoke de Windows envía las operaciones como
+expresiones y comprueba la ruta histórica; su bloque HTTP se puede ejecutar
+contra un `runserver` local antes del CI.
+
+Para QA en navegador: `A+B`, `A+B+C`, `A-B-C`, `2A`, `AB`, `ABC`, `Ax`,
+`A(B+C)`, `AB+C`, `Aᵀ`, `A^T`, `(A+B)ᵀ`, `ABᵀ` y `(AB)ᵀ`; los productos con las
+tres lecturas; una matriz rectangular, un vector, un escalar y una igualdad;
+Exacto/Decimal en los valores intermedios, procedimiento plegable, resultado
+único, «Calcular solo esta parte», móvil y escritorio, claro y oscuro, teclado
+matemático, navegación, buscador y `/matrices/expresiones/`.

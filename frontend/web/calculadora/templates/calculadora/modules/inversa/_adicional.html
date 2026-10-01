@@ -1,0 +1,72 @@
+{% with adicional=resultado.adicional %}
+{% if resultado.invertible %}
+    <section class="procedure-stage" aria-labelledby="inverse-additional-start">
+        <h4 class="stage-title" id="inverse-additional-start">Usar la inversa calculada</h4>
+        {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="A⁻¹" matriz=resultado.inversa etiqueta="Inversa de A para la función adicional" only %}
+    </section>
+    {% if resultado.funcion_adicional == "inversa_inversa" %}
+        <section class="procedure-stage">
+            <h4 class="stage-title">Invertir nuevamente</h4>
+            <p class="procedure-lead">Ahora invertimos A⁻¹ con el mismo método y comparamos exactamente el resultado con A.</p>
+            {% include "calculadora/modules/inversa/_inversion_adicional.html" with inversion=adicional.pasos_inversa_de_inversa titulo="Pasos de la segunda inversión" only %}
+            {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="(A⁻¹)⁻¹" matriz=adicional.inversa_de_inversa etiqueta="Segunda inversión para comparar con A" only %}
+            <p class="procedure-note">{% if adicional.coincide_con_a %}(A⁻¹)⁻¹ = A. Coinciden exactamente.{% else %}La segunda inversión no coincide con A.{% endif %}</p>
+        </section>
+    {% elif resultado.funcion_adicional == "traspuesta" %}
+        <section class="procedure-stage">
+            <h4 class="stage-title">Trasponer A e invertirla</h4>
+            {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="Aᵀ" matriz=adicional.traspuesta_a etiqueta="Traspuesta de A" only %}
+            {% include "calculadora/modules/inversa/_inversion_adicional.html" with inversion=adicional.pasos_inversa_traspuesta titulo="Pasos de la inversión de Aᵀ" only %}
+            {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="(Aᵀ)⁻¹" matriz=adicional.inversa_traspuesta etiqueta="Inversa de Aᵀ para la comparación" only %}
+        </section>
+        <section class="procedure-stage">
+            <h4 class="stage-title">Trasponer A⁻¹ y comparar</h4>
+            {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="(A⁻¹)ᵀ" matriz=adicional.traspuesta_inversa etiqueta="Traspuesta de la inversa de A" only %}
+            <p class="procedure-note">{% if adicional.coinciden %}(Aᵀ)⁻¹ = (A⁻¹)ᵀ. Ambas matrices coinciden exactamente.{% else %}Las matrices no coinciden.{% endif %}</p>
+        </section>
+    {% elif resultado.funcion_adicional == "producto" %}
+        <section class="procedure-stage">
+            <h4 class="stage-title">Calcular B⁻¹</h4>
+            <p class="procedure-lead">Esta propiedad requiere que A y B tengan inversa.</p>
+            {% include "calculadora/modules/inversa/_inversion_adicional.html" with inversion=adicional.pasos_inversa_b titulo="Pasos de la inversión de B" only %}
+            {% if adicional.b_invertible %}
+                {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="B⁻¹" matriz=adicional.inversa_b etiqueta="Inversa de B" only %}
+            {% else %}<p class="procedure-note">{{ adicional.motivo }}</p>{% endif %}
+        </section>
+        {% if adicional.aplicable %}
+            <section class="procedure-stage">
+                <h4 class="stage-title">Calcular AB y su inversa</h4>
+                {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="AB" matriz=adicional.producto_ab etiqueta="Producto AB" only %}
+                {% include "calculadora/modules/inversa/_inversion_adicional.html" with inversion=adicional.pasos_inversa_producto titulo="Pasos de la inversión de AB" only %}
+                {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="(AB)⁻¹" matriz=adicional.inversa_producto etiqueta="Inversa de AB para la comparación" only %}
+            </section>
+            <section class="procedure-stage">
+                <h4 class="stage-title">Calcular B⁻¹A⁻¹ y comparar</h4>
+                <p class="procedure-lead">Multiplicamos las inversas en orden inverso: primero B⁻¹ y después A⁻¹.</p>
+                {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="B⁻¹A⁻¹" matriz=adicional.producto_inversas etiqueta="Producto de B⁻¹ por A⁻¹" only %}
+                <p class="procedure-note">{% if adicional.coinciden %}(AB)⁻¹ = B⁻¹A⁻¹. Ambas matrices coinciden exactamente.{% else %}Las matrices no coinciden.{% endif %}</p>
+            </section>
+        {% endif %}
+    {% elif resultado.funcion_adicional == "vector" %}
+        <section class="procedure-stage">
+            <h4 class="stage-title">Aplicar la inversa a Ax = b</h4>
+            <p class="procedure-lead">Multiplicamos ambos lados por A⁻¹:</p>
+            <p class="procedure-line">Ax = b</p>
+            <p class="procedure-line">A⁻¹Ax = A⁻¹b</p>
+            <p class="procedure-lead">Como A⁻¹A = I, tenemos Ix = A⁻¹b y, por tanto, x = A⁻¹b.</p>
+            {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="b" matriz=adicional.b etiqueta="Vector b de la aplicación" only %}
+            {% for linea in adicional.desarrollo_vector %}<p class="procedure-line">{{ linea }}</p>{% endfor %}
+            {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="A⁻¹b" matriz=adicional.x etiqueta="Producto de A⁻¹ por b" only %}
+        </section>
+        <section class="procedure-stage">
+            <h4 class="stage-title">Comprobar Ax = b</h4>
+            <p class="procedure-lead">Multiplicamos A por el vector obtenido y lo comparamos exactamente con b.</p>
+            {% for linea in adicional.desarrollo_comprobacion %}<p class="procedure-line">{{ linea }}</p>{% endfor %}
+            {% include "calculadora/modules/inversa/_ecuacion.html" with expresion="Ax" matriz=adicional.a_por_x etiqueta="Producto Ax de comprobación" only %}
+            <p class="procedure-note">{% if adicional.coincide_con_b %}Ax = b. El vector obtenido satisface el sistema.{% else %}Ax no coincide con b.{% endif %}</p>
+        </section>
+    {% endif %}
+{% else %}
+    <section class="procedure-stage"><h4 class="stage-title">Aplicación solicitada</h4><p class="procedure-note">{{ adicional.motivo }}</p></section>
+{% endif %}
+{% endwith %}

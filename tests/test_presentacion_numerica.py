@@ -21,7 +21,7 @@ from frontend.web.calculadora.presentacion_numerica import (
 )
 from frontend.web.calculadora.servicios import resolver_sistema_web
 from tests.test_ecuaciones_matriciales_web import datos_ecuacion
-from tests.test_matrices_web import datos_matrices
+from tests.test_matrices_web import datos_matrices, datos_simbolos, matriz
 from tests.test_multiplicacion_matrices_web import datos_matriz_vector, datos_producto
 from tests.test_vectores_web import combinacion, datos_vectores
 
@@ -110,7 +110,7 @@ class ValoresHTML(HTMLParser):
 class PruebasIntegracionNumerica(SimpleTestCase):
     def test_todas_las_familias_incluyen_ambas_representaciones(self):
         casos = [
-            ("/sistemas/", {"sistema": "3x1 = 1; 2x2 = 1", "metodo": m})
+            ("/matrices/reduccion/", {"sistema": "3x1 = 1; 2x2 = 1", "metodo": m})
             for m in ("gauss", "gauss_jordan", "comparar")
         ] + [
             ("/vectores/operaciones/", datos_vectores("suma", u=["1/3", "1/2"], v=[0, 0])),
@@ -124,10 +124,14 @@ class PruebasIntegracionNumerica(SimpleTestCase):
             ("/matrices/operaciones/", datos_matriz_vector(a=[[1, 0]], x=["1/3", "1/2"], metodo="comparar")),
             ("/matrices/ecuaciones/", datos_ecuacion([[3, 0], [0, 2]], [1, 1], metodo="comparar")),
             ("/matrices/ecuaciones/", datos_ecuacion([[3, 1]], [1])),
-            ("/matrices/expresiones/", {
+            ("/matrices/inversa/", {"orden": "1", "metodo": "gauss_jordan", "celda_A_0_0": "3"}),
+            ("/matrices/inversa/", {"orden": "2", "metodo": "directo_2x2", "celda_A_0_0": "3", "celda_A_0_1": "0",
+                                    "celda_A_1_0": "0", "celda_A_1_1": "1"}),
+            ("/matrices/operaciones/", {
                 "expresion": "(1/3)*A", "cantidad": "1", "nombre_0": "A", "tipo_0": "matriz",
                 "filas_0": "1", "columnas_0": "1", "celda_0_0_0": "1",
             }),
+            ("/matrices/operaciones/", datos_simbolos("(A + B)ᵀ", [matriz("A", [["1/3", 0]]), matriz("B", [[0, "1/2"]])])),
         ]
         for ruta, datos in casos:
             with self.subTest(ruta=ruta, datos=datos):
@@ -148,9 +152,9 @@ class PruebasIntegracionNumerica(SimpleTestCase):
                 self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
 
     def test_bases_entrada_y_errores_no_reciben_selector(self):
-        for ruta in ("/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/bases/conversion/"):
+        for ruta in ("/", "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
             self.assertNotContains(self.client.get(ruta), "data-numeric-controls")
-        self.assertNotContains(self.client.post("/sistemas/", {"sistema": "x1+=1"}), "data-numeric-controls")
+        self.assertNotContains(self.client.post("/matrices/reduccion/", {"sistema": "x1+=1"}), "data-numeric-controls")
         conversion = self.client.post("/bases/conversion/", {
             "numero": "13", "base_origen": "10", "bases_destino": ["2", "16"],
         })

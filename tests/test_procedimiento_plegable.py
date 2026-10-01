@@ -46,7 +46,8 @@ from tests.test_web import datos_matriz
 RAIZ = Path(__file__).resolve().parents[1]
 TEMPLATES = RAIZ / "frontend" / "web" / "calculadora" / "templates" / "calculadora"
 TODOS = list(BLOQUES_PREDETERMINADOS)
-HERRAMIENTAS = ("/sistemas/", RUTA_VECTORES, RUTA_MATRICES, RUTA_ECUACIONES)
+HERRAMIENTAS = ("/matrices/reduccion/", RUTA_VECTORES, RUTA_MATRICES, RUTA_ECUACIONES)
+RUTA_INVERSA = "/matrices/inversa/"
 # Los mismos tres sistemas de test_resolver_sistema escritos como matriz aumentada.
 MATRICES = {UNICA: [[1, 1, 3], [1, -1, 1]], INFINITAS: [[1, 1, 2], [2, 2, 4]], INCONSISTENTE: [[1, 1, 2], [2, 2, 5]]}
 
@@ -196,7 +197,7 @@ def comprobar_estructura(caso, html):
 class PruebasSistemas(SimpleTestCase):
     def resolver(self, sistema=UNICA, metodo="gauss_jordan", mostrar=TODOS, **datos):
         datos = datos or {"sistema": sistema}
-        return self.client.post("/sistemas/", {**datos, "metodo": metodo, "mostrar_definido": "1", "mostrar": mostrar}).content.decode("utf-8")
+        return self.client.post("/matrices/reduccion/", {**datos, "metodo": metodo, "mostrar_definido": "1", "mostrar": mostrar}).content.decode("utf-8")
 
     def test_procedimiento_cerrado_antes_del_resultado_en_todos_los_casos(self):
         for metodo in ("gauss", "gauss_jordan", "comparar"):
@@ -328,12 +329,12 @@ class PruebasMatrices(SimpleTestCase):
     def test_entrada_por_entrada_es_una_sola_cadena_y_el_resultado_una_matriz(self):
         casos = (
             (datos_matrices(), "A + B", "Entrada por entrada", [["6", "8"], ["10", "12"]]),
-            (datos_matrices("resta"), "A − B", "Entrada por entrada", [["-4", "-4"], ["-4", "-4"]]),
-            (datos_matrices("escalar", escalar="1/2"), "k·A", "Entrada por entrada", [["1/2", "1"], ["3/2", "2"]]),
+            (datos_matrices("resta"), "A - B", "Entrada por entrada", [["-4", "-4"], ["-4", "-4"]]),
+            (datos_matrices("escalar", escalar="1/2"), "kA", "Entrada por entrada", [["1/2", "1"], ["3/2", "2"]]),
             (datos_matrices("traspuesta", a=[[1, 2, 3], [4, 5, 6]]), "Aᵀ", "De filas a columnas", [["1", "4"], ["2", "5"], ["3", "6"]]),
         )
         for datos, expresion, etapa, matriz in casos:
-            with self.subTest(operacion=datos["operacion"]):
+            with self.subTest(expresion=datos["expresion"]):
                 html = self.client.post(RUTA_MATRICES, datos).content.decode("utf-8")
                 comprobar_estructura(self, html)
                 doc = Contenido(html)
@@ -342,8 +343,8 @@ class PruebasMatrices(SimpleTestCase):
                 self.assertIn("Desarrollo por entradas", doc.tablas)
                 # La cadena termina en la matriz obtenida; el único bloque «Resultado» es el panel final.
                 self.assertEqual(doc.tablas["Resultado del desarrollo"], matriz)
-                self.assertEqual(doc.tablas["Matriz resultado"], matriz)
-                self.assertEqual(html.count('<table class="matrix-table" aria-label="Matriz resultado"'), 1)
+                self.assertEqual(doc.tablas["Resultado"], matriz)
+                self.assertEqual(html.count('<table class="matrix-table" aria-label="Resultado"'), 1)
                 self.assertEqual(html.count('<table class="matrix-table" aria-label="Resultado del desarrollo"'), 1)
                 self.assertNotIn("Resultado", procedimiento)
                 self.assertNotIn("Expresión matricial", procedimiento)
@@ -366,7 +367,7 @@ class PruebasMatrices(SimpleTestCase):
             (datos_matriz_vector(metodo="comparar"), ["Regla fila-vector", "Combinación lineal de columnas"], None),
         )
         for datos, anidados, titulo in casos:
-            with self.subTest(operacion=datos["operacion"], metodo=datos["metodo"]):
+            with self.subTest(expresion=datos["expresion"], metodo=datos["metodo"]):
                 html = self.client.post(RUTA_MATRICES, datos).content.decode("utf-8")
                 estructura = comprobar_estructura(self, html)
                 metodos = [d for d in estructura.details if "disclosure-nested" in d["clases"]]
@@ -377,12 +378,12 @@ class PruebasMatrices(SimpleTestCase):
                     self.assertEqual(procedimiento.count(titulo), 1)
                 self.assertNotIn("Expresión matricial", procedimiento)
                 self.assertNotIn("Resultado", procedimiento)
-                self.assertEqual(html.count('<table class="matrix-table" aria-label="Matriz resultado"'), 1)
+                self.assertEqual(html.count('<table class="matrix-table" aria-label="Resultado"'), 1)
                 self.assertEqual(texto_resultado(html).count("Resultado"), 1)
                 doc = Contenido(html)
                 for tabla in ("Resultado del desarrollo", "Resultado ensamblado"):
                     if tabla in doc.tablas:
-                        self.assertEqual(doc.tablas[tabla], doc.tablas["Matriz resultado"])
+                        self.assertEqual(doc.tablas[tabla], doc.tablas["Resultado"])
 
 
 class PruebasEcuacionMatricial(SimpleTestCase):
@@ -444,14 +445,17 @@ class PruebasTransversales(SimpleTestCase):
 
     def respuestas(self):
         return (
-            ("/sistemas/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS}),
-            ("/sistemas/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "sistema-resultante"]}),
+            ("/matrices/reduccion/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS}),
+            ("/matrices/reduccion/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "sistema-resultante"]}),
             (RUTA_VECTORES, datos_vectores("escalar", escalar="2", u=[1, 2])),
             (RUTA_VECTORES, combinacion([[1, 2], [3, 4]], [-1, 0])),
             (RUTA_MATRICES, datos_matrices("traspuesta")),
             (RUTA_MATRICES, datos_producto(metodo="comparar")),
             (RUTA_ECUACIONES, datos_ecuacion(*AXB_UNICA)),
             (RUTA_ECUACIONES, datos_ecuacion(*AXB_INFINITAS, metodo="comparar")),
+            # P26.4: los dos métodos de la matriz inversa, con inversa y sin ella.
+            *((RUTA_INVERSA, {"orden": "2", "metodo": metodo, **{f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(a) for j, v in enumerate(fila)}})
+              for metodo in ("gauss_jordan", "directo_2x2") for a in ([[3, 4], [5, 6]], [[1, 2], [2, 4]])),
         )
 
     def test_ancla_y_foco_del_resultado_se_conservan(self):
@@ -532,7 +536,7 @@ class PruebasComparacionSinProcedimiento(SimpleTestCase):
     """Comparar ambos sin «Procedimiento»: cada matriz final nombra su método y sigue habiendo un solo resultado."""
 
     def resolver(self, sistema, mostrar):
-        return self.client.post("/sistemas/", {"sistema": sistema, "metodo": "comparar", "mostrar_definido": "1", "mostrar": mostrar}).content.decode("utf-8")
+        return self.client.post("/matrices/reduccion/", {"sistema": sistema, "metodo": "comparar", "mostrar_definido": "1", "mostrar": mostrar}).content.decode("utf-8")
 
     def test_cada_matriz_final_y_sistema_resultante_nombran_su_metodo(self):
         html = self.resolver(INFINITAS, ["clasificacion", "pivotes", "sistema-resultante"])
@@ -549,7 +553,7 @@ class PruebasComparacionSinProcedimiento(SimpleTestCase):
         self.assertEqual(len(Estructura(html).paneles_finales), 1)
 
     def test_con_un_solo_metodo_o_con_procedimiento_no_se_repite_el_nombre(self):
-        solo = texto_resultado(self.client.post("/sistemas/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["sistema-resultante"]}).content.decode("utf-8"))
+        solo = texto_resultado(self.client.post("/matrices/reduccion/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["sistema-resultante"]}).content.decode("utf-8"))
         self.assertIn("Matriz escalonada 1 1 2 0 0 0 Sistema resultante x1 + x2 = 2 0 = 0", solo)
         self.assertNotIn("· Gauss", solo)
         con_procedimiento = texto_resultado(self.resolver(INFINITAS, TODOS))

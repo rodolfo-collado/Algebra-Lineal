@@ -6,11 +6,12 @@ plantilla: el enunciado (Ax = b tiene solución única, infinitas o ninguna), el
 vector x, la comprobación A·x = b, la interpretación como combinación lineal de
 las columnas de A y la cadena de equivalencias que lleva de Ax = b a [A | b].
 El procedimiento de cada método se adapta con `servicios.presentar_resolucion`,
-las mismas piezas que usa Resolver un sistema.
+las mismas piezas que usa Reducción por filas.
 """
 
 from backend.ecuaciones_matriciales import resolver_ecuacion_matricial
 from backend.matrices import vector_columna
+from backend.presupuesto_computacional import ESTIMADORES, combinar_estimaciones, estimar_producto, perfil_numerico
 from backend.sistemas import enumerar_variables
 
 from .opciones_ecuaciones import NOMBRE_INCOGNITA, forma_texto, metodos_a_resolver, titulo_resultado
@@ -90,6 +91,23 @@ def _comprobacion(a, calculo):
         "b": _columna_texto(calculo["b"]),
         "coincide": calculo["verificacion"] == calculo["b"],
     }
+
+
+def estimar_ecuacion_web(entrada):
+    """Costo previsto de `resolver_ecuacion_web(entrada)`, sin resolver.
+
+    Cada método reduce [A | b] y, con solución única, comprueba A·x = b con un
+    producto; antes de resolver no se sabe si la habrá, así que se cuenta
+    siempre. Todavía no decide nada: ninguna entrada válida se rechaza por su costo.
+    """
+    a, b = entrada["a"], entrada["b"]
+    filas, columnas = len(a), len(a[0])
+    perfil = perfil_numerico(a, [b])
+    comprobacion = estimar_producto(filas, columnas, 1, perfil=perfil)
+    partes = []
+    for clave in metodos_a_resolver(entrada["metodo"]):
+        partes += [ESTIMADORES[clave](filas, columnas + 1, columnas_pivote=columnas, perfil=perfil), comprobacion]
+    return combinar_estimaciones(*partes, operacion=entrada["metodo"])
 
 
 def resolver_ecuacion_web(entrada):

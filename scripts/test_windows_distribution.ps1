@@ -111,8 +111,8 @@ try {
         } while ([DateTime]::UtcNow -lt $deadline)
         if ($process.MainWindowHandle -eq [IntPtr]::Zero) { throw 'pywebview no creó la ventana nativa.' }
         $homeResponse = Invoke-WebRequest -UseBasicParsing -Uri $url
-        if (-not $homeResponse.Content.Contains('href="/sistemas/"')) { throw 'Inicio no enlaza al módulo de sistemas.' }
-        $systemsUrl = $url + 'sistemas/'
+        if (-not $homeResponse.Content.Contains('href="/matrices/reduccion/"')) { throw 'Inicio no enlaza a Reducción por filas.' }
+        $systemsUrl = $url + 'matrices/reduccion/'
         foreach ($method in @('gauss', 'gauss_jordan')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri $systemsUrl -SessionVariable webSession
             $csrf = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
@@ -128,54 +128,64 @@ try {
                 if (-not $text.Contains($expected)) { throw "Falta '$expected' en $method ($url)." }
             }
         }
-        # Operaciones básicas con matrices: rectangular, fracciones y las cuatro variantes.
+        # Operaciones con matrices (P26.6): las operaciones básicas son expresiones del mismo formulario,
+        # con matrices rectangulares y fracciones. Se declaran A, B y k aunque cada expresión use parte.
         $matricesUrl = $url + 'matrices/operaciones/'
-        $expectedMatrices = @{
-            suma = @('2', '4', '6', '8', '10', '12')
-            resta = @('0', '0', '0', '0', '0', '0')
-            escalar = @('1/2', '1', '3/2', '2', '5/2', '3')
-            traspuesta = @('1', '4', '2', '5', '3', '6')
+        $expectedMatrices = [ordered]@{
+            'A + B' = @('2', '4', '6', '8', '10', '12')
+            'A - B' = @('0', '0', '0', '0', '0', '0')
+            'kA' = @('1/2', '1', '3/2', '2', '5/2', '3')
+            'A^T' = @('1', '4', '2', '5', '3', '6')
         }
-        foreach ($operation in @('suma', 'resta', 'escalar', 'traspuesta')) {
+        foreach ($expression in $expectedMatrices.Keys) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -SessionVariable matrixSession
             $matrixCsrf = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
-            $matrixBody = @{ csrfmiddlewaretoken = $matrixCsrf; operacion = $operation; filas = '2'; columnas = '3' }
+            $matrixBody = @{ csrfmiddlewaretoken = $matrixCsrf; expresion = $expression; cantidad = '3'
+                nombre_0 = 'A'; tipo_0 = 'matriz'; filas_0 = '2'; columnas_0 = '3'
+                nombre_1 = 'B'; tipo_1 = 'matriz'; filas_1 = '2'; columnas_1 = '3'
+                nombre_2 = 'k'; tipo_2 = 'escalar'; celda_2_0_0 = '1/2' }
             for ($row = 0; $row -lt 2; $row++) {
                 for ($column = 0; $column -lt 3; $column++) {
                     $value = [string](1 + 3 * $row + $column)
-                    $matrixBody["celda_A_${row}_${column}"] = $value
-                    if ($operation -in @('suma', 'resta')) { $matrixBody["celda_B_${row}_${column}"] = $value }
+                    $matrixBody["celda_0_${row}_${column}"] = $value
+                    $matrixBody["celda_1_${row}_${column}"] = $value
                 }
             }
-            if ($operation -eq 'escalar') { $matrixBody.escalar = '1/2' }
             $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -Method Post -WebSession $matrixSession -Headers @{ Referer = $matricesUrl } -Body $matrixBody
-            $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Matriz resultado"[^>]*>(.*?)</table>').Groups[1].Value
+            $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Resultado"[^>]*>(.*?)</table>').Groups[1].Value
             $cells = Get-CellTexts $resultTable
-            if (($cells -join ',') -ne ($expectedMatrices[$operation] -join ',')) { throw "Resultado incorrecto de matrices: $operation" }
-            if (-not $response.Content.Contains('id="procedimiento"')) { throw "Falta procedimiento de matrices: $operation" }
-            if (-not $response.Content.Contains('data-numeric-controls')) { throw "Falta el selector Exacto/Decimal en matrices: $operation" }
+            if (($cells -join ',') -ne ($expectedMatrices[$expression] -join ',')) { throw "Resultado incorrecto de matrices: $expression" }
+            if (-not $response.Content.Contains('id="procedimiento"')) { throw "Falta procedimiento de matrices: $expression" }
+            if (-not $response.Content.Contains('data-numeric-controls')) { throw "Falta el selector Exacto/Decimal en matrices: $expression" }
         }
-        # P13B: AB (2x3 por 3x2) y Ax (2x3 por x de 3) comparando los dos métodos.
+        # P13B: AB (2x3 por 3x2) y Ax (2x3 por x de 3) comparando las dos lecturas del producto.
         $productBodies = @(
-            @{ operacion = 'producto'; filas = '2'; columnas = '3'; columnas_b = '2'; metodo = 'comparar'
-               celda_A_0_0 = '1'; celda_A_0_1 = '2'; celda_A_0_2 = '3'; celda_A_1_0 = '4'; celda_A_1_1 = '5'; celda_A_1_2 = '6'
-               celda_B_0_0 = '7'; celda_B_0_1 = '8'; celda_B_1_0 = '9'; celda_B_1_1 = '10'; celda_B_2_0 = '11'; celda_B_2_1 = '12' },
-            @{ operacion = 'matriz_vector'; filas = '2'; columnas = '3'; metodo = 'comparar'
-               celda_A_0_0 = '1'; celda_A_0_1 = '2'; celda_A_0_2 = '-1'; celda_A_1_0 = '0'; celda_A_1_1 = '-5'; celda_A_1_2 = '3'
-               celda_x_0_0 = '4'; celda_x_1_0 = '3'; celda_x_2_0 = '7' }
+            @{ expresion = 'AB'; cantidad = '2'; metodo = 'comparar'
+               nombre_0 = 'A'; tipo_0 = 'matriz'; filas_0 = '2'; columnas_0 = '3'
+               celda_0_0_0 = '1'; celda_0_0_1 = '2'; celda_0_0_2 = '3'; celda_0_1_0 = '4'; celda_0_1_1 = '5'; celda_0_1_2 = '6'
+               nombre_1 = 'B'; tipo_1 = 'matriz'; filas_1 = '3'; columnas_1 = '2'
+               celda_1_0_0 = '7'; celda_1_0_1 = '8'; celda_1_1_0 = '9'; celda_1_1_1 = '10'; celda_1_2_0 = '11'; celda_1_2_1 = '12' },
+            @{ expresion = 'Ax'; cantidad = '2'; metodo = 'comparar'
+               nombre_0 = 'A'; tipo_0 = 'matriz'; filas_0 = '2'; columnas_0 = '3'
+               celda_0_0_0 = '1'; celda_0_0_1 = '2'; celda_0_0_2 = '-1'; celda_0_1_0 = '0'; celda_0_1_1 = '-5'; celda_0_1_2 = '3'
+               nombre_1 = 'x'; tipo_1 = 'vector'; filas_1 = '3'
+               celda_1_0_0 = '4'; celda_1_1_0 = '3'; celda_1_2_0 = '7' }
         )
-        $expectedProducts = @{ producto = @('58', '64', '139', '154'); matriz_vector = @('3', '6') }
+        $expectedProducts = @{ AB = @('58', '64', '139', '154'); Ax = @('3', '6') }
         foreach ($productBody in $productBodies) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -SessionVariable productSession
             $productBody.csrfmiddlewaretoken = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value
             $response = Invoke-WebRequest -UseBasicParsing -Uri $matricesUrl -Method Post -WebSession $productSession -Headers @{ Referer = $matricesUrl } -Body $productBody
-            $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Matriz resultado"[^>]*>(.*?)</table>').Groups[1].Value
+            $resultTable = [regex]::Match($response.Content, '(?s)<table[^>]*aria-label="Resultado"[^>]*>(.*?)</table>').Groups[1].Value
             $cells = Get-CellTexts $resultTable
-            if (($cells -join ',') -ne ($expectedProducts[$productBody.operacion] -join ',')) { throw "Resultado incorrecto de matrices: $($productBody.operacion)" }
-            # P18: un «Ver procedimiento» plegado con un sub-bloque por método.
-            if (-not $response.Content.Contains('id="procedimiento"')) { throw "Falta un procedimiento comparado de matrices: $($productBody.operacion)" }
-            if (([regex]::Matches($response.Content, 'class="disclosure disclosure-nested"')).Count -ne 2) { throw "Faltan los dos métodos comparados de matrices: $($productBody.operacion)" }
+            if (($cells -join ',') -ne ($expectedProducts[$productBody.expresion] -join ',')) { throw "Resultado incorrecto de matrices: $($productBody.expresion)" }
+            # P18: un «Ver procedimiento» plegado con un sub-bloque por lectura.
+            if (-not $response.Content.Contains('id="procedimiento"')) { throw "Falta un procedimiento comparado de matrices: $($productBody.expresion)" }
+            if (([regex]::Matches($response.Content, 'class="disclosure disclosure-nested"')).Count -ne 2) { throw "Faltan las dos lecturas comparadas de matrices: $($productBody.expresion)" }
         }
+        # La ruta histórica de Expresiones matriciales lleva a la misma herramienta.
+        $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'matrices/expresiones/')
+        if (-not $response.Content.Contains('action="/matrices/operaciones/#resultado"')) { throw 'La ruta histórica de expresiones no lleva a Operaciones con matrices.' }
         # P14: Ax = b con x desconocido. Solución fraccionaria comparando métodos y un caso rectangular 3x2.
         $equationsUrl = $url + 'matrices/ecuaciones/'
         $response = Invoke-WebRequest -UseBasicParsing -Uri $equationsUrl
@@ -203,7 +213,7 @@ try {
                 if (-not $response.Content.Contains($marker)) { throw "Falta '$marker' en Ax = b (caso $($case + 1))." }
             }
         }
-        foreach ($asset in @('styles.css', 'matriz.js', 'matrices.js', 'ecuaciones.js', 'numeros.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'favicon.svg', 'favicon.ico')) {
+        foreach ($asset in @('styles.css', 'matriz.js', 'expresiones.js', 'ecuaciones.js', 'numeros.js', 'tema.js', 'navigation.js', 'buscador.js', 'teclado.js', 'favicon.svg', 'favicon.ico')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri ($url + 'static/calculadora/' + $asset)
             if ($response.StatusCode -ne 200) { throw "No se sirvió el recurso $asset" }
         }

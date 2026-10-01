@@ -7,131 +7,93 @@
 **Aprende resolviendo.** Una calculadora educativa que muestra el camino hasta
 el resultado y ayuda a conectar sistemas, matrices y vectores.
 
-[![CI](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Amain)
-[![Última release](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgithub.com%2Frodolfo-collado%2FAlgebra-Lineal%2Freleases.atom&query=concat%28substring-after%28%28%2F%2F%2A%5Blocal-name%28%29%3D%27entry%27%5D%2F%2A%5Blocal-name%28%29%3D%27link%27%5D%2F%40href%29%5B1%5D%2C%27%2Ftag%2F%27%29%2Csubstring%28%27pendiente%27%2C1%2C9%2Anot%28%2F%2F%2A%5Blocal-name%28%29%3D%27entry%27%5D%29%29%29&label=release&color=blue)](https://github.com/rodolfo-collado/Algebra-Lineal/releases)
+[![CI](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Adevelop)
+[![Última release](https://img.shields.io/github/v/release/rodolfo-collado/Algebra-Lineal?label=release)](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest)
 ![Python >= 3.13](https://img.shields.io/badge/Python-%E2%89%A5%203.13-3776AB?logo=python&logoColor=white)
 ![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4)
 
-[Instalación](#instalación-en-windows) · [Capacidades](#capacidades) ·
-[Documentación](docs/README.md) · [Contribuir](CONTRIBUTING.md)
+[Capacidades](#capacidades) · [Instalación](#instalación-en-windows) ·
+[Desarrollo](#desarrollo-rápido) · [Documentación](docs/README.md) · [Contribuir](CONTRIBUTING.md)
 
-## Entender el procedimiento
-
-El resultado es solo una parte del ejercicio. PyGebra permite seguir
-las operaciones, comparar métodos y ver por qué un sistema tiene solución
-única, infinitas soluciones o ninguna.
-
-- **Procedimientos visibles:** operaciones por filas, sustitución regresiva,
-  productos y conversiones acompañados por su desarrollo.
-- **Aritmética exacta:** los racionales se conservan como fracciones, sin
-  redondear los pasos intermedios.
-- **Formato a tu elección:** resultados exactos o decimales (2, 4, 6 u 8 posiciones),
-  sin recalcular; los valores redondeados se identifican como aproximaciones.
-- **Algoritmos manuales:** el cálculo se implementa con Python estándar,
-  sin delegar el álgebra a NumPy, SciPy o SymPy.
-- **Conceptos conectados:** un producto `Ax` se puede leer como combinación
-  de columnas; resolver `Ax = b` conecta esa lectura con un sistema lineal.
-- **Trabajo local:** una vez instalado, funciona sin Internet, con todos
-  los recursos de la interfaz incluidos.
-
-La arquitectura separa cálculo y presentación para incorporar nuevas
-herramientas educativas sin rehacer los algoritmos ni la navegación.
+PyGebra permite seguir las operaciones, comparar métodos y entender por qué un
+sistema tiene solución única, infinitas soluciones o ninguna. Conserva los
+racionales como fracciones y permite mostrar resultados exactos o decimales
+(2, 4, 6 u 8 posiciones), sin recalcular. Los algoritmos se implementan
+manualmente con Python estándar. Una vez instalado, funciona sin Internet.
 
 ## Capacidades
 
-### Sistemas de ecuaciones
-
-- Entrada como ecuaciones escritas o matriz aumentada editable.
-- Ecuaciones con términos a ambos lados del `=`, como `x1 - 6 = -x2`,
-  `2x1 + 3 = x2 - 5` o `6 = x1 + x2`: PyGebra las normaliza automáticamente.
-- Gauss, Gauss-Jordan o comparación de ambos procedimientos.
-- Clasificación, columnas pivote y variables libres.
-- Solución exacta, solución general o evidencia de la contradicción.
-
-Los dos métodos comparten la interpretación del resultado; puedes comparar
-cómo llegan a ella.
-
 ### Vectores
 
-- Suma, resta y multiplicación por escalar.
-- Comprobación de combinación lineal y sus coeficientes.
-- Dimensión variable, con desarrollo componente a componente.
-
-El backend admite dimensión arbitraria; la interfaz limita el tamaño de la
-entrada para mantenerla legible.
+- Suma, resta y multiplicación por escalar, con desarrollo componente a componente.
+- Combinación lineal: comprobación y cálculo de sus coeficientes.
 
 ### Matrices
 
-- Suma, resta, producto por escalar y traspuesta.
-- Producto `AB` y producto matriz-vector `Ax`.
-- Expresiones compuestas, como `A(u + v)` o `2A - 3B`, y una igualdad entre dos de ellas, como `A(u + v) = Au + Av`.
-- Determinación de una matriz desconocida en `Ax = b`, cuando x es un vector simbólico y b un vector de expresiones lineales.
-- Procedimiento por filas o como combinación lineal de columnas.
-- Resolución de `Ax = b`, también con matrices rectangulares.
+- **Operaciones con matrices:** suma, resta, escalar, traspuesta, productos
+  `AB` y `Ax`, expresiones combinadas e igualdades. También determina una matriz
+  desconocida en `Ax = b` con un vector simbólico.
+- **Reducción por filas:** Gauss, Gauss-Jordan o comparación de ambos, desde
+  ecuaciones o una matriz aumentada; muestra pivotes, variables libres y solución.
+- **Resolver Ax = b:** encuentra x con A y b conocidos, también para matrices
+  rectangulares, y explica la relación con el sistema lineal.
+- **Matriz inversa:** Gauss-Jordan o regla directa para 2×2; explica cuándo no
+  existe y permite verificar `A·A⁻¹ = I` y `A⁻¹·A = I`.
+- **Propiedades y aplicación de la inversa:** `(A⁻¹)⁻¹ = A`,
+  `(AB)⁻¹ = B⁻¹A⁻¹`, `(Aᵀ)⁻¹ = (A⁻¹)ᵀ` y `x = A⁻¹b`.
+  Esta aplicación requiere A invertible; **Resolver Ax = b** sigue siendo la
+  herramienta general para hallar x.
 
-En el producto `Ax`, x es conocido. Resolver Ax = b busca x y explica la
-relación entre la ecuación matricial, el sistema y la matriz aumentada.
-En Expresiones matriciales, `=` con valores numéricos comprueba esos valores.
-Si A se declara como matriz desconocida y x como vector simbólico, `Ax = b`
-determina A para todos los valores de las variables. Hallar x con A y b
-numéricos sigue en Resolver Ax = b.
+Consulta [Funcionalidades](docs/funcionalidades.md) y
+[Matriz inversa](docs/matriz-inversa.md) para entradas, ejemplos y procedimientos.
+Los cálculos largos piden confirmación según el
+[presupuesto computacional](docs/presupuesto-computacional.md).
 
 ### Sistemas numéricos
 
-- Conversión entre binario, octal, decimal y hexadecimal, incluidos números negativos.
-- Un mismo número a una, varias o todas las demás bases en una sola consulta.
-- Divisiones sucesivas y expansión posicional con pasos visibles.
-- Conversión entre bases no decimales mostrando el paso intermedio por decimal,
-  calculado una sola vez y compartido por todos los destinos.
-- Conversión entre decimal y números romanos, del 1 al 3999, en ambos sentidos.
-
-Los formatos de entrada, límites de interfaz y ejemplos completos están en
-la [guía de funcionalidades](docs/funcionalidades.md).
+- Conversión entre binario, octal, decimal y hexadecimal, incluidos negativos,
+  a uno o varios destinos, con divisiones sucesivas y expansión posicional.
+- Conversión entre números arábigos y romanos, del 1 al 3999, en ambos sentidos.
 
 ## Formas de usar el proyecto
 
 | Interfaz | Uso |
 | --- | --- |
-| Escritorio Windows | Todas las herramientas visuales en una ventana local. |
-| Django en desarrollo | La misma interfaz visual desde el navegador local. |
-| Terminal | Menú de matrices y resolución de sistemas por Gauss y Gauss-Jordan. |
+| Escritorio Windows | Herramientas visuales en una ventana local. |
+| Django en desarrollo | La misma interfaz desde el navegador local. |
+| Terminal | Matrices y sistemas por Gauss y Gauss-Jordan. |
 
 La interfaz visual incluye tema claro/oscuro, búsqueda de herramientas y
-teclado matemático contextual. La terminal conserva su propio flujo de uso.
+teclado matemático contextual.
 
 ## Instalación en Windows
 
-Las distribuciones estables se publicarán en **[GitHub Releases](https://github.com/rodolfo-collado/Algebra-Lineal/releases)**.
-El enlace a la **[última versión estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest)**
-está preparado; si todavía no hay publicaciones, espera la primera release.
-El badge de release se actualizará automáticamente cuando exista una.
+Descarga el instalador desde la
+**[última versión estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest)**.
+Todas las versiones publicadas están en
+[GitHub Releases](https://github.com/rodolfo-collado/Algebra-Lineal/releases).
 
-Cuando haya una versión publicada:
-
-1. Descarga `AlgebraLineal-Setup-<version>.exe` de sus assets.
+1. Descarga `AlgebraLineal-Setup-<version>.exe`.
 2. Ejecuta el instalador y elige si deseas un acceso directo en el escritorio.
-3. Abre el acceso directo **Álgebra Lineal** (nombre histórico del instalador);
-   la ventana y la interfaz se presentan como **PyGebra**.
+3. Abre **Álgebra Lineal** (nombre histórico del instalador); la aplicación se
+   presenta como **PyGebra**.
 
-**No necesitas tener Python instalado.** El instalador incluye el runtime y
-las dependencias de la aplicación. Se instala para tu usuario y no requiere
-privilegios de administrador.
+**No necesitas Python instalado.** El paquete incluye el runtime y las
+dependencias, se instala para tu usuario y no requiere permisos de administrador.
 
 Se admite Windows 10 1809 o posterior / Windows 11, compatible con aplicaciones
-x64. Si falta WebView2, su instalación requiere Internet; después la calculadora
-funciona offline. El paquete no está firmado digitalmente.
+x64. Si falta WebView2, su instalación requiere Internet; después PyGebra funciona
+sin conexión. El paquete no está firmado digitalmente.
 
 Consulta [Instalación Windows](docs/instalacion-windows.md) para requisitos,
-instalación sin conexión y desinstalación, y [Releases](docs/releases.md) para
-verificar el SHA-256 del archivo descargado.
-
-Los artifacts de Actions son builds temporales para revisión. La distribución
-estable para usuarios se descarga desde Releases.
+instalación sin conexión y desinstalación, y
+[Releases](docs/releases.md#verificar-una-descarga) para verificar el SHA-256.
+Los artifacts de Actions son builds temporales para revisión.
 
 ## Desarrollo rápido
 
-Necesitas Git y [uv](https://docs.astral.sh/uv/), la herramienta que prepara
-el entorno Python y sus dependencias desde el archivo de versiones bloqueadas.
+Necesitas Git y [uv](https://docs.astral.sh/uv/), que prepara el entorno Python
+y sus dependencias desde el archivo de versiones bloqueadas.
 
 ```bash
 git clone https://github.com/rodolfo-collado/Algebra-Lineal.git
@@ -140,35 +102,25 @@ uv sync --locked
 uv run python manage.py runserver
 ```
 
-Abre <http://127.0.0.1:8000/>. El proyecto requiere Python >= 3.13 y `uv` puede
-instalar la versión de referencia indicada en `.python-version`.
-
-Para contribuir, crea tu rama a partir de `develop` siguiendo
-[CONTRIBUTING.md](CONTRIBUTING.md). Los comandos de terminal, escritorio,
-build y verificación se explican en las guías correspondientes.
+Abre <http://127.0.0.1:8000/>. Se requiere Python >= 3.13; uv puede instalar
+la versión indicada en `.python-version`. Consulta [Desarrollo](docs/desarrollo.md)
+para el entorno y [Guía de ejecución](docs/ejecucion.md) para terminal y escritorio.
 
 ## Documentación
 
-Empieza por el [índice de documentación](docs/README.md) o elige una guía:
+El [índice de documentación](docs/README.md) reúne las guías de uso,
+algoritmos, arquitectura, interfaz, pruebas y distribución.
 
-| Guía | Qué encontrarás |
-| --- | --- |
-| [Funcionalidades](docs/funcionalidades.md) | Entradas, ejemplos, métodos y lectura de resultados. |
-| [Algoritmos](docs/algoritmos.md) | Cálculo manual, exactitud y conexiones conceptuales. |
-| [Arquitectura](docs/arquitectura.md) | Backend, interfaces y distribución. |
-| [Interfaz](docs/interfaz.md) | Componentes, navegación y accesibilidad de la interfaz actual. |
-| [Identidad visual](docs/identidad-visual.md) | Símbolo oficial de PyGebra, geometría y archivos. |
-| [Instalación Windows](docs/instalacion-windows.md) | Uso del instalador y construcción del paquete. |
-| [Desarrollo](docs/desarrollo.md) | Entorno local y extensión del catálogo. |
-| [Guía de ejecución](docs/ejecucion.md) | Requisitos, formas de iniciar PyGebra y verificación. |
-| [Pruebas](docs/pruebas.md) | Suite, verificaciones y smoke del instalador. |
-| [Releases](docs/releases.md) | Versionado, promoción a main y entrega automatizada. |
+- [Funcionalidades](docs/funcionalidades.md): entradas, ejemplos y resultados.
+- [Matriz inversa](docs/matriz-inversa.md): métodos, verificación, propiedades y aplicación.
+- [Pruebas](docs/pruebas.md): verificaciones locales, CI y smoke Windows.
+- [Releases](docs/releases.md): versión, promoción a main y publicación automática.
 
 ## Contribuir
 
-Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para el flujo de ramas, las
-convenciones de commits y las reglas de implementación matemática.
+Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para las convenciones y reglas de
+implementación. Crea tu rama desde `develop` y abre un PR hacia esa rama.
 
-Las propuestas y correcciones se integran mediante PR a `develop`. Las versiones
-estables llegan a `main` mediante un PR separado y se publican desde un tag
-validado. Así, documentación, pruebas y distribución acompañan al código.
+Las versiones se preparan antes del PR `develop → main`. Su merge autoriza la
+publicación: GitHub Actions valida el candidato, ejecuta CI y crea automáticamente
+el tag y la release cuando todas las comprobaciones pasan.

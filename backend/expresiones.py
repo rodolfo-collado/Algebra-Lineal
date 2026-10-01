@@ -13,6 +13,7 @@ los representa y `normalizar_igualdad` pasa una igualdad a la forma estandar.
 from fractions import Fraction
 
 from backend.matrices import formatear_fraccion
+from backend.seguridad_numerica import multiplicar_exacto, restar_exacto, sumar_exacto
 
 NOMBRE_VARIABLE = "x"
 
@@ -36,22 +37,22 @@ def expresion_de_variable(variable):
 def multiplicar_expresion(expresion, factor):
     factor = Fraction(factor)
     coeficientes = {
-        variable: coeficiente * factor
+        variable: multiplicar_exacto(coeficiente, factor)
         for variable, coeficiente in expresion["coeficientes"].items()
     }
 
-    return crear_expresion(expresion["constante"] * factor, coeficientes)
+    return crear_expresion(multiplicar_exacto(expresion["constante"], factor), coeficientes)
 
 
 def restar_expresiones(minuendo, sustraendo):
     coeficientes = dict(minuendo["coeficientes"])
     for variable, coeficiente in sustraendo["coeficientes"].items():
         coeficientes[variable] = (
-            coeficientes.get(variable, Fraction(0)) - coeficiente
+            restar_exacto(coeficientes.get(variable, Fraction(0)), coeficiente)
         )
 
     return crear_expresion(
-        minuendo["constante"] - sustraendo["constante"], coeficientes
+        restar_exacto(minuendo["constante"], sustraendo["constante"]), coeficientes
     )
 
 
@@ -65,9 +66,9 @@ def expresion_desde_terminos(terminos):
     coeficientes = {}
     for variable, coeficiente in terminos:
         if variable is None:
-            constante += coeficiente
+            constante = sumar_exacto(constante, coeficiente)
         else:
-            coeficientes[variable] = coeficientes.get(variable, Fraction(0)) + coeficiente
+            coeficientes[variable] = sumar_exacto(coeficientes.get(variable, Fraction(0)), coeficiente)
 
     return crear_expresion(constante, coeficientes)
 

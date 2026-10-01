@@ -4,7 +4,7 @@
         <svg class="disclosure-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        {% if nivel == 4 %}<h4 class="disclosure-title">{{ titulo }}</h4>{% else %}<h3 class="disclosure-title">{{ titulo }}</h3>{% endif %}
+        {% if nivel == 4 %}<h4 class="disclosure-title">{{ titulo }}</h4>{% elif nivel == 5 %}<h5 class="disclosure-title">{{ titulo }}</h5>{% else %}<h3 class="disclosure-title">{{ titulo }}</h3>{% endif %}
         {% if detalle %}<span class="disclosure-detail">{{ detalle }}</span>{% endif %}
     </summary>
     <div class="disclosure-body">{{ contenido }}</div>

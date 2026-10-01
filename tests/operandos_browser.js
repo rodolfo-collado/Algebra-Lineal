@@ -54,126 +54,103 @@
             for (let i = 0; i < 11; i++) click(w, '[data-agregar-vector]');
             igual(cantidad(w, '[data-vector]'), 13);
         }],
-        ["Matrices: agregar, quitar intermedia, conservar valores y mínimo", "matrices", w => {
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 2);
-            click(w, '[data-agregar-matriz]'); click(w, '[data-agregar-matriz]');
-            click(w, '[name="operacion"][value="resta"]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 4);
-            valor(w, '[name="celda_C_0_0"]', 3); valor(w, '[name="celda_D_0_0"]', 4);
-            click(w, '[aria-label="Quitar matriz C"]');
-            igual(w.document.querySelector('[name="celda_C_0_0"]').value, '4');
-            click(w, '[aria-label="Quitar matriz C"]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 2);
-            igual(cantidad(w, '[aria-label^="Quitar matriz"]'), 0);
-            click(w, '[data-agregar-matriz]');
-            igual(w.document.querySelector('[name="celda_C_0_0"]').value, '');
+        // Operaciones con matrices (P26.6): símbolos con nombre y una expresión; el presupuesto común vive en expresiones.js.
+        ["Matrices: agregar, eliminar uno intermedio, conservar valores y nombres", "matrices", w => {
+            igual(cantidad(w, '[data-simbolo]'), 2);
+            click(w, '[data-agregar]'); click(w, '[data-agregar]');
+            igual(cantidad(w, '[data-simbolo]'), 4);
+            igual([...w.document.querySelectorAll('[data-campo="nombre"]')].map(i => i.value), ['A', 'B', 'C', 'D']);
+            valor(w, '[name="celda_2_0_0"]', 3); valor(w, '[name="celda_3_0_0"]', 4);
+            w.document.querySelectorAll('[data-eliminar]')[2].click();
+            // D conserva su nombre y sus valores; solo cambia su posición en el envío.
+            igual(w.document.querySelector('[name="nombre_2"]').value, 'D');
+            igual(w.document.querySelector('[name="celda_2_0_0"]').value, '4');
+            igual(w.document.querySelector('[name="cantidad"]').value, '3');
+            w.document.querySelectorAll('[data-eliminar]')[2].click();
+            igual(cantidad(w, '[data-simbolo]'), 2);
+            click(w, '[data-agregar]');
+            igual(w.document.querySelector('[name="nombre_2"]').value, 'C');
+            igual(w.document.querySelector('[name="celda_2_0_0"]').value, '');
         }],
-        ["Matrices: resta real de tres", "matrices", async (w, frame) => {
-            click(w, '[name="operacion"][value="resta"]');
-            valor(w, '[name="filas"]', 1); valor(w, '[name="columnas"]', 1);
-            click(w, '[data-agregar-matriz]');
-            for (const [n, v] of [['A',10], ['B',3], ['C',2]]) valor(w, `[name="celda_${n}_0_0"]`, v);
+        ["Matrices: resta real de tres, agrupada por la izquierda", "matrices", async (w, frame) => {
+            click(w, '[data-agregar]');
+            for (let i = 0; i < 3; i++) { valor(w, `[name="filas_${i}"]`, 1); valor(w, `[name="columnas_${i}"]`, 1); }
+            for (const [i, v] of [[0, 10], [1, 3], [2, 2]]) valor(w, `[name="celda_${i}_0_0"]`, v);
+            valor(w, '[name="expresion"]', 'A - B - C');
             w = await enviar(frame);
             igual(w.document.querySelector('.panel-final td').textContent.trim(), '5');
-            igual(w.document.querySelector('#procedimiento').textContent.includes('10 − 3 − 2'), true);
+            const texto = w.document.querySelector('#procedimiento').textContent;
+            igual([texto.includes('10 − 3'), texto.includes('7 − 2')], [true, true]);
         }],
-        ["Matrices: traspuesta unaria y Ax binario tras cambiar operación", "matrices", w => {
-            click(w, '[data-agregar-matriz]');
-            click(w, '[name="operacion"][value="traspuesta"]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 1);
-            igual(w.document.querySelector('[data-agregar-matriz]').hidden, true);
-            click(w, '[name="operacion"][value="matriz_vector"]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 2);
-            igual(w.document.querySelector('[name="cantidad"]').disabled, true);
-            igual(cantidad(w, '[aria-label^="Quitar matriz"]'), 0);
+        ["Matrices: más de diez símbolos y nombres después de Z", "matrices", w => {
+            for (let i = 2; i < 28; i++) click(w, '[data-agregar]');
+            igual(cantidad(w, '[data-simbolo]'), 28);
+            igual(w.document.querySelector('[name="nombre_26"]').value, 'A1');
+            igual(w.document.querySelector('[name="nombre_27"]').value, 'B1');
+            igual(cantidad(w, '[name="celda_27_1_1"]'), 1);
         }],
-        ["Matrices: más de diez operandos y nombres después de Z", "matrices", w => {
-            valor(w, '[name="filas"]', 1); valor(w, '[name="columnas"]', 1);
-            for (let i = 2; i < 28; i++) click(w, '[data-agregar-matriz]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 28);
-            igual(cantidad(w, '[name="celda_AB_0_0"]'), 1);
-        }],
-        ["Matrices: tope de 50 operandos con aviso", "matrices", w => {
-            valor(w, '[name="filas"]', 1); valor(w, '[name="columnas"]', 1);
-            for (let i = 2; i < 60; i++) click(w, '[data-agregar-matriz]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 50);
-            igual(w.document.querySelector('[data-agregar-matriz]').disabled, true);
-            igual(w.document.querySelector('[data-limite-operandos]').hidden, false);
-            click(w, '[aria-label="Quitar matriz AX"]');
-            igual(w.document.querySelector('[data-agregar-matriz]').disabled, false);
-            igual(w.document.querySelector('[data-limite-operandos]').hidden, true);
+        ["Matrices: tope de 50 símbolos", "matrices", w => {
+            for (let i = 2; i < 60; i++) click(w, '[data-agregar]');
+            igual(cantidad(w, '[data-simbolo]'), 50);
+            igual(w.document.querySelector('[data-agregar]').disabled, true);
+            igual(w.document.querySelector('[name="cantidad"]').value, '50');
+            w.document.querySelectorAll('[data-eliminar]')[49].click();
+            igual(w.document.querySelector('[data-agregar]').disabled, false);
         }],
         ["Matrices: el presupuesto de celdas detiene Agregar", "matrices", w => {
-            valor(w, '[name="filas"]', 10); valor(w, '[name="columnas"]', 10);
-            for (let i = 2; i < 12; i++) click(w, '[data-agregar-matriz]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 9);
-            igual(w.document.querySelector('[name="cantidad"]').value, '9');
-            igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('Las 10 matrices suman 1000 celdas'), true);
-            valor(w, '[name="filas"]', 5);
-            igual(cantidad(w, '[name^="celda_I_"]'), 50);
-        }],
-        ["Matrices: una dimensión que excede el presupuesto conserva la cuadrícula", "matrices", w => {
-            for (let i = 2; i < 12; i++) click(w, '[data-agregar-matriz]');
-            valor(w, '[name="filas"]', 10); valor(w, '[name="columnas"]', 10);
-            igual(cantidad(w, '[name^="celda_L_"]'), 20);
-            igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('Las 12 matrices suman 1200 celdas'), true);
-        }],
-        ["Matrices: quitar una intermedia del producto desplaza valores y columnas", "matrices", async (w, frame) => {
-            click(w, '[name="operacion"][value="producto"]');
-            click(w, '[name="metodo"][value="fila_columna"]');
-            valor(w, '[name="filas"]', 1); valor(w, '[name="columnas_b"]', 3);
-            click(w, '[data-agregar-matriz]'); click(w, '[data-agregar-matriz]');
-            valor(w, '[name="columnas_d"]', 1);
-            const matrices = {A:[[1,2]], B:[[1,0,2],[0,1,3]], C:[[1,2],[3,4],[5,6]], D:[[1],[2]]};
-            for (const [nombre, matriz] of Object.entries(matrices)) matriz.forEach((fila,i) => fila.forEach((v,j) => valor(w, `[name="celda_${nombre}_${i}_${j}"]`, v)));
-            click(w, '[aria-label="Quitar matriz C"]');
-            // D pasa a ser C con sus columnas; sus filas son ahora las columnas de B.
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 3);
-            igual(w.document.querySelector('[name="cantidad"]').value, '3');
-            igual(w.document.querySelector('[name="columnas_c"]').value, '1');
-            igual(['celda_C_0_0', 'celda_C_1_0', 'celda_C_2_0'].map(n => w.document.querySelector(`[name="${n}"]`).value), ['1', '2', '']);
-            igual(cantidad(w, '[name^="celda_D_"]'), 0);
-            valor(w, '[name="celda_C_2_0"]', 3);
-            w = await enviar(frame);
-            igual(w.document.querySelector('.panel-final td').textContent.trim(), '29');
-        }],
-        ["Matrices: quitar una intermedia que no cabe no cambia nada", "matrices", w => {
-            click(w, '[name="operacion"][value="producto"]');
-            valor(w, '[name="filas"]', 10); valor(w, '[name="columnas"]', 10); valor(w, '[name="columnas_b"]', 10);
-            // C (10×1) y D (1×10) son pequeñas: sin C, D quedaría de 10×10 (830 → 910 celdas).
-            for (const [nombre, columnas] of Object.entries({c: 1, d: 10, e: 10, f: 10, g: 10, h: 10, i: 10, j: 10, k: 1})) {
-                click(w, '[data-agregar-matriz]');
-                valor(w, `[name="columnas_${nombre}"]`, columnas);
-            }
-            const celdas = ['celda_C_0_0', 'celda_D_0_9', 'celda_E_9_9'];
-            celdas.forEach((nombre, i) => valor(w, `[name="${nombre}"]`, i + 7));
-            const estado = () => [
-                cantidad(w, '[data-matrix-list] fieldset'), cantidad(w, '[name^="celda_"]'), w.document.querySelector('[name="cantidad"]').value,
-                ...['c', 'd', 'j', 'k'].map(n => w.document.querySelector(`[name="columnas_${n}"]`).value),
-                ...celdas.map(n => w.document.querySelector(`[name="${n}"]`).value),
-            ];
-            igual(estado(), [11, 830, '11', '1', '10', '10', '1', '7', '8', '9']);
-            click(w, '[aria-label="Quitar matriz C"]');
-            igual(estado(), [11, 830, '11', '1', '10', '10', '1', '7', '8', '9']);
-            igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('No se puede quitar la matriz C: con las dimensiones actuales, las 10 matrices restantes sumarían 910 celdas'), true);
-            // Con una fila menos en A sí cabe (900): se quita C y los valores se desplazan.
-            valor(w, '[name="filas"]', 9);
-            click(w, '[aria-label="Quitar matriz C"]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 10);
+            for (let i = 2; i < 9; i++) click(w, '[data-agregar]');
+            for (let i = 0; i < 9; i++) { valor(w, `[name="filas_${i}"]`, 10); valor(w, `[name="columnas_${i}"]`, 10); }
             igual(cantidad(w, '[name^="celda_"]'), 900);
-            igual(w.document.querySelector('[name="cantidad"]').value, '10');
-            igual(['c', 'j'].map(n => w.document.querySelector(`[name="columnas_${n}"]`).value), ['10', '1']);
-            igual(['celda_C_0_9', 'celda_D_9_9'].map(n => w.document.querySelector(`[name="${n}"]`).value), ['8', '9']);
-            igual(w.document.querySelector('[data-matrix-shape]').textContent.includes('No se puede quitar'), false);
+            click(w, '[data-agregar]');
+            igual(cantidad(w, '[data-simbolo]'), 9);
+            igual(w.document.querySelector('[data-presupuesto]').textContent.includes('Los 10 símbolos sumarían 904 celdas'), true);
+            valor(w, '[name="filas_8"]', 9);
+            click(w, '[data-agregar]');
+            igual(cantidad(w, '[data-simbolo]'), 10);
+        }],
+        ["Matrices: una dimensión o un tipo que no caben conservan la cuadrícula", "matrices", w => {
+            for (let i = 2; i < 10; i++) click(w, '[data-agregar]');
+            for (let i = 0; i < 9; i++) { valor(w, `[name="filas_${i}"]`, 10); valor(w, `[name="columnas_${i}"]`, i === 8 ? 9 : 10); }
+            igual(cantidad(w, '[name^="celda_"]'), 894);
+            valor(w, '[name="filas_9"]', 10);
+            igual(cantidad(w, '[name^="celda_9_"]'), 4);
+            igual(w.document.querySelector('[data-presupuesto]').textContent.includes('sumarían 910 celdas'), true);
+            // Con el presupuesto justo (900), un stepper que no cabe tampoco cambia el número.
+            valor(w, '[name="filas_9"]', 2); valor(w, '[name="columnas_9"]', 5);
+            igual(cantidad(w, '[name^="celda_"]'), 900);
+            const mas = nombre => w.document.querySelector(`[name="${nombre}"]`).closest('.stepper').querySelector('[data-paso="1"]');
+            mas('columnas_9').click(); mas('filas_9').click();
+            igual(['filas_9', 'columnas_9'].map(n => w.document.querySelector(`[name="${n}"]`).value), ['2', '5']);
+            igual(cantidad(w, '[name^="celda_"]'), 900);
+            // Una matriz desconocida no dibuja celdas; volverla matriz 10×10 no cabe y recupera el tipo.
+            valor(w, '[name="filas_9"]', 2); valor(w, '[name="columnas_9"]', 3);
+            const tipo = w.document.querySelector('[name="tipo_9"]');
+            tipo.value = 'matriz_desconocida'; tipo.dispatchEvent(new w.Event('change', {bubbles: true}));
+            valor(w, '[name="filas_9"]', 10); valor(w, '[name="columnas_9"]', 10);
+            igual(cantidad(w, '[name^="celda_9_"]'), 0);
+            tipo.value = 'matriz'; tipo.dispatchEvent(new w.Event('change', {bubbles: true}));
+            igual(tipo.value, 'matriz_desconocida');
+            igual(cantidad(w, '[name^="celda_9_"]'), 0);
+        }],
+        ["Matrices: las flechas recorren la cuadrícula de un símbolo", "matrices", w => {
+            const tecla = (selector, key) => w.document.querySelector(selector).dispatchEvent(new w.KeyboardEvent('keydown', {key, bubbles: true}));
+            w.document.querySelector('[name="celda_0_0_0"]').focus();
+            tecla('[name="celda_0_0_0"]', 'ArrowRight');
+            igual(w.document.activeElement.name, 'celda_0_0_1');
+            tecla('[name="celda_0_0_1"]', 'ArrowDown');
+            igual(w.document.activeElement.name, 'celda_0_1_1');
+            // El borde no salta a otro símbolo.
+            tecla('[name="celda_0_1_1"]', 'ArrowDown');
+            igual(w.document.activeElement.name, 'celda_0_1_1');
         }],
         ["Matrices: cantidad manipulada vuelve a una estructura segura", "matrices", async (w, frame) => {
             w.document.querySelector('[name="cantidad"]').value = '100000';
             w = await enviar(frame);
-            igual(w.document.querySelector('.errorlist').textContent.includes('hasta 50 matrices'), true);
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 2);
-            igual(w.document.querySelector('[name="cantidad"]').value, '2');
-            click(w, '[data-agregar-matriz]');
-            igual(cantidad(w, '[data-matrix-list] fieldset'), 3);
+            igual(w.document.querySelector('.errorlist').textContent.includes('hasta 50 símbolos'), true);
+            igual(cantidad(w, '[data-simbolo]'), 0);
+            click(w, '[data-agregar]');
+            igual(cantidad(w, '[data-simbolo]'), 1);
+            igual(w.document.querySelector('[name="cantidad"]').value, '1');
         }],
         ["Vectores: tope de 50 vectores con aviso", "vectores", w => {
             for (let i = 2; i < 60; i++) click(w, '[data-agregar-vector]');
@@ -186,18 +163,21 @@
     ];
     for (const metodo of ['fila_columna', 'columnas', 'comparar']) {
         casos.push([`Producto rectangular de cuatro: ${metodo}`, 'matrices', async (w, frame) => {
-            click(w, '[name="operacion"][value="producto"]');
+            click(w, '[data-agregar]'); click(w, '[data-agregar]');
+            const matrices = [[[1, 2]], [[1, 0, 2], [0, 1, 3]], [[1, 2], [3, 4], [5, 6]], [[1], [2]]];
+            matrices.forEach((matriz, k) => {
+                valor(w, `[name="filas_${k}"]`, matriz.length); valor(w, `[name="columnas_${k}"]`, matriz[0].length);
+                matriz.forEach((fila, i) => fila.forEach((v, j) => valor(w, `[name="celda_${k}_${i}_${j}"]`, v)));
+            });
+            valor(w, '[name="expresion"]', 'ABCD');
             click(w, `[name="metodo"][value="${metodo}"]`);
-            valor(w, '[name="filas"]', 1); valor(w, '[name="columnas_b"]', 3);
-            click(w, '[data-agregar-matriz]'); click(w, '[data-agregar-matriz]');
-            valor(w, '[name="columnas_d"]', 1);
-            const matrices = {A:[[1,2]], B:[[1,0,2],[0,1,3]], C:[[1,2],[3,4],[5,6]], D:[[1],[2]]};
-            for (const [nombre, matriz] of Object.entries(matrices)) matriz.forEach((fila,i) => fila.forEach((v,j) => valor(w, `[name="celda_${nombre}_${i}_${j}"]`, v)));
             w = await enviar(frame);
             igual(w.document.querySelector('.panel-final td').textContent.trim(), '163');
             const texto = w.document.querySelector('#procedimiento').textContent;
-            igual(texto.includes('ABCD = ((AB)C)D'), true);
-            igual(texto.includes('Resultado intermedio ABC:'), true);
+            // El árbol agrupa ((AB)C)D: cada producto intermedio cierra con su valor.
+            igual(['AB =', 'ABC ='].map(t => texto.includes(t)), [true, true]);
+            if (metodo !== 'columnas') igual(texto.includes('(ABCD)₁₁ = fila₁(ABC) · columna₁(D)'), true);
+            if (metodo !== 'fila_columna') igual(texto.includes('ABCD = [ABCd₁'), true);
             igual(cantidad(w, '#numeric-mode'), 1);
         }]);
     }

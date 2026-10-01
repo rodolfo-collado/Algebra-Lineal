@@ -239,7 +239,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 html = respuesta.read().decode("utf-8")
                 self.assertEqual(respuesta.status, 200)
                 self.assertIn("Inicio · PyGebra", html)
-                self.assertIn('href="/sistemas/"', html)
+                self.assertIn('href="/matrices/reduccion/"', html)
 
             url_sistemas = f"{url}sistemas/"
             with cliente_http.open(url_sistemas, timeout=3.0) as respuesta:
@@ -294,11 +294,11 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                     self.assertEqual(respuesta.status, 200)
                     self.assertIn(marca, respuesta.read().decode("utf-8"))
 
-            # La ruta antigua de Gauss sigue abriendo Resolver un sistema con Gauss elegido.
+            # La ruta antigua de Gauss sigue abriendo Reducción por filas con Gauss elegido.
             with cliente_http.open(f"{url}sistemas/gauss/", timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
-                self.assertEqual(respuesta.url, f"{url}sistemas/?metodo=gauss")
-                self.assertIn("Resolver un sistema", respuesta.read().decode("utf-8"))
+                self.assertEqual(respuesta.url, f"{url}matrices/reduccion/?metodo=gauss")
+                self.assertIn("Reducción por filas", respuesta.read().decode("utf-8"))
 
             csrf = re.search(
                 rb'name="csrfmiddlewaretoken" value="([^"]+)"',
@@ -411,7 +411,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 solicitud = Request(url_matrices, data=urlencode(datos).encode("ascii"), headers={"Referer": url_matrices})
                 with cliente_http.open(solicitud, timeout=3.0) as respuesta:
                     tablas = Contenido(respuesta.read().decode("utf-8")).tablas
-                self.assertEqual(tablas["Matriz resultado"], esperado)
+                self.assertEqual(tablas["Resultado"], esperado)
             # P13B: AB y Ax con método comparado, por la misma pila.
             from tests.test_multiplicacion_matrices_web import datos_matriz_vector, datos_producto
 
@@ -423,14 +423,14 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 solicitud = Request(url_matrices, data=urlencode(datos).encode("ascii"), headers={"Referer": url_matrices})
                 with cliente_http.open(solicitud, timeout=3.0) as respuesta:
                     html = respuesta.read().decode("utf-8")
-                self.assertEqual(Contenido(html).tablas["Matriz resultado"], esperado)
+                self.assertEqual(Contenido(html).tablas["Resultado"], esperado)
                 for procedimiento in procedimientos:
-                    self.assertIn(f">{procedimiento}</h4>", html)
-            with cliente_http.open(f"{url}static/calculadora/matrices.js", timeout=3.0) as respuesta:
+                    self.assertIn(f">{procedimiento}</h5>", html)
+            with cliente_http.open(f"{url}static/calculadora/expresiones.js", timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 contenido = respuesta.read().decode("utf-8")
-                self.assertIn("matrix-entry-template", contenido)
-                self.assertIn("opcion.metodos", contenido)
+                self.assertIn("symbol-template", contenido)
+                self.assertIn("camposMaximos", contenido)
             # P14: Ax = b con x desconocido, por la misma pila; una fracción y un caso rectangular.
             from tests.test_ecuaciones_matriciales_web import datos_ecuacion
 

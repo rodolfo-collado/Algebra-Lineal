@@ -4,7 +4,7 @@ Segunda herramienta de la categoría Matrices, distinta de Operaciones con
 matrices: allí x se conoce y Ax se calcula; aquí A y b se conocen y x es la
 incógnita. El usuario solo elige las dimensiones de A (m×n): b tiene m
 componentes y x tiene n, así que la interfaz no pide medidas independientes.
-Los métodos son los de Resolver un sistema, con Gauss-Jordan predeterminado.
+Los métodos son los de Reducción por filas, con Gauss-Jordan predeterminado.
 """
 
 from .opciones_matrices import DIMENSION_MAXIMA, DIMENSION_MINIMA, DIMENSION_PREDETERMINADA

@@ -113,19 +113,25 @@ class PruebasCatalogo(SimpleTestCase):
             self.assertNotIn(herramienta.id, herramienta.relacionadas)
 
     def test_relaciones_filtran_herramientas_no_disponibles(self):
-        herramienta = replace(catalogo.SISTEMAS, relacionadas=("conversion-bases", "limites-funciones"))
+        herramienta = replace(catalogo.REDUCCION_FILAS, relacionadas=("conversion-bases", "limites-funciones"))
         self.assertEqual(catalogo.relacionadas_disponibles(herramienta), (catalogo.CONVERSION_BASES,))
 
-    def test_sistemas_de_ecuaciones_tiene_una_sola_herramienta(self):
-        """Gauss, Gauss-Jordan, clasificación y pivotes son opciones de Resolver un sistema, no herramientas."""
-        self.assertEqual(catalogo.herramientas_de(catalogo.SISTEMAS_ECUACIONES), (catalogo.SISTEMAS,))
-        self.assertEqual(catalogo.SISTEMAS.ruta, "/sistemas/")
-        self.assertEqual(catalogo.SISTEMAS.relacionadas, ("ecuaciones-matriciales",))
+    def test_reduccion_por_filas_es_una_herramienta_de_matrices(self):
+        """Gauss, Gauss-Jordan, clasificación y pivotes son opciones de Reducción por filas, no herramientas."""
+        self.assertNotIn("sistemas-ecuaciones", [c.id for c in catalogo.CATEGORIAS])
+        self.assertNotIn("Sistemas de ecuaciones", [c.nombre for c in catalogo.CATEGORIAS])
+        self.assertEqual(catalogo.REDUCCION_FILAS.categoria, catalogo.MATRICES)
+        self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES), (
+            catalogo.OPERACIONES_MATRICES,
+            catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA,
+        ))
+        self.assertEqual(catalogo.REDUCCION_FILAS.ruta, "/matrices/reduccion/")
+        self.assertEqual(catalogo.REDUCCION_FILAS.relacionadas, ("ecuaciones-matriciales",))
         self.assertEqual({h.id for h in catalogo.HERRAMIENTAS} & set(RUTAS_ANTIGUAS), set())
         for nombre in PSEUDO_HERRAMIENTAS:
             self.assertNotIn(nombre, [h.nombre for h in catalogo.HERRAMIENTAS])
         for palabra in ("gauss", "gauss-jordan", "clasificación", "columnas pivote", "inconsistente"):
-            self.assertIn(palabra, catalogo.SISTEMAS.palabras_clave)
+            self.assertIn(palabra, catalogo.REDUCCION_FILAS.palabras_clave)
 
     def test_arbol_recorre_areas_categorias_y_herramientas_en_orden(self):
         arbol = catalogo.arbol()
@@ -134,13 +140,12 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual(categorias, catalogo.CATEGORIAS)
         herramientas = tuple(h for _, grupos in arbol for _, hs in grupos for h in hs)
         self.assertEqual(herramientas, catalogo.HERRAMIENTAS)
-        self.assertTrue(catalogo.SISTEMAS_ECUACIONES.disponible)
         self.assertTrue(catalogo.VECTORES.disponible)
         self.assertTrue(catalogo.MATRICES.disponible)
         self.assertFalse(catalogo.CALCULO.disponible)
 
     def test_herramienta_por_ruta(self):
-        self.assertEqual(catalogo.herramienta_por_ruta(resolve("/sistemas/")), catalogo.SISTEMAS)
+        self.assertEqual(catalogo.herramienta_por_ruta(resolve("/matrices/reduccion/")), catalogo.REDUCCION_FILAS)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve("/bases/conversion/")), catalogo.CONVERSION_BASES)
         # Las rutas antiguas redirigen; no identifican una herramienta.
         self.assertIsNone(catalogo.herramienta_por_ruta(resolve("/sistemas/gauss/")))
@@ -149,14 +154,14 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertIsNone(catalogo.herramienta_por_ruta(None))
 
     def test_migas_derivan_de_area_categoria_y_herramienta(self):
-        migas = catalogo.migas(catalogo.SISTEMAS)
+        migas = catalogo.migas(catalogo.REDUCCION_FILAS)
         self.assertEqual(
             [(miga.nombre, miga.url, miga.actual) for miga in migas],
             [
                 ("Inicio", "/", False),
                 ("Álgebra Lineal", "/#algebra-lineal", False),
-                ("Sistemas de ecuaciones", "/#sistemas-ecuaciones", False),
-                ("Resolver un sistema", None, True),
+                ("Matrices", "/#matrices", False),
+                ("Reducción por filas", None, True),
             ],
         )
         self.assertEqual(catalogo.migas(None), ())
@@ -167,19 +172,19 @@ class PruebasBuscador(SimpleTestCase):
         self.assertEqual(catalogo.normalizar("  Clasificación   DE  Sistemas "), "clasificacion de sistemas")
 
     def test_busca_por_nombre_palabras_clave_categoria_y_area(self):
-        # Lo que antes eran herramientas aparte sigue encontrándose: ahora lleva a Resolver un sistema.
+        # Lo que antes eran herramientas aparte sigue encontrándose: ahora lleva a Reducción por filas.
         for consulta in ("Gauss", "pivote", "clasificacion", "gauss jordan", "escalonada"):
             with self.subTest(consulta=consulta):
-                self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.SISTEMAS,))
-        # «inconsistente» también describe Ax = b (P14); Resolver un sistema conserva el primer lugar.
+                self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.REDUCCION_FILAS,))
+        # «inconsistente» también describe Ax = b (P14); Reducción por filas conserva el primer lugar.
         self.assertEqual(
-            catalogo.buscar_herramientas("inconsistente"), (catalogo.SISTEMAS, catalogo.ECUACIONES_MATRICIALES),
+            catalogo.buscar_herramientas("inconsistente"), (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES),
         )
         self.assertEqual(
             set(catalogo.buscar_herramientas("sistemas de ecuaciones")),
-            set(catalogo.herramientas_de(catalogo.SISTEMAS_ECUACIONES)),
+            {catalogo.REDUCCION_FILAS},
         )
-        self.assertIn(catalogo.SISTEMAS, catalogo.buscar_herramientas("álgebra lineal"))
+        self.assertIn(catalogo.REDUCCION_FILAS, catalogo.buscar_herramientas("álgebra lineal"))
 
     def test_disponibles_primero_y_nombre_antes_que_descripcion(self):
         resultados = catalogo.buscar_herramientas("matriz")
@@ -187,7 +192,7 @@ class PruebasBuscador(SimpleTestCase):
         estados = [herramienta.disponible for herramienta in resultados]
         self.assertEqual(estados, sorted(estados, reverse=True))
         self.assertIn(catalogo.herramienta_por_id("operaciones-matrices"), resultados)
-        self.assertEqual(catalogo.buscar_herramientas("resolver")[0], catalogo.SISTEMAS)
+        self.assertEqual(catalogo.buscar_herramientas("resolver")[0], catalogo.ECUACIONES_MATRICIALES)
         self.assertEqual(catalogo.buscar_herramientas("conversion")[0], catalogo.CONVERSION_BASES)
 
     def test_todos_los_terminos_deben_coincidir(self):
@@ -199,8 +204,8 @@ class PruebasBuscador(SimpleTestCase):
     def test_inicio_responde_a_la_consulta_sin_javascript(self):
         respuesta = self.client.get("/", {"q": "pivote"})
         self.assertContains(respuesta, "Resultados para «pivote»")
-        self.assertContains(respuesta, f'href="{catalogo.SISTEMAS.ruta}"')
-        self.assertContains(respuesta, "Resolver un sistema")
+        self.assertContains(respuesta, f'href="{catalogo.REDUCCION_FILAS.ruta}"')
+        self.assertContains(respuesta, "Reducción por filas")
         self.assertNotContains(respuesta, "Columnas pivote")
         self.assertNotIn("algebra-lineal", Documento(respuesta).ids)
         self.assertContains(respuesta, 'value="pivote"')
@@ -216,7 +221,7 @@ class PruebasBuscador(SimpleTestCase):
         self.assertContains(respuesta, "No se encontraron herramientas para «zzz»")
 
     def test_formulario_de_busqueda_e_indice_en_todas_las_paginas(self):
-        for ruta in ("/", "/sistemas/", "/bases/conversion/"):
+        for ruta in ("/", "/matrices/reduccion/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
                 documento = Documento(respuesta)
@@ -267,8 +272,8 @@ class PruebasNavegacion(SimpleTestCase):
         self.assertEqual(destinos, {"/", "#contenido", *(h.ruta for h in disponibles())})
 
     def test_sistemas_tiene_url_propia(self):
-        self.assertEqual(reverse("calculadora:sistemas"), "/sistemas/")
-        self.assertContains(self.client.get("/sistemas/"), 'id="sistema-form"')
+        self.assertEqual(reverse("calculadora:reduccion-filas"), "/matrices/reduccion/")
+        self.assertContains(self.client.get("/matrices/reduccion/"), 'id="sistema-form"')
 
     def test_inicio_no_resuelve_post(self):
         self.assertEqual(self.client.post("/", {"sistema": "x1=1"}).status_code, 405)
@@ -299,14 +304,15 @@ class PruebasNavegacion(SimpleTestCase):
         self.assertFalse(any(inicio.categorias.values()))
 
     def test_breadcrumbs_navegables_hasta_la_herramienta(self):
-        respuesta = self.client.get("/sistemas/")
+        respuesta = self.client.get("/matrices/reduccion/")
         documento = Documento(respuesta)
         enlaces = [a["href"] for a in documento.enlaces_en("Ruta de navegación")]
-        self.assertEqual(enlaces, ["/", "/#algebra-lineal", "/#sistemas-ecuaciones"])
-        self.assertContains(respuesta, '<span aria-current="page">Resolver un sistema</span>', html=True)
+        self.assertEqual(enlaces, ["/", "/#algebra-lineal", "/#matrices"])
+        self.assertContains(respuesta, '<span aria-current="page">Reducción por filas</span>', html=True)
         ids_inicio = Documento(self.client.get("/")).ids
         self.assertIn("algebra-lineal", ids_inicio)
-        self.assertIn("sistemas-ecuaciones", ids_inicio)
+        self.assertIn("matrices", ids_inicio)
+        self.assertNotIn("sistemas-ecuaciones", ids_inicio)
 
         respuesta = self.client.get("/bases/conversion/")
         enlaces = [a["href"] for a in Documento(respuesta).enlaces_en("Ruta de navegación")]
@@ -316,9 +322,9 @@ class PruebasNavegacion(SimpleTestCase):
     def test_enlaces_y_anclas_de_paginas_y_resultados_existen(self):
         paginas = [(h.ruta, self.client.get(h.ruta)) for h in disponibles()]
         paginas.append(("/", self.client.get("/")))
-        paginas.append(("/sistemas/", self.client.post("/sistemas/", {"sistema": "x1=1", "metodo": "gauss"})))
+        paginas.append(("/matrices/reduccion/", self.client.post("/matrices/reduccion/", {"sistema": "x1=1", "metodo": "gauss"})))
         paginas.append(("/sistemas/ comparar", self.client.post(
-            "/sistemas/", {"sistema": "x1+x2=3;x1-x2=1", "metodo": "comparar"},
+            "/matrices/reduccion/", {"sistema": "x1+x2=3;x1-x2=1", "metodo": "comparar"},
         )))
         paginas.append(("/bases/conversion/", self.client.post(
             "/bases/conversion/", {"numero": "1010", "base_origen": "2", "bases_destino": ["10", "16"]},
@@ -345,7 +351,7 @@ class PruebasNavegacion(SimpleTestCase):
             inicio,
             '<aside id="navegacion-principal" class="app-sidebar" aria-label="Navegación principal">',
         )
-        pagina = self.client.get("/sistemas/")
+        pagina = self.client.get("/matrices/reduccion/")
         formulario = next(f for f in Documento(pagina).formularios if f.get("id") == "sistema-form")
         self.assertEqual(formulario["method"], "post")
         respuesta = self.client.post(formulario["action"].split("#")[0], {"metodo": "gauss", "sistema": "x1=7"})
@@ -357,7 +363,7 @@ class PruebasNavegacion(SimpleTestCase):
         self.assertContains(pagina, 'aria-label="Agregar una ecuación" hidden')
 
     def test_landmarks_skip_link_y_control_de_menu(self):
-        for ruta in ("/", "/sistemas/"):
+        for ruta in ("/", "/matrices/reduccion/"):
             respuesta = self.client.get(ruta)
             documento = Documento(respuesta)
             self.assertContains(respuesta, 'href="#contenido"')

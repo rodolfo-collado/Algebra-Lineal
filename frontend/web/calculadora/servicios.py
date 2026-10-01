@@ -2,8 +2,10 @@
 
 from fractions import Fraction
 
+from .opciones_sistemas import metodos_a_resolver
 from .presentacion_numerica import formatear_exacto
 from backend.parser_sistemas import analizar_sistema
+from backend.presupuesto_computacional import ESTIMADORES, combinar_estimaciones, perfil_numerico
 from backend.presupuesto_sistemas import validar_dimensiones
 from backend.sistemas import (
     INCONSISTENTE,
@@ -71,15 +73,9 @@ def adaptar_sustitucion(pasos):
     return adaptados
 
 
-def resolver_entrada_web(
-    tipo_entrada, metodo, *, texto=None, matriz_aumentada=None
-):
-    """Converge cualquier entrada web en una matriz y delega al backend.
-
-    El texto pasa por el parser con presupuesto numérico; las ecuaciones que
-    hubo que llevar a la forma estándar acompañan al procedimiento. La matriz
-    llega ya validada: SistemaForm revisa cada celda antes de convertirla.
-    """
+def _leer_entrada(tipo_entrada, texto, matriz_aumentada):
+    """(matriz aumentada, reescritas) de la entrada web, con el presupuesto de entrada aplicado."""
+    reescritas = None
     if tipo_entrada == "sistema":
         matriz_inicial, reescritas = analizar_sistema(texto or "", limitar_entrada=True)
     elif tipo_entrada == "matriz":
@@ -90,6 +86,40 @@ def resolver_entrada_web(
         raise ValueError("Selecciona un tipo de entrada válido.")
 
     validar_dimensiones(len(matriz_inicial), len(matriz_inicial[0]) - 1 if matriz_inicial else 0)
+    return matriz_inicial, reescritas
+
+
+def estimar_entrada_web(tipo_entrada, metodo, *, texto=None, matriz_aumentada=None):
+    """Costo previsto de resolver la entrada, sin resolverla; «Comparar ambos» suma los dos métodos.
+
+    Lee la entrada con el mismo presupuesto que `resolver_entrada_web`. Todavía
+    no decide nada: ninguna entrada válida se rechaza por su costo.
+    """
+    matriz, _ = _leer_entrada(tipo_entrada, texto, matriz_aumentada)
+    try:
+        estimadores = [ESTIMADORES[clave] for clave in metodos_a_resolver(metodo)]
+    except KeyError:
+        raise ValueError("Selecciona un método de resolución válido.") from None
+
+    filas, columnas = len(matriz), len(matriz[0])
+    perfil = perfil_numerico(matriz)
+    # Los pivotes solo se buscan en las columnas de coeficientes, como en los motores.
+    return combinar_estimaciones(
+        *(estimar(filas, columnas, columnas_pivote=columnas - 1, perfil=perfil) for estimar in estimadores),
+        operacion=metodo,
+    )
+
+
+def resolver_entrada_web(
+    tipo_entrada, metodo, *, texto=None, matriz_aumentada=None
+):
+    """Converge cualquier entrada web en una matriz y delega al backend.
+
+    El texto pasa por el parser con presupuesto numérico; las ecuaciones que
+    hubo que llevar a la forma estándar acompañan al procedimiento. La matriz
+    llega ya validada: SistemaForm revisa cada celda antes de convertirla.
+    """
+    matriz_inicial, reescritas = _leer_entrada(tipo_entrada, texto, matriz_aumentada)
 
     try:
         _, resolver, _, _ = _RESOLVERS[metodo]
@@ -105,7 +135,7 @@ def resolver_entrada_web(
 def presentar_resolucion(resultado, metodo, matriz_inicial):
     """Adapta a la plantilla un sistema ya resuelto por Gauss o Gauss-Jordan.
 
-    Lo comparten Resolver un sistema y Resolver Ax = b: el segundo resuelve
+    Lo comparten Reducción por filas y Resolver Ax = b: el segundo resuelve
     [A | b] con los mismos motores y muestra el procedimiento con las mismas
     plantillas, sin volver a calcular nada.
     """

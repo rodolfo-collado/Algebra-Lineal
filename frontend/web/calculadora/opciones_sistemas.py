@@ -1,4 +1,4 @@
-"""Opciones de «Resolver un sistema»: método y bloques del resultado.
+"""Opciones de «Reducción por filas»: método y bloques del resultado.
 
 Una sola herramienta y una sola matemática. El método decide el procedimiento
 (Gauss, Gauss-Jordan o los dos para compararlos) y los bloques, qué análisis

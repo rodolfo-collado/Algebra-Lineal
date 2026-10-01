@@ -27,18 +27,18 @@ flowchart TD
 
 | Ruta | Responsabilidad |
 | --- | --- |
-| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, bases y numeración romana. |
+| `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, matriz inversa, bases, numeración romana y presupuestos de entrada y de costo. |
 | `frontend/terminal/` | `menu.py` coordina; `opciones.py` ejecuta opciones; `entradas.py` lee; `salida.py` presenta; `consola.py` maneja color, pausas y limpieza. |
 | `frontend/web/algebra_web/` | Configuración Django, rutas raíz y entradas WSGI/ASGI. |
 | `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, exploraciones, templates y recursos locales. |
 | `desktop.py` | Servidor local y ciclo de vida de la ventana nativa. |
 | `AlgebraLineal.spec` | PyInstaller: Python, dependencias, templates, recursos e icono en una carpeta `onedir`, sin consola (`windowed`). |
 | `installer/AlgebraLineal.iss` | Inno Setup: empaqueta esa carpeta, accesos directos, prerrequisito WebView2 y desinstalación. |
-| `scripts/` | Build Windows, smoke de distribución, validación de tags de release y sincronización del símbolo del header. |
+| `scripts/` | Build Windows, smoke de distribución, validación del candidato de release, sincronización del símbolo del header y benchmark del presupuesto computacional. |
 | `tests/` | Pruebas matemáticas, frontend, infraestructura, distribución y documentación. |
 | `assets/brand/` | Símbolo oficial de PyGebra: SVG canónico, PNG, favicon e icono de Windows. |
 | `pyproject.toml`, `uv.lock`, `.python-version` | Versión/dependencias declaradas, resolución bloqueada y Python de referencia. |
-| `.github/workflows/` | CI de validación y CD de publicación desde tags de `main`. |
+| `.github/workflows/` | CI de validación y publicación desde push a `main`, con tag automático tras CI verde. |
 
 ## Catálogo y presentación
 
@@ -54,7 +54,35 @@ ruta resuelta, así que las vistas no arman la navegación a mano.
 El catálogo permite sumar áreas sin rehacer la navegación. Los módulos marcados
 «Próximamente» no se enlazan como herramientas disponibles.
 
-Resolver un sistema usa una sola vista: `opciones_sistemas.py`
+P26.5 sitúa **Reducción por filas** en **Álgebra Lineal → Matrices**, con ID
+`reduccion-filas`, ruta `/matrices/reduccion/` y nombre Django
+`calculadora:reduccion-filas`. La categoría pública Sistemas de ecuaciones se
+retira del registro; Inicio, menú, buscador y breadcrumbs cambian juntos.
+Matrices ordena sus herramientas así: Operaciones con matrices, Reducción por
+filas, Resolver Ax = b y Matriz inversa. Desde P26.6, Operaciones con matrices
+usa el motor de expresiones para operaciones simples y compuestas; la ruta
+`/matrices/expresiones/` solo redirige (GET 301, POST 308) y no es una
+herramienta del catálogo.
+
+Las dos entradas convergen en `[A | b]`: el parser existente convierte un
+sistema de ecuaciones y la cuadrícula entrega una matriz aumentada validada.
+Gauss y Gauss-Jordan siguen siendo métodos dentro de la herramienta;
+«Comparar ambos» conserva una sola interpretación común. `backend/sistemas.py`
+sigue clasificando y expresando las soluciones, incluidos pivotes, variables
+libres y contradicciones. Resolver Ax = b y Matriz inversa permanecen aparte.
+No se añade ni reescribe ningún algoritmo.
+
+Los nombres internos `views.sistemas`, `SistemaForm`, `opciones_sistemas.py`
+y `modules/sistemas/` se conservan para evitar renombres sin beneficio funcional;
+sus plantillas siguen incluidas por PyInstaller. Las cinco rutas históricas
+redirigen GET al destino canónico con 301, conservando toda la consulta,
+incluidas claves repetidas. POST a `/sistemas/` reutiliza la misma vista y
+devuelve 200, con navegación y formularios canónicos: conserva los clientes
+que no siguen redirecciones y el benchmark histórico, que no se modifica.
+POST a los cuatro slugs usa 308 con `preserve_request=True`, conservando cuerpo
+y método HTTP. La validación sigue a cargo de `SistemaForm`.
+
+Reducción por filas usa una sola vista: `opciones_sistemas.py`
 declara los métodos, los bloques del resultado, sus valores predeterminados y
 las rutas antiguas que redirigen a la herramienta. Operaciones con vectores
 hace lo mismo con `opciones_vectores.py` (operaciones, límites de dimensión y
@@ -70,11 +98,12 @@ templates/calculadora/
 ├── pages/                    # inicio.html y _area.html (un área plegable con sus temas)
 ├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal
-├── modules/matrices/         # entrada rectangular, resultado y procedimientos
-├── modules/expresiones/      # símbolos, expresión o igualdad, y procedimiento por nodos
+├── modules/matrices/         # parciales de procedimiento: por entrada, lecturas de AB/Ax y dimensiones
+├── modules/expresiones/      # Operaciones con matrices: símbolos, expresión o igualdad, y pasos por nodo
 ├── modules/ecuaciones/       # Ax = b: entrada, equivalencias y eliminación reutilizada
+├── modules/inversa/          # matriz inversa: Gauss-Jordan sobre [A | I], regla 2×2 y aviso de espera
 ├── modules/bases/            # index.html y procedimiento de la conversión
-└── modules/romanos/          # decimal ↔ romano: resultado y procedimiento plegable
+└── modules/romanos/          # arábigo ↔ romano: resultado y procedimiento plegable
 ```
 
 La presentación numérica compartida vive en `presentacion_numerica.py`.

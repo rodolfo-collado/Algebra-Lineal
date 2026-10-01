@@ -537,7 +537,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertIn("calculadora/teclado.js", html)
 
     def test_sistemas_sigue_disponible(self):
-        self.assertEqual(self.client.get("/sistemas/").status_code, 200)
+        self.assertEqual(self.client.get("/matrices/reduccion/").status_code, 200)
 
     def test_conversiones_fraccionarias_y_normalizacion(self):
         casos = (

@@ -10,6 +10,8 @@ from fractions import Fraction
 from functools import lru_cache
 import re
 
+from backend.seguridad_numerica import validar_valor_exacto
+
 PRECISIONES = (2, 4, 6, 8)
 PRECISION_PREDETERMINADA = 4
 # No confundir x1/F1, subíndices, URLs o divisiones espaciadas con literales.
@@ -25,7 +27,7 @@ class Representacion:
 
 def formatear_exacto(valor):
     """Contrato textual existente de Fraction; también admite enteros."""
-    return str(Fraction(valor))
+    return str(validar_valor_exacto(Fraction(valor)))
 
 
 @lru_cache(maxsize=4096, typed=True)
@@ -40,7 +42,7 @@ def representar(valor: Fraction, precision=PRECISION_PREDETERMINADA):
         raise ValueError("La precisión debe ser 2, 4, 6 u 8 decimales.")
     if not isinstance(valor, (Fraction, int)) or isinstance(valor, bool):
         raise TypeError("La presentación requiere un Fraction o entero exacto.")
-    valor = Fraction(valor)
+    valor = validar_valor_exacto(Fraction(valor))
     escala = 10 ** precision
     cociente, residuo = divmod(abs(valor.numerator) * escala, valor.denominator)
     if 2 * residuo > valor.denominator or (2 * residuo == valor.denominator and cociente % 2):

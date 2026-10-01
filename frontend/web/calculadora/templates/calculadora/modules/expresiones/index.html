@@ -7,10 +7,11 @@
     <form id="expresiones-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
         {% csrf_token %}
         {{ form.cantidad }}{{ form.cantidad.errors }}
+        {% if not confirmacion %}{{ form.confirmacion }}{% endif %}
         {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
         <section class="workspace-section" id="expression-fields" data-perfil="numerico" aria-labelledby="simbolos-title">
             <h3 class="section-title" id="simbolos-title">Símbolos</h3>
-            <p class="field-help">Agrega solo los objetos que usa la expresión. Una matriz desconocida no pide entradas; un vector simbólico declara sus variables; un vector lineal escribe cada componente.</p>
+            <p class="field-help">Define solo las matrices, vectores y escalares que vas a usar, con el nombre que tendrán en la expresión.</p>
             <div class="symbol-list" data-simbolos>
                 {% for bloque in form.bloques %}
                     {% include "calculadora/modules/expresiones/_simbolo.html" %}
@@ -22,16 +23,41 @@
                 <button class="btn btn-secondary" type="submit" name="agregar" value="1" data-agregar>Agregar símbolo</button>
                 <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
             </div>
+            <p class="field-help" data-presupuesto role="status" aria-live="polite"></p>
             <noscript><p class="field-help">Cambia un tipo o las dimensiones y pulsa <strong>Aplicar</strong> antes de calcular. <strong>Agregar símbolo</strong> y <strong>Eliminar</strong> también funcionan sin JavaScript.</p></noscript>
             <div class="expression-field">
                 <label for="{{ form.expresion.id_for_label }}">Expresión</label>
                 {{ form.expresion }}
                 {{ form.expresion.errors }}
-                <p class="field-help">Suma, resta, producto y paréntesis. <code>2A</code>, <code>AB</code> y <code>A(u + v)</code> equivalen a <code>2*A</code>, <code>A*B</code> y <code>A*(u + v)</code>. Un solo <code>=</code> no es una operación: con valores numéricos compara esos valores, como <code>A(u + v) = Au + Av</code>. Si A es una matriz desconocida, x un vector simbólico y el otro lado un vector lineal, <code>Ax = b</code> determina A comparando coeficientes, para todos los valores de las variables. Hallar x con A y b numéricos sigue en Resolver Ax = b. Si un texto admite más de una lectura, escribe <code>*</code>. Fracciones como <code>1/2</code>.</p>
+                <p class="field-help">Por ejemplo <code>A + B</code>, <code>2A - B</code>, <code>AB</code>, <code>Ax</code>, <code>A(B + C)</code> o <code>Aᵀ</code> (también <code>A^T</code>).</p>
+                {% disclosure titulo="Cómo se escribe" nivel=4 clase="disclosure-help" %}
+                    <ul class="syntax-help">
+                        <li><code>2A</code>, <code>AB</code> y <code>A(B + C)</code> multiplican sin escribir <code>*</code>. Si un texto admite más de una lectura, como <code>AB</code> cuando también existe un símbolo llamado AB, escribe <code>A*B</code>.</li>
+                        <li>La traspuesta va después de lo que traspone: <code>Aᵀ</code> o <code>A^T</code>. <code>ABᵀ</code> es A por Bᵀ; para trasponer el producto escribe <code>(AB)ᵀ</code>. <code>^</code> no calcula potencias ni inversas.</li>
+                        <li>En cada nivel se opera de izquierda a derecha: <code>A - B - C</code> es <code>(A - B) - C</code> y <code>ABC</code> es <code>(AB)C</code>.</li>
+                        <li>Escribe fracciones como <code>1/2</code>, decimales como <code>0.5</code> y negativos con <code>-</code>.</li>
+                        <li>Un solo <code>=</code> compara dos expresiones con valores, como <code>A(B + C) = AB + AC</code>; no resuelve ecuaciones. Para hallar x en Ax = b usa la herramienta Resolver Ax = b.</li>
+                        <li>Tipos simbólicos: con una matriz desconocida A, un vector simbólico x y un vector lineal b, <code>Ax = b</code> determina A comparando coeficientes.</li>
+                    </ul>
+                {% enddisclosure %}
             </div>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
+        {% disclosure titulo="Opciones del procedimiento" id="opciones-procedimiento" abierto=form.opciones_abiertas %}
+            <fieldset class="choice-fieldset">
+                <legend>{{ form.metodo.label }}</legend>
+                <div class="option-list">
+                    {% for radio in form.metodo %}<label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                {{ form.metodo.errors }}
+                <p class="field-help" id="{{ form.metodo.auto_id }}_helptext">{{ form.metodo.help_text }}</p>
+            </fieldset>
+        {% enddisclosure %}
         <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular</button></div>
+        {% if confirmacion %}
+            {% if form.cleaned_data.entrada.nodo %}<input type="hidden" name="nodo" value="{{ form.cleaned_data.entrada.nodo }}">{% endif %}
+            {% include "calculadora/components/confirmacion_costo.html" %}
+        {% endif %}
     </form>
 </section>
 {% endblock %}
@@ -51,9 +77,9 @@
             {% include "calculadora/components/numeric_format.html" %}
             {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
                 <h4 class="stage-title">Lado izquierdo</h4>
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos %}
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos texto=resultado.izquierda.texto nivel=5 %}
                 <h4 class="stage-title">Lado derecho</h4>
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos %}
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos texto=resultado.derecha.texto nivel=5 %}
             {% enddisclosure %}
             <div class="equality-sides">
                 {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.izquierda titulo="Lado izquierdo" identificador="lado-izquierdo" %}
@@ -70,7 +96,7 @@
             </header>
             {% include "calculadora/components/numeric_format.html" %}
             {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos %}
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos texto=resultado.texto %}
             {% enddisclosure %}
             <section class="panel panel-final" aria-labelledby="final-title">
                 <h3 id="final-title" class="panel-title">Resultado</h3>

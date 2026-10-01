@@ -1,7 +1,8 @@
 {% load componentes %}
+{% comment %}AB y Ax de un paso: las lecturas del mismo producto. Con una, su desarrollo va directo; al comparar, cada lectura es un sub-bloque cerrado dentro del paso.{% endcomment %}
     {% for metodo in resultado.metodos %}
         {% if resultado.comparando %}
-            {% disclosure titulo=metodo.titulo nivel=4 clase="disclosure-nested" %}
+            {% disclosure titulo=metodo.titulo nivel=5 clase="disclosure-nested" %}
                 {% if metodo.clave == "fila_columna" %}
                     {% include "calculadora/modules/matrices/_producto_fila_columna.html" %}
                 {% else %}

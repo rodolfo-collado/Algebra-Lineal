@@ -136,7 +136,7 @@
             </details>
 
             <div class="workspace-actions">
-                <button class="btn btn-primary" type="submit">Resolver</button>
+                <button class="btn btn-primary" type="submit">Reducir</button>
             </div>
         </form>
     </section>
@@ -169,7 +169,8 @@
                     {% endif %}
                     <div class="final-block">
                         <h4 class="final-label">Matriz inicial</h4>
-                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" %}
+                        {% firstof resultado.columnas_izquierda columnas_izquierda as corte_aumentado %}
+                        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_inicial etiqueta="Matriz inicial" columnas_izquierda=corte_aumentado %}
                     </div>
                     {% for resultado in resultados %}
                         {% if comparando %}

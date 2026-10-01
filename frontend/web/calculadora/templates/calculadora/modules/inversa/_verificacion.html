@@ -1,0 +1,28 @@
+<section class="procedure-stage" aria-labelledby="inverse-verification-title">
+    <h4 class="stage-title" id="inverse-verification-title">Verificación</h4>
+    {% if resultado.verificacion %}
+        <p class="procedure-lead">Se usa la inversa ya calculada. Ambos productos se comparan exactamente con la matriz identidad:</p>
+        <div class="matrix-equation" tabindex="0" role="region" aria-label="Identidad de comparación">
+            <span class="matrix-expression">I =</span>
+            {% include "calculadora/components/matriz.html" with matriz=resultado.verificacion.identidad etiqueta="Matriz identidad de verificación" only %}
+        </div>
+        <div class="matrix-equation" tabindex="0" role="region" aria-label="Comprobación de A por su inversa">
+            <span class="matrix-expression">A · A⁻¹ =</span>
+            {% include "calculadora/components/matriz.html" with matriz=resultado.verificacion.a_por_inversa etiqueta="Producto A por su inversa" only %}
+            <span class="matrix-expression">{% if resultado.verificacion.a_por_inversa_es_identidad %}= I{% else %}≠ I{% endif %}</span>
+        </div>
+        <div class="matrix-equation" tabindex="0" role="region" aria-label="Comprobación de la inversa por A">
+            <span class="matrix-expression">A⁻¹ · A =</span>
+            {% include "calculadora/components/matriz.html" with matriz=resultado.verificacion.inversa_por_a etiqueta="Producto de la inversa por A" only %}
+            <span class="matrix-expression">{% if resultado.verificacion.inversa_por_a_es_identidad %}= I{% else %}≠ I{% endif %}</span>
+        </div>
+        {% if resultado.verificacion.verificada %}
+            <p class="procedure-note">Ambos productos son la matriz identidad.</p>
+        {% else %}
+            {% if not resultado.verificacion.a_por_inversa_es_identidad %}<p class="procedure-note">A · A⁻¹ no coincide con la matriz identidad.</p>{% endif %}
+            {% if not resultado.verificacion.inversa_por_a_es_identidad %}<p class="procedure-note">A⁻¹ · A no coincide con la matriz identidad.</p>{% endif %}
+        {% endif %}
+    {% else %}
+        <p class="procedure-note">No se puede realizar la verificación porque A no tiene inversa.</p>
+    {% endif %}
+</section>

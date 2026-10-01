@@ -84,7 +84,7 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         self.assertEqual(reverse("calculadora:operaciones-vectores"), RUTA)
         self.assertEqual(resolve(RUTA).view_name, "calculadora:operaciones-vectores")
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_VECTORES)
-        self.assertEqual(self.herramienta.relacionadas, ("ecuaciones-matriciales", "expresiones-matriciales"))
+        self.assertEqual(self.herramienta.relacionadas, ("ecuaciones-matriciales", "operaciones-matrices"))
         for palabra in ("vector", "vectores", "suma de vectores", "resta de vectores", "escalar",
                         "combinación lineal", "span", "generado", "dimensión"):
             self.assertIn(palabra, self.herramienta.palabras_clave)
@@ -106,11 +106,12 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         # Desde P13B, Operaciones con matrices también responde a «vector» (Ax) y a
         # «combinación lineal» (Ax como combinación de columnas), y desde P14 Resolver
         # Ax = b responde a «vector» (vector b) y a «combinación lineal»; vectores sigue primero.
+        # Desde P26.6 Operaciones con matrices también combina vectores y escalares.
         compartidas = {
-            "escalar": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES),
-            "vector": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES, catalogo.ECUACIONES_MATRICIALES),
-            "vectores": (catalogo.OPERACIONES_VECTORES, catalogo.EXPRESIONES_MATRICIALES),
-            "suma de vectores": (catalogo.OPERACIONES_VECTORES, catalogo.EXPRESIONES_MATRICIALES),
+            "escalar": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES),
+            "vector": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES),
+            "vectores": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES),
+            "suma de vectores": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES),
             "combinación lineal": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES),
         }
         for consulta in ("vector", "vectores", "suma de vectores", "escalar", "combinación lineal", "span", "dimension"):
@@ -352,7 +353,7 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado Sí:"))
         self.assertEqual(texto.count("x1 = 3 x2 = 4"), 2)  # sistema equivalente y coeficientes
         self.assertContains(respuesta, 'data-kind="unica"')
-        # Las incógnitas son x1, x2, … como en Resolver un sistema, no c1, c2, …
+        # Las incógnitas son x1, x2, … como en Reducción por filas, no c1, c2, …
         self.assertNotRegex(texto, INCOGNITA_C)
         self.assertNotIn("Entender este resultado", texto)
 
@@ -414,7 +415,7 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         texto = seccion_resultado(respuesta)
         self.assertIn("Coeficientes x1 = -1 x2 = 2", texto)
         self.assertIn("(5, 6) = -(1, 2) + 2(3, 4)", texto)
-        # La matriz reducida resalta las columnas pivote igual que en Resolver un sistema.
+        # La matriz reducida resalta las columnas pivote igual que en Reducción por filas.
         self.assertContains(respuesta, ' pivot"')
 
     def test_un_solo_generador(self):

@@ -11,6 +11,11 @@ def aplicar_gauss_jordan(matriz, columnas_pivote=None):
     arriba. columnas_pivote limita cuántas columnas iniciales pueden contener
     pivote; por defecto se consideran todas. Los pivotes son pares
     (fila, columna).
+
+    Para [A | B], pasar columnas_pivote igual al ancho de A: la búsqueda queda
+    en el bloque izquierdo, pero cada operación transforma la fila completa,
+    incluidas todas las columnas de B. Los pasos conservan ambas matrices
+    completas; el corte entre bloques es metadato de quien las presenta.
     """
     matriz_reducida, pasos, pivotes = aplicar_gauss(matriz, columnas_pivote)
 

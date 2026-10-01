@@ -5,7 +5,7 @@
 ## Usar y comprender
 
 - [Funcionalidades](funcionalidades.md): formatos de entrada, terminal, sistemas,
-  vectores, matrices, expresiones matriciales, conversión de bases y ejemplos para interpretar resultados.
+  vectores, operaciones con matrices (simples y compuestas), conversión de bases y ejemplos para interpretar resultados.
 - [Algoritmos](algoritmos.md): implementación manual, aritmética exacta,
   procedimientos estructurados y conexiones entre Ax, combinaciones y sistemas.
 - [Instalación Windows](instalacion-windows.md): requisitos, uso y desinstalación;
@@ -24,8 +24,19 @@
 - [Guía de ejecución](ejecucion.md): requisitos, arranque web, terminal o
   escritorio y comprobaciones para usar el proyecto completo.
 - [Pruebas](pruebas.md): suite, Django, compilación, enlaces y smoke real Windows.
+- [Presupuesto computacional](presupuesto-computacional.md): límite frente a costo,
+  cálculo y procedimiento, tamaño de los números, referencias calibrables y
+  benchmark. El presupuesto de entrada de Reducción por filas sigue en
+  [su propio documento](presupuesto-sistemas.md).
+- [Protección numérica común](seguridad-numerica.md): inspección de literales
+  antes de convertir, crecimiento exacto acotado y errores controlados.
+- [Matrices aumentadas por bloques](matrices-aumentadas.md): primitivas exactas,
+  contrato de Gauss-Jordan para `[A | B]`, preparación de `[A | I]` y separación
+  de bloques durante el procedimiento.
+- [Matriz inversa](matriz-inversa.md): Gauss-Jordan sobre `[A | I]`, la regla
+  2×2, verificación, propiedades y aplicación `x = A⁻¹b`.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
-  política de tags, CD y checksums.
+  publicación desde main con tag/release automáticos y checksums.
 
 La entrada para contribuir sigue siendo [CONTRIBUTING.md](../CONTRIBUTING.md).
 Estas guías describen el funcionamiento vigente; el historial de cambios y los

@@ -1,4 +1,5 @@
-"""Contratos de P13A: catálogo, estructura HTTP, cálculo, presentación y seguridad."""
+"""Contratos de P13A migrados a la herramienta unificada (P26.6): catálogo, estructura HTTP,
+cálculo, presentación y seguridad de suma, resta, escalar y traspuesta."""
 
 import os
 from fractions import Fraction
@@ -17,30 +18,56 @@ from django.urls import resolve, reverse
 
 from backend.matrices import resolver_operacion_matrices
 from frontend.web.calculadora import catalogo
-from frontend.web.calculadora.forms_matrices import MatricesForm
-from frontend.web.calculadora.opciones_matrices import CONFIGURACION, DIMENSION_MAXIMA, es_vector
-from frontend.web.calculadora.servicios_matrices import operar_matrices
+from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm
+from frontend.web.calculadora.opciones_matrices import DIMENSION_MAXIMA
 from tests.test_navegacion import Documento
 
 RUTA = "/matrices/operaciones/"
 RAIZ = Path(__file__).resolve().parents[1]
+# Cada operación del módulo anterior es ahora una expresión sobre los mismos símbolos.
+EXPRESIONES = {"suma": "A + B", "resta": "A - B", "escalar": "kA", "traspuesta": "Aᵀ", "producto": "AB", "matriz_vector": "Ax"}
+
+
+def datos_simbolos(expresion, simbolos, **extra):
+    """POST del formulario unificado: un bloque por símbolo, en orden, con su tipo y sus celdas."""
+    datos = {"expresion": expresion, "cantidad": str(len(simbolos))}
+    for indice, simbolo in enumerate(simbolos):
+        tipo = simbolo["tipo"]
+        datos[f"nombre_{indice}"] = simbolo["nombre"]
+        datos[f"tipo_{indice}"] = tipo
+        if tipo == "matriz_desconocida":
+            datos[f"filas_{indice}"], datos[f"columnas_{indice}"] = str(simbolo["filas"]), str(simbolo["columnas"])
+        elif tipo == "vector_simbolico":
+            datos[f"filas_{indice}"] = str(simbolo["filas"])
+        elif tipo == "escalar":
+            datos[f"celda_{indice}_0_0"] = str(simbolo["valor"])
+        elif tipo in ("vector", "vector_lineal"):
+            datos[f"filas_{indice}"] = str(len(simbolo["valor"]))
+            for fila, componente in enumerate(simbolo["valor"]):
+                datos[f"celda_{indice}_{fila}_0"] = str(componente)
+        else:
+            datos[f"filas_{indice}"] = str(len(simbolo["valor"]))
+            datos[f"columnas_{indice}"] = str(len(simbolo["valor"][0]))
+            for fila, renglon in enumerate(simbolo["valor"]):
+                for columna, entrada in enumerate(renglon):
+                    datos[f"celda_{indice}_{fila}_{columna}"] = str(entrada)
+    datos.update({clave: valor for clave, valor in extra.items() if valor is not None})
+    return datos
+
+
+def matriz(nombre, valor):
+    return {"nombre": nombre, "tipo": "matriz", "valor": valor}
 
 
 def datos_matrices(operacion="suma", a=None, b=None, escalar=None, **extra):
+    """Una operación del módulo anterior escrita como expresión: A + B, A - B, kA o Aᵀ."""
     a = [[1, 2], [3, 4]] if a is None else a
-    datos = {"operacion": operacion, "filas": str(len(a)), "columnas": str(len(a[0]))}
-    matrices = {"A": a}
-    if b is not None:
-        matrices["B"] = b
-    elif operacion in ("suma", "resta"):
-        matrices["B"] = [[5, 6], [7, 8]]
-    for nombre, matriz in matrices.items():
-        for i, fila in enumerate(matriz):
-            for j, valor in enumerate(fila):
-                datos[f"celda_{nombre}_{i}_{j}"] = str(valor)
-    if escalar is not None:
-        datos["escalar"] = str(escalar)
-    return datos | extra
+    simbolos = [matriz("A", a)]
+    if operacion in ("suma", "resta"):
+        simbolos.append(matriz("B", [[5, 6], [7, 8]] if b is None else b))
+    if operacion == "escalar":
+        simbolos.append({"nombre": "k", "tipo": "escalar", "valor": "" if escalar is None else escalar})
+    return datos_simbolos(EXPRESIONES.get(operacion, operacion), simbolos, **extra)
 
 
 class Contenido(HTMLParser):
@@ -98,10 +125,10 @@ class Contenido(HTMLParser):
 
 class PruebasCatalogoMatrices(SimpleTestCase):
     def test_operaciones_es_la_primera_herramienta_de_matrices(self):
-        # Desde P14 la categoría tiene dos herramientas; Operaciones con matrices sigue igual.
+        # Desde P26.6 la categoría tiene cuatro herramientas; Operaciones con matrices sigue primera.
         self.assertTrue(catalogo.MATRICES.disponible)
         self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES)[0], catalogo.OPERACIONES_MATRICES)
-        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 3)
+        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 4)
         self.assertEqual(reverse("calculadora:operaciones-matrices"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_MATRICES)
 
@@ -125,10 +152,16 @@ class PruebasCatalogoMatrices(SimpleTestCase):
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
         self.assertTrue(doc.categorias["matrices"])
 
-    def test_seis_operaciones_en_una_sola_herramienta(self):
-        # P13B añadió AB y Ax a la misma herramienta, sin otra entrada en la sidebar.
-        form = MatricesForm()
-        self.assertEqual(set(dict(form.fields["operacion"].choices)), {"suma", "resta", "escalar", "traspuesta", "producto", "matriz_vector"})
+    def test_las_seis_operaciones_son_expresiones_de_una_sola_herramienta(self):
+        # P13B añadió AB y Ax a la misma herramienta; P26.6 las escribe como expresiones del mismo formulario.
+        simbolos = [matriz("A", [[1, 2], [3, 4]]), matriz("B", [[0, 1], [1, 0]]),
+                    {"nombre": "k", "tipo": "escalar", "valor": 2}, {"nombre": "x", "tipo": "vector", "valor": [1, -1]}]
+        esperados = {"suma": [["1", "3"], ["4", "4"]], "resta": [["1", "1"], ["2", "4"]], "escalar": [["2", "4"], ["6", "8"]],
+                     "traspuesta": [["1", "3"], ["2", "4"]], "producto": [["2", "1"], ["4", "3"]], "matriz_vector": [["-1"], ["-1"]]}
+        for operacion, expresion in EXPRESIONES.items():
+            with self.subTest(operacion=operacion):
+                respuesta = self.client.post(RUTA, datos_simbolos(expresion, simbolos))
+                self.assertEqual(Contenido(respuesta.content.decode()).tablas.get("Resultado"), esperados[operacion])
 
 
 class PruebasFormularioMatrices(SimpleTestCase):
@@ -136,68 +169,67 @@ class PruebasFormularioMatrices(SimpleTestCase):
         respuesta = self.client.get(RUTA)
         doc = Contenido(respuesta.content.decode())
         self.assertEqual(len([k for k in doc.campos if k.startswith("celda_")]), 8)
-        self.assertNotIn("escalar", doc.campos)
-        self.assertEqual({"Matriz A", "Matriz B"}, set(doc.tablas))
+        self.assertEqual([doc.campos[f"nombre_{i}"]["value"] for i in range(2)], ["A", "B"])
+        self.assertNotIn("nombre_2", doc.campos)
+        self.assertNotContains(respuesta, 'id="resultado"')
 
-    def test_campos_de_cada_operacion_sin_javascript(self):
-        # Cada entrada toma su forma de la estructura: A es 2×3; B comparte forma en suma/resta,
-        # es 3×2 en AB (columnas_b nace en 2 al cambiar de operación) y x es un vector de 3.
-        for op, opcion in CONFIGURACION.items():
-            respuesta = self.client.post(RUTA, {"operacion": op, "filas": "2", "columnas": "3", "ajustar": "1"})
-            doc = Contenido(respuesta.content.decode())
-            esperadas = {("Vector " if es_vector(opcion, n) else "Matriz ") + n for n in opcion["matrices"]}
-            self.assertEqual(set(doc.tablas), esperadas)
-            self.assertEqual("escalar" in doc.campos, opcion["escalar"])
-            medidas = {"filas": 2, "columnas": 3, "columnas_b": 2, None: 1}
-            celdas = sum(medidas[alto] * medidas[ancho] for alto, ancho in (opcion["formas"][n] for n in opcion["matrices"]))
-            self.assertEqual(len([k for k in doc.campos if k.startswith("celda_")]), celdas)
-            self.assertNotContains(respuesta, 'id="resultado"')
+    def test_campos_de_cada_tipo_sin_javascript(self):
+        # Aplicar dibuja la estructura del tipo elegido: A es 2×3; un vector, sus componentes; un escalar, una celda.
+        for tipo, celdas in (("matriz", 6), ("vector", 2), ("escalar", 1), ("matriz_desconocida", 0), ("vector_simbolico", 0), ("vector_lineal", 2)):
+            with self.subTest(tipo=tipo):
+                respuesta = self.client.post(RUTA, {"cantidad": "1", "nombre_0": "A", "tipo_0": tipo, "filas_0": "2", "columnas_0": "3",
+                                                     "expresion": "", "ajustar": "1"})
+                doc = Contenido(respuesta.content.decode())
+                self.assertEqual(len([k for k in doc.campos if k.startswith("celda_")]), celdas)
+                self.assertNotContains(respuesta, 'id="resultado"')
 
     def test_aplicar_conserva_celdas_al_cambiar_dimensiones(self):
-        respuesta = self.client.post(RUTA, datos_matrices(filas="3", columnas="1", ajustar="1"))
+        respuesta = self.client.post(RUTA, datos_matrices(filas_0="3", columnas_0="1", ajustar="1"))
         campos = Contenido(respuesta.content.decode()).campos
-        self.assertEqual(campos["celda_A_1_0"]["value"], "3")
-        self.assertEqual(campos["celda_A_2_0"].get("value", ""), "")
-        self.assertNotIn("celda_A_0_1", campos)
+        self.assertEqual(campos["celda_0_1_0"]["value"], "3")
+        self.assertEqual(campos["celda_0_2_0"].get("value", ""), "")
+        self.assertNotIn("celda_0_0_1", campos)
 
     def test_aplicar_conserva_fraccion_a_medio_escribir(self):
-        respuesta = self.client.post(RUTA, datos_matrices(celda_A_0_0="1/", ajustar="1"))
-        self.assertEqual(Contenido(respuesta.content.decode()).campos["celda_A_0_0"]["value"], "1/")
+        respuesta = self.client.post(RUTA, datos_matrices(celda_0_0_0="1/", ajustar="1"))
+        self.assertEqual(Contenido(respuesta.content.decode()).campos["celda_0_0_0"]["value"], "1/")
         self.assertNotContains(respuesta, 'role="alert"')
 
-    def test_aplicar_valida_dimensiones_y_operacion(self):
-        for campo, valor in (("filas", "0"), ("columnas", "11"), ("operacion", "inversa")):
+    def test_aplicar_valida_dimensiones_y_tipo(self):
+        for campo, valor in (("filas_0", "0"), ("columnas_0", "11"), ("tipo_0", "inversa")):
             r = self.client.post(RUTA, datos_matrices(**{campo: valor, "ajustar": "1"}))
             self.assertContains(r, 'role="alert"')
             self.assertNotContains(r, 'id="resultado"')
 
     def test_formulario_exactitud_del_parser_compartido(self):
-        form = MatricesForm(datos_matrices("escalar", a=[["0.5", "-7/3", "0"]], escalar="1/2"))
+        form = ExpresionMatricialForm(datos_matrices("escalar", a=[["0.5", "-7/3", "0"]], escalar="1/2"))
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.cleaned_data["entrada"]["matrices"]["A"], [[Fraction(1, 2), Fraction(-7, 3), 0]])
-        self.assertEqual(form.cleaned_data["entrada"]["escalar"], Fraction(1, 2))
+        simbolos = form.cleaned_data["entrada"]["simbolos"]
+        self.assertEqual(simbolos["A"]["valor"], [[Fraction(1, 2), Fraction(-7, 3), 0]])
+        self.assertEqual(simbolos["k"]["valor"], Fraction(1, 2))
 
     def test_labels_reales_para_todas_las_celdas(self):
         r = self.client.post(RUTA, datos_matrices("escalar", escalar="2", ajustar="1"))
         doc = Contenido(r.content.decode())
         for nombre, attrs in doc.campos.items():
-            if nombre.startswith("celda_") or nombre in ("escalar", "filas", "columnas"):
-                self.assertTrue(doc.labels.get(attrs["id"]))
+            if nombre.startswith(("celda_", "filas_", "columnas_", "nombre_")):
+                self.assertTrue(doc.labels.get(attrs["id"]), nombre)
 
     def test_error_asociado_con_celda_y_valores_conservados(self):
-        r = self.client.post(RUTA, datos_matrices(celda_A_0_0="1/0"))
+        r = self.client.post(RUTA, datos_matrices(celda_0_0_0="1/0"))
         doc = Contenido(r.content.decode())
-        attrs = doc.campos["celda_A_0_0"]
+        attrs = doc.campos["celda_0_0_0"]
         self.assertEqual(attrs["aria-invalid"], "true")
-        self.assertIn("id_celda_A_0_0_error", attrs["aria-describedby"])
-        self.assertContains(r, 'id="id_celda_A_0_0_error"')
+        self.assertIn("id_celda_0_0_0_error", attrs["aria-describedby"])
+        self.assertContains(r, 'id="id_celda_0_0_0_error"')
         self.assertEqual(attrs["value"], "1/0")
-        self.assertEqual(doc.campos["celda_B_1_1"]["value"], "8")
+        self.assertEqual(doc.campos["celda_1_1_1"]["value"], "8")
 
     def test_limite_de_interfaz_admite_rectangulares(self):
         for m, n in ((1, 10), (10, 1), (2, 3), (3, 2), (10, 10)):
-            form = MatricesForm(datos_matrices("traspuesta", a=[[0] * n for _ in range(m)]))
+            form = ExpresionMatricialForm(datos_matrices("traspuesta", a=[[0] * n for _ in range(m)]))
             self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(DIMENSION_MAXIMA, 10)
 
 
 class PruebasResultadosMatrices(SimpleTestCase):
@@ -205,7 +237,7 @@ class PruebasResultadosMatrices(SimpleTestCase):
         r = self.client.post(RUTA, datos)
         self.assertEqual(r.status_code, 200)
         doc = Contenido(r.content.decode())
-        self.assertEqual(doc.tablas.get("Matriz resultado"), esperado)
+        self.assertEqual(doc.tablas.get("Resultado"), esperado)
         self.assertEqual(doc.tablas.get("Resultado del desarrollo"), esperado)
         return r, doc
 
@@ -246,13 +278,13 @@ class PruebasResultadosMatrices(SimpleTestCase):
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
         self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
 
-    def test_servicio_delega_la_matematica(self):
-        with patch("frontend.web.calculadora.servicios_matrices.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:
-            operar_matrices({"operacion": "traspuesta", "matrices": {"A": [[1, 2]]}})
-        resolver.assert_called_once_with("traspuesta", [[1, 2]], None, None)
+    def test_el_motor_delega_la_matematica(self):
+        with patch("backend.expresiones_matriciales.evaluador.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:
+            self.client.post(RUTA, datos_matrices("traspuesta", a=[[1, 2]]))
+        resolver.assert_called_once_with("traspuesta", [[1, 2]])
 
     def test_dominio_del_backend_llega_como_error_legible(self):
-        with patch("frontend.web.calculadora.views.operar_matrices", side_effect=ValueError("Ambas matrices deben tener las mismas dimensiones.")):
+        with patch("frontend.web.calculadora.views.evaluar_expresion_web", side_effect=ValueError("Ambas matrices deben tener las mismas dimensiones.")):
             r = self.client.post(RUTA, datos_matrices())
         self.assertContains(r, "Ambas matrices deben tener las mismas dimensiones.")
         self.assertNotContains(r, 'id="resultado"')
@@ -272,57 +304,57 @@ class PruebasRechazoMatrices(SimpleTestCase):
         self.rechazar({})
 
     def test_dimensiones_invalidas(self):
-        for campo in ("filas", "columnas"):
+        for campo in ("filas_0", "columnas_0"):
             for valor in ("", "0", "-1", "1.5", "abc", "11", "99999999999999999"):
                 with self.subTest(campo=campo, valor=valor):
                     self.rechazar(datos_matrices(**{campo: valor}))
 
-    def test_operacion_invalida(self):
-        for op in ("", "inversa", "determinante", "<script>"):
-            self.rechazar(datos_matrices(operacion=op))
+    def test_tipo_invalido(self):
+        for tipo in ("", "inversa", "determinante", "<script>"):
+            self.rechazar(datos_matrices(tipo_0=tipo))
 
     def test_filas_y_columnas_incompletas(self):
-        for borrada in ("celda_A_0_0", "celda_A_1_1", "celda_B_1_0"):
+        for borrada in ("celda_0_0_0", "celda_0_1_1", "celda_1_1_0"):
             datos = datos_matrices()
             del datos[borrada]
             self.rechazar(datos, "Las celdas recibidas no coinciden")
 
-    def test_dimensiones_incompatibles_en_post(self):
-        self.rechazar(datos_matrices(a=[[1, 2, 3]], b=[[1], [2], [3]]), "Las celdas recibidas no coinciden")
+    def test_dimensiones_incompatibles_en_el_calculo(self):
+        self.rechazar(datos_matrices(a=[[1, 2, 3]], b=[[1], [2], [3]]), "Para sumar o restar, ambas matrices deben tener las mismas dimensiones")
 
     def test_campos_sobrantes_o_indices_manipulados(self):
-        for nombre in ("celda_A_2_0", "celda_B_-1_0", "celda_A_00_0", "celda_C_0_0", "filas_B", "escalar", "celda_A_x_0"):
-            self.rechazar(datos_matrices(**{nombre: "1"}), "Las celdas recibidas no coinciden")
+        for nombre in ("celda_0_2_0", "celda_1_-1_0", "celda_0_00_0", "celda_2_0_0", "filas_2", "escalar", "celda_0_x_0", "operacion"):
+            self.rechazar(datos_matrices() | {nombre: "1"}, "Las celdas recibidas no coinciden")
 
     def test_campos_ajenos_a_traspuesta_o_escalar(self):
         for op in ("traspuesta", "escalar"):
-            self.rechazar(datos_matrices(op, escalar="2" if op == "escalar" else None, celda_B_0_0="3"))
+            self.rechazar(datos_matrices(op, escalar="2" if op == "escalar" else None, celda_2_0_0="3"))
 
     def test_campos_duplicados(self):
-        for campo in ("filas", "operacion", "celda_A_0_0"):
+        for campo in ("filas_0", "expresion", "celda_0_0_0"):
             datos = QueryDict(mutable=True)
             datos.update(datos_matrices())
             datos.appendlist(campo, datos[campo])
-            form = MatricesForm(datos)
+            form = ExpresionMatricialForm(datos)
             self.assertFalse(form.is_valid())
             self.assertIn("campos repetidos", str(form.non_field_errors()))
 
     def test_celdas_vacias(self):
         for valor in ("", "   "):
-            self.rechazar(datos_matrices(celda_A_0_0=valor), "Completa matriz a, fila 1, columna 1.")
+            self.rechazar(datos_matrices(celda_0_0_0=valor), "Completa matriz a, fila 1, columna 1.")
 
     def test_numeros_y_fracciones_invalidos(self):
         for valor in ("abc", "1/0", "1/", "1/2/3", "NaN", "Infinity", "--2"):
-            self.rechazar(datos_matrices(celda_A_0_0=valor), "no es un número válido")
+            self.rechazar(datos_matrices(celda_0_0_0=valor), "no es un número válido")
 
     def test_escalar_invalido_o_ausente(self):
-        for valor in (None, "", "1/0", "texto"):
+        for valor in ("", "1/0", "texto"):
             self.rechazar(datos_matrices("escalar", escalar=valor))
 
     def test_html_se_escapa_incluso_al_aplicar(self):
         ataque = '<script>alert("x")</script>'
         for ajustar in (False, True):
-            datos = datos_matrices(celda_A_0_0=ataque)
+            datos = datos_matrices(celda_0_0_0=ataque)
             if ajustar:
                 datos["ajustar"] = "1"
             r = self.client.post(RUTA, datos)
@@ -360,9 +392,10 @@ class PruebasComponentesYRecursosMatrices(SimpleTestCase):
 
     def test_tema_teclado_y_recursos_locales(self):
         r = self.client.get(RUTA)
-        for recurso in ("matrices.js", "teclado.js", "tema.js", "styles.css"):
+        for recurso in ("expresiones.js", "teclado.js", "tema.js", "styles.css"):
             self.assertContains(r, f"/static/calculadora/{recurso}")
-        self.assertContains(r, 'id="matrix-fields" data-perfil="numerico"')
+        self.assertNotContains(r, "calculadora/matrices.js")
+        self.assertContains(r, 'id="expression-fields" data-perfil="numerico"')
         from tests.test_teclado import Pagina
         teclas = Pagina(r.content.decode()).perfiles_publicados["numerico"]["grupos"][0]["teclas"]
         self.assertEqual([t["insercion"] for t in teclas], ["-", "/"])
@@ -371,7 +404,10 @@ class PruebasComponentesYRecursosMatrices(SimpleTestCase):
 
     def test_pyinstaller_incluye_modulos_y_recursos(self):
         spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
-        for modulo in ("backend.matrices", "frontend.web.calculadora.forms_matrices", "frontend.web.calculadora.opciones_matrices", "frontend.web.calculadora.servicios_matrices"):
+        for modulo in ("backend.matrices", "frontend.web.calculadora.forms_matrices", "frontend.web.calculadora.opciones_matrices",
+                       "frontend.web.calculadora.servicios_matrices", "frontend.web.calculadora.forms_expresiones",
+                       "frontend.web.calculadora.servicios_expresiones", "backend.expresiones_matriciales.evaluador"):
             self.assertIn(f'"{modulo}"', spec)
         self.assertIn('"frontend/web/calculadora/templates"', spec)
         self.assertIn('"frontend/web/calculadora/static"', spec)
+        self.assertFalse((RAIZ / "frontend/web/calculadora/static/calculadora/matrices.js").exists())

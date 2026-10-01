@@ -102,7 +102,7 @@ misma matriz aumentada, así que son intercambiables.
 Volver al menú, o escribir un sistema con un formato inválido, deja intacta la
 matriz activa: solo un sistema creado correctamente la reemplaza.
 
-## Resolver un sistema
+## Resolución de sistemas en terminal
 
 Una matriz solo se interpreta como sistema de ecuaciones cuando se elige uno de
 los dos métodos de resolución. En ese caso la **última columna** se toma
@@ -206,7 +206,7 @@ esté orientado a resolver sistemas.
 ## Vectores
 
 En **Operaciones con vectores** (`/vectores/operaciones/`) la operación se
-elige dentro, igual que el método en Resolver un sistema. La dimensión `n`
+elige dentro, igual que el método en Reducción por filas. La dimensión `n`
 no está fijada, así que cada vector se escribe como una fila de
 celdas, `u = ( [ ] [ ] [ ] )`, y los botones **+/−** agregan o quitan
 componentes (de 1 a 10). No hay campos `x`, `y`, `z` ni sintaxis de listas.
@@ -295,13 +295,13 @@ caracteres.
 
 La herramienta **Conversión de números romanos** (`/romanos/conversion/`) tiene
 su propio tema, **Numeración romana**, porque no es un sistema posicional de
-base n. Se elige la dirección (**Decimal → romano** o **Romano → decimal**), se
+base n. Se elige la dirección (**Arábigo → romano** o **Romano → arábigo**), se
 escribe un número y se obtiene un único resultado, precedido del procedimiento plegado:
 
-- **Decimal → romano:** el número se separa por órdenes decimales y cada parte
+- **Arábigo → romano:** el número se separa por órdenes decimales y cada parte
   se escribe con la tabla romana: `1963 = 1000 + 900 + 60 + 3`, con `1000 → M`,
   `900 → CM`, `60 → LX` y `3 → III`, así que `1963 = MCMLXIII`.
-- **Romano → decimal:** se lee de izquierda a derecha reconociendo las restas
+- **Romano → arábigo:** se lee de izquierda a derecha reconociendo las restas
   IV, IX, XL, XC, CD y CM: `MCMLXIII = 1000 + 900 + 50 + 10 + 1 + 1 + 1 = 1963`.
 
 Se usa la notación moderna convencional del 1 al 3999, solo con I, V, X, L, C,
@@ -311,17 +311,24 @@ de su valor: `IIII` se rechaza indicando que 4 se escribe `IV`, y `VV`, `IC` o
 `MMMM` también se rechazan con un mensaje claro. El núcleo vive en
 `backend/sistemas_numericos/romanos.py`, separado de la conversión de bases.
 
-## Sistemas en la interfaz visual
+## Reducción por filas en la interfaz visual
 
 Inicio de PyGebra permite buscar una herramienta o abrir un área y después
-un tema (Sistemas de ecuaciones, Vectores, Matrices, Bases numéricas); el
-menú ☰ abre el mismo árbol en cualquier página. Dentro de **Álgebra Lineal →
-Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
-(`/sistemas/`), que se configura en el propio formulario:
+un tema (Vectores, Matrices, Bases numéricas); el menú ☰ abre el mismo árbol
+en cualquier página. **Álgebra Lineal → Matrices → Reducción por filas**
+(`/matrices/reduccion/`) reduce específicamente una matriz aumentada `[A | b]`.
+Puede ingresarse como **Sistema de ecuaciones** (el parser lo convierte a
+`[A | b]`) o como **Matriz aumentada**. El backend de sistemas conserva la
+clasificación y las soluciones. P26.5 reorganiza la herramienta pública sin
+añadir matemática nueva; no existe una categoría pública de Sistemas de ecuaciones.
+Resolver Ax = b y Matriz inversa siguen siendo herramientas aparte.
+
+Se configura en el propio formulario:
 
 | Opción | Valores | Predeterminado |
 | --- | --- | --- |
 | Método | Gauss, Gauss-Jordan o Comparar ambos | Gauss-Jordan |
+| Tipo de entrada | Sistema de ecuaciones o Matriz aumentada | Sistema de ecuaciones |
 | Mostrar | Procedimiento, Clasificación, Columnas pivote, Sistema resultante | Todos activos |
 
 La matriz final y la solución se muestran siempre. Las casillas de Mostrar
@@ -338,9 +345,15 @@ comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve
 la misma entrada con los dos métodos y pliega cada procedimiento en su propio
 sub-bloque; como la clasificación y la solución coinciden, aparecen una sola
 vez, en el resultado común.
-Las rutas de la versión anterior (`/sistemas/gauss/`, `/sistemas/gauss-jordan/`,
+Las rutas anteriores (`/sistemas/`, `/sistemas/gauss/`, `/sistemas/gauss-jordan/`,
 `/sistemas/clasificacion/` y `/sistemas/columnas-pivote/`) redirigen a
-`/sistemas/`, las dos primeras con el método ya seleccionado.
+`/matrices/reduccion/`: GET usa 301. POST a `/sistemas/` se procesa con la
+misma vista (200) y formularios canónicos; POST a los cuatro slugs usa 308,
+conservando cuerpo y método. Así también funcionan los clientes históricos
+que enviaban POST directamente a `/sistemas/` sin seguir redirecciones.
+Se conservan los parámetros GET, incluidas las casillas repetidas; las rutas
+de Gauss y Gauss-Jordan sugieren método cuando no se indicó uno explícito.
+El botón **Reducir** envía siempre a la ruta canónica.
 
 Se puede elegir el tipo de entrada —sistema de ecuaciones o matriz aumentada— y
 ambos validan igual. El selector de tema recuerda la preferencia en el
@@ -370,121 +383,35 @@ según la base de origen, conservando la conversión a varios destinos.
 
 ## Operaciones matriciales y Ax = b
 
-**Operaciones con matrices** (`/matrices/operaciones/`) reúne suma, resta,
-producto por escalar, traspuesta, multiplicación de matrices (`AB`) y matriz
-por vector (`Ax`) en un solo formulario. Filas y columnas se eligen de 1 a 10
-por legibilidad; el backend no impone ese límite ni exige matrices cuadradas.
-Para suma/resta, A y B comparten dimensiones. En `AB` la interfaz pide tres
-medidas —filas de A, columnas de A (= filas de B) y columnas de B— y muestra
-`A: m×n · B: n×p → AB: m×p`, así que no se puede construir un producto
-imposible; en `Ax` el vector columna x toma su dimensión de las columnas de A
-(`A (m×n) · x (n) → Ax (m)`). Con JavaScript los controles +/− regeneran las
-celdas y conservan los valores; sin JavaScript, **Aplicar** prepara la
-estructura antes de calcular. El teclado contextual existente permite
-negativos y fracciones.
-
-Para `AB` y `Ax` se elige cómo ver el procedimiento, igual que el método en
-Resolver un sistema: **Fila por columna** (`cᵢⱼ = filaᵢ(A) · columnaⱼ(B)`,
-que en `Ax` se llama **Regla fila-vector**), **Por columnas**
-(`AB = [Ab₁ Ab₂ … Abₚ]`, con cada `Abⱼ` como combinación lineal de las
-columnas de A; en `Ax`, **Combinación lineal de columnas**:
-`Ax = x₁a₁ + … + xₙaₙ`) o **Comparar ambos**. Son dos lecturas del mismo
-producto, no dos operaciones: el resultado se calcula una sola vez y se muestra
-una sola vez; cada método (un sub-bloque plegado al comparar) muestra su
-procedimiento con la igualdad completa de
-cada entrada (`c₂₃ = fila₂(A) · columna₃(B) = a₂₁b₁₃ + … = 3·2 + (-1)·4 +
-5·(1/2) = 9/2`) o de cada columna (`Ab₁ = 2a₁ − a₂ + 3a₃`, los vectores
-escalados y la columna obtenida). Los grupos por fila o por columna se
-despliegan con `details` y nacen abiertos cuando el resultado tiene pocas
-entradas.
-
-`backend/matrices.py` contiene las seis operaciones y los pasos estructurados
-con `Fraction`: `producto_punto` es la primitiva, `multiplicar_matrices`
-calcula `cᵢⱼ` como producto punto de fila por columna y
-`multiplicar_matriz_vector` reutiliza ese mismo producto con x escrito como
-columna, cambiando solo la validación y la explicación. Los productos
-`aᵢₖbₖⱼ` se calculan una vez y se entregan agrupados por entrada y por
-columna. `forms_matrices.py` valida dimensiones, método, campos y números con
-el parser común; `opciones_matrices.py` centraliza la configuración y
-`servicios_matrices.py` adapta los datos a presentación. El procedimiento va
-plegado antes del resultado: la regla por entrada y una sola cadena
-`A + B = [A] + [B] = [desarrollo] = [C]`; la traspuesta explica el intercambio
-de filas/columnas y de dimensiones. La matriz obtenida se presenta una vez,
-en el panel Resultado.
-Los componentes de entrada y `components/matriz.html` se pueden reutilizar (x
-se captura y se muestra como matriz `n×1`); `matrix.html` mantiene la
-representación aumentada de sistemas. Las igualdades y matrices anchas se
-desplazan dentro de sus contenedores.
-
-En `Ax` el vector x es conocido y solo se calcula el producto. Buscar x es
-otra herramienta: **Resolver Ax = b** (`/matrices/ecuaciones/`), la segunda
-de la categoría Matrices. Allí A (m×n) y b son conocidos, x es la incógnita y
-la interfaz muestra `A (m×n) · x (n) = b (m)`: se eligen solo las dimensiones
-de A, b toma m componentes, x se dibuja como vector de incógnitas `x₁ … xₙ` sin
-celdas editables y A no necesita ser cuadrada (`2×3`, `3×2`, …). La
-herramienta enseña que estas formas son la misma ecuación:
+**Operaciones con matrices** (`/matrices/operaciones/`) es la herramienta
+general de la categoría Matrices: realiza y combina operaciones con matrices,
+vectores y escalares paso a paso. Desde P26.6 las operaciones simples y las
+compuestas usan el mismo formulario y el mismo motor de expresiones
+(`backend/expresiones_matriciales/`); no hay un modo «sencillo» aparte:
 
 ```text
-Ax = b  ↔  x₁a₁ + x₂a₂ + … + xₙaₙ = b  ↔  sistema lineal  ↔  [A | b]
+A + B    A - B    2A    AB    Ax    Aᵀ
+2A + B   AB - C   A(B + C)   2A - BC   (A + B)ᵀ
 ```
 
-No hay un segundo solucionador: `backend/ecuaciones_matriciales.py` valida la
-ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
-`resolver_sistema_gauss` o `resolver_sistema_gauss_jordan` de
-`backend/sistemas.py`, cuyo resultado se amplía con la lectura de `Ax = b`.
-Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
-`matrices.py`. El método se elige como en Resolver un sistema (Gauss,
-Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
-sola vez y los dos procedimientos plegados). El procedimiento va plegado
-primero y el resultado después, siempre visible:
+Expresiones matriciales dejó de ser una herramienta separada (ver
+[Compatibilidad](#compatibilidad-de-expresiones-matriciales)).
 
-- solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
-  `x2 = 2`, el vector columna x y la comprobación `A · x = b` calculada con
-  `multiplicar_matriz_vector`; b es combinación lineal de las columnas de A de
-  una única manera (`b = 3a₁ + 2a₂`);
-- soluciones infinitas: la solución general de sistemas (`x1 = 2 - x3`,
-  `x3 es libre`); b es combinación lineal de las columnas de A de infinitas
-  maneras;
-- inconsistente: la contradicción que ya detecta sistemas (`[0 0 | 1]`, es
-  decir, `0 = 1`); b no pertenece al conjunto generado por las columnas de A.
-
-La interpretación como combinación lineal se deriva solo de la clasificación
-del sistema. «Ver procedimiento» muestra la cadena de equivalencias —ecuación
-matricial, ecuación vectorial con las columnas de A, sistema equivalente
-(`ecuaciones_de_matriz`, con `n` incógnitas) y matriz aumentada— y después la
-eliminación con los mismos bloques de Resolver un sistema: operaciones por
-filas, matriz escalonada o reducida con sus pivotes, columnas pivote, sistema
-resultante y sustitución regresiva. La comprobación `A · x = b` y la
-interpretación van en sus propios bloques plegados después del resultado.
-`EcuacionMatricialForm`
-(`forms_ecuaciones.py`) comparte con `MatricesForm` la base `FormularioCeldas`
-—celdas, parser y comprobaciones del POST— y exige que b tenga exactamente
-una componente por fila de A; x nunca viaja en el POST. Con JavaScript los
-controles +/− regeneran A, x y b; sin JavaScript, **Aplicar** redibuja la
-misma estructura.
-
-Para las decisiones de presentación y accesibilidad, consulta [Interfaz](interfaz.md).
-La reutilización del cálculo se explica en [Algoritmos](algoritmos.md).
-
-## Expresiones matriciales
-
-**Expresiones matriciales** (`/matrices/expresiones/`) evalúa una expresión
-compuesta con las mismas operaciones de matrices y vectores, o compara dos
-expresiones separadas por un solo `=`. No sustituye a
-Operaciones con matrices ni a Resolver Ax = b: esas herramientas siguen siendo
-el acceso directo a una sola operación o a la ecuación.
-
-El usuario define solo los símbolos que necesita (nombre, tipo y valores) y
-escribe la expresión. Con JavaScript puede agregar, quitar, cambiar el tipo y
-las dimensiones sin recargar el inicio; sin JavaScript, **Agregar símbolo**,
-**Eliminar** y **Aplicar** hacen lo mismo en el servidor.
+El usuario define solo los símbolos que va a usar —nombre, tipo, dimensiones y
+valores; al abrir hay dos matrices 2×2, A y B— y escribe la expresión. Filas y
+columnas van de 1 a 10 por legibilidad; el backend no impone ese límite ni exige
+matrices cuadradas. Con JavaScript se agregan, quitan y redimensionan símbolos
+sin recargar, las flechas recorren la cuadrícula de cada símbolo y los
+controles +/− conservan los valores; sin JavaScript, **Agregar símbolo**,
+**Eliminar** y **Aplicar** hacen lo mismo en el servidor. El teclado contextual
+existente permite negativos y fracciones.
 
 ### Sintaxis
 
 Enteros, fracciones (`1/2`, `-3/4`) y los decimales exactos que ya acepta el
 parser del proyecto. Símbolos definidos por el usuario (`A`, `u`, `k`, `A1`).
-Operadores `+`, `-`, `*` y paréntesis. El menos unario aplica al factor
-siguiente: `-3B` es `(-3)B`.
+Operadores `+`, `-`, `*`, paréntesis y la traspuesta. El menos unario aplica al
+factor siguiente: `-3B` es `(-3)B`.
 
 La multiplicación implícita equivale a `*` cuando hay una sola lectura:
 
@@ -492,22 +419,83 @@ La multiplicación implícita equivale a `*` cuando hay una sola lectura:
 2A ↔ 2*A    AB ↔ A*B    Au ↔ A*u    A(u + v) ↔ A*(u + v)
 ```
 
-Un solo `=` compara dos expresiones, por ejemplo `A(u + v) = Au + Av`. No es una
-operación como `+` o `*`: cada lado se analiza con el mismo parser. Se rechazan
-`A = B = C`, `==`, un lado vacío y los demás operadores relacionales.
-
 Si `AB` puede ser el símbolo `AB` o el producto `A*B`, la expresión se rechaza
 y hay que escribir `*`. No se adivina.
 
-Precedencia: paréntesis, multiplicación, suma y resta. `A + BC` es `A + (BC)`.
-`(A + B)C` respeta los paréntesis. La resta asocia por la izquierda.
+La **traspuesta** es una operación del árbol (nodo `Traspuesta`), no un
+reemplazo de texto. `Aᵀ` y `A^T` son la misma operación; el procedimiento la
+escribe siempre como `ᵀ`. Es postfija y afecta solo al factor que la precede:
+`ABᵀ` es `A(Bᵀ)`; para trasponer el producto se escribe `(AB)ᵀ`. Se aplica a
+matrices con entradas conocidas; para una fila, se define una matriz de 1×n.
+`^` no forma potencias: `A^2` y `A^-1` se rechazan sin interpretarlos (la
+inversa se calcula en la herramienta Matriz inversa).
 
-### Tipos y dimensiones
+Precedencia: paréntesis y traspuesta, menos unario, multiplicación (implícita o
+`*`), suma y resta. En cada nivel se agrupa de izquierda a derecha:
+
+```text
+A + BC = A + (BC)     A - B - C = (A - B) - C     ABC = (AB)C
+```
+
+Una cadena de productos se evalúa en ese orden; no se reordena para ahorrar
+cuentas (no hay optimización de la parentización).
+
+Un solo `=` compara dos expresiones, por ejemplo `A(u + v) = Au + Av` o
+`(AB)ᵀ = BᵀAᵀ`. No es una operación como `+` o `*`: cada lado se analiza con el
+mismo parser. Se rechazan `A = B = C`, `==`, un lado vacío y los demás
+operadores relacionales.
+
+### Procedimiento por nodos
+
+Cada nodo del árbol se calcula una vez con `backend/matrices.py` o
+`backend/vectores.py` y muestra su propio procedimiento, el mismo del módulo
+anterior de Operaciones con matrices:
+
+- **suma, resta y escalar**: la regla por entrada (`cᵢⱼ = aᵢⱼ + bᵢⱼ`,
+  `(kA)ᵢⱼ = k · aᵢⱼ`) y una sola cadena `A + B = [A] + [B] = [desarrollo] = [C]`;
+- **traspuesta**: `(Aᵀ)ᵢⱼ = Aⱼᵢ`, el cambio de dimensiones (`2×3 → 3×2`) y
+  cómo cada fila pasa a ser una columna (`Fila 1 de A → columna 1 de Aᵀ`);
+- **AB y Ax**: las lecturas del mismo producto, elegidas en **Opciones del
+  procedimiento** → **Cómo mostrar los productos**: **Fila por columna**
+  (`cᵢⱼ = filaᵢ(A) · columnaⱼ(B)`; en `Ax`, **Regla fila-vector**), **Por
+  columnas** (`AB = [Ab₁ Ab₂ … Abₚ]`, con cada `Abⱼ` como combinación lineal de
+  las columnas de A; en `Ax`, **Combinación lineal de columnas**:
+  `Ax = x₁a₁ + … + xₙaₙ`) o **Comparar ambos**. Es solo presentación: el
+  producto se calcula una vez (los productos `aᵢₖbₖⱼ` se agrupan por entrada y
+  por columna) y el resultado no cambia;
+- **vectores y escalares**: una línea por componente (`4 + (-3) = 1`).
+
+Los pasos siguen el orden en que se calcularon (hijos primero). En `A(B + C)`
+aparecen `B + C` y después `A(B + C)`; en `(A + B)ᵀ`, la suma y después su
+traspuesta; en `AB + C`, el producto con la lectura elegida y después la suma.
+Cada paso intermedio cierra con su valor, que usa el paso siguiente; el último
+no lo repite, porque es el resultado y se muestra una sola vez, en el panel
+Resultado, fuera del procedimiento plegado.
+
+Cuando la expresión es un producto o una suma de dos símbolos (`AB`, `A + B`),
+las entradas se llaman `cᵢⱼ` y las fórmulas son las del módulo anterior. Dentro
+de una expresión mayor se llaman como el paso, `(AB)ᵢⱼ` o
+`(A(B + C))ᵢⱼ = filaᵢ(A) · columnaⱼ(B + C)`, para no confundirse con otro
+operando. Una subexpresión como operando se escribe entre paréntesis cuando
+hace falta: `(B + C)₁₁`, `(A + B)c₁`.
+
+Cada paso ofrece **Calcular solo esta parte**, que evalúa ese nodo por su ruta
+estable (`0`, `0.1`, `0.1.0`; en una igualdad, `izq:0.1` o `der:0`). Las rutas
+de una expresión sin traspuesta no cambian respecto de las versiones
+anteriores; una traspuesta es un nodo más con su propia ruta.
+
+El selector Exacto/Decimal alcanza el resultado, los valores intermedios y las
+igualdades de cada procedimiento.
+
+### Tipos, dimensiones e igualdades
 
 Suma y resta: matriz con matriz, vector con vector o escalar con escalar, y
 solo si las dimensiones coinciden. Producto: escalar con escalar, vector o
-matriz; matriz con matriz; matriz con vector. No hay producto punto automático
-ni producto vector por matriz.
+matriz; matriz con matriz; matriz con vector. Traspuesta: solo matrices. No hay
+producto punto automático ni producto vector por matriz.
+
+En `Ax` el vector x es conocido y solo se calcula el producto. Buscar x es otra
+herramienta, **Resolver Ax = b**, que no cambia.
 
 El error nombra la subexpresión que falla. Si `B + C` no se puede sumar, el
 mensaje habla de `B + C`. Si esa suma existe pero `A(B + C)` no se puede
@@ -517,37 +505,16 @@ derecho. Una igualdad falsa no es un error: es un resultado.
 
 Con símbolos numéricos, que ambos lados coincidan significa que producen el
 mismo objeto para esos valores. No demuestra la identidad para todos los
-valores. Hallar el vector x cuando A y b son numéricos sigue en Resolver Ax = b.
+valores. La comparación usa los `Fraction` calculados, no el texto decimal, y
+solo es verdadera o falsa si ambos lados son el mismo tipo y las mismas
+dimensiones; si no, el mensaje dice qué es cada lado.
 
-### Arquitectura
+### Tipos simbólicos
 
-```text
-texto → ¿un solo =?
-  no → lexer → parser → AST → evaluador → primitivas existentes
-  sí → cada lado por ese mismo camino
-        numérico → comparación de los dos valores
-        Ax simbólico → coeficientes de formas lineales → matriz A
-```
-
-Cada nodo guarda operación, hijos, texto y una ruta estable (`0`, `0.1`,
-`0.1.0`). En una igualdad las rutas llevan el lado (`izq:0`, `izq:0.1`,
-`der:0`) para que no se confundan. La evaluación recorre cada árbol de abajo
-hacia arriba. Se puede pedir solo una ruta: la interfaz ofrece **Calcular solo
-esta parte** en cada paso, también en cualquiera de los dos lados. Matriz por
-matriz y matriz por vector reutilizan el procedimiento de
-`resolver_operacion_matrices`; no hay un segundo algoritmo de producto.
-
-La comparación numérica usa los `Fraction` calculados, no el texto decimal.
-Solo es verdadera o falsa si ambos lados son el mismo tipo y las mismas
-dimensiones. Si no, el mensaje dice qué es cada lado. El resultado usa el
-selector Exacto/Decimal ya existente. Cambia cómo se ven los valores; no vuelve
-a comparar.
-
-El camino simbólico solo se activa si un símbolo se declaró como matriz
-desconocida, vector simbólico o vector lineal. Un nombre sin definición sigue
-siendo un error.
-
-### Expresión lineal simbólica
+Siguen disponibles, sin capacidades nuevas, agrupados como «Simbólicos» en el
+selector de tipo. El camino simbólico solo se activa si un símbolo se declaró
+como matriz desconocida, vector simbólico o vector lineal. Un nombre sin
+definición sigue siendo un error.
 
 Una forma lineal es una constante más un coeficiente exacto por variable, por
 ejemplo `3x1 - 2x2 + 5`. Los coeficientes son `Fraction`. Dos textos distintos
@@ -555,7 +522,8 @@ con los mismos coeficientes son la misma forma: `x1 + x1` es `2x1` y
 `2(x1 + x2) - x1` es `x1 + 2x2`. Una variable que no aparece tiene coeficiente 0.
 
 Solo se conservan la suma, la resta, la negación y el producto por un escalar
-numérico. Se rechazan `x1*x2`, `x1^2`, `1/x1` y llamadas como `sin(x1)`.
+numérico. Se rechazan `x1*x2`, `x1^2`, `1/x1`, la traspuesta y llamadas como
+`sin(x1)`.
 
 En la misma página se declaran tres objetos, sin adivinar incógnitas:
 
@@ -584,21 +552,147 @@ Si A ya es numérica y x es simbólico, la misma igualdad compara los dos vector
 lineales. Coincidir entonces significa la misma expresión para todos los valores
 de las variables declaradas, no solo para los números de una matriz concreta.
 
-El selector Exacto/Decimal cambia cómo se ven los coeficientes. La comparación
-sigue siendo exacta.
+### Presupuesto de entrada
+
+El presupuesto es el mismo de las operaciones del módulo anterior, aplicado a
+símbolos y a la expresión, y se comprueba antes de crear un campo por celda:
+
+| Qué se cuenta | Tope | Por qué |
+| --- | ---: | --- |
+| Símbolos definidos | 50 | El máximo lógico de operandos (`OPERANDOS_MAXIMOS`). |
+| Celdas de todos los símbolos | 900 | `CELDAS_MAXIMAS`, como antes. |
+| Campos de estructura y celdas | 990 | Cada símbolo envía nombre, tipo y hasta dos dimensiones además de sus celdas; con los controles fijos (csrf, expresión, cantidad, presentación y el botón) el envío queda dentro de los 1000 campos de Django (`CAMPOS_MAXIMOS`). |
+| Operandos de la expresión | 50 | Cada aparición de un símbolo o de un número cuenta: `AAAA` usa cuatro veces A. |
+| Operaciones de la expresión | 49 | Las de una operación de 50 operandos; acota también las cadenas de signos y traspuestas (`Aᵀᵀᵀ…`, `---A`). |
+| Entradas de los operandos | 900 | Cada aparición cuenta todas sus entradas: repetir una matriz 10×10 diez veces no cabe. |
+
+El tope histórico de 8 símbolos de Expresiones matriciales desapareció. Lo que
+el módulo anterior admitía sigue cabiendo con 22 matrices o menos (900 celdas);
+con 50 matrices caben hasta 790 celdas, porque 200 campos son de estructura.
+Solo se pierden los envíos extremos de 23 o más matrices que, entre todas,
+pasan de `990 − 4 × cantidad` celdas (por ejemplo, 36 matrices de 5×5). Para
+recuperarlos habría que subir `DATA_UPLOAD_MAX_NUMBER_FIELDS`, que P26.2 fijó
+como límite estructural. Si una estructura no cabe, se dibujan los mismos
+símbolos con dimensiones iniciales y un mensaje lo explica; con JavaScript,
+agregar o redimensionar no se aplica y el mensaje aparece al instante. La
+seguridad numérica común (literales acotados, `BITS_MAXIMOS`) no cambia.
+
+### Arquitectura
+
+```text
+texto → ¿un solo =?
+  no → lexer → parser → AST → evaluador → primitivas existentes
+  sí → cada lado por ese mismo camino
+        numérico → comparación de los dos valores
+        Ax simbólico → coeficientes de formas lineales → matriz A
+```
+
+Cada nodo guarda operación, hijos, texto y su ruta. La evaluación recorre cada
+árbol de abajo hacia arriba y llama a `resolver_operacion_matrices` (suma,
+resta, escalar, traspuesta, `AB` y `Ax`) o a `backend/vectores.py`; no hay otra
+suma, otro producto ni otra traspuesta. `servicios_expresiones.py` arma un paso
+por nodo y delega la escritura en `servicios_matrices.py`
+(`presentar_producto`, `presentar_por_entrada`), que convierte los datos exactos
+ya calculados en textos sin volver a calcular. `forms_expresiones.py` valida la
+estructura, el presupuesto y los números con el parser común
+(`FormularioCeldas`).
+
+### Compatibilidad de Expresiones matriciales
+
+`/matrices/expresiones/` ya no es una herramienta: un GET redirige con 301 a
+`/matrices/operaciones/` conservando la consulta, y un POST usa 308 para que el
+navegador reenvíe el mismo cuerpo, que el formulario unificado entiende tal cual
+(es el de expresiones; un envío sin la opción de productos usa fila por
+columna). No hay una segunda tarjeta en el catálogo, y las búsquedas de
+«expresiones matriciales», «expresión», «2A» o «AB» llevan a Operaciones con
+matrices.
+
+El contrato POST interno anterior de `/matrices/operaciones/` (`operacion`,
+`filas`, `columnas`, `columnas_b`, `celda_A_i_j`…) se retiró: mantenerlo exigía
+inferir la estructura de las celdas y sostener un segundo contrato sin otros
+clientes que las pruebas y el smoke de Windows, que ahora usan el formulario de
+símbolos. Los GET y los enlaces siguen funcionando.
 
 ### Límites
 
-No hay inversa, determinante, potencias ni traspuesta dentro de la expresión
-numérica. En el camino simbólico tampoco hay dos matrices desconocidas,
-`AX = B`, `XA = B`, inversas o determinantes simbólicos, polinomios, división
-por variables ni un sistema algebraico general. Un nombre que no esté definido
-sigue siendo un error, no una incógnita. Resolver Ax = b, con A y b conocidos
-y x incógnita, no cambia.
+No hay inversa, determinante ni potencias dentro de la expresión numérica. En
+el camino simbólico tampoco hay dos matrices desconocidas, `AX = B`, `XA = B`,
+inversas o determinantes simbólicos, polinomios, división por variables ni un
+sistema algebraico general. Un nombre que no esté definido sigue siendo un
+error, no una incógnita.
+
+### Resolver Ax = b
+
+En `Ax` el vector x es conocido y solo se calcula el producto. Buscar x es
+otra herramienta de la categoría Matrices: **Resolver Ax = b**
+(`/matrices/ecuaciones/`). Allí A (m×n) y b son conocidos, x es la incógnita y
+la interfaz muestra `A (m×n) · x (n) = b (m)`: se eligen solo las dimensiones
+de A, b toma m componentes, x se dibuja como vector de incógnitas `x₁ … xₙ` sin
+celdas editables y A no necesita ser cuadrada (`2×3`, `3×2`, …). La
+herramienta enseña que estas formas son la misma ecuación:
+
+```text
+Ax = b  ↔  x₁a₁ + x₂a₂ + … + xₙaₙ = b  ↔  sistema lineal  ↔  [A | b]
+```
+
+No hay un segundo solucionador: `backend/ecuaciones_matriciales.py` valida la
+ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
+`resolver_sistema_gauss` o `resolver_sistema_gauss_jordan` de
+`backend/sistemas.py`, cuyo resultado se amplía con la lectura de `Ax = b`.
+Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
+`matrices.py`. El método se elige como en Reducción por filas (Gauss,
+Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
+sola vez y los dos procedimientos plegados). El procedimiento va plegado
+primero y el resultado después, siempre visible:
+
+- solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
+  `x2 = 2`, el vector columna x y la comprobación `A · x = b` calculada con
+  `multiplicar_matriz_vector`; b es combinación lineal de las columnas de A de
+  una única manera (`b = 3a₁ + 2a₂`);
+- soluciones infinitas: la solución general de sistemas (`x1 = 2 - x3`,
+  `x3 es libre`); b es combinación lineal de las columnas de A de infinitas
+  maneras;
+- inconsistente: la contradicción que ya detecta sistemas (`[0 0 | 1]`, es
+  decir, `0 = 1`); b no pertenece al conjunto generado por las columnas de A.
+
+La interpretación como combinación lineal se deriva solo de la clasificación
+del sistema. «Ver procedimiento» muestra la cadena de equivalencias —ecuación
+matricial, ecuación vectorial con las columnas de A, sistema equivalente
+(`ecuaciones_de_matriz`, con `n` incógnitas) y matriz aumentada— y después la
+eliminación con los mismos bloques de Reducción por filas: operaciones por
+filas, matriz escalonada o reducida con sus pivotes, columnas pivote, sistema
+resultante y sustitución regresiva. La comprobación `A · x = b` y la
+interpretación van en sus propios bloques plegados después del resultado.
+`EcuacionMatricialForm`
+(`forms_ecuaciones.py`) comparte con Operaciones con matrices y Matriz inversa la base `FormularioCeldas`
+—celdas, parser y comprobaciones del POST— y exige que b tenga exactamente
+una componente por fila de A; x nunca viaja en el POST. Con JavaScript los
+controles +/− regeneran A, x y b; sin JavaScript, **Aplicar** redibuja la
+misma estructura.
+
+Para las decisiones de presentación y accesibilidad, consulta [Interfaz](interfaz.md).
+La reutilización del cálculo se explica en [Algoritmos](algoritmos.md).
+
+## Matriz inversa
+
+**Matriz inversa** (`/matrices/inversa/`) recibe una matriz cuadrada A, de 1×1
+a 10×10, y calcula su inversa exacta. El método se elige en el formulario:
+
+- **Gauss-Jordan** (predeterminado, cualquier tamaño): coloca la identidad
+  junto a A, aplica operaciones por filas a `[A | I]` y, si el lado izquierdo
+  llega a la identidad, el derecho es `A⁻¹`.
+- **Método para matrices 2×2** (solo si A es 2×2): calcula `ad − bc` y, si no
+  es 0, intercambia a y d, cambia el signo de b y c y multiplica por
+  `1/(ad − bc)`.
+
+Si A no tiene inversa, el resultado lo dice con una explicación breve según el
+método. Un cálculo con Gauss-Jordan que se estima largo pide confirmación antes
+de ejecutarse. Los detalles, los ejemplos y la API están en
+[Matriz inversa](matriz-inversa.md).
 
 ## Visualización de resultados en PyGebra
 
-Sistemas, Vectores, Matrices, Expresiones matriciales y Ax=b permiten alternar **Exacto / Decimal**
+Sistemas, Vectores, Operaciones con matrices y Ax=b permiten alternar **Exacto / Decimal**
 después de resolver. El máximo de decimales puede ser 2, 4 (predeterminado),
 6 u 8. La preferencia se conserva localmente entre herramientas compatibles.
 `1/2` se ve como `0.5` y `1/3` como `0.3333` con cuatro decimales; `4` sigue
