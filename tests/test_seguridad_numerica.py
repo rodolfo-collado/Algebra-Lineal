@@ -44,7 +44,7 @@ def entradas_web(literal):
     matrices = "/matrices/operaciones/"
     vectores = "/vectores/operaciones/"
     ecuaciones = "/matrices/ecuaciones/"
-    expresiones = "/matrices/expresiones/"
+    expresiones = "/matrices/operaciones/"
     yield sistemas, {"metodo": "gauss", "sistema": f"x1={literal}"}
     yield sistemas, datos_matriz([[1, literal]])
     yield matrices, datos_matrices("suma", a=[[literal]], b=[[1]])
@@ -131,19 +131,19 @@ class PruebasEntradasWeb(SimpleTestCase):
             datos_lineales("b", [{"nombre": "b", "tipo": "vector_lineal", "valor": [largo + "x1"]}]),
         ):
             with self.subTest(datos=datos), patch("backend.parser_sistemas.Fraction", fraction_vigilada):
-                respuesta = self.client.post("/matrices/expresiones/", datos)
+                respuesta = self.client.post("/matrices/operaciones/", datos)
                 self.assertContains(respuesta, MENSAJE_NUMERO_GRANDE)
                 self.assertNotContains(respuesta, 'id="resultado"')
 
     def test_expresiones_no_interpretan_cientifica_y_conservan_nombres_con_e(self):
         for texto in ("1e1000000000", "1e-1000000000"):
             with self.subTest(texto=texto), patch("backend.parser_sistemas.Fraction", fraction_vigilada):
-                respuesta = self.client.post("/matrices/expresiones/", datos_expresion(texto, []))
+                respuesta = self.client.post("/matrices/operaciones/", datos_expresion(texto, []))
                 self.assertEqual(respuesta.status_code, 200)
                 self.assertContains(respuesta, "no está definido")
                 self.assertNotContains(respuesta, 'id="resultado"')
         # La yuxtaposición 1·e2 es sintaxis existente, no un exponente.
-        respuesta = self.client.post("/matrices/expresiones/", datos_expresion("1e2", [{"nombre": "e2", "tipo": "escalar", "valor": 7}]))
+        respuesta = self.client.post("/matrices/operaciones/", datos_expresion("1e2", [{"nombre": "e2", "tipo": "escalar", "valor": 7}]))
         self.assertContains(respuesta, 'id="resultado"')
 
     def test_crecimiento_de_entradas_admitidas_da_error_en_sistemas_ax_y_combinacion(self):
@@ -168,7 +168,7 @@ class PruebasEntradasWeb(SimpleTestCase):
     def test_producto_escalar_encadenado_se_detiene_antes_de_presentar(self):
         # 37 factores de 100 cifras caben en una expresión de 73 caracteres.
         datos = datos_expresion("*".join(["k"] * 37), [{"nombre": "k", "tipo": "escalar", "valor": "9" * 100}])
-        self.assert_error_controlado(self.client.post("/matrices/expresiones/", datos))
+        self.assert_error_controlado(self.client.post("/matrices/operaciones/", datos))
 
     def test_cadena_de_matrices_admitidas_se_detiene_antes_de_presentar(self):
         # 37 matrices de una celda caben en los presupuestos de operandos y celdas.

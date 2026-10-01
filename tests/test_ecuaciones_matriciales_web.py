@@ -61,13 +61,13 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
     def test_ax_b_es_una_herramienta_de_matrices_con_ruta_propia(self):
         self.assertEqual(
             catalogo.herramientas_de(catalogo.MATRICES),
-            (catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA),
+            (catalogo.OPERACIONES_MATRICES, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA),
         )
         self.assertTrue(catalogo.ECUACIONES_MATRICIALES.disponible)
         self.assertEqual(catalogo.ECUACIONES_MATRICIALES.nombre, "Resolver Ax = b")
         self.assertEqual(reverse("calculadora:ecuaciones-matriciales"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.ECUACIONES_MATRICIALES)
-        self.assertEqual(catalogo.ECUACIONES_MATRICIALES.relacionadas, ("reduccion-filas", "operaciones-matrices", "operaciones-vectores", "expresiones-matriciales"))
+        self.assertEqual(catalogo.ECUACIONES_MATRICIALES.relacionadas, ("reduccion-filas", "operaciones-matrices", "operaciones-vectores"))
         # Operaciones con matrices sigue igual: Ax con x conocido no cambia de significado.
         self.assertEqual(catalogo.OPERACIONES_MATRICES.ruta, RUTA_OPERACIONES)
         self.assertIn("ax", catalogo.OPERACIONES_MATRICES.palabras_clave)
@@ -86,7 +86,7 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
         self.assertTrue(doc.categorias["matrices"])
         enlaces = [a["href"] for a in doc.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, [RUTA_OPERACIONES, "/matrices/expresiones/", "/matrices/reduccion/", RUTA, "/matrices/inversa/"])
+        self.assertEqual(enlaces, [RUTA_OPERACIONES, "/matrices/reduccion/", RUTA, "/matrices/inversa/"])
         self.assertNotContains(respuesta, "Herramientas relacionadas")
 
     def test_busqueda_por_ecuacion_matricial_y_conceptos(self):

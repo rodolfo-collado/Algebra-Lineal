@@ -1,112 +1,26 @@
-"""Configuración de la herramienta; los límites son de interfaz, no matemáticos."""
-
-from backend.operandos import ARIDAD_MATRICES, nombre_matriz
+"""Opciones de las herramientas de matrices; los límites son de interfaz, no matemáticos."""
 
 DIMENSION_MINIMA = 1
 DIMENSION_MAXIMA = 10
 DIMENSION_PREDETERMINADA = 2
-OPERACION_PREDETERMINADA = "suma"
 
-# Cómo ver el procedimiento de AB y Ax. Los identificadores se comparten: las
-# etiquetas cambian con la operación, la matemática no.
+# Cómo se explica cada producto AB o Ax de una expresión. Es solo presentación:
+# el producto se calcula una vez y cada lectura agrupa los mismos productos aᵢₖbₖⱼ.
 METODO_PREDETERMINADO = "fila_columna"
+METODOS = (("fila_columna", "Fila por columna"), ("columnas", "Por columnas"), ("comparar", "Comparar ambos"))
+# En Ax las mismas lecturas conservan sus nombres pedagógicos.
+METODOS_MATRIZ_VECTOR = (
+    ("fila_columna", "Regla fila-vector"), ("columnas", "Combinación lineal de columnas"), ("comparar", "Comparar ambos"),
+)
 METODOS_COMPARADOS = ("fila_columna", "columnas")
+AYUDA_METODOS = (
+    "Solo cambia la explicación: el resultado es el mismo. Fila por columna calcula cada entrada "
+    "como una fila de la izquierda por una columna de la derecha; por columnas obtiene cada columna "
+    "del producto como combinación lineal de las columnas de la izquierda. En una matriz por un vector "
+    "son la regla fila-vector y la combinación lineal de columnas."
+)
 # Con más entradas en el resultado, los grupos del procedimiento nacen plegados.
 ENTRADAS_DESPLEGADAS = 12
-
-# Cada operación declara qué campos de estructura usa (con su etiqueta) y la
-# forma de cada matriz de entrada como (campo de filas, campo de columnas);
-# None en las columnas indica un vector columna, que se dibuja como matriz n×1.
-DIMENSIONES_COMUNES = (("filas", "Filas"), ("columnas", "Columnas"))
-FORMA_A = {"A": ("filas", "columnas")}
-
-CONFIGURACION = {
-    "suma": {
-        "etiqueta": "Suma", "matrices": ("A", "B"), "escalar": False,
-        "formas": {**FORMA_A, "B": ("filas", "columnas")}, "dimensiones": DIMENSIONES_COMUNES,
-        "forma_texto": "{m}×{n} en cada matriz de entrada.", "metodos": (), "ayuda_metodos": "",
-        "expresion": "A + B", "simbolo": "+", "formula": "cᵢⱼ = aᵢⱼ + bᵢⱼ",
-        "ayuda": "Suma las entradas en la misma posición. Todas las matrices comparten filas y columnas.",
-    },
-    "resta": {
-        "etiqueta": "Resta", "matrices": ("A", "B"), "escalar": False,
-        "formas": {**FORMA_A, "B": ("filas", "columnas")}, "dimensiones": DIMENSIONES_COMUNES,
-        "forma_texto": "{m}×{n} en cada matriz de entrada.", "metodos": (), "ayuda_metodos": "",
-        "expresion": "A − B", "simbolo": "−", "formula": "cᵢⱼ = aᵢⱼ − bᵢⱼ",
-        "ayuda": "Resta las entradas en la misma posición y en el orden indicado. Todas las matrices comparten filas y columnas.",
-    },
-    "escalar": {
-        "etiqueta": "Multiplicación por escalar", "matrices": ("A",), "escalar": True,
-        "formas": FORMA_A, "dimensiones": DIMENSIONES_COMUNES,
-        "forma_texto": "{m}×{n} en cada matriz de entrada.", "metodos": (), "ayuda_metodos": "",
-        "expresion": "k·A", "simbolo": "·", "formula": "(kA)ᵢⱼ = k · aᵢⱼ",
-        "ayuda": "El escalar k multiplica cada entrada de A.",
-    },
-    "traspuesta": {
-        "etiqueta": "Traspuesta", "matrices": ("A",), "escalar": False,
-        "formas": FORMA_A, "dimensiones": DIMENSIONES_COMUNES,
-        "forma_texto": "{m}×{n} en cada matriz de entrada.", "metodos": (), "ayuda_metodos": "",
-        "expresion": "Aᵀ", "simbolo": "", "formula": "(Aᵀ)ᵢⱼ = Aⱼᵢ",
-        "ayuda": "Las filas de A pasan a ser las columnas de Aᵀ.",
-    },
-    "producto": {
-        "etiqueta": "Multiplicación de matrices", "matrices": ("A", "B"), "escalar": False,
-        # Las filas de B son las columnas de A: la interfaz no permite un producto imposible.
-        "formas": {**FORMA_A, "B": ("columnas", "columnas_b")},
-        "dimensiones": (("filas", "Filas de A"), ("columnas", "Columnas de A = filas de B"), ("columnas_b", "Columnas de B")),
-        "forma_texto": "A: {m}×{n} · B: {n}×{p} → AB: {m}×{p}.",
-        "metodos": (("fila_columna", "Fila por columna"), ("columnas", "Por columnas"), ("comparar", "Comparar ambos")),
-        "ayuda_metodos": (
-            "Fila por columna calcula cada entrada cᵢⱼ como filaᵢ(A) · columnaⱼ(B). Por columnas obtiene cada "
-            "columna Abⱼ como combinación lineal de las columnas de A. Comparar ambos muestra los dos procedimientos."
-        ),
-        "expresion": "AB", "simbolo": "·",
-        "formula": "cᵢⱼ = filaᵢ(A) · columnaⱼ(B) = aᵢ₁b₁ⱼ + aᵢ₂b₂ⱼ + … + aᵢₙbₙⱼ",
-        "ayuda": "AB existe solo si el número de columnas de A coincide con el número de filas de B: A (m×n) · B (n×p) da AB (m×p). En una cadena, se comprueba cada pareja consecutiva y se multiplica de izquierda a derecha.",
-    },
-    "matriz_vector": {
-        "etiqueta": "Matriz por vector (Ax)", "matrices": ("A", "x"), "escalar": False,
-        "formas": {**FORMA_A, "x": ("columnas", None)},
-        "dimensiones": (("filas", "Filas de A"), ("columnas", "Columnas de A = componentes de x")),
-        "forma_texto": "A ({m}×{n}) · x ({n}) → Ax ({m}).",
-        "metodos": (("fila_columna", "Regla fila-vector"), ("columnas", "Combinación lineal de columnas"), ("comparar", "Comparar ambos")),
-        "ayuda_metodos": (
-            "La regla fila-vector calcula cada entrada (Ax)ᵢ como filaᵢ(A) · x. La combinación lineal escribe "
-            "Ax = x₁a₁ + … + xₙaₙ con las columnas de A. Comparar ambos muestra los dos procedimientos."
-        ),
-        "expresion": "Ax", "simbolo": "·",
-        "formula": "(Ax)ᵢ = filaᵢ(A) · x = aᵢ₁x₁ + aᵢ₂x₂ + … + aᵢₙxₙ",
-        "ayuda": "x es un vector columna con tantas componentes como columnas tiene A: A (m×n) · x (n) da Ax (m).",
-    },
-}
-OPERACIONES = tuple((clave, opcion["etiqueta"]) for clave, opcion in CONFIGURACION.items())
-for clave, opcion in CONFIGURACION.items():
-    opcion["aridad"] = ARIDAD_MATRICES[clave]
-CAMPOS_DIMENSION = ("filas", "columnas", "columnas_b")
-
-
-def configuracion_operandos(operacion, cantidad=2):
-    base = CONFIGURACION[operacion]
-    if base["aridad"][1] is not None:
-        return base
-    nombres = tuple(nombre_matriz(i) for i in range(cantidad))
-    formas = dict(base["formas"])
-    dimensiones = list(base["dimensiones"])
-    for i, nombre in enumerate(nombres[2:], start=2):
-        if operacion == "producto":
-            anterior = nombre_matriz(i - 1).lower()
-            campo = f"columnas_{nombre.lower()}"
-            formas[nombre] = (f"columnas_{anterior}", campo)
-            dimensiones.append((campo, f"Columnas de {nombre}"))
-        else:
-            formas[nombre] = ("filas", "columnas")
-    expresion = "".join(nombres) if operacion == "producto" else f" {base['simbolo']} ".join(nombres)
-    return {**base, "matrices": nombres, "formas": formas, "dimensiones": tuple(dimensiones), "expresion": expresion}
-
-
-def es_vector(opcion, nombre):
-    """Una entrada sin campo de columnas es un vector columna."""
-    return opcion["formas"][nombre][1] is None
 
 
 def metodos_a_mostrar(metodo):

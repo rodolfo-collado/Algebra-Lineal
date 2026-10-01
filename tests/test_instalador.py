@@ -91,10 +91,15 @@ class PruebasInstalacionPorUsuario(unittest.TestCase):
         self.assertIn("/DIR=", prueba)
         self.assertIn("cuenta limpia", prueba)
         self.assertIn("matrices/operaciones/", prueba)
-        self.assertIn("matrices.js", prueba)
+        self.assertIn("expresiones.js", prueba)
+        self.assertNotIn("matrices.js", prueba)
+        # P26.6: las operaciones son expresiones del formulario de símbolos y la ruta histórica redirige.
+        self.assertIn("'A + B'", prueba)
+        self.assertIn("'A^T'", prueba)
+        self.assertIn("matrices/expresiones/", prueba)
         # P13B viaja en el mismo smoke: AB y Ax comparando los dos procedimientos.
-        self.assertIn("operacion = 'producto'", prueba)
-        self.assertIn("operacion = 'matriz_vector'", prueba)
+        self.assertIn("expresion = 'AB'", prueba)
+        self.assertIn("expresion = 'Ax'", prueba)
         self.assertIn('id="procedimiento"', prueba)
         self.assertIn('class="disclosure disclosure-nested"', prueba)
         # P14: Ax = b con solución fraccionaria y un caso rectangular, más su recurso local.

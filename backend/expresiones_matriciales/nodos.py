@@ -110,6 +110,17 @@ class Igualdad:
     derecha: Nodo
 
 
+def nodos(arbol):
+    """Todos los nodos de una expresión, o de los dos lados de una igualdad, en orden de lectura."""
+    pendientes = [arbol.derecha, arbol.izquierda] if isinstance(arbol, Igualdad) else [arbol]
+    encontrados = []
+    while pendientes:
+        nodo = pendientes.pop()
+        encontrados.append(nodo)
+        pendientes.extend(reversed(nodo.hijos()))
+    return encontrados
+
+
 def estructura(nodo):
     """Forma del árbol sin texto ni posiciones: así `AB` y `A*B` se comparan."""
     if isinstance(nodo, Igualdad):

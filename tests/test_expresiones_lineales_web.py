@@ -1,4 +1,4 @@
-"""Expresiones lineales en la herramienta web: determinación de A, formato y POST."""
+"""Expresiones lineales en Operaciones con matrices: determinación de A, formato y POST."""
 
 import os
 from html.parser import HTMLParser
@@ -13,7 +13,7 @@ from django.test import Client, SimpleTestCase
 from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm
 from frontend.web.calculadora.servicios_expresiones import evaluar_expresion_web
 
-RUTA = "/matrices/expresiones/"
+RUTA = "/matrices/operaciones/"
 
 
 def datos(expresion, simbolos, **extra):

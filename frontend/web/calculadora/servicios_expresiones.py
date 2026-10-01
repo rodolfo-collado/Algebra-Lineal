@@ -1,4 +1,10 @@
-"""Presenta la evaluación. La aritmética sigue en el backend."""
+"""Presenta la evaluación de Operaciones con matrices. La aritmética sigue en el backend.
+
+Cada paso del árbol muestra su propio procedimiento: suma, resta, escalar y
+traspuesta entrada por entrada; AB y Ax con la lectura elegida (fila por
+columna, por columnas o ambas). El último paso no repite su resultado: ese
+valor es el resultado de la página y se muestra una sola vez, al final.
+"""
 
 from fractions import Fraction
 
@@ -6,20 +12,24 @@ from backend.expresiones_matriciales import Comparacion, Determinacion, Evaluaci
 from backend.expresiones_matriciales.lineal import enumerar, texto_forma
 from backend.matrices import vector_columna
 
+from .opciones_matrices import METODO_PREDETERMINADO
 from .presentacion_numerica import formatear_exacto
 from .servicios import formatear_matriz
-from .servicios_matrices import combinacion_columnas
+from .servicios_matrices import operando, presentar_por_entrada, presentar_producto
 
-_SIGNOS = {"resta": "−", "resta_vector": "−", "escalar": "·", "escalar_vector": "·"}
+_SIGNOS = {"resta_vector": "−", "escalar_vector": "·"}
+# Al yuxtaponerlos o nombrarlos dentro de otra operación necesitan paréntesis: (A + B)c₁.
+_AGRUPAR = frozenset({"suma", "resta", "negacion"})
 
 
 def evaluar_expresion_web(entrada):
+    metodo = entrada.get("metodo") or METODO_PREDETERMINADO
     resultado = evaluar(entrada["expresion"], entrada["simbolos"], entrada.get("nodo"))
     if isinstance(resultado, Determinacion):
         return presentar_determinacion(resultado)
     if isinstance(resultado, Comparacion):
-        return presentar_igualdad(resultado)
-    return presentar(resultado)
+        return presentar_igualdad(resultado, metodo)
+    return presentar(resultado, metodo)
 
 
 def presentar_determinacion(determinacion):
@@ -59,7 +69,7 @@ def _columna(coeficientes):
     return "[" + ", ".join(formatear_exacto(coeficiente) for coeficiente in coeficientes) + "]^T"
 
 
-def presentar_igualdad(comparacion):
+def presentar_igualdad(comparacion, metodo=METODO_PREDETERMINADO):
     if not comparacion.comparable:
         titulo, veredicto = "No se pueden comparar ambos lados", "incomparable"
     elif comparacion.alcance == "simbolica" and comparacion.coincide:
@@ -80,34 +90,75 @@ def presentar_igualdad(comparacion):
         "comparable": comparacion.comparable,
         "alcance": comparacion.alcance,
         "dimensiones": None if veredicto == "incomparable" else dimensiones(comparacion.izquierda),
-        "izquierda": presentar(Evaluacion(comparacion.izquierda)),
-        "derecha": presentar(Evaluacion(comparacion.derecha)),
+        # Cada lado es un árbol propio: sus productos nunca se llaman cᵢⱼ.
+        "izquierda": presentar(Evaluacion(comparacion.izquierda), metodo, raiz=False),
+        "derecha": presentar(Evaluacion(comparacion.derecha), metodo, raiz=False),
     }
 
 
-def presentar(evaluacion):
-    pasos = aplanar(evaluacion.principal)
-    visibles = pasos if len(pasos) == 1 else [paso for paso in pasos if paso.operacion not in ("numero", "simbolo")]
+def presentar(evaluacion, metodo=METODO_PREDETERMINADO, raiz=True):
+    """Los pasos en el orden en que se calcularon (hijos primero); el último es el resultado."""
+    principal = evaluacion.principal
+    pasos = [paso for paso in aplanar(principal) if paso.operacion not in ("numero", "simbolo")]
     return {
-        "texto": evaluacion.principal.texto,
-        "tipo": evaluacion.principal.tipo,
-        "parcial": evaluacion.principal.id != "0",
-        "dimensiones": dimensiones(evaluacion.principal),
-        "igualdad": igualdad(evaluacion.principal),
-        "matriz": matriz_de(evaluacion.principal),
-        "pasos": [presentar_paso(paso) for paso in visibles],
+        "texto": principal.texto,
+        "tipo": principal.tipo,
+        "parcial": principal.id != "0",
+        "dimensiones": dimensiones(principal),
+        "igualdad": igualdad(principal),
+        "matriz": matriz_de(principal),
+        # El último paso es lo que se pidió calcular: no repite su valor ni ofrece recalcularse.
+        # En una igualdad, cada lado sí puede pedirse solo.
+        "pasos": [
+            presentar_paso(paso, metodo, final=paso is principal, simple=raiz and paso is principal,
+                           recalcular=not (raiz and paso is principal))
+            for paso in pasos
+        ],
     }
 
 
-def presentar_paso(paso):
+def presentar_paso(paso, metodo=METODO_PREDETERMINADO, final=False, simple=False, recalcular=True):
     return {
         "id": paso.id,
         "texto": paso.texto,
         "operacion": paso.operacion,
+        "dimensiones": dimensiones(paso),
         "igualdad": igualdad(paso),
         "matriz": matriz_de(paso),
+        "final": final,
+        "recalcular": recalcular,
+        "matricial": procedimiento_matricial(paso, metodo, simple),
         "lineas": lineas(paso),
     }
+
+
+def _operando(paso):
+    return operando(paso.texto, paso.resultado, simbolo=paso.operacion == "simbolo", agrupar=paso.operacion in _AGRUPAR)
+
+
+def procedimiento_matricial(paso, metodo=METODO_PREDETERMINADO, simple=False):
+    """El procedimiento de Operaciones con matrices para un paso con matrices; None si no lo tiene.
+
+    `simple` solo vale para dos símbolos operados: es el caso del módulo anterior
+    (AB, A + B) y conserva sus nombres cᵢⱼ y sus fórmulas completas.
+    """
+    detalle = paso.detalle or {}
+    operacion = detalle.get("operacion")
+    simple = simple and all(hijo.operacion == "simbolo" for hijo in paso.hijos)
+    if operacion in ("producto", "matriz_vector"):
+        izquierda, derecha = paso.hijos
+        return presentar_producto(detalle, metodo, _operando(izquierda), _operando(derecha), paso.texto, simple)
+    if operacion in ("suma", "resta"):
+        return presentar_por_entrada(detalle, paso.texto, [_operando(hijo) for hijo in paso.hijos], simple=simple)
+    if operacion == "traspuesta":
+        return presentar_por_entrada(detalle, paso.texto, [_operando(paso.hijos[0])])
+    if operacion == "escalar":
+        # kA, Ak o -A (la negación multiplica por -1): el factor es el hijo escalar.
+        matriz = next(hijo for hijo in paso.hijos if hijo.tipo == "matriz")
+        escalar = next((hijo for hijo in paso.hijos if hijo.tipo == "escalar"), None)
+        factor = _operando(escalar) if escalar else operando("-1", Fraction(-1), agrupar=True)
+        return presentar_por_entrada(detalle, paso.texto, [_operando(matriz)], factor=factor)
+    return None
 
 
 def dimensiones(paso):
@@ -163,44 +214,21 @@ def matriz_de(paso):
 
 
 def lineas(paso):
+    """Vectores y escalar por vector: una línea por componente. Las matrices usan su procedimiento."""
     detalle = paso.detalle or {}
     operacion = detalle.get("operacion")
-    if operacion in ("producto", "matriz_vector"):
-        return lineas_producto(detalle) + lineas_columnas(detalle)
-    pasos = detalle.get("pasos") or ()
-    if not pasos:
+    if operacion not in ("suma_vector", "resta_vector", "escalar_vector"):
         return []
     signo = _SIGNOS.get(operacion, "+")
-    if isinstance(pasos[0], dict):
-        return [linea_operandos(entrada, signo) for entrada in pasos]
-    return [linea_operandos(entrada, signo) for fila in pasos for entrada in fila]
-
-
-def lineas_producto(detalle):
-    """Las mismas entradas que ya calculó resolver_operacion_matrices, sin rehacer el producto."""
-    resultado = []
-    for fila in detalle["pasos"]:
-        for paso in fila:
-            sustitucion = " + ".join(
-                f"{operando(a)}·{operando(b)}" for a, b in zip(paso["fila"], paso["columna"])
-            )
-            resultado.append(f"{sustitucion} = {formatear_exacto(paso['resultado'])}")
-    return resultado
-
-
-def lineas_columnas(detalle):
-    return [
-        f"{combinacion_columnas(columna['coeficientes'])} = [{', '.join(formatear_exacto(valor) for valor in columna['resultado'])}]"
-        for columna in detalle["columnas"]
-    ]
+    return [linea_operandos(entrada, signo) for entrada in detalle["pasos"]]
 
 
 def linea_operandos(paso, signo):
-    expresion = f" {signo} ".join(operando(valor) for valor in paso["operandos"])
+    expresion = f" {signo} ".join(operando_texto(valor) for valor in paso["operandos"])
     return f"{expresion} = {formatear_exacto(paso['resultado'])}"
 
 
-def operando(numero):
+def operando_texto(numero):
     numero = Fraction(numero)
     texto = formatear_exacto(numero)
     return f"({texto})" if numero < 0 or numero.denominator != 1 else texto

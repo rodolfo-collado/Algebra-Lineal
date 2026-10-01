@@ -313,7 +313,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         self.assertNotIn("open = true", script)
 
     def test_el_teclado_plegado_llega_a_todas_las_herramientas(self):
-        for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
+        for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
                 teclados = Desplegables(html).con_clase("disclosure-keyboard")

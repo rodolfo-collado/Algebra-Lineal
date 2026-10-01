@@ -329,12 +329,12 @@ class PruebasMatrices(SimpleTestCase):
     def test_entrada_por_entrada_es_una_sola_cadena_y_el_resultado_una_matriz(self):
         casos = (
             (datos_matrices(), "A + B", "Entrada por entrada", [["6", "8"], ["10", "12"]]),
-            (datos_matrices("resta"), "A − B", "Entrada por entrada", [["-4", "-4"], ["-4", "-4"]]),
-            (datos_matrices("escalar", escalar="1/2"), "k·A", "Entrada por entrada", [["1/2", "1"], ["3/2", "2"]]),
+            (datos_matrices("resta"), "A - B", "Entrada por entrada", [["-4", "-4"], ["-4", "-4"]]),
+            (datos_matrices("escalar", escalar="1/2"), "kA", "Entrada por entrada", [["1/2", "1"], ["3/2", "2"]]),
             (datos_matrices("traspuesta", a=[[1, 2, 3], [4, 5, 6]]), "Aᵀ", "De filas a columnas", [["1", "4"], ["2", "5"], ["3", "6"]]),
         )
         for datos, expresion, etapa, matriz in casos:
-            with self.subTest(operacion=datos["operacion"]):
+            with self.subTest(expresion=datos["expresion"]):
                 html = self.client.post(RUTA_MATRICES, datos).content.decode("utf-8")
                 comprobar_estructura(self, html)
                 doc = Contenido(html)
@@ -343,8 +343,8 @@ class PruebasMatrices(SimpleTestCase):
                 self.assertIn("Desarrollo por entradas", doc.tablas)
                 # La cadena termina en la matriz obtenida; el único bloque «Resultado» es el panel final.
                 self.assertEqual(doc.tablas["Resultado del desarrollo"], matriz)
-                self.assertEqual(doc.tablas["Matriz resultado"], matriz)
-                self.assertEqual(html.count('<table class="matrix-table" aria-label="Matriz resultado"'), 1)
+                self.assertEqual(doc.tablas["Resultado"], matriz)
+                self.assertEqual(html.count('<table class="matrix-table" aria-label="Resultado"'), 1)
                 self.assertEqual(html.count('<table class="matrix-table" aria-label="Resultado del desarrollo"'), 1)
                 self.assertNotIn("Resultado", procedimiento)
                 self.assertNotIn("Expresión matricial", procedimiento)
@@ -367,7 +367,7 @@ class PruebasMatrices(SimpleTestCase):
             (datos_matriz_vector(metodo="comparar"), ["Regla fila-vector", "Combinación lineal de columnas"], None),
         )
         for datos, anidados, titulo in casos:
-            with self.subTest(operacion=datos["operacion"], metodo=datos["metodo"]):
+            with self.subTest(expresion=datos["expresion"], metodo=datos["metodo"]):
                 html = self.client.post(RUTA_MATRICES, datos).content.decode("utf-8")
                 estructura = comprobar_estructura(self, html)
                 metodos = [d for d in estructura.details if "disclosure-nested" in d["clases"]]
@@ -378,12 +378,12 @@ class PruebasMatrices(SimpleTestCase):
                     self.assertEqual(procedimiento.count(titulo), 1)
                 self.assertNotIn("Expresión matricial", procedimiento)
                 self.assertNotIn("Resultado", procedimiento)
-                self.assertEqual(html.count('<table class="matrix-table" aria-label="Matriz resultado"'), 1)
+                self.assertEqual(html.count('<table class="matrix-table" aria-label="Resultado"'), 1)
                 self.assertEqual(texto_resultado(html).count("Resultado"), 1)
                 doc = Contenido(html)
                 for tabla in ("Resultado del desarrollo", "Resultado ensamblado"):
                     if tabla in doc.tablas:
-                        self.assertEqual(doc.tablas[tabla], doc.tablas["Matriz resultado"])
+                        self.assertEqual(doc.tablas[tabla], doc.tablas["Resultado"])
 
 
 class PruebasEcuacionMatricial(SimpleTestCase):

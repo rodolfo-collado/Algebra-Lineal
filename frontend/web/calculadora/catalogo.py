@@ -119,7 +119,7 @@ VECTORES = Categoria(
 )
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones y expresiones matriciales, reducción por filas, la ecuación matricial Ax = b y la matriz inversa.",
+    "Operaciones con matrices, reducción por filas, la ecuación matricial Ax = b y la matriz inversa.",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -171,7 +171,7 @@ OPERACIONES_VECTORES = Herramienta(
         "combinacion lineal", "coeficientes", "ecuación vectorial", "span", "generado",
         "conjunto generado", "dimensión", "componentes", "rn",
     ),
-    relacionadas=("ecuaciones-matriciales", "expresiones-matriciales"),
+    relacionadas=("ecuaciones-matriciales", "operaciones-matrices"),
     invitacion="Operar con vectores",
 )
 
@@ -210,19 +210,23 @@ CONVERSION_ROMANOS = Herramienta(
     invitacion="Convertir números romanos",
 )
 
-# La operación (suma, resta, escalar, traspuesta, AB o Ax) y, en los productos,
-# el método del procedimiento se eligen dentro, igual que el método en Reducción
-# por filas. En Ax el vector x es conocido y solo se calcula el producto.
+# Una sola herramienta para operaciones simples y compuestas (P26.6): A + B, 2A, AB,
+# Ax, Aᵀ o A(B + C) - 2D usan el mismo motor de expresiones. Cómo se explican los
+# productos se elige dentro. En Ax el vector x es conocido y solo se calcula el
+# producto. Absorbió a Expresiones matriciales: sus palabras clave siguen llevando aquí.
 OPERACIONES_MATRICES = Herramienta(
     id="operaciones-matrices", nombre="Operaciones con matrices", categoria=MATRICES,
-    descripcion="Opera con matrices, calcula AB o Ax y sigue el desarrollo paso a paso.",
+    descripcion="Realiza y combina operaciones con matrices, vectores y escalares paso a paso.",
     estado="disponible", route_name="calculadora:operaciones-matrices",
     palabras_clave=("matriz", "matrices", "suma", "resta", "escalar", "traspuesta",
-                    "transpuesta", "filas", "columnas", "rectangular", "fracciones",
+                    "transpuesta", "aᵀ", "a^t", "filas", "columnas", "rectangular", "fracciones",
                     "multiplicación de matrices", "producto de matrices", "matriz por matriz",
                     "ax", "matriz por vector", "fila por columna", "regla fila-vector",
-                    "producto punto", "combinación lineal"),
-    relacionadas=("ecuaciones-matriciales", "expresiones-matriciales"),
+                    "producto punto", "combinación lineal", "expresión", "expresiones",
+                    "expresiones matriciales", "componer", "combinar", "paréntesis",
+                    "multiplicación implícita", "igualdad", "2a", "ab", "au",
+                    "matriz desconocida", "vector simbólico", "expresión lineal"),
+    relacionadas=("ecuaciones-matriciales", "operaciones-vectores"),
     invitacion="Operar con matrices",
 )
 
@@ -236,24 +240,8 @@ ECUACIONES_MATRICIALES = Herramienta(
                     "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
                     "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
                     "inconsistente"),
-    relacionadas=("reduccion-filas", "operaciones-matrices", "operaciones-vectores", "expresiones-matriciales"),
+    relacionadas=("reduccion-filas", "operaciones-matrices", "operaciones-vectores"),
     invitacion="Resolver una ecuación matricial",
-)
-
-EXPRESIONES_MATRICIALES = Herramienta(
-    id="expresiones-matriciales",
-    nombre="Expresiones matriciales",
-    categoria=MATRICES,
-    descripcion="Evalúa sumas, restas y productos de matrices, vectores y escalares; compara dos expresiones o determina una matriz desconocida cuando Ax = b es lineal.",
-    estado="disponible",
-    route_name="calculadora:expresiones-matriciales",
-    palabras_clave=(
-        "expresión", "expresiones matriciales", "componer", "paréntesis",
-        "multiplicación implícita", "igualdad", "2a", "ab", "au",
-        "matriz desconocida", "vector simbólico", "expresión lineal",
-    ),
-    relacionadas=("operaciones-matrices", "ecuaciones-matriciales", "operaciones-vectores"),
-    invitacion="Evaluar una expresión matricial",
 )
 
 # Solo para matrices cuadradas. El método (Gauss-Jordan o la regla 2×2) se elige
@@ -276,7 +264,6 @@ MATRIZ_INVERSA = Herramienta(
 HERRAMIENTAS = (
     OPERACIONES_VECTORES,
     OPERACIONES_MATRICES,
-    EXPRESIONES_MATRICIALES,
     REDUCCION_FILAS,
     ECUACIONES_MATRICIALES,
     MATRIZ_INVERSA,

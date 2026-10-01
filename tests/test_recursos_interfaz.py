@@ -39,7 +39,6 @@ ASSETS_LOCALES = (
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "teclado.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "conversion.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "vectores.js",
-    RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "matrices.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "ecuaciones.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "expresiones.js",
     RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora" / "numeros.js",

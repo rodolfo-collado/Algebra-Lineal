@@ -84,7 +84,7 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         self.assertEqual(reverse("calculadora:operaciones-vectores"), RUTA)
         self.assertEqual(resolve(RUTA).view_name, "calculadora:operaciones-vectores")
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_VECTORES)
-        self.assertEqual(self.herramienta.relacionadas, ("ecuaciones-matriciales", "expresiones-matriciales"))
+        self.assertEqual(self.herramienta.relacionadas, ("ecuaciones-matriciales", "operaciones-matrices"))
         for palabra in ("vector", "vectores", "suma de vectores", "resta de vectores", "escalar",
                         "combinación lineal", "span", "generado", "dimensión"):
             self.assertIn(palabra, self.herramienta.palabras_clave)
@@ -106,11 +106,12 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         # Desde P13B, Operaciones con matrices también responde a «vector» (Ax) y a
         # «combinación lineal» (Ax como combinación de columnas), y desde P14 Resolver
         # Ax = b responde a «vector» (vector b) y a «combinación lineal»; vectores sigue primero.
+        # Desde P26.6 Operaciones con matrices también combina vectores y escalares.
         compartidas = {
-            "escalar": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES),
-            "vector": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES, catalogo.ECUACIONES_MATRICIALES),
-            "vectores": (catalogo.OPERACIONES_VECTORES, catalogo.EXPRESIONES_MATRICIALES),
-            "suma de vectores": (catalogo.OPERACIONES_VECTORES, catalogo.EXPRESIONES_MATRICIALES),
+            "escalar": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES),
+            "vector": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES),
+            "vectores": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES),
+            "suma de vectores": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES),
             "combinación lineal": (catalogo.OPERACIONES_VECTORES, catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES),
         }
         for consulta in ("vector", "vectores", "suma de vectores", "escalar", "combinación lineal", "span", "dimension"):
