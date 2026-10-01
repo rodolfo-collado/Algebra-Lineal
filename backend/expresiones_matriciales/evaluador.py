@@ -1,7 +1,7 @@
 """Evalúa un AST de abajo hacia arriba con las operaciones ya existentes.
 
-No hay otra suma ni otro producto numérico: cada nodo llama a
-`backend.matrices` o `backend.vectores`. El identificador de un nodo es su
+No hay otra suma, otro producto ni otra traspuesta numérica: cada nodo llama
+a `backend.matrices` o `backend.vectores`. El identificador de un nodo es su
 ruta en el árbol (`0`, `0.1`, `0.1.0`), estable para pedir una subexpresión.
 
 Una igualdad con valores numéricos compara esos valores. Si aparece una
@@ -33,7 +33,7 @@ from backend.expresiones_matriciales.lineal import (
     sumar as sumar_formas,
     variables_simbolicas,
 )
-from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma
+from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma, Traspuesta
 from backend.expresiones_matriciales.parser import analizar_entrada, nombre_valido
 
 _RUTA_LADO = re.compile(r"^(izq|der):(\d+(?:\.\d+)*)$")
@@ -357,6 +357,8 @@ def _evaluar(nodo, entorno, ruta):
         detalle = None
     elif isinstance(nodo, Negacion):
         valor, detalle = _negar(hijos[0])
+    elif isinstance(nodo, Traspuesta):
+        valor, detalle = _trasponer(nodo.texto, hijos[0])
     elif isinstance(nodo, Suma):
         valor, detalle = _operar(nodo.texto, _valor(hijos[0]), _valor(hijos[1]), nodo.izquierda.texto, nodo.derecha.texto, _SUMA, True)
     elif isinstance(nodo, Resta):
@@ -377,6 +379,22 @@ def _valor(paso):
 
 def _negar(paso):
     return _multiplicar(f"(-1)·{paso.texto}", Valor("escalar", Fraction(-1)), _valor(paso), "-1", paso.texto)
+
+
+def _trasponer(texto, paso):
+    """La misma traspuesta exacta de Operaciones con matrices, con su evidencia por entrada."""
+    valor = _valor(paso)
+    if valor.tipo != "matriz":
+        sugerencia = (
+            f" Para escribir {paso.texto} como fila, defínelo como una matriz de 1×{valor.filas}."
+            if valor.tipo == "vector" else ""
+        )
+        raise ValueError(
+            f"No se puede calcular {texto}: {describir(valor, paso.texto)}. "
+            f"La traspuesta se aplica a matrices con entradas conocidas.{sugerencia}"
+        )
+    detalle = resolver_operacion_matrices("traspuesta", valor.valor)
+    return Valor("matriz", detalle["resultado"], valor.columnas, valor.filas), detalle
 
 
 def describir(valor, texto):

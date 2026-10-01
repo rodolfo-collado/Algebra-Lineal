@@ -49,6 +49,20 @@ class Negacion(Nodo):
 
 
 @dataclass(frozen=True)
+class Traspuesta(Nodo):
+    """Operador postfijo: `Aᵀ` y `A^T` son el mismo nodo. No es una potencia."""
+
+    operando: Nodo
+
+    @property
+    def operacion(self):
+        return "traspuesta"
+
+    def hijos(self):
+        return (self.operando,)
+
+
+@dataclass(frozen=True)
 class Suma(Nodo):
     izquierda: Nodo
     derecha: Nodo
@@ -104,8 +118,8 @@ def estructura(nodo):
         return ("numero", nodo.valor)
     if isinstance(nodo, Simbolo):
         return ("simbolo", nodo.nombre)
-    if isinstance(nodo, Negacion):
-        return ("negacion", estructura(nodo.operando))
+    if isinstance(nodo, (Negacion, Traspuesta)):
+        return (nodo.operacion, estructura(nodo.operando))
     if isinstance(nodo, (Suma, Resta, Producto)):
         return (nodo.operacion, estructura(nodo.izquierda), estructura(nodo.derecha))
     raise TypeError(f"Nodo desconocido: {type(nodo).__name__}")

@@ -1,9 +1,11 @@
 """Parser recursivo del subconjunto de expresiones que PyGebra evalúa.
 
-Precedencia: paréntesis, menos unario, multiplicación (implícita o `*`),
-suma y resta asociativas por la izquierda. La multiplicación implícita
-solo parte un identificador en símbolos que de verdad están definidos.
-Si hay más de una lectura, se rechaza: no se adivina.
+Precedencia: paréntesis y traspuesta postfija (`ᵀ` o `^T`), menos unario,
+multiplicación (implícita o `*`), suma y resta asociativas por la izquierda:
+`A - B - C` es `(A - B) - C` y `ABC` es `(AB)C`. La traspuesta afecta solo
+al factor que la precede: `ABᵀ` es `A(Bᵀ)`; `(AB)ᵀ` traspone el producto.
+La multiplicación implícita solo parte un identificador en símbolos que de
+verdad están definidos. Si hay más de una lectura, se rechaza: no se adivina.
 """
 
 import re
@@ -12,8 +14,8 @@ from fractions import Fraction
 
 from backend.parser_sistemas import convertir_a_numero
 
-from backend.expresiones_matriciales.lexer import tokenizar
-from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma
+from backend.expresiones_matriciales.lexer import TRASPUESTA, tokenizar
+from backend.expresiones_matriciales.nodos import Igualdad, Negacion, Numero, Producto, Resta, Simbolo, Suma, Traspuesta
 
 _NOMBRE = re.compile(r"[A-Za-z][A-Za-z0-9]*\Z")
 _INICIA_FACTOR = frozenset({"numero", "nombre", "izq"})
@@ -142,7 +144,7 @@ class Parser:
                 valor = Fraction(convertir_a_numero(token.valor, limitar_entrada=True))
             except ValueError as error:
                 raise ValueError(str(error)) from None
-            return Numero(token.valor, token.inicio, token.fin, valor)
+            return self._postfijos(Numero(token.valor, token.inicio, token.fin, valor))
         if token.tipo == "nombre":
             self.avanzar()
             return self._simbolos(token)
@@ -156,14 +158,23 @@ class Parser:
                 raise ValueError("Falta el paréntesis de cierre.")
             fin = self.avanzar().fin
             self.abiertos -= 1
-            return replace(nodo, inicio=inicio, fin=fin)
+            return self._postfijos(replace(nodo, inicio=inicio, fin=fin))
         if token.tipo == "fin":
             if self.abiertos:
                 raise ValueError("Falta el paréntesis de cierre.")
             raise ValueError("La expresión está incompleta.")
         if token.tipo == "der":
             raise ValueError("Hay un paréntesis de cierre sin apertura.")
+        if token.tipo == "traspuesta":
+            raise ValueError(f"Falta la matriz antes de «{token.valor}»: la traspuesta se escribe después, como Aᵀ o A^T.")
         raise ValueError(f"«{token.valor}» está donde se esperaba un número, un símbolo o un paréntesis.")
+
+    def _postfijos(self, nodo):
+        """Cada `ᵀ` o `^T` seguido envuelve al operando anterior; `Aᵀᵀ` traspone dos veces."""
+        while self.actual.tipo == "traspuesta":
+            fin = self.avanzar().fin
+            nodo = Traspuesta(self._trozo(nodo.inicio, fin), nodo.inicio, fin, nodo)
+        return nodo
 
     def _simbolos(self, token):
         formas = segmentar(token.valor, self.nombres)
@@ -171,17 +182,21 @@ class Parser:
             raise ValueError(mensaje_desconocido(token.valor, self.nombres))
         if len(formas) > 1:
             raise ValueError(mensaje_ambiguo(token.valor, formas))
+        piezas = []
         cursor = token.inicio
-        nodo = None
         for nombre in formas[0]:
-            fin = cursor + len(nombre)
-            pieza = Simbolo(nombre, cursor, fin, nombre)
-            nodo = pieza if nodo is None else Producto(self._trozo(nodo.inicio, fin), nodo.inicio, fin, nodo, pieza)
-            cursor = fin
+            piezas.append(Simbolo(nombre, cursor, cursor + len(nombre), nombre))
+            cursor += len(nombre)
+        # En `ABᵀ` la traspuesta toca solo a B: el último factor del nombre segmentado.
+        piezas[-1] = self._postfijos(piezas[-1])
+        nodo = piezas[0]
+        for pieza in piezas[1:]:
+            nodo = Producto(self._trozo(nodo.inicio, pieza.fin), nodo.inicio, pieza.fin, nodo, pieza)
         return nodo
 
     def _trozo(self, inicio, fin):
-        return self.texto[inicio:fin].strip()
+        # `A^T` y `Aᵀ` son la misma operación: el procedimiento la escribe siempre con ᵀ.
+        return self.texto[inicio:fin].strip().replace("^T", TRASPUESTA)
 
 
 def analizar(texto, nombres):
@@ -215,7 +230,7 @@ def analizar_entrada(texto, nombres):
     if not derecha.strip():
         raise ValueError("Falta la expresión del lado derecho.")
     return Igualdad(
-        texto.strip(),
+        texto.strip().replace("^T", TRASPUESTA),
         _parsear_lado(izquierda, nombres, "izquierdo"),
         _parsear_lado(derecha, nombres, "derecho"),
     )
