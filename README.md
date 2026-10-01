@@ -67,6 +67,11 @@ Si A se declara como matriz desconocida y x como vector simbólico, `Ax = b`
 determina A para todos los valores de las variables. Hallar x con A y b
 numéricos sigue en Resolver Ax = b.
 
+Los productos de una expresión se [estiman antes de calcular](docs/presupuesto-computacional.md#operaciones-con-matrices-p267).
+Si el procedimiento puede tardar, aparece un intervalo aproximado y puedes
+Cancelar conservando la entrada o Continuar. El costo no invalida la expresión;
+la confirmación corresponde a sus valores, presentación y parte solicitada.
+
 #### Reducción por filas
 
 Dentro de **Álgebra Lineal → Matrices**, reduce `[A | b]` e interpreta su solución.

@@ -19,6 +19,7 @@ from backend.operandos import CAMPOS_MAXIMOS, CELDAS_MAXIMAS, OPERANDOS_MAXIMOS,
 from backend.vectores import evaluar_combinacion_lineal, operar_vectores
 from frontend.web.calculadora.forms import VectoresForm
 from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm, nombre_libre
+from frontend.web.calculadora.presupuesto_expresiones import firmar_entrada
 from frontend.web.calculadora.opciones_vectores import DIMENSION_MAXIMA as DIMENSION_VECTORES, nombres_vectores
 from tests.ayudas import elemento_html
 from tests.test_procedimiento_plegable import comprobar_estructura, partes
@@ -287,6 +288,13 @@ class PruebasPresupuesto(SimpleTestCase):
                 datos = datos_coleccion(operacion, nueve, "fila_columna")
                 self.assertLess(len(datos) + 2, settings.DATA_UPLOAD_MAX_NUMBER_FIELDS)  # + csrfmiddlewaretoken y el botón
                 html = self.post(MATRICES, datos)
+                if operacion == "producto":
+                    # P26.7: cabe estructuralmente, pero el costo requiere confirmar.
+                    self.assertIn("data-confirmacion", html)
+                    self.assertNotIn('id="resultado"', html)
+                    form = ExpresionMatricialForm(datos)
+                    self.assertTrue(form.is_valid(), form.errors)
+                    html = self.post(MATRICES, datos | {"confirmacion": firmar_entrada(form.cleaned_data["entrada"])})
                 self.assertEqual(Contenido(html).tablas["Resultado"], [[esperado] * 10] * 10)
         self.assertTrue(ExpresionMatricialForm(datos_coleccion("resta", [llena(5, 5)] * 22)).is_valid())  # 22 × 25 = 550
 
@@ -336,7 +344,11 @@ class PruebasPresupuesto(SimpleTestCase):
     def test_repetir_un_simbolo_no_elude_los_topes(self):
         # Cada aparición cuenta como un operando del módulo anterior, con todas sus entradas.
         grande = [matriz("A", llena(10, 10))]
-        self.assertIn('id="resultado"', self.post(MATRICES, datos_simbolos("A" * 9, grande)))
+        datos = datos_simbolos("A" * 9, grande)
+        self.assertIn("data-confirmacion", self.post(MATRICES, datos))
+        form = ExpresionMatricialForm(datos)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIn('id="resultado"', self.post(MATRICES, datos | {"confirmacion": firmar_entrada(form.cleaned_data["entrada"])}))
         html = self.post(MATRICES, datos_simbolos("A" * 10, grande))
         self.assertIn("Los operandos de la expresión suman 1000 entradas y la interfaz admite hasta 900", html)
         self.assertNotIn('id="resultado"', html)

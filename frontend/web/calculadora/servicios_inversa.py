@@ -8,7 +8,6 @@ estimación pesada no calcula hasta que el usuario confirma con «Continuar».
 
 from django.utils.crypto import constant_time_compare, salted_hmac
 
-from backend.matrices import contar
 from backend.matriz_inversa import DIRECTO_2X2, GAUSS_JORDAN, calcular_inversa
 from backend.presupuesto_computacional import (
     Categoria, categoria, estimar_gauss_jordan, intervalo_segundos, perfil_numerico,
@@ -18,6 +17,7 @@ from .presentacion_numerica import formatear_exacto
 from .servicios import adaptar_pasos, formatear_matriz
 from .servicios_bases import enumerar
 from .servicios_matrices import _operando, _sumando
+from .servicios_presupuesto import texto_intervalo
 
 METODOS = ((GAUSS_JORDAN, "Gauss-Jordan"), (DIRECTO_2X2, "Método para matrices 2×2"))
 
@@ -53,21 +53,6 @@ def firmar_entrada(entrada):
     """Firma de esta matriz exacta y este método: una confirmación no sirve para otra entrada."""
     valores = ";".join(",".join(str(valor) for valor in fila) for fila in entrada["a"])
     return salted_hmac(_SAL_CONFIRMACION, f"{entrada['metodo']}|{valores}", algorithm="sha256").hexdigest()
-
-
-def _duracion(segundos):
-    """(cantidad, unidad) redondeada para leerla: segundos hasta un minuto y medio, después minutos."""
-    if segundos < 90:
-        return max(1, round(segundos)), "segundo"
-    return round(segundos / 60), "minuto"
-
-
-def texto_intervalo(bajo, alto):
-    """«entre 1 y 11 segundos», «entre 13 segundos y 2 minutos»."""
-    (desde, unidad_desde), (hasta, unidad_hasta) = _duracion(bajo), _duracion(alto)
-    if unidad_desde == unidad_hasta:
-        return f"entre {desde} y {contar(hasta, unidad_hasta)}"
-    return f"entre {contar(desde, unidad_desde)} y {contar(hasta, unidad_hasta)}"
 
 
 def confirmacion_pendiente(entrada, firma=""):

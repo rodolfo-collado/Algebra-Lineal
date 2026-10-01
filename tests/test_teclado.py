@@ -45,7 +45,7 @@ HERRAMIENTAS = {
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
 }
 
-# Contrato HTTP de cada formulario tal como existía antes del teclado único: no debe cambiar.
+# Contrato HTTP de cada formulario: el teclado no agrega controles de envío.
 CONTROLES = {
     "/matrices/reduccion/": {
         "csrfmiddlewaretoken", "ecuaciones", "metodo", "mostrar", "mostrar_definido", "sistema",
@@ -61,7 +61,7 @@ CONTROLES = {
         "ajustar", "agregar", "cantidad", "celda_0_0_0", "celda_0_0_1", "celda_0_1_0", "celda_0_1_1",
         "celda_1_0_0", "celda_1_0_1", "celda_1_1_0", "celda_1_1_1", "columnas_0", "columnas_1",
         "csrfmiddlewaretoken", "eliminar", "expresion", "filas_0", "filas_1", "metodo", "nombre_0",
-        "nombre_1", "tipo_0", "tipo_1",
+        "nombre_1", "tipo_0", "tipo_1", "confirmacion",  # P26.7
     },
     "/matrices/ecuaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",

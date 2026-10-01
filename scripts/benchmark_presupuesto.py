@@ -8,6 +8,7 @@ referencias de backend/presupuesto_computacional.py, no como promesa.
     uv run python -m scripts.benchmark_presupuesto
     uv run python -m scripts.benchmark_presupuesto --tamanos 14 16 20 --digitos 30
     uv run python -m scripts.benchmark_presupuesto --web
+    uv run python -m scripts.benchmark_presupuesto --expresiones --repeticiones 3
 """
 
 import argparse
@@ -156,15 +157,79 @@ def web(tamanos, digitos, repeticiones):
                  numero(len(respuesta.content) / 1024, 0), numero(segundos / celdas * 1e6, 2))
 
 
+def casos_expresiones():
+    """Entradas pequeñas deterministas; el exterior alcanza los 50 operandos de P26.6."""
+    def simbolos(nombres, orden):
+        return {nombre: {"tipo": "matriz", "valor": matriz(orden, orden, 0, indice + 1)}
+                for indice, nombre in enumerate(nombres)}
+
+    return (
+        ("AB 3×3", "AB", simbolos("AB", 3)),
+        ("AB 10×10", "AB", simbolos("AB", 10)),
+        ("ABCD 10×10", "ABCD", simbolos("ABCD", 10)),
+        ("(uv) × 25", "(uv)" * 25, {
+            "u": {"tipo": "matriz", "valor": [[i + 1] for i in range(10)]},
+            "v": {"tipo": "matriz", "valor": [[j + 1 for j in range(10)]]},
+        }),
+    )
+
+
+def expresiones(repeticiones):
+    """POST completo confirmado: estimación, cálculo, presentación y HTML.
+
+    El primer POST verifica el aviso; su firma autoriza solo este benchmark
+    manual. No evita la validación ni desactiva ninguna protección de producción.
+    """
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
+    import django
+    django.setup()
+    from django.test import Client
+    from backend.presupuesto_computacional import categoria, intervalo_segundos, segundos_referencia
+    from backend.presupuesto_expresiones import analizar_presupuesto
+    from frontend.web.calculadora.presupuesto_expresiones import confirmacion_pendiente
+
+    cliente = Client()
+    print("Caso | presentación | productos | categoría | referencia s | intervalo s | mediana POST s | HTML MiB")
+    for nombre, texto, simbolos in casos_expresiones():
+        analisis = analizar_presupuesto(texto, simbolos)
+        for metodo in ("fila_columna", "columnas", "comparar"):
+            entrada = {"expresion": texto, "simbolos": simbolos, "metodo": metodo, "nodo": None}
+            datos = {"expresion": texto, "cantidad": len(simbolos), "metodo": metodo}
+            for indice, (simbolo, definicion) in enumerate(simbolos.items()):
+                valores = definicion["valor"]
+                datos.update({f"nombre_{indice}": simbolo, f"tipo_{indice}": "matriz",
+                              f"filas_{indice}": len(valores), f"columnas_{indice}": len(valores[0])})
+                datos.update({f"celda_{indice}_{i}_{j}": str(valor)
+                              for i, renglon in enumerate(valores) for j, valor in enumerate(renglon)})
+            aviso = confirmacion_pendiente(entrada)
+            if aviso:
+                primero = cliente.post("/matrices/operaciones/", datos)
+                if b"data-confirmacion" not in primero.content or b'id="resultado"' in primero.content:
+                    raise RuntimeError("El POST pesado no presentó la confirmación previa.")
+                datos["confirmacion"] = aviso["firma"]
+            medida = medir(lambda: cliente.post("/matrices/operaciones/", datos), repeticiones)
+            if not medida or b'id="resultado"' not in medida[1].content:
+                raise RuntimeError(f"Sin resultado en {nombre} / {metodo}")
+            bajo, alto = intervalo_segundos(analisis.total)
+            print(f"{nombre} | {metodo} | {len(analisis.productos)} | {categoria(analisis.total).name} | "
+                  f"{segundos_referencia(analisis.total):.3f} | {bajo:.3f}–{alto:.3f} | "
+                  f"{medida[0]:.3f} | {len(medida[1].content) / 2**20:.2f}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tamanos", type=int, nargs="+", default=TAMANOS, help="n de los sistemas n×(n+1) y de los productos n×n·n×n")
     parser.add_argument("--digitos", type=int, default=DIGITOS, help="cifras del numerador y del denominador en la segunda serie")
     parser.add_argument("--repeticiones", type=int, default=3)
     parser.add_argument("--web", action="store_true", help="mide además el POST completo de Resolver un sistema")
+    parser.add_argument("--expresiones", action="store_true", help="mide solo los POST de Operaciones con matrices, con las tres lecturas")
     args = parser.parse_args()
     if min(args.tamanos) < 1 or args.digitos < 1 or args.repeticiones < 1:
         parser.error("tamaños, cifras y repeticiones deben ser positivos")
+
+    if args.expresiones:
+        expresiones(args.repeticiones)
+        return
 
     motores(args.tamanos, args.digitos, args.repeticiones)
     print()
