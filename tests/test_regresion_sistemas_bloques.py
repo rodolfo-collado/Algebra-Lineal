@@ -174,7 +174,7 @@ class PruebasRegresionSistemasBloques(SimpleTestCase):
                 }
                 for tipo, datos in entradas.items():
                     with self.subTest(caso=nombre, metodo=metodo, entrada=tipo):
-                        respuesta = self.client.post("/sistemas/", datos)
+                        respuesta = self.client.post("/matrices/reduccion/", datos)
                         self.assertEqual(respuesta.status_code, 200)
                         html = respuesta.content.decode("utf-8")
                         panel = elemento_html(html, html.index('class="panel panel-final"'), "section")

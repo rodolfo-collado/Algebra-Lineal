@@ -4,7 +4,8 @@
 [Presupuesto computacional](presupuesto-computacional.md)
 
 P26.4 añade **Matriz inversa** (`/matrices/inversa/`), la cuarta herramienta
-de Matrices. Recibe una matriz cuadrada A y calcula su inversa con uno de dos
+de Matrices en ese incremento. Desde P26.5 comparte el catálogo de cinco herramientas
+con Reducción por filas. Recibe una matriz cuadrada A y calcula su inversa con uno de dos
 métodos: **Gauss-Jordan**, para cualquier tamaño, o el **método para matrices
 2×2**, solo cuando A es 2×2. Sigue el orden de todas las herramientas: entrada,
 «Ver procedimiento» plegado y el resultado al final. Todo es exacto, con
@@ -27,7 +28,7 @@ Inicio, menú, migas y buscador salen del catálogo, como en el resto de las
 herramientas. El buscador la encuentra por «inversa», «invertible», «no
 invertible», «matriz singular», «identidad», «matriz cuadrada», «A⁻¹», «A^-1»
 o «2x2». Sus palabras clave evitan «gauss» y «pivote» a propósito: esas
-búsquedas siguen llevando solo a Resolver un sistema. Ni el catálogo ni los
+búsquedas siguen llevando solo a Reducción por filas. Ni el catálogo ni los
 controles muestran fórmulas.
 
 ## Entrada
@@ -250,8 +251,8 @@ Las plantillas están en `templates/calculadora/modules/inversa/`: `index.html`,
 
 Llegan en incrementos posteriores: resolver sistemas mediante la inversa, la
 entrada por ecuaciones, la verificación `A⁻¹A = AA⁻¹ = I` seleccionable, los
-teoremas de la inversa de la inversa, de AB y de la traspuesta, el cambio de
-nombre de Resolver un sistema, los determinantes generales, las dimensiones
+teoremas de la inversa de la inversa, de AB y de la traspuesta, los
+determinantes generales, las dimensiones
 mayores que 10 y la generación diferida de procedimientos.
 
 ## Pruebas

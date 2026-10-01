@@ -111,8 +111,8 @@ try {
         } while ([DateTime]::UtcNow -lt $deadline)
         if ($process.MainWindowHandle -eq [IntPtr]::Zero) { throw 'pywebview no creó la ventana nativa.' }
         $homeResponse = Invoke-WebRequest -UseBasicParsing -Uri $url
-        if (-not $homeResponse.Content.Contains('href="/sistemas/"')) { throw 'Inicio no enlaza al módulo de sistemas.' }
-        $systemsUrl = $url + 'sistemas/'
+        if (-not $homeResponse.Content.Contains('href="/matrices/reduccion/"')) { throw 'Inicio no enlaza a Reducción por filas.' }
+        $systemsUrl = $url + 'matrices/reduccion/'
         foreach ($method in @('gauss', 'gauss_jordan')) {
             $response = Invoke-WebRequest -UseBasicParsing -Uri $systemsUrl -SessionVariable webSession
             $csrf = [regex]::Match($response.Content, 'name="csrfmiddlewaretoken" value="([^"]+)"').Groups[1].Value

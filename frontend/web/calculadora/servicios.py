@@ -135,7 +135,7 @@ def resolver_entrada_web(
 def presentar_resolucion(resultado, metodo, matriz_inicial):
     """Adapta a la plantilla un sistema ya resuelto por Gauss o Gauss-Jordan.
 
-    Lo comparten Resolver un sistema y Resolver Ax = b: el segundo resuelve
+    Lo comparten Reducción por filas y Resolver Ax = b: el segundo resuelve
     [A | b] con los mismos motores y muestra el procedimiento con las mismas
     plantillas, sin volver a calcular nada.
     """

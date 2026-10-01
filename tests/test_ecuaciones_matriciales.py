@@ -226,7 +226,7 @@ class PruebasVerificacion(unittest.TestCase):
 
 
 class PruebasEquivalenciaConSistemas(unittest.TestCase):
-    """P14 no tiene un segundo solucionador: coincide con Resolver un sistema sobre [A | b]."""
+    """P14 no tiene un segundo solucionador: coincide con Reducción por filas sobre [A | b]."""
 
     def test_mismo_resultado_que_el_sistema_con_matriz_aumentada(self):
         motores = {"gauss": resolver_sistema_gauss, "gauss_jordan": resolver_sistema_gauss_jordan}

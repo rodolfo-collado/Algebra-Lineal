@@ -26,7 +26,7 @@
 - [Pruebas](pruebas.md): suite, Django, compilación, enlaces y smoke real Windows.
 - [Presupuesto computacional](presupuesto-computacional.md): límite frente a costo,
   cálculo y procedimiento, tamaño de los números, referencias calibrables y
-  benchmark. El presupuesto de entrada de Resolver un sistema sigue en
+  benchmark. El presupuesto de entrada de Reducción por filas sigue en
   [su propio documento](presupuesto-sistemas.md).
 - [Protección numérica común](seguridad-numerica.md): inspección de literales
   antes de convertir, crecimiento exacto acotado y errores controlados.

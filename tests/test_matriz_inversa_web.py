@@ -71,11 +71,11 @@ def forzar(nivel=Categoria.PESADA, intervalo=(2.0, 18.0)):
 
 
 class PruebasCatalogo(SimpleTestCase):
-    def test_cuarta_herramienta_de_matrices_con_ruta_propia(self):
+    def test_quinta_herramienta_de_matrices_con_ruta_propia(self):
         herramienta = catalogo.MATRIZ_INVERSA
         self.assertEqual(
             catalogo.herramientas_de(catalogo.MATRICES),
-            (catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES, catalogo.ECUACIONES_MATRICIALES, herramienta),
+            (catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, herramienta),
         )
         self.assertEqual((herramienta.id, herramienta.nombre), ("matriz-inversa", "Matriz inversa"))
         self.assertTrue(herramienta.disponible)
@@ -103,7 +103,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
         self.assertTrue(doc.categorias["matrices"])
         enlaces = [a["href"] for a in doc.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", RUTA])
+        self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/expresiones/", "/matrices/reduccion/", "/matrices/ecuaciones/", RUTA])
 
     def test_buscador_encuentra_la_inversa_sin_quitar_prioridades(self):
         for consulta in ("inversa", "matriz inversa", "Inversa de una matriz", "invertible", "no invertible",
@@ -112,7 +112,7 @@ class PruebasCatalogo(SimpleTestCase):
                 self.assertIn(catalogo.MATRIZ_INVERSA, catalogo.buscar_herramientas(consulta))
                 self.assertContains(self.client.get("/", {"q": consulta}), f'href="{RUTA}"')
         self.assertEqual(catalogo.buscar_herramientas("inversa"), (catalogo.MATRIZ_INVERSA,))
-        # Gauss, pivotes y sistemas siguen llevando solo a Resolver un sistema.
+        # Gauss, pivotes y sistemas siguen llevando solo a Reducción por filas.
         for consulta in ("gauss", "gauss jordan", "pivote", "escalonada", "binario", "resolver", "vector"):
             self.assertNotIn(catalogo.MATRIZ_INVERSA, catalogo.buscar_herramientas(consulta))
 

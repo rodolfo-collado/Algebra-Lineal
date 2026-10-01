@@ -39,18 +39,6 @@ herramientas educativas sin rehacer los algoritmos ni la navegación.
 
 ## Capacidades
 
-### Sistemas de ecuaciones
-
-- Entrada como ecuaciones escritas o matriz aumentada editable.
-- Ecuaciones con términos a ambos lados del `=`, como `x1 - 6 = -x2`,
-  `2x1 + 3 = x2 - 5` o `6 = x1 + x2`: PyGebra las normaliza automáticamente.
-- Gauss, Gauss-Jordan o comparación de ambos procedimientos.
-- Clasificación, columnas pivote y variables libres.
-- Solución exacta, solución general o evidencia de la contradicción.
-
-Los dos métodos comparten la interpretación del resultado; puedes comparar
-cómo llegan a ella.
-
 ### Vectores
 
 - Suma, resta y multiplicación por escalar.
@@ -77,6 +65,20 @@ En Expresiones matriciales, `=` con valores numéricos comprueba esos valores.
 Si A se declara como matriz desconocida y x como vector simbólico, `Ax = b`
 determina A para todos los valores de las variables. Hallar x con A y b
 numéricos sigue en Resolver Ax = b.
+
+#### Reducción por filas
+
+Dentro de **Álgebra Lineal → Matrices**, reduce `[A | b]` e interpreta su solución.
+
+- Entrada como **Sistema de ecuaciones** o **Matriz aumentada** editable.
+- Ecuaciones con términos a ambos lados del `=`, como `x1 - 6 = -x2`,
+  `2x1 + 3 = x2 - 5` o `6 = x1 + x2`: PyGebra las normaliza automáticamente.
+- Gauss, Gauss-Jordan o comparación de ambos procedimientos.
+- Clasificación, columnas pivote y variables libres.
+- Solución exacta, solución general o evidencia de la contradicción.
+
+Los dos métodos comparten la interpretación del resultado; puedes comparar
+cómo llegan a ella.
 
 ### Sistemas numéricos
 

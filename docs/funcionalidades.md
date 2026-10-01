@@ -102,7 +102,7 @@ misma matriz aumentada, así que son intercambiables.
 Volver al menú, o escribir un sistema con un formato inválido, deja intacta la
 matriz activa: solo un sistema creado correctamente la reemplaza.
 
-## Resolver un sistema
+## Resolución de sistemas en terminal
 
 Una matriz solo se interpreta como sistema de ecuaciones cuando se elige uno de
 los dos métodos de resolución. En ese caso la **última columna** se toma
@@ -206,7 +206,7 @@ esté orientado a resolver sistemas.
 ## Vectores
 
 En **Operaciones con vectores** (`/vectores/operaciones/`) la operación se
-elige dentro, igual que el método en Resolver un sistema. La dimensión `n`
+elige dentro, igual que el método en Reducción por filas. La dimensión `n`
 no está fijada, así que cada vector se escribe como una fila de
 celdas, `u = ( [ ] [ ] [ ] )`, y los botones **+/−** agregan o quitan
 componentes (de 1 a 10). No hay campos `x`, `y`, `z` ni sintaxis de listas.
@@ -311,17 +311,24 @@ de su valor: `IIII` se rechaza indicando que 4 se escribe `IV`, y `VV`, `IC` o
 `MMMM` también se rechazan con un mensaje claro. El núcleo vive en
 `backend/sistemas_numericos/romanos.py`, separado de la conversión de bases.
 
-## Sistemas en la interfaz visual
+## Reducción por filas en la interfaz visual
 
 Inicio de PyGebra permite buscar una herramienta o abrir un área y después
-un tema (Sistemas de ecuaciones, Vectores, Matrices, Bases numéricas); el
-menú ☰ abre el mismo árbol en cualquier página. Dentro de **Álgebra Lineal →
-Sistemas de ecuaciones** hay una sola herramienta, **Resolver un sistema**
-(`/sistemas/`), que se configura en el propio formulario:
+un tema (Vectores, Matrices, Bases numéricas); el menú ☰ abre el mismo árbol
+en cualquier página. **Álgebra Lineal → Matrices → Reducción por filas**
+(`/matrices/reduccion/`) reduce específicamente una matriz aumentada `[A | b]`.
+Puede ingresarse como **Sistema de ecuaciones** (el parser lo convierte a
+`[A | b]`) o como **Matriz aumentada**. El backend de sistemas conserva la
+clasificación y las soluciones. P26.5 reorganiza la herramienta pública sin
+añadir matemática nueva; no existe una categoría pública de Sistemas de ecuaciones.
+Resolver Ax = b y Matriz inversa siguen siendo herramientas aparte.
+
+Se configura en el propio formulario:
 
 | Opción | Valores | Predeterminado |
 | --- | --- | --- |
 | Método | Gauss, Gauss-Jordan o Comparar ambos | Gauss-Jordan |
+| Tipo de entrada | Sistema de ecuaciones o Matriz aumentada | Sistema de ecuaciones |
 | Mostrar | Procedimiento, Clasificación, Columnas pivote, Sistema resultante | Todos activos |
 
 La matriz final y la solución se muestran siempre. Las casillas de Mostrar
@@ -338,9 +345,15 @@ comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve
 la misma entrada con los dos métodos y pliega cada procedimiento en su propio
 sub-bloque; como la clasificación y la solución coinciden, aparecen una sola
 vez, en el resultado común.
-Las rutas de la versión anterior (`/sistemas/gauss/`, `/sistemas/gauss-jordan/`,
+Las rutas anteriores (`/sistemas/`, `/sistemas/gauss/`, `/sistemas/gauss-jordan/`,
 `/sistemas/clasificacion/` y `/sistemas/columnas-pivote/`) redirigen a
-`/sistemas/`, las dos primeras con el método ya seleccionado.
+`/matrices/reduccion/`: GET usa 301. POST a `/sistemas/` se procesa con la
+misma vista (200) y formularios canónicos; POST a los cuatro slugs usa 308,
+conservando cuerpo y método. Así también funcionan los clientes históricos
+que enviaban POST directamente a `/sistemas/` sin seguir redirecciones.
+Se conservan los parámetros GET, incluidas las casillas repetidas; las rutas
+de Gauss y Gauss-Jordan sugieren método cuando no se indicó uno explícito.
+El botón **Reducir** envía siempre a la ruta canónica.
 
 Se puede elegir el tipo de entrada —sistema de ecuaciones o matriz aumentada— y
 ambos validan igual. El selector de tema recuerda la preferencia en el
@@ -384,7 +397,7 @@ estructura antes de calcular. El teclado contextual existente permite
 negativos y fracciones.
 
 Para `AB` y `Ax` se elige cómo ver el procedimiento, igual que el método en
-Resolver un sistema: **Fila por columna** (`cᵢⱼ = filaᵢ(A) · columnaⱼ(B)`,
+Reducción por filas: **Fila por columna** (`cᵢⱼ = filaᵢ(A) · columnaⱼ(B)`,
 que en `Ax` se llama **Regla fila-vector**), **Por columnas**
 (`AB = [Ab₁ Ab₂ … Abₚ]`, con cada `Abⱼ` como combinación lineal de las
 columnas de A; en `Ax`, **Combinación lineal de columnas**:
@@ -433,7 +446,7 @@ ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
 `resolver_sistema_gauss` o `resolver_sistema_gauss_jordan` de
 `backend/sistemas.py`, cuyo resultado se amplía con la lectura de `Ax = b`.
 Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
-`matrices.py`. El método se elige como en Resolver un sistema (Gauss,
+`matrices.py`. El método se elige como en Reducción por filas (Gauss,
 Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
 sola vez y los dos procedimientos plegados). El procedimiento va plegado
 primero y el resultado después, siempre visible:
@@ -452,7 +465,7 @@ La interpretación como combinación lineal se deriva solo de la clasificación
 del sistema. «Ver procedimiento» muestra la cadena de equivalencias —ecuación
 matricial, ecuación vectorial con las columnas de A, sistema equivalente
 (`ecuaciones_de_matriz`, con `n` incógnitas) y matriz aumentada— y después la
-eliminación con los mismos bloques de Resolver un sistema: operaciones por
+eliminación con los mismos bloques de Reducción por filas: operaciones por
 filas, matriz escalonada o reducida con sus pivotes, columnas pivote, sistema
 resultante y sustitución regresiva. La comprobación `A · x = b` y la
 interpretación van en sus propios bloques plegados después del resultado.

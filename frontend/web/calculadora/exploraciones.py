@@ -37,10 +37,10 @@ INVITACIONES_BLOQUES = {
 
 
 def enlace_sistema(entrada, metodo, mostrar):
-    """Vuelve a Resolver un sistema con la misma entrada preparada; nada se resuelve por GET."""
+    """Vuelve a Reducción por filas con la misma entrada preparada; nada se resuelve por GET."""
     parametros = [*entrada, ("metodo", metodo), ("mostrar_definido", "1")]
     parametros += [("mostrar", clave) for clave, _ in BLOQUES if clave in mostrar]
-    return f"{reverse('calculadora:sistemas')}?{urlencode(parametros)}"
+    return f"{reverse('calculadora:reduccion-filas')}?{urlencode(parametros)}"
 
 
 def exploraciones_sistema(entrada, metodo, mostrar):

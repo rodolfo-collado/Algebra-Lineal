@@ -65,7 +65,7 @@ def fracciones(filas, columnas, cifras):
 
 
 def comparar_ambos(filas, variables):
-    """«Comparar ambos» de Resolver un sistema: Gauss y Gauss-Jordan sobre [A | b]."""
+    """«Comparar ambos» de Reducción por filas: Gauss y Gauss-Jordan sobre [A | b]."""
     return combinar_estimaciones(*(
         estimar(filas, variables + 1, columnas_pivote=variables) for estimar in (estimar_gauss, estimar_gauss_jordan)
     ))
@@ -327,7 +327,7 @@ class PruebasIntegracionServicios(SimpleTestCase):
         """P26.2 solo consulta la estimación: nada rechaza una entrada válida por su costo."""
         sistema = "x1 + x2 = 3; x1 - x2 = 1"
         self.assertEqual(categoria(estimar_entrada_web("sistema", "comparar", texto=sistema)), Categoria.MUY_PESADA)
-        respuesta = self.client.post("/sistemas/", {"sistema": sistema, "metodo": "comparar"})
+        respuesta = self.client.post("/matrices/reduccion/", {"sistema": sistema, "metodo": "comparar"})
         self.assertContains(respuesta, 'id="resultado"')
         self.assertContains(respuesta, "x1 = 2")
 

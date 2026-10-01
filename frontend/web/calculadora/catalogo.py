@@ -104,7 +104,7 @@ def normalizar(texto: str) -> str:
 
 ALGEBRA_LINEAL = Area(
     "algebra-lineal", "Álgebra Lineal",
-    "Sistemas de ecuaciones, vectores y matrices.",
+    "Vectores, matrices y sus aplicaciones en álgebra lineal.",
 )
 SISTEMAS_NUMERICOS = Area(
     "sistemas-numericos", "Sistemas numéricos",
@@ -113,17 +113,13 @@ SISTEMAS_NUMERICOS = Area(
 CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.")
 AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, CALCULO)
 
-SISTEMAS_ECUACIONES = Categoria(
-    "sistemas-ecuaciones", "Sistemas de ecuaciones", ALGEBRA_LINEAL,
-    "Resuelve y analiza sistemas lineales mediante operaciones por filas.",
-)
 VECTORES = Categoria(
     "vectores", "Vectores", ALGEBRA_LINEAL,
     "Operaciones con vectores y combinaciones lineales.",
 )
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones con matrices rectangulares, los productos AB y Ax, la ecuación matricial Ax = b y la matriz inversa.",
+    "Operaciones y expresiones matriciales, reducción por filas, la ecuación matricial Ax = b y la matriz inversa.",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -135,19 +131,20 @@ NUMERACION_ROMANA = Categoria(
     "Conversión entre números arábigos y romanos.",
 )
 LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.")
-CATEGORIAS = (SISTEMAS_ECUACIONES, VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, LIMITES)
+CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, LIMITES)
 
 
-# Única herramienta de la categoría: método a elegir (o comparar los dos) y
+# Reducción por filas de [A | b]: método a elegir (o comparar los dos) y
 # clasificación, columnas pivote y sistema resultante como bloques opcionales.
-SISTEMAS = Herramienta(
-    id="sistemas",
-    nombre="Resolver un sistema",
-    categoria=SISTEMAS_ECUACIONES,
-    descripcion="Resuelve un sistema y explora sus pasos con Gauss o Gauss-Jordan.",
+REDUCCION_FILAS = Herramienta(
+    id="reduccion-filas",
+    nombre="Reducción por filas",
+    categoria=MATRICES,
+    descripcion="Reduce una matriz aumentada mediante Gauss o Gauss-Jordan, ingresándola directamente o a partir de un sistema de ecuaciones.",
     estado="disponible",
-    route_name="calculadora:sistemas",
+    route_name="calculadora:reduccion-filas",
     palabras_clave=(
+        "reducción", "reducción por filas", "sistema de ecuaciones", "sistemas de ecuaciones",
         "resolver sistema", "matriz aumentada", "gauss", "gauss-jordan", "gauss jordan",
         "eliminación gaussiana", "escalonar", "forma escalonada", "forma escalonada reducida",
         "sustitución regresiva", "procedimiento paso a paso", "clasificación",
@@ -156,11 +153,11 @@ SISTEMAS = Herramienta(
         "variables pivote",
     ),
     relacionadas=("ecuaciones-matriciales",),
-    invitacion="Resolver el sistema completo",
+    invitacion="Reducir una matriz aumentada",
 )
 
 # Única herramienta de la categoría: la operación (suma, resta, escalar o
-# combinación lineal) se elige dentro, igual que el método en Resolver un sistema.
+# combinación lineal) se elige dentro, igual que el método en Reducción por filas.
 OPERACIONES_VECTORES = Herramienta(
     id="operaciones-vectores",
     nombre="Operaciones con vectores",
@@ -214,8 +211,8 @@ CONVERSION_ROMANOS = Herramienta(
 )
 
 # La operación (suma, resta, escalar, traspuesta, AB o Ax) y, en los productos,
-# el método del procedimiento se eligen dentro, igual que el método en Resolver
-# un sistema. En Ax el vector x es conocido y solo se calcula el producto.
+# el método del procedimiento se eligen dentro, igual que el método en Reducción
+# por filas. En Ax el vector x es conocido y solo se calcula el producto.
 OPERACIONES_MATRICES = Herramienta(
     id="operaciones-matrices", nombre="Operaciones con matrices", categoria=MATRICES,
     descripcion="Opera con matrices, calcula AB o Ax y sigue el desarrollo paso a paso.",
@@ -229,9 +226,8 @@ OPERACIONES_MATRICES = Herramienta(
     invitacion="Operar con matrices",
 )
 
-# Segunda herramienta de Matrices: aquí x es la incógnita. Ax = b es un sistema
-# escrito de otra manera, así que se resuelve con los motores de Resolver un
-# sistema (Gauss, Gauss-Jordan o ambos) sobre la matriz aumentada [A | b].
+# En Resolver Ax = b, x es la incógnita. Se reutilizan los motores de sistemas
+# (Gauss, Gauss-Jordan o ambos) sobre la matriz aumentada [A | b].
 ECUACIONES_MATRICIALES = Herramienta(
     id="ecuaciones-matriciales", nombre="Resolver Ax = b", categoria=MATRICES,
     descripcion="Encuentra x y conecta la ecuación matricial Ax = b con su sistema lineal.",
@@ -240,7 +236,7 @@ ECUACIONES_MATRICIALES = Herramienta(
                     "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
                     "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
                     "inconsistente"),
-    relacionadas=("sistemas", "operaciones-matrices", "operaciones-vectores", "expresiones-matriciales"),
+    relacionadas=("reduccion-filas", "operaciones-matrices", "operaciones-vectores", "expresiones-matriciales"),
     invitacion="Resolver una ecuación matricial",
 )
 
@@ -261,7 +257,7 @@ EXPRESIONES_MATRICIALES = Herramienta(
 )
 
 # Solo para matrices cuadradas. El método (Gauss-Jordan o la regla 2×2) se elige
-# dentro; las palabras clave evitan «gauss» y «pivote», que llevan a Resolver un sistema.
+# dentro; las palabras clave evitan «gauss» y «pivote», que llevan a Reducción por filas.
 MATRIZ_INVERSA = Herramienta(
     id="matriz-inversa",
     nombre="Matriz inversa",
@@ -278,10 +274,10 @@ MATRIZ_INVERSA = Herramienta(
 )
 
 HERRAMIENTAS = (
-    SISTEMAS,
     OPERACIONES_VECTORES,
     OPERACIONES_MATRICES,
     EXPRESIONES_MATRICIALES,
+    REDUCCION_FILAS,
     ECUACIONES_MATRICIALES,
     MATRIZ_INVERSA,
     CONVERSION_BASES,
@@ -357,6 +353,10 @@ def herramienta_por_ruta(resolver_match) -> Herramienta | None:
     """Identifica la herramienta activa a partir de la ruta resuelta por Django."""
     if resolver_match is None:
         return None
+    # Los POST históricos de /sistemas/ usan la misma vista y navegación canónica.
+    # Es un alias de ruta, nunca una segunda herramienta en el catálogo.
+    if resolver_match.view_name == "calculadora:sistemas":
+        return REDUCCION_FILAS
     for herramienta in HERRAMIENTAS:
         if herramienta.route_name != resolver_match.view_name:
             continue

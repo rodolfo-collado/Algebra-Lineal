@@ -145,7 +145,7 @@ def texto_plano(html):
 
 class PruebasMenuBajoDemanda(SimpleTestCase):
     def test_el_menu_nace_cerrado_y_un_solo_boton_lo_controla(self):
-        for ruta in ("/", "/sistemas/", "/bases/conversion/"):
+        for ruta in ("/", "/matrices/reduccion/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
                 html = respuesta.content.decode("utf-8")
@@ -197,7 +197,7 @@ class PruebasMenuBajoDemanda(SimpleTestCase):
     def test_el_cajon_conserva_rutas_estado_activo_y_buscador_tambien_tras_resolver(self):
         paginas = [(h.ruta, self.client.get(h.ruta), h.ruta) for h in disponibles()]
         paginas.append(("/", self.client.get("/"), "/"))
-        paginas.append(("/sistemas/ (POST)", self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss"}), "/sistemas/"))
+        paginas.append(("/sistemas/ (POST)", self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss"}), "/matrices/reduccion/"))
         for nombre, respuesta, activa in paginas:
             with self.subTest(pagina=nombre):
                 documento = Documento(respuesta)
@@ -269,7 +269,7 @@ class PruebasInicioPorTemas(SimpleTestCase):
 
 class PruebasFormularioProgresivo(SimpleTestCase):
     def test_metodo_y_entrada_son_selectores_segmentados_con_una_sola_seleccion(self):
-        html = self.client.get("/sistemas/").content.decode("utf-8")
+        html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         formulario = html[html.index('id="sistema-form"'):html.index('id="system-fields"')]
         segmentos = re.findall(r'<label class="segment"><input type="radio" name="(\w+)" value="([^"]+)"', formulario)
         self.assertEqual(
@@ -289,7 +289,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
             self.assertNotIn(ausente, formulario)
 
     def test_el_teclado_nace_plegado_y_conserva_sus_teclas(self):
-        html = self.client.get("/sistemas/").content.decode("utf-8")
+        html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         desplegables = Desplegables(html)
         teclados = desplegables.con_clase("disclosure-keyboard")
         self.assertEqual(len(teclados), 1)
@@ -313,7 +313,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         self.assertNotIn("open = true", script)
 
     def test_el_teclado_plegado_llega_a_todas_las_herramientas(self):
-        for ruta in ("/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
+        for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
                 teclados = Desplegables(html).con_clase("disclosure-keyboard")
@@ -322,7 +322,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
                 self.assertNotIn("math-keyboard-title", html)
 
     def test_las_opciones_de_resultado_nacen_plegadas_con_sus_predeterminados(self):
-        html = self.client.get("/sistemas/").content.decode("utf-8")
+        html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         opciones = Desplegables(html).por_id("opciones-resultado")
         self.assertFalse(opciones["open"])
         self.assertFalse(opciones["hidden"])
@@ -334,10 +334,10 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         self.assertIn("La matriz final y la solución se muestran siempre.", html)
         # Las opciones van después del problema y antes de la acción principal.
         self.assertLess(html.index('id="system-fields"'), html.index('id="opciones-resultado"'))
-        self.assertLess(html.index('id="opciones-resultado"'), html.index(">Resolver</button>"))
+        self.assertLess(html.index('id="opciones-resultado"'), html.index(">Reducir</button>"))
 
     def test_lo_que_envia_el_formulario_plegado_produce_el_mismo_resultado(self):
-        pagina = self.client.get("/sistemas/").content.decode("utf-8")
+        pagina = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         formulario = Formulario(pagina, "sistema-form")
         nombres = {nombre for nombre, _ in formulario.datos}
         self.assertEqual(nombres, {"csrfmiddlewaretoken", "metodo", "tipo_entrada", "sistema", "mostrar_definido", "mostrar"})
@@ -345,33 +345,33 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         datos = formulario.como_datos(sistema=UNICA)
         self.assertEqual(datos["mostrar"], TODOS)
         self.assertEqual(datos["metodo"], [METODO_PREDETERMINADO])
-        respuesta = self.client.post("/sistemas/", datos)
-        explicito = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": METODO_PREDETERMINADO, "mostrar_definido": "1", "mostrar": TODOS})
+        respuesta = self.client.post("/matrices/reduccion/", datos)
+        explicito = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": METODO_PREDETERMINADO, "mostrar_definido": "1", "mostrar": TODOS})
         texto = seccion_resultado(respuesta)
         self.assertEqual(texto, seccion_resultado(explicito))
         for presente in ("Ver procedimiento", "Operaciones por filas", "Clasificación", "Columnas pivote: C1, C2", "x1 = 2", "x2 = 1"):
             self.assertIn(presente, texto)
 
     def test_elegir_cada_metodo_desde_el_selector_envia_su_clave(self):
-        pagina = self.client.get("/sistemas/").content.decode("utf-8")
+        pagina = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         formulario = Formulario(pagina, "sistema-form")
         for clave, _ in METODOS:
             with self.subTest(metodo=clave):
                 datos = formulario.como_datos(sistema=UNICA, metodo=clave)
                 with patch("frontend.web.calculadora.views.resolver_entrada_web", wraps=resolver_entrada_web) as resolver:
-                    respuesta = self.client.post("/sistemas/", datos)
+                    respuesta = self.client.post("/matrices/reduccion/", datos)
                 esperados = ["gauss", "gauss_jordan"] if clave == "comparar" else [clave]
                 self.assertEqual([llamada.args[1] for llamada in resolver.call_args_list], esperados)
                 marcados = re.findall(r'name="metodo" value="([^"]+)"[^>]*checked', respuesta.content.decode("utf-8"))
                 self.assertEqual(marcados, [clave])
 
     def test_cambiar_el_modo_de_entrada_no_pierde_su_comportamiento(self):
-        pagina = self.client.get("/sistemas/").content.decode("utf-8")
+        pagina = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         self.assertRegex(pagina, r'<fieldset id="system-fields" data-perfil="sistema" class="input-mode">')
         self.assertRegex(pagina, r'<fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="\d+" class="input-mode" hidden disabled>')
         # El modo matricial sigue enviando sus celdas y resolviendo igual que el texto.
-        matriz = self.client.post("/sistemas/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss_jordan"))
-        texto = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss_jordan"})
+        matriz = self.client.post("/matrices/reduccion/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss_jordan"))
+        texto = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan"})
         # Mismo resultado y mismas conexiones; solo cambia lo que viaja en los enlaces y en la cuadrícula.
         self.assertEqual(seccion_resultado(matriz).split("Plantear")[0], seccion_resultado(texto).split("Plantear")[0])
         html = matriz.content.decode("utf-8")
@@ -381,12 +381,12 @@ class PruebasFormularioProgresivo(SimpleTestCase):
 
     def test_las_opciones_se_despliegan_solas_cuando_difieren_de_lo_predeterminado(self):
         casos = (
-            (self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["pivotes"]}), True),
-            (self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": TODOS}), False),
-            (self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss"}), False),
-            (self.client.post("/sistemas/", {"sistema": "x1+=1", "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion"]}), True),
-            (self.client.get("/sistemas/", {"mostrar_definido": "1", "mostrar": ["pivotes"]}), True),
-            (self.client.get("/sistemas/"), False),
+            (self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["pivotes"]}), True),
+            (self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": TODOS}), False),
+            (self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss"}), False),
+            (self.client.post("/matrices/reduccion/", {"sistema": "x1+=1", "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion"]}), True),
+            (self.client.get("/matrices/reduccion/", {"mostrar_definido": "1", "mostrar": ["pivotes"]}), True),
+            (self.client.get("/matrices/reduccion/"), False),
         )
         for respuesta, abiertas in casos:
             with self.subTest(abiertas=abiertas):
@@ -398,7 +398,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
     """Entrada → «Ver procedimiento» (details cerrado) → Resultado final, una sola vez y fuera del details."""
 
     def test_el_procedimiento_plegado_precede_al_resultado(self):
-        respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
+        respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
         orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1", "Matriz reducida",
@@ -419,7 +419,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         self.assertLess(html.index(detalle) + len(detalle), html.index('id="final-title"'))
 
     def test_sin_procedimiento_no_hay_desplegable_y_la_matriz_final_sigue_en_el_resultado(self):
-        respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "pivotes"]})
+        respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "pivotes"]})
         html = respuesta.content.decode("utf-8")
         self.assertNotIn('id="procedimiento"', html)
         self.assertNotIn("Ver procedimiento", html)
@@ -428,7 +428,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         self.assertEqual(texto.count("Matriz escalonada"), 1)
 
     def test_comparar_pliega_cada_metodo_y_deja_un_resultado_comun(self):
-        respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS})
+        respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         # El título «Gauss y Gauss-Jordan» va antes; el orden se mide desde el desplegable.
         texto = seccion_resultado(respuesta)
@@ -458,8 +458,8 @@ class PruebasExplorar(SimpleTestCase):
 
     def test_sin_resultado_no_se_ofrecen_exploraciones(self):
         for respuesta in (
-            self.client.get("/sistemas/"),
-            self.client.post("/sistemas/", {"sistema": "x1+=1", "metodo": "gauss"}),
+            self.client.get("/matrices/reduccion/"),
+            self.client.post("/matrices/reduccion/", {"sistema": "x1+=1", "metodo": "gauss"}),
             self.client.get("/vectores/operaciones/"),
             self.client.get("/"),
         ):
@@ -467,7 +467,7 @@ class PruebasExplorar(SimpleTestCase):
             self.assertNotContains(respuesta, 'class="explore"')
 
     def test_tras_resolver_se_ofrecen_conexiones_a_rutas_existentes(self):
-        respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": TODOS})
+        respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": TODOS})
         enlaces = self.enlaces_explorar(respuesta)
         self.assertEqual(
             [texto for _, texto in enlaces],
@@ -489,7 +489,7 @@ class PruebasExplorar(SimpleTestCase):
         self.assertEqual(parse_qs(urlsplit(enlaces[1][0]).query)["metodo"], ["comparar"])
 
     def test_el_enlace_prepara_el_mismo_sistema_sin_resolverlo(self):
-        respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": TODOS})
+        respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": TODOS})
         href = self.enlaces_explorar(respuesta)[0][0]
         pagina = self.client.get(href)
         self.assertEqual(pagina.status_code, 200)
@@ -500,13 +500,13 @@ class PruebasExplorar(SimpleTestCase):
         self.assertRegex(html, r'data-method-hint="gauss_jordan"\s*>')
         # Resolver desde ahí da exactamente lo mismo que con el otro método elegido a mano.
         formulario = Formulario(html, "sistema-form")
-        directo = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
-        self.assertEqual(seccion_resultado(self.client.post("/sistemas/", formulario.como_datos())), seccion_resultado(directo))
+        directo = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
+        self.assertEqual(seccion_resultado(self.client.post("/matrices/reduccion/", formulario.como_datos())), seccion_resultado(directo))
 
     def test_los_bloques_omitidos_se_ofrecen_y_la_matriz_viaja_completa(self):
         datos = datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss")
         datos.update({"mostrar_definido": "1", "mostrar": ["procedimiento", "clasificacion"]})
-        respuesta = self.client.post("/sistemas/", datos)
+        respuesta = self.client.post("/matrices/reduccion/", datos)
         enlaces = self.enlaces_explorar(respuesta)
         self.assertEqual(
             [texto for _, texto in enlaces],
@@ -531,7 +531,7 @@ class PruebasExplorar(SimpleTestCase):
         self.assertEqual(marcadas, ["procedimiento", "clasificacion", "pivotes"])
 
     def test_comparar_no_ofrece_otro_metodo_y_nada_se_inventa(self):
-        respuesta = self.client.post("/sistemas/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS})
+        respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS})
         self.assertEqual(
             [texto for _, texto in self.enlaces_explorar(respuesta)],
             ["Plantear un sistema como ecuación matricial Ax = b"],
@@ -544,7 +544,7 @@ class PruebasExplorar(SimpleTestCase):
             self.assertTrue(exploracion.url.startswith("/"))
 
     def test_una_consulta_invalida_no_rompe_el_formulario(self):
-        pagina = self.client.get("/sistemas/", {
+        pagina = self.client.get("/matrices/reduccion/", {
             "tipo_entrada": "matriz", "ecuaciones": "abc", "variables": "-2", "metodo": "zzz",
             "mostrar_definido": "1", "mostrar": ["nada"], "sistema": "   ",
         })
@@ -566,7 +566,7 @@ class PruebasAccesibilidadProgresiva(SimpleTestCase):
                 self.assertNotIn("onclick=", html)
                 self.assertNotRegex(html, r'<(div|span)[^>]*role="button"')
                 self.assertEqual(html.count("<details"), html.count("<summary"))
-        for ruta in ("/", "/sistemas/"):
+        for ruta in ("/", "/matrices/reduccion/"):
             html = self.client.get(ruta).content.decode("utf-8")
             with self.subTest(ruta=ruta):
                 self.assertEqual(html.count("<details"), html.count("</details>"))
@@ -576,7 +576,7 @@ class PruebasAccesibilidadProgresiva(SimpleTestCase):
     def test_el_foco_visible_cubre_summary_y_el_texto_sigue_en_espanol(self):
         base = (STATIC / "styles" / "base.css").read_text(encoding="utf-8")
         self.assertIn("summary:focus-visible", base)
-        for ruta in ("/", "/sistemas/"):
+        for ruta in ("/", "/matrices/reduccion/"):
             html = self.client.get(ruta).content.decode("utf-8")
             for termino in ("Keyboard", "Options", "Explore", "More topics", "Menu<"):
                 self.assertNotIn(f">{termino}", html)

@@ -98,10 +98,10 @@ class Contenido(HTMLParser):
 
 class PruebasCatalogoMatrices(SimpleTestCase):
     def test_operaciones_es_la_primera_herramienta_de_matrices(self):
-        # Desde P26.4 la categoría tiene cuatro herramientas; Operaciones con matrices sigue primera.
+        # Desde P26.5 la categoría tiene cinco herramientas; Operaciones con matrices sigue primera.
         self.assertTrue(catalogo.MATRICES.disponible)
         self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES)[0], catalogo.OPERACIONES_MATRICES)
-        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 4)
+        self.assertEqual(len(catalogo.herramientas_de(catalogo.MATRICES)), 5)
         self.assertEqual(reverse("calculadora:operaciones-matrices"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.OPERACIONES_MATRICES)
 

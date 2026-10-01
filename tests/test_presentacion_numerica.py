@@ -110,7 +110,7 @@ class ValoresHTML(HTMLParser):
 class PruebasIntegracionNumerica(SimpleTestCase):
     def test_todas_las_familias_incluyen_ambas_representaciones(self):
         casos = [
-            ("/sistemas/", {"sistema": "3x1 = 1; 2x2 = 1", "metodo": m})
+            ("/matrices/reduccion/", {"sistema": "3x1 = 1; 2x2 = 1", "metodo": m})
             for m in ("gauss", "gauss_jordan", "comparar")
         ] + [
             ("/vectores/operaciones/", datos_vectores("suma", u=["1/3", "1/2"], v=[0, 0])),
@@ -151,9 +151,9 @@ class PruebasIntegracionNumerica(SimpleTestCase):
                 self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
 
     def test_bases_entrada_y_errores_no_reciben_selector(self):
-        for ruta in ("/", "/sistemas/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
+        for ruta in ("/", "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
             self.assertNotContains(self.client.get(ruta), "data-numeric-controls")
-        self.assertNotContains(self.client.post("/sistemas/", {"sistema": "x1+=1"}), "data-numeric-controls")
+        self.assertNotContains(self.client.post("/matrices/reduccion/", {"sistema": "x1+=1"}), "data-numeric-controls")
         conversion = self.client.post("/bases/conversion/", {
             "numero": "13", "base_origen": "10", "bases_destino": ["2", "16"],
         })

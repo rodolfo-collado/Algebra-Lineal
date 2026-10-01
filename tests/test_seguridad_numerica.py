@@ -40,7 +40,7 @@ from tests.test_vectores_web import combinacion, datos_vectores
 
 def entradas_web(literal):
     """Cada clase de dato editable; las estructuras son pequeñas y válidas."""
-    sistemas = "/sistemas/"
+    sistemas = "/matrices/reduccion/"
     matrices = "/matrices/operaciones/"
     vectores = "/vectores/operaciones/"
     ecuaciones = "/matrices/ecuaciones/"
@@ -150,7 +150,7 @@ class PruebasEntradasWeb(SimpleTestCase):
         matriz = matriz_de_crecimiento()
         a, b = [fila[:-1] for fila in matriz], [fila[-1] for fila in matriz]
         for metodo in ("gauss", "gauss_jordan", "comparar"):
-            casos = [("/sistemas/", datos_matriz(matriz, metodo=metodo)), ("/matrices/ecuaciones/", datos_ecuacion(a, b, metodo=metodo))]
+            casos = [("/matrices/reduccion/", datos_matriz(matriz, metodo=metodo)), ("/matrices/ecuaciones/", datos_ecuacion(a, b, metodo=metodo))]
             for ruta, datos in casos:
                 with self.subTest(ruta=ruta, metodo=metodo):
                     self.assert_error_controlado(self.client.post(ruta, datos))
