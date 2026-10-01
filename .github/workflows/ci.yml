@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - develop
-      - main
   pull_request:
     branches:
       - develop
@@ -14,10 +13,10 @@ on:
 permissions:
   contents: read
 
-# Una nueva ejecucion sobre el mismo ref cancela la anterior; otras ramas no se tocan.
+# Los PR/develop cancelan CI obsoleto; el CI de Release queda aislado por ejecución.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref == 'refs/heads/main' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   verificaciones:
@@ -28,6 +27,7 @@ jobs:
       - name: Clonar el repositorio
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Instalar uv
@@ -60,6 +60,7 @@ jobs:
       - name: Clonar el repositorio
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Instalar uv
