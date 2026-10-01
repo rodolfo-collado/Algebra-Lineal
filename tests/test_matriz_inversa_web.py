@@ -1,7 +1,8 @@
-"""P26.4: «Matriz inversa» en la web: catálogo, entrada, métodos, procedimiento, resultado y confirmación."""
+"""P26.4/P26.8: inversa web, verificación opcional exacta y confirmación ligada a la entrada."""
 
 import os
 import re
+from fractions import Fraction
 from html import unescape
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -15,6 +16,8 @@ from django.test import Client, SimpleTestCase
 from django.urls import resolve, reverse
 from django.utils.html import strip_tags
 
+from backend import matriz_inversa
+from backend.matrices import resolver_operacion_matrices
 from backend.matriz_inversa import calcular_inversa
 from backend.presupuesto_computacional import Categoria, estimar_gauss_jordan, perfil_numerico
 from backend.seguridad_numerica import MENSAJE_CALCULO_GRANDE
@@ -41,6 +44,10 @@ PROFESOR_3X3 = [[0, 1, 2], [1, 0, 3], [4, -3, 8]]
 INVERSA_3X3 = [["-9/2", "7", "-3/2"], ["-2", "4", "-1"], ["3/2", "-2", "1/2"]]
 SINGULAR = [[1, 2], [2, 4]]
 TABLA_INVERSA = "Matriz inversa de A"
+TABLA_A_INVERSA = "Producto A por su inversa"
+TABLA_INVERSA_A = "Producto de la inversa por A"
+TABLA_IDENTIDAD = "Matriz identidad de verificación"
+MOTOR_PRODUCTO = "backend.matriz_inversa.resolver_operacion_matrices"
 
 
 def datos_inversa(a=None, metodo="gauss_jordan", **extra):
@@ -63,6 +70,10 @@ def texto(html, desde='id="resultado"'):
 
 def radios(html):
     return {valor: atributos for valor, atributos in re.findall(r'<input type="radio" name="metodo" value="([^"]+)"([^>]*)>', html)}
+
+
+def identidad_texto(orden):
+    return [["1" if i == j else "0" for j in range(orden)] for i in range(orden)]
 
 
 def forzar(nivel=Categoria.PESADA, intervalo=(2.0, 18.0)):
@@ -134,13 +145,14 @@ class PruebasEntrada(SimpleTestCase):
         for ausente in ('id="resultado"', "data-confirmacion", 'role="alert"', "data-numeric-controls"):
             self.assertNotContains(respuesta, ausente)
 
-    def test_los_controles_no_muestran_formulas(self):
+    def test_el_selector_de_metodo_no_muestra_formulas(self):
         html = self.client.get(RUTA).content.decode()
         formulario = elemento_html(html, html.index('id="inversa-form"'), "form")
         etiquetas = re.findall(r'<input type="radio"[^>]*>\s*<span>([^<]+)</span>', formulario)
         self.assertEqual(etiquetas, ["Gauss-Jordan", "Método para matrices 2×2"])
+        selector = elemento_html(formulario, formulario.index('<legend>Método</legend>'), "fieldset")
         for formula in ("ad − bc", "ad-bc", "1/(", "A⁻¹", "[A | I]", "determinante"):
-            self.assertNotIn(formula, strip_tags(formulario))
+            self.assertNotIn(formula, strip_tags(selector))
 
     def test_el_metodo_2x2_solo_esta_disponible_en_2x2(self):
         for orden in (1, 3, 10):
@@ -178,6 +190,7 @@ class PruebasEntrada(SimpleTestCase):
         form = InversaForm(datos_inversa([["1/2", "-3"], ["0.25", 7]], metodo="directo_2x2"))
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["entrada"]["metodo"], "directo_2x2")
+        self.assertIs(form.cleaned_data["entrada"]["verificar"], False)
         self.assertEqual([[str(v) for v in fila] for fila in form.cleaned_data["entrada"]["a"]], [["1/2", "-3"], ["1/4", "7"]])
 
     def test_labels_y_teclado_numerico(self):
@@ -334,6 +347,236 @@ class PruebasResultado(SimpleTestCase):
         self.assertNotContains(respuesta, 'id="resultado"')
 
 
+class PruebasVerificacion(SimpleTestCase):
+    def calcular(self, a=PROFESOR_2X2, metodo="gauss_jordan", **extra):
+        respuesta = self.client.post(RUTA, datos_inversa(a, metodo, verificar="on", **extra))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertNotContains(respuesta, 'role="alert"')
+        self.assertNotContains(respuesta, "data-confirmacion")
+        html = respuesta.content.decode()
+        return html, Contenido(html)
+
+    def test_checkbox_opcional_con_label_y_ayuda_asociada(self):
+        html = self.client.get(RUTA).content.decode()
+        doc = Contenido(html)
+        checkbox = doc.campos["verificar"]
+        self.assertEqual(checkbox["type"], "checkbox")
+        self.assertNotIn("checked", checkbox)
+        self.assertNotIn("required", checkbox)
+        self.assertEqual(" ".join(doc.labels[checkbox["id"]].split()), "Verificar el resultado")
+        ayuda = checkbox["aria-describedby"].split()
+        self.assertTrue(ayuda)
+        textos = " ".join(
+            strip_tags(elemento_html(html, html.index(f'id="{identificador}"'), "p"))
+            for identificador in ayuda
+        )
+        self.assertIn("A·A⁻¹", textos)
+        self.assertIn("A⁻¹·A", textos)
+        self.assertIn("matriz identidad", textos)
+        self.assertLess(html.index('name="metodo"'), html.index('name="verificar"'))
+        self.assertLess(html.index('name="verificar"'), html.index("Calcular inversa"))
+
+    def test_la_entrada_limpia_incluye_un_booleano(self):
+        for datos, esperado in ((datos_inversa(), False), (datos_inversa(verificar="on"), True),
+                                (datos_inversa(verificar="false"), False)):
+            with self.subTest(esperado=esperado, enviado=datos.get("verificar")):
+                form = InversaForm(datos)
+                self.assertTrue(form.is_valid(), form.errors)
+                self.assertEqual(set(form.cleaned_data["entrada"]), {"a", "metodo", "verificar"})
+                self.assertIs(form.cleaned_data["entrada"]["verificar"], esperado)
+
+    def test_sin_seleccionar_conserva_el_resultado_y_no_multiplica(self):
+        casos = ((PROFESOR_2X2, "gauss_jordan", INVERSA_2X2),
+                 (PROFESOR_2X2, "directo_2x2", INVERSA_2X2),
+                 (PROFESOR_3X3, "gauss_jordan", INVERSA_3X3))
+        for a, metodo, inversa in casos:
+            with self.subTest(metodo=metodo, n=len(a)), \
+                    patch(MOTOR_PRODUCTO, side_effect=AssertionError("verificó sin selección")) as producto, \
+                    patch(f"{SERVICIO}.verificar_inversa", side_effect=AssertionError("verificó sin selección")) as verificar:
+                html = self.client.post(RUTA, datos_inversa(a, metodo)).content.decode()
+                self.assertEqual(Contenido(html).tablas[TABLA_INVERSA], inversa)
+                self.assertNotIn('id="inverse-verification-title"', html)
+                self.assertNotIn(TABLA_A_INVERSA, html)
+                self.assertNotIn(TABLA_INVERSA_A, html)
+                producto.assert_not_called()
+                verificar.assert_not_called()
+                comprobar_estructura(self, html)
+
+    def test_ejemplos_exactos_y_ambos_metodos_muestran_los_dos_productos(self):
+        casos = (([[4]], "gauss_jordan", [["1/4"]]),
+                 (PROFESOR_2X2, "gauss_jordan", INVERSA_2X2),
+                 (PROFESOR_2X2, "directo_2x2", INVERSA_2X2),
+                 (PROFESOR_3X3, "gauss_jordan", INVERSA_3X3),
+                 ([["1/2", -1], [3, "-2/3"]], "gauss_jordan", [["-1/4", "3/8"], ["-9/8", "3/16"]]),
+                 ([["1/2", -1], [3, "-2/3"]], "directo_2x2", [["-1/4", "3/8"], ["-9/8", "3/16"]]))
+        for a, metodo, inversa in casos:
+            with self.subTest(a=a, metodo=metodo):
+                with patch(MOTOR_PRODUCTO, wraps=resolver_operacion_matrices) as producto:
+                    html, doc = self.calcular(a, metodo)
+                self.assertEqual(producto.call_count, 2)
+                self.assertTrue(all(llamada.args == ("producto",) for llamada in producto.call_args_list))
+                self.assertEqual(doc.tablas[TABLA_INVERSA], inversa)
+                for tabla in (TABLA_A_INVERSA, TABLA_INVERSA_A, TABLA_IDENTIDAD):
+                    self.assertEqual(doc.tablas[tabla], identidad_texto(len(a)))
+                contenido = texto(html)
+                self.assertIn("A · A⁻¹", contenido)
+                self.assertIn("A⁻¹ · A", contenido)
+                for etiqueta, formula in (("Comprobación de A por su inversa", "A · A⁻¹"),
+                                           ("Comprobación de la inversa por A", "A⁻¹ · A")):
+                    region = elemento_html(html, html.index(f'aria-label="{etiqueta}"'), "div")
+                    region_texto = " ".join(unescape(strip_tags(re.sub(r">\s*<", "> <", region))).split())
+                    celdas = " ".join(valor for fila in identidad_texto(len(a)) for valor in fila)
+                    self.assertEqual(region_texto, f"{formula} = {celdas} = I")
+                self.assertIn("Ambos productos son la matriz identidad.", contenido)
+                self.assertIn("checked", doc.campos["verificar"])
+
+    def test_se_verifica_la_misma_inversa_calculada_una_sola_vez(self):
+        for metodo in ("gauss_jordan", "directo_2x2"):
+            with self.subTest(metodo=metodo):
+                calculos = []
+
+                def calcular_una_vez(a, metodo):
+                    calculo = calcular_inversa(a, metodo)
+                    calculos.append(calculo)
+                    return calculo
+
+                motores = {nombre: Mock(wraps=funcion) for nombre, funcion in matriz_inversa.METODOS.items()}
+                # El dispatcher usa el registro; invocar directamente los métodos de nuevo falla.
+                with patch.dict(matriz_inversa.METODOS, motores), \
+                        patch.object(matriz_inversa, "inversa_gauss_jordan", side_effect=AssertionError("recalculó Gauss-Jordan")), \
+                        patch.object(matriz_inversa, "inversa_metodo_2x2", side_effect=AssertionError("recalculó la regla 2×2")), \
+                        patch(f"{SERVICIO}.calcular_inversa", side_effect=calcular_una_vez) as calcular, \
+                        patch(f"{SERVICIO}.verificar_inversa", wraps=matriz_inversa.verificar_inversa) as verificar:
+                    self.calcular(PROFESOR_2X2, metodo)
+                calcular.assert_called_once()
+                motores[metodo].assert_called_once()
+                for otro_metodo, motor in motores.items():
+                    if otro_metodo != metodo:
+                        motor.assert_not_called()
+                verificar.assert_called_once()
+                self.assertIs(verificar.call_args.args[1], calculos[0]["inversa"])
+
+    def test_singular_no_verifica_ni_ejecuta_productos(self):
+        for metodo in ("gauss_jordan", "directo_2x2"):
+            with self.subTest(metodo=metodo), \
+                    patch(MOTOR_PRODUCTO, side_effect=AssertionError("multiplicó una singular")) as producto, \
+                    patch(f"{SERVICIO}.verificar_inversa", side_effect=AssertionError("verificó una singular")) as verificar:
+                html, doc = self.calcular(SINGULAR, metodo)
+                procedimiento, resultado = partes(html)
+                self.assertIn("La matriz no tiene inversa.", resultado)
+                self.assertIn("No se puede realizar la verificación porque A no tiene inversa.", procedimiento)
+                for tabla in (TABLA_INVERSA, TABLA_A_INVERSA, TABLA_INVERSA_A, TABLA_IDENTIDAD):
+                    self.assertNotIn(tabla, doc.tablas)
+                producto.assert_not_called()
+                verificar.assert_not_called()
+
+    def test_verificacion_en_el_procedimiento_antes_del_resultado_unico(self):
+        for metodo, ultimo_paso in (("gauss_jordan", "3 · Matriz final"),
+                                    ("directo_2x2", "4 · Multiplicar por 1/(ad − bc)")):
+            with self.subTest(metodo=metodo):
+                html, _ = self.calcular(PROFESOR_2X2, metodo)
+                comprobar_estructura(self, html)
+                procedimiento, resultado = partes(html)
+                self.assertLess(procedimiento.index(ultimo_paso), procedimiento.index("Verificación"))
+                self.assertIn("A · A⁻¹", procedimiento)
+                self.assertIn("A⁻¹ · A", procedimiento)
+                self.assertNotIn("Resultado", procedimiento)
+                self.assertNotIn("Verificación", resultado)
+                self.assertEqual(resultado, "Resultado A⁻¹ = -3 2 5/2 -3/2")
+                self.assertEqual(len(re.findall(rf'<table[^>]*aria-label="{TABLA_INVERSA}"', html)), 1)
+                self.assertEqual(texto(html).count("Resultado"), 1)
+                self.assertRegex(html, r'<h[3-6][^>]*id="inverse-verification-title"[^>]*>Verificación</h[3-6]>')
+                ids = re.findall(r'id="([^"]+)"', html)
+                self.assertEqual(len(ids), len(set(ids)))
+
+    def test_verificacion_respeta_la_presentacion_exacta_decimal(self):
+        html, _ = self.calcular(PROFESOR_3X3)
+        self.assertIn("data-numeric-controls hidden", html)
+        detalle = elemento_html(html, html.index('id="procedimiento"'), "details")
+        bloque = detalle[detalle.index('id="inverse-verification-title"'):]
+        # La presentación común conserva 0 y 1: solo prepara variantes si el decimal cambia.
+        self.assertEqual(ValoresHTML(bloque).valores, [])
+        tablas = Contenido(bloque).tablas
+        for tabla in (TABLA_A_INVERSA, TABLA_INVERSA_A, TABLA_IDENTIDAD):
+            self.assertEqual(tablas[tabla], identidad_texto(3))
+        inversa = {valor["exacto"]: valor for valor in ValoresHTML(html).valores}
+        self.assertEqual(inversa["-9/2"]["decimales"]["4"], "-4.5")
+
+    def test_el_producto_no_identico_se_muestra_sin_afirmar_exito(self):
+        for orden_fallido, mensaje in ((0, "A · A⁻¹ no coincide con la matriz identidad."),
+                                       (1, "A⁻¹ · A no coincide con la matriz identidad.")):
+            with self.subTest(orden_fallido=orden_fallido):
+                numero_llamada = 0
+
+                def producto_con_fallo(*args, **kwargs):
+                    nonlocal numero_llamada
+                    producto = resolver_operacion_matrices(*args, **kwargs)
+                    if numero_llamada == orden_fallido:
+                        producto["resultado"][0][0] = Fraction(1, 3)
+                    numero_llamada += 1
+                    return producto
+
+                with patch(MOTOR_PRODUCTO, side_effect=producto_con_fallo):
+                    html, doc = self.calcular()
+                tabla_fallida, otra = ((TABLA_A_INVERSA, TABLA_INVERSA_A) if orden_fallido == 0
+                                      else (TABLA_INVERSA_A, TABLA_A_INVERSA))
+                self.assertEqual(doc.tablas[tabla_fallida], [["1/3", "0"], ["0", "1"]])
+                self.assertEqual(doc.tablas[otra], identidad_texto(2))
+                procedimiento, _ = partes(html)
+                self.assertIn(mensaje, procedimiento)
+                self.assertEqual(procedimiento.count("≠ I"), 1)
+                self.assertNotIn("Ambos productos son la matriz identidad.", procedimiento)
+                bloque = html[html.index('id="inverse-verification-title"'):]
+                valor = next(v for v in ValoresHTML(bloque).valores if v["exacto"] == "1/3")
+                self.assertEqual(valor["decimales"]["4"], "0.3333")
+
+    def test_seguridad_del_producto_muestra_el_error_comun_sin_traceback(self):
+        with patch(MOTOR_PRODUCTO, side_effect=ValueError(MENSAJE_CALCULO_GRANDE)) as producto, \
+                patch(f"{SERVICIO}.calcular_inversa", wraps=calcular_inversa) as calcular:
+            respuesta = self.client.post(RUTA, datos_inversa(verificar="on"))
+        calcular.assert_called_once()
+        producto.assert_called_once()
+        self.assertContains(respuesta, MENSAJE_CALCULO_GRANDE)
+        for fragmento in ('id="resultado"', "Traceback", "Exceeds the limit", "bits"):
+            self.assertNotContains(respuesta, fragmento)
+
+    def test_aplicar_conserva_checkbox_celdas_y_metodo_sin_calcular(self):
+        for verificar in (False, True):
+            for orden, metodo_esperado in ((2, "directo_2x2"), (3, "gauss_jordan")):
+                with self.subTest(verificar=verificar, orden=orden), \
+                        patch(f"{SERVICIO}.calcular_inversa", side_effect=AssertionError("calculó al aplicar")), \
+                        patch(MOTOR_PRODUCTO, side_effect=AssertionError("multiplicó al aplicar")):
+                    extra = {"verificar": "on"} if verificar else {}
+                    html = self.client.post(RUTA, datos_inversa(metodo="directo_2x2", orden=str(orden),
+                                                              celda_A_0_0="1/", ajustar="1", **extra)).content.decode()
+                doc = Contenido(html)
+                self.assertEqual("checked" in doc.campos["verificar"], verificar)
+                self.assertEqual(doc.campos["celda_A_0_0"]["value"], "1/")
+                self.assertEqual(doc.campos["celda_A_1_1"]["value"], "6")
+                self.assertIn("checked", radios(html)[metodo_esperado])
+                self.assertNotIn('id="resultado"', html)
+                self.assertNotIn('role="alert"', html)
+
+    def test_post_manipulado_con_checkbox_no_salta_el_contrato(self):
+        casos = [datos_inversa(verificar="on", celda_B_0_0="1"),
+                 datos_inversa(verificar="on", teorema="inversa_de_inversa"),
+                 datos_inversa(verificar="on", metodo="otro")]
+        duplicado = QueryDict(mutable=True)
+        duplicado.update(datos_inversa(verificar="on"))
+        duplicado.appendlist("verificar", "false")
+        casos.append(duplicado)
+        for datos in casos:
+            with self.subTest(datos=datos), \
+                    patch(f"{SERVICIO}.calcular_inversa", side_effect=AssertionError("calculó entrada manipulada")), \
+                    patch(MOTOR_PRODUCTO, side_effect=AssertionError("multiplicó entrada manipulada")):
+                if isinstance(datos, QueryDict):
+                    respuesta = self.client.post(RUTA, datos.urlencode(), content_type="application/x-www-form-urlencoded")
+                else:
+                    respuesta = self.client.post(RUTA, datos)
+                self.assertContains(respuesta, 'role="alert"')
+                self.assertNotContains(respuesta, 'id="resultado"')
+
+
 class PruebasRechazo(SimpleTestCase):
     def rechazar(self, datos, mensaje=None):
         with patch("frontend.web.calculadora.views.calcular_inversa_web", side_effect=AssertionError("calculó")):
@@ -366,9 +609,9 @@ class PruebasRechazo(SimpleTestCase):
         self.rechazar(datos_inversa(PROFESOR_3X3, orden="2"), "Las celdas recibidas no coinciden")
 
     def test_campos_repetidos(self):
-        for campo in ("orden", "metodo", "celda_A_0_0", "confirmacion"):
+        for campo in ("orden", "metodo", "celda_A_0_0", "confirmacion", "verificar"):
             datos = QueryDict(mutable=True)
-            datos.update(datos_inversa(confirmacion="x"))
+            datos.update(datos_inversa(confirmacion="x", verificar="on"))
             datos.appendlist(campo, datos[campo])
             form = InversaForm(datos)
             self.assertFalse(form.is_valid())
@@ -476,6 +719,103 @@ class PruebasConfirmacion(SimpleTestCase):
         self.assertNotEqual(firmar_entrada(entrada), firmar_entrada({**entrada, "a": [[3, 4], [5, 7]]}))
         # Sin categoría pesada no hace falta firma.
         self.assertIsNone(confirmacion_pendiente(entrada))
+
+    def test_la_firma_incluye_verificar_y_es_estable_para_la_misma_entrada(self):
+        entrada = {"a": PROFESOR_2X2, "metodo": "gauss_jordan", "verificar": False}
+        otra = {**entrada, "verificar": True}
+        self.assertNotEqual(firmar_entrada(entrada), firmar_entrada(otra))
+        for original in (entrada, otra):
+            with self.subTest(verificar=original["verificar"]):
+                self.assertEqual(firmar_entrada(original), firmar_entrada(dict(original)))
+                exacta = {**original, "a": [[Fraction(v) for v in fila] for fila in original["a"]]}
+                self.assertEqual(firmar_entrada(original), firmar_entrada(exacta))
+        self.assertEqual(firmar_entrada(entrada), firmar_entrada({"a": PROFESOR_2X2, "metodo": "gauss_jordan"}))
+
+    def test_pesada_en_ambos_estados_espera_y_continuar_calcula_una_vez(self):
+        for verificar in (False, True):
+            with self.subTest(verificar=verificar):
+                extra = {"verificar": "on"} if verificar else {}
+                datos = datos_inversa(PROFESOR_3X3, **extra)
+                with patch(f"{SERVICIO}.calcular_inversa", side_effect=AssertionError("calculó sin confirmar")) as calcular, \
+                        patch(MOTOR_PRODUCTO, side_effect=AssertionError("multiplicó sin confirmar")) as producto:
+                    html = self.post(datos)
+                calcular.assert_not_called()
+                producto.assert_not_called()
+                self.assertIn("data-confirmacion", html)
+                self.assertNotIn('id="resultado"', html)
+                self.assertEqual("checked" in Contenido(html).campos["verificar"], verificar)
+                firma = self.firma_de(html)
+                with patch(f"{SERVICIO}.calcular_inversa", wraps=calcular_inversa) as calcular, \
+                        patch(MOTOR_PRODUCTO, wraps=resolver_operacion_matrices) as producto:
+                    html = self.post({**datos, "confirmacion": firma})
+                calcular.assert_called_once()
+                self.assertEqual(producto.call_count, 2 if verificar else 0)
+                self.assertNotIn("data-confirmacion", html)
+                self.assertEqual(Contenido(html).tablas[TABLA_INVERSA], INVERSA_3X3)
+                self.assertEqual("checked" in Contenido(html).campos["verificar"], verificar)
+                self.assertEqual('id="inverse-verification-title"' in html, verificar)
+                comprobar_estructura(self, html)
+
+    def test_cancelar_conserva_la_opcion_y_las_celdas_sin_calcular(self):
+        for verificar in (False, True):
+            with self.subTest(verificar=verificar):
+                extra = {"verificar": "on"} if verificar else {}
+                datos = datos_inversa(PROFESOR_3X3, **extra)
+                firma = self.firma_de(self.post(datos))
+                with patch(f"{SERVICIO}.calcular_inversa", side_effect=AssertionError("calculó al cancelar")), \
+                        patch(MOTOR_PRODUCTO, side_effect=AssertionError("multiplicó al cancelar")):
+                    html = self.post({**datos, "confirmacion": firma, "ajustar": "1"})
+                campos = Contenido(html).campos
+                self.assertEqual("checked" in campos["verificar"], verificar)
+                self.assertEqual({k: campo["value"] for k, campo in campos.items() if k.startswith("celda_A_")},
+                                 {f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(PROFESOR_3X3) for j, v in enumerate(fila)})
+                self.assertIn("checked", radios(html)["gauss_jordan"])
+                for ausente in ('id="resultado"', "data-confirmacion", 'role="alert"'):
+                    self.assertNotIn(ausente, html)
+
+    def test_cambiar_la_opcion_invalida_la_firma_en_ambos_sentidos(self):
+        for verificar_original in (False, True):
+            with self.subTest(verificar_original=verificar_original):
+                original = {"verificar": "on"} if verificar_original else {}
+                cambiada = {} if verificar_original else {"verificar": "on"}
+                firma = self.firma_de(self.post(datos_inversa(PROFESOR_3X3, **original)))
+                with patch(f"{SERVICIO}.calcular_inversa", side_effect=AssertionError("calculó con otra opción")) as calcular, \
+                        patch(MOTOR_PRODUCTO, side_effect=AssertionError("multiplicó con otra opción")) as producto:
+                    html = self.post(datos_inversa(PROFESOR_3X3, confirmacion=firma, **cambiada))
+                calcular.assert_not_called()
+                producto.assert_not_called()
+                self.assertIn("data-confirmacion", html)
+                self.assertNotEqual(self.firma_de(html), firma)
+                self.assertEqual("checked" in Contenido(html).campos["verificar"], not verificar_original)
+
+    def test_cambiar_celda_o_metodo_tambien_invalida_firma_con_verificacion(self):
+        firma = self.firma_de(self.post(datos_inversa(PROFESOR_2X2, verificar="on")))
+        firma_otro_metodo = firmar_entrada({"a": PROFESOR_2X2, "metodo": "directo_2x2", "verificar": True})
+        cambios = (datos_inversa(verificar="on", celda_A_1_1="7", confirmacion=firma),
+                   datos_inversa(verificar="on", confirmacion=firma_otro_metodo))
+        for datos in cambios:
+            with self.subTest(datos=datos), \
+                    patch(f"{SERVICIO}.calcular_inversa", side_effect=AssertionError("calculó con otra entrada")), \
+                    patch(MOTOR_PRODUCTO, side_effect=AssertionError("multiplicó con otra entrada")):
+                html = self.post(datos)
+                self.assertIn("data-confirmacion", html)
+                self.assertNotIn('id="resultado"', html)
+
+    def test_verificar_no_cambia_el_presupuesto_ni_agrega_otra_confirmacion(self):
+        entrada = {"a": PROFESOR_3X3, "metodo": "gauss_jordan"}
+        self.assertEqual(estimar_inversa_web({**entrada, "verificar": False}),
+                         estimar_inversa_web({**entrada, "verificar": True}))
+        for verificar in (False, True):
+            with self.subTest(verificar=verificar):
+                extra = {"verificar": "on"} if verificar else {}
+                for nivel in (Categoria.NORMAL, Categoria.PERCEPTIBLE):
+                    html = self.post(datos_inversa(PROFESOR_3X3, **extra), nivel)
+                    self.assertIn('id="resultado"', html)
+                    self.assertNotIn("data-confirmacion", html)
+                with patch(f"{SERVICIO}.estimar_gauss_jordan", side_effect=AssertionError("estimó el método directo")):
+                    html = self.post(datos_inversa(PROFESOR_2X2, "directo_2x2", **extra), Categoria.MUY_PESADA)
+                self.assertIn('id="resultado"', html)
+                self.assertNotIn("data-confirmacion", html)
 
     def test_muy_pesada_y_minutos(self):
         html = self.post(datos_inversa(PROFESOR_3X3), Categoria.MUY_PESADA, (12.8, 115.6))

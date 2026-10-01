@@ -8,7 +8,7 @@ estimación pesada no calcula hasta que el usuario confirma con «Continuar».
 
 from django.utils.crypto import constant_time_compare, salted_hmac
 
-from backend.matriz_inversa import DIRECTO_2X2, GAUSS_JORDAN, calcular_inversa
+from backend.matriz_inversa import DIRECTO_2X2, GAUSS_JORDAN, calcular_inversa, verificar_inversa
 from backend.presupuesto_computacional import (
     Categoria, categoria, estimar_gauss_jordan, intervalo_segundos, perfil_numerico,
 )
@@ -50,9 +50,12 @@ def estimar_inversa_web(entrada):
 
 
 def firmar_entrada(entrada):
-    """Firma de esta matriz exacta y este método: una confirmación no sirve para otra entrada."""
+    """Firma de la matriz exacta, el método y la opción de verificar esta misma entrada."""
     valores = ";".join(",".join(str(valor) for valor in fila) for fila in entrada["a"])
-    return salted_hmac(_SAL_CONFIRMACION, f"{entrada['metodo']}|{valores}", algorithm="sha256").hexdigest()
+    verificar = "1" if entrada.get("verificar", False) else "0"
+    return salted_hmac(
+        _SAL_CONFIRMACION, f"{entrada['metodo']}|verificar={verificar}|{valores}", algorithm="sha256",
+    ).hexdigest()
 
 
 def confirmacion_pendiente(entrada, firma=""):
@@ -125,6 +128,18 @@ def _metodo_2x2(calculo):
 def calcular_inversa_web(entrada):
     """Calcula la entrada ya validada (y confirmada, si hacía falta) y la deja lista para la plantilla."""
     calculo = calcular_inversa(entrada["a"], entrada["metodo"])
+    verificar_solicitado = entrada.get("verificar", False)
+    verificacion = None
+    if verificar_solicitado and calculo["invertible"]:
+        comprobacion = verificar_inversa(entrada["a"], calculo["inversa"])
+        verificacion = {
+            clave: formatear_matriz(comprobacion[clave])
+            for clave in ("identidad", "a_por_inversa", "inversa_por_a")
+        }
+        verificacion.update({
+            clave: comprobacion[clave]
+            for clave in ("a_por_inversa_es_identidad", "inversa_por_a_es_identidad", "verificada")
+        })
     orden = calculo["orden"]
     presentar = _gauss_jordan if calculo["metodo"] == GAUSS_JORDAN else _metodo_2x2
     return {
@@ -132,6 +147,8 @@ def calcular_inversa_web(entrada):
         "titulo_metodo": dict(METODOS)[calculo["metodo"]],
         "forma": f"{orden}×{orden}",
         "invertible": calculo["invertible"],
+        "verificar_solicitado": verificar_solicitado,
+        "verificacion": verificacion,
         "inversa": formatear_matriz(calculo["inversa"]) if calculo["invertible"] else None,
         "explicacion": None if calculo["invertible"] else NO_INVERTIBLE[calculo["metodo"]],
         **presentar(calculo),

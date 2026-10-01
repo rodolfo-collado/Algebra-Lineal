@@ -33,6 +33,11 @@ class InversaForm(FormularioCeldas):
         label="Método", choices=METODOS, initial=METODO_PREDETERMINADO, widget=RadioConInactivas,
         error_messages={"required": "Selecciona un método.", "invalid_choice": "Selecciona un método válido."},
     )
+    verificar = forms.BooleanField(
+        label="Verificar el resultado", required=False, initial=False,
+        help_text="Comprueba que A·A⁻¹ y A⁻¹·A producen la matriz identidad.",
+        widget=forms.CheckboxInput(attrs={"aria-describedby": "inverse-verification-help"}),
+    )
     # Firma que envía «Continuar» cuando un cálculo largo pidió confirmación; la comprueba el servicio.
     confirmacion = forms.CharField(required=False, strip=False)
 
@@ -71,11 +76,15 @@ class InversaForm(FormularioCeldas):
             return datos
 
         orden = self.estructura["orden"]
-        datos["entrada"] = {"a": self.leer_matriz(datos, "A", orden, orden), "metodo": datos["metodo"]}
+        datos["entrada"] = {
+            "a": self.leer_matriz(datos, "A", orden, orden),
+            "metodo": datos["metodo"], "verificar": datos["verificar"],
+        }
         return datos
 
     def iniciales(self):
         """Conserva las celdas que sobreviven a Aplicar; la estructura ya está saneada."""
         iniciales = {nombre: self.data.get(nombre, "") for nombre in self.fields if nombre != "confirmacion"}
         iniciales.update(self.estructura)
+        iniciales["verificar"] = self.cleaned_data["verificar"]
         return iniciales
