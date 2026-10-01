@@ -151,11 +151,12 @@ $installer = Get-Item .\dist\installer\AlgebraLineal-Setup-*.exe
 La prueba instala en una carpeta nueva de `%LOCALAPPDATA%\Programs` fuera del
 repositorio. Comprueba ambos accesos directos y que el ejecutable sea `windowed`,
 abre desde Inicio, resuelve por Gauss y Gauss-Jordan, las cuatro operaciones
-matriciales básicas, los productos `AB` y `Ax` comparando métodos y la ecuación
+matriciales básicas escritas como expresiones (`A + B`, `A - B`, `kA`, `A^T`),
+los productos `AB` y `Ax` comparando lecturas, la ruta histórica de expresiones y la ecuación
 `Ax = b` (solución fraccionaria comparando métodos y un caso
 rectangular 3×2) a través del Django/Waitress empaquetado, leyendo las celdas
 exactas que el formato Exacto/Decimal envuelve en `<span data-numeric>`,
-solicita CSS/JS (incluidos `matrices.js`, `ecuaciones.js` y `numeros.js`) e
+solicita CSS/JS (incluidos `expresiones.js`, `ecuaciones.js` y `numeros.js`) e
 icono, cierra la ventana y
 verifica que el proceso y el servidor terminan. Repite la apertura y luego
 desinstala comprobando que se eliminaron archivos, registro y accesos directos.

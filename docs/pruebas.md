@@ -13,21 +13,24 @@ uv run python manage.py check
 
 Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`
 cubre aridad, colecciones exactas, dimensiones consecutivas, cadenas de tres y
-cuatro matrices, ambos procedimientos, validación estricta del POST y el
-presupuesto de entrada: hasta 50 operandos y 900 celdas en total, comprobados
-antes de construir el formulario y dentro del límite de campos por envío de
-Django. Las pruebas anteriores de dos operandos y operaciones unarias siguen en
-la suite.
+cuatro matrices como expresiones (`A + B + C`, `ABCD`), ambas lecturas del
+producto, validación estricta del POST y el presupuesto común de P26.6: hasta 50
+símbolos, 900 celdas y 990 campos de estructura y celdas, comprobados antes de
+construir el formulario y dentro del límite de campos por envío de Django, y en
+la expresión hasta 50 operandos, 49 operaciones y 900 entradas contando cada
+aparición (también cadenas de traspuestas y signos). Vectores conserva sus
+pruebas de 50 vectores.
 
 Para comprobar los controles en un DOM real, ejecuta
 `uv run python -m tests.operandos_browser` y abre
-`http://127.0.0.1:8877/__pruebas/`. Los diecisiete casos usan la aplicación
-Django y los scripts de producción: añadir/quitar operandos, eliminar uno
-intermedio (también en un producto, donde las columnas se desplazan, y rechazar
-sin cambios la eliminación que excedería el presupuesto), preservar valores y
-orden, mínimos por operación, cambios a unarias y Ax, cantidades mayores de diez,
-los topes del presupuesto (50 operandos, 900 celdas y una cantidad manipulada) y
-los tres modos de presentación del producto.
+`http://127.0.0.1:8877/__pruebas/`. Los quince casos usan la aplicación Django y
+los scripts de producción. En vectores: añadir/quitar, eliminar uno intermedio,
+mínimos por operación y el tope de 50. En Operaciones con matrices: agregar y
+eliminar símbolos conservando nombres y valores, una resta real de tres
+agrupada por la izquierda, nombres después de Z (A1, B1…), el tope de 50
+símbolos, el presupuesto de celdas que detiene Agregar, dimensiones, steppers y
+cambios de tipo que no caben y no cambian nada, flechas dentro de la cuadrícula,
+una cantidad manipulada y `ABCD` con las tres lecturas del producto.
 Este ejecutor local no añade dependencias ni se lanza en `unittest discover`.
 
 Las de `tests/` cubren las reglas matemáticas del backend (validaciones, matrices
@@ -46,19 +49,19 @@ operaciones con vectores —suma, resta, escalar, combinación lineal
 con solución única, infinitas o inconsistente, dimensión arbitraria, fracciones
 exactas, la reutilización del motor de sistemas, la estructura dinámica del
 formulario y los POST manipulados—, las operaciones con matrices —suma, resta,
-escalar y traspuesta en rectangulares, fracciones exactas, procedimiento por
-entrada, catálogo, selector, estructura dinámica, errores asociados a celdas
-y POST manipulados—, los productos `AB` y `Ax` —producto punto, dimensiones
+escalar y traspuesta en rectangulares escritas como expresiones, fracciones
+exactas, procedimiento por entrada, catálogo, estructura dinámica, errores
+asociados a celdas y POST manipulados—, los productos `AB` y `Ax` —producto punto, dimensiones
 compatibles e incompatibles, rectangulares, fracciones, equivalencia exacta
 entre fila por columna y por columnas (también contra la combinación lineal de
-`backend/vectores.py`), tercera dimensión, vector x, selector de método,
+`backend/vectores.py`), vector x con otro nombre, opción de presentación,
 comparación con un solo resultado y POST manipulados—, la ecuación matricial
 `Ax = b` —matriz aumentada `[A | b]`, casos cuadrados y rectangulares con
 solución única, infinitas o inconsistente, fracciones, equivalencia exacta con
 Reducción por filas y entre Gauss y Gauss-Jordan, comprobación `A · x = b`,
 interpretación como combinación lineal, b derivado de las filas y x de las
 columnas, flujo Aplicar sin JavaScript y POST manipulados—, las expresiones
-matriciales —lexer, parser, árbol, tipos, dimensiones, procedimiento por nodo,
+de Operaciones con matrices —lexer, parser, árbol, traspuesta, tipos, dimensiones, procedimiento por nodo,
 subexpresión, fracciones exactas, igualdades verdaderas y falsas, lados no
 comparables, rutas `izq`/`der`, regresión contra las primitivas, integración
 web, POST manipulado y formato Exacto/Decimal—, las formas lineales
@@ -347,3 +350,46 @@ escritorio/móvil, teclado, Exacto/Decimal, procedimiento plegable, resultado fi
 buscador y marcadores antiguos. La entrada textual mantiene el flujo sin JS.
 El smoke de Windows exige el enlace canónico; no se renombran recursos ni se
 modifica la configuración de empaquetado.
+
+## Operaciones con matrices unificada (P26.6)
+
+`tests/test_traspuesta_expresiones.py` cubre la traspuesta en el motor: `Aᵀ` y
+`A^T` como el mismo token y el mismo nodo, precedencia postfija (`ABᵀ` es `A(Bᵀ)`,
+`(AB)ᵀ` traspone el producto), segmentación de nombres (`AT`, `M1ᵀ`, ambigüedad),
+rechazo de `A^2` y `A^-1` sin interpretarlos, rutas estables (las expresiones sin
+traspuesta conservan las suyas), subexpresiones dentro y debajo de una
+traspuesta, identidades (`(AB)ᵀ = BᵀAᵀ`), tipos que no se trasponen (vectores,
+escalares, simbólicos) y la lista de expresiones del brief (`A+B` … `A(B+C)-2D`)
+con su asociatividad, contra las primitivas y sin reordenar productos.
+
+La referencia `tests/fixtures/operaciones_matrices_p265.json` se capturó **antes
+de editar** desde `develop` en `c5d241e7df2fb061a6f4eee34346c64b220d78a3`
+(P26.5): la salida completa del servicio anterior de Operaciones con matrices
+para 40 casos —suma y resta de 2, 3 y 4 matrices, fracciones, el orden de la
+resta, escalar entero, fraccionario y negativo, traspuesta cuadrada,
+rectangular, 1×n y n×1, `AB`, `ABC`, `ABCD`, rectangulares y `Ax` con las tres
+lecturas—. `tests/test_operaciones_matrices_unificadas.py` escribe cada POST
+antiguo como símbolos y expresión y exige el mismo resultado en los 40 casos;
+en los pasos de suma, resta, escalar y traspuesta, el mismo desarrollo, las
+mismas fórmulas, ayudas, factor y traslados; en `AB`, `ABC`, `ABCD` y `Ax`, cada
+lectura idéntica (títulos, fórmulas, cada igualdad, columnas, ensamble y grupos)
+y los mismos resultados intermedios. Tres o más sumas, que antes se escribían en
+una celda (`1 + 4 + 7`), se comparan entrada a entrada con los pasos del árbol.
+El mismo archivo prueba la ruta histórica (GET 301 con la consulta, POST 308
+con el mismo cuerpo y el mismo resultado, CSRF), el catálogo final, las
+búsquedas históricas, el procedimiento por nodos (`A(B + C)`, `(A + B)ᵀ`,
+`AB + C`) y las subexpresiones con traspuesta.
+
+Las suites anteriores de Operaciones con matrices (`test_matrices_web`,
+`test_multiplicacion_matrices_web`, `test_operandos_multiples`) y de Expresiones
+(`test_expresiones_matriciales_web`, `test_expresiones_lineales_web`) se ejecutan
+contra `/matrices/operaciones/`. El smoke de Windows envía las operaciones como
+expresiones y comprueba la ruta histórica; su bloque HTTP se puede ejecutar
+contra un `runserver` local antes del CI.
+
+Para QA en navegador: `A+B`, `A+B+C`, `A-B-C`, `2A`, `AB`, `ABC`, `Ax`,
+`A(B+C)`, `AB+C`, `Aᵀ`, `A^T`, `(A+B)ᵀ`, `ABᵀ` y `(AB)ᵀ`; los productos con las
+tres lecturas; una matriz rectangular, un vector, un escalar y una igualdad;
+Exacto/Decimal en los valores intermedios, procedimiento plegable, resultado
+único, «Calcular solo esta parte», móvil y escritorio, claro y oscuro, teclado
+matemático, navegación, buscador y `/matrices/expresiones/`.

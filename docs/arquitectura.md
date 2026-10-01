@@ -58,8 +58,11 @@ P26.5 sitúa **Reducción por filas** en **Álgebra Lineal → Matrices**, con I
 `reduccion-filas`, ruta `/matrices/reduccion/` y nombre Django
 `calculadora:reduccion-filas`. La categoría pública Sistemas de ecuaciones se
 retira del registro; Inicio, menú, buscador y breadcrumbs cambian juntos.
-Matrices ordena sus herramientas así: Operaciones con matrices, Expresiones
-matriciales, Reducción por filas, Resolver Ax = b y Matriz inversa.
+Matrices ordena sus herramientas así: Operaciones con matrices, Reducción por
+filas, Resolver Ax = b y Matriz inversa. Desde P26.6, Operaciones con matrices
+usa el motor de expresiones para operaciones simples y compuestas; la ruta
+`/matrices/expresiones/` solo redirige (GET 301, POST 308) y no es una
+herramienta del catálogo.
 
 Las dos entradas convergen en `[A | b]`: el parser existente convierte un
 sistema de ecuaciones y la cuadrícula entrega una matriz aumentada validada.
@@ -95,8 +98,8 @@ templates/calculadora/
 ├── pages/                    # inicio.html y _area.html (un área plegable con sus temas)
 ├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal
-├── modules/matrices/         # entrada rectangular, resultado y procedimientos
-├── modules/expresiones/      # símbolos, expresión o igualdad, y procedimiento por nodos
+├── modules/matrices/         # parciales de procedimiento: por entrada, lecturas de AB/Ax y dimensiones
+├── modules/expresiones/      # Operaciones con matrices: símbolos, expresión o igualdad, y pasos por nodo
 ├── modules/ecuaciones/       # Ax = b: entrada, equivalencias y eliminación reutilizada
 ├── modules/inversa/          # matriz inversa: Gauss-Jordan sobre [A | I], regla 2×2 y aviso de espera
 ├── modules/bases/            # index.html y procedimiento de la conversión

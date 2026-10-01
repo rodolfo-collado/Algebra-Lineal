@@ -178,7 +178,7 @@ herramientas relacionadas y «También puedes explorar». Cada bloque es opciona
 ### Entrada → Procedimiento plegable → Resultado
 
 Tras resolver, todas las herramientas con resultado (Reducción por filas,
-Operaciones con vectores, Operaciones con matrices, Expresiones matriciales,
+Operaciones con vectores, Operaciones con matrices,
 Resolver Ax = b, Conversión de bases y Conversión de números romanos) siguen
 un mismo patrón dentro de `section#resultado`:
 
@@ -323,100 +323,88 @@ el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructur
 sin calcular. `vector-fields` declara `data-perfil="numerico"`, compartido
 con las celdas de matrices y Ax = b, incluido el escalar cuando está presente.
 
-## Matrices
+## Operaciones con matrices
 
-Una sola herramienta `/matrices/operaciones/` selecciona suma, resta, escalar,
-traspuesta, multiplicación de matrices (`AB`) o matriz por vector (`Ax`).
-`opciones_matrices.CONFIGURACION` define, por operación, las entradas
-necesarias, la forma de cada una como `(campo de filas, campo de columnas)`
-—`None` en las columnas señala un vector columna—, los campos de estructura
-con su etiqueta, el texto de la forma (`A: {m}×{n} · B: {n}×{p} → AB: {m}×{p}`),
-los métodos del procedimiento con sus etiquetas, la presencia del escalar y la
-ayuda; el formulario y JavaScript comparten esos datos mediante `json_script`.
-Las dimensiones van de 1 a 10 por razones de interfaz. A y B comparten
-estructura en suma/resta; en `AB` las filas de B son las columnas de A y solo
-se pide `columnas_b`; en `Ax` la dimensión de x es la de las columnas de A.
+Una sola herramienta, `/matrices/operaciones/`, para operaciones simples y
+compuestas (P26.6): el formulario es el de símbolos y expresión, así que `A + B`,
+`2A`, `AB`, `Ax`, `Aᵀ` y `A(B + C) - 2D` siguen el mismo flujo. No hay un modo
+«sencillo» aparte ni un selector de operación. Las plantillas viven en
+`modules/expresiones/` (el motor es el de expresiones) y reutilizan los
+parciales de procedimiento de `modules/matrices/`.
 
-`MatricesForm` vive en `forms_matrices.py` para no ampliar el formulario común.
-Genera campos Django `celda_A_i_j` / `celda_B_i_j` / `celda_x_i_0` con labels
-(«Matriz A, fila 1, columna 2», «Vector x, componente 3») y errores asociados,
-valida el conjunto exacto de campos y rechaza duplicados. Usa el parser existente
-para convertir números a valores exactos. Los campos `columnas_b` y `metodo`
-existen siempre, pero quedan **deshabilitados y ocultos** cuando la operación no
-los usa: así no viajan en el POST y el botón Aplicar sin JavaScript puede
-habilitarlos con su valor inicial al cambiar de operación. En el envío de
-cálculo el contrato es estricto: si llegan y la operación no los usa, el POST se
-rechaza («campos que no corresponden a la operación seleccionada»); solo Aplicar
-los tolera, porque al cambiar de operación el navegador aún envía la estructura
-anterior. Cuando la operación los necesita, `clean()` exige que lleguen. El
-botón Aplicar valida las dimensiones y conserva las entradas al regenerar, sin
-calcular. La edición dinámica utiliza plantillas HTML inertes que incluyen los
-mismos componentes del servidor; `matrices.js` reetiqueta las dimensiones y los
-métodos, muestra u oculta los controles y genera la cuadrícula de cada entrada
-con su forma. No mantiene matrices ocultas dentro del formulario. El teclado se
-reutiliza con `data-perfil="numerico"` en `matrix-fields`. Tab y flechas permiten recorrer las
-celdas.
+El formulario (`ExpresionMatricialForm`, `forms_expresiones.py`) empieza con dos
+matrices 2×2, A y B. Cada símbolo es un bloque `symbol-card` con nombre, tipo
+—«Con valores» (matriz, vector, escalar) y, aparte, «Simbólicos» (matriz
+desconocida, vector simbólico, vector lineal) como `optgroup`—, dimensiones y
+celdas `celda_<índice>_<i>_<j>` con labels reales («Matriz A, fila 1, columna
+2»). **Agregar símbolo**, **Eliminar** y **Aplicar** funcionan sin JavaScript;
+con JavaScript, `expresiones.js` redibuja la cuadrícula conservando lo escrito,
+propone nombres libres (A … Z, después A1, B1 …) y mueve el foco con las flechas
+dentro de la cuadrícula de cada símbolo. El contrato HTTP es estricto: el
+servidor reconstruye el conjunto exacto de campos de la estructura declarada y
+rechaza celdas de más, de menos, campos desconocidos o repetidos.
 
-`components/matriz_entrada.html` y `matriz_celda.html` representan la cuadrícula
-(con `vector` cambia la leyenda y las etiquetas a «Vector x»);
-`components/matriz.html` muestra valores o expresiones con corchetes, sin columna
-aumentada por defecto, y con una sola columna dibuja un vector columna. Acepta
-`matriz`, `etiqueta`, `aumentada` y `columnas_pivote`. `matrix.html` es el
-adaptador de sistemas con `aumentada=True`. Cada cuadrícula y expresión ancha
-tiene scroll local accesible con teclado. Los estilos usan los tokens comunes
-de ambos temas.
+Bajo la expresión, una ayuda breve con ejemplos (`A + B`, `2A - B`, `AB`, `Ax`,
+`A(B + C)`, `Aᵀ`, también `A^T`) y un desplegable «Cómo se escribe» con la
+multiplicación implícita, la traspuesta, el orden de las operaciones, `=` y los
+tipos simbólicos. Las opciones avanzadas no compiten con la entrada: **Opciones
+del procedimiento** es un `{% disclosure %}` cerrado con la presentación de los
+productos (radios `metodo`: fila por columna, por columnas o comparar ambos) y se
+abre solo cuando el valor enviado no es el predeterminado.
+
+El presupuesto común (50 símbolos, 900 celdas, 990 campos) se comprueba antes de
+crear campos; los topes viajan como `data-*` del campo oculto `cantidad` y
+`expresiones.js` aplica la misma regla: agregar, redimensionar o cambiar de tipo
+no se aplican si no caben, y un aviso `role="status"` lo explica. La expresión se
+analiza en `clean()` para contar operandos, operaciones y entradas antes de
+evaluar.
+
+Tras calcular, **Ver procedimiento** va primero y plegado. Lista un paso por nodo
+del árbol, en el orden en que se calculó (hijos primero), cada uno con su
+subexpresión y dimensiones como encabezado (h4) y su procedimiento debajo:
+
+- suma, resta, escalar y traspuesta usan `matrices/_por_entrada.html` (la regla
+  por entrada, los traslados de fila a columna en la traspuesta y la cadena
+  `_expresion.html`: operandos → desarrollo por entradas → matriz obtenida);
+- `AB` y `Ax` usan `matrices/_metodos_producto.html`, que muestra la lectura
+  elegida o, al comparar, un sub-bloque cerrado por lectura (h5), con
+  `_producto_fila_columna.html` y `_producto_columnas.html` y sus grupos por fila
+  o columna abiertos cuando el resultado tiene pocas entradas
+  (`ENTRADAS_DESPLEGADAS`);
+- los vectores y escalares, una línea por componente.
+
+Cada paso intermedio cierra con su valor (el que usa el paso siguiente) y ofrece
+**Calcular solo esta parte**; el último no repite su valor: el resultado aparece
+una sola vez, en el panel Resultado. En una igualdad, el procedimiento separa
+«Lado izquierdo» y «Lado derecho» (pasos en h5), los dos valores se muestran en
+paneles y el veredicto cierra la página; cada lado puede pedirse solo (`izq:…`,
+`der:…`). Si A es una matriz desconocida, x un vector simbólico y el otro lado un
+vector lineal, el resultado es la matriz y, plegado, cómo se obtuvo.
 
 El backend entrega resultado y pasos por posición con operandos exactos; en la
-traspuesta, también identifica la posición de origen; en `AB` y `Ax`, los
-productos `aᵢₖbₖⱼ` calculados una vez, agrupados por entrada (`pasos`) y por
-columna (`columnas`, con coeficientes, columnas escaladas y columna obtenida).
-La capa de presentación solo formatea esos datos: `servicios_matrices.py`
-escribe las igualdades (`c₂₃ = fila₂(A) · columna₃(B) = … = 9/2`, `Ab₁ = 2a₁ −
-a₂ + 3a₃`) y decide qué bloques mostrar según el método elegido
-(`fila_columna`, `columnas` o `comparar`, con identificadores compartidos entre
-`AB` y `Ax` y etiquetas distintas). El procedimiento va plegado después del
-panel Resultado, que muestra la matriz una sola vez aunque se comparen los
-métodos. `_expresion.html` escribe la expresión como una sola cadena
-(operandos → desarrollo por entradas → matriz obtenida) y la comparten
-`_procedimiento.html` (suma, resta, escalar y traspuesta) y
-`_producto_fila_columna.html`; `_producto.html` pliega cada método en un
-sub-bloque al comparar, y `_producto_fila_columna.html` y
-`_producto_columnas.html` agrupan el desarrollo con `details`/`summary` por
-fila o por columna, abiertos cuando el resultado tiene pocas entradas
-(`ENTRADAS_DESPLEGADAS`). Las igualdades largas se parten en líneas en la fuente
-de interfaz, donde los subíndices se leen mejor; las expresiones con matrices
-se desplazan localmente. Resolver una ecuación matricial tiene su propio formulario.
+traspuesta, también la posición de origen; en `AB` y `Ax`, los productos
+`aᵢₖbₖⱼ` calculados una vez, agrupados por entrada (`pasos`) y por columna
+(`columnas`). `servicios_matrices.py` solo escribe esos datos
+(`presentar_producto`, `presentar_por_entrada`): `c₂₃ = fila₂(A) · columna₃(B) =
+… = 9/2`, `Ab₁ = 2a₁ − a₂ + 3a₃` o, dentro de una expresión mayor,
+`(A(B + C))₁₁ = fila₁(A) · columna₁(B + C)`. `opciones_matrices.py` guarda los
+nombres de las lecturas y sus identificadores compartidos entre `AB` y `Ax`.
 
-## Expresiones matriciales
+`components/matriz_entrada.html` y `matriz_celda.html` (Resolver Ax = b e
+inversa) representan cuadrículas editables; `components/matriz.html` muestra
+valores o expresiones con corchetes, sin columna aumentada por defecto, y con
+una sola columna dibuja un vector columna. `matrix.html` es el adaptador de
+sistemas con `aumentada=True`. Cada cuadrícula y cadena ancha tiene scroll local
+accesible con teclado.
 
-`/matrices/expresiones/` compone las operaciones ya existentes. El formulario
-empieza con un símbolo; **Agregar símbolo** y **Eliminar** cambian la lista, y
-el tipo o las dimensiones se ajustan en ese símbolo. Con JavaScript,
-`expresiones.js` redibuja las celdas y conserva lo escrito. Sin JavaScript,
-**Aplicar** pide al servidor la estructura nueva antes de calcular. El cálculo
-no añade una opción a `CONFIGURACION`.
-
-**Ver procedimiento** va primero, plegado, y lista los nodos de abajo hacia
-arriba; cada uno puede pedirse solo con **Calcular solo esta parte**. El
-resultado va después. El
-selector Exacto/Decimal es el de las demás herramientas de álgebra.
-
-Si el texto trae un solo `=`, la misma página muestra el lado izquierdo, el
-lado derecho y si coinciden. No hay un selector Expresión/Igualdad/Resolver A.
-Con valores numéricos la comparación vale para esos valores. Si A es una matriz
-desconocida, x un vector simbólico y el otro lado un vector lineal, el
-resultado es la matriz y, plegado, cómo se obtuvo: columnas, desarrollo,
-agrupación, coeficientes y comprobación simbólica. Una matriz desconocida no
-tiene celdas; un vector simbólico muestra `x1, x2, …`; un vector lineal usa
-campos de texto. Las rutas de **Calcular solo esta parte** siguen siendo
-`izq:…` y `der:…` en las igualdades numéricas. Exacto/Decimal formatea
-coeficientes y valores después de la comparación exacta.
+`/matrices/expresiones/` es solo compatibilidad: GET 301 y POST 308 hacia
+`/matrices/operaciones/`, sin plantilla ni tarjeta propias.
 
 ## Resolver Ax = b
 
 `/matrices/ecuaciones/` resuelve `Ax = b` cuando x es la incógnita.
 Es un formulario aparte, `EcuacionMatricialForm` (`forms_ecuaciones.py`): x es la incógnita,
-así que no es una operación más de `MatricesForm`. Ambos heredan de
+así que no es una operación más de Operaciones con matrices. Ambos heredan de
 `FormularioCeldas` (`forms_matrices.py`), que genera las celdas
 `celda_<nombre>_<i>_<j>` con sus labels, rechaza campos repetidos, compara el
 conjunto exacto de celdas recibidas con el esperado y convierte los números
