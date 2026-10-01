@@ -5,7 +5,6 @@
 ## Instalar como usuario
 
 1. Descarga `AlgebraLineal-Setup-x.y.z.exe` desde la [última release estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest).
-   Si aún no hay releases publicadas, espera la primera publicación estable.
 2. Ejecuta el instalador: decide si quieres un acceso directo en el escritorio y
    pulsa **Instalar**.
 3. Abre **Álgebra Lineal** desde el menú Inicio o el acceso directo opcional del escritorio.

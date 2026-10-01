@@ -34,11 +34,11 @@ flowchart TD
 | `desktop.py` | Servidor local y ciclo de vida de la ventana nativa. |
 | `AlgebraLineal.spec` | PyInstaller: Python, dependencias, templates, recursos e icono en una carpeta `onedir`, sin consola (`windowed`). |
 | `installer/AlgebraLineal.iss` | Inno Setup: empaqueta esa carpeta, accesos directos, prerrequisito WebView2 y desinstalación. |
-| `scripts/` | Build Windows, smoke de distribución, validación de tags de release, sincronización del símbolo del header y benchmark del presupuesto computacional. |
+| `scripts/` | Build Windows, smoke de distribución, validación del candidato de release, sincronización del símbolo del header y benchmark del presupuesto computacional. |
 | `tests/` | Pruebas matemáticas, frontend, infraestructura, distribución y documentación. |
 | `assets/brand/` | Símbolo oficial de PyGebra: SVG canónico, PNG, favicon e icono de Windows. |
 | `pyproject.toml`, `uv.lock`, `.python-version` | Versión/dependencias declaradas, resolución bloqueada y Python de referencia. |
-| `.github/workflows/` | CI de validación y CD de publicación desde tags de `main`. |
+| `.github/workflows/` | CI de validación y publicación desde push a `main`, con tag automático tras CI verde. |
 
 ## Catálogo y presentación
 
