@@ -14,7 +14,7 @@ del presupuesto de entrada de Reducción por filas siguen en
 | | Límite estructural | Costo estimado |
 | --- | --- | --- |
 | Pregunta | ¿Se puede recibir y representar esta entrada sin riesgo? | ¿Cuánto trabajo pide una entrada ya aceptada? |
-| Si se supera | Se rechaza con un mensaje, antes de reservar estructuras. | Nada, por ahora. Más adelante, un aviso con opción de continuar. |
+| Si se supera | Se rechaza con un mensaje, antes de reservar estructuras. | Inversa y Operaciones con matrices avisan y permiten continuar. |
 | Dónde vive | `presupuesto_sistemas.py`, `operandos.py` y los formularios. | `presupuesto_computacional.py`. |
 
 Un costo alto no convierte una entrada en inválida. Un sistema 10×10 con
@@ -221,6 +221,66 @@ que la confirmación no sirve para otra matriz ni depende de JavaScript. La regl
 siendo válida y el usuario decide. Consulta
 [Matriz inversa](matriz-inversa.md#presupuesto-y-confirmación).
 
+### Operaciones con matrices (P26.7)
+
+Los límites estructurales no miden el costo. Una expresión dentro de los
+**50 operandos / 49 operaciones / 900 entradas** puede seguir siendo lenta:
+`(uv)` repetido 25 veces usa solo 20 entradas por par, pero genera 25 matrices
+10×10 y encadena otros 24 productos 10×10.
+
+`backend.presupuesto_expresiones.analizar_presupuesto` analiza el mismo AST
+del evaluador antes de `evaluar_expresion_web`. Consulta los tipos y dimensiones
+de los símbolos validados y recorre hijos antes que padres. Las reglas
+numéricas de `expresiones_matriciales.formas` son compartidas con el evaluador:
+suma, resta, escalares, negación y traspuesta infieren la forma sin calcular
+valores. Cada matriz×matriz o matriz×vector llama a `estimar_producto` con
+sus dimensiones. No llama a `resolver_operacion_matrices` ni construye resultados
+matriciales intermedios. Las pruebas puras bloquean el motor durante el análisis.
+
+`ABC` estima AB y (AB)C; `(AB)(CD)` estima AB, CD y el producto de ambos.
+`combinar_estimaciones` suma todas las partes. Una igualdad suma ambos lados
+y pide una sola confirmación. Si se solicita `nodo`, se localiza primero y se
+analizan únicamente ese nodo y sus descendientes, incluidas las rutas
+`izq:…` / `der:…` de igualdades. Un producto costoso fuera del nodo solicitado
+no contribuye al aviso. Se mantienen los errores dimensionales del evaluador,
+incluido el nombre del lado que falló; no se comparan dimensiones entre lados
+para rechazar una igualdad que el evaluador puede presentar como incomparable.
+
+Cada perfil se obtiene con `perfil_numerico` sobre los valores exactos conocidos
+del subárbol, incluidos los escalares literales. Se combinan los máximos de bits
+de esos perfiles, sin convertir valores a texto y sin calcular intermedios.
+Esto conserva la limitación de P26.2: no predice el crecimiento de valores
+intermedios ni cancelaciones. Si los árboles seleccionados usan una matriz
+desconocida o un vector simbólico/lineal, se conserva íntegro el flujo simbólico
+sin advertencia basada en este presupuesto numérico. Un símbolo simbólico
+declarado pero no utilizado no excluye una expresión numérica.
+
+La vista aplica `categoria`: NORMAL y PERCEPTIBLE calculan; PESADA y MUY_PESADA
+esperan **Cancelar / Continuar**, con un mensaje neutral e intervalo aproximado.
+El costo no invalida el cálculo. Contrato HTTP, lectura segura, parser y formas
+se comprueban antes del aviso; los límites de crecimiento exacto siguen en los
+motores. Cancelar y las acciones de estructura conservan lo escrito sin
+calcular, descartando la confirmación.
+
+Continuar envía una firma HMAC SHA-256 con `salted_hmac`, validada con
+`constant_time_compare`, sobre una serialización JSON canónica de expresión,
+todos los símbolos, tipos, dimensiones, numeradores/denominadores exactos,
+método de presentación y nodo solicitado. Cambiar cualquiera de esos datos
+invalida la firma. El servidor vuelve a analizar antes de validar la firma;
+no confía en un indicador booleano. Funciona sin JavaScript. Con JavaScript,
+editar campos, método o estructura oculta el aviso anterior y limpia la firma
+oculta. Durante el aviso, el botón Continuar es el único control que envía
+`confirmacion`; así se evita duplicar ese nombre en el contrato HTTP estricto.
+
+El intervalo visible y el componente neutral se comparten con Matriz inversa,
+sin duplicar CSS ni alterar sus mensajes, firma o comportamiento.
+
+Se conserva un único modelo para las tres presentaciones. P26.2 cuenta ambas
+lecturas del procedimiento; resulta conservador con Fila por columna, que
+puede terminar antes del límite inferior. Los casos normales no preguntan y
+el caso exterior con Por columnas/Comparar ambos queda dentro del intervalo.
+No se ajustaron referencias, factores de bits ni umbrales por un solo punto.
+
 ## Benchmark
 
 `scripts/benchmark_presupuesto.py` mide Gauss, Gauss-Jordan y el producto de
@@ -234,6 +294,7 @@ sus entradas se repiten.
 uv run python -m scripts.benchmark_presupuesto
 uv run python -m scripts.benchmark_presupuesto --tamanos 14 16 20 --digitos 30
 uv run python -m scripts.benchmark_presupuesto --web
+uv run python -m scripts.benchmark_presupuesto --expresiones --repeticiones 3
 ```
 
 | Opción | Efecto |
@@ -242,6 +303,7 @@ uv run python -m scripts.benchmark_presupuesto --web
 | `--digitos` | Cifras del numerador y del denominador en la segunda serie. Por defecto 10. |
 | `--repeticiones` | Ejecuciones por caso; se informa la mediana. Por defecto 3. |
 | `--web` | Mide además el POST completo de «Comparar ambos» en Reducción por filas; omite los tamaños fuera del presupuesto de entrada. |
+| `--expresiones` | Mide solo AB 3×3, AB 10×10, ABCD 10×10 y `(uv)` × 25, con las tres presentaciones. Verifica primero el aviso y usa su firma para medir el POST confirmado completo. |
 
 Cada fila muestra la operación, las dimensiones, los valores, la mediana, los
 pasos reales, la cota estimada y el factor numérico. «µs/unidad» divide la
@@ -285,6 +347,30 @@ tardó entre dos y tres veces más, todavía dentro del intervalo; en otro momen
 de carga, el mismo 10×11 con enteros llegó a 11,5 s, fuera de él. La forma del
 modelo se mantiene (µs/celda casi igual con enteros y con fracciones); la
 escala depende del equipo.
+
+### Resultados locales de expresiones (P26.7)
+
+Windows, Python 3.13.3, 30 de septiembre de 2026. Antes de modificar la base
+`34d887996b32d86081a9e67d238e331c25bc86d8`, el POST de `(uv)` × 25 con
+Comparar ambos tardó **9,610 s** y produjo **23,46 MiB** de HTML. La composición
+manual de P26.2 ya daba MUY_PESADA, referencia 10,965 s e intervalo
+3,655–32,894 s. No se fijó ninguna regla a esos segundos reales.
+
+Después, `--expresiones --repeticiones 3`, sin una suite ejecutándose en
+paralelo, midió estas medianas del POST completo confirmado:
+
+| Caso | Productos | Categoría | Referencia / intervalo (s) | Fila por columna (s) | Por columnas (s) | Comparar ambos (s) |
+| --- | ---: | --- | --- | ---: | ---: | ---: |
+| AB 3×3 | 1 | NORMAL | 0,013 / 0,004–0,039 | 0,018 | 0,029 | 0,032 |
+| AB 10×10 | 1 | NORMAL | 0,399 / 0,133–1,196 | 0,142 | 0,310 | 0,349 |
+| ABCD 10×10 | 3 | PERCEPTIBLE | 1,196 / 0,399–3,588 | 0,261 | 0,864 | 1,001 |
+| `(uv)` × 25 | 49 | MUY_PESADA | 10,965 / 3,655–32,894 | 2,398 | 7,847 | 10,044 |
+
+Con Por columnas y Comparar ambos los cuatro casos quedan dentro del
+intervalo. Con Fila por columna, ABCD y el exterior quedan por debajo:
+el modelo incluye la evidencia de ambas lecturas y sobreestima esta presentación.
+La diferencia es conservadora, no pide avisos en AB 3×3/10×10 ni en ABCD 10×10
+y no justifica introducir otro modelo o recalibrar referencias.
 
 ## Añadir una operación al presupuesto
 
@@ -332,5 +418,9 @@ cambio de presupuesto. Los formularios y enlaces nuevos usan la ruta canónica.
   `estimar_producto` y una confirmación, como en la inversa, queda pendiente.
 - Sistema por inversa: la composición de arriba sigue siendo una aplicación
   futura; P26.5 no la implementa.
+- P26.7, advertencia de costo en Operaciones con matrices: consume las
+  estimaciones de P26.2 para los productos numéricos del AST, igualdades y
+  subexpresiones. PESADA/MUY_PESADA requieren confirmación de la entrada exacta.
+  Los topes estructurales y las referencias de calibración se conservan.
 - P26.8, verificaciones de inversa: una `estimar_producto(n, n, n)` por cada una, sumada a
   la estimación.
