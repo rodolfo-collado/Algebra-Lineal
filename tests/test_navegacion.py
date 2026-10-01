@@ -122,7 +122,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertNotIn("Sistemas de ecuaciones", [c.nombre for c in catalogo.CATEGORIAS])
         self.assertEqual(catalogo.REDUCCION_FILAS.categoria, catalogo.MATRICES)
         self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES), (
-            catalogo.OPERACIONES_MATRICES, catalogo.EXPRESIONES_MATRICIALES,
+            catalogo.OPERACIONES_MATRICES,
             catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA,
         ))
         self.assertEqual(catalogo.REDUCCION_FILAS.ruta, "/matrices/reduccion/")

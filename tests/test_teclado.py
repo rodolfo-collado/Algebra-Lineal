@@ -40,7 +40,6 @@ HERRAMIENTAS = {
     "/matrices/reduccion/": {"sistema", "numerico"},
     "/vectores/operaciones/": {"numerico"},
     "/matrices/operaciones/": {"numerico"},
-    "/matrices/expresiones/": {"numerico"},
     "/matrices/ecuaciones/": {"numerico"},
     "/matrices/inversa/": {"numerico"},
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
@@ -56,18 +55,17 @@ CONTROLES = {
         "ajustar", "csrfmiddlewaretoken", "dimension", "operacion", "u_0", "u_1", "u_2", "v_0", "v_1",
         "v_2", "vectores",
     },
+    # P26.6: Operaciones con matrices usa el formulario de símbolos (antes Expresiones) y suma la
+    # presentación de los productos. El contrato anterior de operación + celdas_A/B ya no existe.
     "/matrices/operaciones/": {
-        "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_B_0_0",
-        "celda_B_0_1", "celda_B_1_0", "celda_B_1_1", "columnas", "columnas_b", "csrfmiddlewaretoken", "cantidad",
-        "filas", "metodo", "operacion",
+        "ajustar", "agregar", "cantidad", "celda_0_0_0", "celda_0_0_1", "celda_0_1_0", "celda_0_1_1",
+        "celda_1_0_0", "celda_1_0_1", "celda_1_1_0", "celda_1_1_1", "columnas_0", "columnas_1",
+        "csrfmiddlewaretoken", "eliminar", "expresion", "filas_0", "filas_1", "metodo", "nombre_0",
+        "nombre_1", "tipo_0", "tipo_1",
     },
     "/matrices/ecuaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",
         "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo",
-    },
-    "/matrices/expresiones/": {
-        "ajustar", "agregar", "cantidad", "celda_0_0_0", "celda_0_0_1", "celda_0_1_0", "celda_0_1_1",
-        "columnas_0", "csrfmiddlewaretoken", "eliminar", "expresion", "filas_0", "nombre_0", "tipo_0",
     },
     # «confirmacion» solo aparece en el aviso de un cálculo largo, nunca en el GET.
     "/matrices/inversa/": {
@@ -369,7 +367,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
 
     def test_las_celdas_dinamicas_nacen_dentro_del_contenedor_numerico(self):
         for ruta, atributo, valor, formulario in (
-            ("/matrices/operaciones/", "data-matrix-list", "", "matrices-form"),
+            ("/matrices/operaciones/", "data-simbolos", "", "expresiones-form"),
             ("/matrices/ecuaciones/", "data-equation-entry", "", "ecuacion-form"),
             ("/matrices/inversa/", "data-inverse-entry", "", "inversa-form"),
             ("/vectores/operaciones/", "id", "vector-list", "vectores-form"),

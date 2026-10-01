@@ -20,7 +20,7 @@ convierte en una advertencia de operación pesada.
 | Combinación lineal | Generadores y objetivo usaban el conversor sin inspección. | Comparte la protección de Vectores. |
 | Resolver Ax = b / ecuaciones matriciales numéricas | A y b heredaban el conversor sin inspección de `FormularioCeldas`. | Comparte la protección de las celdas de Matrices. |
 | Matriz inversa (P26.4) | Herramienta nueva. | Celdas de `FormularioCeldas` en modo seguro; Gauss-Jordan y la regla 2×2 operan con `multiplicar_exacto`, `restar_exacto` y `dividir_exacto`; la firma de confirmación usa valores ya leídos. |
-| Expresiones: símbolos numéricos | Matrices, vectores y escalares declarados heredaban las celdas sin inspección. | Comparte `FormularioCeldas`. |
+| Expresiones: símbolos numéricos (desde P26.6, Operaciones con matrices) | Matrices, vectores y escalares declarados heredaban las celdas sin inspección. | Comparte `FormularioCeldas`. |
 | Expresiones: literales en el texto y componentes lineales; A desconocida | El lexer solo tokenizaba enteros, fracciones y decimales, pero no limitaba sus componentes antes de convertirlos. | El parser inspecciona cada token numérico antes del conversor y de `Fraction`. |
 | Conversión de bases | Formulario de hasta 128 caracteres y gramática por base antes de acumular dígitos. | Conserva su validación propia. La E hexadecimal es un dígito, no un exponente. |
 | Números romanos | Hasta 15 caracteres antes de acumular; arábigos entre 1 y 3999 y símbolos romanos canónicos. | Conserva su validación propia. |

@@ -33,7 +33,7 @@
     white-space: normal;
 }
 
-:is([data-matrices], [data-inversa]) .errorlist {
+:is([data-expresiones], [data-inversa]) .errorlist {
     margin: 0.4rem 0 0;
     padding-left: 1rem;
     color: var(--color-danger);
@@ -41,15 +41,7 @@
     overflow-wrap: anywhere;
 }
 
-:is([data-matrices], [data-inversa]) [aria-invalid="true"] { border-color: var(--color-danger); }
-
-.matrix-scalar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.65rem;
-    margin-top: 1rem;
-}
+:is([data-expresiones], [data-inversa]) [aria-invalid="true"] { border-color: var(--color-danger); }
 
 .matrix-equation {
     display: flex;
@@ -81,7 +73,7 @@
     overflow-wrap: anywhere;
 }
 
-/* Tres dimensiones en AB (m, n, p); el control que la operación no usa se oculta. */
+/* Controles de estructura de A en Resolver Ax = b y en la inversa. */
 .structure-controls-matrices {
     grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
 }
@@ -1445,6 +1437,37 @@ textarea:focus {
 .expression-lines {
     margin: 0.35rem 0 0.6rem;
     padding-left: 1.1rem;
+}
+
+/* Cada paso del árbol: su subexpresión, su procedimiento y, si no es el último, su valor. */
+.expression-step {
+    min-width: 0;
+}
+
+.expression-step + .expression-step {
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.expression-step-title {
+    font-size: 1rem;
+}
+
+.expression-step-shape {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.expression-step-value {
+    margin-bottom: 0.6rem;
+}
+
+.syntax-help {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding-left: 1.1rem;
+    line-height: 1.45;
 }
 
 .equality-sides {

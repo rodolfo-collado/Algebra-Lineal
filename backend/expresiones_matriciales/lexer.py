@@ -4,6 +4,7 @@ Los literales numéricos son los del resto del proyecto (enteros, fracciones
 `1/2` y decimales exactos). El signo menos es un token propio: el parser
 distingue el unario del binario. `/` solo es válido dentro de una fracción.
 `=` es una relación entre dos expresiones, no un operador aritmético.
+`ᵀ` y `^T` son el mismo token de traspuesta; `^` no forma potencias.
 """
 
 from dataclasses import dataclass
@@ -18,6 +19,17 @@ class Token:
 
 
 _OPERADORES = {"+": "mas", "-": "menos", "*": "por", "(": "izq", ")": "der"}
+TRASPUESTA = "ᵀ"
+
+
+def _exponente(texto, i):
+    """Mensaje para un `^` que no forma `^T`: el exponente no se interpreta."""
+    if texto[i + 1:].lstrip().startswith("-1"):
+        return (
+            "^-1 no se interpreta como inversa: ^ solo admite T, la traspuesta (A^T o Aᵀ). "
+            "La inversa se calcula en la herramienta Matriz inversa."
+        )
+    return "^ solo indica la traspuesta, como A^T o Aᵀ. Esta herramienta no calcula potencias."
 
 
 def tokenizar(texto):
@@ -44,10 +56,21 @@ def tokenizar(texto):
                     i += 1
             tokens.append(Token("numero", texto[inicio:i], inicio, i))
             continue
+        # ᵀ es una letra modificadora para isalpha(): se separa antes de leer nombres.
+        if texto[i] == TRASPUESTA:
+            tokens.append(Token("traspuesta", TRASPUESTA, i, i + 1))
+            i += 1
+            continue
+        if texto[i] == "^":
+            if texto[i + 1:i + 2] != "T":
+                raise ValueError(_exponente(texto, i))
+            tokens.append(Token("traspuesta", "^T", i, i + 2))
+            i += 2
+            continue
         if texto[i].isalpha():
             inicio = i
             i += 1
-            while i < n and texto[i].isalnum():
+            while i < n and texto[i].isalnum() and texto[i] != TRASPUESTA:
                 i += 1
             tokens.append(Token("nombre", texto[inicio:i], inicio, i))
             continue

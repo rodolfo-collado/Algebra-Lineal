@@ -1,16 +1,34 @@
+{% comment %}Los pasos en el orden en que se calcularon (hijos primero). Cada paso con matrices reutiliza el procedimiento de Operaciones con matrices; los de vectores y escalares, una línea por componente. Los intermedios cierran con el valor que usa el paso siguiente; el último no lo repite, porque es el resultado y se muestra una sola vez, al final.{% endcomment %}
+{% with nivel=nivel|default:4 %}
+{% if pasos %}
 <ol class="expression-steps">
     {% for paso in pasos %}
-        <li>
-            <p class="matrix-expression">{{ paso.igualdad }}</p>
-            {% if paso.matriz %}
-                {% include "calculadora/components/matriz.html" with matriz=paso.matriz etiqueta=paso.texto only %}
+        <li class="expression-step">
+            <h{{ nivel }} class="stage-title expression-step-title">{{ paso.texto }} <span class="expression-step-shape">· {{ paso.dimensiones }}</span></h{{ nivel }}>
+            {% if paso.matricial.metodos %}
+                <p class="field-help">{{ paso.matricial.forma }}</p>
+                {% include "calculadora/modules/matrices/_metodos_producto.html" with resultado=paso.matricial %}
+            {% elif paso.matricial %}
+                {% include "calculadora/modules/matrices/_por_entrada.html" with resultado=paso.matricial %}
             {% endif %}
             {% if paso.lineas %}
                 <ul class="expression-lines">
                     {% for linea in paso.lineas %}<li><code>{{ linea }}</code></li>{% endfor %}
                 </ul>
             {% endif %}
-            <button class="btn btn-secondary" type="submit" name="nodo" value="{{ paso.id }}" form="expresiones-form">Calcular solo esta parte</button>
+            {% if not paso.final %}
+                <div class="matrix-equation expression-step-value">
+                    <span class="matrix-expression">{{ paso.igualdad }}</span>
+                    {% if paso.matriz %}{% include "calculadora/components/matriz.html" with matriz=paso.matriz etiqueta=paso.texto only %}{% endif %}
+                </div>
+            {% endif %}
+            {% if paso.recalcular %}
+                <button class="btn btn-secondary" type="submit" name="nodo" value="{{ paso.id }}" form="expresiones-form">Calcular solo esta parte</button>
+            {% endif %}
         </li>
     {% endfor %}
 </ol>
+{% else %}
+<p>{{ texto }} no tiene operaciones que desarrollar.</p>
+{% endif %}
+{% endwith %}

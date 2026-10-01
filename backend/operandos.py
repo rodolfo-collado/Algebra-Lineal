@@ -14,6 +14,12 @@ ARIDAD_MATRICES = {
 # interfaz dibuja siempre se puede enviar.
 OPERANDOS_MAXIMOS = 50
 CELDAS_MAXIMAS = 900
+# Un formulario de símbolos (Operaciones con matrices) envía además el nombre, el
+# tipo y las dimensiones de cada símbolo: hasta 4 campos por matriz. Estructura y
+# celdas no superan este tope, que deja margen para los controles fijos (csrf,
+# expresión, cantidad, presentación y el botón pulsado) dentro de los 1000 campos
+# de Django. Con 50 matrices, 200 campos son de estructura: caben 790 celdas.
+CAMPOS_MAXIMOS = 990
 
 
 def exigir_aridad(cantidad, aridad):

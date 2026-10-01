@@ -1,6 +1,6 @@
 {% comment %}Por columnas (AB) o combinación lineal de columnas (Ax): las columnas de A y, por cada columna del resultado, la combinación con sus coeficientes, los vectores escalados y la columna obtenida. Al comparar, el título lo pone el sub-bloque.{% endcomment %}
 <div class="procedure-stage">
-    {% if not resultado.comparando %}<h4 class="stage-title">{{ metodo.titulo }}</h4>{% endif %}
+    {% if not resultado.comparando %}<h5 class="stage-title">{{ metodo.titulo }}</h5>{% endif %}
     <p>{{ metodo.descripcion }}</p>
     <p class="matrix-formula">{{ metodo.formula }}</p>
     <p class="procedure-lead">Columnas de {{ metodo.izquierda }}:</p>
@@ -14,7 +14,7 @@
     </div>
 </div>
 <div class="procedure-stage">
-    <h4 class="stage-title">{% if resultado.operacion == "matriz_vector" %}Combinación lineal{% else %}Columna por columna{% endif %}</h4>
+    <h5 class="stage-title">{% if resultado.operacion == "matriz_vector" %}Combinación lineal{% else %}Columna por columna{% endif %}</h5>
     {% for grupo in metodo.grupos %}
         <details class="procedure-group"{% if resultado.abierto %} open{% endif %}>
             <summary class="procedure-summary"><span class="procedure-summary-title">{{ grupo.titulo }}</span> <span class="procedure-summary-detail">{{ grupo.resumen }}</span></summary>

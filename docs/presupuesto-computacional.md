@@ -35,6 +35,8 @@ P26.2 no cambia ningún límite. Clasificados por lo que protegen:
 | Valor agrupado, en Sistemas | lo que da un literal | Seguridad y representación: sumar términos no crea valores que una celda no admite. |
 | Ecuaciones, variables y celdas de Sistemas | 12, 12 y 120 | Estructura y, sobre todo, volumen del procedimiento: cada paso guarda dos matrices. |
 | Operandos y celdas de Matrices y Vectores | 50 y 900 | Estructura: un campo HTML por celda cabe en los 1000 campos de Django. |
+| Campos de estructura y celdas de Operaciones con matrices (P26.6) | 990 | Estructura: cada símbolo envía nombre, tipo y dimensiones; con los controles fijos el envío cabe en los 1000 campos. |
+| Operandos, operaciones y entradas de una expresión (P26.6) | 50, 49 y 900 | Volumen del procedimiento: repetir un símbolo o encadenar signos y traspuestas cuenta como en una operación de 50 operandos. |
 | Dimensión de matrices y vectores | 10 | Estructura y representación: cuadrículas editables legibles. |
 
 Ninguno mide el tiempo del cálculo matemático: el motor de un sistema 12×12
@@ -321,7 +323,13 @@ cambio de presupuesto. Los formularios y enlaces nuevos usan la ruta canónica.
   real en un equipo representativo.
 - P26.5, Reducción por filas: reorganiza la herramienta bajo Matrices; no
   cambia el presupuesto, los motores ni los identificadores de método.
-- P26.6, consolidación de Operaciones/Expresiones: queda fuera de P26.5.
+- P26.6, consolidación de Operaciones/Expresiones: no cambia estimadores ni
+  referencias. El presupuesto de la expresión (50 operandos, 49 operaciones y 900
+  entradas por aparición) mantiene el peor caso del módulo anterior: nueve
+  productos 10×10 comparando lecturas midieron 3,1 s y 4,8 MB, como antes
+  (2,9 s). Un producto exterior forzado con paréntesis, `(uv)(uv)…` con u de
+  10×1 y v de 1×10, cabe en ese presupuesto y llega a ~10 s; acotarlo con
+  `estimar_producto` y una confirmación, como en la inversa, queda pendiente.
 - Sistema por inversa: la composición de arriba sigue siendo una aplicación
   futura; P26.5 no la implementa.
 - P26.8, verificaciones de inversa: una `estimar_producto(n, n, n)` por cada una, sumada a

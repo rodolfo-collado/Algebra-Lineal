@@ -3,12 +3,16 @@
         <label>Nombre <input type="text" class="field-input symbol-field-name" autocomplete="off" spellcheck="false" maxlength="12" data-campo="nombre" value="A"></label>
         <label>Tipo
             <select class="field-input symbol-field-type" data-campo="tipo">
-                <option value="matriz" selected>Matriz</option>
-                <option value="vector">Vector</option>
-                <option value="escalar">Escalar</option>
-                <option value="matriz_desconocida">Matriz desconocida</option>
-                <option value="vector_simbolico">Vector simbólico</option>
-                <option value="vector_lineal">Vector lineal</option>
+                <optgroup label="Con valores">
+                    <option value="matriz" selected>Matriz</option>
+                    <option value="vector">Vector</option>
+                    <option value="escalar">Escalar</option>
+                </optgroup>
+                <optgroup label="Simbólicos">
+                    <option value="matriz_desconocida">Matriz desconocida</option>
+                    <option value="vector_simbolico">Vector simbólico</option>
+                    <option value="vector_lineal">Vector lineal</option>
+                </optgroup>
             </select>
         </label>
         <div class="dimension-field" data-dimension="filas">

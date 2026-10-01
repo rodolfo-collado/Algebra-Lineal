@@ -1,0 +1,14 @@
+{% comment %}Suma, resta, escalar y traspuesta de un paso: la regla por entrada y la cadena completa. En la traspuesta, cada fila del operando pasa a ser una columna del resultado.{% endcomment %}
+<div class="procedure-stage">
+    <h5 class="stage-title">{% if resultado.operacion == "traspuesta" %}De filas a columnas{% else %}Entrada por entrada{% endif %}</h5>
+    <p>{{ resultado.ayuda }}</p>
+    <p class="matrix-formula">{{ resultado.formula }}</p>
+    {% if resultado.operacion == "traspuesta" %}
+        <p><strong>{{ resultado.dimensiones_entrada }} → {{ resultado.dimensiones_resultado }}</strong></p>
+        <ol class="matrix-transfers">
+            {% for fila in resultado.traslados %}<li>Fila {{ forloop.counter }} de {{ resultado.operando }} → columna {{ forloop.counter }} de {{ resultado.expresion }}: <code>{{ fila }}</code>.</li>{% endfor %}
+        </ol>
+        <p class="field-help">{{ resultado.nota }}</p>
+    {% endif %}
+    {% include "calculadora/modules/matrices/_expresion.html" with desarrollo=resultado.desarrollo %}
+</div>

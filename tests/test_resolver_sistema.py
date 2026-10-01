@@ -47,7 +47,7 @@ def seccion_resultado(respuesta):
 class PruebasNavegacionUnificada(SimpleTestCase):
     def test_la_navegacion_no_lista_las_pseudo_herramientas(self):
         rutas = (
-            "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/",
+            "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
             "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/",
         )
         for ruta in ("/", *rutas):
@@ -73,7 +73,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         # Cada tema del Inicio despliega sus herramientas; ya no hay chips de acceso rápido.
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
-            ["/vectores/operaciones/", "/matrices/operaciones/", "/matrices/expresiones/", "/matrices/reduccion/", "/matrices/ecuaciones/",
+            ["/vectores/operaciones/", "/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/",
              "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")

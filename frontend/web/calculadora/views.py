@@ -14,14 +14,11 @@ from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_expresiones import ExpresionMatricialForm
 from .forms_inversa import InversaForm
-from .forms_matrices import MatricesForm
 from .forms_romanos import ConversionRomanosForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
-from .opciones_matrices import CONFIGURACION as OPCIONES_MATRICES
 from .servicios_ecuaciones import resolver_ecuacion_web
 from .servicios_expresiones import evaluar_expresion_web
 from .servicios_inversa import calcular_inversa_web, confirmacion_pendiente
-from .servicios_matrices import operar_matrices
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
     METODO_PREDETERMINADO,
@@ -173,28 +170,13 @@ def operaciones_vectores(request):
 
 @require_http_methods(["GET", "POST"])
 def operaciones_matrices(request):
-    ajustar = request.method == "POST" and "ajustar" in request.POST
-    form = MatricesForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
-    resultado = None
-    if request.method == "POST" and form.is_valid():
-        if ajustar:
-            form = MatricesForm(initial=form.iniciales())
-        else:
-            try:
-                resultado = operar_matrices(form.cleaned_data["entrada"])
-            except ValueError as error:
-                form.add_error(None, str(error))
-    return render(request, "calculadora/modules/matrices/index.html", {
-        "form": form, "resultado": resultado, "opciones_matrices": OPCIONES_MATRICES,
-        "perfiles_teclado": perfiles_para("numerico"),
-    })
+    """Operaciones con matrices: símbolos definidos uno a uno y una expresión que los combina.
 
-
-@require_http_methods(["GET", "POST"])
-def expresiones_matriciales(request):
-    """Expresiones compuestas: los símbolos se definen uno a uno y el motor reutiliza las operaciones."""
+    A + B, 2A, AB, Ax, Aᵀ o A(B + C) - 2D usan el mismo flujo y el mismo motor de
+    expresiones, que reutiliza las operaciones exactas de backend.matrices.
+    """
     accion = next((nombre for nombre in ("agregar", "eliminar", "ajustar") if nombre in request.POST), None)
-    form = ExpresionMatricialForm(request.POST or None, accion=accion)
+    form = ExpresionMatricialForm(request.POST if request.method == "POST" else None, accion=accion)
     resultado = None
     if request.method == "POST" and form.is_valid():
         if accion:
@@ -207,6 +189,19 @@ def expresiones_matriciales(request):
     return render(request, "calculadora/modules/expresiones/index.html", {
         "form": form, "resultado": resultado, "perfiles_teclado": perfiles_para("numerico"),
     })
+
+
+@require_http_methods(["GET", "POST"])
+def expresiones_ruta_antigua(request):
+    """Expresiones matriciales dejó de ser una herramienta aparte: es Operaciones con matrices.
+
+    GET usa 301 y conserva la consulta. POST usa 308: el navegador reenvía el mismo
+    cuerpo, que el formulario unificado entiende tal cual (es el de expresiones).
+    """
+    destino = reverse("calculadora:operaciones-matrices")
+    if request.GET:
+        destino = f"{destino}?{request.GET.urlencode()}"
+    return HttpResponsePermanentRedirect(destino, preserve_request=request.method == "POST")
 
 
 @require_http_methods(["GET", "POST"])

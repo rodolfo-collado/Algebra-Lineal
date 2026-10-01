@@ -1,4 +1,4 @@
-"""Herramienta web de expresiones matriciales: catálogo, POST, procedimiento y formato."""
+"""Expresiones dentro de Operaciones con matrices (P26.6): catálogo, POST, procedimiento y formato."""
 
 import os
 from html.parser import HTMLParser
@@ -17,30 +17,14 @@ from backend.matrices import multiplicar_matriz_vector, sumar_matrices
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm
 from frontend.web.calculadora.servicios_expresiones import evaluar_expresion_web
+from tests.test_matrices_web import datos_simbolos
 
-RUTA = "/matrices/expresiones/"
+RUTA = "/matrices/operaciones/"
+ANTIGUA = "/matrices/expresiones/"
 
 
 def datos_expresion(expresion, simbolos, **extra):
-    datos = {"expresion": expresion, "cantidad": str(len(simbolos))}
-    for indice, simbolo in enumerate(simbolos):
-        datos[f"nombre_{indice}"] = simbolo["nombre"]
-        datos[f"tipo_{indice}"] = simbolo["tipo"]
-        valor = simbolo["valor"]
-        if simbolo["tipo"] == "escalar":
-            datos[f"celda_{indice}_0_0"] = str(valor)
-        elif simbolo["tipo"] == "vector":
-            datos[f"filas_{indice}"] = str(len(valor))
-            for fila, componente in enumerate(valor):
-                datos[f"celda_{indice}_{fila}_0"] = str(componente)
-        else:
-            datos[f"filas_{indice}"] = str(len(valor))
-            datos[f"columnas_{indice}"] = str(len(valor[0]))
-            for fila, renglon in enumerate(valor):
-                for columna, entrada in enumerate(renglon):
-                    datos[f"celda_{indice}_{fila}_{columna}"] = str(entrada)
-    datos.update(extra)
-    return datos
+    return datos_simbolos(expresion, simbolos, **extra)
 
 
 EJEMPLO = (
@@ -64,31 +48,35 @@ class Texto(HTMLParser):
 
 
 class PruebasCatalogo(SimpleTestCase):
-    def test_entra_en_matrices_y_queda_relacionada(self):
-        herramienta = catalogo.EXPRESIONES_MATRICIALES
+    def test_las_expresiones_son_operaciones_con_matrices(self):
+        # P26.6: una sola herramienta; la ruta anterior redirige y no hay segunda tarjeta.
+        herramienta = catalogo.OPERACIONES_MATRICES
         self.assertEqual(herramienta.ruta, RUTA)
         self.assertEqual(herramienta.categoria, catalogo.MATRICES)
+        self.assertFalse(hasattr(catalogo, "EXPRESIONES_MATRICIALES"))
+        self.assertIsNone(catalogo.herramienta_por_id("expresiones-matriciales"))
         self.assertEqual(
             catalogo.herramientas_de(catalogo.MATRICES),
-            (catalogo.OPERACIONES_MATRICES, herramienta, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA),
+            (herramienta, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA),
         )
-        self.assertEqual(
-            set(herramienta.relacionadas),
-            {"operaciones-matrices", "ecuaciones-matriciales", "operaciones-vectores"},
-        )
+        self.assertEqual(set(herramienta.relacionadas), {"ecuaciones-matriciales", "operaciones-vectores"})
         respuesta = self.client.get("/")
-        self.assertContains(respuesta, 'href="/matrices/expresiones/"')
-        self.assertContains(respuesta, "Expresiones matriciales")
+        self.assertContains(respuesta, f'href="{RUTA}"')
+        self.assertNotContains(respuesta, f'href="{ANTIGUA}"')
+        self.assertNotContains(respuesta, "Expresiones matriciales")
         self.assertNotContains(respuesta, "Acceso rápido")
+        self.assertEqual(self.client.get(ANTIGUA)["Location"], RUTA)
 
 
 class PruebasPagina(SimpleTestCase):
-    def test_get_empieza_con_un_simbolo_y_sin_resultado(self):
+    def test_get_empieza_con_dos_matrices_y_sin_resultado(self):
         respuesta = self.client.get(RUTA)
         self.assertContains(respuesta, 'id="expresiones-form"')
         self.assertContains(respuesta, 'name="nombre_0"')
+        self.assertContains(respuesta, 'name="nombre_1"')
         self.assertContains(respuesta, "Matriz A, fila 1, columna 1")
-        self.assertNotContains(respuesta, 'name="nombre_1"')
+        self.assertContains(respuesta, "Matriz B, fila 2, columna 2")
+        self.assertNotContains(respuesta, 'name="nombre_2"')
         self.assertNotContains(respuesta, 'id="resultado"')
         self.assertNotContains(respuesta, "data-numeric-controls")
         self.assertContains(respuesta, "calculadora/expresiones.js")

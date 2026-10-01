@@ -50,9 +50,10 @@ entrada para mantenerla legible.
 
 ### Matrices
 
-- Suma, resta, producto por escalar y traspuesta.
-- Producto `AB` y producto matriz-vector `Ax`.
-- Expresiones compuestas, como `A(u + v)` o `2A - 3B`, y una igualdad entre dos de ellas, como `A(u + v) = Au + Av`.
+- Operaciones con matrices: suma, resta, producto por escalar, traspuesta (`Aᵀ` o `A^T`),
+  producto `AB` y producto matriz-vector `Ax`, solas o combinadas en una expresión,
+  como `2A + B`, `A(B + C)` o `(AB)ᵀ`, con el procedimiento de cada paso.
+- Una igualdad entre dos expresiones, como `A(u + v) = Au + Av`.
 - Determinación de una matriz desconocida en `Ax = b`, cuando x es un vector simbólico y b un vector de expresiones lineales.
 - Procedimiento por filas o como combinación lineal de columnas.
 - Resolución de `Ax = b`, también con matrices rectangulares.
@@ -61,7 +62,7 @@ entrada para mantenerla legible.
 
 En el producto `Ax`, x es conocido. Resolver Ax = b busca x y explica la
 relación entre la ecuación matricial, el sistema y la matriz aumentada.
-En Expresiones matriciales, `=` con valores numéricos comprueba esos valores.
+En Operaciones con matrices, `=` con valores numéricos comprueba esos valores.
 Si A se declara como matriz desconocida y x como vector simbólico, `Ax = b`
 determina A para todos los valores de las variables. Hallar x con A y b
 numéricos sigue en Resolver Ax = b.
