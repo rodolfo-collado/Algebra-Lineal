@@ -29,6 +29,12 @@
     }
 
     const initialValues = JSON.parse(initialValuesElement.textContent);
+    const memoria = new Map();
+    initialValues.forEach((fila, row) => fila.forEach((value, column) => {
+        const clave = column === fila.length - 1 ? `b_${row}` : `a_${row}_${column}`;
+        memoria.set(clave, value);
+    }));
+    const { validarDimension } = window.entradasSeguras;
     const maxCells = Number(matrixFields.dataset.maxCeldas);
     let renderedRows = 0;
     let renderedVariables = 0;
@@ -56,11 +62,10 @@
     }
 
     function currentValues() {
-        const values = {};
         matrixGrid.querySelectorAll("input[data-cell]").forEach((input) => {
-            values[input.dataset.cell] = input.value;
+            memoria.set(input.dataset.memoria, input.value);
         });
-        return values;
+        return memoria;
     }
 
     function createElement(tagName, className, text) {
@@ -83,7 +88,8 @@
         input.type = "text";
         input.name = name;
         input.dataset.cell = name;
-        input.value = values[name] ?? initialValues[row]?.[column] ?? "";
+        input.dataset.memoria = isIndependentTerm ? `b_${row}` : `a_${row}_${column}`;
+        input.value = values.get(input.dataset.memoria) ?? "";
         input.setAttribute("aria-label", label);
         input.autocomplete = "off";
         input.spellcheck = false;
@@ -100,6 +106,10 @@
         const rows = dimensionValue(equationsInput);
         const variables = dimensionValue(variablesInput);
         const error = matrixError(rows, variables);
+        [equationsInput, variablesInput].forEach(input => validarDimension(input));
+        if (dimensionAllowed(equationsInput, rows) && dimensionAllowed(variablesInput, variables) && error) {
+            [equationsInput, variablesInput].forEach(input => validarDimension(input, error));
+        }
         // Validar antes de leer/copiar celdas, borrar la cuadrícula o crear nodos.
         // Una dimensión transitoria inválida conserva la última entrada válida.
         if (error) {

@@ -1,6 +1,7 @@
 """Seguridad de literales e intermedios exactos, independiente del costo estimado."""
 
 from fractions import Fraction
+import re
 import sys
 
 DIGITOS_MAXIMOS = 100
@@ -12,6 +13,10 @@ MENSAJE_NOTACION_CIENTIFICA = (
 MENSAJE_CALCULO_GRANDE = (
     "El cálculo produjo números demasiado grandes para mostrarlos de forma segura."
 )
+MENSAJE_ESPACIOS_NUMERICOS = (
+    "No se admiten espacios entre dígitos o puntos de un número."
+)
+_ESPACIOS_NUMERICOS = re.compile(r"[\d.]\s+[\d.]")
 
 # Hasta unas 3613 cifras por componente: deja margen para Exacto/Decimal.
 BITS_MAXIMOS = 12_000
@@ -61,10 +66,16 @@ def _rechazar_digitos_excesivos(cuerpo):
         _exigir_digitos(cuerpo)
 
 
+def validar_espacios_numericos(texto):
+    if isinstance(texto, str) and _ESPACIOS_NUMERICOS.search(texto):
+        raise ValueError(MENSAJE_ESPACIOS_NUMERICOS)
+
+
 def validar_literal_numerico(texto):
     """Inspecciona texto antes de Fraction; el parser conserva su propia gramática."""
     if not isinstance(texto, str):
         return
+    validar_espacios_numericos(texto)
     compacto = "".join(texto.split())
     if not compacto:
         return

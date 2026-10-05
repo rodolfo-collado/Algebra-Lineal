@@ -33,6 +33,18 @@ cambios de tipo que no caben y no cambian nada, flechas dentro de la cuadrícula
 una cantidad manipulada y `ABCD` con las tres lecturas del producto.
 Este ejecutor local no añade dependencias ni se lanza en `unittest discover`.
 
+Entradas seguras (P27.1): `uv run --locked python -m tests.entradas_browser`
+en `http://127.0.0.1:8878/__pruebas/` comprueba los scripts de producción en
+formularios Django reales. Cubre recuperación de celdas al reducir y aumentar
+dimensiones, memoria por tipo de símbolo, vectores y escalar, independencia
+de la columna b, dimensiones inválidas sin reemplazar nodos, presupuestos,
+feedback y `aria-invalid`, mínimos/máximos de los steppers, Enter hacia la
+acción principal y el fallback sin JavaScript. La rueda se verifica sin
+cancelar su evento; conviene comprobar también con una rueda física que la
+página sigue desplazándose. `tests.test_entradas_seguras` valida Aplicar sin
+JavaScript y `tests.test_seguridad_numerica` rechaza espacios numéricos antes
+de convertirlos, conservando `1 / 2`, `- 3` y los saltos entre ecuaciones.
+
 Las de `tests/` cubren las reglas matemáticas del backend (validaciones, matrices
 rectangulares, pivotes, escalonamiento, sustitución regresiva y clasificación de
 sistemas), las expresiones lineales y su formato, la traducción de una matriz a

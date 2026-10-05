@@ -35,9 +35,15 @@ literal científico. En conversión hexadecimal, `1E2` sigue siendo válido.
 
 Se extrae la política histórica de [Sistemas](presupuesto-sistemas.md), sin
 cambiar sus límites: 100 dígitos por entero, numerador, denominador, parte
-entera o parte decimal. Se conservan los signos, espacios y variantes que
+entera o parte decimal. Se conservan los signos y variantes que
 ya aceptaba cada parser (`5.` y `1_000` en celdas; los separadores conservan
 el cómputo histórico de hasta 100 dígitos en todo el literal).
+
+P27.1 rechaza espacios o tabuladores entre dígitos o puntos antes de compactar
+el literal: `1 2`, `1\t2`, `1 .2` y `1. 2` no se convierten en otro número.
+Los espacios alrededor de signos y barras siguen admitidos en las celdas,
+como `- 3` y `1 / 2`. Sistemas inspecciona cada línea original antes del parser;
+los saltos que separan ecuaciones siguen siendo válidos. La gramática no cambia.
 
 La inspección no convierte a entero ni calcula potencias. Detecta `e`/`E`
 después de un dígito y rechaza `1e1000000000` y `1e-1000000000` antes de

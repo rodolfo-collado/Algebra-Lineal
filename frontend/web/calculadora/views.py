@@ -149,7 +149,9 @@ def operaciones_vectores(request):
                 form.add_error(None, str(error))
     elif request.method == "POST":
         # «Aplicar» sin JavaScript: se redibuja la estructura con lo escrito, sin calcular.
-        form = VectoresForm(initial=VectoresForm.iniciales_desde(request.POST))
+        form = VectoresForm(request.POST, ajustar=True)
+        if form.is_valid():
+            form = VectoresForm(initial=VectoresForm.iniciales_desde(request.POST))
     else:
         form = VectoresForm()
 
