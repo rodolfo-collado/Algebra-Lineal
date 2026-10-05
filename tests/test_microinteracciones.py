@@ -92,7 +92,7 @@ class PruebasMicrointeracciones(unittest.TestCase):
         self.assertIn("@supports selector(details::details-content)", css)
         self.assertIn("details[open]::details-content", css)
         self.assertIn(".panel-final", css)
-        self.assertNotRegex(css, r"opacity:\s*0(?:\.0+)?\s*;")
+        self.assertNotRegex(css, r"\.panel-final\s*\{[^}]*opacity:\s*0(?:\.0+)?\s*;")
         self.assertNotIn("animation-fill-mode", css)
         self.assertNotIn("content-visibility:", css)
 

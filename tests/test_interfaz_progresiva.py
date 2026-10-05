@@ -305,7 +305,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         # El dock depende del foco y mantiene la inserción en el cursor.
         script = (STATIC / "teclado.js").read_text(encoding="utf-8")
         self.assertNotIn('teclado.closest("details.disclosure")', script)
-        self.assertIn("teclado.hidden = !objetivo", script)
+        self.assertIn("mostrarDock(Boolean(objetivo))", script)
         self.assertIn("setRangeText", script)
         self.assertNotIn("open = true", script)
 
@@ -316,7 +316,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
                 teclados = Pagina(html).teclados
                 self.assertTrue(teclados)
                 self.assertTrue(all("hidden" in t and "details" not in t["antecesores"] for t in teclados))
-                self.assertNotIn("math-keyboard-title", html)
+                self.assertIn('<span class="math-keyboard-title">Teclado matemático</span>', html)
 
     def test_las_opciones_de_resultado_nacen_plegadas_con_sus_predeterminados(self):
         html = self.client.get("/matrices/reduccion/").content.decode("utf-8")

@@ -10,6 +10,14 @@
         }
     };
     const turno = () => new Promise(resolve => setTimeout(resolve, 0));
+    const animar = async d => {
+        const enlace = d.createElement('link'); enlace.rel = 'stylesheet'; enlace.href = '/dock.css';
+        const carga = new Promise(resolve => {enlace.onload = resolve;});
+        d.head.append(enlace); await carga;
+    };
+    const finalizar = async teclado => {
+        teclado.getAnimations().forEach(animacion => animacion.finish()); await turno();
+    };
     const casos = [
         ["Carga oculta, sin disclosure ni destino implícito", ({d, teclado}) => {
             igual(d.querySelectorAll('.math-keyboard').length, 1);
@@ -146,6 +154,33 @@
             d.execCommand = () => false; let eventos = 0; b.addEventListener('input', () => eventos++);
             b.value = '123'; b.focus(); b.setSelectionRange(1,2); tecla('/').click();
             igual([b.value,b.selectionStart,eventos], ['1/3',2,1]);
+        }],
+        ["Salida conserva las teclas, pierde interacción y termina en hidden", async ({d, a, teclado, tecla}) => {
+            await animar(d); a.focus(); await finalizar(teclado); const anterior = tecla('-');
+            d.getElementById('otro').focus();
+            igual([teclado.hidden,teclado.inert,teclado.hasAttribute('data-abierto')], [false,true,false]);
+            igual(teclado.contains(anterior), true); anterior.click(); igual(a.value, '');
+            igual(teclado.getAnimations().length > 0, true); await finalizar(teclado);
+            igual([teclado.hidden,teclado.querySelectorAll('button').length], [true,0]);
+        }],
+        ["Cambio directo no reinicia entrada y reapertura invalida cierre anterior", async ({d, a, b, teclado}) => {
+            await animar(d); a.focus(); const entrada = teclado.getAnimations();
+            igual(entrada.length > 0, true); b.focus();
+            const siguientes = teclado.getAnimations();
+            igual(siguientes.length === entrada.length && siguientes.every(animacion => entrada.includes(animacion)), true);
+            await finalizar(teclado); d.getElementById('otro').focus();
+            const cierre = Promise.allSettled(teclado.getAnimations().map(animacion => animacion.finished));
+            a.focus(); await finalizar(teclado); await cierre;
+            igual([teclado.hidden,teclado.inert,teclado.hasAttribute('data-abierto'),d.activeElement === a], [false,false,true,true]);
+        }],
+        ["Escape durante entrada oculta sin editar ni revivir por mutaciones", async ({d, a, teclado, tecla}) => {
+            await animar(d); a.value = 'x1'; a.focus();
+            teclado.getAnimations().forEach(animacion => {animacion.currentTime = animacion.effect.getTiming().duration / 2;});
+            const anterior = tecla('-');
+            a.dispatchEvent(new d.defaultView.KeyboardEvent('keydown', {key:'Escape',bubbles:true}));
+            anterior.click(); d.getElementById('celdas').dataset.perfil = 'base-2';
+            await finalizar(teclado);
+            igual([teclado.hidden,a.value,d.activeElement === a], [true,'x1',true]);
         }],
     ];
     let aprobadas = 0;

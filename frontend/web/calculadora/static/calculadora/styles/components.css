@@ -838,9 +838,34 @@ a.tool-link .tool-link-name {
     width: min(100% - 2rem, var(--content-max));
     padding: 0.6rem 0.8rem;
     border: 1px solid var(--color-border);
+    border-top: 2px solid var(--color-brand);
     border-radius: var(--radius-md);
     background: var(--color-surface);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 -4px 16px var(--color-shadow-strong), var(--shadow-lg);
+}
+
+.math-keyboard-title {
+    display: block;
+    margin-bottom: 0.15rem;
+    color: var(--color-brand);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .math-keyboard {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+        transition: opacity var(--motion-fast), transform var(--motion-fast);
+    }
+
+    .math-keyboard[data-abierto] {
+        opacity: 1;
+        transform: translate(-50%, 0);
+        transition: opacity var(--motion), transform var(--motion);
+        transition-timing-function: ease-out;
+    }
 }
 
 /* Reserva estable al final: mostrar/ocultar nunca desplaza los controles. */
@@ -908,6 +933,9 @@ html.js [data-perfil] :is(input, textarea) { scroll-margin: 0; }
     margin: 0.5rem 0 0;
     color: var(--color-muted);
     font-size: 0.76rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @media (max-width: 480px) {
@@ -916,7 +944,7 @@ html.js [data-perfil] :is(input, textarea) { scroll-margin: 0; }
 
 @media (max-height: 640px) {
     .math-keyboard { padding: 0.4rem 0.5rem; }
-    .math-keyboard-group-name, .math-keyboard-help { display: none; }
+    .math-keyboard-title, .math-keyboard-group-name, .math-keyboard-help { display: none; }
     .math-keyboard-groups { gap: 0.5rem; }
     html.js:has(.math-keyboard) { scroll-padding-bottom: 4.5rem; }
     html.js body:has(.math-keyboard) { padding-bottom: 4.5rem; }

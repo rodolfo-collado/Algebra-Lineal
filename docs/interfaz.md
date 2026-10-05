@@ -66,7 +66,7 @@ depende de que una animación se ejecute.
   `--motion` (160 ms) se usa para entradas breves. No hay retrasos.
 - Botones, steppers, teclas matemáticas y controles de navegación comparten
   pulsación de 1 px y borde interior; `:disabled` excluye hover y pulsación.
-  El foco visible se conserva. No hay timers ni cambios en el motor del teclado.
+  El foco visible se conserva.
 - Radios, casillas y segmentos conservan controles HTML nativos y transiciones
   de fondo/borde. Seleccionar no cambia el peso de letra ni mueve opciones vecinas.
 - Los chevrons comunican apertura/cierre. Donde el navegador admite
@@ -76,6 +76,12 @@ depende de que una animación se ejecute.
   `<details>/<summary>` conserva todo su comportamiento nativo, también sin JS.
 - El panel final usa la misma entrada, visible desde el primer instante, sin
   desplazamiento, espera ni clase añadida por JavaScript.
+- El dock entra en 160 ms con opacidad y 10 px de desplazamiento, y sale en
+  120 ms. Su etiqueta y acento verde lo identifican; en modo compacto se oculta
+  la etiqueta. Al salir pierde destino e interacción inmediatamente, conserva
+  las teclas durante la transición y aplica `hidden` al finalizar. Un nuevo
+  foco cancela ese cierre; cambiar de campo compatible no reinicia la entrada.
+  Con movimiento reducido la apertura y el cierre son inmediatos.
 - No se animan celdas, cambios de dimensiones, regeneraciones de campos, perfiles
   del teclado, controles condicionales ni el desplazamiento del drawer. `hidden`,
   `disabled`, `inert`, Escape y restauración de foco mantienen sus contratos.

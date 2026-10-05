@@ -13,6 +13,7 @@
         const ayuda = teclado.querySelector(".math-keyboard-help");
         let objetivo = null;
         let perfilActual = null;
+        let cambioVisual = 0;
 
         function perfilDe(campo) {
             return campo?.closest("[data-perfil]")?.dataset.perfil;
@@ -50,19 +51,49 @@
             });
         }
 
+        function mostrarDock(abierto) {
+            if (abierto === teclado.hasAttribute("data-abierto")) return;
+            const cambio = ++cambioVisual;
+            if (abierto) {
+                teclado.hidden = false;
+                // Medir el estado inicial permite entrar desde hidden sin una espera.
+                teclado.getBoundingClientRect();
+            }
+            teclado.toggleAttribute("data-abierto", abierto);
+            teclado.inert = !abierto;
+            teclado.setAttribute("aria-hidden", String(!abierto));
+            if (abierto) return;
+
+            function terminarCierre() {
+                // Un foco nuevo invalida cualquier finalización del cierre anterior.
+                if (cambio !== cambioVisual) return;
+                teclado.hidden = true;
+                mostrarPerfil(null);
+            }
+            const transiciones = teclado.getAnimations();
+            if (transiciones.length) {
+                Promise.allSettled(transiciones.map(animacion => animacion.finished)).then(terminarCierre);
+            } else {
+                terminarCierre(); // Sin movimiento o CSS: cierre inmediato.
+            }
+        }
+
         function sincronizar() {
             if (!esValido(objetivo) || document.activeElement !== objetivo) objetivo = null;
-            mostrarPerfil(objetivo ? perfilDe(objetivo) : null);
-            teclado.hidden = !objetivo;
+            if (objetivo) mostrarPerfil(perfilDe(objetivo));
+            mostrarDock(Boolean(objetivo));
         }
 
         function revelarCampo() {
             if (!objetivo || teclado.hidden) return;
             const campo = objetivo.getBoundingClientRect();
-            const limite = teclado.getBoundingClientRect().top - 8;
+            const desplazamiento = new DOMMatrix(getComputedStyle(teclado).transform).m42;
+            const limite = teclado.getBoundingClientRect().top - desplazamiento - 8;
             const cabecera = document.querySelector(".app-header")?.getBoundingClientRect().bottom || 0;
             if (campo.bottom > limite || campo.top < cabecera + 8) {
                 objetivo.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+                const visible = objetivo.getBoundingClientRect();
+                if (visible.bottom > limite) window.scrollBy({ top: visible.bottom - limite, behavior: "instant" });
             }
         }
 

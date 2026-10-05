@@ -51,6 +51,10 @@ class PaginaPruebas(BaseHTTPRequestHandler):
             "/": ("text/html", b'<!doctype html><html lang="es"><meta charset="utf-8"><title>Regresiones DOM P17</title><h1>Regresiones DOM P17</h1><ol id="resultados"></ol><p id="total">Ejecutando...</p><script src="/pruebas.js"></script></html>'),
             "/fixture": ("text/html", fixture()),
             "/teclado.js": ("text/javascript", (RAIZ / "frontend/web/calculadora/static/calculadora/teclado.js").read_bytes()),
+            "/dock.css": ("text/css", b"\n".join(
+                (RAIZ / "frontend/web/calculadora/static/calculadora/styles" / nombre).read_bytes()
+                for nombre in ("tokens.css", "components.css")
+            )),
             "/pruebas.js": ("text/javascript", (RAIZ / "tests/teclado_browser.js").read_bytes()),
         }
         if self.path not in recursos:

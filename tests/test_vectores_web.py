@@ -251,7 +251,7 @@ class PruebasFormulario(SimpleTestCase):
         self.assertEqual(len(pagina.teclados), 1)
         self.assertEqual(pagina.contenedores["vector-fields"], "numerico")
         self.assertEqual(pagina.perfiles_publicados, perfiles_para("numerico"))
-        self.assertIn('role="group" aria-label="Teclado matemático" hidden>', html)
+        self.assertIn("hidden", pagina.teclados[0])
         teclado = pagina.perfiles_publicados["numerico"]["grupos"][0]["teclas"]
         self.assertEqual([t["insercion"] for t in teclado], ["-", "/"])
         estructura = re.findall(r'aria-label="(Quitar una componente|Agregar una componente|Quitar un vector|Agregar un vector)" hidden', html)
