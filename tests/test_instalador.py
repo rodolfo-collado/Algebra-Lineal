@@ -7,8 +7,13 @@ de compilar y probar el instalador a mano.
 """
 
 import re
+import os
+import tempfile
+import tomllib
 import unittest
 from pathlib import Path
+
+from scripts.windows_version_info import version_info
 
 RAIZ = Path(__file__).resolve().parents[1]
 SCRIPT_INNO = RAIZ / "installer" / "AlgebraLineal.iss"
@@ -205,12 +210,63 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
         build = SCRIPT_BUILD.read_text(encoding="utf-8-sig")
 
         self.assertEqual(setup["AppName"], "{#AppName}")
-        self.assertIn('#define AppName "Álgebra Lineal"', SCRIPT_INNO.read_text(encoding="utf-8"))
+        self.assertIn('#define AppName "PyGebra"', SCRIPT_INNO.read_text(encoding="utf-8"))
+        self.assertEqual(setup["AppPublisher"], "Proyecto PyGebra")
+        self.assertEqual(setup["AppPublisherURL"], "https://github.com/rodolfo-collado/Algebra-Lineal")
         self.assertEqual(setup["AppVersion"], "{#AppVersion}")
-        self.assertEqual(setup["OutputBaseFilename"], "AlgebraLineal-Setup-{#AppVersion}")
+        self.assertEqual(setup["OutputBaseFilename"], "PyGebra-Setup-{#AppVersion}")
         self.assertEqual(setup["OutputDir"], r"{#ProjectRoot}\dist\installer")
         self.assertIn('"/DAppVersion=$appVersion"', build)
-        self.assertIn('dist\\installer\\AlgebraLineal-Setup-$appVersion.exe', build)
+        self.assertIn('dist\\installer\\PyGebra-Setup-$appVersion.exe', build)
+
+    def test_migracion_solo_elimina_los_dos_accesos_historicos(self):
+        setup = directivas_setup()
+        self.assertEqual(setup["UsePreviousGroup"], "no")
+        self.assertEqual(setup["DefaultGroupName"], "{#AppName}")
+        self.assertEqual(setup["UsePreviousAppDir"], "yes")
+        self.assertEqual(secciones()["InstallDelete"], [
+            'Type: files; Name: "{userprograms}\\Álgebra Lineal\\Álgebra Lineal.lnk"',
+            'Type: files; Name: "{userdesktop}\\Álgebra Lineal.lnk"',
+        ])
+        texto = SCRIPT_INNO.read_text(encoding="utf-8")
+        self.assertIn('#define AppExe "AlgebraLineal.exe"', texto)
+        self.assertIn('Description: "Abrir {#AppName}"', texto)
+        for icono in secciones()["Icons"]:
+            self.assertIn('\\{#AppName}"', icono)
+        self.assertEqual(setup["AppId"], "{" + APP_ID)
+        self.assertIn('#define AppUserModelId "PyGebra.Desktop"', texto)
+
+    def test_smoke_cubre_actualizacion_registro_y_metadatos_reales(self):
+        smoke = SCRIPT_PRUEBA.read_text(encoding="utf-8")
+        for campo in ("PreviousInstallerPath", "PreviousDesktopIcon", "legacyShortcuts",
+                      "DisplayName", "Publisher", "InstallLocation", "ProductName",
+                      "FileDescription", "CompanyName", "OriginalFilename", "MainWindowTitle",
+                      "System.AppUserModel.ID", "P27.2-preserve-"):
+            self.assertIn(campo, smoke)
+        self.assertIn("'PyGebra\\PyGebra.lnk'", smoke)
+        self.assertIn("'PyGebra.lnk'", smoke)
+
+    def test_spec_genera_recurso_desde_pyproject_y_build_verifica_exe(self):
+        spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
+        self.assertIn('"windows_version_info.py"', spec)
+        self.assertIn('version_info(PROJECT_ROOT / "pyproject.toml")', spec)
+        self.assertIn('version=str(version_resource)', spec)
+        self.assertEqual(spec.count('name="AlgebraLineal"'), 2)
+        build = SCRIPT_BUILD.read_text(encoding="utf-8-sig")
+        for campo in ("VersionInfo", "FileDescription", "ProductName", "CompanyName",
+                      "OriginalFilename", "FileVersion", "ProductVersion"):
+            self.assertIn(campo, build)
+
+    def test_documentacion_de_uso_muestra_pygebra(self):
+        for archivo in ("README.md", "docs/instalacion-windows.md", "docs/ejecucion.md"):
+            texto = (RAIZ / archivo).read_text(encoding="utf-8")
+            with self.subTest(archivo=archivo):
+                self.assertIn("PyGebra-Setup-", texto)
+                self.assertIn("Abre **PyGebra**".lower(), texto.lower())
+                self.assertNotIn("Abre **Álgebra Lineal**".lower(), texto.lower())
+                # La base publicada 0.8.0 se nombra únicamente al probar migración.
+                historicas = [linea for linea in texto.splitlines() if "AlgebraLineal-Setup-" in linea]
+                self.assertTrue(all("-PreviousInstallerPath" in linea for linea in historicas))
 
     def test_estilo_moderno_dinamico_sin_recursos_externos(self):
         setup = directivas_setup()
@@ -251,6 +307,49 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
         version = re.search(r"innosetup-(\d+\.\d+\.\d+)\.exe", ci)
         self.assertIsNotNone(version)
         self.assertIn(f"Inno Setup {version.group(1)}", documentacion)
+
+
+class PruebasVersionInfo(unittest.TestCase):
+    def test_version_real_y_futuras_sin_copia_manual(self):
+        real = tomllib.loads((RAIZ / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+        self.assertIn(f"StringStruct('ProductVersion', {real!r})", version_info(RAIZ / "pyproject.toml"))
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory) / "pyproject.toml"
+            for version, numeric in (("1.12.3", (1, 12, 3, 0)), ("2.0.4.7", (2, 0, 4, 7))):
+                with self.subTest(version=version):
+                    project.write_text(f'[project]\nversion = "{version}"\n', encoding="utf-8")
+                    first = version_info(project)
+                    self.assertEqual(first, version_info(project))
+                    self.assertIn(f"filevers={numeric!r}, prodvers={numeric!r}", first)
+                    for campo in ("FileVersion", "ProductVersion"):
+                        self.assertIn(f"StringStruct('{campo}', {version!r})", first)
+
+    def test_rechaza_versiones_que_windows_no_puede_representar(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory) / "pyproject.toml"
+            for version in ("1.2", "1.2.3rc1", "1.2.3+build", "1.2.3.4.5", "65536.0.0", "1.-2.3"):
+                with self.subTest(version=version):
+                    project.write_text(f'[project]\nversion = "{version}"\n', encoding="utf-8")
+                    with self.assertRaises(ValueError):
+                        version_info(project)
+
+    @unittest.skipUnless(os.name == "nt", "El recurso PE se serializa en Windows")
+    def test_pyinstaller_serializa_y_recupera_el_recurso(self):
+        from PyInstaller.utils.win32.versioninfo import VSVersionInfo, load_version_info_from_text_file
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "version.txt"
+            path.write_text(version_info(RAIZ / "pyproject.toml"), encoding="utf-8")
+            generated = load_version_info_from_text_file(str(path))
+            restored = VSVersionInfo()
+            restored.fromRaw(generated.toRaw())
+            self.assertEqual(restored.ffi.fileVersionMS, generated.ffi.fileVersionMS)
+            self.assertEqual(restored.ffi.fileVersionLS, generated.ffi.fileVersionLS)
+            strings = {entry.name: entry.val for entry in restored.kids[0].kids[0].kids}
+            self.assertEqual(strings["ProductName"], "PyGebra")
+            self.assertEqual(strings["FileDescription"], "PyGebra")
+            self.assertEqual(strings["CompanyName"], "Proyecto PyGebra")
+            self.assertEqual(strings["OriginalFilename"], "AlgebraLineal.exe")
 
 
 if __name__ == "__main__":

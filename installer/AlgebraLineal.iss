@@ -5,7 +5,7 @@
 #ifndef ProjectRoot
   #define ProjectRoot ExtractFileDir(SourcePath)
 #endif
-#define AppName "Álgebra Lineal"
+#define AppName "PyGebra"
 #define AppExe "AlgebraLineal.exe"
 ; Mismo identificador que desktop.APP_USER_MODEL_ID. No depende de la versión.
 #define AppUserModelId "PyGebra.Desktop"
@@ -14,15 +14,17 @@
 AppId={{D0455B79-7F5E-4C78-9F3B-F47187E9A83A}
 AppName={#AppName}
 AppVersion={#AppVersion}
-AppPublisher=Proyecto Álgebra Lineal
+AppPublisher=Proyecto PyGebra
 AppPublisherURL=https://github.com/rodolfo-collado/Algebra-Lineal
 DefaultDirName={localappdata}\Programs\AlgebraLineal
+UsePreviousAppDir=yes
 ; Instalación por usuario en una carpeta fija: no se pregunta la carpeta, pero el
 ; resumen previo a instalar la muestra. /DIR sigue disponible para casos avanzados
 ; y una instalación previa conserva su carpeta (UsePreviousAppDir).
 DisableDirPage=yes
 AlwaysShowDirOnReadyPage=yes
 DefaultGroupName={#AppName}
+UsePreviousGroup=no
 DisableProgramGroupPage=yes
 ; Flujo corto: tareas → resumen → instalación → final.
 DisableWelcomePage=yes
@@ -31,7 +33,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 OutputDir={#ProjectRoot}\dist\installer
-OutputBaseFilename=AlgebraLineal-Setup-{#AppVersion}
+OutputBaseFilename=PyGebra-Setup-{#AppVersion}
 SetupIconFile={#ProjectRoot}\assets\brand\app\pygebra.ico
 UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\{#AppExe}
@@ -52,6 +54,11 @@ Name: "desktopicon"; Description: "Crear un acceso directo en el escritorio"; Gr
 ; El bootstrapper se ejecuta desde una carpeta instalada, nunca desde el checkout.
 Source: "{#ProjectRoot}\build\prerequisites\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{app}\prerequisites"; Flags: ignoreversion; Check: NeedsWebView2; AfterInstall: InstallWebView2
 Source: "{#ProjectRoot}\dist\AlgebraLineal\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[InstallDelete]
+; Solo los accesos de la instalación histórica por usuario, nunca su contenido.
+Type: files; Name: "{userprograms}\Álgebra Lineal\Álgebra Lineal.lnk"
+Type: files; Name: "{userdesktop}\Álgebra Lineal.lnk"
 
 ; La barra de tareas muestra el icono del acceso directo, no el de la ventana.
 ; IconFilename apunta al pygebra.ico ya incluido por PyInstaller, no al icono

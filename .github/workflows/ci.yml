@@ -94,7 +94,7 @@ jobs:
       - name: Probar instalación, dos aperturas y desinstalación
         shell: pwsh
         run: |
-          $installers = @(Get-ChildItem dist/installer/AlgebraLineal-Setup-*.exe)
+          $installers = @(Get-ChildItem dist/installer/PyGebra-Setup-*.exe)
           if ($installers.Count -ne 1) { throw 'Se esperaba exactamente un instalador.' }
           .\scripts\test_windows_distribution.ps1 -InstallerPath $installers[0].FullName
 
@@ -103,6 +103,6 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: algebra-lineal-windows
-          path: dist/installer/AlgebraLineal-Setup-*.exe
+          path: dist/installer/PyGebra-Setup-*.exe
           if-no-files-found: error
           retention-days: 14

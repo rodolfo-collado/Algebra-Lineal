@@ -72,7 +72,7 @@ def ensure_webview2_runtime() -> None:
     if sys.platform == "win32" and not webview2_available():
         raise DesktopStartupError(
             "Falta Microsoft Edge WebView2 Runtime o necesita actualizarse.\n"
-            "Vuelve a ejecutar el instalador de Álgebra Lineal con conexión a Internet "
+            "Vuelve a ejecutar el instalador de PyGebra con conexión a Internet "
             "para instalarlo. También puedes descargar el runtime Evergreen desde:\n"
             f"{WEBVIEW2_DOWNLOAD_URL}\n"
             "Después, vuelve a abrir PyGebra."

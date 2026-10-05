@@ -73,10 +73,9 @@ Descarga el instalador desde la
 Todas las versiones publicadas están en
 [GitHub Releases](https://github.com/rodolfo-collado/Algebra-Lineal/releases).
 
-1. Descarga `AlgebraLineal-Setup-<version>.exe`.
+1. Descarga `PyGebra-Setup-<version>.exe`.
 2. Ejecuta el instalador y elige si deseas un acceso directo en el escritorio.
-3. Abre **Álgebra Lineal** (nombre histórico del instalador); la aplicación se
-   presenta como **PyGebra**.
+3. Abre **PyGebra** desde el menú Inicio o el acceso directo del escritorio.
 
 **No necesitas Python instalado.** El paquete incluye el runtime y las
 dependencias, se instala para tu usuario y no requiere permisos de administrador.

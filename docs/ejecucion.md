@@ -99,7 +99,7 @@ la interfaz web es la vía compatible y recomendada para tener todas las
 funciones visuales.
 
 Para un usuario final de Windows no hace falta Git, Python ni uv: descarga
-`AlgebraLineal-Setup-<versión>.exe` desde la [última release](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest), instálala y abre **Álgebra Lineal** desde el menú Inicio. Consulta [Instalación Windows](instalacion-windows.md) para el detalle de instalación y desinstalación.
+`PyGebra-Setup-<versión>.exe` desde la [última release](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest), instálala y abre **PyGebra** desde el menú Inicio. Consulta [Instalación Windows](instalacion-windows.md) para el detalle de instalación y desinstalación.
 
 ## Comprobar que quedó listo
 
