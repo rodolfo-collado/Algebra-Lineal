@@ -13,6 +13,7 @@
     const matrizTemplate = document.getElementById("matrix-entry-template");
     const celdaTemplate = document.getElementById("matrix-cell-template");
     const memoria = new Map();
+    const { dimensionValida, validarDimension } = window.entradasSeguras;
     const SUBINDICES = "₀₁₂₃₄₅₆₇₈₉";
 
     function campo(nombre) {
@@ -25,11 +26,6 @@
 
     function guardar() {
         entrada.querySelectorAll("input").forEach(input => memoria.set(input.name, input.value));
-    }
-
-    function dimensionValida(input) {
-        const valor = Number(input.value);
-        return Number.isInteger(valor) && valor >= Number(input.min) && valor <= Number(input.max);
     }
 
     function ocultarResultado() {
@@ -83,17 +79,12 @@
     }
 
     function actualizarBotones() {
-        root.querySelectorAll(".stepper").forEach(stepper => {
-            const input = stepper.querySelector("input");
-            stepper.querySelectorAll("[data-paso]").forEach(button => {
-                const limite = Number(button.dataset.paso) < 0 ? input.min : input.max;
-                button.disabled = Number(input.value) === Number(limite);
-            });
-        });
+        Object.keys(dimensiones).forEach(nombre => validarDimension(campo(nombre)));
     }
 
     function render() {
         ocultarResultado();
+        actualizarBotones();
         // No se corrigen silenciosamente dimensiones inválidas: el servidor
         // muestra el error. Mientras se escribe, se conserva la ecuación.
         if (!Object.keys(dimensiones).every(nombre => dimensionValida(campo(nombre)))) return;
@@ -119,6 +110,7 @@
     });
     root.addEventListener("input", ocultarResultado);
     root.querySelector("[data-aplicar]").hidden = true;
+    root.querySelector("[data-aplicar]").disabled = true;
     actualizarBotones();
 
     // Tab recorre todos los campos. Las flechas verticales cambian de fila;

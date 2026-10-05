@@ -17,7 +17,10 @@
     if (!dimensionInput || !vectoresInput || !lista || !operaciones.length) return;
 
     const initialValues = initialValuesElement ? JSON.parse(initialValuesElement.textContent) : {};
-    let primeraCarga = true;
+    const memoria = new Map(Object.entries(initialValues));
+    const cantidades = new Map();
+    const { dimensionValida, validarDimension } = window.entradasSeguras;
+    let escalarGuardado = root.querySelector('[name="escalar"]');
     let operacionAnterior = operacionActual();
     const agregar = root.querySelector("[data-agregar-vector]");
     const limiteOperandos = root.querySelector("[data-limite-operandos]");
@@ -30,9 +33,7 @@
     }
 
     function valorEntero(input, predeterminado) {
-        const valor = Number(input.value);
-        if (!Number.isInteger(valor)) return predeterminado;
-        return Math.min(Math.max(valor, limite(input, "min", 1)), limite(input, "max", Infinity));
+        return dimensionValida(input) ? Number(input.value) : predeterminado;
     }
 
     function operacionActual() {
@@ -52,11 +53,10 @@
     }
 
     function valoresActuales() {
-        const valores = {};
         lista.querySelectorAll("input[data-cell]").forEach((input) => {
-            valores[input.dataset.cell] = input.value;
+            memoria.set(input.dataset.cell, input.value);
         });
-        return valores;
+        return memoria;
     }
 
     function crear(tag, className, texto) {
@@ -78,7 +78,7 @@
         input.type = "text";
         input.name = campo;
         input.dataset.cell = campo;
-        input.value = valores[campo] ?? (primeraCarga ? initialValues[campo] : "") ?? "";
+        input.value = valores.get(campo) ?? "";
         input.className = esObjetivo ? "matrix-input independent-input" : "matrix-input";
         input.setAttribute("aria-label", `Componente ${indice + 1} de ${nombre}`);
         input.autocomplete = "off";
@@ -141,34 +141,42 @@
         return fila;
     }
 
-    function render() {
+    function render(guardarDatos = true) {
         const operacion = operacionActual();
         const minimo = operacion === "combinacion" || operacion === "escalar" ? 1 : 2;
-        vectoresInput.min = String(minimo);
-        vectoresInput.disabled = operacion === "escalar";
         if (operacion !== operacionAnterior) {
+            if (operacionAnterior !== "escalar" && dimensionValida(vectoresInput)) {
+                cantidades.set(operacionAnterior === "combinacion" ? "combinacion" : "suma", vectoresInput.value);
+            }
             if (![operacion, operacionAnterior].every(op => ["suma", "resta"].includes(op))) {
-                vectoresInput.value = String(minimo);
+                vectoresInput.value = cantidades.get(operacion === "combinacion" ? "combinacion" : "suma") ?? String(minimo);
             }
             operacionAnterior = operacion;
         }
-        root.querySelector("[data-cantidad-vectores]").hidden = true;
+        vectoresInput.min = String(minimo);
+        vectoresInput.disabled = operacion === "escalar";
+        root.querySelector("[data-cantidad-vectores]").hidden = operacion === "escalar";
         agregar.hidden = operacion === "escalar";
-        const dimension = valorEntero(dimensionInput, 3);
-        const cantidad = valorEntero(vectoresInput, 2);
-        vectoresInput.value = String(cantidad);
+        const resultado = document.getElementById("resultado");
+        if (resultado && render.iniciado) resultado.hidden = true;
+        const validas = [dimensionInput, vectoresInput].map(input => validarDimension(input));
+        if (validas.includes(false)) return;
+        const dimension = Number(dimensionInput.value);
+        const cantidad = operacion === "escalar" ? 1 : Number(vectoresInput.value);
         // El tope de operandos llega del servidor como `max` del campo.
         agregar.disabled = cantidad >= limite(vectoresInput, "max", Infinity);
         limiteOperandos.hidden = agregar.hidden || !agregar.disabled;
-        const valores = valoresActuales();
+        const valores = guardarDatos ? valoresActuales() : memoria;
         // El escalar conserva su nodo (y su valor) entre redibujados.
-        const escalarExistente = lista.querySelector('input[name="escalar"]');
+        escalarGuardado = lista.querySelector('input[name="escalar"]') || escalarGuardado;
 
         lista.replaceChildren();
         lista.dataset.dimension = String(dimension);
         lista.dataset.vectores = String(cantidad);
         if (operacion === "escalar") {
-            lista.appendChild(filaEscalar(escalarExistente));
+            const fila = filaEscalar(escalarGuardado);
+            escalarGuardado = fila.querySelector("input");
+            lista.appendChild(fila);
         }
         const nombres = nombresVectores(operacion, cantidad);
         nombres.forEach((nombre, indice) => {
@@ -178,22 +186,22 @@
                 quitar.type = "button";
                 quitar.setAttribute("aria-label", `Quitar vector ${nombre}`);
                 quitar.addEventListener("click", () => {
+                    valoresActuales();
                     // Desplazar los valores preserva el orden, también en la resta.
                     for (let i = indice; i < cantidad - 1; i += 1) {
-                        for (let j = 0; j < dimension; j += 1) {
-                            lista.querySelector(`[name="${nombres[i]}_${j}"]`).value = lista.querySelector(`[name="${nombres[i + 1]}_${j}"]`).value;
+                        for (let j = 0; j < Number(dimensionInput.max); j += 1) {
+                            memoria.set(`${nombres[i]}_${j}`, memoria.get(`${nombres[i + 1]}_${j}`) ?? "");
                         }
                     }
+                    // Eliminar es deliberado: Agregar no debe resucitar el vector quitado.
+                    for (let j = 0; j < Number(dimensionInput.max); j += 1) memoria.delete(`${nombres[cantidad - 1]}_${j}`);
                     vectoresInput.value = String(cantidad - 1);
-                    render();
+                    render(false);
                 });
                 fila.appendChild(quitar);
             }
             lista.appendChild(fila);
         });
-        primeraCarga = false;
-        const resultado = document.getElementById("resultado");
-        if (resultado && render.iniciado) resultado.hidden = true;
         render.iniciado = true;
 
         root.querySelectorAll("[data-solo-operacion]").forEach((bloque) => {
@@ -210,9 +218,9 @@
         }
     }
 
-    operaciones.forEach((radio) => radio.addEventListener("change", render));
-    dimensionInput.addEventListener("input", render);
-    vectoresInput.addEventListener("input", render);
+    operaciones.forEach((radio) => radio.addEventListener("change", () => render()));
+    dimensionInput.addEventListener("input", () => render());
+    vectoresInput.addEventListener("input", () => render());
     agregar.addEventListener("click", () => {
         vectoresInput.value = String(valorEntero(vectoresInput, 2) + 1);
         render();

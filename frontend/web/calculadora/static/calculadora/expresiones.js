@@ -16,6 +16,8 @@
         campos: Number(cantidad.dataset.camposMaximos),
     };
     const DIMENSION = 2;
+    const memorias = new WeakMap();
+    const { dimensionValida, validarDimension } = window.entradasSeguras;
 
     function tarjeta(nodo) {
         return nodo.closest("[data-simbolo]");
@@ -26,16 +28,22 @@
     }
 
     function entero(input) {
-        const valor = Number(input && !input.disabled ? input.value : "");
-        return Number.isInteger(valor) && valor >= 1 && valor <= 10 ? valor : null;
+        return input && !input.disabled && dimensionValida(input) ? Number(input.value) : null;
     }
 
     function memoria(card) {
-        const valores = new Map();
+        if (!memorias.has(card)) {
+            memorias.set(card, { tipo: campo(card, "tipo").value, tipos: new Map(),
+                filas: entero(campo(card, "filas")) || DIMENSION,
+                columnas: entero(campo(card, "columnas")) || DIMENSION });
+        }
+        const estado = memorias.get(card);
+        if (!estado.tipos.has(estado.tipo)) estado.tipos.set(estado.tipo, new Map());
+        const valores = estado.tipos.get(estado.tipo);
         card.querySelectorAll("[data-campo=celda]").forEach(input => {
             valores.set(`${input.dataset.fila}_${input.dataset.columna}`, input.value);
         });
-        return valores;
+        return estado;
     }
 
     function ocultarResultado() {
@@ -60,11 +68,11 @@
     }
 
     function estructura(card) {
-        // Una dimensión aún inválida cuenta como la del servidor: la inicial.
+        const guardado = memorias.get(card);
         return {
             tipo: campo(card, "tipo").value,
-            filas: entero(campo(card, "filas")) || DIMENSION,
-            columnas: entero(campo(card, "columnas")) || DIMENSION,
+            filas: entero(campo(card, "filas")) || guardado?.filas || DIMENSION,
+            columnas: entero(campo(card, "columnas")) || guardado?.columnas || DIMENSION,
         };
     }
 
@@ -175,7 +183,8 @@
 
     function reconstruir(card) {
         const tipo = campo(card, "tipo").value;
-        const guardado = memoria(card);
+        const estado = memoria(card);
+        const guardado = estado.tipos.get(tipo) || new Map();
         const vector = esVector(tipo);
         const conColumnas = tipo === "matriz" || tipo === "matriz_desconocida";
         const conCeldas = tipo !== "matriz_desconocida" && tipo !== "vector_simbolico";
@@ -187,15 +196,18 @@
         } else {
             const entradaFilas = mostrar(card, "filas", vector ? "Componentes" : "Filas");
             filas = entero(entradaFilas);
-            if (filas === null) return;
             if (!conColumnas) {
                 ocultar(card, "columnas");
             } else {
                 const entradaColumnas = mostrar(card, "columnas", "Columnas");
                 columnas = entero(entradaColumnas);
-                if (columnas === null) return;
             }
         }
+        const validas = [...card.querySelectorAll('.dimension-field input')].map(input => validarDimension(input));
+        if (filas === null || columnas === null || validas.includes(false)) return;
+        estado.tipo = tipo;
+        if (tipo !== "escalar") estado.filas = filas;
+        if (conColumnas) estado.columnas = columnas;
         const cuerpo = card.querySelector("tbody");
         cuerpo.replaceChildren();
         if (conCeldas) {
@@ -209,7 +221,7 @@
                     const input = copia.querySelector("input");
                     input.dataset.fila = String(i);
                     input.dataset.columna = String(j);
-                    input.value = guardado.get(`${i}_${j}`) || "";
+                    input.value = guardado.get(`${i}_${j}`) ?? "";
                     input.classList.toggle("matrix-input-lineal", tipo === "vector_lineal");
                     input.placeholder = tipo === "vector_lineal" ? "3x1 - 2x2" : "";
                     copia.querySelector("label").textContent = etiquetaCelda(tipo, nombre, i, j);
@@ -238,13 +250,16 @@
                 input.name = `${clave}_${i}`;
                 input.id = `id_${clave}_${i}`;
             }
-            card.querySelector("[data-eliminar]").value = String(i);
+            const eliminar = card.querySelector("[data-eliminar]");
+            eliminar.value = String(i);
+            eliminar.type = "button";
             card.querySelectorAll("[data-campo=celda]").forEach(input => {
                 input.name = `celda_${i}_${input.dataset.fila}_${input.dataset.columna}`;
                 input.id = `id_${input.name}`;
                 const label = input.closest("td").querySelector("label");
                 if (label) label.htmlFor = input.id;
             });
+            card.querySelectorAll('.dimension-field input').forEach(input => validarDimension(input));
         });
         cantidad.value = String(cards.length);
         if (agregar) agregar.disabled = cards.length >= maximos.simbolos;
@@ -267,7 +282,7 @@
         if (paso && root.contains(paso)) {
             const card = tarjeta(paso);
             const input = paso.closest(".stepper").querySelector("input");
-            const siguiente = Math.min(10, Math.max(1, (entero(input) || 1) + Number(paso.dataset.paso)));
+            const siguiente = Math.min(Number(input.max), Math.max(Number(input.min), Number(input.value) + Number(paso.dataset.paso)));
             // El paso es atómico: si no cabe, nada cambia y queda el aviso.
             if (!cabe(card, { [input.dataset.campo]: siguiente })) return;
             input.value = String(siguiente);
@@ -321,7 +336,9 @@
         if (!card) return;
         if (event.target.dataset.campo === "filas" || event.target.dataset.campo === "columnas") {
             // Mientras se escribe no se corrige el número: si no cabe, la cuadrícula espera.
+            validarDimension(event.target);
             if (cabe(card, {})) reconstruir(card);
+            else validarDimension(event.target, aviso.textContent);
         }
         if (event.target.dataset.campo === "nombre") {
             const tipo = campo(card, "tipo").value;
@@ -337,7 +354,6 @@
     });
     root.addEventListener("input", ocultarResultado);
     root.addEventListener("change", ocultarResultado);
-    root.querySelector("[data-aplicar]").addEventListener("click", ocultarResultado);
 
     // Tab recorre todos los campos. Las flechas verticales cambian de fila dentro del
     // símbolo; las horizontales solo cambian de celda al llegar al extremo del texto.
@@ -359,5 +375,14 @@
     });
 
     root.querySelectorAll(".stepper [data-paso]").forEach(boton => { boton.hidden = false; });
+    agregar.type = "button";
+    tarjetas().forEach(card => memoria(card));
     reindex();
+    root.querySelector("form").addEventListener("submit", event => {
+        const mensaje = presupuesto(tarjetas().map(estructura));
+        if (mensaje) {
+            event.preventDefault();
+            aviso.textContent = mensaje;
+        }
+    });
 })();

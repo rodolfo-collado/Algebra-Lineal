@@ -481,9 +481,14 @@ class VectoresForm(forms.Form):
         }
         return iniciales
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, ajustar=False, **kwargs):
         super().__init__(*args, **kwargs)
-        if self._valor_actual("operacion", OPERACION_PREDETERMINADA) == "escalar":
+        self.ajustar = ajustar
+        operacion = self._valor_actual("operacion", OPERACION_PREDETERMINADA)
+        if operacion in ARIDAD_VECTORES:
+            self.fields["vectores"].min_value = ARIDAD_VECTORES[operacion][0]
+            self.fields["vectores"].widget.attrs["min"] = str(ARIDAD_VECTORES[operacion][0])
+        if operacion == "escalar":
             self.fields["vectores"].widget.attrs["disabled"] = True
 
     def _valor_actual(self, campo, predeterminado):
@@ -574,6 +579,10 @@ class VectoresForm(forms.Form):
             exigir_aridad(cantidad, ARIDAD_VECTORES[operacion])
         except ValueError as error:
             self.add_error("vectores", str(error))
+            return datos
+
+        if self.ajustar:
+            # Aplicar valida la estructura, pero conserva las celdas aún incompletas.
             return datos
 
         nombres = nombres_vectores(operacion, cantidad)
