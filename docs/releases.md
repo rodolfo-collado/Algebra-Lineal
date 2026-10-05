@@ -6,7 +6,7 @@
 
 La única fuente de versión es `project.version` en
 [`pyproject.toml`](../pyproject.toml). El build la lee para generar
-`AlgebraLineal-Setup-<version>.exe`. `uv.lock` refleja los metadatos y se
+`PyGebra-Setup-<version>.exe`. `uv.lock` refleja los metadatos y se
 regenera con `uv lock`; no se edita a mano.
 
 Usamos [Semantic Versioning](https://semver.org/lang/es/) estable `X.Y.Z`:
@@ -132,7 +132,7 @@ Todo concluye en la misma ejecución, sin depender de otro workflow por el tag.
 
 Los únicos assets públicos son:
 
-- `AlgebraLineal-Setup-<version>.exe`;
+- `PyGebra-Setup-<version>.exe`;
 - `SHA256SUMS.txt`.
 
 La carpeta PyInstaller, `build/`, logs y bootstrapper WebView2 no se publican
@@ -187,7 +187,7 @@ y smoke normales, sin crear tags remotos o releases de prueba.
 Descarga ambos assets de la misma release. En PowerShell:
 
 ```powershell
-Get-FileHash .\AlgebraLineal-Setup-*.exe -Algorithm SHA256
+Get-FileHash .\PyGebra-Setup-*.exe -Algorithm SHA256
 Get-Content .\SHA256SUMS.txt
 ```
 

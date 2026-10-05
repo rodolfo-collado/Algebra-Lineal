@@ -20,6 +20,14 @@ RAIZ = Path(__file__).resolve().parents[1]
 
 
 class PruebasLauncherDesktop(unittest.TestCase):
+    def test_mensaje_webview2_identifica_pygebra(self):
+        self.assertEqual(desktop.APP_TITLE, "PyGebra")
+        with patch.object(desktop.sys, "platform", "win32"), patch.object(desktop, "webview2_available", return_value=False):
+            with self.assertRaises(desktop.DesktopStartupError) as error:
+                desktop.ensure_webview2_runtime()
+        self.assertIn("Vuelve a ejecutar el instalador de PyGebra", str(error.exception))
+        self.assertNotIn("Álgebra Lineal", str(error.exception))
+
     def test_construye_url_de_loopback(self):
         self.assertEqual(
             desktop.build_local_url(desktop.LOOPBACK_HOST, 49173),

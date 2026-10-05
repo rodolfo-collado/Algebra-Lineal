@@ -10,7 +10,23 @@ El nombre de la identidad es **PyGebra**.
 
 El símbolo es un recorrido que termina avanzando. PyGebra no se limita a entregar un resultado: ayuda a seguir el procedimiento y a ver cómo se conectan los conceptos. El dibujo no representa una letra, ni Python, ni una serpiente, ni un laberinto.
 
-La interfaz web y la ventana de escritorio se presentan como **PyGebra**. Los nombres técnicos históricos de paquetes e instalador se conservan.
+La identidad visible es **PyGebra** en la interfaz, la ventana de escritorio,
+los accesos directos, el instalador, el desinstalador y Aplicaciones de Windows.
+El publisher es **Proyecto PyGebra** y el archivo distribuido se llama
+`PyGebra-Setup-<version>.exe`.
+
+Los nombres técnicos heredados permanecen para conservar compatibilidad:
+`AlgebraLineal.exe`, la carpeta `AlgebraLineal`, `AlgebraLineal.spec`,
+`installer/AlgebraLineal.iss`, el repositorio `Algebra-Lineal` y el proyecto
+interno `algebra-lineal` (incluido `frontend.web.algebra_web`). También se
+conservan `ALGEBRA_DESKTOP`, `ALGEBRA_DESKTOP_DEBUG`, el thread
+`AlgebraLineal-Waitress` y las claves internas/localStorage existentes.
+
+El AppId de Inno Setup y el AUMID `PyGebra.Desktop` son estables entre versiones.
+Al actualizar desde 0.8.0, el instalador conserva la carpeta previa y sustituye
+los accesos históricos de **Álgebra Lineal** por **PyGebra**. El área académica
+**Álgebra Lineal** del catálogo sigue siendo un concepto temático; su nombre
+queda fuera de P27.2 (UI-07).
 
 ## Símbolo
 
