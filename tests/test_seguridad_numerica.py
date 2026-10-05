@@ -19,11 +19,12 @@ from backend.gauss import aplicar_gauss
 from backend.gauss_jordan import aplicar_gauss_jordan
 from backend.matrices import formatear_fraccion, producto_punto
 from backend.operaciones_filas import eliminar_en_columna, normalizar_fila, registrar_paso
-from backend.parser_sistemas import convertir_a_numero
+from backend.parser_sistemas import convertir_a_numero, parsear_sistema
 from backend import presupuesto_sistemas
 from backend.seguridad_numerica import (
     BITS_MAXIMOS, DIGITOS_MAXIMOS, MENSAJE_CALCULO_GRANDE,
     MENSAJE_NOTACION_CIENTIFICA, MENSAJE_NUMERO_GRANDE,
+    MENSAJE_ESPACIOS_NUMERICOS,
     dividir_exacto, multiplicar_exacto, restar_exacto, sumar_exacto,
     validar_literal_numerico, validar_valor_exacto,
 )
@@ -77,6 +78,26 @@ def matriz_de_crecimiento():
 
 
 class PruebasLiterales(unittest.TestCase):
+    def test_espacios_internos_se_rechazan_antes_de_fraction(self):
+        for literal in ("1 2", "1\t2", "1  .2", "1. 2", ".\t5", "1\n2", "1\u00a02", "1 2/3", "1/2 3"):
+            with self.subTest(literal=literal), patch("backend.parser_sistemas.Fraction") as convertir:
+                with self.assertRaisesRegex(ValueError, MENSAJE_ESPACIOS_NUMERICOS):
+                    convertir_a_numero(literal, limitar_entrada=True)
+                convertir.assert_not_called()
+
+    def test_espacios_en_signos_y_fracciones_conservan_el_contrato(self):
+        for literal, esperado in (("1 / 2", Fraction(1, 2)), ("- 3", -3), (" +\t3 ", 3), (" - 1 / 2 ", Fraction(-1, 2))):
+            with self.subTest(literal=literal):
+                self.assertEqual(convertir_a_numero(literal, limitar_entrada=True), esperado)
+
+    def test_sistema_valida_el_texto_original_sin_cambiar_la_gramatica(self):
+        for sistema in ("x1=1 2", "1\t2x1=3", "x1=1. 2", "x1 + 1 2 = 3", "x1=1\v2", "x1=1\u00a02"):
+            with self.subTest(sistema=sistema), patch("backend.parser_sistemas.Fraction") as convertir:
+                with self.assertRaisesRegex(ValueError, MENSAJE_ESPACIOS_NUMERICOS):
+                    parsear_sistema(sistema, limitar_entrada=True)
+                convertir.assert_not_called()
+        self.assertEqual(parsear_sistema("x1 = - 3\n2x1 = 1 / 2", limitar_entrada=True), [[1, -3], [2, Fraction(1, 2)]])
+
     def test_exponentes_se_rechazan_antes_de_fraction(self):
         for literal in ("1e1000000000", "1e-1000000000", "-1E1000000000", "1 e -1000000000", "1e2"):
             with self.subTest(literal=literal), patch("backend.parser_sistemas.Fraction", side_effect=AssertionError("conversión")) as convertir:
@@ -106,6 +127,14 @@ class PruebasLiterales(unittest.TestCase):
 
 
 class PruebasEntradasWeb(SimpleTestCase):
+    def test_espacios_internos_no_producen_resultados_en_ninguna_entrada_numerica(self):
+        for literal in ("1 2", "1\t2", "1 .2", "1. 2", ".\t5"):
+            for indice, (ruta, datos) in enumerate(entradas_web(literal)):
+                with self.subTest(ruta=ruta, indice=indice, literal=literal):
+                    respuesta = self.client.post(ruta, datos)
+                    self.assertContains(respuesta, MENSAJE_ESPACIOS_NUMERICOS)
+                    self.assertNotContains(respuesta, 'id="resultado"')
+
     def test_todas_las_celdas_y_escalares_rechazan_exponentes_y_literales_largos(self):
         for literal, mensaje in (("1e1000000000", MENSAJE_NOTACION_CIENTIFICA), ("1e-1000000000", MENSAJE_NOTACION_CIENTIFICA), ("9" * 101, MENSAJE_NUMERO_GRANDE), ("1/" + "9" * 101, MENSAJE_NUMERO_GRANDE), ("0." + "9" * 101, MENSAJE_NUMERO_GRANDE)):
             for indice, (ruta, datos) in enumerate(entradas_web(literal)):
