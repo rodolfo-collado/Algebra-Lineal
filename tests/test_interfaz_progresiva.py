@@ -1,4 +1,4 @@
-"""Divulgación progresiva: Inicio por temas, menú bajo demanda, teclado y opciones plegados,
+"""Divulgación progresiva: Inicio por temas, menú bajo demanda, teclado contextual y opciones plegadas,
 procedimiento plegable antes del resultado (P18, P25.1) y conexiones «También puedes explorar». Contratos HTML, POST y de
 los scripts locales, sin depender de clases decorativas."""
 
@@ -288,15 +288,12 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         for ausente in ("Configuración de entrada", ">Datos<", "<h3"):
             self.assertNotIn(ausente, formulario)
 
-    def test_el_teclado_nace_plegado_y_conserva_sus_teclas(self):
+    def test_el_teclado_nace_oculto_sin_desplegable_y_conserva_sus_teclas(self):
         html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         desplegables = Desplegables(html)
         teclados = desplegables.con_clase("disclosure-keyboard")
-        self.assertEqual(len(teclados), 1)
-        for teclado in teclados:
-            self.assertFalse(teclado["open"])
-            self.assertTrue(teclado["hidden"])
-            self.assertEqual(teclado["summary"].strip(), "Teclado matemático")
+        self.assertEqual(teclados, [])
+        self.assertIn("hidden", Pagina(html).teclados[0])
         # El registro conserva las inserciones y los nombres para generar los botones.
         perfiles = Pagina(html).perfiles_publicados
         self.assertEqual(set(perfiles), {"sistema", "numerico"})
@@ -305,20 +302,20 @@ class PruebasFormularioProgresivo(SimpleTestCase):
                 for tecla in grupo["teclas"]:
                     self.assertTrue(tecla["insercion"])
                     self.assertTrue(tecla["nombre"])
-        # teclado.js muestra el desplegable (cerrado) y mantiene la inserción en el cursor.
+        # El dock depende del foco y mantiene la inserción en el cursor.
         script = (STATIC / "teclado.js").read_text(encoding="utf-8")
-        self.assertIn('teclado.closest("details.disclosure")', script)
-        self.assertIn("desplegable.hidden = !objetivo", script)
+        self.assertNotIn('teclado.closest("details.disclosure")', script)
+        self.assertIn("teclado.hidden = !objetivo", script)
         self.assertIn("setRangeText", script)
         self.assertNotIn("open = true", script)
 
-    def test_el_teclado_plegado_llega_a_todas_las_herramientas(self):
+    def test_el_teclado_contextual_llega_a_todas_las_herramientas(self):
         for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
-                teclados = Desplegables(html).con_clase("disclosure-keyboard")
+                teclados = Pagina(html).teclados
                 self.assertTrue(teclados)
-                self.assertTrue(all(t["hidden"] and not t["open"] for t in teclados))
+                self.assertTrue(all("hidden" in t and "details" not in t["antecesores"] for t in teclados))
                 self.assertNotIn("math-keyboard-title", html)
 
     def test_las_opciones_de_resultado_nacen_plegadas_con_sus_predeterminados(self):

@@ -395,7 +395,7 @@ class PruebasComponentesYRecursosMatrices(SimpleTestCase):
         for recurso in ("expresiones.js", "teclado.js", "tema.js", "styles.css"):
             self.assertContains(r, f"/static/calculadora/{recurso}")
         self.assertNotContains(r, "calculadora/matrices.js")
-        self.assertContains(r, 'id="expression-fields" data-perfil="numerico"')
+        self.assertContains(r, 'class="expression-field" data-perfil="expresion"')
         from tests.test_teclado import Pagina
         teclas = Pagina(r.content.decode()).perfiles_publicados["numerico"]["grupos"][0]["teclas"]
         self.assertEqual([t["insercion"] for t in teclas], ["-", "/"])

@@ -33,9 +33,13 @@ def fixture():
     componente = render_to_string("calculadora/components/math_keyboard.html", {"perfiles_teclado": perfiles})
     return f'''<!doctype html><html lang="es"><meta charset="utf-8"><title>Fixture teclado</title>
     <form id="entrada">
-      <fieldset id="texto" data-perfil="sistema"><textarea aria-label="Texto" id="a"></textarea></fieldset>
+      <fieldset id="texto" data-perfil="sistema"><label for="a">Texto</label><textarea aria-label="Texto" id="a"></textarea></fieldset>
       <fieldset id="celdas" data-perfil="numerico"><input aria-label="Celda" id="b" type="text"></fieldset>
       <input aria-label="Fuera de contexto" id="ajeno" type="text">
+      <input aria-label="Radio" id="radio" type="radio">
+      <input aria-label="Checkbox" id="checkbox" type="checkbox">
+      <select aria-label="Selector" id="select"><option>Opción</option></select>
+      <a href="#entrada" id="enlace">Enlace</a>
       <button type="button" id="otro">Otro control</button>
       {componente}
     </form><script src="/teclado.js"></script></html>'''.encode()

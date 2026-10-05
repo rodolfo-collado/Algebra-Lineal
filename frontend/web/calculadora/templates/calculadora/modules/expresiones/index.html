@@ -9,7 +9,7 @@
         {{ form.cantidad }}{{ form.cantidad.errors }}
         {% if not confirmacion %}{{ form.confirmacion }}{% endif %}
         {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
-        <section class="workspace-section" id="expression-fields" data-perfil="numerico" aria-labelledby="simbolos-title">
+        <section class="workspace-section" id="expression-fields" aria-labelledby="simbolos-title">
             <h3 class="section-title" id="simbolos-title">Símbolos</h3>
             <p class="field-help">Define solo las matrices, vectores y escalares que vas a usar, con el nombre que tendrán en la expresión.</p>
             <div class="symbol-list" data-simbolos>
@@ -25,7 +25,7 @@
             </div>
             <p class="field-help" data-presupuesto role="status" aria-live="polite"></p>
             <noscript><p class="field-help">Cambia un tipo o las dimensiones y pulsa <strong>Aplicar</strong> antes de calcular. <strong>Agregar símbolo</strong> y <strong>Eliminar</strong> también funcionan sin JavaScript.</p></noscript>
-            <div class="expression-field">
+            <div class="expression-field" data-perfil="expresion">
                 <label for="{{ form.expresion.id_for_label }}">Expresión</label>
                 {{ form.expresion }}
                 {{ form.expresion.errors }}

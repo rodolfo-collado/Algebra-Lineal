@@ -194,7 +194,7 @@ def operaciones_matrices(request):
                 form.add_error("expresion", str(error))
     return render(request, "calculadora/modules/expresiones/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
-        "perfiles_teclado": perfiles_para("numerico"),
+        "perfiles_teclado": perfiles_para("numerico", "expresion", "lineal"),
     })
 
 
