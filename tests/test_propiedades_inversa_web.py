@@ -77,12 +77,34 @@ class PruebasPresentacionPropiedades(SimpleTestCase):
         radios = re.findall(r'<input type="radio" name="funcion_adicional" value="([^"]+)"([^>]*)>', html)
         self.assertEqual([valor for valor, _ in radios], list(FUNCIONES))
         self.assertEqual([valor for valor, attrs in radios if "checked" in attrs], ["ninguna"])
-        bloque = elemento_html(html, html.index("data-inverse-function"), "details")
+        bloque = elemento_html(html, html.index('id="aplicaciones"'), "details")
         self.assertNotIn("open", bloque.split(">", 1)[0])
         self.assertIn("Aplicaciones y propiedades", bloque)
         for indice in range(5):
             self.assertIn(f'for="id_funcion_adicional_{indice}"', bloque)
         self.assertEqual(set(Contenido(html).tablas), {"Matriz A"})
+
+    def test_cada_opcion_explica_que_calcula_y_describe_su_radio(self):
+        # P27.8 (UI-35): la ayuda se ve antes de elegir y queda asociada a su radio.
+        esperadas = {
+            "ninguna": "Solo calcula A⁻¹.",
+            "inversa_inversa": "Comprueba (A⁻¹)⁻¹ = A.",
+            "traspuesta": "Comprueba (Aᵀ)⁻¹ = (A⁻¹)ᵀ.",
+            "producto": "Comprueba (AB)⁻¹ = B⁻¹A⁻¹.",
+            "vector": "Calcula x = A⁻¹b y comprueba Ax = b.",
+        }
+        html = html_activo(self.client.get(RUTA).content.decode())
+        radios = re.findall(r'<input type="radio" name="funcion_adicional" value="([^"]+)"([^>]*)>', html)
+        self.assertEqual([valor for valor, _ in radios], list(esperadas))
+        for valor, atributos in radios:
+            with self.subTest(valor=valor):
+                identificador = re.search(r'id="([^"]+)"', atributos)[1]
+                self.assertIn(f'aria-describedby="{identificador}_ayuda"', atributos)
+                self.assertIn(f'<p class="option-description" id="{identificador}_ayuda">{esperadas[valor]}</p>', html)
+        # Con un error del campo, cada radio conserva también la descripción del error.
+        error = self.client.post(RUTA, post_datos(entrada(), funcion_adicional="otra")).content.decode()
+        for _, atributos in re.findall(r'<input type="radio" name="funcion_adicional" value="([^"]+)"([^>]*)>', html_activo(error)):
+            self.assertRegex(atributos, r'aria-describedby="id_funcion_adicional_\d_ayuda id_funcion_adicional_error"')
 
     def test_campos_condicionales_y_aplicar_sin_javascript(self):
         for funcion in FUNCIONES:
@@ -97,7 +119,7 @@ class PruebasPresentacionPropiedades(SimpleTestCase):
                 self.assertNotIn('id="resultado"', html)
                 self.assertIn("<noscript>", html)
                 if funcion != "ninguna":
-                    detalles = elemento_html(html, html.index("data-inverse-function"), "details")
+                    detalles = elemento_html(html, html.index('id="aplicaciones"'), "details")
                     self.assertIn("open", detalles.split(">", 1)[0])
 
     def test_b_y_b_vector_tienen_labels_y_dimension_de_a(self):
@@ -109,7 +131,7 @@ class PruebasPresentacionPropiedades(SimpleTestCase):
                 self.assertEqual(len(nombres), 9 if funcion == "producto" else 3)
                 for campo in nombres:
                     self.assertIn(f'for="id_{campo}"', html)
-                self.assertLess(html.index("data-inverse-function"), html.index(f'data-matriz="{nombre}"'))
+                self.assertLess(html.index('id="aplicaciones"'), html.index(f'data-matriz="{nombre}"'))
 
     def test_resultados_comparados_con_motor_y_panel_unico(self):
         for metodo in ("gauss_jordan", "directo_2x2"):

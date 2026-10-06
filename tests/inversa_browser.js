@@ -14,7 +14,7 @@
     const funcion = (w, value) => {
         // Se sigue el recorrido visible: los radios de una sección plegada
         // no son interactuables por teclado ni dejan enfocar sus entradas.
-        if (!q(w, '[data-inverse-function]').open) click(w, '[data-inverse-function] > summary');
+        if (!q(w, '#aplicaciones').open) click(w, '#aplicaciones > summary');
         click(w, `[name="funcion_adicional"][value="${value}"]`);
     };
     const matriz = (w, nombre, valores) => valores.forEach((fila, i) => fila.forEach((v, j) => valor(w, `[name="celda_${nombre}_${i}_${j}"]`, v)));

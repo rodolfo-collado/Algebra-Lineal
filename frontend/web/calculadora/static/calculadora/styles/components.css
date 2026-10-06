@@ -747,7 +747,9 @@ a.tool-link .tool-link-name {
     font-weight: 700;
 }
 
-/* —— Desplegables: opciones avanzadas aparecen solo cuando se piden —— */
+/* —— Desplegables: un solo componente, {% disclosure %}, para opciones, ayudas,
+   procedimientos, sub-bloques y grupos. Chevrón siempre al inicio, icono opcional
+   (solo opciones de configuración), título como encabezado real y detalle secundario. —— */
 
 .disclosure {
     margin-top: 0.8rem;
@@ -767,7 +769,8 @@ a.tool-link .tool-link-name {
     min-height: 2.5rem;
     padding: 0.45rem 0.8rem;
     border-radius: var(--radius-md);
-    font-size: 0.88rem;
+    background: var(--fondo-summary, transparent);
+    font-size: var(--text-sm);
     font-weight: 700;
     list-style: none;
     cursor: pointer;
@@ -779,8 +782,9 @@ a.tool-link .tool-link-name {
     display: none;
 }
 
+/* El mismo matiz sobre cualquier fondo, también sobre el summary sticky opaco. */
 .disclosure-summary:hover {
-    background: var(--color-surface-muted);
+    background: color-mix(in srgb, var(--color-text) 6%, var(--fondo-summary, transparent));
 }
 
 .disclosure-icon {
@@ -794,8 +798,7 @@ a.tool-link .tool-link-name {
     width: 0.9rem;
     height: 0.9rem;
     flex: none;
-    margin-left: auto;
-    color: var(--color-muted);
+    color: var(--color-brand);
     transition: transform var(--motion-fast);
 }
 
@@ -805,12 +808,6 @@ a.tool-link .tool-link-name {
 
 .disclosure-body {
     padding: 0.15rem 0.8rem 0.85rem;
-}
-
-/* Componente {% disclosure %}: chevrón al inicio y título como encabezado real dentro del summary. */
-.disclosure-summary > .disclosure-chevron:first-child {
-    margin-left: 0;
-    color: var(--color-brand);
 }
 
 .disclosure-title {
@@ -836,14 +833,15 @@ a.tool-link .tool-link-name {
 .disclosure-procedure > .disclosure-summary {
     min-height: 2.75rem;
     padding: 0.55rem 1rem;
-    font-size: 0.95rem;
+    font-size: var(--text-base);
 }
 
+/* Solo el summary principal del procedimiento abierto es sticky (P27.6), con fondo opaco. */
 .disclosure-procedure[open] > .disclosure-summary {
+    --fondo-summary: var(--color-surface-raised);
     position: sticky;
     top: var(--header-height);
     z-index: 10;
-    background: var(--color-surface-raised);
     border-bottom: 1px solid var(--color-border);
 }
 
@@ -851,13 +849,22 @@ a.tool-link .tool-link-name {
     padding: 0.35rem 1.1rem 1.15rem;
 }
 
-/* Sub-bloques (un método al comparar, comprobación e interpretación): más discretos. */
-.disclosure-nested {
-    margin-top: 0.85rem;
+/* Sub-bloques (un método al comparar, comprobación e interpretación) y grupos por fila o
+   columna de un producto: el mismo desplegable, más discreto. */
+.disclosure-nested,
+.procedure-group {
     background: var(--color-surface-muted);
 }
 
-.disclosure-nested > .disclosure-body {
+.disclosure-nested {
+    margin-top: 0.85rem;
+}
+
+.procedure-group {
+    margin-top: 0.6rem;
+}
+
+:is(.disclosure-nested, .procedure-group) > .disclosure-body {
     padding: 0.25rem 0.9rem 0.9rem;
 }
 

@@ -97,18 +97,8 @@
             <noscript><p class="field-help">Para editar la cuadrícula de una matriz, activa JavaScript. Puedes resolver y comparar métodos usando el sistema escrito como texto.</p></noscript>
 
             {% comment %}Las opciones avanzadas solo se despliegan cuando el usuario las necesita; sus casillas viajan igual, plegadas o no.{% endcomment %}
-            <details class="disclosure disclosure-options" id="opciones-resultado"{% if opciones_abiertas %} open{% endif %}>
-                <summary class="disclosure-summary">
-                    <svg class="disclosure-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                        <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>
-                        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/>
-                    </svg>
-                    <span>Opciones de resultado</span>
-                    <svg class="disclosure-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                        <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </summary>
-                <fieldset class="choice-fieldset disclosure-body">
+            {% disclosure titulo="Opciones de resultado" id="opciones-resultado" abierto=opciones_abiertas icono="opciones" %}
+                <fieldset class="choice-fieldset">
                     <legend class="sr-only">{{ form.mostrar.label }}</legend>
                     <input type="hidden" name="mostrar_definido" value="1">
                     <div class="option-list">
@@ -119,7 +109,7 @@
                     <p class="field-help option-help">La matriz final y la solución se muestran siempre.</p>
                     {{ form.mostrar.errors }}
                 </fieldset>
-            </details>
+            {% enddisclosure %}
 
             <div class="workspace-actions">
                 <button class="btn btn-primary" type="submit" data-calculo>Reducir</button>

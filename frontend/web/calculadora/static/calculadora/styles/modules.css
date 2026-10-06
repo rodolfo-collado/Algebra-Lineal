@@ -78,69 +78,9 @@
     display: none;
 }
 
-/* Procedimientos de AB y Ax: grupos plegables por fila o por columna, abiertos
-   cuando el resultado es pequeño; las igualdades largas se parten en líneas. */
-.procedure-group {
-    margin-top: 0.6rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface-muted);
-}
-
-.procedure-group + .procedure-group {
-    margin-top: 0.6rem;
-}
-
-.procedure-summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.2rem 0.6rem;
-    align-items: baseline;
-    padding: 0.6rem 0.8rem;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    list-style: none;
-    transition: background-color var(--motion-fast);
-}
-
-.procedure-summary::-webkit-details-marker {
-    display: none;
-}
-
-.procedure-summary::before {
-    content: "▸";
-    flex: none;
-    color: var(--color-brand);
-    font-size: 0.85rem;
-    transition: transform var(--motion-fast);
-}
-
-.procedure-group[open] > .procedure-summary::before {
-    transform: rotate(90deg);
-}
-
-.procedure-summary:hover {
-    background: var(--color-surface);
-}
-
-.procedure-summary-title {
-    font-weight: 700;
-}
-
-.procedure-summary-detail {
-    min-width: 0;
-    color: var(--color-muted);
-    font-size: 0.9rem;
-    overflow-wrap: anywhere;
-}
-
-.procedure-group > :not(summary) {
-    margin-inline: 0.8rem;
-}
-
-.procedure-group > :last-child {
-    margin-bottom: 0.8rem;
-}
+/* Procedimientos de AB y Ax: los grupos por fila o por columna son {% disclosure %}
+   (.procedure-group), abiertos cuando el resultado es pequeño; las igualdades largas
+   se parten en líneas. */
 
 /* Los subíndices (a₂₁b₁₃) se leen mejor en la fuente de interfaz que en la monoespaciada. */
 .procedure-line,
@@ -260,8 +200,7 @@ fieldset {
     margin: 0 0 1rem;
 }
 
-.choice-fieldset:last-child,
-.disclosure-body.choice-fieldset {
+.choice-fieldset:last-child {
     margin-bottom: 0;
 }
 
@@ -917,6 +856,30 @@ textarea:focus {
     margin: 0.55rem 0 0;
 }
 
+/* Opciones con una ayuda breve cada una (Matriz inversa): la píldora y, a su lado, qué
+   calcula; en pantallas estrechas la ayuda va debajo de su opción. */
+.option-list-described {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 0.45rem 0.9rem;
+}
+
+.option-list-described > .option {
+    justify-self: start;
+}
+
+.option-description {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+}
+
+/* Una entrada adicional vacía no deja hueco dentro del desplegable. */
+.matrix-entry-list:not(:has(*)) {
+    display: none;
+}
+
 /* Conversión de bases */
 /* Un solo número por línea: no hereda la altura del área de texto de sistemas. */
 .field-input-numeral {
@@ -1396,6 +1359,15 @@ textarea:focus {
 
     .base-selectors {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .option-list-described {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 0.2rem;
+    }
+
+    .option-list-described > .option-description {
+        margin-bottom: 0.45rem;
     }
 
     .workspace-actions .btn-primary {

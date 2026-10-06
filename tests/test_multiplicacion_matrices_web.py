@@ -224,11 +224,11 @@ class PruebasResultadosProducto(SimpleTestCase):
 
     def test_grupos_abiertos_solo_con_resultados_pequenos(self):
         html, _ = self.calcular(datos_producto())
-        self.assertEqual(html.count('<details class="procedure-group" open>'), 2)
+        self.assertEqual(html.count('<details class="disclosure procedure-group" open>'), 2)
         grande = [[1] * 4 for _ in range(4)]
         html, _ = self.calcular(datos_producto(a=grande, b=grande, metodo="comparar"))
-        self.assertNotIn('<details class="procedure-group" open>', html)
-        self.assertEqual(html.count('<details class="procedure-group">'), 8)
+        self.assertNotIn('<details class="disclosure procedure-group" open>', html)
+        self.assertEqual(html.count('<details class="disclosure procedure-group">'), 8)
         self.assertEqual(ENTRADAS_DESPLEGADAS, 12)
 
     def test_procedimiento_plegado_antes_del_resultado_y_recursos_locales(self):
@@ -320,9 +320,11 @@ class PruebasAccesibilidadProducto(SimpleTestCase):
 
     def test_procedimiento_comprensible_sin_color(self):
         html = self.client.post(RUTA, datos_producto(metodo="comparar")).content.decode()
-        # Cada igualdad nombra la fila y la columna; los grupos son details/summary reales con texto.
+        # Cada igualdad nombra la fila y la columna; los grupos son el {% disclosure %} común,
+        # con su título como encabezado y el resumen de valores como detalle (P27.8).
         self.assertIn("c₂₁ = fila₂(A) · columna₁(B)", html)
-        self.assertIn('<summary class="procedure-summary">', html)
+        self.assertIn('<h6 class="disclosure-title">Fila 2 de AB</h6>', html)
+        self.assertNotIn("procedure-summary", html)
         self.assertIn('role="region" aria-label="Desarrollo de Ab₁"', html)
         self.assertIn('aria-label="Columnas de A"', html)
         self.assertNotIn('tabindex="0"', html)

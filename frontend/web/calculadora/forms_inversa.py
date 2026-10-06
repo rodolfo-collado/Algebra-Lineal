@@ -10,7 +10,19 @@ from django import forms
 from backend.matriz_inversa import DIRECTO_2X2, GAUSS_JORDAN, METODO_PREDETERMINADO
 
 from .forms_matrices import FormularioCeldas, campo_dimension
-from .servicios_inversa import FUNCIONES_ADICIONALES, METODOS
+from .servicios_inversa import AYUDAS_FUNCIONES, FUNCIONES_ADICIONALES, METODOS
+
+
+class RadiosConAyuda(forms.RadioSelect):
+    """Cada radio queda descrito por su ayuda breve (`<id>_ayuda`, junto a él en la plantilla)."""
+
+    def create_option(self, *args, **kwargs):
+        opcion = super().create_option(*args, **kwargs)
+        atributos = opcion["attrs"]
+        # Conserva la descripción del error del campo, si la hay.
+        ids = [f"{atributos['id']}_ayuda", *atributos.get("aria-describedby", "").split()]
+        atributos["aria-describedby"] = " ".join(ids)
+        return opcion
 
 
 class InversaForm(FormularioCeldas):
@@ -26,7 +38,7 @@ class InversaForm(FormularioCeldas):
     )
     funcion_adicional = forms.ChoiceField(
         label="Aplicaciones y propiedades", choices=FUNCIONES_ADICIONALES, initial="ninguna",
-        widget=forms.RadioSelect,
+        widget=RadiosConAyuda,
         error_messages={
             "required": "Selecciona una función adicional válida.",
             "invalid_choice": "Selecciona una función adicional válida.",
@@ -64,6 +76,16 @@ class InversaForm(FormularioCeldas):
     def forma_texto(self):
         orden = self.estructura["orden"]
         return f"A es {orden}×{orden}"
+
+    @property
+    def aplicaciones_abiertas(self):
+        """Aplicaciones y propiedades se despliega sola cuando hay una opción elegida."""
+        return self["funcion_adicional"].value() != "ninguna"
+
+    @property
+    def funciones_con_ayuda(self):
+        """Cada radio de Aplicaciones y propiedades con la ayuda que lo describe."""
+        return [(radio, AYUDAS_FUNCIONES[radio.data["value"]]) for radio in self["funcion_adicional"]]
 
     def clean(self):
         datos = super().clean()
