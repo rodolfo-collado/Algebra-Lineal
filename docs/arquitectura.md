@@ -140,6 +140,24 @@ la aplicación en un puerto efímero de `127.0.0.1`; el launcher comprueba
 `server.close()` y espera el thread de Waitress. El launcher no contiene lógica
 matemática y no usa `runserver` ni abre un navegador externo.
 
+```text
+desktop.py ─ Django (DESKTOP_MODE, DEBUG=False) ─ Waitress 127.0.0.1:<efímero>
+    └─ pywebview/WebView2 (modo privado) ── carga http://127.0.0.1:<puerto>/
+            └─ POST /preferencias/ ─ Django ─ %LOCALAPPDATA%\PyGebra\preferencias.json
+```
+
+WebView2 corre en modo privado: su perfil (historial, caché, formularios,
+autocompletado) se descarta al cerrar. Las únicas preferencias que sobreviven
+—tema, Exacto/Decimal y precisión— las escribe Django en un archivo propio que
+fija `desktop.preferences_path()`; como no dependen del origen, el puerto puede
+seguir siendo efímero y una segunda instancia comparte las mismas preferencias.
+La ventana abre maximizada y, al restaurarla, cabe en el área útil del monitor
+principal. El launcher también deja el menú contextual nativo solo con las
+acciones de edición mediante `ContextMenuRequested` de WebView2, al que llega por
+`window.native.webview` (atributo interno de pywebview: si cambia, la ventana
+queda sin menú, como antes). Los detalles de interfaz están en
+[Interfaz · Escritorio](interfaz.md#escritorio).
+
 PyInstaller reúne el runtime Python y los recursos; Inno Setup transforma esa
 carpeta en el instalador de Windows. El build obtiene la versión únicamente de
 `pyproject.toml`. WebView2 renderiza la ventana; solo su instalación, si falta,

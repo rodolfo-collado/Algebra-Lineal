@@ -1,14 +1,15 @@
 """Vistas HTTP de la interfaz web."""
 
-from django.http import Http404, HttpResponsePermanentRedirect
+from django.conf import settings
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponsePermanentRedirect
 from django.shortcuts import render
 from django.urls import reverse
-from django.views.decorators.http import require_GET, require_http_methods
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from backend.sistemas_numericos import NOMBRES_BASE
 from backend.presupuesto_sistemas import CELDAS_MAXIMAS, dimensiones_admitidas
 
-from . import catalogo
+from . import catalogo, preferencias
 from .exploraciones import exploraciones_sistema
 from .forms import ConversionBasesForm, SistemaForm, VectoresForm
 from .forms_ecuaciones import EcuacionMatricialForm
@@ -329,3 +330,18 @@ def conversion_romanos(request):
         except ValueError as error:
             form.add_error("numero", str(error))
     return render(request, "calculadora/modules/romanos/index.html", {"form": form, "resultado": resultado})
+
+
+@require_POST
+def guardar_preferencia(request):
+    """Guarda tema o formato numérico de la app de escritorio; la web usa localStorage."""
+    if not settings.DESKTOP_MODE:
+        raise Http404("Solo la app de escritorio guarda preferencias.")
+    # Waitress publica también la longitud final de cuerpos recibidos por chunks.
+    # Estas dos cadenas cerradas no necesitan aceptar cargas de archivos grandes.
+    if int(request.META.get("CONTENT_LENGTH") or 0) > 1024:
+        return HttpResponseBadRequest()
+    if not preferencias.guardar(request.POST.get("clave"), request.POST.get("valor"),
+                                request.headers.get("X-PyGebra-Escritura")):
+        return HttpResponseBadRequest()
+    return HttpResponse(status=204)

@@ -4,7 +4,7 @@
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
-    <form id="ecuacion-form" data-entrada-calculo action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+    <form id="ecuacion-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="equation-fields" data-perfil="numerico" aria-labelledby="equation-title">

@@ -246,7 +246,8 @@
         const deltas = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] };
         const delta = deltas[event.key];
         const celda = event.target?.dataset?.cell;
-        if (!delta || celda === undefined) return;
+        // Alt+←/→ queda para el historial de escritorio, como en las demás cuadrículas.
+        if (!delta || event.altKey || celda === undefined) return;
 
         const filas = Array.from(lista.querySelectorAll(".vector-row[data-vector]"));
         const filaActual = event.target.closest(".vector-row");

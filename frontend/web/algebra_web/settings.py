@@ -10,6 +10,8 @@ SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY", "django-insecure-algebra-lineal-development"
 )
 DESKTOP_MODE = os.environ.get("ALGEBRA_DESKTOP") == "1"
+# Lo fija desktop.py: único archivo que la app de escritorio conserva entre aperturas.
+DESKTOP_PREFERENCES_FILE = os.environ.get("ALGEBRA_PREFERENCIAS") if DESKTOP_MODE else None
 DEBUG = False if DESKTOP_MODE else os.environ.get("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
@@ -34,6 +36,7 @@ TEMPLATES = [
         "OPTIONS": {
             "context_processors": [
                 "frontend.web.calculadora.context_processors.navegacion",
+                "frontend.web.calculadora.context_processors.escritorio",
             ],
         },
     },

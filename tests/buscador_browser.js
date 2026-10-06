@@ -114,13 +114,14 @@
             menu(w); const categoria = q(w, '[data-categoria="vectores"]'); categoria.open = true;
             const area = q(w, "#nav-area-calculo").parentElement; area.open = false;
             await turno(w);
-            const memoria = w.localStorage.getItem("algebra-lineal-menu-secciones");
+            const memoria = w.sessionStorage.getItem("algebra-lineal-menu-secciones");
+            igual(JSON.parse(memoria).includes("vectores"), true); igual(w.localStorage.getItem("algebra-lineal-menu-secciones"), null);
             const abiertos = todos(w, "#arbol-herramientas details").map(n => n.open);
             valor(w, "límites", true); await turno(w);
-            igual(w.localStorage.getItem("algebra-lineal-menu-secciones"), memoria);
+            igual(w.sessionStorage.getItem("algebra-lineal-menu-secciones"), memoria);
             valor(w, "", true); await turno(w);
             igual(todos(w, "#arbol-herramientas details").map(n => n.open), abiertos);
-            igual(w.localStorage.getItem("algebra-lineal-menu-secciones"), memoria);
+            igual(w.sessionStorage.getItem("algebra-lineal-menu-secciones"), memoria);
         }],
         ["Grupos y herramientas ocultos no se pueden enfocar", "/", w => {
             menu(w); valor(w, "inversa", true); const input = q(w, "#buscador-lateral"); input.focus();

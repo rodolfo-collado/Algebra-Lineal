@@ -11,15 +11,8 @@
         ({node, data: JSON.parse(node.dataset.numeric)}));
     const attributes = Array.from(result.querySelectorAll("[data-numeric-attributes]"), node =>
         ({node, data: JSON.parse(node.dataset.numericAttributes)}));
-
-    try {
-        const savedMode = localStorage.getItem("pygebra-formato-numerico");
-        const savedPrecision = localStorage.getItem("pygebra-precision-decimal");
-        if (savedMode === "decimal") mode.value = savedMode;
-        if (["2", "4", "6", "8"].includes(savedPrecision)) precision.value = savedPrecision;
-    } catch (_) {
-        // El HTML y la preferencia predeterminada son exactos.
-    }
+    // tema_inicial.html: localStorage en la sesión y, en escritorio, el archivo propio.
+    const preferencias = window.preferencias;
 
     function apply() {
         const decimal = mode.value === "decimal";
@@ -29,26 +22,38 @@
             approximate ||= data.aproximados.includes(precision.value);
             return data.decimales[precision.value];
         }
-        numbers.forEach(({node, data}) => { node.textContent = text(data); });
+        numbers.forEach(({node, data}) => {
+            const valor = text(data);
+            if (node.textContent !== valor) node.textContent = valor;
+        });
         attributes.forEach(({node, data}) => {
             Object.entries(data).forEach(([attribute, value]) => node.setAttribute(attribute, text(value)));
         });
         label.hidden = precision.hidden = !decimal;
-        notice.textContent = approximate
+        const aviso = approximate
             ? `Valores decimales aproximados a ${precision.value} decimales. Los cálculos conservan su valor exacto.`
             : "";
+        // Repetir el mismo texto en la región viva lo volvería a anunciar.
+        if (notice.textContent !== aviso) notice.textContent = aviso;
     }
-    function change() {
+    // Solo representación: no envía formularios, no recalcula ni emite input/change.
+    function sincronizar() {
+        const savedMode = preferencias.leer("pygebra-formato-numerico");
+        const savedPrecision = preferencias.leer("pygebra-precision-decimal");
+        if (["exacto", "decimal"].includes(savedMode)) mode.value = savedMode;
+        if (["2", "4", "6", "8"].includes(savedPrecision)) precision.value = savedPrecision;
         apply();
-        try {
-            localStorage.setItem("pygebra-formato-numerico", mode.value);
-            localStorage.setItem("pygebra-precision-decimal", precision.value);
-        } catch (_) {
-            // El cambio visible funciona aunque la preferencia no pueda guardarse.
-        }
+    }
+    function change(event) {
+        apply();
+        preferencias.guardar(event.target === mode ? "pygebra-formato-numerico" : "pygebra-precision-decimal", event.target.value);
     }
     controls.hidden = false;
     mode.addEventListener("change", change);
     precision.addEventListener("change", change);
-    apply();
+    // Una página restaurada del historial vuelve con la preferencia vigente, no con la de entonces.
+    window.addEventListener("pageshow", event => {
+        if (event.persisted) sincronizar();
+    });
+    sincronizar();
 })();

@@ -1,7 +1,9 @@
 """Punto de entrada de la aplicación de escritorio para Windows.
 
 El launcher mantiene Django como interfaz: Waitress atiende únicamente en
-loopback y pywebview presenta esa URL en una ventana nativa.
+loopback y pywebview presenta esa URL en una ventana nativa. WebView2 corre en
+modo privado; solo las preferencias de presentación sobreviven al cierre, en un
+archivo propio que escribe Django.
 """
 
 from __future__ import annotations
@@ -23,9 +25,12 @@ from urllib.request import Request, urlopen
 LOOPBACK_HOST = "127.0.0.1"
 DJANGO_SETTINGS_MODULE = "frontend.web.algebra_web.settings"
 DESKTOP_ENVIRONMENT = "ALGEBRA_DESKTOP"
+PREFERENCES_ENVIRONMENT = "ALGEBRA_PREFERENCIAS"
 APP_TITLE = "PyGebra"
+# Tamaño máximo al restaurar: la ventana abre maximizada.
 WINDOW_WIDTH = 1100
 WINDOW_HEIGHT = 760
+SPI_GETWORKAREA = 0x0030
 WINDOW_MIN_SIZE = (760, 560)
 WINDOW_BACKGROUND = "#EEF3F0"
 ICON_RELATIVE_PATH = Path("assets") / "brand" / "app" / "pygebra.ico"
@@ -38,6 +43,8 @@ WEBVIEW2_REGISTRY_KEY = (
     r"SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 )
 WEBVIEW2_DOWNLOAD_URL = "https://developer.microsoft.com/microsoft-edge/webview2/"
+# El menú nativo de WebView2 trae también Imprimir, Emoji y «Más herramientas».
+CONTEXT_MENU_ITEMS = frozenset({"cut", "copy", "paste", "selectAll"})
 
 
 class DesktopStartupError(RuntimeError):
@@ -119,11 +126,33 @@ def application_icon_path() -> str | None:
     return None
 
 
+def preferences_path() -> Path | None:
+    """Archivo de preferencias del usuario, fuera de la instalación y del repositorio.
+
+    En Windows queda en %LOCALAPPDATA%\\PyGebra: las actualizaciones lo conservan y
+    la desinstalación no lo borra. No es temporal ni depende del puerto local. Sin
+    una carpeta de usuario absoluta devuelve None: nunca se escribe junto al programa.
+    """
+    base = os.environ.get("LOCALAPPDATA")
+    if base and Path(base).is_absolute():
+        raiz = Path(base)
+    else:
+        try:
+            raiz = Path.home() / ".local" / "share"
+        except RuntimeError:
+            return None
+    return raiz / APP_TITLE / "preferencias.json"
+
+
 def configure_desktop_environment() -> None:
     """Fuerza la configuración segura de Django para la distribución desktop."""
     os.environ["DJANGO_SETTINGS_MODULE"] = DJANGO_SETTINGS_MODULE
     os.environ[DESKTOP_ENVIRONMENT] = "1"
     os.environ["DJANGO_DEBUG"] = "0"
+    ruta = preferences_path()
+    if ruta is not None:
+        # Una ruta ya fijada permite aislar pruebas manuales sin tocar las preferencias reales.
+        os.environ.setdefault(PREFERENCES_ENVIRONMENT, str(ruta))
 
 
 def load_wsgi_application() -> Callable[..., Any]:
@@ -342,16 +371,60 @@ def stop_waitress(
         )
 
 
+def restored_window_geometry() -> tuple[int, int, int, int] | None:
+    """Posición y tamaño al restaurar, dentro del área útil del monitor principal.
+
+    Con el escalado de Windows 1100×760 lógicos pueden no caber sobre la barra de
+    tareas. Devuelve (x, y, ancho, alto) en unidades lógicas, como pywebview, o None
+    fuera de Windows. No recuerda tamaño, posición ni monitor de aperturas previas.
+    """
+    if sys.platform != "win32":
+        return None
+    import ctypes
+
+    # RECT propio: ctypes.wintypes no siempre se importa fuera de Windows (pruebas en CI).
+    class Rect(ctypes.Structure):
+        _fields_ = [(lado, ctypes.c_long) for lado in ("left", "top", "right", "bottom")]
+
+    user32 = getattr(getattr(ctypes, "windll", None), "user32", None)
+    area = Rect()
+    try:
+        if user32 is None or not user32.SystemParametersInfoW(SPI_GETWORKAREA, 0, ctypes.byref(area), 0):
+            return None
+        # Sin conciencia de DPI, Windows ya entrega unidades lógicas y GetDpiForSystem da 96.
+        escala = (int(user32.GetDpiForSystem()) or 96) / 96
+        ancho_util = (area.right - area.left) / escala
+        alto_util = (area.bottom - area.top) / escala
+        ancho = max(WINDOW_MIN_SIZE[0], min(WINDOW_WIDTH, int(ancho_util * 0.92)))
+        alto = max(WINDOW_MIN_SIZE[1], min(WINDOW_HEIGHT, int(alto_util * 0.92)))
+        # Si ni min_size cabe, la barra de título sigue visible arriba a la izquierda.
+        x = int(area.left / escala + max(0, (ancho_util - ancho) / 2))
+        y = int(area.top / escala + max(0, (alto_util - alto) / 2))
+    except Exception:
+        # Solo es el tamaño al restaurar: nunca debe impedir abrir la ventana.
+        return None
+    return x, y, ancho, alto
+
+
 def create_desktop_window(webview_module: Any, url: str) -> Any:
-    """Crea la única ventana nativa que presenta la aplicación local."""
+    """Crea la única ventana nativa que presenta la aplicación local.
+
+    Abre maximizada (no en pantalla completa) para no quedar fuera del área útil
+    con el escalado de Windows; al restaurarla conserva barra de título y bordes,
+    y vuelve a un tamaño que cabe en el monitor principal.
+    """
+    x, y, ancho, alto = restored_window_geometry() or (None, None, WINDOW_WIDTH, WINDOW_HEIGHT)
     window = webview_module.create_window(
         APP_TITLE,
         url=url,
-        width=WINDOW_WIDTH,
-        height=WINDOW_HEIGHT,
+        x=x,
+        y=y,
+        width=ancho,
+        height=alto,
         min_size=WINDOW_MIN_SIZE,
         resizable=True,
         fullscreen=False,
+        maximized=True,
         confirm_close=False,
         text_select=True,
         background_color=WINDOW_BACKGROUND,
@@ -359,6 +432,53 @@ def create_desktop_window(webview_module: Any, url: str) -> Any:
     if window is None:
         raise DesktopStartupError("pywebview no pudo crear la ventana.")
     return window
+
+
+def filter_context_menu(sender: Any, args: Any) -> None:
+    """Deja en el menú contextual nativo solo Cortar, Copiar, Pegar y Seleccionar todo.
+
+    Sin acciones de edición (texto sin seleccionar, enlaces, fondo) no se muestra
+    ningún menú. Un fallo inesperado también lo oculta: nunca aparece el menú completo.
+    """
+    try:
+        items = args.MenuItems
+        for indice in range(items.Count - 1, -1, -1):
+            if items[indice].Name not in CONTEXT_MENU_ITEMS:
+                items.RemoveAt(indice)
+        if items.Count == 0:
+            args.Handled = True
+    except Exception:
+        args.Handled = True
+
+
+def install_edit_context_menu(window: Any) -> None:
+    """Activa el menú contextual de WebView2 filtrado a las acciones de edición.
+
+    pywebview desactiva todos los menús por defecto fuera de debug y no ofrece un
+    filtro. ``window.native.webview`` (el control WinForms de WebView2) no es API
+    pública de pywebview: si cambia, la ventana sigue sin menú, como antes.
+    """
+
+    def configurar(sender: Any, args: Any) -> None:
+        try:
+            if not args.IsSuccess:
+                return
+            core = sender.CoreWebView2
+            core.ContextMenuRequested += filter_context_menu
+            core.Settings.AreDefaultContextMenusEnabled = True
+        except Exception:
+            # El callback viene de .NET: no debe propagar fallos de esta API opcional.
+            return
+
+    def antes_de_mostrar() -> None:
+        # before_show corre en el hilo de la GUI, antes de que WebView2 termine de iniciar.
+        try:
+            window.native.webview.CoreWebView2InitializationCompleted += configurar
+        except Exception:
+            # Un backend distinto conserva el menú desactivado de pywebview.
+            return
+
+    window.events.before_show += antes_de_mostrar
 
 
 def make_shutdown_callback(
@@ -405,6 +525,9 @@ def run_desktop() -> None:
         import webview
 
         window = create_desktop_window(webview, url)
+        # En diagnóstico se conserva el menú completo de pywebview (con Inspeccionar).
+        if sys.platform == "win32" and not desktop_debug_enabled():
+            install_edit_context_menu(window)
         shutdown = make_shutdown_callback(server, thread)
         window.events.closing += shutdown
         # start() bloquea en el thread principal hasta que el usuario cierra la ventana.
@@ -412,6 +535,8 @@ def run_desktop() -> None:
             gui="edgechromium" if sys.platform == "win32" else None,
             debug=desktop_debug_enabled(),
             http_server=False,
+            # El perfil de WebView2 se descarta al cerrar: historial, caché y formularios
+            # no llegan a disco. Las preferencias viven en preferences_path().
             private_mode=True,
             # WinForms lee este icono aunque la documentación mencione GTK/QT.
             icon=application_icon_path(),

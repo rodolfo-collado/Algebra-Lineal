@@ -1,6 +1,8 @@
 """Contexto de navegación derivado del registro central y de la ruta activa."""
 
-from . import catalogo
+from django.conf import settings
+
+from . import catalogo, preferencias
 
 
 def navegacion(request):
@@ -16,3 +18,10 @@ def navegacion(request):
             catalogo.relacionadas_disponibles(herramienta) if herramienta else ()
         ),
     }
+
+
+def escritorio(request):
+    """Señal de la app de escritorio y sus preferencias guardadas; nada en la web."""
+    if not settings.DESKTOP_MODE:
+        return {}
+    return {"escritorio": True, "preferencias_guardadas": preferencias.leer()}
