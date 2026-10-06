@@ -98,6 +98,14 @@ con pywebview. Al cerrar la ventana, el servidor se detiene. En Linux o macOS
 la interfaz web es la vía compatible y recomendada para tener todas las
 funciones visuales.
 
+La ventana abre maximizada y siempre en Inicio. Entre aperturas recuerda solo
+el tema, Exacto/Decimal y la precisión decimal, en
+`%LOCALAPPDATA%\PyGebra\preferencias.json`; nunca la sesión de trabajo. Para
+volver o avanzar usa los botones laterales del ratón o Alt+← / Alt+→. El clic
+derecho ofrece Cortar, Copiar, Pegar y Seleccionar todo. Los atajos propios de
+un navegador (F5, Ctrl+P, Ctrl+F, F12) no están activos; para diagnosticar, ejecuta
+con `ALGEBRA_DESKTOP_DEBUG=1`, que muestra también las herramientas de desarrollo.
+
 Para un usuario final de Windows no hace falta Git, Python ni uv: descarga
 `PyGebra-Setup-<versión>.exe` desde la [última release](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest), instálala y abre **PyGebra** desde el menú Inicio. Consulta [Instalación Windows](instalacion-windows.md) para el detalle de instalación y desinstalación.
 

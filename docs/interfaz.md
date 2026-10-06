@@ -23,6 +23,7 @@ plantillas Django, CSS propio y JavaScript mínimo, todos locales.
 
 El tema claro u oscuro se guarda en `localStorage` (`pygebra-tema`). Se lee
 primero esta clave; si falta, se recupera y migra `algebra-lineal-tema`.
+En la app de escritorio también se conserva entre aperturas (ver [Escritorio](#escritorio)).
 Si el almacenamiento está bloqueado, tema y menú siguen funcionando.
 Si el usuario no ha elegido, se respeta `prefers-color-scheme`. El icono del
 selector representa el tema activo: sol en claro, luna en oscuro.
@@ -133,9 +134,14 @@ que también marca la herramienta activa y calcula las relacionadas.
   `inert`; al cerrarse, el foco vuelve al botón Menú. No se guarda ninguna
   preferencia de apertura: un overlay abierto al cargar taparía el contenido.
 - Dentro, `details`/`summary` por categoría: funciona sin JavaScript y es
-  accesible con teclado. `navigation.js` recuerda las categorías abiertas
-  (`algebra-lineal-menu-secciones`) y abre los desplegables que contienen el
+  accesible con teclado. `navigation.js` recuerda las categorías abiertas solo
+  durante la ejecución (`sessionStorage`, clave `algebra-lineal-menu-secciones`):
+  un arranque nuevo parte limpio y se retira la copia en `localStorage` de
+  versiones anteriores. También abre los desplegables que contienen el
   destino de un ancla (`/#bases-numericas`) al llegar por la URL.
+- Una página restaurada del historial (`pageshow` con `persisted`) vuelve con
+  el cajón cerrado, `data-drawer` retirado, fondo oculto, `main` sin `inert`,
+  `aria-expanded="false"` y el foco fuera del cajón (pasa al botón Menú).
 - El contenido ocupa una sola columna (`--content-max`): matrices grandes,
   procedimientos y comparaciones disponen de todo el ancho.
 - El buscador (`components/search.html`) es un formulario `GET` a Inicio.
@@ -243,7 +249,9 @@ Exacto/Decimal y precisión son presentación fuera del formulario; tema, Menú,
 foco, apertura de Opciones/procedimiento y teclado sin insertar datos tampoco
 lo desactualizan. CSRF y la firma de confirmación no son entrada matemática.
 No se detecta la vuelta exacta A → B → A. `feedback.js` sigue siendo el único
-responsable de busy, foco de errores, confirmaciones y `pageshow`.
+responsable de busy, foco de errores y confirmaciones; en `pageshow` restaura
+la espera. Menú, tema y formato numérico tienen su propio `pageshow`,
+independiente e idempotente (ver [Escritorio](#escritorio)).
 
 `components/related_tools.html` muestra las relacionadas como enlaces
 discretos después de resolver y no aparece cuando la herramienta no declara
@@ -632,8 +640,60 @@ usan `≈`; para matrices y cadenas repartidas en celdas, una nota de grupo
 informa la precisión únicamente cuando existe aproximación.
 
 Se guardan `pygebra-formato-numerico` y `pygebra-precision-decimal` en
-`localStorage`, sin cookies ni estado de negocio. Si falla el almacenamiento,
+`localStorage`, sin cookies ni estado de negocio; en escritorio también entre
+aperturas. Al cargar y al restaurar del historial, `numeros.js` aplica la
+preferencia vigente sin recalcular, sin `input`/`change` (el resultado no queda
+desactualizado) y sin repetir el aviso si no cambió. Los dos selectores llevan
+`autocomplete="off"` para que volver con el historial no restaure un valor
+antiguo. Si falla el almacenamiento,
 se parte de Exacto y se pueden cambiar los controles durante esa visita.
 Sin JavaScript los controles permanecen ocultos y la matemática exacta
 continúa visible. Conversión de bases conserva su significado y no incluye
 este selector. Los algoritmos y sus resultados `Fraction` no cambian.
+
+## Escritorio
+
+La app de escritorio muestra esta misma interfaz en WebView2, sin barra de
+navegador. Django publica una única señal declarativa, `<html data-desktop>`,
+solo con `DESKTOP_MODE`; la web normal no la recibe y conserva el
+comportamiento de su navegador.
+
+- **Historial.** No hay botones Atrás/Adelante ni barra de direcciones: la
+  navegación visible siguen siendo migas, Menú, buscador y relacionadas. Los
+  botones laterales del ratón los atiende WebView2. `navigation.js` añade
+  Alt+← (`history.back()`) y Alt+→ (`history.forward()`) solo con
+  `data-desktop` y sin pila propia; ignora Ctrl, Shift, AltGr (Ctrl+Alt),
+  composición IME y eventos ya atendidos. Las cuadrículas dejan Alt+flecha al
+  historial; Ctrl+←/→ y las flechas sin modificador no cambian.
+- **Volver con el historial.** WebView2 no usa bfcache: volver recarga la
+  página desde su caché, también un resultado POST, sin pedir reenvío. Los
+  formularios de cálculo llevan `autocomplete="off"`: al volver muestran los
+  datos que produjeron el resultado, no ediciones posteriores que lo dejarían
+  vigente por error. En navegadores con bfcache, `pageshow` restaura Menú, tema
+  y formato numérico (secciones anteriores).
+- **Preferencias.** Entre aperturas solo se conservan `pygebra-tema`,
+  `pygebra-formato-numerico` y `pygebra-precision-decimal`. WebView2 corre en
+  modo privado y Django las guarda en `%LOCALAPPDATA%\PyGebra\preferencias.json`
+  (`POST /preferencias/` con CSRF, lista blanca de claves y valores, escritura
+  atómica) y las pinta como `data-pygebra-…` en `<html>`. Durante la ejecución
+  manda `localStorage`. No se guardan URL, herramienta, formularios, matrices,
+  resultados, procedimientos, scroll, foco, Menú ni historial: cada arranque
+  abre Inicio con el cajón cerrado.
+- **Clic derecho.** El menú nativo de WebView2 se filtra a Cortar, Copiar,
+  Pegar y Seleccionar todo (sin Imprimir, Emoji ni «Más herramientas»); sin
+  acciones de edición no aparece. Es edición real del navegador: los eventos
+  `input`, deshacer y el aviso de resultado desactualizado funcionan, y el foco
+  no sale del campo, así que el teclado matemático sigue abierto. En la web no
+  se sustituye el menú del navegador.
+- **Atajos del navegador.** Siguen desactivados (F5, Ctrl+R, Ctrl+P, Ctrl+F,
+  F12 y DevTools). `ALGEBRA_DESKTOP_DEBUG=1` devuelve los de pywebview, con su
+  menú completo, solo para diagnóstico.
+
+### Páginas de error
+
+`templates/404.html` reutiliza la interfaz normal: Menú y buscador ayudan a
+encontrar la herramienta. `400.html`, `403.html`, `403_csrf.html` y `500.html`
+extienden `calculadora/errores/base.html`: marca PyGebra, mensaje breve e
+«Ir al inicio» hacia la raíz `/`, sin catálogo, `reverse()` ni JavaScript, porque
+Django renderiza el 500 sin request. Nunca muestran traceback, motivo técnico
+ni datos del error. Django solo las usa con `DEBUG=False`, siempre en escritorio.

@@ -489,3 +489,33 @@ se continuó en una pestaña válida. Un registro histórico del runner numéric
 contenía un TypeError de MutationObserver; la recarga terminó 10/10 sin errores
 nuevos y no se reprodujo. No se usó Playwright externo ni fallback. Esta QA
 cubre el navegador integrado; no añade validación de otros motores o desktop.
+
+## P27.7 — Experiencia de escritorio
+
+```bash
+uv run --locked python -m tests.escritorio_browser
+```
+
+Abrir `http://127.0.0.1:8882/__pruebas/`. El runner sirve la app real con
+`DEBUG=False`, en modo escritorio o web según la cookie `p277=web`, y un archivo
+de preferencias temporal. Sus 25 casos cubren Alt+←/→ sobre GET y sobre un
+resultado POST (vuelve desde la caché, con los datos calculados y sin reenvío),
+Alt+← desde una celda, Ctrl/Shift/AltGr/IME sin navegar y la web sin
+interceptar Alt+flecha ni el menú contextual; `pageshow` restaurado (cajón,
+`inert`, foco, tema, Exacto/Decimal y precisión sin stale ni anuncio repetido,
+junto a la espera de P27.4); categorías del Menú solo en `sessionStorage`;
+preferencias en el archivo propio y su vuelta en un arranque nuevo; y las
+páginas 404, 400, 403, CSRF y 500 a 1280, 744 y 390 px sin desborde, con
+«Ir al inicio» enfocable. Si la pestaña está oculta, espera con temporizador.
+
+`tests.test_escritorio` prueba el archivo de preferencias (lista blanca,
+archivo dañado, escritura atómica, hilos simultáneos), el endpoint (CSRF, 400,
+405 y 404 en la web), `data-desktop` solo en escritorio, `autocomplete="off"`,
+los contratos de historial; `tests.test_paginas_error`, las páginas de error con
+`DEBUG=False`.
+`tests.test_desktop` añade ventana maximizada y su geometría al restaurar,
+ruta de preferencias fuera de repositorio, instalación y temporales, modo
+privado, puerto efímero, dos instancias simultáneas, el filtro del menú nativo
+con dobles de .NET y, en el smoke Waitress, el 404 propio y una preferencia
+guardada por HTTP. El menú nativo, los atajos y el foco reales solo se validan
+en WebView2; véase [validación P27.7](validacion-p27-7.md).

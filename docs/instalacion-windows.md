@@ -31,6 +31,11 @@ antes de iniciar y muestra un mensaje legible si falta. La desinstalación elimi
 los archivos y accesos directos de PyGebra; conserva WebView2, que puede ser
 utilizado por otras aplicaciones.
 
+PyGebra guarda solo tus preferencias de presentación (tema, Exacto/Decimal y
+precisión) en `%LOCALAPPDATA%\PyGebra\preferencias.json`, fuera de la carpeta
+instalada. Las actualizaciones lo conservan y la desinstalación no lo borra;
+puedes eliminarlo a mano para volver a los valores iniciales.
+
 CI conserva builds temporales; el workflow de [releases](releases.md) publica
 la distribución estable al promover a `main`, tras validar el candidato y superar
 CI, build y smoke. GitHub Actions crea el tag automáticamente. El paquete no está
