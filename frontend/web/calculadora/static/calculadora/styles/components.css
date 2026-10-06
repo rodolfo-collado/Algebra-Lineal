@@ -1043,12 +1043,12 @@ html.js [data-perfil] :is(input, textarea) { scroll-margin: 0; }
     display: none;
 }
 
-.stepper-btn:first-child {
+.stepper > .stepper-btn:first-child {
     border-radius: var(--radius-sm) 0 0 var(--radius-sm);
     border-right: 0;
 }
 
-.stepper-btn:last-child {
+.stepper > .stepper-btn:last-child {
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     border-left: 0;
 }

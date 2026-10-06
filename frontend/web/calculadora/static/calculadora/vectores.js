@@ -24,7 +24,23 @@
     let operacionAnterior = operacionActual();
     const agregar = root.querySelector("[data-agregar-vector]");
     const limiteOperandos = root.querySelector("[data-limite-operandos]");
+    const estado = root.querySelector("[data-estado-vectores]");
     const OBJETIVO = "b";
+
+    function filasVector() {
+        return [...lista.querySelectorAll(".vector-row[data-vector]")];
+    }
+
+    function generadores(filas) {
+        return filas.map(fila => fila.dataset.vector).filter(nombre => nombre !== OBJETIVO);
+    }
+
+    // Dice qué cambió y, si se indica un destino, sigue en la primera componente de esa
+    // fila o, sin fila, en Agregar: el foco nunca queda en body.
+    function anunciar(mensaje, fila) {
+        if (estado) estado.textContent = mensaje;
+        if (fila !== undefined) (fila?.querySelector("input") || agregar).focus();
+    }
 
     function limite(input, atributo, predeterminado) {
         if (!input.hasAttribute(atributo)) return predeterminado;
@@ -180,7 +196,8 @@
         nombres.forEach((nombre, indice) => {
             const fila = crearFila(nombre, dimension, valores);
             if (nombre !== OBJETIVO && indice >= minimo && operacion !== "escalar") {
-                const quitar = crear("button", "stepper-btn", "×");
+                // Tercera columna de la misma fila: el botón pertenece a su vector.
+                const quitar = crear("button", "stepper-btn vector-remove", "×");
                 quitar.type = "button";
                 quitar.setAttribute("aria-label", `Quitar vector ${nombre}`);
                 quitar.addEventListener("click", () => {
@@ -196,6 +213,9 @@
                     vectoresInput.value = String(cantidad - 1);
                     render(false);
                     vectoresInput.dispatchEvent(new Event("change", { bubbles: true }));
+                    // Sigue en la fila que ocupa su lugar o, si era la última, en la anterior.
+                    const filas = filasVector();
+                    anunciar(`Se eliminó el vector ${nombre}.`, filas[indice] || filas[indice - 1] || null);
                 });
                 fila.appendChild(quitar);
             }
@@ -220,8 +240,13 @@
     dimensionInput.addEventListener("input", () => render());
     vectoresInput.addEventListener("input", () => render());
     agregar.addEventListener("click", () => {
+        const antes = filasVector().length;
         vectoresInput.value = String(valorEntero(vectoresInput, 2) + 1);
         vectoresInput.dispatchEvent(new Event("input", { bubbles: true }));
+        if (filasVector().length <= antes) return;
+        // El nuevo generador es el último antes de b (o el último, sin b): se sigue en él.
+        const nueva = filasVector().filter(fila => fila.dataset.vector !== OBJETIVO).at(-1);
+        anunciar(`Se agregó el vector ${nueva.dataset.vector}.`, nueva);
     });
 
     // Controles de estructura (+/- componente, +/- vector): cambian n y k, no
@@ -232,11 +257,16 @@
         stepper.querySelectorAll("button[data-paso]").forEach((button) => {
             button.hidden = false;
             button.addEventListener("click", () => {
+                const antes = generadores(filasVector());
                 const minimo = limite(input, "min", 1);
                 const maximo = limite(input, "max", Infinity);
                 const siguiente = valorEntero(input, minimo) + Number(button.dataset.paso);
                 input.value = String(Math.min(Math.max(siguiente, minimo), maximo));
                 input.dispatchEvent(new Event("input", { bubbles: true }));
+                // ± vector también avisa; el foco sigue en el botón, que no desaparece.
+                const despues = generadores(filasVector());
+                if (despues.length > antes.length) anunciar(`Se agregó el vector ${despues.at(-1)}.`);
+                else if (despues.length < antes.length) anunciar(`Se eliminó el vector ${antes.at(-1)}.`);
             });
         });
     });

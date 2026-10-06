@@ -118,7 +118,8 @@
             caja.className = "dimension-field";
             caja.dataset.dimension = nombre;
             caja.innerHTML = `<label>${etiqueta}</label><div class="stepper"><button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar">−</button><input type="number" class="field-input" min="1" max="10" value="2" data-campo="${nombre}" inputmode="numeric"><button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar">+</button></div>`;
-            card.querySelector("[data-eliminar]").before(caja);
+            // Filas se crea antes que Columnas: el orden del grupo se conserva.
+            card.querySelector(".symbol-dims").append(caja);
             input = campo(card, nombre);
         }
         input.disabled = false;
@@ -169,6 +170,24 @@
         }
         texto.hidden = true;
         rejilla.hidden = false;
+    }
+
+    // Los mismos textos que forms_expresiones.rotulos_dimension: cada control dice a qué símbolo pertenece.
+    const UNIDADES = { Filas: "una fila", Componentes: "una componente", Columnas: "una columna" };
+
+    function simbolo(card, indice) {
+        return campo(card, "nombre").value.trim() || String(indice + 1);
+    }
+
+    function rotular(card, indice) {
+        const nombre = simbolo(card, indice);
+        card.setAttribute("aria-label", `Símbolo ${nombre}`);
+        card.querySelector("[data-eliminar]").setAttribute("aria-label", `Eliminar símbolo ${nombre}`);
+        card.querySelectorAll("[data-dimension]").forEach(caja => {
+            const unidad = UNIDADES[caja.querySelector("label").textContent.trim()];
+            caja.querySelector('[data-paso="-1"]').setAttribute("aria-label", `Quitar ${unidad} de ${nombre}`);
+            caja.querySelector('[data-paso="1"]').setAttribute("aria-label", `Agregar ${unidad} a ${nombre}`);
+        });
     }
 
     function etiquetaCelda(tipo, nombre, i, j) {
@@ -255,6 +274,7 @@
                 if (label) label.htmlFor = input.id;
             });
             card.querySelectorAll('.dimension-field input').forEach(input => validarDimension(input));
+            rotular(card, i);
         });
         cantidad.value = String(cards.length);
         if (agregar) agregar.disabled = cards.length >= maximos.simbolos;
@@ -289,9 +309,17 @@
         const quitar = event.target.closest("[data-eliminar]");
         if (quitar && lista.contains(quitar)) {
             event.preventDefault();
-            tarjeta(quitar).remove();
-            aviso.textContent = "";
+            const card = tarjeta(quitar);
+            const cards = tarjetas();
+            const indice = cards.indexOf(card);
+            const nombre = simbolo(card, indice);
+            // El foco sigue en el símbolo vecino (el siguiente o, si no hay, el anterior);
+            // sin símbolos, en Agregar. Nunca queda en body.
+            const vecina = cards[indice + 1] || cards[indice - 1];
+            card.remove();
             reindex();
+            aviso.textContent = `Se eliminó el símbolo ${nombre}.`;
+            (vecina ? campo(vecina, "nombre") : agregar).focus();
             root.querySelector("form").dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
             ocultarConfirmacion();
             return;
@@ -308,11 +336,14 @@
                 aviso.textContent = `No se puede agregar otro símbolo: una matriz 2×2 más no cabe. ${mensaje}`;
                 return;
             }
-            aviso.textContent = "";
             lista.append(plantilla.content.cloneNode(true));
             const nueva = lista.querySelector("[data-simbolo]:last-child");
-            campo(nueva, "nombre").value = nombreLibre(new Set(actuales.map(card => campo(card, "nombre").value)));
+            const nombre = nombreLibre(new Set(actuales.map(card => campo(card, "nombre").value)));
+            campo(nueva, "nombre").value = nombre;
             reconstruir(nueva);
+            // El usuario continúa en el nuevo símbolo: primero su nombre, luego sus celdas.
+            aviso.textContent = `Se agregó el símbolo ${nombre}.`;
+            campo(nueva, "nombre").focus();
             root.querySelector("form").dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
             ocultarConfirmacion();
         }
@@ -339,6 +370,7 @@
             else validarDimension(event.target, aviso.textContent);
         }
         if (event.target.dataset.campo === "nombre") {
+            rotular(card, tarjetas().indexOf(card));
             const tipo = campo(card, "tipo").value;
             const nombre = event.target.value || "símbolo";
             if (tipo === "vector_simbolico") {

@@ -1,4 +1,5 @@
-<article class="symbol-card" data-simbolo>
+{% comment %}Cada símbolo es un grupo con su nombre («Símbolo A»); sus botones dicen a qué símbolo pertenecen y expresiones.js los renombra al cambiar el nombre.{% endcomment %}
+<fieldset class="symbol-card" data-simbolo aria-label="Símbolo {{ bloque.simbolo }}">
     <div class="symbol-head">
         <div class="field-group">
             <label for="{{ bloque.nombre.id_for_label }}">Nombre</label>
@@ -8,13 +9,15 @@
             <label for="{{ bloque.tipo_campo.id_for_label }}">Tipo</label>
             {{ bloque.tipo_campo }}{{ bloque.tipo_campo.errors }}
         </div>
-        {% if bloque.filas_campo %}
-            {% include "calculadora/modules/matrices/_dimension.html" with campo=bloque.filas_campo quitar="Quitar una fila" agregar="Agregar una fila" %}
-        {% endif %}
-        {% if bloque.columnas_campo %}
-            {% include "calculadora/modules/matrices/_dimension.html" with campo=bloque.columnas_campo quitar="Quitar una columna" agregar="Agregar una columna" %}
-        {% endif %}
-        <button class="btn btn-secondary" type="submit" name="eliminar" value="{{ bloque.indice }}" data-eliminar>Eliminar</button>
+        <div class="symbol-dims">
+            {% if bloque.filas_campo %}
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=bloque.filas_campo quitar=bloque.quitar_filas agregar=bloque.agregar_filas %}
+            {% endif %}
+            {% if bloque.columnas_campo %}
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=bloque.columnas_campo quitar=bloque.quitar_columnas agregar=bloque.agregar_columnas %}
+            {% endif %}
+        </div>
+        <button class="btn btn-secondary" type="submit" name="eliminar" value="{{ bloque.indice }}" data-eliminar aria-label="Eliminar símbolo {{ bloque.simbolo }}">Eliminar</button>
     </div>
     <p class="field-help" data-nota {% if not bloque.nota %}hidden{% endif %}>{{ bloque.nota }}</p>
     <div class="matrix" data-rejilla data-perfil="{% if bloque.tipo == 'vector_lineal' %}lineal{% else %}numerico{% endif %}" {% if not bloque.celdas_visibles %}hidden{% endif %}>
@@ -36,4 +39,4 @@
             </div>
         </div>
     </div>
-</article>
+</fieldset>
