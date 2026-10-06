@@ -74,7 +74,15 @@ actualizaciones lo conservan y la desinstalación no lo borra.
 | precisión decimal | expresiones, resultados, procedimientos, stale, scroll, foco, historial |
 
 Una segunda instancia usa otro puerto y su propia sesión privada, y comparte el
-mismo archivo de preferencias; no hay single-instance ni sincronización.
+mismo archivo de preferencias; no hay single-instance ni sincronización de la UI.
+Las actualizaciones del JSON se coordinan entre procesos mediante
+`preferencias.lock`, un archivo vacío sin datos del usuario.
+
+La auditoría independiente del 6 de octubre encontró pérdida de preferencias
+por peticiones fuera de orden y por escrituras entre instancias. Se corrigen con
+envíos en serie, solo del control cambiado, y un lock que cubre lectura y reemplazo.
+También se limpian temporales ante errores de escritura y se captura el fallo
+de registro del menú contextual para conservar el menú desactivado.
 
 ## Pruebas automatizadas
 

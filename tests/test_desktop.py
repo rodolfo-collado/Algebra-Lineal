@@ -430,6 +430,25 @@ class PruebasEscritorioP27_7(unittest.TestCase):
         self.assertNotIn("AreDevToolsEnabled", " ".join(orden))
         self.assertNotIn("AreBrowserAcceleratorKeysEnabled", " ".join(orden))
 
+    def test_un_fallo_al_registrar_el_menu_no_sale_al_evento_net(self):
+        class EventoRoto(EventoNet):
+            def __iadd__(self, manejador):
+                raise RuntimeError("API no disponible en este runtime")
+
+        ajustes = SimpleNamespace(AreDefaultContextMenusEnabled=False)
+        core = SimpleNamespace(ContextMenuRequested=EventoRoto(), Settings=ajustes)
+        control = SimpleNamespace(CoreWebView2InitializationCompleted=EventoNet())
+        ventana = SimpleNamespace(events=SimpleNamespace(before_show=EventoNet()), native=SimpleNamespace(webview=control))
+        desktop.install_edit_context_menu(ventana)
+        ventana.events.before_show.disparar()
+        control.CoreWebView2InitializationCompleted.disparar(SimpleNamespace(CoreWebView2=core), SimpleNamespace(IsSuccess=True))
+        self.assertFalse(ajustes.AreDefaultContextMenusEnabled)
+
+    def test_sin_control_nativo_el_hook_no_impide_mostrar_la_ventana(self):
+        ventana = SimpleNamespace(events=SimpleNamespace(before_show=EventoNet()), native=None)
+        desktop.install_edit_context_menu(ventana)
+        ventana.events.before_show.disparar()
+
     def test_dos_instancias_conviven_sin_single_instance(self):
         def aplicacion(environ, start_response):
             start_response("200 OK", [("Content-Type", "text/plain")])

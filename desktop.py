@@ -460,15 +460,23 @@ def install_edit_context_menu(window: Any) -> None:
     """
 
     def configurar(sender: Any, args: Any) -> None:
-        if not args.IsSuccess:
+        try:
+            if not args.IsSuccess:
+                return
+            core = sender.CoreWebView2
+            core.ContextMenuRequested += filter_context_menu
+            core.Settings.AreDefaultContextMenusEnabled = True
+        except Exception:
+            # El callback viene de .NET: no debe propagar fallos de esta API opcional.
             return
-        core = sender.CoreWebView2
-        core.ContextMenuRequested += filter_context_menu
-        core.Settings.AreDefaultContextMenusEnabled = True
 
     def antes_de_mostrar() -> None:
         # before_show corre en el hilo de la GUI, antes de que WebView2 termine de iniciar.
-        window.native.webview.CoreWebView2InitializationCompleted += configurar
+        try:
+            window.native.webview.CoreWebView2InitializationCompleted += configurar
+        except Exception:
+            # Un backend distinto conserva el menú desactivado de pywebview.
+            return
 
     window.events.before_show += antes_de_mostrar
 
