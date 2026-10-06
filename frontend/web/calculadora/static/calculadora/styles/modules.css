@@ -189,15 +189,16 @@
     font-weight: 600;
 }
 
-/* Cada x₁ ocupa la altura de una celda editable, así x queda a la par de A y b. */
+/* Cada x₁ ocupa la caja de una celda editable (padding de la celda, del input y su borde,
+   con la misma fuente), así x queda a la par de A y b y sus etiquetas, alineadas. */
 .unknown-vector .matrix-table td {
-    padding: 0.25rem 0.55rem;
+    padding: calc(0.25rem + 0.5rem + 1px) 0.55rem;
     color: var(--color-aug-strong);
     font-family: var(--font-math);
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-style: italic;
     font-weight: 600;
-    line-height: 2.35rem;
+    line-height: normal;
     text-align: center;
 }
 
@@ -430,12 +431,19 @@ textarea,
     border-radius: 0 8px 8px 0;
 }
 
+/* La cuadrícula conserva su ancho natural (columnas auto): el marco se desplaza en vez de
+   comprimir las columnas por debajo de su valor más largo. */
 .matrix-grid {
     display: grid;
+    flex: none;
     width: max-content;
-    min-width: 0;
     align-items: center;
     gap: 0.45rem 0.35rem;
+}
+
+.matrix-grid-cell .field-error {
+    max-width: 9rem;
+    white-space: normal;
 }
 
 .matrix-corner,
@@ -461,7 +469,9 @@ textarea,
 }
 
 .matrix-input {
-    width: 4.25rem;
+    /* Ancho mínimo cómodo; los contextos compactos lo reducen. */
+    --celda-min: 4.25rem;
+    width: var(--celda-min);
     padding: 0.5rem 0.4rem;
     border: 1px solid var(--color-border-input);
     border-radius: 7px;
@@ -470,6 +480,22 @@ textarea,
     font-size: 0.9rem;
     text-align: right;
     transition: border-color var(--motion-fast);
+}
+
+/* Cada celda crece con su valor (-11/13, 123/456, 3.14159) hasta 7rem; más allá conserva
+   el cursor y el desplazamiento del input. En tablas y cuadrículas la columna toma el ancho
+   de su valor más largo, así que todas sus celdas siguen alineadas. Sin soporte, ancho fijo. */
+@supports (field-sizing: content) {
+    .matrix-input {
+        field-sizing: content;
+        width: auto;
+        min-width: var(--celda-min);
+        max-width: 7rem;
+    }
+
+    .matrix-entry-table .matrix-input {
+        width: 100%;
+    }
 }
 
 .independent-input {
@@ -1330,7 +1356,7 @@ textarea:focus {
     }
 
     .vector-inputs .matrix-input {
-        width: 3.4rem;
+        --celda-min: 3.4rem;
         padding-inline: 0.3rem;
     }
 
@@ -1345,7 +1371,7 @@ textarea:focus {
     }
 
     .equation-entry .matrix-input {
-        width: 3rem;
+        --celda-min: 3rem;
         padding-inline: 0.3rem;
     }
 
@@ -1354,7 +1380,7 @@ textarea:focus {
     }
 
     .unknown-vector .matrix-table td {
-        padding-inline: 0.4rem;
+        padding: calc(0.2rem + 0.5rem + 1px) 0.4rem;
     }
 
     .segmented {
@@ -1420,7 +1446,7 @@ textarea:focus {
 
 .symbol-field-name { width: 7rem; }
 .symbol-field-type { width: auto; min-width: 12.5rem; }
-.matrix-input-lineal { width: 11rem; text-align: left; }
+.matrix-input-lineal { --celda-min: 11rem; max-width: 18rem; text-align: left; }
 [data-rejilla][hidden],
 [data-nota][hidden] { display: none; }
 .symbol-field-dim,

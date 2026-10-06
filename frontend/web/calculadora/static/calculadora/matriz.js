@@ -125,8 +125,9 @@
         matrixWrapper.hidden = false;
         matrixHelp.textContent =
             "Completa todas las celdas con números, enteros o fracciones.";
+        // Columnas auto: cada una toma el ancho de su valor más largo (field-sizing en CSS).
         matrixGrid.style.gridTemplateColumns =
-            `3rem repeat(${variables}, 4.25rem) 1.25rem 4.25rem`;
+            `3rem repeat(${variables}, auto) 1.25rem auto`;
 
         matrixGrid.appendChild(createElement("span", "matrix-corner"));
         for (let column = 0; column < variables; column += 1) {
