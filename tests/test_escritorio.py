@@ -22,6 +22,7 @@ import django
 django.setup()
 
 from django.test import Client, SimpleTestCase, override_settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from frontend.web.calculadora import catalogo, preferencias
@@ -198,6 +199,14 @@ class PruebasEndpointDePreferencias(EnEscritorio):
             with self.subTest(datos=datos):
                 self.assertEqual(self.client.post("/preferencias/", datos).status_code, 400)
         self.assertEqual(self.client.get("/preferencias/").status_code, 405)
+        self.assertFalse(self.archivo.exists())
+
+    def test_rechaza_post_grande_tambien_con_archivos_multipart(self):
+        respuesta = self.client.post("/preferencias/", {
+            "clave": "pygebra-tema", "valor": "dark",
+            "archivo": SimpleUploadedFile("extra.bin", b"x" * 2048),
+        })
+        self.assertEqual(respuesta.status_code, 400)
         self.assertFalse(self.archivo.exists())
 
     def test_exige_csrf(self):

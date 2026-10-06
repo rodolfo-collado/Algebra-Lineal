@@ -88,10 +88,14 @@ encadenan promesas entre guardados: destruir el documento perdería los pendient
 También se limpian temporales ante errores de escritura y se captura el fallo
 de registro del menú contextual para conservar el menú desactivado.
 
-La revisión independiente ejecutó 1609 pruebas Python y 27/27 pruebas DOM de
+La revisión independiente ejecutó 1610 pruebas Python y 27/27 pruebas DOM de
 escritorio. Las regresiones nuevas prueban procesos separados, fallos antes del
 reemplazo, registro nativo fallido y HTTP retrasado durante cambios y navegación.
 No se repitió la automatización nativa de Escape por la limitación indicada abajo.
+
+El endpoint limita el POST aceptado a 1 KiB: las dos cadenas cerradas son pequeñas.
+El límite general de datos de Django excluye los archivos multipart; la auditoría
+comprobó que antes se aceptaba un archivo extra de 3 MiB aunque no se guardaba.
 
 ## Pruebas automatizadas
 

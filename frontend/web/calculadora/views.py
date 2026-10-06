@@ -337,6 +337,10 @@ def guardar_preferencia(request):
     """Guarda tema o formato numérico de la app de escritorio; la web usa localStorage."""
     if not settings.DESKTOP_MODE:
         raise Http404("Solo la app de escritorio guarda preferencias.")
+    # Waitress publica también la longitud final de cuerpos recibidos por chunks.
+    # Estas dos cadenas cerradas no necesitan aceptar cargas de archivos grandes.
+    if int(request.META.get("CONTENT_LENGTH") or 0) > 1024:
+        return HttpResponseBadRequest()
     if not preferencias.guardar(request.POST.get("clave"), request.POST.get("valor"),
                                 request.headers.get("X-PyGebra-Escritura")):
         return HttpResponseBadRequest()
