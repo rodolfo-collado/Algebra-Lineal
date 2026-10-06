@@ -30,8 +30,9 @@ def fixture():
         <details id="pasos"><summary>Ver procedimiento</summary><code>F1 = (1/3)F1</code>
         <table aria-label="Matriz con factor 1/3"><tr><td>1/3</td><td>-1/3</td></tr></table></details>
         </section>{% endnumeric_results %}''').render(Context())
-    base = (APP / "templates/calculadora/base.html").read_text(encoding="utf-8")
-    tema_inicial = re.search(r"<script>(.*?)</script>", base, re.S).group(1)
+    # El mismo script inicial del <head> que incluyen base.html y las páginas de error.
+    inicial = (APP / "templates/calculadora/components/tema_inicial.html").read_text(encoding="utf-8")
+    tema_inicial = re.search(r"<script>(.*?)</script>", inicial, re.S).group(1)
     return f'''<!doctype html><html lang="es" data-theme="light"><meta charset="utf-8">
         <script>
         const seed = parent.seed || {{}};

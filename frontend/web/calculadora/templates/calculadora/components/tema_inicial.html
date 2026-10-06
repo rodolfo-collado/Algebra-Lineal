@@ -1,0 +1,46 @@
+<script>
+    (function () {
+        var root = document.documentElement;
+        // Preferencias de presentación: localStorage durante la sesión y, en la app de
+        // escritorio, el archivo propio que el servidor pinta como data-pygebra-… entre aperturas.
+        var preferencias = window.preferencias = {
+            leer: function (clave) {
+                try {
+                    var valor = localStorage.getItem(clave);
+                    if (valor !== null) return valor;
+                } catch (_) { /* Sin almacenamiento queda el valor de escritorio. */ }
+                return root.getAttribute("data-" + clave);
+            },
+            guardar: function (clave, valor) {
+                try {
+                    localStorage.setItem(clave, valor);
+                } catch (_) { /* El cambio vale para esta visita. */ }
+                if (!root.hasAttribute("data-desktop")) return;
+                root.setAttribute("data-" + clave, valor);
+                var token = document.querySelector('meta[name="csrf-token"]');
+                fetch("/preferencias/", {
+                    method: "POST",
+                    keepalive: true,
+                    headers: {"X-CSRFToken": token ? token.content : ""},
+                    body: new URLSearchParams({clave: clave, valor: valor})
+                }).catch(function () { /* Sin servidor, vale para esta ejecución. */ });
+            }
+        };
+        var stored = null;
+        try {
+            stored = localStorage.getItem("pygebra-tema");
+            if (stored === null) {
+                stored = localStorage.getItem("algebra-lineal-tema");
+                if (stored === "light" || stored === "dark") localStorage.setItem("pygebra-tema", stored);
+            }
+        } catch (_) { /* El tema y el menú funcionan sin almacenamiento. */ }
+        if (stored !== "light" && stored !== "dark") stored = preferencias.leer("pygebra-tema");
+        var theme = stored === "light" || stored === "dark"
+            ? stored
+            : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        root.setAttribute("data-theme", theme);
+        root.style.colorScheme = theme;
+        // Con JavaScript la navegación es un cajón cerrado; la clase evita que asome antes de tiempo.
+        root.classList.add("js");
+    })();
+</script>

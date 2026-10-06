@@ -21,4 +21,6 @@ urlpatterns = [
     path("matrices/inversa/", views.matriz_inversa, name="matriz-inversa"),
     path("bases/conversion/", views.conversion_bases, name="conversion-bases"),
     path("romanos/conversion/", views.conversion_romanos, name="conversion-romanos"),
+    # Solo la app de escritorio: tema y formato numérico entre aperturas (404 en la web).
+    path("preferencias/", views.guardar_preferencia, name="preferencias"),
 ]

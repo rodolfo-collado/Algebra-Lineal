@@ -241,7 +241,8 @@
             ArrowDown: [1, 0],
         };
         const delta = deltas[event.key];
-        if (!delta || event.target.dataset?.cell === undefined) {
+        // Alt+←/→ queda para el historial de escritorio, como en las demás cuadrículas.
+        if (!delta || event.altKey || event.target.dataset?.cell === undefined) {
             return;
         }
 
