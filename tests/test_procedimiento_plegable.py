@@ -155,6 +155,28 @@ class PruebasComponenteDisclosure(SimpleTestCase):
         self.assertNotIn("<h3", html)
         self.assertNotIn(' id="', html)
 
+    def test_chevron_primero_icono_de_opciones_y_detalle_opcionales(self):
+        # P27.8 (UI-57): un solo orden en el summary, con o sin icono y detalle.
+        html = self.render('{% disclosure titulo="Fila 1 de AB" detalle="c₁₁ = 7" nivel=6 icono="opciones" %}x{% enddisclosure %}')
+        summary = html[html.index("<summary"):html.index("</summary>")]
+        orden = [summary.index(marca) for marca in ('class="disclosure-chevron"', 'class="disclosure-icon"', "<h6", 'class="disclosure-detail"')]
+        self.assertEqual(orden, sorted(orden))
+        self.assertIn('<span class="disclosure-detail">c₁₁ = 7</span>', summary)
+        sencillo = self.render('{% disclosure titulo="Cómo se escribe" %}x{% enddisclosure %}')
+        self.assertNotIn("disclosure-icon", sencillo)
+        self.assertNotIn("disclosure-detail", sencillo)
+
+    def test_las_herramientas_no_escriben_desplegables_a_mano(self):
+        # Opciones, ayudas, aplicaciones y grupos de producto usan {% disclosure %}; solo la
+        # navegación (Menú e Inicio) conserva su propio details.
+        plantillas = list((TEMPLATES / "modules").rglob("*.html"))
+        self.assertGreater(len(plantillas), 30)
+        for plantilla in plantillas:
+            with self.subTest(plantilla=plantilla.relative_to(TEMPLATES).as_posix()):
+                html = plantilla.read_text(encoding="utf-8")
+                self.assertNotIn("<details", html)
+                self.assertNotIn("<summary", html)
+
     def test_el_titulo_se_escapa_y_el_contenido_renderizado_no_se_vuelve_a_escapar(self):
         html = self.render('{% disclosure titulo=titulo %}<code>{{ valor }}</code>{% enddisclosure %}', titulo="a < b", valor="x&y")
         self.assertIn("a &lt; b", html)

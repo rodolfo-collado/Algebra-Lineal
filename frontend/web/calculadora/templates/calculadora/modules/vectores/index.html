@@ -63,6 +63,8 @@
                 {% include "calculadora/components/errores_grupo.html" %}
                 <button type="button" class="btn btn-secondary" data-agregar-vector hidden>+ Agregar vector</button>
                 <p class="field-help" data-limite-operandos hidden>{{ form.vectores.field.error_messages.max_value }}</p>
+                {% comment %}Qué cambió al agregar o quitar un vector; el foco ya indica dónde seguir.{% endcomment %}
+                <p class="field-help" data-estado-vectores role="status" aria-live="polite"></p>
                 {{ form.escalar.errors }}
                 <p class="field-help vector-help" data-operacion-hint-fields="combinacion" {% if estructura.operacion != "combinacion" %}hidden{% endif %}>
                     ¿Es <strong>b</strong> combinación lineal de los vectores v1, v2, …? Cada vector es una columna del sistema; b es la columna aumentada.

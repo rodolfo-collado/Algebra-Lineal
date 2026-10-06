@@ -1,3 +1,4 @@
+{% load componentes %}
 {% comment %}Por columnas (AB) o combinación lineal de columnas (Ax): las columnas de A y, por cada columna del resultado, la combinación con sus coeficientes, los vectores escalados y la columna obtenida. Al comparar, el título lo pone el sub-bloque.{% endcomment %}
 <div class="procedure-stage">
     {% if not resultado.comparando %}<h5 class="stage-title">{{ metodo.titulo }}</h5>{% endif %}
@@ -16,8 +17,7 @@
 <div class="procedure-stage">
     <h5 class="stage-title">{% if resultado.operacion == "matriz_vector" %}Combinación lineal{% else %}Columna por columna{% endif %}</h5>
     {% for grupo in metodo.grupos %}
-        <details class="procedure-group"{% if resultado.abierto %} open{% endif %}>
-            <summary class="procedure-summary"><span class="procedure-summary-title">{{ grupo.titulo }}</span> <span class="procedure-summary-detail">{{ grupo.resumen }}</span></summary>
+        {% disclosure titulo=grupo.titulo detalle=grupo.resumen nivel=6 clase="procedure-group" abierto=resultado.abierto %}
             <p class="procedure-line">{{ grupo.simbolica }}</p>
             <div class="matrix-equation" role="region" aria-label="Desarrollo de {{ grupo.nombre }}">
                 <span class="matrix-expression">{{ grupo.nombre }} =</span>
@@ -33,7 +33,7 @@
                 <span class="matrix-expression">=</span>
                 {% include "calculadora/components/matriz.html" with matriz=grupo.resultado etiqueta=grupo.etiqueta_resultado only %}
             </div>
-        </details>
+        {% enddisclosure %}
     {% endfor %}
     {% if metodo.ensamble %}
         <p class="procedure-lead">Las columnas obtenidas, en orden, forman el resultado:</p>

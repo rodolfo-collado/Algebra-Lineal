@@ -1,7 +1,11 @@
-<article class="symbol-card" data-simbolo>
+<fieldset class="symbol-card" data-simbolo>
     <div class="symbol-head">
-        <label>Nombre <input type="text" class="field-input symbol-field-name" autocomplete="off" spellcheck="false" maxlength="12" data-campo="nombre" value="A"></label>
-        <label>Tipo
+        <div class="field-group">
+            <label>Nombre</label>
+            <input type="text" class="field-input symbol-field-name" autocomplete="off" spellcheck="false" maxlength="12" data-campo="nombre" value="A">
+        </div>
+        <div class="field-group">
+            <label>Tipo</label>
             <select class="field-input symbol-field-type" data-campo="tipo">
                 <optgroup label="Con valores">
                     <option value="matriz" selected>Matriz</option>
@@ -14,21 +18,23 @@
                     <option value="vector_lineal">Vector lineal</option>
                 </optgroup>
             </select>
-        </label>
-        <div class="dimension-field" data-dimension="filas">
-            <label>Filas</label>
-            <div class="stepper">
-                <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar una fila">−</button>
-                <input type="number" class="field-input" min="1" max="10" value="2" data-campo="filas" inputmode="numeric" aria-label="Filas">
-                <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una fila">+</button>
-            </div>
         </div>
-        <div class="dimension-field" data-dimension="columnas">
-            <label>Columnas</label>
-            <div class="stepper">
-                <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar una columna">−</button>
-                <input type="number" class="field-input" min="1" max="10" value="2" data-campo="columnas" inputmode="numeric" aria-label="Columnas">
-                <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una columna">+</button>
+        <div class="symbol-dims">
+            <div class="dimension-field" data-dimension="filas">
+                <label>Filas</label>
+                <div class="stepper">
+                    <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar una fila">−</button>
+                    <input type="number" class="field-input" min="1" max="10" value="2" data-campo="filas" inputmode="numeric">
+                    <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una fila">+</button>
+                </div>
+            </div>
+            <div class="dimension-field" data-dimension="columnas">
+                <label>Columnas</label>
+                <div class="stepper">
+                    <button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar una columna">−</button>
+                    <input type="number" class="field-input" min="1" max="10" value="2" data-campo="columnas" inputmode="numeric">
+                    <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una columna">+</button>
+                </div>
             </div>
         </div>
         <button class="btn btn-secondary" type="submit" data-eliminar>Eliminar</button>
@@ -46,4 +52,4 @@
             </div>
         </div>
     </div>
-</article>
+</fieldset>

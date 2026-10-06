@@ -1,6 +1,7 @@
 """Expresiones dentro de Operaciones con matrices (P26.6): catálogo, POST, procedimiento y formato."""
 
 import os
+import re
 from html.parser import HTMLParser
 from unittest.mock import patch
 
@@ -95,6 +96,38 @@ class PruebasPagina(SimpleTestCase):
         })
         self.assertContains(vector, "componente 3")
         self.assertNotContains(vector, 'id="resultado"')
+
+    def test_cada_simbolo_es_un_grupo_y_sus_controles_dicen_a_que_simbolo_pertenecen(self):
+        # P27.8 (UI-34): también sin JavaScript; expresiones.js mantiene los mismos textos al renombrar
+        # (y rotula las copias de la plantilla inerte, que se excluye aquí).
+        html = re.sub(r"<template\b.*?</template>", "", self.client.get(RUTA).content.decode(), flags=re.S)
+        for nombre in ("A", "B"):
+            with self.subTest(nombre=nombre):
+                self.assertIn(f'<fieldset class="symbol-card" data-simbolo aria-label="Símbolo {nombre}">', html)
+                self.assertIn(f'aria-label="Eliminar símbolo {nombre}">Eliminar</button>', html)
+                for etiqueta in (f"Quitar una fila de {nombre}", f"Agregar una fila a {nombre}",
+                                 f"Quitar una columna de {nombre}", f"Agregar una columna a {nombre}"):
+                    self.assertIn(f'aria-label="{etiqueta}"', html)
+        self.assertNotIn('aria-label="Quitar una fila"', html)
+        self.assertNotIn('aria-label="Eliminar"', html)
+        # Renombrado y de otro tipo: el servidor ya rotula con el nombre enviado.
+        renombrado = self.client.post(RUTA, {
+            "cantidad": "1", "nombre_0": "u", "tipo_0": "vector", "filas_0": "2",
+            "celda_0_0_0": "1", "celda_0_1_0": "2", "expresion": "u", "ajustar": "1",
+        }).content.decode()
+        self.assertIn('aria-label="Símbolo u"', renombrado)
+        self.assertIn('aria-label="Quitar una componente de u"', renombrado)
+        self.assertIn('aria-label="Agregar una componente a u"', renombrado)
+        self.assertIn('aria-label="Eliminar símbolo u"', renombrado)
+
+    def test_nombre_tipo_y_dimensiones_tienen_label_asociado_sin_dos_puntos(self):
+        # P27.8 (UI-62): etiquetas reales encima de cada control y sin «:» automático.
+        html = self.client.get(RUTA).content.decode()
+        for campo, texto in (("nombre_0", "Nombre"), ("tipo_0", "Tipo"), ("filas_0", "Filas"), ("columnas_0", "Columnas")):
+            with self.subTest(campo=campo):
+                self.assertIn(f'<label for="id_{campo}">{texto}</label>', html)
+                self.assertIn(f'id="id_{campo}"', html)
+        self.assertNotIn(":</label>", html)
 
 
 class PruebasCalculo(SimpleTestCase):

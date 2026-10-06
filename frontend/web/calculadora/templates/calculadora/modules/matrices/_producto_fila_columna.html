@@ -1,3 +1,4 @@
+{% load componentes %}
 {% comment %}Fila por columna (AB) o regla fila-vector (Ax): la cadena completa (operandos, sustitución en forma de matriz y producto) y, agrupada por fila, la igualdad completa de cada entrada. Al comparar, el título lo pone el sub-bloque.{% endcomment %}
 <div class="procedure-stage">
     {% if not resultado.comparando %}<h5 class="stage-title">{{ metodo.titulo }}</h5>{% endif %}
@@ -8,11 +9,10 @@
 <div class="procedure-stage">
     <h5 class="stage-title">Entrada por entrada</h5>
     {% for grupo in metodo.grupos %}
-        <details class="procedure-group"{% if resultado.abierto %} open{% endif %}>
-            <summary class="procedure-summary"><span class="procedure-summary-title">{{ grupo.titulo }}</span> <span class="procedure-summary-detail">{{ grupo.resumen }}</span></summary>
+        {% disclosure titulo=grupo.titulo detalle=grupo.resumen nivel=6 clase="procedure-group" abierto=resultado.abierto %}
             <ol class="equations procedure-lines">
                 {% for linea in grupo.lineas %}<li>{{ linea }}</li>{% endfor %}
             </ol>
-        </details>
+        {% enddisclosure %}
     {% endfor %}
 </div>
