@@ -174,6 +174,28 @@
             igual(await archivo(), {});
             igual(["light", "dark"].includes(w.localStorage.getItem("pygebra-tema")), true);
         }],
+        ["Escritorio: dos cambios rápidos llegan al servidor en el orden elegido", "/", {}, async w => {
+            const original = w.fetch;
+            const peticiones = [];
+            let completar;
+            w.fetch = (url, opciones) => {
+                peticiones.push(opciones.body.get("valor"));
+                return new Promise(resolve => { completar = () => resolve({ ok: true }); });
+            };
+            try {
+                w.preferencias.guardar("pygebra-tema", "dark");
+                w.preferencias.guardar("pygebra-tema", "light");
+                await turno(w);
+                igual(peticiones, ["dark"], "escrituras simultáneas");
+                completar(); await turno(w);
+                igual(peticiones, ["dark", "light"]);
+                completar(); await turno(w);
+                igual(w.localStorage.getItem("pygebra-tema"), "light");
+            } finally {
+                completar?.();
+                w.fetch = original;
+            }
+        }],
         ...[["404", "/no-existe/", "No encontramos esta página."],
             ["400", "/__pruebas/error/400/", "No pudimos procesar esta solicitud."],
             ["403", "/__pruebas/error/403/", "No se pudo completar esta acción."],

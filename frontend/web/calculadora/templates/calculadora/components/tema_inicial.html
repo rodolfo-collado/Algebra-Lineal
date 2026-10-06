@@ -1,6 +1,7 @@
 <script>
     (function () {
         var root = document.documentElement;
+        var escritura = Promise.resolve();
         // Preferencias de presentación: localStorage durante la sesión y, en la app de
         // escritorio, el archivo propio que el servidor pinta como data-pygebra-… entre aperturas.
         var preferencias = window.preferencias = {
@@ -18,11 +19,14 @@
                 if (!root.hasAttribute("data-desktop")) return;
                 root.setAttribute("data-" + clave, valor);
                 var token = document.querySelector('meta[name="csrf-token"]');
-                fetch("/preferencias/", {
-                    method: "POST",
-                    keepalive: true,
-                    headers: {"X-CSRFToken": token ? token.content : ""},
-                    body: new URLSearchParams({clave: clave, valor: valor})
+                // Un cambio posterior no puede adelantarse al que todavía se guarda.
+                escritura = escritura.then(function () {
+                    return fetch("/preferencias/", {
+                        method: "POST",
+                        keepalive: true,
+                        headers: {"X-CSRFToken": token ? token.content : ""},
+                        body: new URLSearchParams({clave: clave, valor: valor})
+                    });
                 }).catch(function () { /* Sin servidor, vale para esta ejecución. */ });
             }
         };

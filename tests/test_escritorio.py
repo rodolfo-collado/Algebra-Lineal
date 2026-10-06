@@ -5,6 +5,7 @@ del historial (Alt+←/→, pageshow, sessionStorage).
 """
 
 import json
+import multiprocessing
 import os
 import re
 import tempfile
@@ -30,6 +31,24 @@ APP = RAIZ / "frontend" / "web" / "calculadora"
 STATIC = APP / "static" / "calculadora"
 TEMPLATES = APP / "templates"
 HERRAMIENTAS = [h.ruta for h in catalogo.HERRAMIENTAS if h.disponible]
+
+
+def guardar_en_proceso(ruta, clave, valor, iniciado, leido=None, continuar=None):
+    """Escritor independiente; permite pausar una lectura antes del reemplazo."""
+    original = Path.read_text
+
+    def leer_pausado(archivo, *args, **kwargs):
+        datos = original(archivo, *args, **kwargs)
+        if archivo == Path(ruta) and leido is not None:
+            leido.set()
+            if not continuar.wait(8):
+                raise TimeoutError("No se liberó el escritor de prueba.")
+        return datos
+
+    with override_settings(DESKTOP_MODE=True, DESKTOP_PREFERENCES_FILE=ruta), \
+            patch.object(Path, "read_text", leer_pausado):
+        iniciado.set()
+        preferencias.guardar(clave, valor)
 
 
 class EnEscritorio(SimpleTestCase):
@@ -66,7 +85,7 @@ class PruebasArchivoDePreferencias(EnEscritorio):
         self.assertEqual(self.guardado(), {
             "pygebra-tema": "dark", "pygebra-formato-numerico": "decimal", "pygebra-precision-decimal": "8",
         })
-        self.assertEqual(sorted(p.name for p in self.archivo.parent.iterdir()), ["preferencias.json"])
+        self.assertEqual(sorted(p.name for p in self.archivo.parent.iterdir()), ["preferencias.json", "preferencias.lock"])
 
     def test_lectura_descarta_claves_ajenas_valores_invalidos_y_archivos_danados(self):
         self.archivo.parent.mkdir(parents=True)
@@ -99,8 +118,44 @@ class PruebasArchivoDePreferencias(EnEscritorio):
         with patch("frontend.web.calculadora.preferencias.os.replace", side_effect=PermissionError("en uso")):
             with self.assertRaises(PermissionError):
                 preferencias.guardar("pygebra-tema", "light")
-        self.assertEqual(sorted(p.name for p in self.archivo.parent.iterdir()), ["preferencias.json"])
+        self.assertEqual(sorted(p.name for p in self.archivo.parent.iterdir()), ["preferencias.json", "preferencias.lock"])
         self.assertEqual(self.guardado(), {"pygebra-tema": "dark"})
+
+    def test_dos_procesos_no_pierden_preferencias(self):
+        self.archivo.parent.mkdir(parents=True)
+        self.archivo.write_text("{}", encoding="utf-8")
+        contexto = multiprocessing.get_context("spawn")
+        iniciado_a, iniciado_b, leido, continuar = [contexto.Event() for _ in range(4)]
+        procesos = [
+            contexto.Process(target=guardar_en_proceso, args=(str(self.archivo), "pygebra-tema", "dark", iniciado_a, leido, continuar)),
+            contexto.Process(target=guardar_en_proceso, args=(str(self.archivo), "pygebra-precision-decimal", "8", iniciado_b)),
+        ]
+        try:
+            procesos[0].start()
+            self.assertTrue(leido.wait(8))
+            procesos[1].start()
+            self.assertTrue(iniciado_b.wait(8))
+            # Sin lock entre procesos, B termina y luego A sobrescribe su clave.
+            procesos[1].join(1)
+            continuar.set()
+            for proceso in procesos:
+                proceso.join(8)
+                self.assertEqual(proceso.exitcode, 0)
+            self.assertEqual(self.guardado(), {"pygebra-tema": "dark", "pygebra-precision-decimal": "8"})
+        finally:
+            continuar.set()
+            for proceso in procesos:
+                if proceso.pid is not None and proceso.is_alive():
+                    proceso.terminate()
+                    proceso.join(3)
+
+    def test_un_fallo_durante_la_escritura_conserva_el_json_y_limpia_temporales(self):
+        preferencias.guardar("pygebra-tema", "dark")
+        with patch.object(preferencias.json, "dump", side_effect=OSError("disco lleno")):
+            with self.assertRaises(OSError):
+                preferencias.guardar("pygebra-tema", "light")
+        self.assertEqual(self.guardado(), {"pygebra-tema": "dark"})
+        self.assertEqual(list(self.archivo.parent.glob("*.tmp")), [])
 
     def test_la_web_no_lee_ni_escribe_aunque_haya_ruta(self):
         with override_settings(DESKTOP_MODE=False):

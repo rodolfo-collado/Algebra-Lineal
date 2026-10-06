@@ -44,10 +44,9 @@
         if (["2", "4", "6", "8"].includes(savedPrecision)) precision.value = savedPrecision;
         apply();
     }
-    function change() {
+    function change(event) {
         apply();
-        preferencias.guardar("pygebra-formato-numerico", mode.value);
-        preferencias.guardar("pygebra-precision-decimal", precision.value);
+        preferencias.guardar(event.target === mode ? "pygebra-formato-numerico" : "pygebra-precision-decimal", event.target.value);
     }
     controls.hidden = false;
     mode.addEventListener("change", change);
