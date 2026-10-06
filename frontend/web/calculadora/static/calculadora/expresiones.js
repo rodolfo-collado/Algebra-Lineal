@@ -46,9 +46,7 @@
         return estado;
     }
 
-    function ocultarResultado() {
-        const resultado = document.getElementById("resultado");
-        if (resultado) resultado.hidden = true;
+    function ocultarConfirmacion() {
         const confirmacion = root.querySelector("[data-confirmacion]");
         if (confirmacion) confirmacion.hidden = true;
         const firma = root.querySelector('input[name="confirmacion"]');
@@ -288,7 +286,8 @@
             if (!cabe(card, { [input.dataset.campo]: siguiente })) return;
             input.value = String(siguiente);
             reconstruir(card);
-            ocultarResultado();
+            root.querySelector("form").dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
+            ocultarConfirmacion();
             return;
         }
         const quitar = event.target.closest("[data-eliminar]");
@@ -297,7 +296,8 @@
             tarjeta(quitar).remove();
             aviso.textContent = "";
             reindex();
-            ocultarResultado();
+            root.querySelector("form").dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
+            ocultarConfirmacion();
             return;
         }
         if (event.target.closest("[data-agregar]")) {
@@ -317,7 +317,8 @@
             const nueva = lista.querySelector("[data-simbolo]:last-child");
             campo(nueva, "nombre").value = nombreLibre(new Set(actuales.map(card => campo(card, "nombre").value)));
             reconstruir(nueva);
-            ocultarResultado();
+            root.querySelector("form").dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
+            ocultarConfirmacion();
         }
     });
 
@@ -330,7 +331,7 @@
             return;
         }
         reconstruir(card);
-        ocultarResultado();
+        ocultarConfirmacion();
     });
     lista.addEventListener("input", (event) => {
         const card = tarjeta(event.target);
@@ -353,8 +354,8 @@
             });
         }
     });
-    root.addEventListener("input", ocultarResultado);
-    root.addEventListener("change", ocultarResultado);
+    root.addEventListener("input", ocultarConfirmacion);
+    root.addEventListener("change", ocultarConfirmacion);
 
     // Tab recorre todos los campos. Las flechas verticales cambian de fila dentro del
     // símbolo; las horizontales solo cambian de celda al llegar al extremo del texto.

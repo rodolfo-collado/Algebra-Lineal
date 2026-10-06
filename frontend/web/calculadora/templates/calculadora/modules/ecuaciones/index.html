@@ -4,7 +4,7 @@
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
-    <form id="ecuacion-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+    <form id="ecuacion-form" data-entrada-calculo action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="equation-fields" data-perfil="numerico" aria-labelledby="equation-title">
@@ -51,7 +51,7 @@
 {% if resultado %}
     {% comment %}Entrada → procedimiento plegable (equivalencias y eliminación) → resultado (clasificación y solución, una vez) → comprobación e interpretación plegadas, que parten de la solución y aportan información distinta del procedimiento. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
     {% numeric_results %}
-    <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+    <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
             <p class="section-kicker">Ecuación matricial · {{ resultado.titulo_metodo }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
             <h2 id="results-title">{{ resultado.forma }}</h2>
@@ -86,7 +86,7 @@
                             {% for linea in resultado.solucion_general %}<li><code>{{ linea }}</code></li>{% endfor %}
                         </ul>
                         {% if resultado.x %}
-                            <div class="matrix-equation" tabindex="0" role="region" aria-label="Vector solución x">
+                            <div class="matrix-equation" role="region" aria-label="Vector solución x">
                                 <span class="matrix-expression">x =</span>
                                 {% include "calculadora/components/matriz.html" with matriz=resultado.x etiqueta="Vector solución x" only %}
                             </div>
@@ -99,7 +99,7 @@
         {% if resultado.comprobacion %}
             {% disclosure titulo="Comprobar solución" id="comprobacion" clase="disclosure-procedure" %}
                 <p class="procedure-lead">Al sustituir x, el producto Ax {% if resultado.comprobacion.coincide %}reproduce{% else %}no reproduce{% endif %} b.</p>
-                <div class="matrix-equation" tabindex="0" role="region" aria-label="Comprobación: A por x igual a b">
+                <div class="matrix-equation" role="region" aria-label="Comprobación: A por x igual a b">
                     <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.a etiqueta="Matriz A de la comprobación" only %}</div>
                     <span class="matrix-expression">·</span>
                     <div class="matrix-operand"><span class="muted">x</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.x etiqueta="Vector x sustituido" only %}</div>

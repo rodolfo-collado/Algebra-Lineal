@@ -2,14 +2,14 @@
 <div class="procedure-stage">
     <h4 class="stage-title">1 · La regla para matrices 2×2</h4>
     <p class="procedure-lead">Se nombran las entradas de A con letras: {{ resultado.entradas }}.</p>
-    <div class="matrix-equation" tabindex="0" role="region" aria-label="Entradas a, b, c y d de A">
+    <div class="matrix-equation" role="region" aria-label="Entradas a, b, c y d de A">
         <span class="matrix-expression">A =</span>
         {% include "calculadora/components/matriz.html" with matriz=resultado.simbolica etiqueta="A con letras" only %}
         <span class="matrix-expression">=</span>
         {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Matriz A" only %}
     </div>
     <p class="procedure-lead">Si ad − bc no es 0, la inversa se obtiene con esta regla:</p>
-    <div class="matrix-equation" tabindex="0" role="region" aria-label="Regla de la inversa de una matriz 2×2">
+    <div class="matrix-equation" role="region" aria-label="Regla de la inversa de una matriz 2×2">
         <span class="matrix-expression">A⁻¹ = 1/(ad − bc) ·</span>
         {% include "calculadora/components/matriz.html" with matriz=resultado.simbolica_intercambiada etiqueta="d, −b, −c y a" only %}
     </div>
@@ -29,7 +29,7 @@
     <div class="procedure-stage">
         <h4 class="stage-title">3 · Intercambiar a y d; cambiar el signo de b y c</h4>
         <p class="procedure-lead">a y d cambian de lugar; b y c se quedan donde están, con el signo cambiado.</p>
-        <div class="matrix-equation" tabindex="0" role="region" aria-label="Intercambio y cambio de signo">
+        <div class="matrix-equation" role="region" aria-label="Intercambio y cambio de signo">
             {% include "calculadora/components/matriz.html" with matriz=resultado.simbolica_intercambiada etiqueta="d, −b, −c y a" only %}
             <span class="matrix-expression">=</span>
             {% include "calculadora/components/matriz.html" with matriz=resultado.intercambiada etiqueta="Matriz con a y d intercambiados" only %}
@@ -40,7 +40,7 @@
         <h4 class="stage-title">4 · Multiplicar por 1/(ad − bc)</h4>
         <p class="procedure-line">{{ resultado.factor }}</p>
         <p class="procedure-lead">Cada entrada se multiplica por ese número:</p>
-        <div class="matrix-equation" tabindex="0" role="region" aria-label="Multiplicación por 1/(ad − bc)">
+        <div class="matrix-equation" role="region" aria-label="Multiplicación por 1/(ad − bc)">
             <span class="matrix-expression">{{ resultado.factor_operando }} ·</span>
             {% include "calculadora/components/matriz.html" with matriz=resultado.intercambiada etiqueta="Matriz que se multiplica" only %}
             <span class="matrix-expression">=</span>

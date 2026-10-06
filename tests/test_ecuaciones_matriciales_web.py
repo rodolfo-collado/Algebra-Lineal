@@ -480,7 +480,7 @@ class PruebasRecursosEcuacion(SimpleTestCase):
         for marca in ("data-ecuacion", "data-equation-entry", "data-unknown", "data-equation-shape", "data-aplicar", 'data-dimension="filas"', 'data-dimension="columnas"'):
             self.assertIn(marca, html)
         js = (ESTATICOS / "ecuaciones.js").read_text(encoding="utf-8")
-        for fragmento in ("data-ecuacion", "matrix-entry-template", "data-matriz=\"A\"", "data-matriz=\"b\"", "actualizarIncognita", "data-equation-shape", "ArrowDown", "resultado"):
+        for fragmento in ("data-ecuacion", "matrix-entry-template", "data-matriz=\"A\"", "data-matriz=\"b\"", "actualizarIncognita", "data-equation-shape", "ArrowDown"):
             self.assertIn(fragmento, js)
         self.assertNotIn("innerHTML", js)
 
@@ -497,4 +497,4 @@ class PruebasRecursosEcuacion(SimpleTestCase):
         self.assertIn("Columnas pivote: C1, C2", strip_tags(html))
         for etiqueta in ("Ecuación matricial A por x igual a b", "Ecuación vectorial con las columnas de A", "Matriz aumentada A barra b"):
             self.assertIn(f'aria-label="{etiqueta}"', html)
-        self.assertIn('tabindex="0"', html)
+        self.assertNotIn('tabindex="0"', html)

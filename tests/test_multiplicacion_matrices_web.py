@@ -325,6 +325,6 @@ class PruebasAccesibilidadProducto(SimpleTestCase):
         self.assertIn('<summary class="procedure-summary">', html)
         self.assertIn('role="region" aria-label="Desarrollo de Ab₁"', html)
         self.assertIn('aria-label="Columnas de A"', html)
-        self.assertIn('tabindex="0"', html)
+        self.assertNotIn('tabindex="0"', html)
         for etiqueta in ("Columna 1 de A", "Columna 1 de AB", "Resultado ensamblado"):
             self.assertIn(f'aria-label="{etiqueta}"', html)

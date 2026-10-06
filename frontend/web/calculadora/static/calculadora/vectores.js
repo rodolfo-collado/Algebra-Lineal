@@ -157,8 +157,6 @@
         vectoresInput.disabled = operacion === "escalar";
         root.querySelector("[data-cantidad-vectores]").hidden = operacion === "escalar";
         agregar.hidden = operacion === "escalar";
-        const resultado = document.getElementById("resultado");
-        if (resultado && render.iniciado) resultado.hidden = true;
         const validas = [dimensionInput, vectoresInput].map(input => validarDimension(input));
         if (validas.includes(false)) return;
         const dimension = Number(dimensionInput.value);
@@ -197,12 +195,12 @@
                     for (let j = 0; j < Number(dimensionInput.max); j += 1) memoria.delete(`${nombres[cantidad - 1]}_${j}`);
                     vectoresInput.value = String(cantidad - 1);
                     render(false);
+                    vectoresInput.dispatchEvent(new Event("change", { bubbles: true }));
                 });
                 fila.appendChild(quitar);
             }
             lista.appendChild(fila);
         });
-        render.iniciado = true;
 
         root.querySelectorAll("[data-solo-operacion]").forEach((bloque) => {
             bloque.hidden = bloque.dataset.soloOperacion !== operacion;
@@ -223,7 +221,7 @@
     vectoresInput.addEventListener("input", () => render());
     agregar.addEventListener("click", () => {
         vectoresInput.value = String(valorEntero(vectoresInput, 2) + 1);
-        render();
+        vectoresInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
     // Controles de estructura (+/- componente, +/- vector): cambian n y k, no

@@ -4,7 +4,7 @@
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title">
         <h2 id="workspace-title" class="sr-only">Entrada</h2>
-        <form id="romanos-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        <form id="romanos-form" data-entrada-calculo action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
             {% csrf_token %}
             {% include "calculadora/components/errores_generales.html" %}
 
@@ -35,7 +35,7 @@
 {% block tool_result %}
     {% if resultado %}
         {% comment %}Entrada → procedimiento plegable → resultado (una sola vez). Las filas y las igualdades llegan como datos del servicio; la plantilla no calcula.{% endcomment %}
-        <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">Conversión</p>
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
