@@ -21,6 +21,8 @@ from backend.sistemas_numericos import BASES_SOPORTADAS, NOMBRES_BASE, normaliza
 from frontend.web.calculadora import teclados
 from frontend.web.calculadora.teclados import (
     PERFIL_NUMERICO,
+    PERFIL_EXPRESION,
+    PERFIL_LINEAL,
     PERFIL_SISTEMA,
     PERFILES,
     PERFILES_BASE,
@@ -39,7 +41,7 @@ STATIC = RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 HERRAMIENTAS = {
     "/matrices/reduccion/": {"sistema", "numerico"},
     "/vectores/operaciones/": {"numerico"},
-    "/matrices/operaciones/": {"numerico"},
+    "/matrices/operaciones/": {"numerico", "expresion", "lineal"},
     "/matrices/ecuaciones/": {"numerico"},
     "/matrices/inversa/": {"numerico"},
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
@@ -221,8 +223,8 @@ class PruebasRegistro(unittest.TestCase):
         with self.assertRaises(ValueError):
             Perfil("repetido", (GrupoTeclas("A", (menos, Tecla("−", "–", "Raya"))),))
 
-    def test_el_registro_tiene_seis_perfiles_completos_sin_duplicados(self):
-        self.assertEqual(set(PERFILES), {"sistema", "numerico", "base-2", "base-8", "base-10", "base-16"})
+    def test_el_registro_tiene_ocho_perfiles_completos_sin_duplicados(self):
+        self.assertEqual(set(PERFILES), {"sistema", "numerico", "expresion", "lineal", "base-2", "base-8", "base-10", "base-16"})
         for id_, perfil in PERFILES.items():
             with self.subTest(perfil=id_):
                 self.assertIsInstance(perfil, Perfil)
@@ -245,7 +247,8 @@ class PruebasRegistro(unittest.TestCase):
         self.assertEqual(por_etiqueta["−"], "-")
         self.assertEqual(por_etiqueta["a⁄b"], "/")
         self.assertEqual(por_etiqueta["x₁"], "x1")
-        self.assertEqual(por_etiqueta["; nueva ecuación"], ";\n")
+        self.assertEqual(por_etiqueta["Nueva ecuación"], "\n")
+        self.assertEqual([t.insercion for t in PERFIL_SISTEMA.teclas[:6]], [f"x{i}" for i in range(1, 7)])
         self.assertEqual([grupo.nombre for grupo in PERFIL_SISTEMA.grupos], ["Variables", "Operaciones", "Ecuaciones"])
 
     def test_lo_que_inserta_el_perfil_de_sistema_lo_entiende_el_parser(self):
@@ -267,6 +270,13 @@ class PruebasRegistro(unittest.TestCase):
         self.assertTrue(set(PERFIL_NUMERICO.teclas) <= set(PERFIL_SISTEMA.teclas))
         menos, fraccion = (t.insercion for t in PERFIL_NUMERICO.teclas)
         self.assertEqual(convertir_a_numero(menos + "1" + fraccion + "2"), Fraction(-1, 2))
+
+    def test_perfiles_expresion_y_lineal_reutilizan_teclas_y_sintaxis(self):
+        self.assertEqual([t.insercion for t in PERFIL_EXPRESION.teclas], ["()", "^T", "+", "-", "=", "/"])
+        self.assertEqual(PERFIL_EXPRESION.teclas[0].retroceso, 1)
+        self.assertEqual([t.insercion for t in PERFIL_LINEAL.teclas], [f"x{i}" for i in range(1, 7)] + ["+", "-", "/"])
+        self.assertIs(PERFIL_LINEAL.grupos[0], PERFIL_SISTEMA.grupos[0])
+        self.assertIs(PERFIL_EXPRESION.teclas[-1], teclados.FRACCION)
 
     def test_los_perfiles_de_base_corresponden_a_los_digitos_de_cada_base(self):
         self.assertEqual(set(PERFILES_BASE), set(BASES_SOPORTADAS))
@@ -321,12 +331,10 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
             with self.subTest(ruta=ruta):
                 pagina = self.pagina(ruta)
                 self.assertEqual(len(pagina.teclados), 1)
-                self.assertEqual(len(pagina.desplegables), 1)
-                teclado, desplegable = pagina.teclados[0], pagina.desplegables[0]
+                self.assertEqual(pagina.desplegables, [])
+                teclado = pagina.teclados[0]
                 self.assertIn("hidden", teclado)
-                self.assertIn("hidden", desplegable)
-                self.assertNotIn("open", desplegable)
-                self.assertEqual(desplegable["summary"].strip(), "Teclado matemático")
+                self.assertNotIn("details", teclado["antecesores"])
                 # El nombre accesible no depende del perfil activo.
                 self.assertEqual(teclado["role"], "group")
                 self.assertEqual(teclado["aria-label"], "Teclado matemático")
@@ -349,7 +357,23 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
                 pagina = self.pagina(ruta)
                 self.assertTrue(pagina.campos)
                 for campo in pagina.campos:
-                    self.assertIn(campo["perfil"], pagina.perfiles_publicados, campo)
+                    if (campo["name"] or "").startswith("nombre_"):
+                        self.assertIsNone(campo["perfil"], campo)
+                    else:
+                        self.assertIn(campo["perfil"], pagina.perfiles_publicados, campo)
+
+    def test_operaciones_separa_nombres_expresion_y_valores_lineales(self):
+        pagina = self.pagina("/matrices/operaciones/")
+        campos = {c["name"]: c["perfil"] for c in pagina.campos}
+        self.assertEqual(campos["expresion"], "expresion")
+        self.assertIsNone(campos["nombre_0"])
+        self.assertEqual(campos["celda_0_0_0"], "numerico")
+        respuesta = self.client.post("/matrices/operaciones/", {
+            "cantidad": "1", "nombre_0": "b", "tipo_0": "vector_lineal", "filas_0": "2", "ajustar": "1",
+        })
+        campos = {c["name"]: c["perfil"] for c in Pagina(respuesta.content.decode()).campos}
+        self.assertEqual(campos["celda_0_0_0"], "lineal")
+        self.assertIsNone(campos["nombre_0"])
 
     def test_sistemas_cambia_de_perfil_entre_el_texto_y_la_matriz_con_un_solo_componente(self):
         pagina = self.pagina("/matrices/reduccion/")
@@ -367,14 +391,14 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
 
     def test_las_celdas_dinamicas_nacen_dentro_del_contenedor_numerico(self):
         for ruta, atributo, valor, formulario in (
-            ("/matrices/operaciones/", "data-simbolos", "", "expresiones-form"),
+            ("/matrices/operaciones/", "data-rejilla", "", "expresiones-form"),
             ("/matrices/ecuaciones/", "data-equation-entry", "", "ecuacion-form"),
             ("/matrices/inversa/", "data-inverse-entry", "", "inversa-form"),
             ("/vectores/operaciones/", "id", "vector-list", "vectores-form"),
         ):
             with self.subTest(ruta=ruta):
                 elemento = next(e for e in self.pagina(ruta).elementos if atributo in e and (e[atributo] or "") == valor)
-                self.assertEqual(elemento["perfil"], "numerico")
+                self.assertEqual(elemento.get("data-perfil", elemento["perfil"]), "numerico")
                 self.assertEqual(elemento["formulario"], formulario)
 
     def test_bases_publica_los_cuatro_perfiles_y_el_contenedor_sigue_a_la_base_de_origen(self):
@@ -444,6 +468,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         tecla = re.search(r'<template id="math-key-template">(.*?)</template>', html, re.S).group(1)
         self.assertRegex(tecla, r'<button[^>]*type="button"')
         self.assertIn('class="math-key"', tecla)
+        self.assertIn('tabindex="-1"', tecla)
         self.assertIn("data-insercion", tecla)
         self.assertIn("data-retroceso", tecla)
         grupo = re.search(r'<template id="math-key-group-template">(.*?)</template>', html, re.S).group(1)
@@ -468,7 +493,12 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         self.assertIn('"end"', script)
         self.assertIn("retroceso", script)
         self.assertIn('new Event("input", { bubbles: true })', script)
-        self.assertIn(".focus()", script)
+        self.assertIn('document.execCommand("insertText", false, texto)', script)
+        self.assertNotIn(".focus()", script)
+        self.assertIn('"mousedown"', script)
+        self.assertIn("event.preventDefault()", script)
+        self.assertIn('event.key === "Escape"', script)
+        self.assertNotIn(".find(esValido)", script)
         # Sin anuncios en vivo ni abrir el desplegable por su cuenta.
         self.assertNotIn("aria-live", script)
         self.assertNotIn("open = true", script)

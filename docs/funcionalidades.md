@@ -375,11 +375,13 @@ delega los cálculos a `backend/`.
 El **teclado matemático** único de cada herramienta se adapta al campo activo y muestra notación
 matemática (`x₁`, `−`, `a⁄b`) e inserta la sintaxis que entiende el parser
 (`x1`, `-`, `/`), de modo que nadie necesita conocer esa sintaxis para escribir
-un sistema. Va plegado bajo «Teclado matemático», solo aparece con JavaScript
-y solo contiene teclas con una inserción real. En Sistemas alterna entre
-ecuaciones y valores numéricos; Matrices, Vectores y Ax = b comparten las
-teclas de negativo y fracción. En conversión de bases cambia los dígitos
-según la base de origen, conservando la conversión a varios destinos.
+un sistema. Aparece al enfocar una entrada compatible y desaparece al salir
+o pulsar Escape. Sin JavaScript permanece oculto; el teclado físico siempre
+está disponible. En Sistemas alterna entre ecuaciones y valores numéricos;
+las celdas numéricas comparten negativo y fracción. Las expresiones matriciales
+añaden paréntesis y traspuesta; las componentes lineales ofrecen x₁…x₆.
+Los nombres de símbolos y Romanos no lo activan. En conversión de bases cambia
+los dígitos según la base de origen, conservando la conversión a varios destinos.
 
 ## Operaciones matriciales y Ax = b
 

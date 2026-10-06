@@ -183,6 +183,7 @@
 
     function reconstruir(card) {
         const tipo = campo(card, "tipo").value;
+        card.querySelector("[data-rejilla]").dataset.perfil = tipo === "vector_lineal" ? "lineal" : "numerico";
         const estado = memoria(card);
         const guardado = estado.tipos.get(tipo) || new Map();
         const vector = esVector(tipo);

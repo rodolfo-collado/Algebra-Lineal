@@ -66,7 +66,7 @@ depende de que una animación se ejecute.
   `--motion` (160 ms) se usa para entradas breves. No hay retrasos.
 - Botones, steppers, teclas matemáticas y controles de navegación comparten
   pulsación de 1 px y borde interior; `:disabled` excluye hover y pulsación.
-  El foco visible se conserva. No hay timers ni cambios en el motor del teclado.
+  El foco visible se conserva.
 - Radios, casillas y segmentos conservan controles HTML nativos y transiciones
   de fondo/borde. Seleccionar no cambia el peso de letra ni mueve opciones vecinas.
 - Los chevrons comunican apertura/cierre. Donde el navegador admite
@@ -76,6 +76,12 @@ depende de que una animación se ejecute.
   `<details>/<summary>` conserva todo su comportamiento nativo, también sin JS.
 - El panel final usa la misma entrada, visible desde el primer instante, sin
   desplazamiento, espera ni clase añadida por JavaScript.
+- El dock entra en 160 ms con opacidad y 10 px de desplazamiento, y sale en
+  120 ms. Su etiqueta y acento verde lo identifican; en modo compacto se oculta
+  la etiqueta. Al salir pierde destino e interacción inmediatamente, conserva
+  las teclas durante la transición y aplica `hidden` al finalizar. Un nuevo
+  foco cancela ese cierre; cambiar de campo compatible no reinicia la entrada.
+  Con movimiento reducido la apertura y el cierre son inmediatos.
 - No se animan celdas, cambios de dimensiones, regeneraciones de campos, perfiles
   del teclado, controles condicionales ni el desplazamiento del drawer. `hidden`,
   `disabled`, `inert`, Escape y restauración de foco mantienen sus contratos.
@@ -243,8 +249,9 @@ jerarquía h2 → h3 → h4 se conserva y no hay botones dentro del `summary`.
 La jerarquía del formulario es: Método y Tipo de entrada como selectores
 segmentados (`.segmented`, radios reales, una sola selección) con una pista
 de una línea para la opción elegida (`data-method-hint`, `data-input-hint`;
-`matriz.js` cambia la visible), el problema (texto o cuadrícula), el teclado
-plegado, «Opciones de resultado» plegadas y Resolver. Las opciones conservan
+`matriz.js` cambia la visible), el problema (texto o cuadrícula),
+«Opciones de resultado» plegadas y Resolver. El teclado aparece al enfocar
+una entrada compatible y desaparece al salir. Las opciones conservan
 sus casillas y predeterminados (todo activo) y se despliegan solas cuando lo
 elegido difiere de lo predeterminado (`opciones_abiertas`).
 
@@ -281,24 +288,37 @@ herramienta incluye **una sola instancia** del componente dentro del formulario:
 
 Los campos heredan `data-perfil` de su contenedor más cercano. En Sistemas,
 `system-fields` declara `sistema` y `matrix-fields` declara `numerico`; el
-teclado queda fuera de ambos fieldsets para poder alternarlos. Matrices,
-Vectores y Ax = b comparten `numerico` (`−`, `a⁄b`). El componente publica los
+teclado queda fuera de ambos fieldsets para poder alternarlos. Celdas de matrices,
+vectores numéricos y Ax = b comparten `numerico` (`−`, `a⁄b`). En Operaciones,
+la expresión usa `expresion` (`( )`, `ᵀ`, `+`, `−`, `=`, `a⁄b`) y las componentes
+de vectores lineales usan `lineal` (x₁…x₆, `+`, `−`, `a⁄b`). Los nombres de
+símbolos y los números romanos no tienen teclado matemático. `sistema` ofrece
+x₁…x₆ y «Nueva ecuación» inserta solo un salto de línea. El componente publica los
 perfiles con `json_script`; sus plantillas HTML inertes generan grupos y botones
 con nombres accesibles y `type="button"`.
 
-`teclado.js` no conoce herramientas ni sintaxis matemática. Delega `focusin`
-en el formulario, conserva el último objetivo válido y observa cambios de
-perfil, estructura, visibilidad o disponibilidad. Las celdas regeneradas heredan
-su perfil; los campos eliminados, ocultos, deshabilitados o de solo lectura no
-reciben inserciones. `setRangeText` respeta cursor y selección; `retroceso`
-recoloca el cursor, se devuelve el foco y se emite un único evento `input`
-que burbujea. No se intercepta la escritura física.
+`teclado.js` no conoce herramientas ni sintaxis matemática. Delega el foco en
+el documento: solo el campo compatible activo puede ser objetivo; no existe
+fallback al primer campo ni se conserva el destino al pasar a otro control.
+Las celdas regeneradas heredan su perfil; un observador invalida campos eliminados,
+ocultos, deshabilitados o de solo lectura y actualiza cambios de perfil.
+`mousedown` de las teclas conserva el foco del campo. `execCommand("insertText")`
+respeta cursor, selección y Ctrl+Z en Chromium; reafirmar la selección antes y
+después separa esta edición de la escritura física. `setRangeText` es el fallback
+de inserción si no está disponible (sin garantía de undo en ese navegador).
+`retroceso` recoloca el cursor y se emite un único `input`. Las teclas usan
+`tabindex="-1"` y nombres accesibles que comienzan con su etiqueta visible.
+Escape oculta sin editar; el teclado físico siempre sigue disponible.
 
-El teclado sigue plegado bajo «Teclado matemático»; tanto el desplegable como
-el teclado nacen con `hidden` y solo se muestran si hay JavaScript y un campo
-válido. Sin JavaScript los formularios y sus POST mantienen el comportamiento
-anterior. Añadir un perfil consiste en registrarlo, publicarlo desde la vista
-y declararlo en los campos, sin modificar el motor. No registres teclas sin
+El dock nace con `hidden`, sin botón de apertura, y aparece al enfocar una
+entrada compatible. Se oculta al pasar a Opciones, Calcular, Menú, Tema u otro
+control. Entre entradas compatibles permanece visible y adapta su perfil.
+Es fijo, alineado con la columna principal y debajo de la cabecera y del menú.
+La reserva estable al final y `scroll-padding` evitan tapar el campo o mover
+Calcular al ocultarlo. Con altura ≤640 px usa una fila compacta; los símbolos
+que no caben se desplazan dentro del dock. Sin JavaScript no se ve el teclado
+y los formularios siguen funcionando. Añadir un perfil consiste en registrarlo,
+publicarlo desde la vista y declararlo en los campos, sin modificar el motor. No registres teclas sin
 una inserción real detrás.
 
 Los controles que cambian la estructura de una entrada (agregar o quitar
@@ -491,6 +511,10 @@ El único teclado cambia entre los perfiles `base-2`, `base-8`, `base-10` y
 el origen; recibe nombres, perfiles y dígitos en `bases-digitos`, derivados
 del mismo registro. No contiene otra tabla de dígitos ni manipula teclados.
 La selección multidestino de P16 mantiene sus controles y su contrato POST.
+
+La expectativa histórica del runner DOM que comprobaba solo `01` se corrigió
+en P27.3: el contrato de `base-N` incluye dígitos, punto decimal y signo (`01.-`
+para base 2), como ya comprobaban las pruebas Python y la validación del número.
 
 ## Conversión de números romanos
 

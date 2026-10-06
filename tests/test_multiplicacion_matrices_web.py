@@ -239,7 +239,7 @@ class PruebasResultadosProducto(SimpleTestCase):
             self.assertIn(f"/static/calculadora/{recurso}", html)
         self.assertNotIn('src="https://', html)
         self.assertNotIn('href="https://', html)
-        self.assertIn('id="expression-fields" data-perfil="numerico"', html)
+        self.assertIn('class="expression-field" data-perfil="expresion"', html)
 
     def test_subindices_legibles_hasta_diez(self):
         self.assertEqual(subindice(2, 3), "₂₃")

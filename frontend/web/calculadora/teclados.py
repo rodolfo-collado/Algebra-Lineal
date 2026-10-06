@@ -79,11 +79,17 @@ def digitos(base: int) -> str:
 
 MENOS = Tecla("−", "-", "Menos")
 FRACCION = Tecla("a⁄b", "/", "Barra de fracción")
+MAS = Tecla("+", "+", "Más")
+IGUAL = Tecla("=", "=", "Igual")
 
 # Grupos reutilizables: un perfil se compone eligiendo grupos, no copiando teclas.
-VARIABLES = GrupoTeclas("Variables", variables(4))
-OPERACIONES = GrupoTeclas("Operaciones", (Tecla("+", "+", "Más"), MENOS, FRACCION, Tecla("=", "=", "Igual")))
-ECUACIONES = GrupoTeclas("Ecuaciones", (Tecla("; nueva ecuación", ";\n", "Separar la siguiente ecuación"),))
+VARIABLES = GrupoTeclas("Variables", variables(6))
+OPERACIONES = GrupoTeclas("Operaciones", (MAS, MENOS, FRACCION, IGUAL))
+ECUACIONES = GrupoTeclas("Ecuaciones", (Tecla("Nueva ecuación", "\n", "Separar la siguiente ecuación"),))
+LINEALES = GrupoTeclas("Operaciones", (MAS, MENOS, FRACCION))
+EXPRESIONES = GrupoTeclas("Expresión", (
+    Tecla("( )", "()", "Paréntesis", 1), Tecla("ᵀ", "^T", "Traspuesta"), MAS, MENOS, IGUAL, FRACCION,
+))
 VALORES = GrupoTeclas("Valores", (MENOS, FRACCION))
 SEPARADOR = GrupoTeclas("Separador", (Tecla(".", ".", "Punto decimal"),))
 SIGNO = GrupoTeclas("Signo", (MENOS,))
@@ -95,6 +101,8 @@ def grupo_digitos(base: int) -> GrupoTeclas:
 
 PERFIL_SISTEMA = Perfil("sistema", (VARIABLES, OPERACIONES, ECUACIONES))
 PERFIL_NUMERICO = Perfil("numerico", (VALORES,), ayuda="Inserta en la celda donde está el cursor.")
+PERFIL_EXPRESION = Perfil("expresion", (EXPRESIONES,))
+PERFIL_LINEAL = Perfil("lineal", (VARIABLES, LINEALES))
 PERFILES_BASE = {
     base: Perfil(
         f"base-{base}",
@@ -104,7 +112,9 @@ PERFILES_BASE = {
     for base in sorted(BASES_SOPORTADAS)
 }
 
-PERFILES = {perfil.id: perfil for perfil in (PERFIL_SISTEMA, PERFIL_NUMERICO, *PERFILES_BASE.values())}
+PERFILES = {perfil.id: perfil for perfil in (
+    PERFIL_SISTEMA, PERFIL_NUMERICO, PERFIL_EXPRESION, PERFIL_LINEAL, *PERFILES_BASE.values(),
+)}
 
 
 def perfiles_para(*ids: str) -> dict[str, dict]:
