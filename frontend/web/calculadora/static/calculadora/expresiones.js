@@ -117,12 +117,11 @@
             const caja = document.createElement("div");
             caja.className = "dimension-field";
             caja.dataset.dimension = nombre;
-            caja.innerHTML = `<label>${etiqueta}</label><div class="stepper"><button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar">−</button><input type="number" class="field-input" min="1" max="10" value="2" data-campo="${nombre}" inputmode="numeric" aria-label="${etiqueta}"><button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar">+</button></div>`;
+            caja.innerHTML = `<label>${etiqueta}</label><div class="stepper"><button type="button" class="stepper-btn" data-paso="-1" aria-label="Quitar">−</button><input type="number" class="field-input" min="1" max="10" value="2" data-campo="${nombre}" inputmode="numeric"><button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar">+</button></div>`;
             card.querySelector("[data-eliminar]").before(caja);
             input = campo(card, nombre);
         }
         input.disabled = false;
-        input.setAttribute("aria-label", etiqueta);
         const caja = input.closest("[data-dimension]");
         caja.hidden = false;
         const label = caja.querySelector("label");
@@ -236,19 +235,16 @@
     function reindex() {
         const cards = tarjetas();
         cards.forEach((card, i) => {
-            const nombre = campo(card, "nombre");
-            const tipo = campo(card, "tipo");
-            nombre.name = `nombre_${i}`;
-            nombre.id = `id_nombre_${i}`;
-            tipo.name = `tipo_${i}`;
-            tipo.id = `id_tipo_${i}`;
-            tipo.dataset.anterior = tipo.value;
-            for (const clave of ["filas", "columnas"]) {
+            // Cada campo de la cabecera conserva su label real al reindexar.
+            for (const clave of ["nombre", "tipo", "filas", "columnas"]) {
                 const input = campo(card, clave);
                 if (!input) continue;
                 input.name = `${clave}_${i}`;
                 input.id = `id_${clave}_${i}`;
+                const label = input.closest(".field-group, .dimension-field").querySelector("label");
+                if (label) label.htmlFor = input.id;
             }
+            campo(card, "tipo").dataset.anterior = campo(card, "tipo").value;
             const eliminar = card.querySelector("[data-eliminar]");
             eliminar.value = String(i);
             eliminar.type = "button";

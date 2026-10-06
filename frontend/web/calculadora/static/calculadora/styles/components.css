@@ -181,7 +181,7 @@
 .field-error,
 .alert {
     color: var(--color-danger);
-    font-size: 0.87rem;
+    font-size: var(--text-sm);
 }
 
 .field-error {
@@ -190,7 +190,6 @@
 
 ul.field-error { padding-left: 1.15rem; }
 .alert .errorlist { margin: 0; padding-left: 1.15rem; }
-:is(input, select, textarea)[aria-invalid="true"] { border-color: var(--color-danger); }
 [data-calculo][aria-disabled="true"] { cursor: wait; }
 .btn[data-calculo] { min-width: 9rem; }
 :is([data-confirmacion], [data-error-general]):focus {
@@ -286,7 +285,7 @@ ul.field-error { padding-left: 1.15rem; }
     width: 100%;
     min-height: 2.35rem;
     padding: 0.45rem 0.6rem 0.45rem 2.2rem;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-input);
     border-radius: var(--radius-sm);
     background: var(--color-surface-raised);
     color: var(--color-text);
@@ -300,7 +299,7 @@ ul.field-error { padding-left: 1.15rem; }
 }
 
 .search-input:hover {
-    border-color: var(--color-border-strong);
+    border-color: var(--color-muted);
 }
 
 .search-input:focus {
@@ -1025,7 +1024,7 @@ html.js [data-perfil] :is(input, textarea) { scroll-margin: 0; }
 
 .stepper-btn {
     width: 2.5rem;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-input);
     background: var(--color-surface-raised);
     color: var(--color-text);
     font-size: 1.05rem;
@@ -1161,7 +1160,7 @@ html.js [data-perfil] :is(input, textarea) { scroll-margin: 0; }
 .numeric-format select {
     min-height: 2.75rem;
     padding: 0.35rem 0.65rem;
-    border: 1px solid var(--color-border-strong);
+    border: 1px solid var(--color-border-input);
     border-radius: var(--radius-sm);
     background: var(--color-surface-raised);
     color: var(--color-text);

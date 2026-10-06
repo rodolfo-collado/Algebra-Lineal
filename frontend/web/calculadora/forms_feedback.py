@@ -26,4 +26,6 @@ class FormularioConErrores(forms.Form):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("error_class", ErroresFormulario)
+        # Las etiquetas no llevan «:» automático; el texto de cada una decide su puntuación.
+        kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)

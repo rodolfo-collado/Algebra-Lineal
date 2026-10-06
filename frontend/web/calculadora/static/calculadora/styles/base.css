@@ -82,6 +82,12 @@ button {
     color: var(--color-muted);
 }
 
+/* Un ejemplo legible (al menos 4.5:1) que se distingue del valor escrito por su tono. */
+::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+}
+
 .text-link {
     color: var(--color-brand-strong);
     font-weight: 600;

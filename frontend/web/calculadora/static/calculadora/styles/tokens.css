@@ -14,6 +14,8 @@
     --color-muted: #626262;
     --color-border: #dedede;
     --color-border-strong: #a0a0a0;
+    /* Frontera de campos y celdas: al menos 3:1 sobre cualquier superficie (WCAG 1.4.11). */
+    --color-border-input: #858585;
 
     --color-brand: #1A6560;
     --color-brand-strong: #124e4a;
@@ -69,6 +71,11 @@
     --font-display: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
     --font-math: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
 
+    /* Escala de formularios: metadatos, etiquetas y ayudas, texto y títulos de sección. */
+    --text-xs: 0.8rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+
     --header-height: 3.5rem;
     --nav-width: 19rem;
     --content-max: 1200px;
@@ -90,6 +97,7 @@
     --color-muted: #adadad;
     --color-border: #363636;
     --color-border-strong: #737373;
+    --color-border-input: #7a7a7a;
 
     --color-brand: #7DCFC6;
     --color-brand-strong: #a2e2dc;
