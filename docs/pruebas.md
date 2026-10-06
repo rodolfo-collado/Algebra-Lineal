@@ -421,6 +421,6 @@ uv run --locked python -m tests.buscador_browser
 Abrir `http://127.0.0.1:8881/__pruebas/`. El runner usa Django y el JavaScript
 de producción. Verifica cambios sucesivos sin GET, estados/recuentos, foco,
 sugerencias, próximas, Escape y memoria del Menú. Compara desde Inicio y un
-GET previo los IDs live con Python para 38 consultas, incluidas las siete
+GET previo los IDs live con Python para 40 consultas, incluidas las siete
 obligatorias, acciones naturales, tildes, mayúsculas, espacios Unicode y todos
 los términos ignorados. Véase [validación P27.5](validacion-p27-5.md).

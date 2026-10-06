@@ -18,7 +18,7 @@ CONSULTAS = (
     "pasar decimal a binario", "restar vectores", "reducir matriz",
     "  MÉTODO   de GAUSS  ", "CALCULAR\u0085la\u00a0INVERSA", "li\u0301mites",
     "sistemas lineales", "ecuaciones lineales", "gauss binario", "zzz",
-    "calcular la", "método de", *catalogo.PALABRAS_VACIAS,
+    "calcular la", "método de", "\ufeffinversa", "\ufeff", *catalogo.PALABRAS_VACIAS,
 )
 
 

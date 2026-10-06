@@ -233,6 +233,8 @@ class PruebasBuscador(SimpleTestCase):
     def test_terminos_vacios_no_devuelven_coincidencias(self):
         self.assertEqual(catalogo.terminos_de("  MÉTODO\tde\nGauss  "), ("gauss",))
         self.assertEqual(catalogo.terminos_de("CALCULAR\u0085la\u00a0INVERSA"), ("inversa",))
+        # FEFF no es espacio para Python; el cliente tampoco debe recortarlo y dar falsos resultados.
+        self.assertEqual(catalogo.buscar_herramientas("\ufeffinversa"), ())
         for consulta in (*catalogo.PALABRAS_VACIAS, "calcular la", "Método de", "pasar a un"):
             with self.subTest(consulta=consulta):
                 self.assertEqual(catalogo.buscar_herramientas(consulta), ())

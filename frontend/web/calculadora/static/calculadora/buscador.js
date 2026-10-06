@@ -68,7 +68,7 @@
         }
 
         function filtrar() {
-            const consulta = input.value.trim();
+            const consulta = input.value.split(espacios).filter(Boolean).join(" ");
             const original = principal && input.value === input.defaultValue;
             if (original || (!principal && !consulta)) {
                 if (filtrando) restaurar();

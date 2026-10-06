@@ -27,10 +27,12 @@ Python elimina marcas Unicode con `category`; JS usa `\p{M}` tras NFD.
 
 Ambos exigen que cada término significativo aparezca como subcadena del índice.
 El orden es: disponibles antes de próximas, más aciertos en el nombre y orden
-del registro. El runner compara los IDs del JS real con Python para **38
-consultas desde dos estados iniciales**: Inicio y `/?q=gauss` (76 comparaciones).
+del registro. El runner compara los IDs del JS real con Python para **40
+consultas desde dos estados iniciales**: Inicio y `/?q=gauss` (80 comparaciones).
 Incluye la tabla obligatoria y palabras vacías, tildes, mayúsculas y espacios
 Unicode. La lista y el separador se verifican también contra el JSON renderizado.
+El cliente usa ese separador también al recortar la consulta, sin `trim()`:
+U+FEFF no es espacio en Python y no debe convertirse en una coincidencia en JS.
 
 Lista exacta ignorada, después de normalizar: `de`, `a`, `al`, `el`, `la`, `los`,
 `las`, `un`, `una`, `calcular`, `hallar`, `metodo`, `pasar`.
@@ -102,7 +104,7 @@ Ax = b no relaciona Matriz inversa ni propone resolver sistemas por inversión.
 
 | Comando | Resultado |
 | --- | --- |
-| `uv run --locked python -m unittest discover -v` | 1562 pruebas, OK, 67.234 s |
+| `uv run --locked python -m unittest discover -v` | 1562 pruebas, OK, 66.765 s |
 | `uv run --locked python -m unittest tests.test_navegacion tests.test_interfaz_progresiva -v` | 58 pruebas, OK |
 | `uv run --locked python -m unittest tests.test_navegacion tests.test_expresiones_matriciales_web tests.test_matriz_inversa_web tests.test_ecuaciones_matriciales_web -q` | 149 pruebas, OK |
 | `uv run --locked python manage.py check` | Sin problemas, 0 silenciados |
@@ -118,7 +120,7 @@ Se conservaron las expectativas de copy que siguen siendo compatibles.
 
 | Runner DOM | Resultado |
 | --- | --- |
-| `uv run --locked python -m tests.buscador_browser` — 8881 | 16/16; 76 comparaciones Python/JS |
+| `uv run --locked python -m tests.buscador_browser` — 8881 | 16/16; 80 comparaciones Python/JS |
 | `uv run --locked python -m tests.entradas_browser` — 8878 | 19/19 |
 | `uv run --locked python -m tests.operandos_browser` — 8877 | 15/15 |
 | `uv run --locked python -m tests.inversa_browser` — 8879 | 7/7 |
@@ -128,6 +130,9 @@ Se conservaron las expectativas de copy que siguen siendo compatibles.
 
 Total DOM: **116/116**, sin errores JavaScript. El runner nuevo añade regresión
 para un GET inicialmente sin coincidencias que se edita y vuelve al estado vacío.
+Comprobación de regresión: reintroducir solo `trim()` mediante una respuesta JS
+interceptada hace fallar ambas tablas de paridad (14/16). No se modificaron las
+fuentes para esa comprobación; con el separador compartido pasan 16/16.
 
 ## QA renderizada
 
