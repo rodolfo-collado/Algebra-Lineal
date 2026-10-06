@@ -263,5 +263,15 @@
         destino.focus();
     });
 
+    // El primer render instala controles de estructura, conservando los errores por celda.
+    const erroresIniciales = [...lista.querySelectorAll("[data-error-field]")];
     render();
+    erroresIniciales.forEach(error => {
+        const nombre = error.dataset.errorField.replace(/^id_/, "");
+        const input = [...lista.querySelectorAll("input")].find(campo => campo.name === nombre);
+        if (!input) return;
+        const caja = crear("span", "vector-cell");
+        input.before(caja);
+        caja.append(input, error);
+    });
 })();

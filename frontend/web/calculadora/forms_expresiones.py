@@ -160,6 +160,7 @@ class ExpresionMatricialForm(FormularioCeldas):
         # símbolos con las dimensiones iniciales (a lo sumo 50 de 2×2) y clean() lo rechaza.
         self.error_presupuesto = presupuesto_estructura(estructuras)
         if self.error_presupuesto:
+            self.grupo_error = "symbol-list"
             estructuras = [(tipo, DIMENSION_PREDETERMINADA, DIMENSION_PREDETERMINADA) for tipo, _, _ in estructuras]
         for indice, estructura in enumerate(estructuras):
             self._bloque(indice, *estructura)
@@ -317,6 +318,7 @@ class ExpresionMatricialForm(FormularioCeldas):
             self.add_error(None, "No se puede eliminar ese símbolo.")
             return datos
         if not self._contrato(simbolos):
+            self.grupo_error = "symbol-list"
             self.add_error(None, "Las celdas recibidas no coinciden con los símbolos indicados. Pulsa Aplicar para ajustar la estructura.")
             return datos
         if self.accion == "agregar":

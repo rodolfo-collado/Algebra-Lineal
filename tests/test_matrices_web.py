@@ -341,7 +341,7 @@ class PruebasRechazoMatrices(SimpleTestCase):
 
     def test_celdas_vacias(self):
         for valor in ("", "   "):
-            self.rechazar(datos_matrices(celda_0_0_0=valor), "Completa matriz a, fila 1, columna 1.")
+            self.rechazar(datos_matrices(celda_0_0_0=valor), "Completa matriz A, fila 1, columna 1.")
 
     def test_numeros_y_fracciones_invalidos(self):
         for valor in ("abc", "1/0", "1/", "1/2/3", "NaN", "Infinity", "--2"):

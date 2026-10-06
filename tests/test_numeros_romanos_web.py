@@ -280,7 +280,7 @@ class PruebasErroresWeb(SimpleTestCase):
                 respuesta = self.enviar({"direccion": "romano_a_decimal", "numero": numero})
                 self.assertIn(mensaje, texto_plano(respuesta))
                 # El error queda junto al campo y el valor enviado se conserva para corregirlo.
-                self.assertRegex(respuesta.content.decode("utf-8"), r'<p class="field-error" role="alert">[^<]+</p>')
+                self.assertRegex(respuesta.content.decode("utf-8"), r'<ul class="errorlist field-error"[^>]*role="alert"><li>[^<]+</li></ul>')
                 self.assertRegex(respuesta.content.decode("utf-8"), r'name="direccion" value="romano_a_decimal"[^>]*checked')
 
     def test_longitud_maxima(self):
@@ -333,7 +333,7 @@ class PruebasErroresWeb(SimpleTestCase):
             for numero in entradas:
                 with self.subTest(direccion=direccion, numero=numero):
                     respuesta = self.enviar({"direccion": direccion, "numero": numero})
-                    self.assertRegex(respuesta.content.decode("utf-8"), r'<p class="field-error" role="alert">')
+                    self.assertRegex(respuesta.content.decode("utf-8"), r'<ul class="errorlist field-error"[^>]*role="alert">')
 
 
 class PruebasRelacionadas(SimpleTestCase):

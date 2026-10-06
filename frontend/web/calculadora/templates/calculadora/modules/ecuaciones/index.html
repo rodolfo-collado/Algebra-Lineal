@@ -4,9 +4,9 @@
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
-    <form id="ecuacion-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+    <form id="ecuacion-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
-        {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
+        {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="equation-fields" data-perfil="numerico" aria-labelledby="equation-title">
             <h3 class="section-title" id="equation-title">Ecuación matricial</h3>
             <p class="field-help">A y b son conocidos; x es el vector incógnita que se busca. Elige solo las dimensiones de A: b tiene tantas componentes como filas tiene A, y x tantas como columnas.</p>
@@ -17,7 +17,7 @@
             <p class="field-help" data-equation-shape aria-live="polite">{{ form.forma_texto }}. De {{ form.filas.field.min_value }} a {{ form.filas.field.max_value }} filas y columnas.</p>
             <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
             <noscript><p class="field-help">Cambia las filas o columnas de A y pulsa <strong>Aplicar</strong> antes de resolver. Se conservan las celdas que siguen en la estructura.</p></noscript>
-            <div class="matrix-equation equation-entry" data-equation-entry>
+            <div id="equation-entry" class="matrix-equation equation-entry" data-equation-entry>
                 {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.0.nombre filas=form.matrices.0.filas vector=False only %}
                 <span class="matrix-expression" aria-hidden="true">·</span>
                 <div class="matrix-operand unknown-vector" data-unknown>
@@ -28,6 +28,7 @@
                 <span class="matrix-expression" aria-hidden="true">=</span>
                 {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.1.nombre filas=form.matrices.1.filas vector=True only %}
             </div>
+            {% include "calculadora/components/errores_grupo.html" %}
             <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. A puede ser rectangular: más ecuaciones que incógnitas o más incógnitas que ecuaciones.</p>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
@@ -41,7 +42,7 @@
                 <p class="field-help option-help">{{ ayuda_metodos }}</p>
             </fieldset>
         </section>
-        <div class="workspace-actions"><button class="btn btn-primary" type="submit">Resolver</button></div>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Resolver</button></div>
     </form>
 </section>
 {% endblock %}

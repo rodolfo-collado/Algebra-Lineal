@@ -274,4 +274,14 @@
     });
 
     setInputMode();
+    // Las celdas se crean en JS: el error del servidor queda junto a su control,
+    // manteniendo un solo elemento de la cuadrícula por celda.
+    matrixFields.querySelectorAll("[data-error-field]").forEach(error => {
+        const nombre = error.dataset.errorField.replace(/^id_/, "");
+        const input = [...matrixGrid.querySelectorAll("input")].find(campo => campo.name === nombre);
+        if (!input) return;
+        const caja = createElement("div", "matrix-grid-cell");
+        input.before(caja);
+        caja.append(input, error);
+    });
 })();

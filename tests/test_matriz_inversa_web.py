@@ -624,7 +624,7 @@ class PruebasRechazo(SimpleTestCase):
             self.assertIn("campos repetidos", str(form.non_field_errors()))
 
     def test_celdas_vacias_o_invalidas(self):
-        self.rechazar(datos_inversa(celda_A_0_0=""), "Completa matriz a, fila 1, columna 1.")
+        self.rechazar(datos_inversa(celda_A_0_0=""), "Completa matriz A, fila 1, columna 1.")
         for valor in ("abc", "1/0", "1/", "NaN", "--2", "1,5"):
             with self.subTest(valor=valor):
                 self.rechazar(datos_inversa(celda_A_1_0=valor), "no es un número válido")
@@ -673,18 +673,19 @@ class PruebasConfirmacion(SimpleTestCase):
         self.assertEqual(
             leido,
             "Antes de calcular La matriz es válida. Esta operación puede tardar varios segundos porque la matriz "
-            "requiere un procedimiento largo. Tiempo estimado: entre 2 y 18 segundos. ¿Quieres continuar? Cancelar Continuar",
+            "requiere un procedimiento largo. Operación pendiente: Calcular A⁻¹ y la aplicación o propiedad seleccionada. "
+            "El cálculo completo todavía no se ha ejecutado. Tiempo estimado: entre 2 y 18 segundos. ¿Quieres continuar? Cancelar Continuar",
         )
         for tecnico in ("O(", "bits", "operaciones", "celdas", "presupuesto", "categoría", "PESADA"):
             self.assertNotIn(tecnico, leido)
         self.assertRegex(tarjeta, r'<button class="btn btn-secondary" type="submit" name="ajustar" value="1" formnovalidate>Cancelar</button>')
-        self.assertRegex(tarjeta, r'<button class="btn btn-primary" type="submit" name="confirmacion" value="[0-9a-f]{64}">Continuar</button>')
+        self.assertRegex(tarjeta, r'<button class="btn btn-primary" type="submit" data-calculo name="confirmacion" value="[0-9a-f]{64}">Continuar</button>')
 
     def test_la_confirmacion_conserva_matriz_y_metodo_dentro_del_formulario(self):
         html = self.post(datos_inversa(PROFESOR_3X3))
         formulario = elemento_html(html, html.index('id="inversa-form"'), "form")
         self.assertIn("data-confirmacion", formulario)
-        self.assertLess(formulario.index("data-confirmacion"), formulario.index('data-inverse-entry'))
+        self.assertLess(formulario.index("data-confirmacion"), formulario.index('class="workspace-actions"'))
         campos = Contenido(html).campos
         self.assertEqual({k: campos[k]["value"] for k in campos if k.startswith("celda_A_")},
                          {f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(PROFESOR_3X3) for j, v in enumerate(fila)})

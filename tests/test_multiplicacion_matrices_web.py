@@ -274,7 +274,7 @@ class PruebasRechazoProducto(SimpleTestCase):
         self.rechazar(datos_matriz_vector(celda_1_1_0=""), "Completa vector x, componente 2.")
 
     def test_celdas_de_b_vacias_o_invalidas(self):
-        self.rechazar(datos_producto(celda_1_0_0=""), "Completa matriz b, fila 1, columna 1.")
+        self.rechazar(datos_producto(celda_1_0_0=""), "Completa matriz B, fila 1, columna 1.")
         self.rechazar(datos_producto(celda_1_1_1="1/0"), "no es un número válido")
 
     def test_estructura_de_b_manipulada(self):

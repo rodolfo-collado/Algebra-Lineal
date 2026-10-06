@@ -126,7 +126,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         for valor, etiqueta in zip(("2", "8", "10", "16"), NOMBRES):
             self.assertRegex(
                 html,
-                rf'<label class="option" data-destino-base="{valor}"><input type="checkbox" name="bases_destino" value="{valor}" id="id_bases_destino_\d"( checked)?><span>{etiqueta}</span></label>',
+                rf'<label class="option" data-destino-base="{valor}"><input type="checkbox" name="bases_destino" value="{valor}" aria-describedby="destinos-ayuda destinos-aviso" id="id_bases_destino_\d"( checked)?><span>{etiqueta}</span></label>',
             )
         # Predeterminado: decimal → binario, como hasta ahora. El servidor no oculta ni
         # desactiva ninguna casilla: sin JavaScript se ven las cuatro y él rechaza origen = destino.

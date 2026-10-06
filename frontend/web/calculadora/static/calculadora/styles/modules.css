@@ -28,20 +28,10 @@
     vertical-align: top;
 }
 
-.matrix-entry-table .errorlist {
+.matrix-entry-table .field-error {
     max-width: 9rem;
     white-space: normal;
 }
-
-:is([data-expresiones], [data-inversa]) .errorlist {
-    margin: 0.4rem 0 0;
-    padding-left: 1rem;
-    color: var(--color-danger);
-    font-size: 0.8rem;
-    overflow-wrap: anywhere;
-}
-
-:is([data-expresiones], [data-inversa]) [aria-invalid="true"] { border-color: var(--color-danger); }
 
 .matrix-equation {
     display: flex;

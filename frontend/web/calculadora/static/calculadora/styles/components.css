@@ -188,6 +188,16 @@
     margin: 0.45rem 0 0;
 }
 
+ul.field-error { padding-left: 1.15rem; }
+.alert .errorlist { margin: 0; padding-left: 1.15rem; }
+:is(input, select, textarea)[aria-invalid="true"] { border-color: var(--color-danger); }
+[data-calculo][aria-disabled="true"] { cursor: wait; }
+.btn[data-calculo] { min-width: 9rem; }
+:is([data-confirmacion], [data-error-general]):focus {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
 .alert {
     margin-bottom: 1rem;
     padding: 0.75rem 0.9rem;

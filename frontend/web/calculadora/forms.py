@@ -4,6 +4,9 @@ import re
 
 from django import forms
 
+from .forms_feedback import FormularioConErrores
+from .forms_matrices import campo_numero
+
 from backend.parser_sistemas import construir_matriz_aumentada, convertir_a_numero
 from backend.operandos import ARIDAD_VECTORES, OPERANDOS_MAXIMOS, exigir_aridad
 from backend.presupuesto_sistemas import (
@@ -30,7 +33,7 @@ from .opciones_vectores import (
 )
 
 
-class SistemaForm(forms.Form):
+class SistemaForm(FormularioConErrores):
     TIPOS_ENTRADA = (
         ("sistema", "Sistema de ecuaciones"),
         ("matriz", "Matriz aumentada"),
@@ -160,7 +163,7 @@ class SistemaForm(forms.Form):
         try:
             validar_dimensiones(ecuaciones, variables)
         except ValueError as error:
-            self.add_error(None, str(error))
+            self.add_error("variables", str(error))
             return datos
 
         nombres_esperados = {
@@ -174,6 +177,7 @@ class SistemaForm(forms.Form):
             if nombre.startswith("matriz_")
         }
         if nombres_recibidos != nombres_esperados:
+            self.grupo_error = "matrix-grid"
             self.add_error(
                 None,
                 "La cantidad de celdas no coincide con las dimensiones indicadas.",
@@ -181,7 +185,6 @@ class SistemaForm(forms.Form):
             return datos
 
         filas = []
-        errores = []
         for fila in range(ecuaciones):
             valores = []
             for columna in range(variables + 1):
@@ -189,20 +192,20 @@ class SistemaForm(forms.Form):
                 texto = self.data.get(nombre, "")
                 etiqueta = self._etiqueta_celda(fila, columna, variables)
                 if not isinstance(texto, str) or not texto.strip():
-                    errores.append(f"La celda {etiqueta} no puede estar vacía.")
+                    self.fields[nombre] = campo_numero(etiqueta)
+                    self.add_error(nombre, f"La celda {etiqueta} no puede estar vacía.")
                     continue
 
                 try:
                     validar_literal_numerico(texto)
                     valores.append(convertir_a_numero(texto))
                 except ValueError as error:
-                    errores.append(f"La celda {etiqueta}: {error}")
+                    self.fields[nombre] = campo_numero(etiqueta)
+                    self.add_error(nombre, f"La celda {etiqueta}: {error}")
 
             filas.append(valores)
 
-        if errores:
-            for error in errores:
-                self.add_error(None, error)
+        if self.errors:
             return datos
 
         datos["matriz_aumentada"] = construir_matriz_aumentada(
@@ -227,6 +230,10 @@ class SistemaForm(forms.Form):
             return []
 
         return self.valores_matriz_desde(self.data, ecuaciones, variables)
+
+    @property
+    def errores_celdas(self):
+        return [self[nombre] for nombre in self.errors if nombre.startswith("matriz_")]
 
     @staticmethod
     def valores_matriz_desde(datos, ecuaciones, variables):
@@ -294,7 +301,7 @@ class SistemaForm(forms.Form):
         return [clave for clave, _ in BLOQUES if clave in elegidos]
 
 
-class ConversionBasesForm(forms.Form):
+class ConversionBasesForm(FormularioConErrores):
     """Un número, su base de origen y las bases a las que convertirlo.
 
     Los destinos son casillas: una, varias o todas las demás bases, nunca la de
@@ -330,6 +337,7 @@ class ConversionBasesForm(forms.Form):
                 "autocomplete": "off",
                 "spellcheck": "false",
                 "inputmode": "text",
+                "aria-describedby": "numero-ayuda numero-aviso",
             }
         ),
     )
@@ -346,7 +354,7 @@ class ConversionBasesForm(forms.Form):
         coerce=int,
         initial=[2],
         required=False,
-        widget=forms.CheckboxSelectMultiple,
+        widget=forms.CheckboxSelectMultiple(attrs={"aria-describedby": "destinos-ayuda destinos-aviso"}),
     )
 
     def clean_numero(self):
@@ -383,7 +391,7 @@ class ConversionBasesForm(forms.Form):
         return datos
 
 
-class VectoresForm(forms.Form):
+class VectoresForm(FormularioConErrores):
     """Operación, dimensión y componentes de los vectores, como celdas `nombre_i`.
 
     Las componentes viajan como campos sueltos (u_0, u_1, …, v1_0, …, b_0, …)
@@ -490,6 +498,15 @@ class VectoresForm(forms.Form):
             self.fields["vectores"].widget.attrs["min"] = str(ARIDAD_VECTORES[operacion][0])
         if operacion == "escalar":
             self.fields["vectores"].widget.attrs["disabled"] = True
+        for fila in self.estructura()["filas"]:
+            for componente in fila["componentes"]:
+                nombre = componente["campo"]
+                campo = campo_numero(f"Componente {componente['indice']} de {fila['nombre']}")
+                campo.initial = componente["valor"]
+                campo.widget.attrs.update({"data-cell": nombre, "required": True, "aria-label": campo.label})
+                if fila["objetivo"]:
+                    campo.widget.attrs["class"] += " independent-input"
+                self.fields[nombre] = campo
 
     def _valor_actual(self, campo, predeterminado):
         if self.is_bound:
@@ -530,6 +547,7 @@ class VectoresForm(forms.Form):
                 "objetivo": nombre == NOMBRE_OBJETIVO,
                 "componentes": [
                     {"campo": f"{nombre}_{indice}", "indice": indice + 1,
+                     "control": self[f"{nombre}_{indice}"] if f"{nombre}_{indice}" in self.fields else None,
                      "valor": valores.get(f"{nombre}_{indice}", "")}
                     for indice in range(dimension)
                 ],
@@ -595,6 +613,7 @@ class VectoresForm(forms.Form):
             self.add_error(None, "Envía un único valor por campo; hay campos repetidos.")
             return datos
         if recibidos != esperados:
+            self.grupo_error = "vector-list"
             self.add_error(
                 None,
                 "La cantidad de componentes no coincide con la dimensión y los vectores indicados.",
@@ -605,18 +624,17 @@ class VectoresForm(forms.Form):
             return datos
 
         vectores = {}
-        errores = []
         for nombre in nombres:
             componentes = []
             for indice in range(dimension):
                 texto = self.data.get(f"{nombre}_{indice}", "")
                 if not isinstance(texto, str) or not texto.strip():
-                    errores.append(f"Falta {self._etiqueta(nombre, indice)}.")
+                    self.add_error(f"{nombre}_{indice}", f"Falta {self._etiqueta(nombre, indice)}.")
                     continue
                 try:
                     componentes.append(convertir_a_numero(texto, limitar_entrada=True))
                 except ValueError as error:
-                    errores.append(f"En {self._etiqueta(nombre, indice)}: {error}")
+                    self.add_error(f"{nombre}_{indice}", f"En {self._etiqueta(nombre, indice)}: {error}")
             vectores[nombre] = componentes
 
         escalar = None
@@ -630,10 +648,6 @@ class VectoresForm(forms.Form):
                 except ValueError as error:
                     self.add_error("escalar", f"El escalar: {error}")
 
-        if errores:
-            for error in errores:
-                self.add_error(None, error)
-            return datos
         if self.errors:
             return datos
 

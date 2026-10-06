@@ -76,6 +76,7 @@ def sistemas(request):
         except ValueError as error:
             resultados = []
             if form.cleaned_data.get("tipo_entrada") == "matriz":
+                form.grupo_error = "matrix-grid"
                 form.add_error(None, str(error))
             else:
                 form.add_error("sistema", str(error))
@@ -254,6 +255,7 @@ def matriz_inversa(request):
                 try:
                     resultado = calcular_inversa_web(entrada)
                 except ValueError as error:
+                    form.grupo_error = "inverse-matrix"
                     form.add_error(None, str(error))
     return render(request, "calculadora/modules/inversa/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,

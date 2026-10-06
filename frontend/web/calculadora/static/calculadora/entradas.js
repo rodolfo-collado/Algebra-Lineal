@@ -9,9 +9,12 @@
 
     function validarDimension(input, mensaje = "") {
         const valida = input.disabled || dimensionValida(input);
-        const error = input.disabled ? "" : mensaje || (valida ? "" :
-            `Indica un número entero entre ${input.min} y ${input.max}.`);
         const caja = input.closest(".dimension-field");
+        const servidor = caja?.querySelector("[data-error-field]");
+        const errorServidor = servidor && !servidor.hidden && input.value === input.defaultValue && !input.disabled;
+        if (servidor && !errorServidor) servidor.hidden = true;
+        const error = input.disabled || errorServidor ? "" : mensaje || (valida ? "" :
+            `Indica un número entero entre ${input.min} y ${input.max}.`);
         if (caja) {
             let ayuda = caja.querySelector("[data-error-dimension]");
             if (!ayuda) {
@@ -35,8 +38,8 @@
                     (Number(button.dataset.paso) < 0 ? Number(input.value) <= Number(input.min) : Number(input.value) >= Number(input.max));
             });
         }
-        input.setAttribute("aria-invalid", String(Boolean(error)));
-        return !error;
+        input.setAttribute("aria-invalid", String(Boolean(error || errorServidor)));
+        return !error && !errorServidor;
     }
 
     window.entradasSeguras = { dimensionValida, validarDimension };
