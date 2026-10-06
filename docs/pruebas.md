@@ -519,3 +519,36 @@ privado, puerto efímero, dos instancias simultáneas, el filtro del menú nativ
 con dobles de .NET y, en el smoke Waitress, el 404 propio y una preferencia
 guardada por HTTP. El menú nativo, los atajos y el foco reales solo se validan
 en WebView2; véase [validación P27.7](validacion-p27-7.md).
+
+## P27.8 — Pulido visual y accesibilidad
+
+```bash
+uv run --locked python -m tests.pulido_browser
+```
+
+Abrir `http://127.0.0.1:8885/__pruebas/`. El runner sirve la app y sus scripts
+reales; los 16 casos usan formularios y POST de verdad. Comprueban que `-11/13`,
+`123/456`, `-123456` y `3.14159` se leen completos en Ax = b, Inversa, Operaciones,
+la matriz aumentada y Vectores a 1280, 744, 390 y 760 px, con columnas alineadas y sin
+desborde de página; también una matriz 1×1 en el tamaño mínimo desktop y una 10×10
+donde más allá de 7rem la celda conserva cursor y scroll local;
+Calcular dentro del primer viewport a 1920×1010, dos tarjetas por fila y una sola
+columna a 390 px; foco y aviso al agregar y quitar símbolos y vectores (nunca en
+body); el × dentro de su fila; nombres por símbolo al renombrar; la ayuda asociada a
+cada aplicación de la inversa; un solo desplegable (chevrón al inicio, mismo tamaño,
+abre y cierra, grupos sin «▸») con el procedimiento como único sticky; etiquetas
+asociadas, sin «:» y con el mismo estilo y separación en las siete herramientas;
+contraste calculado de bordes (normal, foco y error) y placeholders en claro y
+oscuro; y anclas y foco bajo la cabecera y bajo el summary sticky. Compara medidas
+entre sí y relaciones de contraste, no píxeles ni colores escritos. Con la pestaña
+oculta cede el turno con `MessageChannel`: no hay `requestAnimationFrame` y los
+temporizadores se agrupan.
+
+En Python, `test_procedimiento_plegable` fija el contrato del componente (chevrón
+primero, icono, h6 y detalle opcionales) y que ninguna plantilla de herramienta
+escribe `<details>`; `test_propiedades_inversa_web`, la ayuda por opción y su
+`aria-describedby`, que conserva la descripción del error;
+`test_expresiones_matriciales_web`, el grupo y los botones por símbolo, también
+renombrado sin JavaScript, y los labels reales sin «:»; y
+`test_multiplicacion_matrices_web`, los grupos de producto con el componente. Véase
+[validación P27.8](validacion-p27-8.md).

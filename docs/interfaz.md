@@ -58,6 +58,32 @@ Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-rais
 `--color-pivot`, …) en lugar de hexadecimales sueltos. Cada token existe en el
 bloque claro y en `[data-theme="dark"]`.
 
+### Formularios
+
+Contrato común de los formularios de herramienta (P27.8):
+
+- **Escala.** `--text-xs` (0.8rem) para metadatos, como los encabezados `x₁` y `F1`
+  de la cuadrícula; `--text-sm` (0.875rem) para etiquetas, leyendas, ayudas,
+  opciones, errores y títulos de desplegables; `--text-base` (1rem) para títulos de
+  sección y valores. No sustituye todos los tamaños de la aplicación.
+- **Etiquetas.** Una sola regla para `legend` y para todo `label` visible de
+  `.workspace` (las píldoras `.option` y `.segment` tienen la suya): `--text-sm`,
+  peso 600 y `--space-1` hasta su control, también en el campo principal. Son
+  `<label for>` reales: Nombre y Tipo de cada símbolo van encima de su control, como
+  Filas y Columnas, y `expresiones.js` conserva la asociación al reindexar. Los
+  formularios usan `label_suffix = ""`: ninguna etiqueta termina en «:» automático.
+  Las ayudas (`.field-help`) van en `--text-sm`, regulares y en `--color-muted`.
+- **Bordes de campo.** `--color-border-input` (`#858585` en claro, `#7a7a7a` en
+  oscuro) delimita inputs, selects, textareas, celdas, el buscador y los botones del
+  stepper; alcanza al menos 3:1 sobre todas las superficies donde viven (relaciones en
+  la [validación P27.8](validacion-p27-8.md)). Prioridad: normal < hover
+  (`--color-muted`) < foco (`--color-brand` y anillo) < error (`--color-danger`, que
+  se mantiene con hover y foco); deshabilitado vuelve a `--color-border` con
+  opacidad. Paneles, tarjetas, píldoras y botones con texto conservan `--color-border`.
+- **Placeholders.** `::placeholder` usa `--color-muted` con opacidad 1: como mínimo
+  5,49:1 en claro y 6,74:1 en oscuro en los campos probados; sigue siendo más tenue
+  que un valor escrito.
+
 ## Movimiento funcional
 
 Las animaciones son una mejora progresiva. Ningún estado, contenido o acción
@@ -144,6 +170,11 @@ que también marca la herramienta activa y calcula las relacionadas.
   `aria-expanded="false"` y el foco fuera del cajón (pasa al botón Menú).
 - El contenido ocupa una sola columna (`--content-max`): matrices grandes,
   procedimientos y comparaciones disponen de todo el ancho.
+- La cabecera es fija. `html { scroll-padding-top: cabecera + 1.5rem }` reserva su
+  altura para todo desplazamiento automático: Tab y Shift+Tab, anclas como
+  `#resultado` y `scrollIntoView`. Dentro del procedimiento abierto, lo enfocable
+  añade la franja del summary sticky (`scroll-margin-top`). El teclado matemático solo
+  reserva el final de la página.
 - El buscador (`components/search.html`) es un formulario `GET` a Inicio.
   `buscador.js` consulta el índice completo publicado por `catalogo.py`, incluidas
   las próximas, con la misma semántica y orden del servidor. Inicio conserva
@@ -270,25 +301,39 @@ Son enlaces a rutas que ya existen; ningún destino se inventa.
 
 ### Desplegables
 
-Las opciones avanzadas viven en `details.disclosure` con un `summary` real
-(icono, título y chevrón): funcionan sin JavaScript, se abren con Enter o
-Espacio y anuncian su estado. Los controles plegados siguen formando parte
-del formulario, así que sus valores viajan igual en el envío.
-
-Para los bloques plegables del resultado existe el componente
+Todo bloque plegable de una herramienta —opciones, ayuda, aplicaciones,
+procedimiento, sub-bloques y grupos de un producto— usa el componente
 `{% disclosure %}` (`templatetags/componentes.py`, que renderiza
-`components/disclosure.html`):
+`components/disclosure.html`); las plantillas de `modules/` no escriben
+`<details>` a mano. Solo la navegación (Menú e Inicio por temas) conserva sus
+propios `details`, con el chevrón a la derecha de cada fila.
 
 ```django
 {% load componentes %}
-{% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+{% disclosure titulo="Opciones de resultado" id="opciones-resultado" abierto=opciones_abiertas icono="opciones" %}
     …contenido…
 {% enddisclosure %}
 ```
 
-Acepta `nivel=4` (título como `h4`, para sub-bloques), `clase` y `abierto`.
-El título va dentro del `summary` como encabezado real, así que la
-jerarquía h2 → h3 → h4 se conserva y no hay botones dentro del `summary`.
+- El título va dentro del `summary` como encabezado real: h3 por defecto y
+  `nivel=4`, `5` o `6` en sub-bloques y grupos, así que la jerarquía se conserva y
+  no hay botones dentro del `summary`.
+- El chevrón va siempre primero, con el mismo tamaño y color, y gira al abrir.
+- `icono="opciones"` añade el engranaje solo a las opciones de configuración
+  («Opciones de resultado», «Opciones del procedimiento»).
+- `detalle` añade un resumen secundario: los grupos por fila o columna de AB y Ax
+  muestran, por ejemplo, `c₁₁ = 3, c₁₂ = 6`.
+- `clase` elige la variante: `disclosure-procedure` (Ver procedimiento),
+  `disclosure-nested` (un método al comparar) y `procedure-group` (grupos de un
+  producto, abiertos solo cuando el resultado es pequeño). `abierto` decide el
+  estado inicial, como antes.
+- Hover común (un matiz de `--color-text` sobre cualquier fondo, también sobre el
+  summary sticky), foco visible y al menos 2.5rem de alto. Solo el summary
+  principal del procedimiento abierto es sticky.
+
+Funcionan sin JavaScript, se abren con Enter o Espacio y anuncian su estado. Los
+controles plegados siguen formando parte del formulario, así que sus valores viajan
+igual en el envío.
 
 ### Divulgación progresiva en Reducción por filas
 
@@ -389,6 +434,14 @@ el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructur
 sin calcular. `vector-fields` declara `data-perfil="numerico"`, compartido
 con las celdas de matrices y Ax = b, incluido el escalar cuando está presente.
 
+Las filas comparten tres columnas (subgrid): nombre, componentes y el botón ×. Así
+los `=` quedan alineados y el × pertenece a la fila de su vector, con borde y
+esquinas completos; bajo 760 px caben tres componentes junto a él. **Agregar
+vector** lleva el foco a la primera componente del nuevo; quitar uno lo lleva a la
+fila que ocupa su lugar o, si era el último, a la anterior. Un `role="status"` bajo
+Agregar dice «Se agregó el vector v3.» o «Se eliminó el vector v3.»; los botones ±
+de la cantidad también avisan, sin mover el foco.
+
 ## Operaciones con matrices
 
 Una sola herramienta, `/matrices/operaciones/`, para operaciones simples y
@@ -409,6 +462,18 @@ propone nombres libres (A … Z, después A1, B1 …) y mueve el foco con las fl
 dentro de la cuadrícula de cada símbolo. El contrato HTTP es estricto: el
 servidor reconstruye el conjunto exacto de campos de la estructura declarada y
 rechaza celdas de más, de menos, campos desconocidos o repetidos.
+
+Cada símbolo es un `fieldset` con nombre accesible («Símbolo A»): Nombre y Tipo
+arriba y, juntas, Filas y Columnas con **Eliminar** a la derecha, lejos de sus + y
+−. Los botones dicen a qué símbolo pertenecen («Eliminar símbolo A», «Agregar una
+fila a A», «Quitar una componente de u»): el servidor los escribe
+(`rotulos_dimension`) y `expresiones.js` los actualiza al renombrar. En escritorio
+van dos tarjetas por fila y una matriz de seis columnas o más ocupa la fila entera;
+el orden del DOM y de Tab no cambia. Al agregar, el foco va al nombre del símbolo
+nuevo; al eliminar, al nombre del siguiente, al del anterior o a **Agregar
+símbolo**, y la región `role="status"` dice «Se agregó el símbolo C.» o «Se eliminó
+el símbolo B.». La expresión mide las dos líneas de `rows`, sin la altura mínima del
+área de texto de sistemas.
 
 Bajo la expresión, una ayuda breve con ejemplos (`A + B`, `2A - B`, `AB`, `Ax`,
 `A(B + C)`, `Aᵀ`, también `A^T`) y un desplegable «Cómo se escribe» con la
@@ -460,7 +525,15 @@ nombres de las lecturas y sus identificadores compartidos entre `AB` y `Ax`.
 inversa) representan cuadrículas editables; `components/matriz.html` muestra
 valores o expresiones con corchetes, sin columna aumentada por defecto, y con
 una sola columna dibuja un vector columna. `matrix.html` es el adaptador de
-sistemas con `aumentada=True`. `.matrix-scroll` contiene `.matrix-content` con
+sistemas con `aumentada=True`.
+
+Las celdas editables (`.matrix-input`) crecen con su valor (`field-sizing:
+content`) entre `--celda-min` (4.25rem; bajo 760 px, 3rem en Ax = b y 3.2rem en
+Vectores) y 7rem (18rem en un vector lineal): `-11/13`, `123/456` o `3.14159` se
+leen completos mientras se editan. En tablas y en la cuadrícula aumentada la
+columna toma el ancho de su valor más largo, así que sus celdas siguen alineadas,
+y la cuadrícula se desplaza en lugar de comprimirse. Más allá del máximo, el input
+conserva cursor y desplazamiento. Sin soporte de `field-sizing` queda el ancho fijo. `.matrix-scroll` contiene `.matrix-content` con
 ambos corchetes y todas las columnas. `.matrix-equation` permite wrap sin crear
 otro scroll alrededor de la misma matriz; los hijos flex/grid pueden reducirse
 con `min-width: 0` y columnas `minmax(0, 1fr)`. Las notas largas envuelven texto,
@@ -527,6 +600,13 @@ cuadrícula y desactiva el radio **Método para matrices 2×2** fuera de 2×2 (e
 servidor también lo desactiva y rechaza un envío manipulado). Los nombres de
 los métodos no llevan fórmulas; la regla `ad − bc` solo aparece dentro del
 procedimiento.
+
+En **Aplicaciones y propiedades** (`{% disclosure %}` con `id="aplicaciones"`),
+cada opción dice antes de elegirla qué calcula o comprueba —«Comprueba (AB)⁻¹ =
+B⁻¹A⁻¹.», «Calcula x = A⁻¹b y comprueba Ax = b.»— en una línea secundaria junto a
+su radio, que la describe con `aria-describedby` (`AYUDAS_FUNCIONES` en
+`servicios_inversa.py`, `RadiosConAyuda` en `forms_inversa.py`). Los algoritmos,
+las opciones y la verificación no cambian.
 
 El procedimiento de Gauss-Jordan reutiliza `modules/sistemas/_pasos.html` con
 `columnas_izquierda = n`, así que el separador de `[A | I]` se ve en todas las
