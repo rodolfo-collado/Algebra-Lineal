@@ -231,7 +231,8 @@ class PruebasInicioPorTemas(SimpleTestCase):
                 self.assertFalse(grupo["open"])
                 self.assertIn(area.nombre, grupo["summary"])
             else:
-                self.assertNotIn(area.id, [d["id"] for d in desplegables.details])
+                # P27.5 conserva el universo completo para live, ocultando las áreas próximas.
+                self.assertIn("hidden", Documento(respuesta).grupos[area.id])
         # Cada herramienta se descubre dentro de su tema, una sola vez.
         for herramienta in disponibles():
             inicio_tema = html.index(f'id="{herramienta.categoria.id}"')

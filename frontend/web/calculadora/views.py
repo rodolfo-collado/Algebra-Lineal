@@ -38,10 +38,11 @@ from .teclados import PERFILES_BASE, perfiles_para
 @require_GET
 def inicio(request):
     consulta = request.GET.get("q", "").strip()
+    resultados = catalogo.buscar_herramientas(consulta) if consulta else None
     return render(request, "calculadora/pages/inicio.html", {
         "consulta": consulta,
-        "resultados_busqueda": catalogo.buscar_herramientas(consulta) if consulta else None,
-        "herramientas_disponibles": catalogo.herramientas_disponibles(),
+        "resultados_busqueda": resultados,
+        "universo_busqueda": (*resultados, *(h for h in catalogo.HERRAMIENTAS if h not in resultados)) if resultados is not None else (),
     })
 
 

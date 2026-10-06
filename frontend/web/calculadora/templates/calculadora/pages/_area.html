@@ -1,4 +1,4 @@
-<details class="home-area" id="{{ area.id }}" data-grupo aria-labelledby="area-{{ area.id }}">
+<details class="home-area" id="{{ area.id }}" data-grupo aria-labelledby="area-{{ area.id }}"{% if not area.disponible %} hidden{% endif %}>
     <summary class="home-area-summary">
         <span><span id="area-{{ area.id }}" class="home-area-title">{{ area.nombre }}</span>
         <span class="home-area-description">{{ area.descripcion }}</span></span>
@@ -22,8 +22,8 @@
                     </summary>
                     <ul class="tool-list">
                         {% for herramienta in herramientas %}
-                            <li class="tool-item" data-indice="{{ herramienta.indice }}">
-                                {% include "calculadora/components/tool_link.html" with mostrar_estado=categoria.disponible %}
+                            <li class="tool-item" data-herramienta="{{ herramienta.id }}" data-indice="{{ herramienta.indice }}">
+                                {% include "calculadora/components/tool_link.html" with mostrar_estado=True %}
                             </li>
                         {% endfor %}
                     </ul>

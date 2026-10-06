@@ -41,6 +41,7 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+    {{ datos_buscador|json_script:"datos-buscador" }}
     <script src="{% static 'calculadora/tema.js' %}" defer></script>
     <script src="{% static 'calculadora/navigation.js' %}" defer></script>
     <script src="{% static 'calculadora/buscador.js' %}" defer></script>

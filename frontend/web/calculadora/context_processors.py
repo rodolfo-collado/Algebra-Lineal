@@ -8,6 +8,7 @@ def navegacion(request):
     herramienta = catalogo.herramienta_por_ruta(getattr(request, "resolver_match", None))
     return {
         "arbol_navegacion": catalogo.arbol(),
+        "datos_buscador": catalogo.datos_buscador(),
         "herramienta_actual": herramienta,
         "categoria_actual": herramienta.categoria if herramienta else None,
         "migas": catalogo.migas(herramienta),
