@@ -424,3 +424,68 @@ sugerencias, próximas, Escape y memoria del Menú. Compara desde Inicio y un
 GET previo los IDs live con Python para 40 consultas, incluidas las siete
 obligatorias, acciones naturales, tildes, mayúsculas, espacios Unicode y todos
 los términos ignorados. Véase [validación P27.5](validacion-p27-5.md).
+
+## P27.6 — Resultado y procedimiento
+
+```bash
+uv run --locked python -m tests.resultado_browser
+```
+
+Abrir `http://127.0.0.1:8883/__pruebas/` en Browser. El runner sirve POST reales
+de Django y scripts/CSS de producción; no necesita Playwright ni dependencias
+nuevas. Sus 66 casos comprueban las siete herramientas: conservar el resultado
+anterior, una sola transición/anuncio, selección del contenido y nuevo POST
+vigente; cambios de método, operación, dimensiones, expresión, casillas,
+destinos y estructura; exclusión de tema y presentación; busy, `pageshow` y
+foco del POST inválido. Las fixtures comparten la cookie CSRF para permitir la
+inspección simultánea en otra pestaña sin invalidar sus formularios.
+
+Mide geometría real en 1280×650, 1084×721, 744×521, 640×325 y 390×650 para
+inversas 4×4 con fracciones, 6×6, 8×8 y 10×10, reducción 8×9, matriz
+rectangular 2×10, Ax=b y Bases con 39 cifras. Verifica ausencia de overflow de
+página, ambos corchetes dentro del scroll, última columna accesible, ausencia
+de scroll anidado, wrap y dirección de la flecha, Tab condicionado por overflow
+y cambios de viewport/Exacto/Decimal. El procedimiento largo comprueba sticky
+por estilo y posición después de bajar 6000 px, y Resultado visible al plegar.
+También cubre procedimiento 3×3 sin paradas extra y HTML sin JavaScript.
+
+`test_resultado_presentacion` verifica el contrato declarativo de las siete
+herramientas, corchetes/columnas completos y conclusión de verificación real
+con ambos métodos y propiedad adicional. Las pruebas de inversa conservan el
+conteo de motores/productos y cubren fallo de verificación y matriz singular
+sin falso ✓. Se actualizaron las expectativas históricas de `tabindex="0"` y
+resultado oculto; no se modificaron las referencias matemáticas.
+
+Validación local P27.6: **1565 pruebas Python**, **66/66** en este runner y las
+regresiones DOM: presentación **10/10**, feedback **19/19**, inversa **7/7**,
+teclado contextual **30/30**, buscador **16/16**, entradas **19/19** y operandos
+**15/15**. `manage.py check`, `compileall`, `uv lock --check` y
+`git diff --check` pasan.
+
+QA principal con el plugin oficial Browser sobre localhost, con árbol AX,
+DOM, Tab real, scroll nativo e inspección visual en los cinco viewports. Anchos
+`scrollWidth/clientWidth` de página observados: **1265/1265**, **1069/1069**,
+**729/729**, **625/625** y **375/375**, respectivamente (se excluye la barra
+vertical). En Resultado de inversa 8×8 hay una sola región horizontal: ancho
+660 px, contenido 2441 px y final alcanzado en `scrollLeft=1781`; última
+columna y cierre visibles. Ax=b pequeño recorrió 30 Tab reales sin entrar en
+contenedores de matrices. El scroll ancho sí recibe Tab, nombre y foco normal,
+y ArrowRight desplaza nativamente. Reducción 8×9 mantuvo el summary en y=56
+tras bajar hasta y=8125; al plegar, Resultado quedó en y≈204.
+
+Se capturaron fila Antes/Después, wrap con fracciones, última columna 8×8,
+resultado anterior, sticky, verificación, [A | I] 10×10 a 744 px y Bases a
+390 px. Las imágenes permanecen fuera del repositorio. No se observaron
+pantallas en blanco, overlaps ni errores nuevos de consola/recursos en la
+ejecución final. Teclado, Escape, Menú, buscador, Exacto/Decimal y foco de error
+mantienen los contratos P27.3–P27.5.
+
+Incidencias de Browser recuperadas: conexión inicial rechazada antes de que el
+servidor escuchara; timeout del selector por rol para `summary`, resuelto con
+su locator DOM nativo; viewport aplicado a otra pestaña, corregido midiendo
+`innerWidth/innerHeight` de la pestaña inspeccionada. Una pestaña antigua de
+error de conexión no pudo reutilizarse por la política de URL del Browser;
+se continuó en una pestaña válida. Un registro histórico del runner numérico
+contenía un TypeError de MutationObserver; la recarga terminó 10/10 sin errores
+nuevos y no se reprodujo. No se usó Playwright externo ni fallback. Esta QA
+cubre el navegador integrado; no añade validación de otros motores o desktop.

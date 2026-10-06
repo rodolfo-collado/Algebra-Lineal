@@ -4,7 +4,7 @@
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title">
         <h2 id="workspace-title" class="sr-only">Entrada</h2>
-        <form id="sistema-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        <form id="sistema-form" data-entrada-calculo action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
             {% csrf_token %}
             {% include "calculadora/components/errores_generales.html" %}
 
@@ -132,7 +132,7 @@
     {% if resultados %}
         {% comment %}Entrada → procedimiento plegable → resultado. El procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución); el panel final, fuera del desplegable, dice qué se obtuvo (clasificación, solución, pivotes) una sola vez. Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
         {% numeric_results %}
-        <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">{% if comparando %}Comparación de métodos{% elif "procedimiento" in mostrar %}Procedimiento y resultado{% else %}Resultado{% endif %}</p>
                 <h2 id="results-title">{{ titulo_resultado }}</h2>

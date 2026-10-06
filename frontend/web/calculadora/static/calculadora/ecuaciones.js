@@ -28,11 +28,6 @@
         entrada.querySelectorAll("input").forEach(input => memoria.set(input.name, input.value));
     }
 
-    function ocultarResultado() {
-        const resultado = document.getElementById("resultado");
-        if (resultado) resultado.hidden = true;
-    }
-
     function crearMatriz(nombre, m, n, vector) {
         // Las plantillas inertes comparten el marcado con la versión del servidor.
         const fragmento = matrizTemplate.content.cloneNode(true);
@@ -83,7 +78,6 @@
     }
 
     function render() {
-        ocultarResultado();
         actualizarBotones();
         // No se corrigen silenciosamente dimensiones inválidas: el servidor
         // muestra el error. Mientras se escribe, se conserva la ecuación.
@@ -105,10 +99,9 @@
             const input = button.closest(".stepper").querySelector("input");
             const actual = dimensionValida(input) ? Number(input.value) : Number(input.min);
             input.value = String(Math.min(Number(input.max), Math.max(Number(input.min), actual + Number(button.dataset.paso))));
-            render();
+            input.dispatchEvent(new Event("input", { bubbles: true }));
         });
     });
-    root.addEventListener("input", ocultarResultado);
     root.querySelector("[data-aplicar]").hidden = true;
     root.querySelector("[data-aplicar]").disabled = true;
     actualizarBotones();

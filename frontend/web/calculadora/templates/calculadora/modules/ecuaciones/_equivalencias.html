@@ -2,7 +2,7 @@
 <div class="procedure-stage">
     <h4 class="stage-title">1 · Ecuación matricial</h4>
     <p class="procedure-lead">{{ resultado.forma }}: A y b son conocidos y x es la incógnita.</p>
-    <div class="matrix-equation" tabindex="0" role="region" aria-label="Ecuación matricial A por x igual a b">
+    <div class="matrix-equation" role="region" aria-label="Ecuación matricial A por x igual a b">
         <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.a etiqueta="Matriz A" only %}</div>
         <span class="matrix-expression">·</span>
         <div class="matrix-operand"><span class="muted">x</span>{% include "calculadora/components/matriz.html" with matriz=resultado.incognitas etiqueta="Vector incógnita x" only %}</div>
@@ -15,7 +15,7 @@
     <h4 class="stage-title">2 · Ecuación vectorial</h4>
     <p class="procedure-lead">Ax es la combinación lineal de las columnas de A con coeficientes x₁, …, xₙ, así que Ax = b equivale a:</p>
     <p class="procedure-line">{{ resultado.ecuacion_vectorial.simbolica }}</p>
-    <div class="matrix-equation" tabindex="0" role="region" aria-label="Ecuación vectorial con las columnas de A">
+    <div class="matrix-equation" role="region" aria-label="Ecuación vectorial con las columnas de A">
         {% for termino in resultado.ecuacion_vectorial.terminos %}
             {% if not forloop.first %}<span class="matrix-expression">+</span>{% endif %}
             <span class="matrix-expression">{{ termino.coeficiente }}</span>

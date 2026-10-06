@@ -463,7 +463,7 @@ class PruebasTransversales(SimpleTestCase):
             with self.subTest(ruta=ruta):
                 html = self.client.post(ruta, datos).content.decode("utf-8")
                 self.assertIn(f'action="{ruta}#resultado"', html)
-                self.assertRegex(html, r'<section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">')
+                self.assertRegex(html, r'<section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">')
                 self.assertEqual(html.count('id="resultado"'), 1)
 
     def test_los_encabezados_del_resultado_no_saltan_niveles(self):

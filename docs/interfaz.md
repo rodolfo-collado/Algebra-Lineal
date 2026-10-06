@@ -196,7 +196,7 @@ herramientas relacionadas y «También puedes explorar». Cada bloque es opciona
 
 Tras resolver, todas las herramientas con resultado (Reducción por filas,
 Operaciones con vectores, Operaciones con matrices,
-Resolver Ax = b, Conversión de bases y Conversión de números romanos) siguen
+Resolver Ax = b, Matriz inversa, Conversión de bases y Conversión de números romanos) siguen
 un mismo patrón dentro de `section#resultado`:
 
 ```html
@@ -221,6 +221,29 @@ bloque «Resultado», clasificación, solución o coeficientes dentro del
 procedimiento. Al comparar métodos, cada uno es un sub-bloque cerrado
 (`disclosure-nested`) y el resultado común aparece una vez. Inicio conserva su
 presentación. No se guardan preferencias de apertura.
+
+Mientras está abierto, solo el `summary` principal del procedimiento permanece
+sticky bajo la cabecera, con fondo sólido y foco visible. Los disclosures
+anidados conservan su posición. Plegarlo desde abajo acerca el bloque cerrado
+y el Resultado, sin animar el salto ni interferir con el teclado contextual.
+
+P27.6 declara `data-entrada-calculo` en el formulario y
+`data-resultado="vigente"` en el resultado de un POST válido. `resultado.js`
+compara los datos enviados al cálculo cuando recibe `input`, `change` o
+`entrada-cambiada` (cambios estructurales hechos con JS). La primera modificación
+cambia a `desactualizado` y añade una única nota `role="status"`: «Cambiaste los
+datos. Este resultado corresponde a la entrada anterior. Vuelve a calcular para
+actualizarlo». El contenido sigue legible, seleccionable y desplazable; el panel
+final usa un borde secundario discontinuo. Ediciones posteriores no vuelven a
+anunciarlo y el siguiente POST válido entrega un documento vigente.
+
+Números, matrices, vectores, expresiones, operación, método, dimensiones y
+opciones que cambian el cálculo o el procedimiento sí lo desactualizan.
+Exacto/Decimal y precisión son presentación fuera del formulario; tema, Menú,
+foco, apertura de Opciones/procedimiento y teclado sin insertar datos tampoco
+lo desactualizan. CSRF y la firma de confirmación no son entrada matemática.
+No se detecta la vuelta exacta A → B → A. `feedback.js` sigue siendo el único
+responsable de busy, foco de errores, confirmaciones y `pageshow`.
 
 `components/related_tools.html` muestra las relacionadas como enlaces
 discretos después de resolver y no aparece cuando la herramienta no declara
@@ -429,8 +452,22 @@ nombres de las lecturas y sus identificadores compartidos entre `AB` y `Ax`.
 inversa) representan cuadrículas editables; `components/matriz.html` muestra
 valores o expresiones con corchetes, sin columna aumentada por defecto, y con
 una sola columna dibuja un vector columna. `matrix.html` es el adaptador de
-sistemas con `aumentada=True`. Cada cuadrícula y cadena ancha tiene scroll local
-accesible con teclado.
+sistemas con `aumentada=True`. `.matrix-scroll` contiene `.matrix-content` con
+ambos corchetes y todas las columnas. `.matrix-equation` permite wrap sin crear
+otro scroll alrededor de la misma matriz; los hijos flex/grid pueden reducirse
+con `min-width: 0` y columnas `minmax(0, 1fr)`. Las notas largas envuelven texto,
+sin ocultar overflow de la página.
+
+Los pares Antes → Después usan flex con wrap. `presentacion.js` mide el ancho
+natural de ambas matrices y la transición: conserva la fila si cabe y coloca
+la flecha hacia abajo en su propia fila cuando deben apilarse. No depende del
+orden de la matriz ni de un breakpoint específico.
+
+El mismo script observa tamaño/contenido y reevalúa al cargar, redimensionar,
+abrir disclosures o cambiar la presentación numérica. Añade `tabindex="0"`
+solo a salidas con `scrollWidth > clientWidth + 1`, con nombre accesible y anillo
+normal de foco; lo retira al dejar de desbordar. Las entradas se recorren por sus
+inputs, nunca por sus contenedores. Sin JS el HTML no añade paradas Tab mudas.
 
 `/matrices/expresiones/` es solo compatibilidad: GET 301 y POST 308 hacia
 `/matrices/operaciones/`, sin plantilla ni tarjeta propias.
@@ -487,6 +524,13 @@ El procedimiento de Gauss-Jordan reutiliza `modules/sistemas/_pasos.html` con
 `columnas_izquierda = n`, así que el separador de `[A | I]` se ve en todas las
 matrices. El resultado (`A⁻¹ =` o «La matriz no tiene inversa.») va al final y
 usa Exacto / Decimal.
+
+Si se solicitó Verificar, Resultado añade la conclusión breve de la
+comprobación real del servicio: `A·A⁻¹ = A⁻¹·A = I ✓` solo cuando ambos
+productos son identidad. Si falla un producto se indica `≠ I`; si A no es
+invertible se indica que la verificación no está disponible. Los productos
+completos siguen dentro del procedimiento. También funciona con la regla 2×2
+y las aplicaciones adicionales, sin recalcular ni duplicar matrices.
 
 Cuando la estimación es pesada, el formulario muestra arriba un aviso
 (`_confirmacion.html`, `.confirmation`) en tonos neutros con acento verde,

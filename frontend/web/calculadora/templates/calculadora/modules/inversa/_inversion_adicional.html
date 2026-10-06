@@ -12,7 +12,7 @@
         <p class="procedure-line">{{ inversion.ad_menos_bc }}</p>
         {% if inversion.invertible %}
             <p class="procedure-line">{{ inversion.factor }}</p>
-            <div class="matrix-equation" tabindex="0" role="region" aria-label="Regla 2×2 de la inversión adicional">
+            <div class="matrix-equation" role="region" aria-label="Regla 2×2 de la inversión adicional">
                 <span class="matrix-expression">{{ inversion.factor_operando }} ·</span>
                 {% include "calculadora/components/matriz.html" with matriz=inversion.intercambiada etiqueta="Matriz intercambiada de la inversión adicional" only %}
                 <span class="matrix-expression">=</span>

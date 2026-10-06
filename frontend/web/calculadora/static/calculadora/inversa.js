@@ -24,8 +24,8 @@
         return dimensionValida(orden);
     }
 
-    function ocultarSalida() {
-        document.querySelectorAll("#resultado, [data-confirmacion]").forEach(nodo => { nodo.hidden = true; });
+    function ocultarConfirmacion() {
+        document.querySelectorAll("[data-confirmacion]").forEach(nodo => { nodo.hidden = true; });
     }
 
     function crearMatriz(nombre, n, vector = false) {
@@ -99,7 +99,7 @@
     }
 
     function render() {
-        ocultarSalida();
+        ocultarConfirmacion();
         actualizarBotones();
         // No se corrige en silencio un tamaño inválido: el servidor muestra el error.
         if (!ordenValido()) return;
@@ -114,7 +114,7 @@
 
     orden.addEventListener("input", render);
     root.addEventListener("change", event => {
-        ocultarSalida();
+        ocultarConfirmacion();
         if (event.target.name !== "funcion_adicional" || !ordenValido()) return;
         guardar();
         actualizarAdicional(Number(orden.value));
@@ -124,10 +124,10 @@
         button.addEventListener("click", () => {
             const actual = ordenValido() ? Number(orden.value) : Number(orden.min);
             orden.value = String(Math.min(Number(orden.max), Math.max(Number(orden.min), actual + Number(button.dataset.paso))));
-            render();
+            orden.dispatchEvent(new Event("input", { bubbles: true }));
         });
     });
-    root.addEventListener("input", ocultarSalida);
+    root.addEventListener("input", ocultarConfirmacion);
     root.querySelectorAll("[data-aplicar]").forEach(button => { button.hidden = true; button.disabled = true; });
     if (ordenValido()) actualizarMetodos(Number(orden.value));
     actualizarBotones();

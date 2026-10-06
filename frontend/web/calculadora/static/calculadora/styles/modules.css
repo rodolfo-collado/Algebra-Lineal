@@ -35,17 +35,22 @@
 
 .matrix-equation {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.85rem;
     max-width: 100%;
     min-width: 0;
-    overflow-x: auto;
     padding-block: 0.4rem;
 }
 
 .matrix-equation > * {
-    flex-shrink: 0;
+    min-width: 0;
+    max-width: 100%;
 }
+
+.matrix-equation > .matrix { flex-shrink: 1; }
+.matrix-operand { min-width: 0; max-width: 100%; }
+.matrix-expression { overflow-x: auto; }
 
 .matrix-operand {
     display: grid;
@@ -492,6 +497,7 @@ textarea:focus {
 
 .results {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.9rem;
     margin-top: 1.35rem;
     min-width: 0;
@@ -530,6 +536,19 @@ textarea:focus {
     border-color: var(--color-border-strong);
     box-shadow: none;
 }
+
+.result-notice {
+    margin: 0;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--color-border-strong);
+    border-left: 3px solid var(--color-brand);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-muted);
+    overflow-wrap: anywhere;
+}
+
+.result-notice:empty { display: none; }
+[data-resultado="desactualizado"] .panel-final { border-style: dashed; }
 
 .results > .panel-final {
     margin-bottom: 1rem;
@@ -625,15 +644,20 @@ textarea:focus {
 }
 
 .matrix-pair {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.7rem 0.85rem;
     align-items: center;
 }
 
 .matrix-pair-item {
     min-width: 0;
+    max-width: 100%;
 }
+
+.matrix-pair[data-wrapped] > .matrix-pair-arrow { flex-basis: 100%; }
+.matrix-pair-arrow > span { display: inline-block; }
+.matrix-pair[data-wrapped] > .matrix-pair-arrow > span { transform: rotate(90deg); }
 
 .matrix-pair-arrow {
     color: var(--color-brand);
@@ -1029,6 +1053,7 @@ textarea:focus {
 
 .procedure-lead,
 .procedure-note {
+    overflow-wrap: anywhere;
     margin: 0 0 0.85rem;
     color: var(--color-muted);
     font-size: 0.92rem;
@@ -1292,10 +1317,6 @@ textarea:focus {
 }
 
 @media (max-width: 760px) {
-    .matrix-pair {
-        grid-template-columns: 1fr;
-    }
-
     .vector-equality {
         font-size: 1.1rem;
     }
@@ -1348,11 +1369,6 @@ textarea:focus {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .matrix-pair-arrow {
-        justify-self: center;
-        transform: rotate(90deg);
-    }
-
     .workspace-actions .btn-primary {
         width: 100%;
     }
@@ -1375,11 +1391,14 @@ textarea:focus {
 
 .symbol-list {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.85rem;
 }
 
 .symbol-card {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
     gap: 0.75rem;
     margin: 0;
     padding: 0.85rem 1rem 1rem;
@@ -1474,5 +1493,5 @@ textarea:focus {
 .equality-verdict-distinto { color: var(--color-danger); }
 
 @media (min-width: 761px) {
-    .equality-sides { grid-template-columns: 1fr 1fr; }
+    .equality-sides { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

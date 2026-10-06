@@ -93,14 +93,16 @@
             igual([...w.document.querySelectorAll('.panel-final td')].map(td => td.textContent.trim()), ['5', '-3']);
             igual(q(w, '#procedimiento').compareDocumentPosition(q(w, '.panel-final')) & 4, 4);
             valor(w, '[name="celda_b_0_0"]', 4);
-            igual(q(w, '#resultado').hidden, true);
+            igual(q(w, '#resultado').hidden, false);
+            igual(q(w, '#resultado').dataset.resultado, 'desactualizado');
         }],
         ["Cambio de función invalida resultado anterior", {}, async (w, frame) => {
             matriz(w, 'A', [[3, 4], [5, 6]]);
             w = await post(frame);
             igual(q(w, '#resultado').hidden, false);
             funcion(w, 'traspuesta');
-            igual(q(w, '#resultado').hidden, true);
+            igual(q(w, '#resultado').hidden, false);
+            igual(q(w, '#resultado').dataset.resultado, 'desactualizado');
         }],
         ["Sin JS: Aplicar cambia función y tamaño, conserva B y normaliza método", {sinJS: true}, async (w, frame) => {
             igual(q(w, '[data-aplicar]').hidden, false);

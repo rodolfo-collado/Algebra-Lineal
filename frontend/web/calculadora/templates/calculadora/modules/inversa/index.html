@@ -4,7 +4,7 @@
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-inversa>
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
-    <form id="inversa-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+    <form id="inversa-form" data-entrada-calculo action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="inverse-fields" data-perfil="numerico" aria-labelledby="inverse-title">
@@ -71,7 +71,7 @@
 {% if resultado %}
     {% comment %}Entrada → procedimiento plegable del método elegido → resultado, una sola vez y al final. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
     {% numeric_results %}
-    <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+    <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
             <p class="section-kicker">Matriz inversa · {{ resultado.titulo_metodo }}</p>
             <h2 id="results-title">{{ resultado.titulo }} ({{ resultado.forma }})</h2>
@@ -94,8 +94,20 @@
 
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
+            {% if resultado.verificar_solicitado %}
+                <p data-verificacion>
+                    {% if resultado.verificacion.verificada %}
+                        Verificación: A·A⁻¹ = A⁻¹·A = I ✓
+                    {% elif resultado.verificacion %}
+                        Verificación: {% if not resultado.verificacion.a_por_inversa_es_identidad %}A·A⁻¹ ≠ I.{% endif %}
+                        {% if not resultado.verificacion.inversa_por_a_es_identidad %}A⁻¹·A ≠ I.{% endif %}
+                    {% else %}
+                        Verificación no disponible: A no tiene inversa.
+                    {% endif %}
+                </p>
+            {% endif %}
             {% if resultado.invertible and resultado.adicional.aplicable %}
-                <div class="matrix-equation" tabindex="0" role="region" aria-label="{{ resultado.etiqueta_final }}">
+                <div class="matrix-equation" role="region" aria-label="{{ resultado.etiqueta_final }}">
                     <span class="matrix-expression">{{ resultado.expresion_final }} =</span>
                     {% include "calculadora/components/matriz.html" with matriz=resultado.adicional.resultado etiqueta=resultado.etiqueta_final only %}
                 </div>

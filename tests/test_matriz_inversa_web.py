@@ -223,7 +223,7 @@ class PruebasResultado(SimpleTestCase):
                 self.assertEqual(doc.tablas[TABLA_INVERSA], INVERSA_2X2)
                 self.assertIn(f"Matriz inversa · {titulo} Inversa de A (2×2)", contenido)
                 _, resultado = partes(html)
-                self.assertEqual(resultado, "Resultado A⁻¹ = -3 2 5/2 -3/2")
+                self.assertTrue(resultado.endswith("A⁻¹ = -3 2 5/2 -3/2"))
 
     def test_profesor_3x3_por_gauss_jordan(self):
         html, doc, contenido = self.calcular(PROFESOR_3X3)
@@ -466,6 +466,8 @@ class PruebasVerificacion(SimpleTestCase):
                 html, doc = self.calcular(SINGULAR, metodo)
                 procedimiento, resultado = partes(html)
                 self.assertIn("La matriz no tiene inversa.", resultado)
+                self.assertIn("Verificación no disponible: A no tiene inversa.", resultado)
+                self.assertNotIn("✓", resultado)
                 self.assertIn("No se puede realizar la verificación porque A no tiene inversa.", procedimiento)
                 for tabla in (TABLA_INVERSA, TABLA_A_INVERSA, TABLA_INVERSA_A, TABLA_IDENTIDAD):
                     self.assertNotIn(tabla, doc.tablas)
@@ -483,8 +485,8 @@ class PruebasVerificacion(SimpleTestCase):
                 self.assertIn("A · A⁻¹", procedimiento)
                 self.assertIn("A⁻¹ · A", procedimiento)
                 self.assertNotIn("Resultado", procedimiento)
-                self.assertNotIn("Verificación", resultado)
-                self.assertEqual(resultado, "Resultado A⁻¹ = -3 2 5/2 -3/2")
+                self.assertIn("Verificación: A·A⁻¹ = A⁻¹·A = I ✓", resultado)
+                self.assertTrue(resultado.endswith("A⁻¹ = -3 2 5/2 -3/2"))
                 self.assertEqual(len(re.findall(rf'<table[^>]*aria-label="{TABLA_INVERSA}"', html)), 1)
                 self.assertEqual(texto(html).count("Resultado"), 1)
                 self.assertRegex(html, r'<h[3-6][^>]*id="inverse-verification-title"[^>]*>Verificación</h[3-6]>')
@@ -524,8 +526,10 @@ class PruebasVerificacion(SimpleTestCase):
                                       else (TABLA_INVERSA_A, TABLA_A_INVERSA))
                 self.assertEqual(doc.tablas[tabla_fallida], [["1/3", "0"], ["0", "1"]])
                 self.assertEqual(doc.tablas[otra], identidad_texto(2))
-                procedimiento, _ = partes(html)
+                procedimiento, resultado = partes(html)
                 self.assertIn(mensaje, procedimiento)
+                self.assertIn("≠ I", resultado)
+                self.assertNotIn("✓", resultado)
                 self.assertEqual(procedimiento.count("≠ I"), 1)
                 self.assertNotIn("Ambos productos son la matriz identidad.", procedimiento)
                 bloque = html[html.index('id="inverse-verification-title"'):]
@@ -884,7 +888,7 @@ class PruebasRecursos(SimpleTestCase):
         for marca in ("data-inversa", "data-inverse-entry", "data-inverse-shape", "data-aplicar", 'data-dimension="orden"'):
             self.assertIn(marca, html)
         js = (ESTATICOS / "inversa.js").read_text(encoding="utf-8")
-        for fragmento in ("data-inversa", "matrix-entry-template", 'value="directo_2x2"', "data-confirmacion", "#resultado", "ArrowDown", "disabled"):
+        for fragmento in ("data-inversa", "matrix-entry-template", 'value="directo_2x2"', "data-confirmacion", "ArrowDown", "disabled"):
             self.assertIn(fragmento, js)
         self.assertNotIn("innerHTML", js)
         from tests.test_teclado import Pagina

@@ -378,7 +378,7 @@ class PruebasComponentesYRecursosMatrices(SimpleTestCase):
         html = render_to_string("calculadora/components/matriz.html", {"matriz": [[1, 2, 3]], "etiqueta": "A"})
         self.assertNotIn('class="constant', html)
         self.assertIn("matrix-fence-start", html)
-        self.assertIn('tabindex="0"', html)
+        self.assertNotIn('tabindex="0"', html)
 
     def test_matriz_aumentada_conserva_separador_y_pivotes(self):
         html = render_to_string("calculadora/components/matrix.html", {"matriz": [[1, 2, 3]], "columnas_pivote": [1]})
