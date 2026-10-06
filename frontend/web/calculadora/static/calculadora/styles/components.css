@@ -849,6 +849,12 @@ a.tool-link .tool-link-name {
     padding: 0.35rem 1.1rem 1.15rem;
 }
 
+/* Bajo la cabecera, el summary sticky ocupa otra franja: lo que recibe foco dentro del
+   procedimiento abierto se detiene debajo de ambos. */
+.disclosure-procedure[open] > .disclosure-body :is(a, button, summary, input, select, textarea, [tabindex]) {
+    scroll-margin-top: 2.75rem;
+}
+
 /* Sub-bloques (un método al comparar, comprobación e interpretación) y grupos por fila o
    columna de un producto: el mismo desplegable, más discreto. */
 .disclosure-nested,
@@ -909,16 +915,13 @@ a.tool-link .tool-link-name {
     }
 }
 
-/* Reserva estable al final: mostrar/ocultar nunca desplaza los controles. */
+/* Reserva estable al final: mostrar/ocultar nunca desplaza los controles. La de arriba es la
+   global de la cabecera (base.css). */
 html.js:has(.math-keyboard) {
-    scroll-padding-top: calc(var(--header-height) + 0.5rem);
     scroll-padding-bottom: 8rem;
 }
 
 html.js body:has(.math-keyboard) { padding-bottom: 8rem; }
-
-/* El margen global de anclas duplicaría la reserva de cabecera al enfocar. */
-html.js [data-perfil] :is(input, textarea) { scroll-margin: 0; }
 
 .math-keyboard[hidden] {
     display: none;
