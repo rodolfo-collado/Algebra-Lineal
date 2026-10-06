@@ -74,7 +74,7 @@
     for (const ruta of ["/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/operaciones/", AUMENTADA, "/vectores/operaciones/"]) {
         casos.push([`UI-31 ${ruta}: valores largos completos, columnas alineadas y sin desborde`, ruta, async (w, frame) => {
             assert(w.CSS.supports("field-sizing", "content"), "field-sizing disponible en Chromium/WebView2");
-            for (const [ancho, alto] of [[1280, 650], [744, 521], [390, 650]]) {
+            for (const [ancho, alto] of [[1280, 650], [744, 521], [390, 650], [760, 560]]) {
                 await tamano(frame, ancho, alto);
                 const celdas = visibles(w, "input.matrix-input");
                 assert(celdas.length >= 4, "Hay celdas");
@@ -102,6 +102,15 @@
         }]);
     }
     casos.push(["UI-31: más allá de 7rem la celda conserva su máximo, el cursor y el scroll local", "/matrices/inversa/", async (w, frame) => {
+        await tamano(frame, 760, 560);
+        escribir(w, q(w, '[name="orden"]'), 1);
+        const unica = q(w, '[name="celda_A_0_0"]');
+        assert(todos(w, '[name^="celda_A_"]').length === 1, "A es 1×1");
+        for (const valor of VALORES) {
+            escribir(w, unica, valor); await turno(w);
+            assert(unica.scrollWidth <= unica.clientWidth + 1, `1×1 recorta ${valor}`);
+        }
+        sinDesborde(w);
         await tamano(frame, 390, 650);
         escribir(w, q(w, '[name="orden"]'), 10);
         const celdas = todos(w, '[name^="celda_A_"]');
