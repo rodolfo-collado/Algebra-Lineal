@@ -139,12 +139,21 @@ que también marca la herramienta activa y calcula las relacionadas.
 - El contenido ocupa una sola columna (`--content-max`): matrices grandes,
   procedimientos y comparaciones disponen de todo el ancho.
 - El buscador (`components/search.html`) es un formulario `GET` a Inicio.
-  `buscador.js` filtra al instante los elementos con `data-indice` de la lista
-  indicada en `data-buscador`; los contenedores con `data-grupo` se ocultan
-  cuando no tienen coincidencias y los `details` con coincidencias se abren.
-  El índice lo calcula `Herramienta.indice`, el mismo que usa
-  `buscar_herramientas` en Python. Solo hay un buscador principal, el del
-  Inicio; el del cajón filtra el árbol y solo se ve con el menú abierto.
+  `buscador.js` consulta el índice completo publicado por `catalogo.py`, incluidas
+  las próximas, con la misma semántica y orden del servidor. Inicio conserva
+  una fila por herramienta: al filtrar traslada esas filas a una lista ordenada;
+  al limpiar restaura los temas y su apertura. El cajón conserva su árbol,
+  oculta grupos sin coincidencias y abre los que coinciden; limpiar restaura
+  los grupos sin alterar la memoria de categorías.
+  Se ignoran `de`, `a`, `al`, `el`, `la`, `los`, `las`, `un`, `una`, `calcular`,
+  `hallar`, `método` y `pasar`. Una consulta formada solo por esos términos
+  no encuentra herramientas. Las acciones útiles se declaran como palabras
+  clave: invertir, multiplicar, sumar, restar, transponer, convertir y reducir.
+  En un GET se ocultan las filas que no coinciden y se enfoca la región de
+  resultados con contorno visible. El status live nace vacío; al editar oculta
+  el encabezado/recuento anterior y anuncia solo la consulta actual. Volver al
+  valor exacto restaura el estado servidor. Los vacíos ofrecen enlaces `?q=`.
+  Escape lateral con texto limpia sin cerrar el Menú; vacío puede cerrarlo.
 
 ### Inicio por temas
 
@@ -153,8 +162,10 @@ resolver?» con su buscador y «Explorar por temas». Cada área disponible es
 un `details` cerrado; al abrirla aparecen los temas, también plegados, y
 cada tema despliega las herramientas de `catalogo.py`. Son filas con bordes
 discretos: ninguna cuadrícula de tarjetas ni accesos duplicados. Las áreas
-sin herramientas disponibles quedan dentro del menú y de la búsqueda GET,
-sin ocupar el Inicio. Con `?q=` se muestran los resultados de búsqueda.
+sin herramientas disponibles permanecen ocultas en Inicio y se encuentran
+tanto por GET como en vivo. Cálculo muestra «Próximamente» en el Menú.
+Con `?q=` se muestran únicamente las coincidencias; todas las filas permanecen
+en el DOM para permitir cambiar la consulta sin otro envío.
 
 El recorrido es Inicio → área → tema → herramienta → resultado. Los
 breadcrumbs abren las anclas de área y categoría con todos sus ancestros.
@@ -214,7 +225,11 @@ presentación. No se guardan preferencias de apertura.
 `components/related_tools.html` muestra las relacionadas como enlaces
 discretos después de resolver y no aparece cuando la herramienta no declara
 ninguna o ya se muestran exploraciones contextuales. Así se evita duplicar
-los destinos. Las relaciones se declaran en el catálogo. Las
+los destinos. Cada enlace muestra nombre e `invitacion`: una frase breve que
+explica cuándo usar esa alternativa. Reducción orienta desde el sistema escrito
+o la matriz aumentada; Ax = b desde A y b conocidos. Operaciones con matrices
+también enlaza a Matriz inversa; Ax = b no propone resolver por inversión.
+Las relaciones se declaran en el catálogo. Las
 relaciones se reservan para módulos realmente distintos: las variantes de un
 mismo problema (método, bloques del resultado) son opciones del formulario.
 
