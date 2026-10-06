@@ -1342,7 +1342,7 @@ textarea:focus {
     }
 
     .vector-inputs .matrix-input {
-        --celda-min: 3.4rem;
+        --celda-min: 3.2rem;
         padding-inline: 0.3rem;
     }
 
@@ -1482,7 +1482,7 @@ textarea:focus {
 }
 
 /* El hueco de la rejilla ya separa la etiqueta de su campo. */
-.expression-field > label {
+.workspace .expression-field > label {
     margin-bottom: 0;
 }
 
