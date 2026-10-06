@@ -61,7 +61,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
         ):
             respuesta = self.client.post("/matrices/reduccion/", datos)
             self.assertEqual(respuesta.status_code, 200)
-            self.assertRegex(respuesta.content.decode(), r'class="(?:field-error|alert error)"')
+            self.assertRegex(respuesta.content.decode(), r'class="(?:errorlist field-error|field-error|alert error)"')
             for mock in (rangos, convertir, construir, reconstruir, resolver):
                 mock.assert_not_called()
         return respuesta

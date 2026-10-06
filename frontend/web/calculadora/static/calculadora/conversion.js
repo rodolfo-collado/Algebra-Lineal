@@ -9,6 +9,9 @@
     const destinos = root.querySelectorAll('input[name="bases_destino"]');
     const aviso = root.querySelector("[data-validacion-cliente]");
     const avisoDestinos = root.querySelector("[data-validacion-destinos]");
+    const grupoDestinos = root.querySelector("[data-destinos]");
+    const errorNumero = root.querySelector('[data-error-field="id_numero"]');
+    const errorDestinos = root.querySelector('[data-error-field="id_bases_destino"]');
     const datos = document.getElementById("bases-digitos");
     const contexto = campo?.closest("[data-perfil]");
     const etiquetasNumero = root.querySelectorAll("[data-number-label-base]");
@@ -41,7 +44,8 @@
     }
 
     function validar() {
-        if (!aviso) return;
+        if (!aviso) return true;
+        if (errorNumero) errorNumero.hidden = true;
         const mensaje = mensajeInvalido(campo.value);
         aviso.textContent = mensaje;
         aviso.hidden = !mensaje;
@@ -50,14 +54,26 @@
         } else {
             campo.removeAttribute("aria-invalid");
         }
+        return !mensaje;
     }
 
     // Hace falta al menos un destino; el servidor lo vuelve a comprobar al convertir.
-    function validarDestinos() {
-        if (!avisoDestinos) return;
+    function validarDestinos(mostrar = true) {
+        if (!avisoDestinos) return true;
         const alguno = Array.from(destinos).some((casilla) => !casilla.disabled && casilla.checked);
-        avisoDestinos.textContent = alguno ? "" : "Elige al menos una base de destino.";
-        avisoDestinos.hidden = alguno;
+        if (alguno && errorDestinos) errorDestinos.hidden = true;
+        const errorServidor = errorDestinos && !errorDestinos.hidden;
+        const mensaje = !alguno && mostrar && !errorServidor;
+        avisoDestinos.textContent = mensaje ? "Elige al menos una base de destino." : "";
+        avisoDestinos.hidden = !mensaje;
+        const invalido = !alguno && (mensaje || errorServidor);
+        if (invalido) grupoDestinos.setAttribute("aria-invalid", "true");
+        else grupoDestinos.removeAttribute("aria-invalid");
+        destinos.forEach(casilla => {
+            if (invalido && !casilla.disabled) casilla.setAttribute("aria-invalid", "true");
+            else casilla.removeAttribute("aria-invalid");
+        });
+        return alguno;
     }
 
     // La base de origen nunca es destino: su casilla se apaga, se desmarca y se oculta.
@@ -77,15 +93,21 @@
             etiqueta.hidden = etiqueta.dataset.numberLabelBase !== origen.value;
         });
         sincronizarDestinos();
-        validar();
     }
 
     // El aviso de destinos solo aparece tras interactuar: al cargar, el error lo pone el servidor.
     origen.addEventListener("change", () => {
         actualizar();
-        validarDestinos();
+        validar();
+        validarDestinos(false);
     });
-    destinos.forEach((casilla) => casilla.addEventListener("change", validarDestinos));
+    destinos.forEach((casilla) => casilla.addEventListener("change", () => validarDestinos()));
     campo.addEventListener("input", validar);
+    root.querySelector("form").addEventListener("submit", event => {
+        // No reemplazar ni duplicar el error del servidor si la entrada sigue intacta.
+        const numeroValido = errorNumero && !errorNumero.hidden ? !mensajeInvalido(campo.value) : validar();
+        const destinosValidos = validarDestinos();
+        if (!numeroValido || !destinosValidos) event.preventDefault();
+    });
     actualizar();
 })();

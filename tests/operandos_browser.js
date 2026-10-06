@@ -146,7 +146,7 @@
         ["Matrices: cantidad manipulada vuelve a una estructura segura", "matrices", async (w, frame) => {
             w.document.querySelector('[name="cantidad"]').value = '100000';
             w = await enviar(frame);
-            igual(w.document.querySelector('.errorlist').textContent.includes('hasta 50 símbolos'), true);
+            igual(w.document.querySelector('.alert.error').textContent.includes('hasta 50 símbolos'), true);
             igual(cantidad(w, '[data-simbolo]'), 0);
             click(w, '[data-agregar]');
             igual(cantidad(w, '[data-simbolo]'), 1);

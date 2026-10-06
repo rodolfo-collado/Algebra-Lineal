@@ -4,10 +4,10 @@
     <div class="vector-inputs">
         <span class="vector-fence" aria-hidden="true">(</span>
         {% for componente in fila.componentes %}
-            <input type="text" name="{{ componente.campo }}" data-cell="{{ componente.campo }}" value="{{ componente.valor }}"
-                   class="matrix-input{% if fila.objetivo %} independent-input{% endif %}"
-                   aria-label="Componente {{ componente.indice }} de {{ fila.nombre }}"
-                   autocomplete="off" spellcheck="false" inputmode="text" required>
+            <span class="vector-cell">
+                <label class="sr-only" for="{{ componente.control.id_for_label }}">{{ componente.control.label }}</label>
+                {{ componente.control }}{{ componente.control.errors }}
+            </span>
             {% if not forloop.last %}<span class="vector-sep" aria-hidden="true">,</span>{% endif %}
         {% endfor %}
         <span class="vector-fence" aria-hidden="true">)</span>

@@ -4,10 +4,9 @@
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-inversa>
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
-    <form id="inversa-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+    <form id="inversa-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
-        {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
-        {% if confirmacion %}{% include "calculadora/modules/inversa/_confirmacion.html" %}{% endif %}
+        {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="inverse-fields" data-perfil="numerico" aria-labelledby="inverse-title">
             <h3 class="section-title" id="inverse-title">Matriz de entrada</h3>
             <p class="field-help">Solo una matriz cuadrada puede tener inversa: A tiene tantas filas como columnas.</p>
@@ -17,9 +16,10 @@
             <p class="field-help" data-inverse-shape aria-live="polite">{{ form.forma_texto }}. De {{ form.orden.field.min_value }} a {{ form.orden.field.max_value }} filas y columnas.</p>
             <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
             <noscript><p class="field-help">Cambia el número de filas y columnas y pulsa <strong>Aplicar</strong> antes de calcular. Se conservan las celdas que siguen en la matriz.</p></noscript>
-            <div class="matrix-entry-list" data-inverse-entry>
+            <div id="inverse-matrix" class="matrix-entry-list" data-inverse-entry>
                 {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.0.nombre filas=form.matrices.0.filas vector=False only %}
             </div>
+            {% include "calculadora/components/errores_grupo.html" %}
             <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos.</p>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
@@ -61,7 +61,8 @@
                 <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
             </div>
         </details>
-        <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular inversa</button></div>
+        {% if confirmacion %}{% include "calculadora/modules/inversa/_confirmacion.html" %}{% endif %}
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Calcular inversa</button></div>
     </form>
 </section>
 {% endblock %}

@@ -2,10 +2,12 @@
 
 from django import forms
 
+from .forms_feedback import FormularioConErrores
+
 from backend.sistemas_numericos import LONGITUD_ROMANA_MAXIMA
 
 
-class ConversionRomanosForm(forms.Form):
+class ConversionRomanosForm(FormularioConErrores):
     """La dirección de la conversión y un único número.
 
     Como en Conversión de bases, el contrato HTTP es estricto: un campo ajeno

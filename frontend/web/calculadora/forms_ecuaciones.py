@@ -43,6 +43,7 @@ class EcuacionMatricialForm(FormularioCeldas):
             return datos
 
         if not self.celdas_coinciden():
+            self.grupo_error = "equation-entry"
             self.add_error(None, "Las celdas recibidas no coinciden con las dimensiones de A y de b. Pulsa Aplicar para ajustar la estructura.")
             return datos
 

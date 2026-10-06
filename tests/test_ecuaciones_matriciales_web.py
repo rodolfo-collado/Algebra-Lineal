@@ -431,7 +431,7 @@ class PruebasRechazoEcuacion(SimpleTestCase):
             self.assertIn("campos repetidos", str(form.non_field_errors()))
 
     def test_celdas_vacias_y_numeros_invalidos_con_error_asociado(self):
-        self.rechazar(datos_ecuacion(celda_A_0_0=""), "Completa matriz a, fila 1, columna 1.")
+        self.rechazar(datos_ecuacion(celda_A_0_0=""), "Completa matriz A, fila 1, columna 1.")
         self.rechazar(datos_ecuacion(celda_b_1_0="  "), "Completa vector b, componente 2.")
         for valor in ("abc", "1/0", "1/", "1/2/3", "NaN", "Infinity", "--2", "1,5"):
             with self.subTest(valor=valor):

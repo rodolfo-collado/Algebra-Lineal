@@ -451,7 +451,7 @@ class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
             with self.subTest(sistema=sistema):
                 respuesta = self.resolver(sistema)
                 self.assertEqual(respuesta.status_code, 200)
-                self.assertRegex(respuesta.content.decode("utf-8"), rf'<p class="field-error" role="alert">Formato de sistema inválido: [^<]*{re.escape(motivo)}')
+                self.assertRegex(respuesta.content.decode("utf-8"), rf'<ul class="errorlist field-error"[^>]*role="alert"><li>Formato de sistema inválido: [^<]*{re.escape(motivo)}')
                 self.assertNotContains(respuesta, 'id="resultado"')
                 self.assertNotContains(respuesta, "Traceback")
 

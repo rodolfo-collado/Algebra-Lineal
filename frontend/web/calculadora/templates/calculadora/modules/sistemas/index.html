@@ -4,13 +4,9 @@
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title">
         <h2 id="workspace-title" class="sr-only">Entrada</h2>
-        <form id="sistema-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+        <form id="sistema-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
             {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="alert error" role="alert">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
+            {% include "calculadora/components/errores_generales.html" %}
 
             {% comment %}Primero el problema: método y tipo de entrada en una fila compacta, cada uno con una pista de una línea (matriz.js muestra la elegida); teclado por foco y opciones plegadas.{% endcomment %}
             <div class="choice-row">
@@ -26,9 +22,7 @@
                             {% if radio.data.value == "gauss" %}Escalona la matriz y resuelve por sustitución regresiva.{% elif radio.data.value == "gauss_jordan" %}Continúa hasta la forma escalonada reducida.{% else %}Muestra los dos procedimientos con la misma entrada.{% endif %}
                         </p>
                     {% endfor %}
-                    {% for error in form.metodo.errors %}
-                        <p class="field-error">{{ error }}</p>
-                    {% endfor %}
+                    {{ form.metodo.errors }}
                 </fieldset>
 
                 <fieldset class="choice-fieldset">
@@ -43,9 +37,7 @@
                             {% if radio.data.value == "sistema" %}Escribe las ecuaciones directamente.{% else %}Ingresa los coeficientes en la matriz [A | b].{% endif %}
                         </p>
                     {% endfor %}
-                    {% for error in form.tipo_entrada.errors %}
-                        <p class="field-error">{{ error }}</p>
-                    {% endfor %}
+                    {{ form.tipo_entrada.errors }}
                 </fieldset>
             </div>
 
@@ -59,9 +51,7 @@
                         Puedes dejar términos a ambos lados del <code>=</code>, como <code>x1 - 6 = -x2</code>.
                     </p>
                     {{ form.sistema }}
-                    {% for error in form.sistema.errors %}
-                        <p class="field-error" role="alert">{{ error }}</p>
-                    {% endfor %}
+                    {{ form.sistema.errors }}
                 </div>
             </fieldset>
 
@@ -75,9 +65,7 @@
                             {{ form.ecuaciones }}
                             <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una ecuación" hidden>+</button>
                         </div>
-                        {% for error in form.ecuaciones.errors %}
-                            <p class="field-error" role="alert">{{ error }}</p>
-                        {% endfor %}
+                        {{ form.ecuaciones.errors }}
                     </div>
                     <div class="dimension-field">
                         {{ form.variables.label_tag }}
@@ -86,9 +74,7 @@
                             {{ form.variables }}
                             <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una variable" hidden>+</button>
                         </div>
-                        {% for error in form.variables.errors %}
-                            <p class="field-error" role="alert">{{ error }}</p>
-                        {% endfor %}
+                        {{ form.variables.errors }}
                     </div>
                 </div>
                 <p class="field-help">
@@ -101,9 +87,11 @@
                         <div id="matrix-grid" class="matrix-grid" role="grid" aria-label="Matriz aumentada"></div>
                     </div>
                 </div>
+                {% include "calculadora/components/errores_grupo.html" %}
                 <p id="matrix-grid-help" class="field-help" aria-live="polite">
                     Completa todas las celdas con números, enteros o fracciones.
                 </p>
+                {% for campo in form.errores_celdas %}{{ campo.errors }}{% endfor %}
             </fieldset>
             {% include "calculadora/components/math_keyboard.html" %}
             <noscript><p class="field-help">Para editar la cuadrícula de una matriz, activa JavaScript. Puedes resolver y comparar métodos usando el sistema escrito como texto.</p></noscript>
@@ -129,14 +117,12 @@
                         {% endfor %}
                     </div>
                     <p class="field-help option-help">La matriz final y la solución se muestran siempre.</p>
-                    {% for error in form.mostrar.errors %}
-                        <p class="field-error">{{ error }}</p>
-                    {% endfor %}
+                    {{ form.mostrar.errors }}
                 </fieldset>
             </details>
 
             <div class="workspace-actions">
-                <button class="btn btn-primary" type="submit">Reducir</button>
+                <button class="btn btn-primary" type="submit" data-calculo>Reducir</button>
             </div>
         </form>
     </section>

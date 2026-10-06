@@ -82,6 +82,7 @@ class InversaForm(FormularioCeldas):
             return datos
 
         if not self.celdas_coinciden():
+            self.grupo_error = "inverse-matrix"
             self.add_error(None, "Las celdas recibidas no coinciden con el tamaño de A y la función adicional elegida. Pulsa Aplicar para ajustar la estructura.")
             return datos
 

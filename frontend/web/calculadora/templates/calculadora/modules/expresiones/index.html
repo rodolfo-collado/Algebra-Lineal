@@ -4,21 +4,22 @@
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-expresiones>
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
-    <form id="expresiones-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+    <form id="expresiones-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
-        {{ form.cantidad }}{{ form.cantidad.errors }}
+        {{ form.cantidad }}
         {% if not confirmacion %}{{ form.confirmacion }}{% endif %}
-        {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
+        {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="expression-fields" aria-labelledby="simbolos-title">
             <h3 class="section-title" id="simbolos-title">Símbolos</h3>
             <p class="field-help">Define solo las matrices, vectores y escalares que vas a usar, con el nombre que tendrán en la expresión.</p>
-            <div class="symbol-list" data-simbolos>
+            <div id="symbol-list" class="symbol-list" data-simbolos>
                 {% for bloque in form.bloques %}
                     {% include "calculadora/modules/expresiones/_simbolo.html" %}
                 {% empty %}
                     <p class="field-help" data-vacio>Sin símbolos: la expresión solo puede usar números, como <code>2 + 1/2</code>.</p>
                 {% endfor %}
             </div>
+            {% include "calculadora/components/errores_grupo.html" %}
             <div class="symbol-actions">
                 <button class="btn btn-secondary" type="submit" name="agregar" value="1" data-agregar>Agregar símbolo</button>
                 <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
@@ -53,11 +54,11 @@
                 <p class="field-help" id="{{ form.metodo.auto_id }}_helptext">{{ form.metodo.help_text }}</p>
             </fieldset>
         {% enddisclosure %}
-        <div class="workspace-actions"><button class="btn btn-primary" type="submit">Calcular</button></div>
         {% if confirmacion %}
             {% if form.cleaned_data.entrada.nodo %}<input type="hidden" name="nodo" value="{{ form.cleaned_data.entrada.nodo }}">{% endif %}
-            {% include "calculadora/components/confirmacion_costo.html" %}
+            {% include "calculadora/components/confirmacion_costo.html" with operacion=form.expresion.value %}
         {% endif %}
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Calcular</button></div>
     </form>
 </section>
 {% endblock %}

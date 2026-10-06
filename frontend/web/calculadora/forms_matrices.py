@@ -5,6 +5,8 @@ La comparten Operaciones con matrices, Resolver Ax = b y Matriz inversa.
 
 from django import forms
 
+from .forms_feedback import FormularioConErrores
+
 from backend.parser_sistemas import convertir_a_numero
 
 from .opciones_matrices import DIMENSION_MAXIMA, DIMENSION_MINIMA, DIMENSION_PREDETERMINADA
@@ -47,7 +49,7 @@ def etiqueta_celda(nombre, vector, i, j):
     return f"Matriz {nombre}, fila {i + 1}, columna {j + 1}"
 
 
-class FormularioCeldas(forms.Form):
+class FormularioCeldas(FormularioConErrores):
     """Base de las herramientas que capturan matrices o vectores columna como celdas `celda_<nombre>_<i>_<j>`.
 
     Los campos se generan según la estructura vigente (filas, columnas) y el
@@ -104,7 +106,7 @@ class FormularioCeldas(forms.Form):
         for nombre in nombres:
             texto = datos.get(nombre, "")
             if not texto:
-                self.add_error(nombre, f"Completa {self.fields[nombre].label.lower()}.")
+                self.add_error(nombre, f"Completa {_minuscula_inicial(self.fields[nombre].label)}.")
             else:
                 try:
                     datos[nombre] = convertir_a_numero(texto, limitar_entrada=True)
