@@ -8,6 +8,7 @@ No sustituye la prueba en WebView2: aquí no existen el menú nativo ni sus ataj
 import json
 import os
 import tempfile
+import time
 from pathlib import Path
 from wsgiref.simple_server import make_server
 
@@ -58,6 +59,9 @@ def pruebas(environ, start_response):
         with ajustes:
             respuesta = ERRORES[ruta.rstrip("/").rsplit("/", 1)[-1]](WSGIRequest(environ))
         return responder(start_response, respuesta.content, estado=f"{respuesta.status_code} {respuesta.reason_phrase}")
+    if ruta == "/__pruebas/preferencia-lenta/":
+        time.sleep(0.4)
+        environ["PATH_INFO"] = "/preferencias/"
     with ajustes:
         # Django renderiza dentro de la llamada; los estáticos no dependen del modo.
         return aplicacion(environ, start_response)

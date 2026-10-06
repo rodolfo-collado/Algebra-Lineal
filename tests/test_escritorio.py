@@ -11,6 +11,7 @@ import re
 import tempfile
 import threading
 import unittest
+from uuid import uuid4
 from pathlib import Path
 from unittest.mock import patch
 
@@ -175,6 +176,22 @@ class PruebasEndpointDePreferencias(EnEscritorio):
         respuesta = self.client.post("/preferencias/", {"clave": "pygebra-tema", "valor": "dark"})
         self.assertEqual(respuesta.status_code, 204)
         self.assertEqual(self.guardado(), {"pygebra-tema": "dark"})
+
+    def test_peticion_retrasada_no_sobrescribe_la_eleccion_mas_reciente(self):
+        sesion = str(uuid4())
+        for numero, valor in ((2, "light"), (1, "dark")):
+            respuesta = self.client.post("/preferencias/", {"clave": "pygebra-tema", "valor": valor},
+                                         HTTP_X_PYGEBRA_ESCRITURA=f"{sesion}:{numero}")
+            self.assertEqual(respuesta.status_code, 204)
+        self.assertEqual(self.guardado(), {"pygebra-tema": "light"})
+
+    def test_rechaza_identificadores_de_escritura_invalidos(self):
+        for escritura in ("incorrecto", f"{uuid4()}:0", f"{uuid4()}:1.5", f"{uuid4()}:9007199254740992"):
+            with self.subTest(escritura=escritura):
+                respuesta = self.client.post("/preferencias/", {"clave": "pygebra-tema", "valor": "dark"},
+                                             HTTP_X_PYGEBRA_ESCRITURA=escritura)
+                self.assertEqual(respuesta.status_code, 400)
+        self.assertFalse(self.archivo.exists())
 
     def test_rechaza_otras_claves_valores_y_metodos(self):
         for datos in ({"clave": "sistema", "valor": "x1=1"}, {"clave": "pygebra-tema", "valor": "rojo"}, {}):

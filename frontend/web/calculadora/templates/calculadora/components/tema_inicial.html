@@ -1,7 +1,7 @@
 <script>
     (function () {
         var root = document.documentElement;
-        var escritura = Promise.resolve();
+        var escritura = null;
         // Preferencias de presentación: localStorage durante la sesión y, en la app de
         // escritorio, el archivo propio que el servidor pinta como data-pygebra-… entre aperturas.
         var preferencias = window.preferencias = {
@@ -19,14 +19,25 @@
                 if (!root.hasAttribute("data-desktop")) return;
                 root.setAttribute("data-" + clave, valor);
                 var token = document.querySelector('meta[name="csrf-token"]');
-                // Un cambio posterior no puede adelantarse al que todavía se guarda.
-                escritura = escritura.then(function () {
-                    return fetch("/preferencias/", {
-                        method: "POST",
-                        keepalive: true,
-                        headers: {"X-CSRFToken": token ? token.content : ""},
-                        body: new URLSearchParams({clave: clave, valor: valor})
-                    });
+                var headers = {"X-CSRFToken": token ? token.content : ""};
+                try {
+                    escritura = JSON.parse(sessionStorage.getItem("pygebra-escrituras")) || escritura;
+                } catch (_) { /* Sin almacenamiento el orden vale para esta visita. */ }
+                try {
+                    if (!escritura || !Number.isSafeInteger(escritura.numero) || escritura.numero < 0) {
+                        escritura = {sesion: crypto.randomUUID(), numero: 0};
+                    }
+                    escritura.numero++;
+                    headers["X-PyGebra-Escritura"] = escritura.sesion + ":" + escritura.numero;
+                    try { sessionStorage.setItem("pygebra-escrituras", JSON.stringify(escritura)); } catch (_) {}
+                } catch (_) { /* Sin identificador, el servidor guarda normalmente. */ }
+                // Se envía ya: keepalive también cubre navegar mientras el servidor escribe.
+                // El servidor descarta escrituras anteriores que lleguen tarde.
+                fetch("/preferencias/", {
+                    method: "POST",
+                    keepalive: true,
+                    headers: headers,
+                    body: new URLSearchParams({clave: clave, valor: valor})
                 }).catch(function () { /* Sin servidor, vale para esta ejecución. */ });
             }
         };

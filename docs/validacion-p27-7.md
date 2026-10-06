@@ -80,9 +80,18 @@ Las actualizaciones del JSON se coordinan entre procesos mediante
 
 La auditoría independiente del 6 de octubre encontró pérdida de preferencias
 por peticiones fuera de orden y por escrituras entre instancias. Se corrigen con
-envíos en serie, solo del control cambiado, y un lock que cubre lectura y reemplazo.
+envíos inmediatos solo del control cambiado y un lock que cubre lectura y reemplazo.
+Un identificador y contador en `sessionStorage` permiten descartar una petición
+anterior que llegue tarde, incluso tras navegar. El servidor retiene ese orden
+solo en memoria; el JSON conserva únicamente las tres preferencias. No se
+encadenan promesas entre guardados: destruir el documento perdería los pendientes.
 También se limpian temporales ante errores de escritura y se captura el fallo
 de registro del menú contextual para conservar el menú desactivado.
+
+La revisión independiente ejecutó 1609 pruebas Python y 27/27 pruebas DOM de
+escritorio. Las regresiones nuevas prueban procesos separados, fallos antes del
+reemplazo, registro nativo fallido y HTTP retrasado durante cambios y navegación.
+No se repitió la automatización nativa de Escape por la limitación indicada abajo.
 
 ## Pruebas automatizadas
 

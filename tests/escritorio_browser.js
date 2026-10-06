@@ -157,7 +157,8 @@
             const modo = q(w, "[data-numeric-mode]"); modo.value = "decimal"; modo.dispatchEvent(new w.Event("change"));
             const precision = q(w, "[data-numeric-precision]"); precision.value = "8"; precision.dispatchEvent(new w.Event("change"));
             await espera(400);
-            igual(await archivo(), { "pygebra-tema": otro, "pygebra-formato-numerico": "decimal", "pygebra-precision-decimal": "8" });
+            igual(Object.entries(await archivo()).sort(), Object.entries({ "pygebra-tema": otro,
+                "pygebra-formato-numerico": "decimal", "pygebra-precision-decimal": "8" }).sort());
             // Arranque nuevo: el modo privado de WebView2 empieza sin localStorage ni sessionStorage.
             w.localStorage.clear(); w.sessionStorage.clear();
             w = await navegar(frame, () => { w.location.href = "/"; });
@@ -174,27 +175,32 @@
             igual(await archivo(), {});
             igual(["light", "dark"].includes(w.localStorage.getItem("pygebra-tema")), true);
         }],
-        ["Escritorio: dos cambios rápidos llegan al servidor en el orden elegido", "/", {}, async w => {
+        ["Escritorio: una petición retrasada no pisa el tema elegido después", "/", {}, async w => {
             const original = w.fetch;
-            const peticiones = [];
-            let completar;
-            w.fetch = (url, opciones) => {
-                peticiones.push(opciones.body.get("valor"));
-                return new Promise(resolve => { completar = () => resolve({ ok: true }); });
-            };
+            let primera = true;
+            w.fetch = (url, opciones) => original.call(w, primera
+                ? (primera = false, "/__pruebas/preferencia-lenta/") : url, opciones);
             try {
                 w.preferencias.guardar("pygebra-tema", "dark");
                 w.preferencias.guardar("pygebra-tema", "light");
-                await turno(w);
-                igual(peticiones, ["dark"], "escrituras simultáneas");
-                completar(); await turno(w);
-                igual(peticiones, ["dark", "light"]);
-                completar(); await turno(w);
+                await espera(650);
+                igual(await archivo(), { "pygebra-tema": "light" });
                 igual(w.localStorage.getItem("pygebra-tema"), "light");
             } finally {
-                completar?.();
                 w.fetch = original;
             }
+        }],
+        ["Escritorio: navegar durante una escritura conserva ambos cambios", "/", {}, async (w, frame) => {
+            const original = w.fetch;
+            let primera = true;
+            w.fetch = (url, opciones) => original.call(w, primera
+                ? (primera = false, "/__pruebas/preferencia-lenta/") : url, opciones);
+            w.preferencias.guardar("pygebra-tema", "dark");
+            w.preferencias.guardar("pygebra-precision-decimal", "8");
+            await navegar(frame, () => { w.location.href = "/matrices/reduccion/"; });
+            await espera(650);
+            igual(Object.entries(await archivo()).sort(), Object.entries({
+                "pygebra-tema": "dark", "pygebra-precision-decimal": "8" }).sort());
         }],
         ...[["404", "/no-existe/", "No encontramos esta página."],
             ["400", "/__pruebas/error/400/", "No pudimos procesar esta solicitud."],

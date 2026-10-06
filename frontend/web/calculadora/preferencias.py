@@ -9,13 +9,17 @@ import os
 import tempfile
 import threading
 from contextlib import contextmanager
+from collections import OrderedDict
 from pathlib import Path
+from uuid import UUID
 
 from django.conf import settings
 
 
 # Serializa los hilos; el lock del sistema operativo también coordina instancias.
 _ACCESO = threading.RLock()
+# Solo memoria del servidor: el orden no se guarda en preferencias.json.
+_ESCRITURAS = OrderedDict()
 VALORES = {
     "pygebra-tema": ("light", "dark"),
     "pygebra-formato-numerico": ("exacto", "decimal"),
@@ -70,12 +74,23 @@ def leer():
         return {}
 
 
-def guardar(clave, valor):
+def guardar(clave, valor, escritura=None):
     """Guarda una de las tres preferencias; cualquier otra clave o valor se rechaza."""
     archivo = _archivo()
     if archivo is None or valor not in VALORES.get(clave, ()):
         return False
+    orden = None
+    if escritura is not None:
+        try:
+            sesion, numero = escritura.split(":")
+            orden = int(numero)
+            if str(UUID(sesion)) != sesion or str(orden) != numero or not 0 < orden <= 2**53 - 1:
+                return False
+        except (AttributeError, TypeError, ValueError):
+            return False
     with _ACCESO:
+        if orden is not None and orden <= _ESCRITURAS.get((sesion, clave), 0):
+            return True
         archivo.parent.mkdir(parents=True, exist_ok=True)
         with _bloqueo(archivo):
             # El lock cubre lectura + modificación + reemplazo, no solo la escritura.
@@ -90,4 +105,10 @@ def guardar(clave, valor):
                 os.replace(temporal.name, archivo)
             finally:
                 Path(temporal.name).unlink(missing_ok=True)
+        if orden is not None:
+            _ESCRITURAS[sesion, clave] = orden
+            _ESCRITURAS.move_to_end((sesion, clave))
+            # ponytail: 256 claves de sesión bastan para una ventana por servidor.
+            if len(_ESCRITURAS) > 256:
+                _ESCRITURAS.popitem(last=False)
     return True
