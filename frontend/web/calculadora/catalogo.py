@@ -6,13 +6,18 @@ estructuras inmutables que se declaran una sola vez por herramienta.
 """
 
 from dataclasses import dataclass
+from re import split
 from typing import Literal
-from unicodedata import combining, normalize
+from unicodedata import category, normalize
 
 from django.urls import reverse
 
 
 Estado = Literal["disponible", "proximamente"]
+PALABRAS_VACIAS = ("de", "a", "al", "el", "la", "los", "las", "un", "una",
+                   "calcular", "hallar", "metodo", "pasar")
+# Espacios Unicode explícitos: Python y JS no asignan exactamente lo mismo a \s.
+SEPARADOR_TERMINOS = r"[\t-\r\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+"
 
 
 @dataclass(frozen=True)
@@ -97,14 +102,31 @@ class Miga:
 def normalizar(texto: str) -> str:
     """Minúsculas, sin acentos y con espacios simples: «Clasificación» ≈ «clasificacion»."""
     sin_acentos = "".join(
-        caracter for caracter in normalize("NFD", texto) if not combining(caracter)
+        caracter for caracter in normalize("NFD", texto) if not category(caracter).startswith("M")
     )
-    return " ".join(sin_acentos.lower().split())
+    return " ".join(t for t in split(SEPARADOR_TERMINOS, sin_acentos.lower()) if t)
+
+
+def terminos_de(texto: str) -> tuple[str, ...]:
+    return tuple(t for t in normalizar(texto).split() if t not in PALABRAS_VACIAS)
+
+
+def datos_buscador() -> dict:
+    """Índice, prioridad y palabras vacías del único catálogo, publicados con json_script."""
+    return {
+        "palabras_vacias": PALABRAS_VACIAS,
+        "separador": SEPARADOR_TERMINOS,
+        "herramientas": [
+            {"id": h.id, "indice": h.indice, "nombre": normalizar(h.nombre),
+             "disponible": h.disponible}
+            for h in HERRAMIENTAS
+        ],
+    }
 
 
 ALGEBRA_LINEAL = Area(
     "algebra-lineal", "Álgebra Lineal",
-    "Vectores, matrices y sus aplicaciones en álgebra lineal.",
+    "Vectores, matrices, sistemas de ecuaciones y sus aplicaciones.",
 )
 SISTEMAS_NUMERICOS = Area(
     "sistemas-numericos", "Sistemas numéricos",
@@ -119,7 +141,7 @@ VECTORES = Categoria(
 )
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones con matrices, reducción por filas, la ecuación matricial Ax = b y la matriz inversa.",
+    "Operaciones con matrices, sistemas de ecuaciones, reducción por filas, la ecuación matricial Ax = b y la matriz inversa.",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -140,7 +162,7 @@ REDUCCION_FILAS = Herramienta(
     id="reduccion-filas",
     nombre="Reducción por filas",
     categoria=MATRICES,
-    descripcion="Reduce una matriz aumentada mediante Gauss o Gauss-Jordan, ingresándola directamente o a partir de un sistema de ecuaciones.",
+    descripcion="Resuelve sistemas de ecuaciones con Gauss o Gauss-Jordan, desde el sistema escrito o una matriz aumentada.",
     estado="disponible",
     route_name="calculadora:reduccion-filas",
     palabras_clave=(
@@ -150,10 +172,10 @@ REDUCCION_FILAS = Herramienta(
         "sustitución regresiva", "procedimiento paso a paso", "clasificación",
         "tipo de solución", "consistente", "inconsistente", "solución única",
         "soluciones infinitas", "variables libres", "pivote", "pivotes", "columnas pivote",
-        "variables pivote",
+        "variables pivote", "reducir", "matriz", "sistema lineal", "sistemas lineales", "ecuaciones lineales",
     ),
     relacionadas=("ecuaciones-matriciales",),
-    invitacion="Reducir una matriz aumentada",
+    invitacion="Parte de un sistema escrito o una matriz aumentada y sigue la reducción.",
 )
 
 # Única herramienta de la categoría: la operación (suma, resta, escalar o
@@ -169,10 +191,10 @@ OPERACIONES_VECTORES = Herramienta(
         "vector", "vectores", "suma de vectores", "resta de vectores", "escalar",
         "multiplicación por escalar", "producto por escalar", "combinación lineal",
         "combinacion lineal", "coeficientes", "ecuación vectorial", "span", "generado",
-        "conjunto generado", "dimensión", "componentes", "rn",
+        "conjunto generado", "dimensión", "componentes", "rn", "sumar", "restar", "multiplicar",
     ),
     relacionadas=("ecuaciones-matriciales", "operaciones-matrices"),
-    invitacion="Operar con vectores",
+    invitacion="Suma o resta vectores y encuentra coeficientes de una combinación lineal.",
 )
 
 CONVERSION_BASES = Herramienta(
@@ -187,10 +209,10 @@ CONVERSION_BASES = Herramienta(
     route_name="calculadora:conversion-bases",
     palabras_clave=(
         "binario", "decimal", "octal", "hexadecimal", "bases", "conversión",
-        "sistemas numéricos", "conversión de bases", "base",
+        "sistemas numéricos", "conversión de bases", "base", "convertir",
     ),
     relacionadas=("conversion-romanos",),
-    invitacion="Convertir entre bases numéricas",
+    invitacion="Cambia un número entre binario, octal, decimal y hexadecimal.",
 )
 
 CONVERSION_ROMANOS = Herramienta(
@@ -204,10 +226,10 @@ CONVERSION_ROMANOS = Herramienta(
         "romano", "romanos", "números romanos", "numeración romana",
         "arábigo a romano", "romano a arábigo",
         # Solo para el buscador (no se muestran): quien escriba «decimal» también la encuentra.
-        "decimal a romano", "romano a decimal",
+        "decimal a romano", "romano a decimal", "convertir",
     ),
     relacionadas=("conversion-bases",),
-    invitacion="Convertir números romanos",
+    invitacion="Convierte entre números arábigos y romanos.",
 )
 
 # Una sola herramienta para operaciones simples y compuestas (P26.6): A + B, 2A, AB,
@@ -225,23 +247,25 @@ OPERACIONES_MATRICES = Herramienta(
                     "producto punto", "combinación lineal", "expresión", "expresiones",
                     "expresiones matriciales", "componer", "combinar", "paréntesis",
                     "multiplicación implícita", "igualdad", "2a", "ab", "au",
-                    "matriz desconocida", "vector simbólico", "expresión lineal"),
-    relacionadas=("ecuaciones-matriciales", "operaciones-vectores"),
-    invitacion="Operar con matrices",
+                    "matriz desconocida", "vector simbólico", "expresión lineal",
+                    "multiplicar", "sumar", "restar", "transponer", "trasponer"),
+    relacionadas=("ecuaciones-matriciales", "operaciones-vectores", "matriz-inversa"),
+    invitacion="Combina operaciones con matrices, vectores y escalares.",
 )
 
 # En Resolver Ax = b, x es la incógnita. Se reutilizan los motores de sistemas
 # (Gauss, Gauss-Jordan o ambos) sobre la matriz aumentada [A | b].
 ECUACIONES_MATRICIALES = Herramienta(
     id="ecuaciones-matriciales", nombre="Resolver Ax = b", categoria=MATRICES,
-    descripcion="Encuentra x y conecta la ecuación matricial Ax = b con su sistema lineal.",
+    descripcion="Si ya tienes A y b, encuentra x en Ax = b mediante reducción por filas.",
     estado="disponible", route_name="calculadora:ecuaciones-matriciales",
     palabras_clave=("ecuación matricial", "ecuaciones matriciales", "ax=b", "ax = b", "resolver ax=b",
                     "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
                     "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
-                    "inconsistente"),
+                    "inconsistente", "resolver sistema", "sistema de ecuaciones", "sistemas de ecuaciones",
+                    "sistema lineal", "sistemas lineales", "ecuaciones lineales"),
     relacionadas=("reduccion-filas", "operaciones-matrices", "operaciones-vectores"),
-    invitacion="Resolver una ecuación matricial",
+    invitacion="Si ya tienes A y b, encuentra x en Ax = b.",
 )
 
 # Solo para matrices cuadradas. El método (Gauss-Jordan o la regla 2×2) se elige
@@ -255,10 +279,10 @@ MATRIZ_INVERSA = Herramienta(
     route_name="calculadora:matriz-inversa",
     palabras_clave=(
         "inversa", "matriz inversa", "inversa de una matriz", "a⁻¹", "a^-1", "invertible",
-        "no invertible", "matriz singular", "matriz identidad", "identidad", "matriz cuadrada", "2x2", "2×2",
+        "no invertible", "matriz singular", "matriz identidad", "identidad", "matriz cuadrada", "2x2", "2×2", "invertir",
     ),
     relacionadas=("operaciones-matrices", "ecuaciones-matriciales"),
-    invitacion="Calcular la inversa de una matriz",
+    invitacion="Si necesitas invertir una matriz cuadrada, sigue el procedimiento.",
 )
 
 HERRAMIENTAS = (
@@ -319,7 +343,7 @@ def buscar_herramientas(consulta: str, herramientas=HERRAMIENTAS) -> tuple[Herra
     Todos los términos deben aparecer. Primero las disponibles y, entre ellas,
     las que coinciden por nombre; después se respeta el orden del registro.
     """
-    terminos = normalizar(consulta).split()
+    terminos = terminos_de(consulta)
     if not terminos:
         return ()
 

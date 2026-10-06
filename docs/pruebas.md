@@ -405,3 +405,22 @@ tres lecturas; una matriz rectangular, un vector, un escalar y una igualdad;
 Exacto/Decimal en los valores intermedios, procedimiento plegable, resultado
 único, «Calcular solo esta parte», móvil y escritorio, claro y oscuro, teclado
 matemático, navegación, buscador y `/matrices/expresiones/`.
+
+## P27.5 — Buscador y orientación
+
+`test_navegacion` cubre normalización, términos vacíos, consultas naturales,
+orden de sistemas, próximas, universo completo oculto sin JS y renderizado de
+invitaciones. Los cambios de expectativas responden a UI-15 y UI-17: Cálculo
+oculto existe en Inicio, sistemas devuelve también Ax = b y operaciones
+relaciona Matriz inversa.
+
+```bash
+uv run --locked python -m tests.buscador_browser
+```
+
+Abrir `http://127.0.0.1:8881/__pruebas/`. El runner usa Django y el JavaScript
+de producción. Verifica cambios sucesivos sin GET, estados/recuentos, foco,
+sugerencias, próximas, Escape y memoria del Menú. Compara desde Inicio y un
+GET previo los IDs live con Python para 40 consultas, incluidas las siete
+obligatorias, acciones naturales, tildes, mayúsculas, espacios Unicode y todos
+los términos ignorados. Véase [validación P27.5](validacion-p27-5.md).

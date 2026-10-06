@@ -81,7 +81,7 @@
     }
     if (backdrop) backdrop.addEventListener("click", cerrar);
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && abierto) cerrar();
+        if (event.key === "Escape" && abierto && !event.defaultPrevented) cerrar();
     });
 
     // Las categorías abiertas por el usuario se recuerdan; la categoría activa

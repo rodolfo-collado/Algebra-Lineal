@@ -51,6 +51,13 @@ el Inicio, los breadcrumbs y las herramientas relacionadas derivan de ahí:
 `context_processors.navegacion` identifica la herramienta activa a partir de la
 ruta resuelta, así que las vistas no arman la navegación a mano.
 
+P27.5 publica `datos_buscador()` con `json_script`: índice, nombre normalizado,
+estado y orden de todas las herramientas, palabras vacías y separador de términos.
+El cliente deriva sus coincidencias de esos datos; no tiene otro catálogo.
+GET y live exigen todos los términos significativos y ordenan por disponibilidad,
+aciertos en el nombre y posición del registro. `tests.buscador_browser` compara
+los IDs del JS real con `buscar_herramientas()` para una tabla generada en Python.
+
 El catálogo permite sumar áreas sin rehacer la navegación. Los módulos marcados
 «Próximamente» no se enlazan como herramientas disponibles.
 

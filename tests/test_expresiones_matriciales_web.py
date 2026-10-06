@@ -59,7 +59,8 @@ class PruebasCatalogo(SimpleTestCase):
             catalogo.herramientas_de(catalogo.MATRICES),
             (herramienta, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA),
         )
-        self.assertEqual(set(herramienta.relacionadas), {"ecuaciones-matriciales", "operaciones-vectores"})
+        # UI-17 añade inversa desde operaciones, sin sugerir resolver Ax=b por inversión.
+        self.assertEqual(set(herramienta.relacionadas), {"ecuaciones-matriciales", "operaciones-vectores", "matriz-inversa"})
         respuesta = self.client.get("/")
         self.assertContains(respuesta, f'href="{RUTA}"')
         self.assertNotContains(respuesta, f'href="{ANTIGUA}"')
