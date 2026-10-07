@@ -18,8 +18,8 @@
     </div>
     <p id="{{ search_id }}-estado" class="search-status" aria-live="polite"></p>
     <p class="search-suggestions" data-busqueda-sugerencias{% if not search_large or resultados_busqueda or resultados_busqueda is None %} hidden{% endif %}>
-        Prueba con <a href="{% url 'calculadora:inicio' %}?q=gauss">Buscar Gauss</a>,
-        <a href="{% url 'calculadora:inicio' %}?q=matriz">Buscar Matriz</a> o
-        <a href="{% url 'calculadora:inicio' %}?q=vectores">Buscar Vectores</a>.
+        Prueba con <a class="text-link" href="{% url 'calculadora:inicio' %}?q=gauss">Buscar Gauss</a>,
+        <a class="text-link" href="{% url 'calculadora:inicio' %}?q=matriz">Buscar Matriz</a> o
+        <a class="text-link" href="{% url 'calculadora:inicio' %}?q=vectores">Buscar Vectores</a>.
     </p>
 </form>

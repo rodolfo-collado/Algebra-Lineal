@@ -186,6 +186,7 @@
 
         lista.replaceChildren();
         lista.dataset.dimension = String(dimension);
+        lista.style.setProperty("--vector-dimension", dimension);
         lista.dataset.vectores = String(cantidad);
         if (operacion === "escalar") {
             const fila = filaEscalar(escalarGuardado);

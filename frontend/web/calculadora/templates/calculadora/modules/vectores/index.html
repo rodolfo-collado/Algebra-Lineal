@@ -49,7 +49,7 @@
                     </div>
                 </div>
 
-                <div id="vector-list" class="vector-list" data-dimension="{{ estructura.dimension }}" data-vectores="{{ estructura.vectores }}">
+                <div id="vector-list" class="vector-list" style="--vector-dimension: {{ estructura.dimension }}" data-dimension="{{ estructura.dimension }}" data-vectores="{{ estructura.vectores }}">
                     {% if estructura.operacion == "escalar" %}
                         <div class="vector-row vector-row-scalar" data-escalar role="group" aria-label="Escalar k">
                             <span class="vector-name" aria-hidden="true">k =</span>

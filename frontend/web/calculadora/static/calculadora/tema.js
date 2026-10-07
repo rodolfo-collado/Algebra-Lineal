@@ -39,7 +39,6 @@
         const siguiente = theme === "dark" ? "claro" : "oscuro";
         button.setAttribute("aria-label", `Cambiar a tema ${siguiente}`);
         // El texto visible es siempre «Tema»: el icono y el aria-label indican el estado.
-        button.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
     }
 
     applyTheme(storedTheme() || currentTheme() || systemTheme());
@@ -50,6 +49,7 @@
             preferencias.guardar(STORAGE_KEY, next);
             applyTheme(next);
         });
+        button.hidden = false;
     }
 
     media.addEventListener("change", () => {

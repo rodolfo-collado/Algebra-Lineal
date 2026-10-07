@@ -8,7 +8,7 @@ import os
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
 import django
@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "frontend/web/calculadora"
 
 
-def fixture():
+def fixture(valor=None):
     contenido = Template('''{% load numeros %}
         <input id="entrada" value="1/3" aria-label="Entrada original">
         {% numeric_results %}<section id="resultado">
@@ -30,6 +30,10 @@ def fixture():
         <details id="pasos"><summary>Ver procedimiento</summary><code>F1 = (1/3)F1</code>
         <table aria-label="Matriz con factor 1/3"><tr><td>1/3</td><td>-1/3</td></tr></table></details>
         </section>{% endnumeric_results %}''').render(Context())
+    if valor is not None:
+        contenido = Template('''{% load numeros %}{% numeric_results %}<section id="resultado">
+        {% include "calculadora/components/numeric_format.html" %}<code id="solucion">{{ valor }}</code>
+        </section>{% endnumeric_results %}''').render(Context({"valor": valor}))
     # El mismo script inicial del <head> que incluyen base.html y las páginas de error.
     inicial = (APP / "templates/calculadora/components/tema_inicial.html").read_text(encoding="utf-8")
     tema_inicial = re.search(r"<script>(.*?)</script>", inicial, re.S).group(1)
@@ -45,7 +49,7 @@ def fixture():
         window.fetch = () => {{ window.requests++; throw new Error("petición inesperada"); }};
         window.XMLHttpRequest = function() {{ window.requests++; throw new Error("petición inesperada"); }};
         {tema_inicial}
-        </script><button id="theme-toggle"><span class="theme-toggle-text">Tema</span></button>
+        </script><button id="theme-toggle" hidden><span class="theme-toggle-text">Tema</span></button>
         {contenido}<script src="/numeros.js"></script><script src="/tema.js"></script></html>'''.encode()
 
 
@@ -53,7 +57,7 @@ class PaginaPruebas(BaseHTTPRequestHandler):
     def do_GET(self):
         recursos = {
             "/": ("text/html", b'<!doctype html><html lang="es"><meta charset="utf-8"><title>PyGebra: regresiones de presentacion</title><h1>Presentacion numerica y tema</h1><ol id="resultados"></ol><p id="total">Ejecutando...</p><script src="/pruebas.js"></script></html>'),
-            "/fixture": ("text/html", fixture()),
+            "/fixture": ("text/html", fixture(parse_qs(urlsplit(self.path).query).get("valor", [None])[0])),
             "/numeros.js": ("text/javascript", (APP / "static/calculadora/numeros.js").read_bytes()),
             "/tema.js": ("text/javascript", (APP / "static/calculadora/tema.js").read_bytes()),
             "/pruebas.js": ("text/javascript", (ROOT / "tests/presentacion_browser.js").read_bytes()),

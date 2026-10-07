@@ -12,6 +12,7 @@
     const texto = (w, selector) => w.document.querySelector(selector).textContent;
     const casos = [
         ["Exacto inicial; precisión oculta y pasos cerrados", {}, w => {
+            igual(w.document.querySelector("[data-numeric-controls]").hidden, false);
             igual(texto(w, "#solucion"), "x1 = 1/3");
             igual(w.document.querySelector("#numeric-mode").value, "exacto");
             igual(w.document.querySelector("#numeric-precision").hidden, true);
@@ -65,22 +66,48 @@
         }],
         ["Tema PyGebra tiene prioridad sobre el histórico", {values:{"pygebra-tema":"light","algebra-lineal-tema":"dark"}}, w => {
             igual(w.document.documentElement.dataset.theme,"light");
+            const boton = w.document.querySelector("#theme-toggle");
+            igual(boton.hidden, false);
+            igual(boton.hasAttribute("aria-pressed"), false);
+            igual(boton.getAttribute("aria-label"), "Cambiar a tema oscuro");
             w.document.querySelector("#theme-toggle").click();
             igual(w.localStorage.getItem("pygebra-tema"),"dark");
+            igual(boton.getAttribute("aria-label"), "Cambiar a tema claro");
         }],
         ["Sin JavaScript: valores exactos y details nativos", {nojs:true}, w => {
             igual(texto(w,"#solucion"),"x1 = 1/3");
             igual(w.document.querySelector("[data-numeric-controls]").hidden,true);
+            igual(w.document.querySelector("#theme-toggle").hidden,true);
             w.document.querySelector("summary").click();
             igual(w.document.querySelector("#pasos").open,true);
         }],
     ];
+    for (const valor of ["4", "0.5", "Sin solución"]) casos.push([
+        `Formato oculto sin variantes: ${valor}; conserva preferencias y pageshow`,
+        {valor, values:{"pygebra-formato-numerico":"decimal","pygebra-precision-decimal":"6"}}, w => {
+            igual(w.document.querySelector("[data-numeric-controls]").hidden,true);
+            w.dispatchEvent(new w.PageTransitionEvent("pageshow", {persisted:true}));
+            igual(w.document.querySelector("[data-numeric-controls]").hidden,true);
+            igual(texto(w,"#solucion"),valor);
+            igual(w.localStorage.getItem("pygebra-formato-numerico"),"decimal");
+            igual(w.localStorage.getItem("pygebra-precision-decimal"),"6");
+            igual(w.requests,0);
+        }
+    ]);
+    casos.push(["Formato redondeable y pageshow recupera la preferencia global", {valor:"1234567/10000000",values:{"pygebra-formato-numerico":"decimal"}}, w => {
+        igual(w.document.querySelector("[data-numeric-controls]").hidden,false);
+        igual(texto(w,"#solucion"),"0.1235");
+        w.localStorage.setItem("pygebra-formato-numerico","exacto");
+        w.dispatchEvent(new w.PageTransitionEvent("pageshow", {persisted:true}));
+        igual(texto(w,"#solucion"),"1234567/10000000");
+        igual(w.requests,0);
+    }]);
     let passed=0;
     for (const [name, seed, test] of casos) {
         window.seed=seed;
         const frame=document.createElement("iframe");
         if(seed.nojs) frame.setAttribute("sandbox","allow-same-origin");
-        frame.src="/fixture";
+        frame.src=seed.valor ? `/fixture?valor=${encodeURIComponent(seed.valor)}` : "/fixture";
         const loaded=new Promise(resolve => frame.onload=resolve);
         document.body.append(frame);
         await loaded;

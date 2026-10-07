@@ -282,6 +282,11 @@ legend,
     outline-offset: 2px;
 }
 
+/* La pastilla ya representa el foco del radio nativo que contiene. */
+:is(.option, .segment) input:focus-visible {
+    outline: none;
+}
+
 .field-group {
     margin-bottom: 0;
 }
@@ -1129,15 +1134,16 @@ textarea:focus {
     font-weight: 400;
 }
 
-/* Nombre · componentes · botón ×: todas las filas comparten esas tres columnas (subgrid),
-   así los vectores quedan alineados y el × pertenece a su fila, nunca a una fila aparte. */
+/* Un solo scroll; subgrid comparte también el ancho de cada componente entre filas. */
 .vector-list {
     display: grid;
-    grid-template-columns: auto minmax(0, max-content) auto;
+    /* Nombre, paréntesis/componentes/separadores compartidos y botón de la fila. */
+    grid-template-columns: auto repeat(calc(2 * var(--vector-dimension) + 1), max-content) auto;
     justify-content: start;
     gap: 0.55rem;
     max-width: 100%;
     min-width: 0;
+    overflow-x: auto;
     padding: 0.85rem;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -1147,13 +1153,13 @@ textarea:focus {
 .vector-row {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: auto minmax(0, max-content) auto;
     grid-template-columns: subgrid;
     align-items: center;
     min-width: 0;
 }
 
 .vector-remove {
+    grid-column: -2;
     width: 2.25rem;
     height: 2.25rem;
     border-radius: var(--radius-sm);
@@ -1187,16 +1193,21 @@ textarea:focus {
 }
 
 .vector-inputs {
-    display: flex;
+    display: grid;
+    grid-column: 2 / -2;
+    grid-template-columns: subgrid;
     align-items: center;
     gap: 0.3rem;
     min-width: 0;
     padding: 0.2rem 0.15rem;
-    overflow-x: auto;
 }
 
-.vector-inputs .matrix-input {
-    flex: none;
+.vector-row:not(.vector-row-scalar) .matrix-input {
+    width: 100%;
+}
+
+.vector-row-scalar .vector-inputs {
+    display: flex;
 }
 
 .vector-fence {
@@ -1329,7 +1340,7 @@ textarea:focus {
         font-size: 1.1rem;
     }
 
-    /* En pantallas estrechas caben tres componentes sin desplazar la fila, también
+    /* En pantallas estrechas caben tres componentes sin desplazar la lista, también
        con la columna del botón ×. */
     .vector-list {
         column-gap: 0.4rem;
@@ -1399,6 +1410,13 @@ textarea:focus {
 
     .base-results {
         font-size: 1.15rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .segmented,
+    .segment {
+        border-radius: var(--radius-md);
     }
 }
 

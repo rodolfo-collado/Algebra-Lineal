@@ -100,10 +100,10 @@
             const boton = q(w, "#theme-toggle");
             w.localStorage.setItem("pygebra-tema", "dark"); restaurar(w);
             igual(w.document.documentElement.dataset.theme, "dark");
-            igual([boton.getAttribute("aria-label"), boton.getAttribute("aria-pressed")], ["Cambiar a tema claro", "true"]);
+            igual([boton.getAttribute("aria-label"), boton.getAttribute("aria-pressed")], ["Cambiar a tema claro", null]);
             w.localStorage.setItem("pygebra-tema", "light"); restaurar(w);
             igual(w.document.documentElement.dataset.theme, "light");
-            igual([boton.getAttribute("aria-label"), boton.getAttribute("aria-pressed")], ["Cambiar a tema oscuro", "false"]);
+            igual([boton.getAttribute("aria-label"), boton.getAttribute("aria-pressed")], ["Cambiar a tema oscuro", null]);
         }],
         ["pageshow restaurado: Exacto/Decimal y precisión sin recalcular, stale ni anuncios", "/matrices/reduccion/", {}, async (w, frame) => {
             w = await calcular(frame);
