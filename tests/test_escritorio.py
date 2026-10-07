@@ -275,9 +275,11 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
             self.assertNotIn(ausente, script)
 
     def test_las_cuadriculas_dejan_alt_flechas_al_historial(self):
+        compartido = (STATIC / "entradas.js").read_text(encoding="utf-8")
+        self.assertIn("event.altKey", compartido)
         for nombre in ("matriz.js", "vectores.js", "ecuaciones.js", "expresiones.js", "inversa.js"):
             with self.subTest(script=nombre):
-                self.assertIn("event.altKey", (STATIC / nombre).read_text(encoding="utf-8"))
+                self.assertIn("window.entradasSeguras.flechaDeCelda(event)", (STATIC / nombre).read_text(encoding="utf-8"))
 
     def test_pageshow_restaurado_cierra_menu_y_resincroniza_preferencias(self):
         navegacion = (STATIC / "navigation.js").read_text(encoding="utf-8")

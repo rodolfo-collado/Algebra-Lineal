@@ -45,9 +45,12 @@
                 <legend class="sr-only">Sistema de ecuaciones</legend>
                 <div class="field-group">
                     {{ form.sistema.label_tag }}
-                    <p class="field-help">
-                        Escribe una ecuación por línea o sepáralas con <code>;</code>.
-                        Las variables son <code>x1</code>, <code>x2</code>, …; se admiten fracciones como <code>1/2</code>.
+                    <p id="sistema-ayuda" class="field-help">
+                        Usa <code>x1</code>, <code>x2</code>, … como incógnitas, con <code>x</code> minúscula.
+                        Puedes escribir enteros, fracciones como <code>1/2</code> y decimales con punto.
+                        Separa las ecuaciones con <code>;</code> o con saltos de línea.
+                        Ejemplo: <code>2x1 - x2 = 3; x1 + 4x2 = 7</code>.
+                        No uses <code>x/y/z</code>, <code>X1</code>, coma decimal ni un <code>;</code> vacío al final.
                         Puedes dejar términos a ambos lados del <code>=</code>, como <code>x1 - 6 = -x2</code>.
                     </p>
                     {{ form.sistema }}
@@ -55,7 +58,7 @@
                 </div>
             </fieldset>
 
-            <fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="{{ celdas_maximas }}" class="input-mode" hidden disabled>
+            <fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="{{ celdas_maximas }}" data-ecuaciones-inicial="{{ form.ecuaciones.field.initial }}" data-variables-inicial="{{ form.variables.field.initial }}" class="input-mode" hidden disabled>
                 <legend class="sr-only">Matriz aumentada</legend>
                 <div class="structure-controls" role="group" aria-label="Estructura de la matriz">
                     <div class="dimension-field">

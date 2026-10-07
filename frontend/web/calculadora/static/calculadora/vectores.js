@@ -277,7 +277,7 @@
         const delta = deltas[event.key];
         const celda = event.target?.dataset?.cell;
         // Alt+←/→ queda para el historial de escritorio, como en las demás cuadrículas.
-        if (!delta || event.altKey || celda === undefined) return;
+        if (!delta || !window.entradasSeguras.flechaDeCelda(event) || celda === undefined) return;
 
         const filas = Array.from(lista.querySelectorAll(".vector-row[data-vector]"));
         const filaActual = event.target.closest(".vector-row");
@@ -286,7 +286,7 @@
         const celdas = Array.from(filaActual.querySelectorAll("input[data-cell]"));
         const indiceCelda = celdas.indexOf(event.target) + delta[1];
         const destino = Array.from(filas[indiceFila].querySelectorAll("input[data-cell]"))[indiceCelda];
-        if (!destino) return;
+        if (!destino || destino.readOnly || destino.matches(":disabled")) return;
 
         event.preventDefault();
         destino.focus();

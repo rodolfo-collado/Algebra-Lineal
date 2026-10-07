@@ -240,6 +240,7 @@
                     input.dataset.columna = String(j);
                     input.value = guardado.get(`${i}_${j}`) ?? "";
                     input.classList.toggle("matrix-input-lineal", tipo === "vector_lineal");
+                    if (tipo === "vector_lineal") input.maxLength = Number(celda.dataset.longitudLineal);
                     input.placeholder = tipo === "vector_lineal" ? "3x1 - 2x2" : "";
                     copia.querySelector("label").textContent = etiquetaCelda(tipo, nombre, i, j);
                     fila.append(copia);
@@ -389,16 +390,14 @@
     // símbolo; las horizontales solo cambian de celda al llegar al extremo del texto.
     lista.addEventListener("keydown", (event) => {
         const input = event.target;
-        if (input.dataset.campo !== "celda" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (input.dataset.campo !== "celda" || !window.entradasSeguras.flechaDeCelda(event)) return;
         const deltas = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
         const delta = deltas[event.key];
-        if (!delta || input.selectionStart !== input.selectionEnd) return;
-        if (event.key === "ArrowLeft" && input.selectionStart !== 0) return;
-        if (event.key === "ArrowRight" && input.selectionEnd !== input.value.length) return;
+        if (!delta) return;
         const fila = Number(input.dataset.fila) + delta[0];
         const columna = Number(input.dataset.columna) + delta[1];
         const destino = tarjeta(input).querySelector(`[data-campo="celda"][data-fila="${fila}"][data-columna="${columna}"]`);
-        if (destino) {
+        if (destino && !destino.readOnly && !destino.matches(":disabled")) {
             event.preventDefault();
             destino.focus();
         }

@@ -110,15 +110,13 @@
     // las horizontales solo cambian de celda al llegar al extremo del texto.
     entrada.addEventListener("keydown", event => {
         const input = event.target;
-        if (input.tagName !== "INPUT" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (!window.entradasSeguras.flechaDeCelda(event)) return;
         const deltas = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
         const delta = deltas[event.key];
-        if (!delta || input.selectionStart !== input.selectionEnd) return;
-        if (event.key === "ArrowLeft" && input.selectionStart !== 0) return;
-        if (event.key === "ArrowRight" && input.selectionEnd !== input.value.length) return;
+        if (!delta) return;
         const [, nombre, i, j] = input.name.split("_");
         const destino = entrada.querySelector(`[name="celda_${nombre}_${Number(i) + delta[0]}_${Number(j) + delta[1]}"]`);
-        if (destino) {
+        if (destino && !destino.readOnly && !destino.matches(":disabled")) {
             event.preventDefault();
             destino.focus();
         }
