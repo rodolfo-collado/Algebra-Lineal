@@ -552,3 +552,35 @@ escribe `<details>`; `test_propiedades_inversa_web`, la ayuda por opción y su
 renombrado sin JavaScript, y los labels reales sin «:»; y
 `test_multiplicacion_matrices_web`, los grupos de producto con el componente. Véase
 [validación P27.8](validacion-p27-8.md).
+
+## P27.9 — Entrada y edición de datos
+
+```bash
+uv run --locked python -m tests.entrada_edicion_browser
+uv run --locked python -m unittest tests.test_entrada_edicion -v
+```
+
+Abrir `http://127.0.0.1:8889/__pruebas/` en @Browser. Sus 33 casos sirven formularios
+y scripts reales: pegado exacto/interior/fila/columna, LF/CRLF, signos/fracciones/
+decimales/espacios, single-cell nativo, comas, atomicidad ante overflow y filas
+desiguales, `maxlength` real de vector lineal, readonly/disabled de origen y destino,
+solo `text/plain`, input/status/foco/teclado/stale y los cinco módulos. También
+defaults 3 ecuaciones × 3 variables, memoria al alternar y redimensionar, POST con
+error, primer cambio tras POST textual, fallback textual sin JS y Aplicar de Ax=b.
+Las flechas cubren extremos/interior, selección, modificadores, AltGr, IME y
+`defaultPrevented`, con paridad entre Reducción y Ax=b; conserva navegación vertical.
+Cuatro casos miden fracciones largas, 7rem, alineación y scroll local a 1280×650,
+744×521, 390×650 y 760×560.
+
+`test_entrada_edicion` aporta seis pruebas Python sobre el parser existente,
+ayuda/placeholder asociados y aceptados, defaults, dimensiones explícitas,
+conservación POST/error y cálculo por texto sin JS. Los casos positivos incluyen
+x1/x2, fracciones, punto decimal, espacios y separadores `;`, LF y CRLF; los
+negativos incluyen X1, x/y/z, coma decimal, `;` final vacío y espacios entre dígitos.
+
+El `ClipboardEvent` simulado se usa únicamente en el runner. La QA adicional en
+@Browser prueba Ctrl+C → Ctrl+V reales entre texto tabulado y otra cuadrícula,
+selección/cursor reales con `-12/7`, el teclado contextual y los cuatro tamaños.
+No sustituye una prueba nativa del menú de WebView2; el handler no depende de Ctrl+V.
+Se ejecutan además los diez runners anteriores, 225 casos. Comandos, resultados
+y límites: [validación P27.9](validacion-p27-9.md).

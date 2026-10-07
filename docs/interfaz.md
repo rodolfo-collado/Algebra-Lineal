@@ -777,3 +777,48 @@ extienden `calculadora/errores/base.html`: marca PyGebra, mensaje breve e
 «Ir al inicio» hacia la raíz `/`, sin catálogo, `reverse()` ni JavaScript, porque
 Django renderiza el 500 sin request. Nunca muestran traceback, motivo técnico
 ni datos del error. Django solo las usa con `DEBUG=False`, siempre en escritorio.
+
+## Entrada y edición de datos (P27.9)
+
+`entradas.js` atiende el evento `paste`, tanto de Ctrl+V como del menú contextual,
+con tres adaptaciones pequeñas al DOM existente: tablas editables, matriz
+aumentada y filas de vectores. Solo usa `text/plain`: TAB separa columnas y LF
+o CRLF separan filas. Ignora una terminación de línea de hoja de cálculo; conserva
+celdas vacías y espacios internos, recortando únicamente los extremos. Las comas
+permanecen dentro del valor. Una sola celda conserva el paste nativo.
+
+- **Destino.** Reducción por filas [A | b]; A y b de Ax=b; A y B/b opcionales de
+  Inversa; matrices y vectores editables de Operaciones; componentes de Vectores.
+  Cada tabla se limita a su símbolo. En Vectores, filas = vectores visibles y
+  columnas = componentes: una columna pegada recorre vectores, una fila recorre
+  componentes. No incluye el escalar k, resultados, procedimiento ni incógnitas.
+- **Todo o nada.** Antes de escribir comprueba que el bloque sea rectangular,
+  que quepa completo desde la celda inicial, que todos los destinos sean editables
+  y que ningún valor exceda su `maxlength`. Si falla, conserva todas las entradas
+  y anuncia el motivo; no redimensiona ni hace pegados parciales.
+- **Estado y foco.** Aplica todos los valores antes de emitir un `input` por celda.
+  Reutiliza `resultado.js` para stale, conservando el resultado previo y el teclado
+  contextual. Mantiene el foco inicial. Reutiliza el status de símbolos/vectores
+  o crea un `role=status` en el formulario: «Se pegaron N valores.» No calcula,
+  envía, interpreta HTML ni valida aritmética. Los límites numéricos existentes
+  siguen en el servidor; el límite de 200 caracteres de componentes lineales se
+  conserva también después de reconstruirlas.
+- **Matriz aumentada lista.** La primera elección propone 3 ecuaciones × 3
+  variables: 3 filas con 3 coeficientes y b, visualmente 3×4. Las dimensiones
+  explícitas, valores y errores POST prevalecen. Alternar con texto conserva la
+  memoria durante la página, sin almacenamiento entre herramientas/sesiones.
+  Sin JS, Reducción mantiene el fallback textual; las demás herramientas mantienen
+  Aplicar/POST.
+- **Flechas.** Las cinco cuadrículas comparten la guarda de edición: ← navega
+  solo en posición 0 y → solo al final, sin selección. Modificadores, AltGr,
+  composición y eventos ya atendidos conservan el comportamiento nativo;
+  Alt+←/→ sigue disponible para el historial desktop. ↑/↓ conservan sus destinos.
+- **Forma libre.** La ayuda asociada mediante `aria-describedby` explica x1,
+  x2, … con x minúscula, enteros/fracciones/punto decimal y ecuaciones separadas
+  por `;` o saltos de línea. Advierte sobre x/y/z, X1, coma decimal y `;` final
+  vacío. Ejemplo: `2x1 - x2 = 3; x1 + 4x2 = 7`. El placeholder anterior es válido
+  y se conserva, sin `;` al final del sistema.
+
+Sin transferencia automática (UI-74), CSV/Excel, drag & drop ni gestor de undo.
+El undo de una sola celda queda al navegador; no se promete undo atómico de bloques.
+Evidencia y límites en [validación P27.9](validacion-p27-9.md).
