@@ -1,3 +1,4 @@
+{% load numeros %}
 {% comment %}Cadena de equivalencias de Ax = b antes de eliminar: ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada [A | b]. Son las primeras etapas de «Ver procedimiento»; todo son datos estructurados del servicio y el HTML vive solo aquí.{% endcomment %}
 <div class="procedure-stage">
     <h4 class="stage-title">1 · Ecuación matricial</h4>
@@ -30,7 +31,7 @@
     <h4 class="stage-title">3 · Sistema equivalente</h4>
     <p class="procedure-lead">Igualando componente a componente queda una ecuación por cada una de las {{ resultado.filas }} fila{{ resultado.filas|pluralize }} de A, con {{ resultado.columnas }} incógnita{{ resultado.columnas|pluralize }}:</p>
     <ol class="equations">
-        {% for ecuacion in resultado.ecuaciones %}<li><code>{{ ecuacion }}</code></li>{% endfor %}
+        {% for ecuacion in resultado.ecuaciones %}<li><code>{{ ecuacion|incognitas }}</code></li>{% endfor %}
     </ol>
 </div>
 

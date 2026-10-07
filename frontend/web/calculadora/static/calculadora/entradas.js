@@ -56,7 +56,8 @@
     window.entradasSeguras = { dimensionValida, validarDimension, flechaDeCelda };
 
     // Solo texto tabulado; las filas/celdas existentes deciden el destino.
-    // Una terminación de línea de una hoja de cálculo no agrega una fila vacía.
+    // Las líneas vacías de los extremos (la terminación de una hoja de cálculo o un salto
+    // de más al copiar un resultado) no son filas; una línea vacía interior sí lo es.
     document.addEventListener("paste", event => {
         const input = event.target;
         if (event.defaultPrevented || !input.matches?.('input.matrix-input[type="text"]') ||
@@ -66,8 +67,9 @@
         if (!form || !grid || !event.clipboardData) return;
         const texto = event.clipboardData.getData("text/plain");
         const lineas = texto.split(/\r?\n/);
-        if (lineas.length > 1 && lineas.at(-1) === "") lineas.pop();
-        if (!texto.includes("\t") && lineas.length === 1) return;
+        while (lineas.length && lineas[0] === "") lineas.shift();
+        while (lineas.length && lineas.at(-1) === "") lineas.pop();
+        if (!texto.includes("\t") && lineas.length <= 1) return;
         event.preventDefault();
 
         let estado = form.querySelector('[data-presupuesto], [data-estado-vectores], [data-estado-pegado]');

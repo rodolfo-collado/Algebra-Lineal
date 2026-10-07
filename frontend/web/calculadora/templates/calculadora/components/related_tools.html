@@ -1,7 +1,7 @@
-{% comment %}Recomendaciones discretas desde el registro central; solo aparecen cuando la herramienta declara relaciones con destinos disponibles.{% endcomment %}
+{% comment %}Recomendaciones discretas desde el registro central; solo aparecen cuando la herramienta declara relaciones con destinos disponibles. Sección y título son los de components/explore.html.{% endcomment %}
 {% if herramientas_relacionadas and resultado and not exploraciones %}
-    <section class="related" aria-labelledby="related-title">
-        <h2 id="related-title" class="related-title">También puedes explorar…</h2>
+    <section class="explore" aria-labelledby="related-title">
+        <h2 id="related-title" class="explore-title">También puedes explorar</h2>
         <ul class="related-list">
             {% for relacionada in herramientas_relacionadas %}
                 <li class="related-item">

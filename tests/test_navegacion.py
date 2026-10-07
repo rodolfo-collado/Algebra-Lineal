@@ -166,7 +166,7 @@ class PruebasCatalogo(SimpleTestCase):
             [(miga.nombre, miga.url, miga.actual) for miga in migas],
             [
                 ("Inicio", "/", False),
-                ("Álgebra Lineal", "/#algebra-lineal", False),
+                ("Álgebra lineal", "/#algebra-lineal", False),
                 ("Matrices", "/#matrices", False),
                 ("Reducción por filas", None, True),
             ],
@@ -446,7 +446,7 @@ class PruebasNavegacion(SimpleTestCase):
         formulario = next(f for f in Documento(pagina).formularios if f.get("id") == "sistema-form")
         self.assertEqual(formulario["method"], "post")
         respuesta = self.client.post(formulario["action"].split("#")[0], {"metodo": "gauss", "sistema": "x1=7"})
-        self.assertContains(respuesta, "x1 = 7")
+        self.assertContains(respuesta, "x₁ = 7")
         self.assertContains(respuesta, "Para editar la cuadrícula de una matriz, activa JavaScript.")
         # Lo que solo funciona con JavaScript nace oculto: no aparenta funcionar.
         self.assertContains(pagina, 'class="math-keyboard" data-perfiles="math-keyboard-profiles"', count=1)

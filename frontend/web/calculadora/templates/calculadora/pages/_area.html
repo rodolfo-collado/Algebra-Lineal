@@ -9,7 +9,7 @@
     <ul class="topic-list">
         {% for categoria, herramientas in categorias %}
             <li class="topic-item">
-                <details class="topic{% if not categoria.disponible %} topic-upcoming{% endif %}" id="{{ categoria.id }}" data-grupo>
+                <details class="topic{% if not categoria.disponible %} topic-upcoming{% endif %}" id="{{ categoria.id }}" data-grupo{% if categoria.herramienta_unica %} open{% endif %}>
                     <summary class="topic-summary">
                         <span class="category-icon" aria-hidden="true">
                             {% include "calculadora/components/category_icon.html" with categoria_id=categoria.id %}

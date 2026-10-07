@@ -1,12 +1,11 @@
 {% extends "calculadora/base.html" %}
-{% comment %}Estructura común de una herramienta: contexto, entrada, resultado, explicación, relacionadas y conexiones para explorar después de resolver. Cada bloque es opcional; una herramienta rellena solo los que necesita.{% endcomment %}
+{% comment %}Estructura común de una herramienta: título, descripción, entrada, resultado, explicación, relacionadas y conexiones para explorar después de resolver. Área y tema ya están en las migas: no se repiten encima del título. Cada bloque es opcional; una herramienta rellena solo los que necesita.{% endcomment %}
 
 {% block title %}{{ herramienta_actual.nombre }} · PyGebra{% endblock %}
 
 {% block content %}
     <article class="tool">
         <header class="tool-header">
-            <p class="tool-kicker">{% block tool_kicker %}{{ categoria_actual.area.nombre }} · {{ categoria_actual.nombre }}{% endblock %}</p>
             <h1 class="tool-title">{% block tool_title %}{{ herramienta_actual.nombre }}{% endblock %}</h1>
             <p class="tool-lead">{% block tool_lead %}{{ herramienta_actual.descripcion }}{% endblock %}</p>
             {% block tool_context %}{% endblock %}

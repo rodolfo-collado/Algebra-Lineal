@@ -92,7 +92,7 @@
                 </div>
                 {% include "calculadora/components/errores_grupo.html" %}
                 <p id="matrix-grid-help" class="field-help" aria-live="polite">
-                    Completa todas las celdas con números, enteros o fracciones.
+                    Completa todas las celdas con enteros, fracciones o decimales con punto.
                 </p>
                 {% for campo in form.errores_celdas %}{{ campo.errors }}{% endfor %}
             </fieldset>
@@ -127,7 +127,8 @@
         {% numeric_results %}
         <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
-                <p class="section-kicker">{% if comparando %}Comparación de métodos{% elif "procedimiento" in mostrar %}Procedimiento y resultado{% else %}Resultado{% endif %}</p>
+                {% comment %}Sin procedimiento ni comparación el kicker solo repetiría el panel «Resultado».{% endcomment %}
+                {% if comparando or "procedimiento" in mostrar %}<p class="section-kicker">{% if comparando %}Comparación de métodos{% else %}Procedimiento y resultado{% endif %}</p>{% endif %}
                 <h2 id="results-title">{{ titulo_resultado }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}
@@ -141,7 +142,7 @@
                             <p class="procedure-lead">Cada ecuación se reescribe con las variables a la izquierda y un solo número a la derecha: los términos semejantes se suman y un término que cruza el signo = cambia de signo. Si todas las variables estaban a la derecha, basta intercambiar los lados.</p>
                             <ul class="equations">
                                 {% for ecuacion in resultado.reescritas %}
-                                    <li><span class="muted">Ecuación {{ ecuacion.numero }}:</span> <code>{{ ecuacion.original }}</code> <span aria-hidden="true">→</span><span class="sr-only">, en forma estándar,</span> <code>{{ ecuacion.estandar }}</code></li>
+                                    <li><span class="muted">Ecuación {{ ecuacion.numero }}:</span> <code>{{ ecuacion.original|incognitas }}</code> <span aria-hidden="true">→</span><span class="sr-only">, en forma estándar,</span> <code>{{ ecuacion.estandar|incognitas }}</code></li>
                                 {% endfor %}
                             </ul>
                         </div>
@@ -164,7 +165,7 @@
             {% endif %}
 
             <section class="panel panel-final" aria-labelledby="final-title">
-                <h3 id="final-title" class="panel-title">Resultado final</h3>
+                <h3 id="final-title" class="panel-title">Resultado</h3>
                 {% if "clasificacion" in mostrar %}
                     {% include "calculadora/modules/sistemas/_clasificacion.html" %}
                 {% endif %}
@@ -172,7 +173,7 @@
                 {% if "pivotes" in mostrar %}
                     {% comment %}Las columnas pivote son la lectura directa de la matriz final y coinciden entre métodos: se toman del primer resultado.{% endcomment %}
                     <div class="final-block">
-                        {% include "calculadora/modules/sistemas/_pivotes.html" %}
+                        {% include "calculadora/modules/sistemas/_pivotes.html" with metodos=resultados %}
                     </div>
                 {% endif %}
                 {% if "procedimiento" not in mostrar %}

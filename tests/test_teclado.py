@@ -54,8 +54,8 @@ CONTROLES = {
         "tipo_entrada", "variables",
     },
     "/vectores/operaciones/": {
-        "ajustar", "csrfmiddlewaretoken", "dimension", "operacion", "u_0", "u_1", "u_2", "v_0", "v_1",
-        "v_2", "vectores",
+        "ajustar", "csrfmiddlewaretoken", "dimension", "operacion", "v1_0", "v1_1", "v1_2", "v2_0", "v2_1",
+        "v2_2", "vectores",
     },
     # P26.6: Operaciones con matrices usa el formulario de símbolos (antes Expresiones) y suma la
     # presentación de los productos. El contrato anterior de operación + celdas_A/B ya no existe.
@@ -457,7 +457,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
 
     def test_sin_javascript_los_formularios_siguen_resolviendo(self):
         respuesta = self.client.post("/matrices/reduccion/", {"metodo": "gauss", "sistema": "x1 + x2 = 3; x1 - x2 = 1"})
-        self.assertContains(respuesta, "x1 = 2")
+        self.assertContains(respuesta, "x₁ = 2")
         respuesta = self.client.post("/bases/conversion/", {"numero": "1010", "base_origen": "2", "bases_destino": ["10"]})
         self.assertContains(respuesta, "10")
         self.assertEqual(len(Pagina(respuesta.content.decode("utf-8")).teclados), 1)

@@ -105,10 +105,10 @@
         }],
         ["Vectores: error de componente conserva asociación tras render inicial", "/vectores/operaciones/", {}, async (w, frame) => {
             w.document.querySelectorAll('[data-cell]').forEach(c => {c.value = '1';});
-            valor(w, '[name="u_1"]', 'malo'); w = await post(frame);
-            igual(w.document.activeElement, q(w, '[name="u_1"]'));
-            igual(w.document.activeElement.getAttribute('aria-describedby'), 'id_u_1_error');
-            igual(q(w, '[name="u_1"]').parentElement.querySelectorAll('[role="alert"]').length, 1);
+            valor(w, '[name="v1_1"]', 'malo'); w = await post(frame);
+            igual(w.document.activeElement, q(w, '[name="v1_1"]'));
+            igual(w.document.activeElement.getAttribute('aria-describedby'), 'id_v1_1_error');
+            igual(q(w, '[name="v1_1"]').parentElement.querySelectorAll('[role="alert"]').length, 1);
         }],
         ["Dimensión del servidor se anuncia una vez y enfoca la dimensión", "/matrices/reduccion/", {}, async (w, frame) => {
             q(w, '[name="tipo_entrada"][value="matriz"]').click();

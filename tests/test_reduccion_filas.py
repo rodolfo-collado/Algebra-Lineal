@@ -16,7 +16,7 @@ from django.test.utils import setup_test_environment, teardown_test_environment
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.forms import SistemaForm
 from frontend.web.calculadora.opciones_sistemas import METODOS, metodos_a_resolver
-from tests.ayudas import elemento_html
+from tests.ayudas import antes_de_p2711, elemento_html
 from tests.test_navegacion import Documento
 from tests.test_resolver_sistema import seccion_resultado
 from tests.test_web import datos_matriz
@@ -176,5 +176,7 @@ class PruebasEquivalenciaP264(ContextoHTTP):
                                 esperado["reescritas"] = caso["reescritas"]
                             esperados.append(esperado)
                         self.assertEqual(actual, esperados)
+                        # Captura previa a P27.11: se deshacen solo el título del panel, la leyenda y x₁.
+                        respuesta.content = antes_de_p2711(respuesta.content.decode("utf-8")).encode()
                         texto = seccion_resultado(respuesta)
                         self.assertEqual(hashlib.sha256(texto.encode()).hexdigest(), caso["texto_sha256"][metodo][entrada])

@@ -608,8 +608,8 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertEqual(respuesta.status, 200)
 
             self.assertIn("Consistente de solución única", resultado)
-            self.assertIn("x1 = 2", resultado)
-            self.assertIn("x2 = 1", resultado)
+            self.assertIn("x₁ = 2", resultado)
+            self.assertIn("x₂ = 1", resultado)
 
             # La conversión de bases viaja por la misma pila Waitress + Django.
             url_bases = f"{url}bases/conversion/"
@@ -669,7 +669,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertEqual(respuesta.status, 200)
                 combinacion = respuesta.read().decode("utf-8")
             self.assertIn("b es combinación lineal de v1 y v2", combinacion)
-            self.assertIn("x1 = 3", combinacion)
+            self.assertIn("x₁ = 3", combinacion)
             self.assertIn("(3, 4) = 3(1, 0) + 4(0, 1)", combinacion)
 
             # P13A viaja por la pila desktop real, con CSRF y recursos locales.
@@ -726,7 +726,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 (datos_ecuacion(a=[[2, 0], [0, 3]], b=[1, 1], metodo="comparar"), [["1/2"], ["1/3"]],
                  ("Ax = b tiene solución única.", "b = (1/2)a₁ + (1/3)a₂", 'id="procedimiento"', 'class="disclosure disclosure-nested"')),
                 (datos_ecuacion(a=[[1, 0], [0, 1], [1, 1]], b=[2, 3, 5]), [["2"], ["3"]],
-                 ("A (3×2) · x (2) = b (3)", "x1 = 2", "x2 = 3")),
+                 ("A (3×2) · x (2) = b (3)", "x₁ = 2", "x₂ = 3")),
             ):
                 datos["csrfmiddlewaretoken"] = csrf.group(1).decode("ascii")
                 solicitud = Request(url_ecuaciones, data=urlencode(datos).encode("ascii"), headers={"Referer": url_ecuaciones})

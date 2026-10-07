@@ -21,7 +21,7 @@ class PruebasDimensionesSinJS(SimpleTestCase):
             with self.subTest(campo=campo, valor=valor):
                 respuesta = self.client.post("/vectores/operaciones/", {
                     "operacion": "suma", "dimension": "3", "vectores": "2",
-                    "ajustar": "1", "u_0": "1/", campo: valor,
+                    "ajustar": "1", "v1_0": "1/", campo: valor,
                 })
                 self.assertContains(respuesta, mensaje)
                 self.assertContains(respuesta, 'aria-invalid="true"')
@@ -31,7 +31,7 @@ class PruebasDimensionesSinJS(SimpleTestCase):
     def test_aplicar_vectores_conserva_entradas_incompletas_sin_calcular(self):
         respuesta = self.client.post("/vectores/operaciones/", {
             "operacion": "suma", "dimension": "4", "vectores": "3",
-            "ajustar": "1", "u_0": "1/", "v_2": "-",
+            "ajustar": "1", "v1_0": "1/", "v2_2": "-",
         })
         self.assertContains(respuesta, 'name="v3_3"')
         self.assertContains(respuesta, 'value="1/"')

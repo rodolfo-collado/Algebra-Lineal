@@ -80,6 +80,38 @@
             igual(q(w, '[data-estado-pegado]').textContent.includes(nombre === "no cabe" ? "2×3" : "misma cantidad"), true);
         });
     }
+    // P27.11: las líneas vacías de los extremos no son filas; una interior sí.
+    for (const [nombre, texto] of [
+        ["LF con líneas vacías al inicio y al final", "\n1\t2\n3\t4\n"],
+        ["CRLF con líneas vacías al inicio y al final", "\r\n1\t2\r\n3\t4\r\n"],
+        ["varias líneas vacías exteriores", "\n\r\n\n1\t2\n3\t4\n\n\r\n"],
+    ]) caso(`Paste P27.11: ${nombre}`, inversa, w => {
+        const celdas = todos(w, A); celdas[0].focus();
+        let eventos = 0; celdas[0].form.addEventListener("input", () => eventos++);
+        igual(pegar(w, celdas[0], texto), true);
+        igual(celdas.map(c => c.value), ["1", "2", "3", "4"]); igual(eventos, 4);
+        igual(q(w, '[data-estado-pegado]').textContent, "Se pegaron 4 valores.");
+        igual(w.document.activeElement === celdas[0], true);
+    });
+    caso("Paste P27.11: una fila vacía interior sigue siendo una fila, todo o nada", inversa, w => {
+        const celdas = todos(w, A); celdas.forEach(c => { c.value = "7"; });
+        let eventos = 0; celdas[0].form.addEventListener("input", () => eventos++);
+        igual(pegar(w, celdas[0], "1\t2\n\n3\t4"), true);
+        igual(celdas.map(c => c.value), ["7", "7", "7", "7"]); igual(eventos, 0);
+        igual(q(w, '[data-estado-pegado]').textContent.includes("misma cantidad"), true);
+        igual(pegar(w, celdas[0], "\n1\t2\r\n\r\n3\t4\n"), true); // Recortar extremos no borra la interior.
+        igual(celdas.map(c => c.value), ["7", "7", "7", "7"]);
+    });
+    caso("Paste P27.11: un valor rodeado de líneas vacías sigue siendo paste nativo", inversa, w => {
+        const input = q(w, A); input.value = "anterior";
+        igual(pegar(w, input, "\n-11/13\r\n\n"), false); igual(input.value, "anterior");
+        igual(q(w, '[data-estado-pegado]'), null);
+    });
+    caso("Paste P27.11: columna de Vectores con salto de más", vectores, w => {
+        pegar(w, q(w, '[name="v1_1"]'), "\n-11/13\n3.14\n");
+        igual([q(w, '[name="v1_1"]').value, q(w, '[name="v2_1"]').value], ["-11/13", "3.14"]);
+        igual(q(w, '[data-estado-vectores]').textContent, "Se pegaron 2 valores.");
+    });
     caso("Paste: maxlength real de vector lineal, también después de reconstruir", operaciones, w => {
         const tipo = q(w, '[name="tipo_0"]'); tipo.value = "vector_lineal";
         tipo.dispatchEvent(new w.Event("change", { bubbles: true }));
@@ -127,10 +159,10 @@
         igual(q(w, '[name="celda_2_1_1"]').value, "100");
     });
     caso("Paste: Vectores según filas/componentes visibles", vectores, w => {
-        pegar(w, q(w, '[name="u_0"]'), "1\t2\t3\n4\t5\t6");
+        pegar(w, q(w, '[name="v1_0"]'), "1\t2\t3\n4\t5\t6");
         igual(todos(w, '#vector-list input[data-cell]').map(c => c.value), ["1", "2", "3", "4", "5", "6"]);
-        pegar(w, q(w, '[name="u_1"]'), "-11/13\n3.14");
-        igual([q(w, '[name="u_1"]').value, q(w, '[name="v_1"]').value], ["-11/13", "3.14"]);
+        pegar(w, q(w, '[name="v1_1"]'), "-11/13\n3.14");
+        igual([q(w, '[name="v1_1"]').value, q(w, '[name="v2_1"]').value], ["-11/13", "3.14"]);
         igual(q(w, '[data-estado-vectores]').textContent, "Se pegaron 2 valores.");
     });
     caso("Paste: resultado visible → stale compartido, teclado/foco y errores numéricos", inversa, async (w, frame) => {

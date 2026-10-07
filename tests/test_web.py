@@ -46,15 +46,16 @@ class PruebasCalculadoraWeb(SimpleTestCase):
                 with self.subTest(metodo=metodo, caso=nombre):
                     respuesta = self.client.post("/matrices/reduccion/", datos_matriz(matriz, metodo))
                     self.assertEqual(respuesta.status_code, 200)
-                    texto = strip_tags(respuesta.content.decode("utf-8"))
+                    html = respuesta.content.decode("utf-8")
+                    texto = strip_tags(html)
                     esperado = ", ".join(f"C{c}" for c in columnas) or "Ninguna"
                     self.assertIn(f"Columnas pivote: {esperado}", texto)
                     self.assertEqual(texto.count("Columnas pivote:"), 1)
                     # El orden se mide dentro del resultado: la clasificación abre el panel y las
                     # columnas pivote acompañan a la matriz final, después de la solución.
-                    inicio_resultado = texto.index("Resultado final")
-                    self.assertLess(inicio_resultado, texto.index("Clasificación", inicio_resultado))
-                    self.assertLess(texto.index("Clasificación", inicio_resultado), texto.index("Columnas pivote:"))
+                    inicio_resultado = html.index('id="final-title"')
+                    self.assertLess(inicio_resultado, html.index("Clasificación", inicio_resultado))
+                    self.assertLess(html.index("Clasificación", inicio_resultado), html.index("Columnas pivote:"))
 
             resultado = resolver_sistema_web("x1 + 2x2 + x3 = 4; x3 = 2", metodo)
             self.assertEqual(resultado["columnas_pivote"], [1, 3])
@@ -65,7 +66,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         respuesta = self.client.get("/matrices/reduccion/")
 
         self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, "Álgebra Lineal")
+        self.assertContains(respuesta, "Álgebra lineal")
         self.assertContains(respuesta, "Reducción por filas")
         self.assertContains(respuesta, "Matrices")
         self.assertContains(respuesta, "Gauss-Jordan")
@@ -105,8 +106,8 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, SOLUCION_UNICA)
         self.assertContains(respuesta, 'data-kind="unica"')
-        self.assertContains(respuesta, "x1 = 2")
-        self.assertContains(respuesta, "x2 = 1")
+        self.assertContains(respuesta, "x₁ = 2")
+        self.assertContains(respuesta, "x₂ = 1")
 
     def test_procesa_una_matriz_con_gauss(self):
         respuesta = self.client.post(
@@ -117,8 +118,8 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "Gauss")
         self.assertContains(respuesta, SOLUCION_UNICA)
-        self.assertContains(respuesta, "x1 = 2")
-        self.assertContains(respuesta, "x2 = 1")
+        self.assertContains(respuesta, "x₁ = 2")
+        self.assertContains(respuesta, "x₂ = 1")
 
     def test_procesa_una_matriz_rectangular_con_gauss_jordan(self):
         respuesta = self.client.post(
@@ -132,8 +133,8 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "Gauss-Jordan")
         self.assertContains(respuesta, SOLUCION_UNICA)
-        self.assertContains(respuesta, "x1 = 2")
-        self.assertContains(respuesta, "x2 = 1")
+        self.assertContains(respuesta, "x₁ = 2")
+        self.assertContains(respuesta, "x₂ = 1")
 
     def test_procesa_soluciones_infinitas(self):
         respuesta = self.client.post(
@@ -147,7 +148,7 @@ class PruebasCalculadoraWeb(SimpleTestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, SOLUCIONES_INFINITAS)
         self.assertContains(respuesta, 'data-kind="infinitas"')
-        self.assertContains(respuesta, "x2 es libre")
+        self.assertContains(respuesta, "x₂ es libre")
         self.assertContains(respuesta, "no tiene pivote")
 
     def test_procesa_una_matriz_rectangular_con_soluciones_infinitas(self):
@@ -161,8 +162,8 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, SOLUCIONES_INFINITAS)
-        self.assertContains(respuesta, "x3 es libre")
-        self.assertContains(respuesta, "x1 = 1 + x3")
+        self.assertContains(respuesta, "x₃ es libre")
+        self.assertContains(respuesta, "x₁ = 1 + x₃")
 
     def test_procesa_un_sistema_inconsistente(self):
         respuesta = self.client.post(
@@ -203,8 +204,8 @@ class PruebasCalculadoraWeb(SimpleTestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "1/2")
-        self.assertContains(respuesta, "x1 = 1")
-        self.assertContains(respuesta, "x2 = -2")
+        self.assertContains(respuesta, "x₁ = 1")
+        self.assertContains(respuesta, "x₂ = -2")
 
     def test_muestra_un_error_de_entrada_sin_traceback(self):
         respuesta = self.client.post(

@@ -125,7 +125,7 @@
         renderedVariables = variables;
         matrixWrapper.hidden = false;
         matrixHelp.textContent =
-            "Completa todas las celdas con números, enteros o fracciones.";
+            "Completa todas las celdas con enteros, fracciones o decimales con punto.";
         // Columnas auto: cada una toma el ancho de su valor más largo (field-sizing en CSS).
         matrixGrid.style.gridTemplateColumns =
             `3rem repeat(${variables}, auto) 1.25rem auto`;

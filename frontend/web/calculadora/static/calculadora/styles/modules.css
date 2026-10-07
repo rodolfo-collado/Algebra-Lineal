@@ -215,11 +215,13 @@ legend,
     font-weight: 600;
 }
 
-/* Método y tipo de entrada comparten una fila compacta; en pantallas estrechas se apilan. */
+/* Método y tipo de entrada comparten una fila compacta; en pantallas estrechas se apilan.
+   Sus pistas guardan la misma distancia que un .choice-fieldset con el campo siguiente. */
 .choice-row {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem 1.75rem;
+    margin-bottom: 1rem;
 }
 
 .choice-row .choice-fieldset {
@@ -892,6 +894,12 @@ textarea:focus {
     letter-spacing: 0.04em;
 }
 
+/* Romanos: etiqueta y ayuda de la dirección elegida (arábigo mientras no se elija romano). */
+#romanos-form:has([name="direccion"][value="romano_a_decimal"]:checked) [data-direccion="decimal_a_romano"],
+#romanos-form:not(:has([name="direccion"][value="romano_a_decimal"]:checked)) [data-direccion="romano_a_decimal"] {
+    display: none;
+}
+
 .field-select {
     width: 100%;
     padding: 0.58rem 2.2rem 0.58rem 0.75rem;
@@ -918,17 +926,14 @@ textarea:focus {
     color: var(--color-muted);
 }
 
-/* Origen a la izquierda y las casillas «Convertir a» a la derecha; en pantallas estrechas se apilan. */
-.base-selectors {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
-    align-items: start;
-    gap: 0.75rem 1.25rem;
-    margin-top: 1rem;
+/* Base de origen, número y «Convertir a», en el orden en que se deciden. */
+.base-selector {
+    max-width: 18rem;
+    margin-bottom: 1rem;
 }
 
-.base-selector {
-    min-width: 0;
+.base-targets {
+    margin-top: 1rem;
 }
 
 /* La casilla de la base de origen no se ofrece como destino. */
@@ -1120,7 +1125,7 @@ textarea:focus {
 }
 
 /* Vectores */
-/* Entrada: una fila por vector, «u = ( [ ] [ ] [ ] )». Con n grande las celdas
+/* Entrada: una fila por vector, «v1 = ( [ ] [ ] [ ] )». Con n grande las celdas
    se desplazan dentro de la fila; la página no gana scroll horizontal. */
 .vector-structure {
     margin-bottom: 0.9rem;
@@ -1389,10 +1394,6 @@ textarea:focus {
         flex: 1 1 auto;
         justify-content: center;
         white-space: nowrap;
-    }
-
-    .base-selectors {
-        grid-template-columns: minmax(0, 1fr);
     }
 
     .option-list-described {

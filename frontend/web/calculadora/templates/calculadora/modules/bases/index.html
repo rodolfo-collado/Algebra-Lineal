@@ -8,6 +8,13 @@
             {% csrf_token %}
             {% include "calculadora/components/errores_generales.html" %}
 
+            {% comment %}Primero la base de origen: decide qué dígitos valen, el teclado y la validación del número.{% endcomment %}
+            <div class="base-selector">
+                <label for="{{ form.base_origen.id_for_label }}">{{ form.base_origen.label }}</label>
+                {{ form.base_origen }}
+                {{ form.base_origen.errors }}
+            </div>
+
             <div id="number-fields" data-perfil="{{ perfil_entrada }}" class="field-group">
                 <label for="{{ form.numero.id_for_label }}">
                     {% for base, nombre in bases_entrada %}
@@ -21,27 +28,20 @@
                 {{ form.numero.errors }}
             </div>
 
-            <div class="base-selectors" role="group" aria-label="Bases de la conversión">
-                <div class="base-selector">
-                    <label for="{{ form.base_origen.id_for_label }}">{{ form.base_origen.label }}</label>
-                    {{ form.base_origen }}
-                    {{ form.base_origen.errors }}
+            {% comment %}Casillas reales: una, varias o todas las demás bases. conversion.js oculta y desactiva la casilla de la base de origen; sin JavaScript se ven las cuatro y el servidor rechaza origen = destino.{% endcomment %}
+            <fieldset class="choice-fieldset base-targets" data-destinos aria-describedby="destinos-ayuda destinos-aviso destinos-errores">
+                <legend>{{ form.bases_destino.label }}</legend>
+                <div class="option-list">
+                    {% for casilla in form.bases_destino %}
+                        <label class="option" data-destino-base="{{ casilla.data.value }}">{{ casilla.tag }}<span>{{ casilla.choice_label }}</span></label>
+                    {% endfor %}
                 </div>
-                {% comment %}Casillas reales: una, varias o todas las demás bases. conversion.js oculta y desactiva la casilla de la base de origen; sin JavaScript se ven las cuatro y el servidor rechaza origen = destino.{% endcomment %}
-                <fieldset class="choice-fieldset base-targets" data-destinos aria-describedby="destinos-ayuda destinos-aviso destinos-errores">
-                    <legend>{{ form.bases_destino.label }}</legend>
-                    <div class="option-list">
-                        {% for casilla in form.bases_destino %}
-                            <label class="option" data-destino-base="{{ casilla.data.value }}">{{ casilla.tag }}<span>{{ casilla.choice_label }}</span></label>
-                        {% endfor %}
-                    </div>
-                    <p id="destinos-ayuda" class="field-help option-help">Marca una, varias o todas las demás bases.</p>
-                    <p id="destinos-aviso" class="field-error" data-validacion-destinos role="alert" hidden></p>
-                    <div id="destinos-errores">
-                        {{ form.bases_destino.errors }}
-                    </div>
-                </fieldset>
-            </div>
+                <p id="destinos-ayuda" class="field-help option-help">Marca una, varias o todas las demás bases.</p>
+                <p id="destinos-aviso" class="field-error" data-validacion-destinos role="alert" hidden></p>
+                <div id="destinos-errores">
+                    {{ form.bases_destino.errors }}
+                </div>
+            </fieldset>
 
             {{ bases_digitos|json_script:"bases-digitos" }}
             {% include "calculadora/components/math_keyboard.html" %}

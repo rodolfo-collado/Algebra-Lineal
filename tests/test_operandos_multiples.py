@@ -20,6 +20,7 @@ from backend.vectores import evaluar_combinacion_lineal, operar_vectores
 from frontend.web.calculadora.forms import VectoresForm
 from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm, nombre_libre
 from frontend.web.calculadora.presupuesto_expresiones import firmar_entrada
+from frontend.web.calculadora.templatetags.numeros import incognitas
 from frontend.web.calculadora.opciones_vectores import DIMENSION_MAXIMA as DIMENSION_VECTORES, nombres_vectores
 from tests.ayudas import elemento_html
 from tests.test_procedimiento_plegable import comprobar_estructura, partes
@@ -71,14 +72,14 @@ class PruebasColecciones(SimpleTestCase):
                     operar_vectores(op, vectores)
 
     def test_errores_de_suma_y_resta_nombran_los_vectores_como_la_interfaz(self):
-        self.assertEqual(nombres_vectores("suma", 4), ("u", "v", "v3", "v4"))
+        self.assertEqual(nombres_vectores("suma", 4), ("v1", "v2", "v3", "v4"))
         for operacion, verbo in (("suma", "sumar"), ("resta", "restar")):
             with self.subTest(operacion=operacion):
                 with self.assertRaises(ValueError) as dimension:
                     operar_vectores(operacion, [[1], [2], [3, 4], [5]])
                 self.assertEqual(str(dimension.exception), f"No se pueden {verbo} vectores de distinta dimensión: "
-                                                           "u tiene 1, v tiene 1, v3 tiene 2, v4 tiene 1 componentes.")
-                with self.assertRaisesRegex(ValueError, "^El vector v no tiene componentes.$"):
+                                                           "v1 tiene 1, v2 tiene 1, v3 tiene 2, v4 tiene 1 componentes.")
+                with self.assertRaisesRegex(ValueError, "^El vector v2 no tiene componentes.$"):
                     operar_vectores(operacion, [[1], [], [3]])
         # La combinación lineal conserva v1, v2, … y el objetivo b.
         with self.assertRaisesRegex(ValueError, "v1 tiene 1, v2 tiene 2, b tiene 1 componentes"):
@@ -131,13 +132,13 @@ class PruebasColecciones(SimpleTestCase):
 class PruebasWebColecciones(SimpleTestCase):
     def test_vectores_tres_y_cuatro_con_procedimiento(self):
         for op, esperado in (("suma", "(12, 15, 18)"), ("resta", "(-10, -11, -12)")):
-            respuesta = self.client.post(VECTORES, datos_vectores(op, vectores=3, u=[1, 2, 3], v=[4, 5, 6], v3=[7, 8, 9]))
+            respuesta = self.client.post(VECTORES, datos_vectores(op, vectores=3, v1=[1, 2, 3], v2=[4, 5, 6], v3=[7, 8, 9]))
             self.assertContains(respuesta, 'id="resultado"')
             self.assertIn(esperado, strip_tags(respuesta.content.decode()))
             self.assertIn("1 + 4 + 7" if op == "suma" else "1 - 4 - 7", strip_tags(respuesta.content.decode()))
 
     def test_vectores_contrato_estricto(self):
-        base = datos_vectores("suma", vectores=3, u=[1], v=[2], v3=[3])
+        base = datos_vectores("suma", vectores=3, v1=[1], v2=[2], v3=[3])
         casos = [base | {"vectores": "1"}, base | {"v3_1": "4"}, base | {"escalar": "2"},
                  base | {"intruso": "2"}, base | {"operacion": "escalar", "escalar": "1"}]
         faltante = dict(base)
@@ -145,7 +146,7 @@ class PruebasWebColecciones(SimpleTestCase):
         casos.append(faltante)
         duplicado = QueryDict("", mutable=True)
         duplicado.update(base)
-        duplicado.appendlist("u_0", "9")
+        duplicado.appendlist("v1_0", "9")
         casos.append(duplicado)
         for datos in casos:
             with self.subTest(datos=datos):
@@ -154,7 +155,7 @@ class PruebasWebColecciones(SimpleTestCase):
     def test_combinacion_reutiliza_coleccion_sin_maximo(self):
         respuesta = self.client.post(VECTORES, combinacion([[1, 0]] * 12, [3, 0]))
         self.assertContains(respuesta, 'id="resultado"')
-        self.assertContains(respuesta, "x12")
+        self.assertContains(respuesta, "x₁₂")
 
     def test_matrices_suma_y_resta_de_tres_paso_a_paso(self):
         # El árbol agrupa por la izquierda: (A + B) + C. Cada paso conserva su desarrollo por entradas.
@@ -383,7 +384,7 @@ class PruebasPresupuesto(SimpleTestCase):
                     self.assertNotIn('id="resultado"', html)
                     self.assertLessEqual(celdas_dibujadas(html), CELDAS_MAXIMAS)
             for operacion, extra in (("suma", {}), ("combinacion", {"ajustar": "1"}), ("escalar", {})):
-                datos = {"operacion": operacion, "vectores": cantidad, "dimension": "10", "u_0": "1"} | extra
+                datos = {"operacion": operacion, "vectores": cantidad, "dimension": "10", "v1_0": "1"} | extra
                 with self.subTest(ruta=VECTORES, cantidad=cantidad, operacion=operacion):
                     html = self.post(VECTORES, datos)
                     self.assertNotIn('id="resultado"', html)
@@ -394,7 +395,7 @@ class PruebasPresupuesto(SimpleTestCase):
             with self.subTest(generadores=cantidad):
                 html = self.post(VECTORES, combinacion([[1, 0]] * cantidad, [3, 0]))
                 self.assertIn('id="resultado"', html)
-                self.assertIn(f"x{cantidad}", strip_tags(html))
+                self.assertIn(incognitas(f"x{cantidad}"), strip_tags(html))
         form = VectoresForm(combinacion([[1, 0]] * (OPERANDOS_MAXIMOS + 1), [3, 0]))
         self.assertFalse(form.is_valid())
         self.assertEqual(form.errors["vectores"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} vectores por operación."])

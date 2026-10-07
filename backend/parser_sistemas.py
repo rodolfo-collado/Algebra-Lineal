@@ -39,6 +39,9 @@ _ESPACIOS = re.compile(r"\s+")
 _SALTO_DE_LINEA = re.compile(r"\r?\n")
 _VARIABLE = re.compile(r"x\d+")
 _FUNCION = re.compile(r"[A-Za-z]{2,}(?=\()")
+# «0,5» o «-3,14»: una sola coma entre cifras y sin espacios. «1,000» también puede
+# separar miles, así que con tres cifras tras una parte entera no se sugiere nada.
+_COMA_DECIMAL = re.compile(r"[+-]?([0-9]*),([0-9]+)")
 
 
 def _simplificar(numero):
@@ -50,14 +53,25 @@ def _simplificar(numero):
     return numero
 
 
+def _sugerir_punto(texto):
+    coma = _COMA_DECIMAL.fullmatch(texto)
+    if not coma or (coma[1].strip("0") and len(coma[2]) == 3):
+        return ""
+    return f" Usa punto para los decimales, por ejemplo {texto.replace(',', '.')}."
+
+
 def convertir_a_numero(texto, *, limitar_entrada=False):
-    """Convierte a un valor exacto; la web activa la inspección previa de literales."""
+    """Convierte a un valor exacto; la web activa la inspección previa de literales.
+
+    No reinterpreta la coma: si parece decimal, el error sugiere el punto.
+    """
     if limitar_entrada:
         validar_literal_numerico(texto)
     try:
         numero = Fraction(_ESPACIOS.sub("", texto))
     except (ValueError, ZeroDivisionError):
-        raise ValueError(f"'{texto.strip()}' no es un número válido.") from None
+        limpio = texto.strip()
+        raise ValueError(f"'{limpio}' no es un número válido.{_sugerir_punto(limpio)}") from None
 
     return _simplificar(numero)
 

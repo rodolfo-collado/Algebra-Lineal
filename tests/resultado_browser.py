@@ -33,7 +33,7 @@ CASOS = {
     "operaciones": ("/matrices/operaciones/", datos_expresion("AB", (
         {"nombre": "A", "tipo": "matriz", "valor": [[1, 2], [3, 4]]},
         {"nombre": "B", "tipo": "matriz", "valor": [[2, 0], [0, 3]]}))),
-    "vectores": ("/vectores/operaciones/", datos_vectores("suma", vectores=2, u=[1, 2], v=[3, 4])),
+    "vectores": ("/vectores/operaciones/", datos_vectores("suma", vectores=2, v1=[1, 2], v2=[3, 4])),
     "bases": ("/bases/conversion/", {"numero": "123", "base_origen": "10", "bases_destino": ["2", "16"]}),
     "romanos": ("/romanos/conversion/", {"numero": "24", "direccion": "decimal_a_romano"}),
     "inversa-4": ("/matrices/inversa/", datos_inversa([[f"{v}/7" for v in fila] for fila in matriz(4)])),

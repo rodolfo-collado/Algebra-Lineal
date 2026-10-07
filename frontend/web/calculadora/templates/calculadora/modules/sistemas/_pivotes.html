@@ -1,4 +1,4 @@
-{% comment %}Columnas pivote: la lectura directa de la matriz final, común a los dos métodos, así que se muestra una sola vez en el resultado.{% endcomment %}
+{% comment %}Columnas pivote: la lectura directa de la matriz final, común a los dos métodos, así que se muestra una sola vez en el resultado. La leyenda nombra el bloque donde se resaltan (Matriz escalonada o Matriz reducida, de cada método en `metodos`) y si está dentro del procedimiento.{% endcomment %}
 <div class="pivot-block">
     <h4 class="final-label" aria-hidden="true">Columnas pivote</h4>
     <p class="sr-only">Columnas pivote: {% for columna in resultado.columnas_pivote %}C{{ columna }}{% if not forloop.last %}, {% endif %}{% empty %}Ninguna{% endfor %}</p>
@@ -10,6 +10,6 @@
         {% endfor %}
     </ul>
     {% if resultado.columnas_pivote %}
-        <p class="pivot-legend muted">Las columnas resaltadas en la matriz final contienen un pivote.</p>
+        <p class="pivot-legend muted">Los pivotes se resaltan en la {% for metodo in metodos %}{% if not forloop.first %} y en la {% endif %}{{ metodo.etiqueta_matriz|lower }}{% endfor %}{% if "procedimiento" in mostrar %} del procedimiento{% endif %}.</p>
     {% endif %}
 </div>

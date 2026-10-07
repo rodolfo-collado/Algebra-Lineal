@@ -219,11 +219,14 @@ class PruebasInicioPorTemas(SimpleTestCase):
             with self.subTest(categoria=categoria.id):
                 tema = desplegables.por_id(categoria.id)
                 self.assertIn("topic", tema["clases"])
-                self.assertFalse(tema["open"])
+                # UI-21: un tema con una sola herramienta disponible nace abierto; los demás, plegados.
+                self.assertEqual(tema["open"], categoria.herramienta_unica)
                 self.assertIn(categoria.nombre, tema["summary"])
                 self.assertIn(categoria.descripcion, tema["summary"])
                 if not categoria.disponible:
                     self.assertIn("Próximamente", tema["summary"])
+        abiertos = [c.id for c in catalogo.CATEGORIAS if c.area.disponible and desplegables.por_id(c.id)["open"]]
+        self.assertEqual(abiertos, ["vectores", "bases-numericas", "numeracion-romana"])
         # Todas las áreas disponibles empiezan cerradas, independientemente de su orden.
         for area in catalogo.AREAS:
             if area.disponible:
@@ -347,7 +350,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         explicito = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": METODO_PREDETERMINADO, "mostrar_definido": "1", "mostrar": TODOS})
         texto = seccion_resultado(respuesta)
         self.assertEqual(texto, seccion_resultado(explicito))
-        for presente in ("Ver procedimiento", "Operaciones por filas", "Clasificación", "Columnas pivote: C1, C2", "x1 = 2", "x2 = 1"):
+        for presente in ("Ver procedimiento", "Operaciones por filas", "Clasificación", "Columnas pivote: C1, C2", "x₁ = 2", "x₂ = 1"):
             self.assertIn(presente, texto)
 
     def test_elegir_cada_metodo_desde_el_selector_envia_su_clave(self):
@@ -393,14 +396,14 @@ class PruebasFormularioProgresivo(SimpleTestCase):
 
 
 class PruebasProcedimientoPlegable(SimpleTestCase):
-    """Entrada → «Ver procedimiento» (details cerrado) → Resultado final, una sola vez y fuera del details."""
+    """Entrada → «Ver procedimiento» (details cerrado) → Resultado, una sola vez y fuera del details."""
 
     def test_el_procedimiento_plegado_precede_al_resultado(self):
         respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
         orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1", "Matriz reducida",
-                 "Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
+                 "Resultado", "Clasificación", "Consistente de solución única", "Solución x₁ = 2 x₂ = 1",
                  "Columnas pivote:")
         posiciones = []
         for fragmento in orden:
@@ -422,7 +425,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         self.assertNotIn('id="procedimiento"', html)
         self.assertNotIn("Ver procedimiento", html)
         texto = seccion_resultado(respuesta)
-        self.assertIn("Resultado final Clasificación Consistente de solución única Solución x1 = 2 x2 = 1", texto)
+        self.assertIn("Resultado Clasificación Consistente de solución única Solución x₁ = 2 x₂ = 1", texto)
         self.assertEqual(texto.count("Matriz escalonada"), 1)
 
     def test_comparar_pliega_cada_metodo_y_deja_un_resultado_comun(self):
@@ -432,7 +435,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         texto = seccion_resultado(respuesta)
         texto = texto[texto.index("Ver procedimiento"):]
         orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas", "Matriz escalonada",
-                 "Gauss-Jordan", "Matriz reducida", "Resultado final", "Clasificación", "Solución x1 = 2 x2 = 1",
+                 "Gauss-Jordan", "Matriz reducida", "Resultado", "Clasificación", "Solución x₁ = 2 x₂ = 1",
                  "Columnas pivote:")
         posiciones = []
         for fragmento in orden:
