@@ -1,6 +1,6 @@
 # Presupuesto de entrada de Reducción por filas
 
-Desde P26.5, la herramienta pública está en Álgebra Lineal → Matrices y recibe
+Desde P26.5, la herramienta pública está en Álgebra lineal → Matrices y recibe
 Sistema de ecuaciones o Matriz aumentada. Conserva exactamente los límites de
 P26.2/P26.2.1; los nombres internos y las auditorías históricas se mantienen.
 

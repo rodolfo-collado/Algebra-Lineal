@@ -61,7 +61,7 @@ los IDs del JS real con `buscar_herramientas()` para una tabla generada en Pytho
 El catálogo permite sumar áreas sin rehacer la navegación. Los módulos marcados
 «Próximamente» no se enlazan como herramientas disponibles.
 
-P26.5 sitúa **Reducción por filas** en **Álgebra Lineal → Matrices**, con ID
+P26.5 sitúa **Reducción por filas** en **Álgebra lineal → Matrices**, con ID
 `reduccion-filas`, ruta `/matrices/reduccion/` y nombre Django
 `calculadora:reduccion-filas`. La categoría pública Sistemas de ecuaciones se
 retira del registro; Inicio, menú, buscador y breadcrumbs cambian juntos.
