@@ -21,6 +21,7 @@ from .opciones_matrices import (
 )
 
 SIMBOLOS_INICIALES = 2
+LONGITUD_COMPONENTE_MAXIMA = 200
 # Los tipos simbólicos siguen disponibles, agrupados aparte para no competir con los valores.
 TIPOS = (
     ("Con valores", (("matriz", "Matriz"), ("vector", "Vector"), ("escalar", "Escalar"))),
@@ -38,7 +39,7 @@ _COMPONENTES = frozenset({"vector", "vector_simbolico", "vector_lineal"})
 
 def campo_lineal(etiqueta):
     return forms.CharField(
-        label=etiqueta, required=False, max_length=200,
+        label=etiqueta, required=False, max_length=LONGITUD_COMPONENTE_MAXIMA,
         widget=forms.TextInput(attrs={
             "class": "matrix-input matrix-input-lineal", "autocomplete": "off",
             "spellcheck": "false", "placeholder": "3x1 - 2x2",
@@ -127,6 +128,8 @@ def presupuesto_expresion(arbol, tamanos):
 
 class ExpresionMatricialForm(FormularioCeldas):
     """Un símbolo por bloque. Calcular exige las celdas de esa estructura; Aplicar, agregar y eliminar no."""
+
+    longitud_lineal_maxima = LONGITUD_COMPONENTE_MAXIMA
 
     confirmacion = forms.CharField(required=False, strip=False, widget=forms.HiddenInput)
 

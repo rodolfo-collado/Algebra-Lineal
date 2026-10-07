@@ -38,6 +38,7 @@
     const maxCells = Number(matrixFields.dataset.maxCeldas);
     let renderedRows = 0;
     let renderedVariables = 0;
+    let matrixVisited = document.querySelector('input[name="tipo_entrada"]:checked')?.value === "matriz";
 
     function dimensionValue(input) {
         const value = Number(input.value);
@@ -162,7 +163,7 @@
         const input = matrixGrid.querySelector(
             `[data-cell="matriz_${row}_${column}"]`
         );
-        if (input) {
+        if (input && !input.readOnly && !input.matches(":disabled")) {
             input.focus();
         }
     }
@@ -181,6 +182,13 @@
             hint.hidden = hint.dataset.inputHint !== (isMatrix ? "matriz" : "sistema");
         });
         if (isMatrix) {
+            // Un POST textual puede omitir dimensiones. Solo la primera visita
+            // completa los campos ausentes; un POST matricial conserva sus errores.
+            if (!matrixVisited) {
+                if (!equationsInput.value) equationsInput.value = matrixFields.dataset.ecuacionesInicial;
+                if (!variablesInput.value) variablesInput.value = matrixFields.dataset.variablesInicial;
+                matrixVisited = true;
+            }
             renderMatrix();
         } else {
             matrixWrapper.hidden = true;
@@ -243,7 +251,7 @@
         };
         const delta = deltas[event.key];
         // Alt+←/→ queda para el historial de escritorio, como en las demás cuadrículas.
-        if (!delta || event.altKey || event.target.dataset?.cell === undefined) {
+        if (!delta || !window.entradasSeguras.flechaDeCelda(event) || event.target.dataset?.cell === undefined) {
             return;
         }
 

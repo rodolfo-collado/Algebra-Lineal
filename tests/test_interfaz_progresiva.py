@@ -366,7 +366,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
     def test_cambiar_el_modo_de_entrada_no_pierde_su_comportamiento(self):
         pagina = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         self.assertRegex(pagina, r'<fieldset id="system-fields" data-perfil="sistema" class="input-mode">')
-        self.assertRegex(pagina, r'<fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="\d+" class="input-mode" hidden disabled>')
+        self.assertRegex(pagina, r'<fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="\d+" data-ecuaciones-inicial="3" data-variables-inicial="3" class="input-mode" hidden disabled>')
         # El modo matricial sigue enviando sus celdas y resolviendo igual que el texto.
         matriz = self.client.post("/matrices/reduccion/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss_jordan"))
         texto = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan"})
@@ -550,7 +550,8 @@ class PruebasExplorar(SimpleTestCase):
         html = pagina.content.decode("utf-8")
         self.assertRegex(html, rf'name="metodo" value="{METODO_PREDETERMINADO}"[^>]*checked')
         self.assertRegex(html, r'name="tipo_entrada" value="matriz"[^>]*checked')
-        self.assertNotIn('name="ecuaciones" value="', html)
+        self.assertIn('name="ecuaciones" value="3"', html)
+        self.assertIn('name="variables" value="3"', html)
         self.assertEqual(re.findall(r'name="mostrar" value="([^"]+)"[^>]*checked', html), [])
         self.assertIn('id="matrix-initial-values"', html)
         self.assertEqual(SistemaForm.inicial_desde(QueryDict("ecuaciones=0&variables=3&metodo=gauss")), {"metodo": "gauss", "variables": 3})

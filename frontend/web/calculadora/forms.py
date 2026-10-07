@@ -78,12 +78,14 @@ class SistemaForm(FormularioConErrores):
                     "x1+x2+x3=6"
                 ),
                 "spellcheck": "false",
+                "aria-describedby": "sistema-ayuda",
             }
         ),
         error_messages={"required": "Ingresa un sistema de ecuaciones."},
     )
     ecuaciones = forms.IntegerField(
         label="Número de ecuaciones",
+        initial=3,
         required=False,
         min_value=1,
         max_value=ECUACIONES_MAXIMAS,
@@ -102,6 +104,7 @@ class SistemaForm(FormularioConErrores):
     )
     variables = forms.IntegerField(
         label="Número de variables",
+        initial=3,
         required=False,
         min_value=1,
         max_value=VARIABLES_MAXIMAS,

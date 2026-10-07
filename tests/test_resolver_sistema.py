@@ -487,7 +487,7 @@ class PruebasUnaEcuacionPorLineaWeb(SimpleTestCase):
                 self.assertEqual(seccion_resultado(respuesta), esperado)
 
     def test_la_ayuda_coincide_con_lo_que_acepta_el_parser(self):
-        self.assertContains(self.client.get("/matrices/reduccion/"), "Escribe una ecuación por línea o sepáralas con <code>;</code>.")
+        self.assertContains(self.client.get("/matrices/reduccion/"), "Separa las ecuaciones con <code>;</code> o con saltos de línea.")
         # Las ecuaciones del marcador de posición, una por línea, con ';' o sin él.
         for metodo in ("gauss", "gauss_jordan", "comparar"):
             with self.subTest(metodo=metodo):
