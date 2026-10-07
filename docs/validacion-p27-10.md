@@ -31,6 +31,15 @@ ni los incrementos pendientes P27.11/P28, incluido el bug de líneas vacías al 
 - **Menú:** las tres líneas existentes se dibujan mediante `border-top: 2px solid
   currentColor`, incluidos los pseudoelementos. El borde sobrevive a forced-colors
   y conserva la geometría normal. No se usa `forced-color-adjust: none`.
+- **Identidad del header:** en forced-colors, `.app-brand` y `.app-mark` usan
+  `CanvasText`; el path existente hereda ese color mediante `fill="currentColor"`.
+  Chromium aplicaba `LinkText` al nombre por su enlace nativo y conservaba el
+  color normal del SVG con `preserve-parent-color`: el tema oscuro producía una
+  marca blanca sobre el Canvas claro (y el caso inverso, negra sobre Canvas oscuro).
+  No se desactiva la adaptación de colores del sistema ni se impone verde de marca.
+  El enlace a Inicio conserva semántica, foco y activación; breadcrumbs y otros
+  enlaces siguen usando los colores de enlace del sistema. Los temas normales
+  conservan sus colores anteriores.
 - **Radios:** `.option` y `.segment` conservan su outline de `:focus-visible`;
   solo el radio interno deja de dibujar un segundo outline. El radio nativo
   mantiene selección, teclado y representación en alto contraste.
@@ -101,12 +110,23 @@ búsqueda. También se emuló prefers-reduced-motion: controles funcionales y
 transiciones desactivadas. No se usó Windows High Contrast físico.
 Sin página vacía, overlay de error ni errores de consola en la QA específica.
 
+Corrección del header en la misma rama y PR #79: QA normal claro/oscuro en
+@Browser y Edge, y forced-colors claro/oscuro emulado en Edge, a 390×650,
+760×650 y 1280×650. Se capturaron y revisaron los cuatro estados; también se
+cruzaron ambos temas de aplicación con ambos esquemas forced-colors: 18
+combinaciones en total. Logo y nombre visibles, Menú/Tema visibles y sin
+overflow de página. Tab real y Shift+Tab conservan el foco de los tres controles;
+Enter en la identidad vuelve a Inicio, Space activa Menú/Tema y Escape retorna
+al botón Menú. AX conserva `link, PyGebra, inicio`. El runner residual compara
+los colores efectivos con sondas `CanvasText`/`LinkText`, sin exigir RGB concretos;
+pasó 39/39 tanto en el esquema forced-colors claro como en el oscuro.
+
 ## Validación automática y regresiones
 
 | Comando | Resultado |
 | --- | --- |
 | uv run --locked python --version | Python 3.13.3 |
-| uv run --locked python -m unittest discover -v | 1621 OK, 153.272 s |
+| uv run --locked python -m unittest discover -v | 1621 OK, 82.005 s (repetición del header) |
 | uv run --locked python manage.py check | Sin problemas, 0 silenciados |
 | uv run --locked python -m compileall -q backend frontend tests main.py manage.py desktop.py | OK |
 | uv lock --check | OK, 30 paquetes |
@@ -115,7 +135,7 @@ Sin página vacía, overlay de error ni errores de consola en la QA específica.
 
 | Runner en @Browser | Resultado |
 | --- | --- |
-| residual_browser (P27.10) | 38/38 |
+| residual_browser (P27.10) | 39/39, también en forced-colors claro/oscuro |
 | presentacion_browser | 14/14 |
 | entrada_edicion_browser (P27.9) | 33/33 |
 | pulido_browser (P27.8) | 16/16 |
@@ -133,6 +153,9 @@ los nombres y la comprobación de pageshow. Al ejecutar varios runners a la vez
 en el mismo origen hubo interferencia de cookies CSRF; resultado pasó 66/66
 en repetición y escritorio pasó 27/27 de forma aislada. Se usa un origen fresco para evitar caché de estáticos de QA previa
 y se separan las ejecuciones que escriben cookies o preferencias.
+Para la corrección del header se repitieron además pulido (16/16), escritorio
+(27/27) y buscador (16/16), junto a todos los comandos de validación anteriores
+y la sintaxis JS del runner residual. Los demás runners registran la QA inicial.
 
 ## Límites y seguimiento
 
@@ -141,8 +164,5 @@ y se separan las ejecuciones que escriben cookies o preferencias.
   Windows, se verifica aparte en la PR; esta tabla registra pruebas locales.
 - La detección de Formato conserva el alcance del adaptador existente: variantes
   preparadas para literales racionales, sin ampliar el parser a textos nuevos.
-- Observación fuera de alcance: en forced-colors con tema oscuro, la marca SVG
-  del header puede perder visibilidad, aunque el nombre PyGebra sigue visible.
-  No se modificó la identidad visual en este incremento.
 - Capturas, logs y script CDP complementario quedan fuera del repositorio.
   Solo se versionan contratos y runners necesarios; no se añade infraestructura.

@@ -37,6 +37,13 @@
     flex: none;
 }
 
+@media (forced-colors: active) {
+    .app-brand,
+    .app-mark {
+        color: CanvasText;
+    }
+}
+
 .app-brand-text {
     display: grid;
     min-width: 0;

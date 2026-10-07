@@ -91,6 +91,31 @@
             pageFits(w);
         }
     }]);
+    casos.push(["Header: identidad visible con colores del sistema en forced-colors", "/matrices/reduccion/", async (w,frame) => {
+        const brand = q(w,".app-brand"), mark = q(w,".app-mark"), path = mark.querySelector("path");
+        const probe = w.document.createElement("span");
+        w.document.body.append(probe);
+        for (const theme of ["light","dark"]) {
+            w.document.documentElement.dataset.theme = theme;
+            for (const width of [390,760,1280]) {
+                await viewport(frame,width,650);
+                assert(brand.tagName === "A" && brand.getAttribute("href") === "/", "Identidad conserva enlace a Inicio");
+                assert(rect(mark).width > 0 && path.getBBox().width > 0 && style(w,path).fill !== "none", "SVG conserva representación");
+                assert(style(w,brand).forcedColorAdjust !== "none" && style(w,mark).forcedColorAdjust !== "none", "Adaptación del sistema activa");
+                probe.style.color = w.matchMedia("(forced-colors: active)").matches ? "CanvasText" : "var(--color-mark)";
+                const expected = style(w,probe).color;
+                assert(style(w,mark).color === expected && style(w,path).fill === expected, "Marca respeta color de sistema o tema normal");
+                if (w.matchMedia("(forced-colors: active)").matches) {
+                    assert(style(w,brand).color === expected && style(w,q(w,".app-name")).color === expected, "Identidad usa CanvasText");
+                    probe.style.color = "LinkText";
+                    assert(style(w,q(w,".breadcrumbs a")).color === style(w,probe).color, "Navegación convencional conserva LinkText");
+                }
+                brand.focus(); assert(style(w,brand).outlineStyle !== "none", "Enlace conserva foco visible");
+                pageFits(w);
+            }
+        }
+        probe.remove();
+    }]);
     casos.push(["UI-68.4: sin JS, Tema oculto y navegación disponible", "/", (w) => {
         assert(q(w,"#theme-toggle").hidden && style(w,q(w,"#theme-toggle")).display === "none","Sin acción falsa");
         assert(q(w,"#navigation-toggle").hidden,"Menú conserva mejora progresiva");
