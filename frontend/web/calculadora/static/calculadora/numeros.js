@@ -11,6 +11,8 @@
         ({node, data: JSON.parse(node.dataset.numeric)}));
     const attributes = Array.from(result.querySelectorAll("[data-numeric-attributes]"), node =>
         ({node, data: JSON.parse(node.dataset.numericAttributes)}));
+    // numeric_results solo marca texto cuya representación cambia en alguna precisión.
+    if (!numbers.length) return;
     // tema_inicial.html: localStorage en la sesión y, en escritorio, el archivo propio.
     const preferencias = window.preferencias;
 
