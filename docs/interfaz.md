@@ -27,6 +27,7 @@ En la app de escritorio también se conserva entre aperturas (ver [Escritorio](#
 Si el almacenamiento está bloqueado, tema y menú siguen funcionando.
 Si el usuario no ha elegido, se respeta `prefers-color-scheme`. El icono del
 selector representa el tema activo: sol en claro, luna en oscuro.
+Tema anuncia la acción de cambiar al tema opuesto y solo aparece cuando JavaScript lo hace operativo.
 
 Todo debe funcionar sin Internet. No uses Google Fonts, CDN ni iconos remotos.
 
@@ -434,9 +435,10 @@ el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructur
 sin calcular. `vector-fields` declara `data-perfil="numerico"`, compartido
 con las celdas de matrices y Ax = b, incluido el escalar cuando está presente.
 
-Las filas comparten tres columnas (subgrid): nombre, componentes y el botón ×. Así
-los `=` quedan alineados y el × pertenece a la fila de su vector, con borde y
-esquinas completos; bajo 760 px caben tres componentes junto a él. **Agregar
+La lista de vectores se desplaza horizontalmente como una unidad: nombres y
+componentes de cada columna permanecen alineados, también con valores de distinto
+ancho. El × pertenece a su fila y queda después de la última componente; bajo
+760 px caben tres componentes junto a él. **Agregar
 vector** lleva el foco a la primera componente del nuevo; quitar uno lo lleva a la
 fila que ocupa su lugar o, si era el último, a la anterior. Un `role="status"` bajo
 Agregar dice «Se agregó el vector v3.» o «Se eliminó el vector v3.»; los botones ±
@@ -700,7 +702,10 @@ No agregues enlaces a pantallas que todavía no existen.
 ## Formato exacto y decimal
 
 Sistemas, Vectores (incluida combinación lineal), Matrices (incluidos AB y Ax),
-Ax=b y Matriz inversa ofrecen un selector discreto junto al resultado. Exacto es el valor
+Ax=b y Matriz inversa ofrecen un selector discreto junto al resultado cuando al
+menos un texto numérico del bloque tiene representaciones distintas. En salidas
+enteras o textuales sin variantes permanece oculto y la preferencia global se conserva.
+Exacto es el valor
 predeterminado y el contenido del HTML sin JavaScript. Decimal permite elegir
 un máximo de 2, 4, 6 u 8 decimales; el valor inicial es 4. Se recortan ceros
 finales: `7/2` → `3.5`, `4` → `4`, `1/3` → `0.3333`.
