@@ -82,6 +82,12 @@ button {
     color: var(--color-muted);
 }
 
+/* Un ejemplo legible (al menos 4.5:1) que se distingue del valor escrito por su tono. */
+::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+}
+
 .text-link {
     color: var(--color-brand-strong);
     font-weight: 600;
@@ -100,13 +106,16 @@ summary:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
-[tabindex="-1"]:focus-visible {
+[tabindex]:focus-visible {
     outline: 3px solid var(--color-focus);
     outline-offset: 2px;
 }
 
-[id] {
-    scroll-margin-top: calc(var(--header-height) + 1.5rem);
+/* Todo desplazamiento automático (Tab y Shift+Tab, anclas como #resultado, scrollIntoView)
+   deja el destino bajo la cabecera fija, nunca detrás. Sustituye al antiguo scroll-margin
+   de [id], que solo cubría anclas y se sumaba a esta reserva. */
+html {
+    scroll-padding-top: calc(var(--header-height) + 1.5rem);
 }
 
 @media (prefers-reduced-motion: reduce) {

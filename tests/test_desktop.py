@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import runpy
+import sys
+import tempfile
 import unittest
 from http.cookiejar import CookieJar
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
@@ -20,6 +24,14 @@ RAIZ = Path(__file__).resolve().parents[1]
 
 
 class PruebasLauncherDesktop(unittest.TestCase):
+    def test_mensaje_webview2_identifica_pygebra(self):
+        self.assertEqual(desktop.APP_TITLE, "PyGebra")
+        with patch.object(desktop.sys, "platform", "win32"), patch.object(desktop, "webview2_available", return_value=False):
+            with self.assertRaises(desktop.DesktopStartupError) as error:
+                desktop.ensure_webview2_runtime()
+        self.assertIn("Vuelve a ejecutar el instalador de PyGebra", str(error.exception))
+        self.assertNotIn("Álgebra Lineal", str(error.exception))
+
     def test_construye_url_de_loopback(self):
         self.assertEqual(
             desktop.build_local_url(desktop.LOOPBACK_HOST, 49173),
@@ -44,6 +56,18 @@ class PruebasLauncherDesktop(unittest.TestCase):
             )
             self.assertEqual(os.environ[desktop.DESKTOP_ENVIRONMENT], "1")
             self.assertEqual(os.environ["DJANGO_DEBUG"], "0")
+
+        local = str(Path.home() / "AppData" / "Local")
+        with patch.dict(os.environ, {"LOCALAPPDATA": local}, clear=True):
+            desktop.configure_desktop_environment()
+            self.assertEqual(
+                os.environ[desktop.PREFERENCES_ENVIRONMENT],
+                str(Path(local) / "PyGebra" / "preferencias.json"),
+            )
+        # Una ruta ya fijada (pruebas manuales aisladas) no se sobrescribe.
+        with patch.dict(os.environ, {"LOCALAPPDATA": local, desktop.PREFERENCES_ENVIRONMENT: "otra.json"}, clear=True):
+            desktop.configure_desktop_environment()
+            self.assertEqual(os.environ[desktop.PREFERENCES_ENVIRONMENT], "otra.json")
 
     def test_carga_la_aplicacion_wsgi_configurada(self):
         aplicacion = object()
@@ -97,7 +121,8 @@ class PruebasLauncherDesktop(unittest.TestCase):
 
         webview = SimpleNamespace(create_window=crear_ventana)
 
-        resultado = desktop.create_desktop_window(webview, "http://127.0.0.1:49173/")
+        with patch.object(desktop, "restored_window_geometry", return_value=None):
+            resultado = desktop.create_desktop_window(webview, "http://127.0.0.1:49173/")
 
         self.assertIs(resultado, ventana)
         self.assertEqual(argumentos["args"], (desktop.APP_TITLE,))
@@ -112,6 +137,10 @@ class PruebasLauncherDesktop(unittest.TestCase):
         self.assertNotIn("icon", argumentos["kwargs"])
         self.assertTrue(argumentos["kwargs"]["resizable"])
         self.assertFalse(argumentos["kwargs"]["fullscreen"])
+        # UI-69: maximizada, no pantalla completa; restaurar vuelve a un tamaño normal.
+        self.assertTrue(argumentos["kwargs"]["maximized"])
+        self.assertNotIn("frameless", argumentos["kwargs"])
+        self.assertEqual(argumentos["kwargs"]["min_size"], (760, 560))
 
     def test_main_reporta_un_error_de_inicio_controlado(self):
         error = desktop.DesktopStartupError("fallo controlado")
@@ -213,6 +242,231 @@ class PruebasLauncherDesktop(unittest.TestCase):
             desktop.set_windows_app_user_model_id()
 
 
+class EventoNet:
+    """Doble de un evento .NET: pythonnet suscribe los manejadores con +=."""
+
+    def __init__(self):
+        self.manejadores = []
+
+    def __iadd__(self, manejador):
+        self.manejadores.append(manejador)
+        return self
+
+    def disparar(self, *args):
+        for manejador in self.manejadores:
+            manejador(*args)
+
+
+class ListaNet(list):
+    """Doble de IList<CoreWebView2ContextMenuItem>."""
+
+    @property
+    def Count(self):
+        return len(self)
+
+    def RemoveAt(self, indice):
+        del self[indice]
+
+
+def menu(*nombres):
+    return SimpleNamespace(MenuItems=ListaNet(SimpleNamespace(Name=n) for n in nombres), Handled=False)
+
+
+class PruebasEscritorioP27_7(unittest.TestCase):
+    """Ventana, preferencias entre aperturas y menú contextual de la app de escritorio."""
+
+    def area_util(self, rect, dpi):
+        """user32 de mentira: área útil en píxeles físicos y DPI del sistema."""
+
+        def spi(accion, parametro, puntero, flags):
+            self.assertEqual(accion, desktop.SPI_GETWORKAREA)
+            area = puntero._obj
+            area.left, area.top, area.right, area.bottom = rect
+            return 1
+
+        return MagicMock(user32=SimpleNamespace(SystemParametersInfoW=spi, GetDpiForSystem=lambda: dpi))
+
+    def test_al_restaurar_la_ventana_cabe_en_el_area_util(self):
+        casos = (
+            # Este equipo: 2912×1638 al 200 % con barra de tareas (área 1456×771 lógica).
+            ((0, 0, 2912, 1542), 192, (178, 31, 1100, 709)),
+            # Pantalla amplia sin escalado: tamaño completo y centrado.
+            ((0, 0, 1920, 1032), 96, (410, 136, 1100, 760)),
+            # Barra de tareas a la izquierda (el área no empieza en 0).
+            ((62, 0, 1366, 768), 96, (164, 31, 1100, 706)),
+            # Área menor que min_size: se respeta min_size y la barra de título queda visible.
+            ((0, 0, 1000, 600), 120, (20, 0, 760, 560)),
+        )
+        for rect, dpi, esperado in casos:
+            with self.subTest(rect=rect, dpi=dpi), patch.object(desktop.sys, "platform", "win32"), \
+                    patch("ctypes.windll", self.area_util(rect, dpi), create=True):
+                self.assertEqual(desktop.restored_window_geometry(), esperado)
+
+    def test_sin_area_util_usa_el_tamano_por_defecto(self):
+        with patch.object(desktop.sys, "platform", "linux"):
+            self.assertIsNone(desktop.restored_window_geometry())
+        sin_area = MagicMock(user32=SimpleNamespace(SystemParametersInfoW=lambda *args: 0, GetDpiForSystem=lambda: 96))
+        with patch.object(desktop.sys, "platform", "win32"), patch("ctypes.windll", sin_area, create=True):
+            self.assertIsNone(desktop.restored_window_geometry())
+        webview = MagicMock()
+        with patch.object(desktop, "restored_window_geometry", return_value=(178, 31, 1100, 709)):
+            desktop.create_desktop_window(webview, "http://127.0.0.1:49173/")
+        opciones = webview.create_window.call_args.kwargs
+        self.assertEqual((opciones["x"], opciones["y"], opciones["width"], opciones["height"]), (178, 31, 1100, 709))
+        self.assertTrue(opciones["maximized"])
+
+    def test_preferencias_fuera_del_repositorio_la_instalacion_y_los_temporales(self):
+        local = Path.home() / "AppData" / "Local"
+        with patch.dict(os.environ, {"LOCALAPPDATA": str(local)}):
+            ruta = desktop.preferences_path()
+        self.assertEqual(ruta, local / "PyGebra" / "preferencias.json")
+        self.assertTrue(ruta.is_absolute())
+        for carpeta in (
+            RAIZ,
+            Path(tempfile.gettempdir()),
+            Path(sys.executable).resolve().parent,
+            # Carpeta de instalación por usuario de Inno Setup y _MEIPASS (_internal).
+            local / "Programs" / "AlgebraLineal",
+        ):
+            with self.subTest(carpeta=carpeta):
+                self.assertFalse(ruta.is_relative_to(carpeta.resolve()))
+                self.assertFalse(ruta.is_relative_to(carpeta))
+
+    def test_sin_carpeta_de_usuario_absoluta_no_se_guardan_preferencias(self):
+        with patch.dict(os.environ, {"LOCALAPPDATA": "relativa"}, clear=True), \
+                patch.object(desktop.Path, "home", side_effect=RuntimeError("sin carpeta")):
+            self.assertIsNone(desktop.preferences_path())
+            desktop.configure_desktop_environment()
+            self.assertNotIn(desktop.PREFERENCES_ENVIRONMENT, os.environ)
+
+    def test_settings_solo_usa_el_archivo_de_preferencias_en_escritorio(self):
+        ruta_settings = RAIZ / "frontend" / "web" / "algebra_web" / "settings.py"
+        with patch.dict(os.environ, {"ALGEBRA_DESKTOP": "1", "ALGEBRA_PREFERENCIAS": "pref.json"}):
+            self.assertEqual(runpy.run_path(str(ruta_settings))["DESKTOP_PREFERENCES_FILE"], "pref.json")
+        with patch.dict(os.environ, {"ALGEBRA_DESKTOP": "0", "ALGEBRA_PREFERENCIAS": "pref.json"}):
+            self.assertIsNone(runpy.run_path(str(ruta_settings))["DESKTOP_PREFERENCES_FILE"])
+
+    def iniciar(self, depuracion):
+        webview = MagicMock()
+        with patch.object(desktop.sys, "platform", "win32"), \
+                patch.object(desktop, "webview2_available", return_value=True), \
+                patch("ctypes.windll", MagicMock(), create=True), \
+                patch.dict("sys.modules", webview=webview), \
+                patch.dict(os.environ, {"ALGEBRA_DESKTOP_DEBUG": depuracion}), \
+                patch.object(desktop, "load_wsgi_application"), \
+                patch.object(desktop, "start_waitress", return_value=(object(), object(), "http://127.0.0.1:49173/", None)) as servidor, \
+                patch.object(desktop, "wait_for_server"), \
+                patch.object(desktop, "stop_waitress"), \
+                patch.object(desktop, "install_edit_context_menu") as menu_edicion:
+            desktop.run_desktop()
+        return webview, servidor, menu_edicion
+
+    def test_inicio_privado_en_puerto_efimero_y_desde_inicio(self):
+        webview, servidor, menu_edicion = self.iniciar("0")
+        opciones = webview.start.call_args.kwargs
+        # WebView2 descarta su perfil al cerrar: no hay sesión anterior que restaurar.
+        self.assertTrue(opciones["private_mode"])
+        self.assertNotIn("storage_path", opciones)
+        self.assertFalse(opciones["debug"])
+        # Sin puerto preferido: el sistema elige uno libre en el mismo bind de Waitress.
+        self.assertEqual(servidor.call_args.kwargs, {})
+        self.assertEqual(webview.create_window.call_args.kwargs["url"], "http://127.0.0.1:49173/")
+        menu_edicion.assert_called_once_with(webview.create_window.return_value)
+
+    def test_diagnostico_conserva_el_menu_de_pywebview(self):
+        webview, _, menu_edicion = self.iniciar("1")
+        self.assertTrue(webview.start.call_args.kwargs["debug"])
+        menu_edicion.assert_not_called()
+
+    def test_menu_contextual_deja_solo_las_acciones_de_edicion(self):
+        # Nombres reales del menú de WebView2 en un campo editable.
+        args = menu("emoji", "other", "undo", "redo", "other", "cut", "copy", "paste", "pasteAndMatchStyle",
+                    "selectAll", "other", "print", "other", "moreTools")
+        desktop.filter_context_menu(None, args)
+        self.assertEqual([item.Name for item in args.MenuItems], ["cut", "copy", "paste", "selectAll"])
+        self.assertFalse(args.Handled)
+        # Texto seleccionado sin editar: solo Copiar.
+        args = menu("copy", "other", "print", "inspectElement")
+        desktop.filter_context_menu(None, args)
+        self.assertEqual([item.Name for item in args.MenuItems], ["copy"])
+        # Fondo de la página o enlaces: nada útil, no se muestra menú.
+        for nombres in (("back", "forward", "reload", "other", "saveAs", "print"), ("copyLinkToClipboard", "openLinkInNewWindow")):
+            with self.subTest(nombres=nombres):
+                args = menu(*nombres)
+                desktop.filter_context_menu(None, args)
+                self.assertEqual(list(args.MenuItems), [])
+                self.assertTrue(args.Handled)
+        # Un fallo inesperado nunca deja ver el menú completo.
+        roto = SimpleNamespace(Handled=False)
+        desktop.filter_context_menu(None, roto)
+        self.assertTrue(roto.Handled)
+
+    def test_menu_contextual_se_filtra_antes_de_activarse(self):
+        orden = []
+
+        class Evento(EventoNet):
+            def __iadd__(self, manejador):
+                orden.append("filtro")
+                return super().__iadd__(manejador)
+
+        class Ajustes:
+            def __setattr__(self, nombre, valor):
+                orden.append(f"{nombre}={valor}")
+                super().__setattr__(nombre, valor)
+
+        core = SimpleNamespace(ContextMenuRequested=Evento(), Settings=Ajustes())
+        control = SimpleNamespace(CoreWebView2InitializationCompleted=EventoNet())
+        ventana = SimpleNamespace(events=SimpleNamespace(before_show=EventoNet()), native=None)
+        desktop.install_edit_context_menu(ventana)
+        # pywebview crea el control nativo justo antes de before_show.
+        ventana.native = SimpleNamespace(webview=control)
+        ventana.events.before_show.disparar()
+        control.CoreWebView2InitializationCompleted.disparar(SimpleNamespace(CoreWebView2=core), SimpleNamespace(IsSuccess=False))
+        self.assertEqual(orden, [])
+        control.CoreWebView2InitializationCompleted.disparar(SimpleNamespace(CoreWebView2=core), SimpleNamespace(IsSuccess=True))
+        self.assertEqual(orden, ["filtro", "AreDefaultContextMenusEnabled=True"])
+        self.assertEqual(core.ContextMenuRequested.manejadores, [desktop.filter_context_menu])
+        # DevTools y los atajos del navegador no se tocan: siguen como los deja pywebview.
+        self.assertNotIn("AreDevToolsEnabled", " ".join(orden))
+        self.assertNotIn("AreBrowserAcceleratorKeysEnabled", " ".join(orden))
+
+    def test_un_fallo_al_registrar_el_menu_no_sale_al_evento_net(self):
+        class EventoRoto(EventoNet):
+            def __iadd__(self, manejador):
+                raise RuntimeError("API no disponible en este runtime")
+
+        ajustes = SimpleNamespace(AreDefaultContextMenusEnabled=False)
+        core = SimpleNamespace(ContextMenuRequested=EventoRoto(), Settings=ajustes)
+        control = SimpleNamespace(CoreWebView2InitializationCompleted=EventoNet())
+        ventana = SimpleNamespace(events=SimpleNamespace(before_show=EventoNet()), native=SimpleNamespace(webview=control))
+        desktop.install_edit_context_menu(ventana)
+        ventana.events.before_show.disparar()
+        control.CoreWebView2InitializationCompleted.disparar(SimpleNamespace(CoreWebView2=core), SimpleNamespace(IsSuccess=True))
+        self.assertFalse(ajustes.AreDefaultContextMenusEnabled)
+
+    def test_sin_control_nativo_el_hook_no_impide_mostrar_la_ventana(self):
+        ventana = SimpleNamespace(events=SimpleNamespace(before_show=EventoNet()), native=None)
+        desktop.install_edit_context_menu(ventana)
+        ventana.events.before_show.disparar()
+
+    def test_dos_instancias_conviven_sin_single_instance(self):
+        def aplicacion(environ, start_response):
+            start_response("200 OK", [("Content-Type", "text/plain")])
+            return [b"ok"]
+
+        primero, puerto_primero = desktop.create_local_server(aplicacion)
+        try:
+            segundo, puerto_segundo = desktop.create_local_server(aplicacion)
+            try:
+                self.assertNotEqual(puerto_primero, puerto_segundo)
+                for servidor in (primero, segundo):
+                    self.assertEqual(servidor.socket.getsockname()[0], desktop.LOOPBACK_HOST)
+            finally:
+                segundo.close()
+        finally:
+            primero.close()
+
+
 class PruebaSmokeWaitressDjango(unittest.TestCase):
     def test_waitress_django_y_backend_responden_por_http(self):
         os.environ.setdefault(
@@ -240,6 +494,34 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertEqual(respuesta.status, 200)
                 self.assertIn("Inicio · PyGebra", html)
                 self.assertIn('href="/matrices/reduccion/"', html)
+
+            # P27.7: con DEBUG=False (como en escritorio) un 404 es una página de PyGebra.
+            from django.test import override_settings
+
+            with override_settings(DEBUG=False), self.assertRaises(HTTPError) as error:
+                cliente_http.open(f"{url}no-existe/", timeout=3.0)
+            self.assertEqual(error.exception.code, 404)
+            pagina_404 = error.exception.read().decode("utf-8")
+            self.assertIn("No encontramos esta página.", pagina_404)
+            self.assertNotIn("Not Found", pagina_404)
+
+            # Las preferencias viajan por la misma pila y solo llegan al archivo propio.
+            with tempfile.TemporaryDirectory() as carpeta:
+                archivo = Path(carpeta) / "PyGebra" / "preferencias.json"
+                with override_settings(DESKTOP_MODE=True, DESKTOP_PREFERENCES_FILE=str(archivo)):
+                    with cliente_http.open(url, timeout=3.0) as respuesta:
+                        inicio = respuesta.read().decode("utf-8")
+                    token = re.search(r'<meta name="csrf-token" content="([^"]+)">', inicio).group(1)
+                    solicitud = Request(
+                        f"{url}preferencias/",
+                        data=urlencode({"clave": "pygebra-tema", "valor": "dark"}).encode("ascii"),
+                        headers={"X-CSRFToken": token},
+                    )
+                    with cliente_http.open(solicitud, timeout=3.0) as respuesta:
+                        self.assertEqual(respuesta.status, 204)
+                    with cliente_http.open(url, timeout=3.0) as respuesta:
+                        self.assertIn('data-desktop data-pygebra-tema="dark"', respuesta.read().decode("utf-8"))
+                self.assertEqual(json.loads(archivo.read_text(encoding="utf-8")), {"pygebra-tema": "dark"})
 
             url_sistemas = f"{url}sistemas/"
             with cliente_http.open(url_sistemas, timeout=3.0) as respuesta:
@@ -326,8 +608,8 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertEqual(respuesta.status, 200)
 
             self.assertIn("Consistente de solución única", resultado)
-            self.assertIn("x1 = 2", resultado)
-            self.assertIn("x2 = 1", resultado)
+            self.assertIn("x₁ = 2", resultado)
+            self.assertIn("x₂ = 1", resultado)
 
             # La conversión de bases viaja por la misma pila Waitress + Django.
             url_bases = f"{url}bases/conversion/"
@@ -387,7 +669,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertEqual(respuesta.status, 200)
                 combinacion = respuesta.read().decode("utf-8")
             self.assertIn("b es combinación lineal de v1 y v2", combinacion)
-            self.assertIn("x1 = 3", combinacion)
+            self.assertIn("x₁ = 3", combinacion)
             self.assertIn("(3, 4) = 3(1, 0) + 4(0, 1)", combinacion)
 
             # P13A viaja por la pila desktop real, con CSRF y recursos locales.
@@ -444,7 +726,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 (datos_ecuacion(a=[[2, 0], [0, 3]], b=[1, 1], metodo="comparar"), [["1/2"], ["1/3"]],
                  ("Ax = b tiene solución única.", "b = (1/2)a₁ + (1/3)a₂", 'id="procedimiento"', 'class="disclosure disclosure-nested"')),
                 (datos_ecuacion(a=[[1, 0], [0, 1], [1, 1]], b=[2, 3, 5]), [["2"], ["3"]],
-                 ("A (3×2) · x (2) = b (3)", "x1 = 2", "x2 = 3")),
+                 ("A (3×2) · x (2) = b (3)", "x₁ = 2", "x₂ = 3")),
             ):
                 datos["csrfmiddlewaretoken"] = csrf.group(1).decode("ascii")
                 solicitud = Request(url_ecuaciones, data=urlencode(datos).encode("ascii"), headers={"Referer": url_ecuaciones})

@@ -4,9 +4,9 @@
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
-    <form id="ecuacion-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+    <form id="ecuacion-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
-        {% if form.errors %}<div class="alert error" role="alert">Revisa los campos indicados. {{ form.non_field_errors }}</div>{% endif %}
+        {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="equation-fields" data-perfil="numerico" aria-labelledby="equation-title">
             <h3 class="section-title" id="equation-title">Ecuación matricial</h3>
             <p class="field-help">A y b son conocidos; x es el vector incógnita que se busca. Elige solo las dimensiones de A: b tiene tantas componentes como filas tiene A, y x tantas como columnas.</p>
@@ -17,7 +17,7 @@
             <p class="field-help" data-equation-shape aria-live="polite">{{ form.forma_texto }}. De {{ form.filas.field.min_value }} a {{ form.filas.field.max_value }} filas y columnas.</p>
             <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
             <noscript><p class="field-help">Cambia las filas o columnas de A y pulsa <strong>Aplicar</strong> antes de resolver. Se conservan las celdas que siguen en la estructura.</p></noscript>
-            <div class="matrix-equation equation-entry" data-equation-entry>
+            <div id="equation-entry" class="matrix-equation equation-entry" data-equation-entry>
                 {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.0.nombre filas=form.matrices.0.filas vector=False only %}
                 <span class="matrix-expression" aria-hidden="true">·</span>
                 <div class="matrix-operand unknown-vector" data-unknown>
@@ -28,7 +28,8 @@
                 <span class="matrix-expression" aria-hidden="true">=</span>
                 {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.1.nombre filas=form.matrices.1.filas vector=True only %}
             </div>
-            <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. A puede ser rectangular: más ecuaciones que incógnitas o más incógnitas que ecuaciones.</p>
+            {% include "calculadora/components/errores_grupo.html" %}
+            <p class="field-help">Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>; usa <code>-</code> para negativos. A puede ser rectangular: más ecuaciones que incógnitas o más incógnitas que ecuaciones.</p>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
         <section class="workspace-section">
@@ -41,7 +42,7 @@
                 <p class="field-help option-help">{{ ayuda_metodos }}</p>
             </fieldset>
         </section>
-        <div class="workspace-actions"><button class="btn btn-primary" type="submit">Resolver</button></div>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Resolver</button></div>
     </form>
 </section>
 {% endblock %}
@@ -50,7 +51,7 @@
 {% if resultado %}
     {% comment %}Entrada → procedimiento plegable (equivalencias y eliminación) → resultado (clasificación y solución, una vez) → comprobación e interpretación plegadas, que parten de la solución y aportan información distinta del procedimiento. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
     {% numeric_results %}
-    <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+    <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
             <p class="section-kicker">Ecuación matricial · {{ resultado.titulo_metodo }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
             <h2 id="results-title">{{ resultado.forma }}</h2>
@@ -76,16 +77,16 @@
                 <h4 class="final-label">{% if resultado.clasificacion_clave == "unica" %}Solución{% elif resultado.clasificacion_clave == "infinitas" %}Conjunto solución{% else %}Contradicción{% endif %}</h4>
                 {% if resultado.justificacion %}
                     <div class="explanation">
-                        {% for parrafo in resultado.justificacion %}{% if parrafo %}<p>{{ parrafo }}</p>{% endif %}{% endfor %}
+                        {% for parrafo in resultado.justificacion %}{% if parrafo %}<p>{{ parrafo|incognitas }}</p>{% endif %}{% endfor %}
                     </div>
                 {% endif %}
                 {% if resultado.solucion_general %}
                     <div class="solution-pair">
                         <ul class="equations solution-list">
-                            {% for linea in resultado.solucion_general %}<li><code>{{ linea }}</code></li>{% endfor %}
+                            {% for linea in resultado.solucion_general %}<li><code>{{ linea|incognitas }}</code></li>{% endfor %}
                         </ul>
                         {% if resultado.x %}
-                            <div class="matrix-equation" tabindex="0" role="region" aria-label="Vector solución x">
+                            <div class="matrix-equation" role="region" aria-label="Vector solución x">
                                 <span class="matrix-expression">x =</span>
                                 {% include "calculadora/components/matriz.html" with matriz=resultado.x etiqueta="Vector solución x" only %}
                             </div>
@@ -98,7 +99,7 @@
         {% if resultado.comprobacion %}
             {% disclosure titulo="Comprobar solución" id="comprobacion" clase="disclosure-procedure" %}
                 <p class="procedure-lead">Al sustituir x, el producto Ax {% if resultado.comprobacion.coincide %}reproduce{% else %}no reproduce{% endif %} b.</p>
-                <div class="matrix-equation" tabindex="0" role="region" aria-label="Comprobación: A por x igual a b">
+                <div class="matrix-equation" role="region" aria-label="Comprobación: A por x igual a b">
                     <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.a etiqueta="Matriz A de la comprobación" only %}</div>
                     <span class="matrix-expression">·</span>
                     <div class="matrix-operand"><span class="muted">x</span>{% include "calculadora/components/matriz.html" with matriz=resultado.comprobacion.x etiqueta="Vector x sustituido" only %}</div>
@@ -110,7 +111,7 @@
             {% enddisclosure %}
         {% endif %}
         {% disclosure titulo="Interpretar Ax = b" id="interpretacion" clase="disclosure-procedure" %}
-            <p class="interpretation">{{ resultado.interpretacion.texto }}</p>
+            <p class="interpretation">{{ resultado.interpretacion.texto|incognitas }}</p>
             {% if resultado.interpretacion.igualdad %}<p class="combination-equality"><code>{{ resultado.interpretacion.igualdad }}</code></p>{% endif %}
         {% enddisclosure %}
     </section>

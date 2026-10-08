@@ -104,7 +104,7 @@ jobs:
         working-directory: release-assets
         run: |
           set -euo pipefail
-          installer="AlgebraLineal-Setup-$VERSION.exe"
+          installer="PyGebra-Setup-$VERSION.exe"
           test -f "$installer"
           test ! -L "$installer"
           test "$(find . -mindepth 1 | wc -l)" -eq 1
@@ -129,7 +129,7 @@ jobs:
           set -euo pipefail
           current_tag=$(gh api "repos/$GH_REPO/commits/refs/tags/$TAG" --jq '.sha')
           test "$COMMIT" = "$current_tag"
-          installer="AlgebraLineal-Setup-$VERSION.exe"
+          installer="PyGebra-Setup-$VERSION.exe"
           sha256sum "$installer" > SHA256SUMS.txt
           sha256sum --check SHA256SUMS.txt
           # Crear primero el draft; publicar únicamente después de verificar la carga.

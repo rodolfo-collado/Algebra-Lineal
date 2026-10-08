@@ -1,5 +1,5 @@
 {% comment %}Dentro del formulario: Continuar envía una firma de esta entrada; Cancelar conserva lo escrito sin calcular. Comparte el CSS neutral de Matriz inversa.{% endcomment %}
-<section class="confirmation" data-confirmacion aria-labelledby="confirmation-title">
+<section class="confirmation" data-confirmacion tabindex="-1" aria-labelledby="confirmation-title">
     <svg class="confirmation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/>
         <path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -7,11 +7,12 @@
     <div class="confirmation-body">
         <h3 id="confirmation-title" class="confirmation-title">Antes de calcular</h3>
         <p>{% if prefacio %}{{ prefacio }} {% endif %}{{ confirmacion.mensaje }}</p>
+        <p>Operación pendiente: <strong>{{ operacion }}</strong>. El cálculo completo todavía no se ha ejecutado.</p>
         <p>Tiempo estimado: {{ confirmacion.tiempo }}.</p>
         <p>¿Quieres continuar?</p>
         <div class="confirmation-actions">
             <button class="btn btn-secondary" type="submit" name="ajustar" value="1" formnovalidate>Cancelar</button>
-            <button class="btn btn-primary" type="submit" name="confirmacion" value="{{ confirmacion.firma }}">Continuar</button>
+            <button class="btn btn-primary" type="submit" data-calculo name="confirmacion" value="{{ confirmacion.firma }}">Continuar</button>
         </div>
     </div>
 </section>

@@ -30,6 +30,14 @@ FUNCIONES_ADICIONALES = (
     ("producto", "Producto con otra matriz"),
     ("vector", "Aplicar a un vector"),
 )
+# Qué calcula o comprueba cada opción, antes de elegirla (una línea, junto a su radio).
+AYUDAS_FUNCIONES = {
+    "ninguna": "Solo calcula A⁻¹.",
+    "inversa_inversa": "Comprueba (A⁻¹)⁻¹ = A.",
+    "traspuesta": "Comprueba (Aᵀ)⁻¹ = (A⁻¹)ᵀ.",
+    "producto": "Comprueba (AB)⁻¹ = B⁻¹A⁻¹.",
+    "vector": "Calcula x = A⁻¹b y comprueba Ax = b.",
+}
 
 # La regla general con letras; los valores concretos llegan del backend.
 SIMBOLICA = [["a", "b"], ["c", "d"]]

@@ -1,0 +1,1 @@
+{% if errors %}<ul class="{{ error_class }}{% if errors.field_id %} field-error{% endif %}"{% if errors.field_id %} id="{{ errors.field_id }}_error" data-error-field="{{ errors.field_id }}" role="alert"{% endif %}>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}

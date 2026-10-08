@@ -1,7 +1,7 @@
 {# Buscador de herramientas: envía a Inicio (?q=) y, con JavaScript, filtra la lista indicada al instante. #}
 <form class="search{% if search_large %} search-large{% endif %}" role="search" method="get"
       action="{% url 'calculadora:inicio' %}"
-      data-buscador="{{ search_target }}">
+      data-buscador="{{ search_target }}"{% if search_large %} data-buscador-inicio{% endif %}>
     <label class="{% if search_large %}search-label{% else %}sr-only{% endif %}" for="{{ search_id }}">{{ search_label|default:"Buscar herramientas" }}</label>
     <div class="search-field">
         <div class="search-box">
@@ -10,11 +10,16 @@
                 <path d="M15 15l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
             <input id="{{ search_id }}" class="search-input" type="search" name="q"
-                   value="{{ consulta|default:'' }}" autocomplete="off" spellcheck="false"
+                   value="{% if search_large %}{{ consulta|default:'' }}{% endif %}" autocomplete="off" spellcheck="false"
                    placeholder="{{ search_placeholder|default:'Gauss, pivote, matriz…' }}"
                    aria-describedby="{{ search_id }}-estado">
         </div>
         <button class="search-submit" type="submit">Buscar</button>
     </div>
     <p id="{{ search_id }}-estado" class="search-status" aria-live="polite"></p>
+    <p class="search-suggestions" data-busqueda-sugerencias{% if not search_large or resultados_busqueda or resultados_busqueda is None %} hidden{% endif %}>
+        Prueba con <a class="text-link" href="{% url 'calculadora:inicio' %}?q=gauss">Buscar Gauss</a>,
+        <a class="text-link" href="{% url 'calculadora:inicio' %}?q=matriz">Buscar Matriz</a> o
+        <a class="text-link" href="{% url 'calculadora:inicio' %}?q=vectores">Buscar Vectores</a>.
+    </p>
 </form>

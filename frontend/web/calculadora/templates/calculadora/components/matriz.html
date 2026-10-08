@@ -1,7 +1,8 @@
 {% comment %}Matriz genérica de valores o expresiones. columnas_izquierda separa bloques en un solo table; aumentada sin corte conserva la última columna de [A | b]. Los índices de columnas_pivote son de base uno. add:0 normaliza el entero si llega capturado por firstof.{% endcomment %}{% with columnas_izquierda=columnas_izquierda|add:0 %}
 <div class="matrix">
-    <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
-    <div class="matrix-scroll" tabindex="0" role="region" aria-label="{{ etiqueta|default:'Matriz' }}">
+    <div class="matrix-scroll" data-matrix-output role="region" aria-label="{{ etiqueta|default:'Matriz' }}, desplazamiento horizontal">
+        <div class="matrix-content">
+        <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
         <table class="matrix-table" aria-label="{{ etiqueta|default:'Matriz' }}">
             <tbody>
                 {% for fila in matriz %}
@@ -13,6 +14,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        <span class="matrix-fence matrix-fence-end" aria-hidden="true"></span>
+        </div>
     </div>
-    <span class="matrix-fence matrix-fence-end" aria-hidden="true"></span>
 </div>{% endwith %}

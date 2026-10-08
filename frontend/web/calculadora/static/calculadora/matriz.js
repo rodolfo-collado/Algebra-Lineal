@@ -29,9 +29,16 @@
     }
 
     const initialValues = JSON.parse(initialValuesElement.textContent);
+    const memoria = new Map();
+    initialValues.forEach((fila, row) => fila.forEach((value, column) => {
+        const clave = column === fila.length - 1 ? `b_${row}` : `a_${row}_${column}`;
+        memoria.set(clave, value);
+    }));
+    const { validarDimension } = window.entradasSeguras;
     const maxCells = Number(matrixFields.dataset.maxCeldas);
     let renderedRows = 0;
     let renderedVariables = 0;
+    let matrixVisited = document.querySelector('input[name="tipo_entrada"]:checked')?.value === "matriz";
 
     function dimensionValue(input) {
         const value = Number(input.value);
@@ -56,11 +63,10 @@
     }
 
     function currentValues() {
-        const values = {};
         matrixGrid.querySelectorAll("input[data-cell]").forEach((input) => {
-            values[input.dataset.cell] = input.value;
+            memoria.set(input.dataset.memoria, input.value);
         });
-        return values;
+        return memoria;
     }
 
     function createElement(tagName, className, text) {
@@ -83,7 +89,8 @@
         input.type = "text";
         input.name = name;
         input.dataset.cell = name;
-        input.value = values[name] ?? initialValues[row]?.[column] ?? "";
+        input.dataset.memoria = isIndependentTerm ? `b_${row}` : `a_${row}_${column}`;
+        input.value = values.get(input.dataset.memoria) ?? "";
         input.setAttribute("aria-label", label);
         input.autocomplete = "off";
         input.spellcheck = false;
@@ -100,6 +107,10 @@
         const rows = dimensionValue(equationsInput);
         const variables = dimensionValue(variablesInput);
         const error = matrixError(rows, variables);
+        [equationsInput, variablesInput].forEach(input => validarDimension(input));
+        if (dimensionAllowed(equationsInput, rows) && dimensionAllowed(variablesInput, variables) && error) {
+            [equationsInput, variablesInput].forEach(input => validarDimension(input, error));
+        }
         // Validar antes de leer/copiar celdas, borrar la cuadrícula o crear nodos.
         // Una dimensión transitoria inválida conserva la última entrada válida.
         if (error) {
@@ -114,9 +125,10 @@
         renderedVariables = variables;
         matrixWrapper.hidden = false;
         matrixHelp.textContent =
-            "Completa todas las celdas con números, enteros o fracciones.";
+            "Completa todas las celdas con enteros, fracciones o decimales con punto.";
+        // Columnas auto: cada una toma el ancho de su valor más largo (field-sizing en CSS).
         matrixGrid.style.gridTemplateColumns =
-            `3rem repeat(${variables}, 4.25rem) 1.25rem 4.25rem`;
+            `3rem repeat(${variables}, auto) 1.25rem auto`;
 
         matrixGrid.appendChild(createElement("span", "matrix-corner"));
         for (let column = 0; column < variables; column += 1) {
@@ -151,7 +163,7 @@
         const input = matrixGrid.querySelector(
             `[data-cell="matriz_${row}_${column}"]`
         );
-        if (input) {
+        if (input && !input.readOnly && !input.matches(":disabled")) {
             input.focus();
         }
     }
@@ -170,6 +182,13 @@
             hint.hidden = hint.dataset.inputHint !== (isMatrix ? "matriz" : "sistema");
         });
         if (isMatrix) {
+            // Un POST textual puede omitir dimensiones. Solo la primera visita
+            // completa los campos ausentes; un POST matricial conserva sus errores.
+            if (!matrixVisited) {
+                if (!equationsInput.value) equationsInput.value = matrixFields.dataset.ecuacionesInicial;
+                if (!variablesInput.value) variablesInput.value = matrixFields.dataset.variablesInicial;
+                matrixVisited = true;
+            }
             renderMatrix();
         } else {
             matrixWrapper.hidden = true;
@@ -231,7 +250,8 @@
             ArrowDown: [1, 0],
         };
         const delta = deltas[event.key];
-        if (!delta || event.target.dataset?.cell === undefined) {
+        // Alt+←/→ queda para el historial de escritorio, como en las demás cuadrículas.
+        if (!delta || !window.entradasSeguras.flechaDeCelda(event) || event.target.dataset?.cell === undefined) {
             return;
         }
 
@@ -264,4 +284,14 @@
     });
 
     setInputMode();
+    // Las celdas se crean en JS: el error del servidor queda junto a su control,
+    // manteniendo un solo elemento de la cuadrícula por celda.
+    matrixFields.querySelectorAll("[data-error-field]").forEach(error => {
+        const nombre = error.dataset.errorField.replace(/^id_/, "");
+        const input = [...matrixGrid.querySelectorAll("input")].find(campo => campo.name === nombre);
+        if (!input) return;
+        const caja = createElement("div", "matrix-grid-cell");
+        input.before(caja);
+        caja.append(input, error);
+    });
 })();

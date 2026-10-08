@@ -1,0 +1,6 @@
+{% extends "calculadora/errores/base.html" %}
+
+{% comment %}Django usa 403_csrf.html en el fallo de CSRF; nunca se muestra su motivo técnico.{% endcomment %}
+{% block title %}Acción no completada{% endblock %}
+{% block mensaje %}No se pudo completar esta acción.{% endblock %}
+{% block detalle %}La página llevaba mucho tiempo abierta o cambió la sesión. Vuelve a abrir la herramienta e inténtalo de nuevo.{% endblock %}

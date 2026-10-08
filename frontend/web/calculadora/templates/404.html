@@ -1,0 +1,12 @@
+{% extends "calculadora/base.html" %}
+
+{% comment %}Reutiliza la interfaz normal: Menú y buscador ayudan a encontrar la herramienta.{% endcomment %}
+{% block title %}Página no encontrada · PyGebra{% endblock %}
+
+{% block content %}
+    <header class="tool-header">
+        <h1 class="tool-title">No encontramos esta página.</h1>
+        <p class="tool-lead">Puede que la dirección haya cambiado. Busca la herramienta en el inicio o en el Menú.</p>
+    </header>
+    <p><a class="btn btn-primary" href="{% url 'calculadora:inicio' %}">Ir al inicio</a></p>
+{% endblock %}

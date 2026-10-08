@@ -129,7 +129,11 @@ class PruebasFormulario(SimpleTestCase):
         self.assertEqual(numero["maxlength"], "15")
         self.assertEqual(numero["aria-describedby"], "numero-ayuda")
         self.assertIn("numero-ayuda", documento.ids)
-        self.assertIn("Un entero del 1 al 3999 o un número romano", html)
+        # UI-40: etiqueta y ayuda por dirección; el CSS muestra la de la dirección elegida.
+        self.assertIn('<span data-direccion="decimal_a_romano">Número arábigo</span>', html)
+        self.assertIn('<span data-direccion="romano_a_decimal">Número romano</span>', html)
+        self.assertIn("Un entero del 1 al 3999, escrito con cifras.", html)
+        self.assertIn("Escrito con I, V, X, L, C, D y M", html)
         self.assertEqual([c.get("type") for c in documento.controles if c.get("class") == "btn btn-primary"], ["submit"])
         self.assertIn(">Convertir</button>", html)
         formulario = next(f for f in documento.formularios if f.get("id") == "romanos-form")
@@ -256,7 +260,7 @@ class PruebasErroresWeb(SimpleTestCase):
             ("", "Ingresa un número entero entre 1 y 3999."),
             ("3.5", "Ingresa un número entero entre 1 y 3999, escrito solo con dígitos."),
             ("12a", "Ingresa un número entero entre 1 y 3999, escrito solo con dígitos."),
-            ("XIV", "Ingresa un número entero entre 1 y 3999, escrito solo con dígitos."),
+            ("XIV", "XIV parece un número romano. Cambia a Romano → arábigo."),
         )
         for numero, mensaje in casos:
             with self.subTest(numero=numero):
@@ -272,7 +276,7 @@ class PruebasErroresWeb(SimpleTestCase):
             ("IC", "IC no es una representación romana válida: los símbolos van de mayor a menor valor"),
             ("MMMM", "llega hasta 3999 (MMMCMXCIX)"),
             ("ABC", "«A» no es un símbolo romano. Usa solo I, V, X, L, C, D y M."),
-            ("1963", "«1» no es un símbolo romano."),
+            ("1963", "1963 está escrito con cifras arábigas. Cambia a Arábigo → romano."),
             ("X IV", "Escribe el número romano sin espacios."),
         )
         for numero, mensaje in casos:
@@ -280,7 +284,7 @@ class PruebasErroresWeb(SimpleTestCase):
                 respuesta = self.enviar({"direccion": "romano_a_decimal", "numero": numero})
                 self.assertIn(mensaje, texto_plano(respuesta))
                 # El error queda junto al campo y el valor enviado se conserva para corregirlo.
-                self.assertRegex(respuesta.content.decode("utf-8"), r'<p class="field-error" role="alert">[^<]+</p>')
+                self.assertRegex(respuesta.content.decode("utf-8"), r'<ul class="errorlist field-error"[^>]*role="alert"><li>[^<]+</li></ul>')
                 self.assertRegex(respuesta.content.decode("utf-8"), r'name="direccion" value="romano_a_decimal"[^>]*checked')
 
     def test_longitud_maxima(self):
@@ -333,7 +337,7 @@ class PruebasErroresWeb(SimpleTestCase):
             for numero in entradas:
                 with self.subTest(direccion=direccion, numero=numero):
                     respuesta = self.enviar({"direccion": direccion, "numero": numero})
-                    self.assertRegex(respuesta.content.decode("utf-8"), r'<p class="field-error" role="alert">')
+                    self.assertRegex(respuesta.content.decode("utf-8"), r'<ul class="errorlist field-error"[^>]*role="alert">')
 
 
 class PruebasRelacionadas(SimpleTestCase):

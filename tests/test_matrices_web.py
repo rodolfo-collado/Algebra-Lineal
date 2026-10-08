@@ -341,7 +341,7 @@ class PruebasRechazoMatrices(SimpleTestCase):
 
     def test_celdas_vacias(self):
         for valor in ("", "   "):
-            self.rechazar(datos_matrices(celda_0_0_0=valor), "Completa matriz a, fila 1, columna 1.")
+            self.rechazar(datos_matrices(celda_0_0_0=valor), "Completa matriz A, fila 1, columna 1.")
 
     def test_numeros_y_fracciones_invalidos(self):
         for valor in ("abc", "1/0", "1/", "1/2/3", "NaN", "Infinity", "--2"):
@@ -378,7 +378,7 @@ class PruebasComponentesYRecursosMatrices(SimpleTestCase):
         html = render_to_string("calculadora/components/matriz.html", {"matriz": [[1, 2, 3]], "etiqueta": "A"})
         self.assertNotIn('class="constant', html)
         self.assertIn("matrix-fence-start", html)
-        self.assertIn('tabindex="0"', html)
+        self.assertNotIn('tabindex="0"', html)
 
     def test_matriz_aumentada_conserva_separador_y_pivotes(self):
         html = render_to_string("calculadora/components/matrix.html", {"matriz": [[1, 2, 3]], "columnas_pivote": [1]})
@@ -395,7 +395,7 @@ class PruebasComponentesYRecursosMatrices(SimpleTestCase):
         for recurso in ("expresiones.js", "teclado.js", "tema.js", "styles.css"):
             self.assertContains(r, f"/static/calculadora/{recurso}")
         self.assertNotContains(r, "calculadora/matrices.js")
-        self.assertContains(r, 'id="expression-fields" data-perfil="numerico"')
+        self.assertContains(r, 'class="expression-field" data-perfil="expresion"')
         from tests.test_teclado import Pagina
         teclas = Pagina(r.content.decode()).perfiles_publicados["numerico"]["grupos"][0]["teclas"]
         self.assertEqual([t["insercion"] for t in teclas], ["-", "/"])

@@ -14,6 +14,7 @@ import django
 django.setup()
 
 from django.test import SimpleTestCase
+from django.template.loader import render_to_string
 from django.urls import resolve, reverse
 from django.utils.html import escape, strip_tags
 
@@ -42,6 +43,8 @@ class Documento(HTMLParser):
         self.ids = []
         self.categorias = {}
         self.indices = []
+        self.herramientas = []
+        self.grupos = {}
         self._regiones = []
         self.feed(respuesta.content.decode("utf-8"))
 
@@ -65,6 +68,10 @@ class Documento(HTMLParser):
             self.categorias[atributos["data-categoria"]] = "open" in atributos
         if "data-indice" in atributos:
             self.indices.append(atributos["data-indice"])
+        if "data-herramienta" in atributos:
+            self.herramientas.append((self.region, atributos))
+        if tag == "details" and atributos.get("id"):
+            self.grupos[atributos["id"]] = atributos
 
     def handle_endtag(self, tag):
         if tag in ("nav", "aside") and self._regiones:
@@ -159,7 +166,7 @@ class PruebasCatalogo(SimpleTestCase):
             [(miga.nombre, miga.url, miga.actual) for miga in migas],
             [
                 ("Inicio", "/", False),
-                ("Álgebra Lineal", "/#algebra-lineal", False),
+                ("Álgebra lineal", "/#algebra-lineal", False),
                 ("Matrices", "/#matrices", False),
                 ("Reducción por filas", None, True),
             ],
@@ -181,8 +188,8 @@ class PruebasBuscador(SimpleTestCase):
             catalogo.buscar_herramientas("inconsistente"), (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES),
         )
         self.assertEqual(
-            set(catalogo.buscar_herramientas("sistemas de ecuaciones")),
-            {catalogo.REDUCCION_FILAS},
+            catalogo.buscar_herramientas("sistemas de ecuaciones"),
+            (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES),
         )
         self.assertIn(catalogo.REDUCCION_FILAS, catalogo.buscar_herramientas("álgebra lineal"))
 
@@ -212,13 +219,94 @@ class PruebasBuscador(SimpleTestCase):
 
         respuesta = self.client.get("/", {"q": "matriz"})
         self.assertContains(respuesta, "Operaciones con matrices")
-        self.assertNotContains(respuesta, "tool-link-upcoming")
+        # UI-15: las próximas también permanecen en el universo, ocultas si no coinciden.
+        items = [a for region, a in Documento(respuesta).herramientas if region is None]
+        self.assertEqual(len(items), len(catalogo.HERRAMIENTAS))
+        self.assertIn("hidden", next(a for a in items if a["data-herramienta"] == "limites-funciones"))
         destinos = {attrs["href"] for attrs in Documento(respuesta).enlaces_en(None)}
         self.assertNotIn("/matrices/", destinos)
         self.assertIn("/matrices/operaciones/", destinos)
 
         respuesta = self.client.get("/", {"q": "zzz"})
         self.assertContains(respuesta, "No se encontraron herramientas para «zzz»")
+
+    def test_terminos_vacios_no_devuelven_coincidencias(self):
+        self.assertEqual(catalogo.terminos_de("  MÉTODO\tde\nGauss  "), ("gauss",))
+        self.assertEqual(catalogo.terminos_de("CALCULAR\u0085la\u00a0INVERSA"), ("inversa",))
+        # FEFF no es espacio para Python; el cliente tampoco debe recortarlo y dar falsos resultados.
+        self.assertEqual(catalogo.buscar_herramientas("\ufeffinversa"), ())
+        for consulta in (*catalogo.PALABRAS_VACIAS, "calcular la", "Método de", "pasar a un"):
+            with self.subTest(consulta=consulta):
+                self.assertEqual(catalogo.buscar_herramientas(consulta), ())
+
+    def test_consultas_naturales(self):
+        consultas = {
+            "calcular inversa": "matriz-inversa", "invertir matriz": "matriz-inversa",
+            "multiplicar matrices": "operaciones-matrices", "sumar vectores": "operaciones-vectores",
+            "convertir a binario": "conversion-bases", "método de gauss": "reduccion-filas",
+            "transponer": "operaciones-matrices", "pasar decimal a binario": "conversion-bases",
+            "restar vectores": "operaciones-vectores", "reducir matriz": "reduccion-filas",
+        }
+        for consulta, esperado in consultas.items():
+            for variante in (consulta, consulta.upper(), f"  {consulta.replace(' ', '   ')}  "):
+                with self.subTest(consulta=variante):
+                    self.assertEqual(catalogo.buscar_herramientas(variante)[0].id, esperado)
+
+    def test_sistemas_y_proximas(self):
+        for consulta in ("sistema de ecuaciones", "sistema lineal", "sistemas lineales", "ecuaciones lineales"):
+            self.assertEqual(catalogo.buscar_herramientas(consulta),
+                             (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES))
+        limites, = catalogo.buscar_herramientas("LÍMITES")
+        self.assertEqual(limites.id, "limites-funciones")
+        self.assertEqual(limites.estado, "proximamente")
+
+    def test_get_conserva_universo_completo_y_oculta_no_coincidentes(self):
+        for consulta in ("gauss", "inversa", "límites", "zzz", "calcular la"):
+            respuesta = self.client.get("/", {"q": consulta})
+            items = [a for region, a in Documento(respuesta).herramientas if region is None]
+            self.assertEqual({a["data-herramienta"] for a in items}, {h.id for h in catalogo.HERRAMIENTAS})
+            visibles = [a["data-herramienta"] for a in items if "hidden" not in a]
+            self.assertEqual(visibles, [h.id for h in catalogo.buscar_herramientas(consulta)])
+            self.assertContains(respuesta, 'tabindex="-1" data-busqueda-get')
+            self.assertContains(respuesta, 'id="buscador-inicio-estado" class="search-status" aria-live="polite"></p>')
+            for termino in ("gauss", "matriz", "vectores"):
+                self.assertContains(respuesta, f'href="{reverse("calculadora:inicio")}?q={termino}"')
+        self.assertNotContains(self.client.get("/"), "data-busqueda-get")
+
+    def test_datos_cliente_se_derivan_del_catalogo(self):
+        respuesta = self.client.get("/")
+        html = respuesta.content.decode()
+        datos = json.loads(html.split('<script id="datos-buscador" type="application/json">')[1].split('</script>')[0])
+        self.assertEqual(datos["palabras_vacias"], list(catalogo.PALABRAS_VACIAS))
+        self.assertEqual(datos["separador"], catalogo.SEPARADOR_TERMINOS)
+        self.assertEqual([h["id"] for h in datos["herramientas"]], [h.id for h in catalogo.HERRAMIENTAS])
+        for h, publicado in zip(catalogo.HERRAMIENTAS, datos["herramientas"]):
+            self.assertEqual(publicado["indice"], h.indice)
+            self.assertEqual(publicado["nombre"], catalogo.normalizar(h.nombre))
+            self.assertEqual(publicado["disponible"], h.disponible)
+
+    def test_invitaciones_y_relaciones_se_renderizan(self):
+        self.assertIn("ecuaciones-matriciales", catalogo.REDUCCION_FILAS.relacionadas)
+        self.assertIn("reduccion-filas", catalogo.ECUACIONES_MATRICIALES.relacionadas)
+        self.assertIn("matriz-inversa", catalogo.OPERACIONES_MATRICES.relacionadas)
+        self.assertNotIn("matriz-inversa", catalogo.ECUACIONES_MATRICIALES.relacionadas)
+        for herramienta in catalogo.herramientas_disponibles():
+            relacionadas = catalogo.relacionadas_disponibles(herramienta)
+            html = render_to_string("calculadora/components/related_tools.html",
+                                    {"herramientas_relacionadas": relacionadas, "resultado": True})
+            for relacionada in relacionadas:
+                self.assertIn(escape(relacionada.nombre), html)
+                self.assertIn(escape(relacionada.invitacion), html)
+        # Comprueba además páginas reales: la orientación sale en el bloque de relacionadas.
+        from tests.test_ecuaciones_matriciales_web import datos_ecuacion
+        from tests.test_matrices_web import datos_simbolos
+        ecuacion = self.client.post(catalogo.ECUACIONES_MATRICIALES.ruta, datos_ecuacion())
+        self.assertContains(ecuacion, catalogo.REDUCCION_FILAS.invitacion)
+        operaciones = self.client.post(catalogo.OPERACIONES_MATRICES.ruta, datos_simbolos(
+            "A", [{"nombre": "A", "tipo": "matriz", "valor": [[1]]}],
+        ))
+        self.assertContains(operaciones, catalogo.MATRIZ_INVERSA.invitacion)
+        self.assertContains(operaciones, catalogo.ECUACIONES_MATRICIALES.invitacion)
 
     def test_formulario_de_busqueda_e_indice_en_todas_las_paginas(self):
         for ruta in ("/", "/matrices/reduccion/", "/bases/conversion/"):
@@ -261,7 +349,9 @@ class PruebasNavegacion(SimpleTestCase):
             if elemento.disponible:
                 self.assertIn(elemento.id, documento.ids)
             else:
-                self.assertNotIn(elemento.id, documento.ids)
+                # UI-15: el universo próximo existe, pero no aparece al explorar sin búsqueda.
+                self.assertIn(elemento.id, documento.ids)
+        self.assertIn("hidden", documento.grupos["calculo"])
         # Sin caminos duplicados: las herramientas se descubren dentro de su tema.
         self.assertNotContains(respuesta, "Acceso rápido")
 
@@ -269,7 +359,8 @@ class PruebasNavegacion(SimpleTestCase):
         respuesta = self.client.get("/")
         self.assertContains(respuesta, "Próximamente")
         destinos = {attrs["href"] for _, attrs in Documento(respuesta).enlaces}
-        self.assertEqual(destinos, {"/", "#contenido", *(h.ruta for h in disponibles())})
+        self.assertEqual(destinos, {"/", "#contenido", *(h.ruta for h in disponibles()),
+                                    "/?q=gauss", "/?q=matriz", "/?q=vectores"})
 
     def test_sistemas_tiene_url_propia(self):
         self.assertEqual(reverse("calculadora:reduccion-filas"), "/matrices/reduccion/")
@@ -355,7 +446,7 @@ class PruebasNavegacion(SimpleTestCase):
         formulario = next(f for f in Documento(pagina).formularios if f.get("id") == "sistema-form")
         self.assertEqual(formulario["method"], "post")
         respuesta = self.client.post(formulario["action"].split("#")[0], {"metodo": "gauss", "sistema": "x1=7"})
-        self.assertContains(respuesta, "x1 = 7")
+        self.assertContains(respuesta, "x₁ = 7")
         self.assertContains(respuesta, "Para editar la cuadrícula de una matriz, activa JavaScript.")
         # Lo que solo funciona con JavaScript nace oculto: no aparenta funcionar.
         self.assertContains(pagina, 'class="math-keyboard" data-perfiles="math-keyboard-profiles"', count=1)

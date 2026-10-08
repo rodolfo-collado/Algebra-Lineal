@@ -1,0 +1,35 @@
+{% load static %}<!doctype html>
+{% comment %}
+Base mínima para 400, 403 y 500: Django puede renderizarlas sin request ni context
+processors (500) y no deben depender del catálogo, de reverse() ni de JavaScript.
+{% endcomment %}
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% endblock %} · PyGebra</title>
+    <link rel="icon" href="{% static 'calculadora/favicon.svg' %}" type="image/svg+xml">
+    <link rel="icon" href="{% static 'calculadora/favicon.ico' %}" sizes="16x16 32x32 48x48">
+    {% include "calculadora/components/tema_inicial.html" %}
+    <link rel="stylesheet" href="{% static 'calculadora/styles.css' %}">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-start">
+            <a class="app-brand" href="/" aria-label="PyGebra, inicio">
+                {% include "calculadora/components/mark.html" %}
+                <span class="app-brand-text">
+                    <span class="app-name">PyGebra</span>
+                </span>
+            </a>
+        </div>
+    </header>
+    <main id="contenido" class="app-content">
+        <header class="tool-header">
+            <h1 class="tool-title">{% block mensaje %}{% endblock %}</h1>
+            <p class="tool-lead">{% block detalle %}{% endblock %}</p>
+        </header>
+        <p><a class="btn btn-primary" href="/">Ir al inicio</a></p>
+    </main>
+</body>
+</html>

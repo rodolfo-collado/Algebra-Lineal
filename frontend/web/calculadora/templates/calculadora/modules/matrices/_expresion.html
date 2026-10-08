@@ -1,5 +1,5 @@
 {% comment %}Un paso de la expresión como una sola cadena de igualdades: los operandos con su nombre, el desarrollo por entradas (`desarrollo`) y la matriz obtenida como último término. La comparten suma, resta, escalar, traspuesta y «fila por columna».{% endcomment %}
-<div class="matrix-equation" tabindex="0" role="region" aria-label="Expresión matricial completa">
+<div class="matrix-equation" role="region" aria-label="Expresión matricial completa">
     {% if resultado.operacion != "traspuesta" %}<span class="matrix-expression">{{ resultado.expresion }} =</span>{% endif %}
     {% if resultado.factor %}<span class="matrix-expression">{{ resultado.factor }} ·</span>{% endif %}
     {% for entrada in resultado.entradas %}

@@ -84,6 +84,10 @@ class PruebasMicrointeracciones(unittest.TestCase):
         css = leer("base.css") + leer("modules.css")
         for selector in ("button:focus-visible", "summary:focus-visible", ".option:has(input:focus-visible)", ".segment:has(input:focus-visible)"):
             self.assertIn(selector, css)
+        # Solo el radio interno cede el outline a su pastilla, que conserva focus-visible.
+        radio = r":is\(\.option, \.segment\) input:focus-visible\s*\{\s*outline:\s*none;\s*\}"
+        self.assertRegex(css, radio)
+        css = re.sub(radio, "", css)
         for regla in re.findall(r"[^{}]*:focus-visible[^{}]*\{([^{}]+)\}", css):
             self.assertRegex(regla, r"outline:\s*3px solid var\(--color-focus\)")
 
@@ -92,7 +96,7 @@ class PruebasMicrointeracciones(unittest.TestCase):
         self.assertIn("@supports selector(details::details-content)", css)
         self.assertIn("details[open]::details-content", css)
         self.assertIn(".panel-final", css)
-        self.assertNotRegex(css, r"opacity:\s*0(?:\.0+)?\s*;")
+        self.assertNotRegex(css, r"\.panel-final\s*\{[^}]*opacity:\s*0(?:\.0+)?\s*;")
         self.assertNotIn("animation-fill-mode", css)
         self.assertNotIn("content-visibility:", css)
 

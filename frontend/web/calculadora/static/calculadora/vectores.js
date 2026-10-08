@@ -17,11 +17,30 @@
     if (!dimensionInput || !vectoresInput || !lista || !operaciones.length) return;
 
     const initialValues = initialValuesElement ? JSON.parse(initialValuesElement.textContent) : {};
-    let primeraCarga = true;
+    const memoria = new Map(Object.entries(initialValues));
+    const cantidades = new Map();
+    const { dimensionValida, validarDimension } = window.entradasSeguras;
+    let escalarGuardado = root.querySelector('[name="escalar"]');
     let operacionAnterior = operacionActual();
     const agregar = root.querySelector("[data-agregar-vector]");
     const limiteOperandos = root.querySelector("[data-limite-operandos]");
+    const estado = root.querySelector("[data-estado-vectores]");
     const OBJETIVO = "b";
+
+    function filasVector() {
+        return [...lista.querySelectorAll(".vector-row[data-vector]")];
+    }
+
+    function generadores(filas) {
+        return filas.map(fila => fila.dataset.vector).filter(nombre => nombre !== OBJETIVO);
+    }
+
+    // Dice qué cambió y, si se indica un destino, sigue en la primera componente de esa
+    // fila o, sin fila, en Agregar: el foco nunca queda en body.
+    function anunciar(mensaje, fila) {
+        if (estado) estado.textContent = mensaje;
+        if (fila !== undefined) (fila?.querySelector("input") || agregar).focus();
+    }
 
     function limite(input, atributo, predeterminado) {
         if (!input.hasAttribute(atributo)) return predeterminado;
@@ -30,9 +49,7 @@
     }
 
     function valorEntero(input, predeterminado) {
-        const valor = Number(input.value);
-        if (!Number.isInteger(valor)) return predeterminado;
-        return Math.min(Math.max(valor, limite(input, "min", 1)), limite(input, "max", Infinity));
+        return dimensionValida(input) ? Number(input.value) : predeterminado;
     }
 
     function operacionActual() {
@@ -40,23 +57,18 @@
         return marcada ? marcada.value : "suma";
     }
 
+    // opciones_vectores.nombres_vectores: v1, v2, … siempre; agregar no renombra a los anteriores.
     function nombresVectores(operacion, cantidad) {
-        if (operacion === "combinacion") {
-            const nombres = [];
-            for (let indice = 1; indice <= cantidad; indice += 1) nombres.push(`v${indice}`);
-            nombres.push(OBJETIVO);
-            return nombres;
-        }
-        if (operacion === "escalar") return ["u"];
-        return ["u", "v", ...Array.from({length: Math.max(0, cantidad - 2)}, (_, i) => `v${i + 3}`)];
+        const nombres = Array.from({length: operacion === "escalar" ? 1 : cantidad}, (_, i) => `v${i + 1}`);
+        if (operacion === "combinacion") nombres.push(OBJETIVO);
+        return nombres;
     }
 
     function valoresActuales() {
-        const valores = {};
         lista.querySelectorAll("input[data-cell]").forEach((input) => {
-            valores[input.dataset.cell] = input.value;
+            memoria.set(input.dataset.cell, input.value);
         });
-        return valores;
+        return memoria;
     }
 
     function crear(tag, className, texto) {
@@ -78,7 +90,7 @@
         input.type = "text";
         input.name = campo;
         input.dataset.cell = campo;
-        input.value = valores[campo] ?? (primeraCarga ? initialValues[campo] : "") ?? "";
+        input.value = valores.get(campo) ?? "";
         input.className = esObjetivo ? "matrix-input independent-input" : "matrix-input";
         input.setAttribute("aria-label", `Componente ${indice + 1} de ${nombre}`);
         input.autocomplete = "off";
@@ -141,60 +153,71 @@
         return fila;
     }
 
-    function render() {
+    function render(guardarDatos = true) {
         const operacion = operacionActual();
         const minimo = operacion === "combinacion" || operacion === "escalar" ? 1 : 2;
-        vectoresInput.min = String(minimo);
-        vectoresInput.disabled = operacion === "escalar";
         if (operacion !== operacionAnterior) {
+            if (operacionAnterior !== "escalar" && dimensionValida(vectoresInput)) {
+                cantidades.set(operacionAnterior === "combinacion" ? "combinacion" : "suma", vectoresInput.value);
+            }
             if (![operacion, operacionAnterior].every(op => ["suma", "resta"].includes(op))) {
-                vectoresInput.value = String(minimo);
+                vectoresInput.value = cantidades.get(operacion === "combinacion" ? "combinacion" : "suma") ?? String(minimo);
             }
             operacionAnterior = operacion;
         }
-        root.querySelector("[data-cantidad-vectores]").hidden = true;
+        vectoresInput.min = String(minimo);
+        vectoresInput.disabled = operacion === "escalar";
+        root.querySelector("[data-cantidad-vectores]").hidden = operacion === "escalar";
         agregar.hidden = operacion === "escalar";
-        const dimension = valorEntero(dimensionInput, 3);
-        const cantidad = valorEntero(vectoresInput, 2);
-        vectoresInput.value = String(cantidad);
+        const validas = [dimensionInput, vectoresInput].map(input => validarDimension(input));
+        if (validas.includes(false)) return;
+        const dimension = Number(dimensionInput.value);
+        const cantidad = operacion === "escalar" ? 1 : Number(vectoresInput.value);
         // El tope de operandos llega del servidor como `max` del campo.
         agregar.disabled = cantidad >= limite(vectoresInput, "max", Infinity);
         limiteOperandos.hidden = agregar.hidden || !agregar.disabled;
-        const valores = valoresActuales();
+        const valores = guardarDatos ? valoresActuales() : memoria;
         // El escalar conserva su nodo (y su valor) entre redibujados.
-        const escalarExistente = lista.querySelector('input[name="escalar"]');
+        escalarGuardado = lista.querySelector('input[name="escalar"]') || escalarGuardado;
 
         lista.replaceChildren();
         lista.dataset.dimension = String(dimension);
+        lista.style.setProperty("--vector-dimension", dimension);
         lista.dataset.vectores = String(cantidad);
         if (operacion === "escalar") {
-            lista.appendChild(filaEscalar(escalarExistente));
+            const fila = filaEscalar(escalarGuardado);
+            escalarGuardado = fila.querySelector("input");
+            lista.appendChild(fila);
         }
         const nombres = nombresVectores(operacion, cantidad);
         nombres.forEach((nombre, indice) => {
             const fila = crearFila(nombre, dimension, valores);
             if (nombre !== OBJETIVO && indice >= minimo && operacion !== "escalar") {
-                const quitar = crear("button", "stepper-btn", "×");
+                // Tercera columna de la misma fila: el botón pertenece a su vector.
+                const quitar = crear("button", "stepper-btn vector-remove", "×");
                 quitar.type = "button";
                 quitar.setAttribute("aria-label", `Quitar vector ${nombre}`);
                 quitar.addEventListener("click", () => {
+                    valoresActuales();
                     // Desplazar los valores preserva el orden, también en la resta.
                     for (let i = indice; i < cantidad - 1; i += 1) {
-                        for (let j = 0; j < dimension; j += 1) {
-                            lista.querySelector(`[name="${nombres[i]}_${j}"]`).value = lista.querySelector(`[name="${nombres[i + 1]}_${j}"]`).value;
+                        for (let j = 0; j < Number(dimensionInput.max); j += 1) {
+                            memoria.set(`${nombres[i]}_${j}`, memoria.get(`${nombres[i + 1]}_${j}`) ?? "");
                         }
                     }
+                    // Eliminar es deliberado: Agregar no debe resucitar el vector quitado.
+                    for (let j = 0; j < Number(dimensionInput.max); j += 1) memoria.delete(`${nombres[cantidad - 1]}_${j}`);
                     vectoresInput.value = String(cantidad - 1);
-                    render();
+                    render(false);
+                    vectoresInput.dispatchEvent(new Event("change", { bubbles: true }));
+                    // Sigue en la fila que ocupa su lugar o, si era la última, en la anterior.
+                    const filas = filasVector();
+                    anunciar(`Se eliminó el vector ${nombre}.`, filas[indice] || filas[indice - 1] || null);
                 });
                 fila.appendChild(quitar);
             }
             lista.appendChild(fila);
         });
-        primeraCarga = false;
-        const resultado = document.getElementById("resultado");
-        if (resultado && render.iniciado) resultado.hidden = true;
-        render.iniciado = true;
 
         root.querySelectorAll("[data-solo-operacion]").forEach((bloque) => {
             bloque.hidden = bloque.dataset.soloOperacion !== operacion;
@@ -210,12 +233,17 @@
         }
     }
 
-    operaciones.forEach((radio) => radio.addEventListener("change", render));
-    dimensionInput.addEventListener("input", render);
-    vectoresInput.addEventListener("input", render);
+    operaciones.forEach((radio) => radio.addEventListener("change", () => render()));
+    dimensionInput.addEventListener("input", () => render());
+    vectoresInput.addEventListener("input", () => render());
     agregar.addEventListener("click", () => {
+        const antes = filasVector().length;
         vectoresInput.value = String(valorEntero(vectoresInput, 2) + 1);
-        render();
+        vectoresInput.dispatchEvent(new Event("input", { bubbles: true }));
+        if (filasVector().length <= antes) return;
+        // El nuevo generador es el último antes de b (o el último, sin b): se sigue en él.
+        const nueva = filasVector().filter(fila => fila.dataset.vector !== OBJETIVO).at(-1);
+        anunciar(`Se agregó el vector ${nueva.dataset.vector}.`, nueva);
     });
 
     // Controles de estructura (+/- componente, +/- vector): cambian n y k, no
@@ -226,11 +254,16 @@
         stepper.querySelectorAll("button[data-paso]").forEach((button) => {
             button.hidden = false;
             button.addEventListener("click", () => {
+                const antes = generadores(filasVector());
                 const minimo = limite(input, "min", 1);
                 const maximo = limite(input, "max", Infinity);
                 const siguiente = valorEntero(input, minimo) + Number(button.dataset.paso);
                 input.value = String(Math.min(Math.max(siguiente, minimo), maximo));
                 input.dispatchEvent(new Event("input", { bubbles: true }));
+                // ± vector también avisa; el foco sigue en el botón, que no desaparece.
+                const despues = generadores(filasVector());
+                if (despues.length > antes.length) anunciar(`Se agregó el vector ${despues.at(-1)}.`);
+                else if (despues.length < antes.length) anunciar(`Se eliminó el vector ${antes.at(-1)}.`);
             });
         });
     });
@@ -240,7 +273,8 @@
         const deltas = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] };
         const delta = deltas[event.key];
         const celda = event.target?.dataset?.cell;
-        if (!delta || celda === undefined) return;
+        // Alt+←/→ queda para el historial de escritorio, como en las demás cuadrículas.
+        if (!delta || !window.entradasSeguras.flechaDeCelda(event) || celda === undefined) return;
 
         const filas = Array.from(lista.querySelectorAll(".vector-row[data-vector]"));
         const filaActual = event.target.closest(".vector-row");
@@ -249,11 +283,21 @@
         const celdas = Array.from(filaActual.querySelectorAll("input[data-cell]"));
         const indiceCelda = celdas.indexOf(event.target) + delta[1];
         const destino = Array.from(filas[indiceFila].querySelectorAll("input[data-cell]"))[indiceCelda];
-        if (!destino) return;
+        if (!destino || destino.readOnly || destino.matches(":disabled")) return;
 
         event.preventDefault();
         destino.focus();
     });
 
+    // El primer render instala controles de estructura, conservando los errores por celda.
+    const erroresIniciales = [...lista.querySelectorAll("[data-error-field]")];
     render();
+    erroresIniciales.forEach(error => {
+        const nombre = error.dataset.errorField.replace(/^id_/, "");
+        const input = [...lista.querySelectorAll("input")].find(campo => campo.name === nombre);
+        if (!input) return;
+        const caja = crear("span", "vector-cell");
+        input.before(caja);
+        caja.append(input, error);
+    });
 })();

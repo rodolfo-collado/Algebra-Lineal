@@ -7,10 +7,11 @@ import re
 import shutil
 import subprocess
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 
-from scripts.validate_release import main, validate_release
+from scripts.validate_release import main, validate_release, version_numbers
 
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -187,6 +188,18 @@ class PruebasCandidatoRelease(unittest.TestCase):
                          f"version=1.2.3\ntag=v1.2.3\ncommit={self.commit}\n")
 
 
+class PruebasVersionPreparada(unittest.TestCase):
+    """La versión del repositorio es un candidato estable coherente con su lockfile."""
+
+    def test_version_estable_sincronizada_con_uv_lock(self):
+        version = tomllib.loads((RAIZ / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+        bloqueado = tomllib.loads((RAIZ / "uv.lock").read_text(encoding="utf-8"))
+        raiz = next(paquete for paquete in bloqueado["package"] if paquete["name"] == "algebra-lineal")
+        self.assertEqual(raiz["version"], version)
+        # P27 se publica como 0.9.0; las versiones siguientes solo pueden subir.
+        self.assertGreaterEqual(version_numbers(version), (0, 9, 0))
+
+
 class PruebasWorkflowRelease(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -252,7 +265,7 @@ class PruebasWorkflowRelease(unittest.TestCase):
         self.assertLess(windows.index("scripts\\build_windows.ps1"), windows.index("scripts\\test_windows_distribution.ps1"))
         self.assertIn("-InstallerPath $installers[0].FullName", windows)
         self.assertIn("if ($installers.Count -ne 1)", windows)
-        self.assertIn("dist/installer/AlgebraLineal-Setup-*.exe", windows)
+        self.assertIn("dist/installer/PyGebra-Setup-*.exe", windows)
 
     def test_actions_fijadas_a_sha(self):
         for workflow in (self.ci, self.release):
@@ -288,7 +301,7 @@ class PruebasWorkflowRelease(unittest.TestCase):
 
     def test_publica_solo_instalador_y_checksum_con_notas(self):
         for marker in ('name: algebra-lineal-windows',
-                       'installer="AlgebraLineal-Setup-$VERSION.exe"',
+                       'installer="PyGebra-Setup-$VERSION.exe"',
                        'sha256sum "$installer" > SHA256SUMS.txt',
                        'sha256sum --check SHA256SUMS.txt',
                        'gh release create "$TAG" "$installer" SHA256SUMS.txt',
@@ -367,11 +380,11 @@ gh() {
       elif [[ "$4" == */git/refs && -z "$FAIL_REF" ]]; then return 0
       else return 1; fi ;;
     "release create"|"release edit") return 0 ;;
-    "release view") printf 'AlgebraLineal-Setup-0.10.0.exe\nSHA256SUMS.txt\n' ;;
+    "release view") printf 'PyGebra-Setup-0.10.0.exe\nSHA256SUMS.txt\n' ;;
     "release download")
       mkdir verified
-      cp AlgebraLineal-Setup-0.10.0.exe SHA256SUMS.txt verified/
-      if [[ -n "$CORRUPT" ]]; then printf 'corrupto' > verified/AlgebraLineal-Setup-0.10.0.exe; fi ;;
+      cp PyGebra-Setup-0.10.0.exe SHA256SUMS.txt verified/
+      if [[ -n "$CORRUPT" ]]; then printf 'corrupto' > verified/PyGebra-Setup-0.10.0.exe; fi ;;
     *) return 99 ;;
   esac
 }
@@ -408,7 +421,7 @@ gh() {
         self.assertNotEqual(self.ejecutar(self.tag, FAIL_REF="true").returncode, 0)
 
     def test_draft_se_publica_solo_tras_verificar_descargas(self):
-        (self.repo / "AlgebraLineal-Setup-0.10.0.exe").write_bytes(b"installer ficticio")
+        (self.repo / "PyGebra-Setup-0.10.0.exe").write_bytes(b"installer ficticio")
         result = self.ejecutar(self.publish)
         self.assertEqual(result.returncode, 0, result.stderr)
         calls = (self.repo / "calls").read_text()
@@ -416,7 +429,7 @@ gh() {
         self.assertLess(calls.index("release download"), calls.index("release edit"))
 
     def test_asset_corrupto_detiene_publicacion_del_draft(self):
-        (self.repo / "AlgebraLineal-Setup-0.10.0.exe").write_bytes(b"installer ficticio")
+        (self.repo / "PyGebra-Setup-0.10.0.exe").write_bytes(b"installer ficticio")
         result = self.ejecutar(self.publish, CORRUPT="true")
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn("release edit", (self.repo / "calls").read_text())

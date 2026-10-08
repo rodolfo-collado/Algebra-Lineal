@@ -1,17 +1,25 @@
 ﻿#requires -Version 5.1
-<# Prueba real en una cuenta Windows sin una instalación previa de Álgebra Lineal.
+<# Prueba real en una cuenta limpia de Windows sin una instalación previa de PyGebra.
    Instala, abre el acceso directo, resuelve por HTTP, cierra, reabre y desinstala.
+   -PreviousInstallerPath prueba además la actualización desde la release 0.8.0.
    La revisión visual de pywebview se realiza además de esta prueba automatizada. #>
 [CmdletBinding()]
-param([Parameter(Mandatory = $true)][string]$InstallerPath)
+param(
+    [Parameter(Mandatory = $true)][string]$InstallerPath,
+    [string]$PreviousInstallerPath,
+    [switch]$PreviousDesktopIcon
+)
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $installer = (Resolve-Path -LiteralPath $InstallerPath).Path
 $registryPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{D0455B79-7F5E-4C78-9F3B-F47187E9A83A}_is1'
-$startShortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Álgebra Lineal\Álgebra Lineal.lnk'
-$desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Álgebra Lineal.lnk'
-foreach ($existing in @($registryPath, $startShortcut, $desktopShortcut)) {
+$startShortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'PyGebra\PyGebra.lnk'
+$desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'PyGebra.lnk'
+$legacyStartShortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Álgebra Lineal\Álgebra Lineal.lnk'
+$legacyDesktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Álgebra Lineal.lnk'
+$legacyShortcuts = @($legacyStartShortcut, $legacyDesktopShortcut)
+foreach ($existing in @($registryPath, $startShortcut, $desktopShortcut) + $legacyShortcuts) {
     if (Test-Path -LiteralPath $existing) { throw "Ya existe $existing. Usa una cuenta limpia para esta prueba." }
 }
 $installRoot = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'Programs'))
@@ -20,6 +28,8 @@ if (-not $installDirectory.StartsWith($installRoot + '\', [StringComparison]::Or
     throw 'La carpeta de prueba queda fuera de Programs.'
 }
 $process = $null
+$appPath = Join-Path $installDirectory 'AlgebraLineal.exe'
+$unrelatedFile = $null
 
 function Wait-AppUrl {
     param([Diagnostics.Process]$AppProcess)
@@ -50,13 +60,51 @@ function Get-CellTexts {
 }
 
 try {
-    $setup = Start-Process -FilePath $installer -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/TASKS=desktopicon', ('/DIR="' + $installDirectory + '"')) -WindowStyle Hidden -PassThru -Wait
+    $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/TASKS=desktopicon')
+    if ($PreviousInstallerPath) {
+        $previous = (Resolve-Path -LiteralPath $PreviousInstallerPath).Path
+        $previousTasks = '/TASKS='
+        if ($PreviousDesktopIcon) { $previousTasks = '/TASKS=desktopicon' }
+        $baseline = Start-Process -FilePath $previous -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', $previousTasks, ('/DIR="' + $installDirectory + '"')) -WindowStyle Hidden -PassThru -Wait
+        if ($baseline.ExitCode -ne 0) { throw "La instalación 0.8.0 falló: $($baseline.ExitCode)" }
+        $oldRegistration = Get-ItemProperty -LiteralPath $registryPath
+        if ($oldRegistration.DisplayName -ne 'Álgebra Lineal' -or $oldRegistration.Publisher -ne 'Proyecto Álgebra Lineal' -or
+            $oldRegistration.DisplayVersion -ne '0.8.0' -or -not (Test-Path -LiteralPath $appPath) -or
+            -not (Test-Path -LiteralPath $legacyStartShortcut)) { throw 'La base no es la instalación histórica publicada 0.8.0.' }
+        if ((Test-Path -LiteralPath $legacyDesktopShortcut) -ne [bool]$PreviousDesktopIcon) { throw 'El acceso histórico de escritorio no coincide con la tarea seleccionada.' }
+        $oldDirectory = $oldRegistration.InstallLocation.TrimEnd('\')
+        if ($oldDirectory -ne $installDirectory) { throw '0.8.0 no usó la carpeta de prueba.' }
+        $legacyShell = New-Object -ComObject Shell.Application
+        $legacyItem = $legacyShell.NameSpace((Split-Path $legacyStartShortcut)).ParseName((Split-Path $legacyStartShortcut -Leaf))
+        if ($legacyItem.ExtendedProperty('System.AppUserModel.ID') -ne 'PyGebra.Desktop') { throw 'El AUMID histórico no es PyGebra.Desktop.' }
+        # Un archivo ajeno en el grupo antiguo debe sobrevivir a la migración.
+        $unrelatedFile = Join-Path (Split-Path $legacyStartShortcut) ('P27.2-preserve-' + [guid]::NewGuid().ToString('N') + '.txt')
+        [IO.File]::WriteAllText($unrelatedFile, 'preservar')
+        Write-Host "Base 0.8.0 verificada: Álgebra Lineal, Proyecto Álgebra Lineal, mismo AppId, AUMID PyGebra.Desktop, $oldDirectory (escritorio: $PreviousDesktopIcon)."
+        # Sin /DIR: el candidato debe recuperar la carpeta de 0.8.0 por AppId.
+    } else {
+        $arguments += ('/DIR="' + $installDirectory + '"')
+    }
+    $setup = Start-Process -FilePath $installer -ArgumentList $arguments -WindowStyle Hidden -PassThru -Wait
     if ($setup.ExitCode -ne 0) { throw "El instalador falló: $($setup.ExitCode)" }
-    $appPath = Join-Path $installDirectory 'AlgebraLineal.exe'
     foreach ($path in @($appPath, $startShortcut, $desktopShortcut, $registryPath)) {
         if (-not (Test-Path -LiteralPath $path)) { throw "El instalador no creó $path" }
     }
+    foreach ($path in $legacyShortcuts) {
+        if (Test-Path -LiteralPath $path) { throw "La actualización dejó un acceso histórico: $path" }
+    }
+    if ($unrelatedFile -and [IO.File]::ReadAllText($unrelatedFile) -ne 'preservar') { throw 'La migración modificó un archivo ajeno.' }
+    $details = (Get-Item -LiteralPath $appPath).VersionInfo
+    if ($details.ProductName -ne 'PyGebra' -or $details.FileDescription -ne 'PyGebra' -or
+        $details.CompanyName -ne 'Proyecto PyGebra' -or $details.OriginalFilename -ne 'AlgebraLineal.exe' -or
+        $details.FileVersion -ne $details.ProductVersion) { throw 'Metadatos de Windows incorrectos.' }
+    if ((Split-Path $installer -Leaf) -ne "PyGebra-Setup-$($details.ProductVersion).exe") { throw 'Nombre o versión incorrectos del instalador.' }
+    $registration = Get-ItemProperty -LiteralPath $registryPath
+    if ($registration.DisplayName -ne 'PyGebra' -or $registration.Publisher -ne 'Proyecto PyGebra' -or
+        $registration.DisplayVersion -ne $details.ProductVersion -or
+        $registration.InstallLocation.TrimEnd('\') -ne $installDirectory) { throw 'Identidad o carpeta incorrectas en el registro de desinstalación.' }
     $shell = New-Object -ComObject WScript.Shell
+    $shellApplication = New-Object -ComObject Shell.Application
     $expectedIcon = Join-Path $installDirectory '_internal\assets\brand\app\pygebra.ico'
     if (-not (Test-Path -LiteralPath $expectedIcon -PathType Leaf)) {
         throw "La distribución no incluye el icono de PyGebra: $expectedIcon"
@@ -76,12 +124,12 @@ try {
         if ($iconIndex -ne 0 -or [IO.Path]::GetFullPath($iconPath) -ne [IO.Path]::GetFullPath($expectedIcon)) {
             throw "El acceso directo no usa pygebra.ico: $shortcutPath -> $location"
         }
-        $shortcutBytes = [IO.File]::ReadAllBytes($shortcutPath)
-        $shortcutText = [Text.Encoding]::Unicode.GetString($shortcutBytes)
-        if ($shortcutText -notlike '*PyGebra.Desktop*') {
+        $item = $shellApplication.NameSpace((Split-Path $shortcutPath)).ParseName((Split-Path $shortcutPath -Leaf))
+        if ($item.ExtendedProperty('System.AppUserModel.ID') -ne 'PyGebra.Desktop') {
             throw "El acceso directo no declara AppUserModelID PyGebra.Desktop: $shortcutPath"
         }
     }
+    Write-Host "Identidad verificada: PyGebra, Proyecto PyGebra, EXE $($details.ProductVersion), accesos PyGebra, AUMID PyGebra.Desktop y ningún acceso histórico."
 
     # El subsistema PE debe ser Windows GUI (2), no consola (3).
     $bytes = [IO.File]::ReadAllBytes($appPath)
@@ -110,6 +158,7 @@ try {
             Start-Sleep -Milliseconds 250
         } while ([DateTime]::UtcNow -lt $deadline)
         if ($process.MainWindowHandle -eq [IntPtr]::Zero) { throw 'pywebview no creó la ventana nativa.' }
+        if ($process.MainWindowTitle -ne 'PyGebra') { throw 'La ventana no se presenta como PyGebra.' }
         $homeResponse = Invoke-WebRequest -UseBasicParsing -Uri $url
         if (-not $homeResponse.Content.Contains('href="/matrices/reduccion/"')) { throw 'Inicio no enlaza a Reducción por filas.' }
         $systemsUrl = $url + 'matrices/reduccion/'
@@ -124,7 +173,7 @@ try {
                 sistema = 'x1 + 2x2 + x3 = 4; x3 = 2'
             }
             $text = [regex]::Replace($response.Content, '<[^>]+>', '')
-            foreach ($expected in @('Columnas pivote: C1, C3', 'Consistente de soluciones infinitas', 'x3 = 2')) {
+            foreach ($expected in @('Columnas pivote: C1, C3', 'Consistente de soluciones infinitas', 'x₃ = 2')) {
                 if (-not $text.Contains($expected)) { throw "Falta '$expected' en $method ($url)." }
             }
         }
@@ -199,7 +248,7 @@ try {
         )
         $expectedEquations = @(
             @{ x = @('1/2', '1/3'); markers = @('Ax = b tiene solución única.', 'b = (1/2)a₁ + (1/3)a₂', 'id="procedimiento"', 'class="disclosure disclosure-nested"') },
-            @{ x = @('2', '3'); markers = @('Ax = b tiene solución única.', 'A (3×2) · x (2) = b (3)', 'x1 = 2', 'x2 = 3', 'id="procedimiento"') }
+            @{ x = @('2', '3'); markers = @('Ax = b tiene solución única.', 'A (3×2) · x (2) = b (3)', 'x₁ = 2', 'x₂ = 3', 'id="procedimiento"') }
         )
         for ($case = 0; $case -lt $equationBodies.Count; $case++) {
             $equationBody = $equationBodies[$case]
@@ -235,8 +284,12 @@ try {
         $uninstall = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -WindowStyle Hidden -PassThru -Wait
         if ($uninstall.ExitCode -ne 0) { throw "La desinstalación falló: $($uninstall.ExitCode)" }
     }
+    if ($unrelatedFile) {
+        if ([IO.File]::ReadAllText($unrelatedFile) -ne 'preservar') { throw 'La desinstalación modificó un archivo ajeno.' }
+        Remove-Item -LiteralPath $unrelatedFile
+    }
 }
-foreach ($path in @($installDirectory, $registryPath, $startShortcut, $desktopShortcut)) {
+foreach ($path in @($installDirectory, $registryPath, $startShortcut, $desktopShortcut) + $legacyShortcuts) {
     if (Test-Path -LiteralPath $path) { throw "La desinstalación dejó $path" }
 }
 Write-Host "Distribución verificada fuera del repositorio y desinstalada: $installDirectory"

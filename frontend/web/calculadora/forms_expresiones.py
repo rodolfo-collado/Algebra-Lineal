@@ -21,6 +21,7 @@ from .opciones_matrices import (
 )
 
 SIMBOLOS_INICIALES = 2
+LONGITUD_COMPONENTE_MAXIMA = 200
 # Los tipos simbólicos siguen disponibles, agrupados aparte para no competir con los valores.
 TIPOS = (
     ("Con valores", (("matriz", "Matriz"), ("vector", "Vector"), ("escalar", "Escalar"))),
@@ -38,13 +39,22 @@ _COMPONENTES = frozenset({"vector", "vector_simbolico", "vector_lineal"})
 
 def campo_lineal(etiqueta):
     return forms.CharField(
-        label=etiqueta, required=False, max_length=200,
+        label=etiqueta, required=False, max_length=LONGITUD_COMPONENTE_MAXIMA,
         widget=forms.TextInput(attrs={
             "class": "matrix-input matrix-input-lineal", "autocomplete": "off",
             "spellcheck": "false", "placeholder": "3x1 - 2x2",
         }),
         error_messages={"max_length": "Cada componente admite hasta 200 caracteres."},
     )
+
+
+_UNIDADES = {"Filas": "una fila", "Componentes": "una componente", "Columnas": "una columna"}
+
+
+def rotulos_dimension(etiqueta, simbolo):
+    """«Quitar una fila de A» y «Agregar una fila a A»: los mismos textos que escribe expresiones.js."""
+    unidad = _UNIDADES[etiqueta]
+    return f"Quitar {unidad} de {simbolo}", f"Agregar {unidad} a {simbolo}"
 
 
 def forma(tipo, filas, columnas):
@@ -119,6 +129,8 @@ def presupuesto_expresion(arbol, tamanos):
 class ExpresionMatricialForm(FormularioCeldas):
     """Un símbolo por bloque. Calcular exige las celdas de esa estructura; Aplicar, agregar y eliminar no."""
 
+    longitud_lineal_maxima = LONGITUD_COMPONENTE_MAXIMA
+
     confirmacion = forms.CharField(required=False, strip=False, widget=forms.HiddenInput)
 
     expresion = forms.CharField(
@@ -160,6 +172,7 @@ class ExpresionMatricialForm(FormularioCeldas):
         # símbolos con las dimensiones iniciales (a lo sumo 50 de 2×2) y clean() lo rechaza.
         self.error_presupuesto = presupuesto_estructura(estructuras)
         if self.error_presupuesto:
+            self.grupo_error = "symbol-list"
             estructuras = [(tipo, DIMENSION_PREDETERMINADA, DIMENSION_PREDETERMINADA) for tipo, _, _ in estructuras]
         for indice, estructura in enumerate(estructuras):
             self._bloque(indice, *estructura)
@@ -219,12 +232,16 @@ class ExpresionMatricialForm(FormularioCeldas):
             widget=forms.Select(attrs={"class": "field-input symbol-field-type", "data-campo": "tipo"}),
             error_messages={"invalid_choice": "El tipo debe ser matriz, vector o escalar, matriz desconocida, vector simbólico o vector lineal."},
         )
+        simbolo = self._simbolo(indice)
         bloque = {
             "indice": indice, "tipo": tipo, "filas": filas, "columnas": columnas,
             "nombre": self[f"nombre_{indice}"], "tipo_campo": self[f"tipo_{indice}"],
             "filas_campo": None, "columnas_campo": None, "celdas": [],
             "nota": self._nota(tipo, indice, filas),
             "celdas_visibles": tipo not in _SIN_CELDAS,
+            # Nombres accesibles que dicen a qué símbolo pertenece cada control;
+            # expresiones.js los actualiza al renombrar.
+            "simbolo": simbolo,
         }
         if tipo != "escalar":
             etiqueta = "Componentes" if tipo in _COMPONENTES else "Filas"
@@ -232,11 +249,13 @@ class ExpresionMatricialForm(FormularioCeldas):
             self.fields[f"filas_{indice}"].initial = filas
             self.fields[f"filas_{indice}"].widget.attrs["data-campo"] = "filas"
             bloque["filas_campo"] = self[f"filas_{indice}"]
+            bloque["quitar_filas"], bloque["agregar_filas"] = rotulos_dimension(etiqueta, simbolo)
         if tipo in _CON_COLUMNAS:
             self.fields[f"columnas_{indice}"] = campo_dimension("Columnas")
             self.fields[f"columnas_{indice}"].initial = columnas
             self.fields[f"columnas_{indice}"].widget.attrs["data-campo"] = "columnas"
             bloque["columnas_campo"] = self[f"columnas_{indice}"]
+            bloque["quitar_columnas"], bloque["agregar_columnas"] = rotulos_dimension("Columnas", simbolo)
         alto, ancho = forma(tipo, filas, columnas)
         for fila in range(alto):
             celdas = []
@@ -268,11 +287,15 @@ class ExpresionMatricialForm(FormularioCeldas):
             return "Indica el nombre. Sus componentes serán independientes: nombre1, nombre2, …"
         return "Componentes independientes: " + ", ".join(f"{nombre}{numero}" for numero in range(1, filas + 1)) + "."
 
-    def _etiqueta(self, tipo, indice, fila, columna):
+    def _simbolo(self, indice):
+        """El nombre con que se presenta el símbolo (o su número, si todavía no tiene)."""
         nombre = str(self._publicado(f"nombre_{indice}", "") or "").strip()
         if not nombre and f"nombre_{indice}" in self.fields:
             nombre = str(self.fields[f"nombre_{indice}"].initial or "").strip()
-        nombre = nombre or str(indice + 1)
+        return nombre or str(indice + 1)
+
+    def _etiqueta(self, tipo, indice, fila, columna):
+        nombre = self._simbolo(indice)
         if tipo == "escalar":
             return f"Valor del escalar {nombre}"
         if tipo == "vector_lineal":
@@ -317,6 +340,7 @@ class ExpresionMatricialForm(FormularioCeldas):
             self.add_error(None, "No se puede eliminar ese símbolo.")
             return datos
         if not self._contrato(simbolos):
+            self.grupo_error = "symbol-list"
             self.add_error(None, "Las celdas recibidas no coinciden con los símbolos indicados. Pulsa Aplicar para ajustar la estructura.")
             return datos
         if self.accion == "agregar":

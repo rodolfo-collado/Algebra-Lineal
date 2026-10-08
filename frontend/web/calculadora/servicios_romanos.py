@@ -11,12 +11,35 @@ def como_se_forma(partes) -> str:
     return f"{resta[0]} − {resta[1]}" if resta else ""
 
 
+def sugerir_direccion(direccion: str, numero: str) -> str | None:
+    """Si la entrada se convierte en la dirección opuesta, lo dice; si no, no adivina."""
+    try:
+        if direccion == "decimal_a_romano":
+            leido = romano_a_decimal(numero).texto_normalizado
+            return f"{leido} parece un número romano. Cambia a Romano → arábigo."
+        valor = decimal_a_romano(numero).valor
+        return f"{valor} está escrito con cifras arábigas. Cambia a Arábigo → romano."
+    except ValueError:
+        return None
+
+
 def convertir_romanos(*, direccion: str, numero: str) -> dict:
     """Ejecuta la conversión y arma un diccionario listo para la plantilla.
 
     No genera HTML: el origen, el resultado, una fila por grupo decimal o por
-    símbolo leído y las igualdades del procedimiento como texto.
+    símbolo leído y las igualdades del procedimiento como texto. Un error que
+    se resuelve cambiando de dirección lo sugiere; nunca convierte por su cuenta.
     """
+    try:
+        return _convertir(direccion, numero)
+    except ValueError as error:
+        sugerencia = sugerir_direccion(direccion, numero)
+        if sugerencia is None:
+            raise
+        raise ValueError(sugerencia) from error
+
+
+def _convertir(direccion: str, numero: str) -> dict:
     if direccion == "decimal_a_romano":
         conversion = decimal_a_romano(numero)
         grupos = conversion.grupos

@@ -13,7 +13,7 @@
     {% endfor %}
     {% comment %}Las columnas pivote coinciden entre métodos: se leen una vez de la matriz final.{% endcomment %}
     <div class="final-block">
-        {% include "calculadora/modules/sistemas/_pivotes.html" %}
+        {% include "calculadora/modules/sistemas/_pivotes.html" with metodos=resultado.metodos %}
     </div>
     <p class="procedure-note">De la matriz final se lee la clasificación del sistema —{{ resultado.clasificacion|lower }}— y {% if resultado.clasificacion_clave == "unica" %}la solución x{% elif resultado.clasificacion_clave == "infinitas" %}el conjunto solución{% else %}la contradicción{% endif %} que muestra el resultado.</p>
 </div>

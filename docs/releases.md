@@ -6,7 +6,7 @@
 
 La única fuente de versión es `project.version` en
 [`pyproject.toml`](../pyproject.toml). El build la lee para generar
-`AlgebraLineal-Setup-<version>.exe`. `uv.lock` refleja los metadatos y se
+`PyGebra-Setup-<version>.exe`. `uv.lock` refleja los metadatos y se
 regenera con `uv lock`; no se edita a mano.
 
 Usamos [Semantic Versioning](https://semver.org/lang/es/) estable `X.Y.Z`:
@@ -17,10 +17,12 @@ Usamos [Semantic Versioning](https://semver.org/lang/es/) estable `X.Y.Z`:
 
 No se admiten prereleases, metadatos extra, cuatro componentes ni ceros
 iniciales. Durante la etapa `0.x`, describe cualquier cambio de compatibilidad
-en las notas. El incremento preparado de 0.7.0 a 0.8.0 es MINOR por las
-capacidades compatibles añadidas, incluidas la verificación, propiedades y
-aplicación de Matriz inversa. Una versión preparada en `develop` aún no es
-una release publicada.
+en las notas. El incremento preparado de 0.8.0 a 0.9.0 es MINOR: P27 amplía
+de forma compatible la experiencia (identidad PyGebra, teclado contextual,
+entradas sin pérdida, pegado y edición de celdas, buscador, resultados,
+escritorio, preferencias y accesibilidad) sin cambiar la matemática ni los
+contratos de cálculo. Una versión preparada en `develop` aún no es una
+release publicada.
 
 ## Flujo de integración y entrega
 
@@ -132,7 +134,7 @@ Todo concluye en la misma ejecución, sin depender de otro workflow por el tag.
 
 Los únicos assets públicos son:
 
-- `AlgebraLineal-Setup-<version>.exe`;
+- `PyGebra-Setup-<version>.exe`;
 - `SHA256SUMS.txt`.
 
 La carpeta PyInstaller, `build/`, logs y bootstrapper WebView2 no se publican
@@ -187,7 +189,7 @@ y smoke normales, sin crear tags remotos o releases de prueba.
 Descarga ambos assets de la misma release. En PowerShell:
 
 ```powershell
-Get-FileHash .\AlgebraLineal-Setup-*.exe -Algorithm SHA256
+Get-FileHash .\PyGebra-Setup-*.exe -Algorithm SHA256
 Get-Content .\SHA256SUMS.txt
 ```
 

@@ -1,10 +1,14 @@
-{% comment %}Bloque plegable nativo del tag {% disclosure %}: chevrón, título como encabezado y cuerpo. Nace cerrado salvo que se pida `abierto`.{% endcomment %}
+{% comment %}Bloque plegable nativo del tag {% disclosure %}: chevrón, icono opcional, título como encabezado y detalle. Nace cerrado salvo que se pida `abierto`.{% endcomment %}
 <details class="disclosure{% if clase %} {{ clase }}{% endif %}"{% if id %} id="{{ id }}"{% endif %}{% if abierto %} open{% endif %}>
     <summary class="disclosure-summary">
         <svg class="disclosure-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        {% if nivel == 4 %}<h4 class="disclosure-title">{{ titulo }}</h4>{% elif nivel == 5 %}<h5 class="disclosure-title">{{ titulo }}</h5>{% else %}<h3 class="disclosure-title">{{ titulo }}</h3>{% endif %}
+        {% if icono == "opciones" %}<svg class="disclosure-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/>
+        </svg>{% endif %}
+        {% if nivel == 4 %}<h4 class="disclosure-title">{{ titulo }}</h4>{% elif nivel == 5 %}<h5 class="disclosure-title">{{ titulo }}</h5>{% elif nivel == 6 %}<h6 class="disclosure-title">{{ titulo }}</h6>{% else %}<h3 class="disclosure-title">{{ titulo }}</h3>{% endif %}
         {% if detalle %}<span class="disclosure-detail">{{ detalle }}</span>{% endif %}
     </summary>
     <div class="disclosure-body">{{ contenido }}</div>

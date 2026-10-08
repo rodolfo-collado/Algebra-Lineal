@@ -1,17 +1,18 @@
+{% load numeros %}
 {% comment %}La solución final siempre se muestra y encabeza el resultado, junto a la clasificación.{% endcomment %}
 <div class="final-block solution">
     <h4 class="final-label">Solución</h4>
     {% if resultado.justificacion %}
         <div class="explanation">
             {% for parrafo in resultado.justificacion %}
-                <p>{{ parrafo }}</p>
+                <p>{{ parrafo|incognitas }}</p>
             {% endfor %}
         </div>
     {% endif %}
     {% if resultado.solucion_general %}
         <ul class="equations solution-list">
             {% for linea in resultado.solucion_general %}
-                <li><code>{{ linea }}</code></li>
+                <li><code>{{ linea|incognitas }}</code></li>
             {% endfor %}
         </ul>
     {% endif %}

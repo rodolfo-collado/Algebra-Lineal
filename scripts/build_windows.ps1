@@ -106,12 +106,20 @@ try {
     if (-not (Test-Path -LiteralPath $appPath -PathType Leaf)) {
         throw "Falta $appPath. Genera primero el build con -Target App o ejecuta el script sin -Target."
     }
+    $details = (Get-Item -LiteralPath $appPath).VersionInfo
+    foreach ($field in @('ProductName', 'FileDescription')) {
+        if ($details.$field -ne 'PyGebra') { throw "El EXE no identifica $field como PyGebra." }
+    }
+    if ($details.CompanyName -ne 'Proyecto PyGebra' -or $details.OriginalFilename -ne 'AlgebraLineal.exe' -or
+        $details.FileVersion -ne $appVersion -or $details.ProductVersion -ne $appVersion) {
+        throw 'Los metadatos del EXE no corresponden al producto o versión actual. Reconstruye con -Target App.'
+    }
     Write-Host "Build PyInstaller: $appPath"
     if ($Target -ne 'App') {
         Prepare-WebView2Bootstrapper
         Clear-BuildDirectory 'dist\installer'
         Invoke-BuildCommand 'Compilando el instalador Inno Setup' $iscc @("/DAppVersion=$appVersion", "/DProjectRoot=$projectRoot", (Join-Path $projectRoot 'installer\AlgebraLineal.iss'))
-        $installerPath = Join-Path $projectRoot "dist\installer\AlgebraLineal-Setup-$appVersion.exe"
+        $installerPath = Join-Path $projectRoot "dist\installer\PyGebra-Setup-$appVersion.exe"
         if (-not (Test-Path -LiteralPath $installerPath -PathType Leaf)) {
             throw "Inno Setup terminó sin generar el instalador esperado: $installerPath"
         }

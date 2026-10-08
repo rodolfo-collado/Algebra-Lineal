@@ -4,13 +4,16 @@
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title" data-conversion-bases>
         <h2 id="workspace-title" class="sr-only">Entrada</h2>
-        <form id="conversion-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+        <form id="conversion-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
             {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="alert error" role="alert">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
+            {% include "calculadora/components/errores_generales.html" %}
+
+            {% comment %}Primero la base de origen: decide qué dígitos valen, el teclado y la validación del número.{% endcomment %}
+            <div class="base-selector">
+                <label for="{{ form.base_origen.id_for_label }}">{{ form.base_origen.label }}</label>
+                {{ form.base_origen }}
+                {{ form.base_origen.errors }}
+            </div>
 
             <div id="number-fields" data-perfil="{{ perfil_entrada }}" class="field-group">
                 <label for="{{ form.numero.id_for_label }}">
@@ -18,46 +21,33 @@
                         <span data-number-label-base="{{ base }}" {% if base != base_entrada_activa %}hidden{% endif %}>Número {{ nombre }}</span>
                     {% endfor %}
                 </label>
-                <p class="field-help">Usa dígitos válidos en la base de origen y un punto para la parte fraccionaria; el teclado de abajo se adapta a ella.</p>
+                <p id="numero-ayuda" class="field-help">Usa dígitos válidos en la base de origen y un punto para la parte fraccionaria. Al enfocar el número aparece un teclado adaptado a su base; también puedes escribir con el teclado físico.</p>
                 {{ form.numero }}
                 {% comment %}Aviso en vivo al cambiar de base o escribir; el servidor vuelve a validar al convertir.{% endcomment %}
-                <p class="field-error" data-validacion-cliente role="alert" hidden></p>
-                {% for error in form.numero.errors %}
-                    <p class="field-error" role="alert">{{ error }}</p>
-                {% endfor %}
+                <p id="numero-aviso" class="field-error" data-validacion-cliente role="alert" hidden></p>
+                {{ form.numero.errors }}
             </div>
 
-            <div class="base-selectors" role="group" aria-label="Bases de la conversión">
-                <div class="base-selector">
-                    <label for="{{ form.base_origen.id_for_label }}">{{ form.base_origen.label }}</label>
-                    {{ form.base_origen }}
-                    {% for error in form.base_origen.errors %}
-                        <p class="field-error" role="alert">{{ error }}</p>
+            {% comment %}Casillas reales: una, varias o todas las demás bases. conversion.js oculta y desactiva la casilla de la base de origen; sin JavaScript se ven las cuatro y el servidor rechaza origen = destino.{% endcomment %}
+            <fieldset class="choice-fieldset base-targets" data-destinos aria-describedby="destinos-ayuda destinos-aviso destinos-errores">
+                <legend>{{ form.bases_destino.label }}</legend>
+                <div class="option-list">
+                    {% for casilla in form.bases_destino %}
+                        <label class="option" data-destino-base="{{ casilla.data.value }}">{{ casilla.tag }}<span>{{ casilla.choice_label }}</span></label>
                     {% endfor %}
                 </div>
-                {% comment %}Casillas reales: una, varias o todas las demás bases. conversion.js oculta y desactiva la casilla de la base de origen; sin JavaScript se ven las cuatro y el servidor rechaza origen = destino.{% endcomment %}
-                <fieldset class="choice-fieldset base-targets" data-destinos aria-describedby="destinos-ayuda destinos-aviso destinos-errores">
-                    <legend>{{ form.bases_destino.label }}</legend>
-                    <div class="option-list">
-                        {% for casilla in form.bases_destino %}
-                            <label class="option" data-destino-base="{{ casilla.data.value }}">{{ casilla.tag }}<span>{{ casilla.choice_label }}</span></label>
-                        {% endfor %}
-                    </div>
-                    <p id="destinos-ayuda" class="field-help option-help">Marca una, varias o todas las demás bases.</p>
-                    <p id="destinos-aviso" class="field-error" data-validacion-destinos role="alert" hidden></p>
-                    <div id="destinos-errores">
-                        {% for error in form.bases_destino.errors %}
-                            <p class="field-error" role="alert">{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                </fieldset>
-            </div>
+                <p id="destinos-ayuda" class="field-help option-help">Marca una, varias o todas las demás bases.</p>
+                <p id="destinos-aviso" class="field-error" data-validacion-destinos role="alert" hidden></p>
+                <div id="destinos-errores">
+                    {{ form.bases_destino.errors }}
+                </div>
+            </fieldset>
 
             {{ bases_digitos|json_script:"bases-digitos" }}
             {% include "calculadora/components/math_keyboard.html" %}
 
             <div class="workspace-actions">
-                <button class="btn btn-primary" type="submit">Convertir</button>
+                <button class="btn btn-primary" type="submit" data-calculo>Convertir</button>
             </div>
         </form>
     </section>
@@ -66,7 +56,7 @@
 {% block tool_result %}
     {% if resultado %}
         {% comment %}Entrada → procedimiento plegable → resultado, como las demás herramientas.{% endcomment %}
-        <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">Conversión</p>
                 <h2 id="results-title">{{ resultado.titulo }}</h2>

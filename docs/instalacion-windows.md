@@ -4,10 +4,10 @@
 
 ## Instalar como usuario
 
-1. Descarga `AlgebraLineal-Setup-x.y.z.exe` desde la [última release estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest).
+1. Descarga `PyGebra-Setup-x.y.z.exe` desde la [última release estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest).
 2. Ejecuta el instalador: decide si quieres un acceso directo en el escritorio y
    pulsa **Instalar**.
-3. Abre **Álgebra Lineal** desde el menú Inicio o el acceso directo opcional del escritorio.
+3. Abre **PyGebra** desde el menú Inicio o el acceso directo opcional del escritorio.
 
 No necesitas Git, Python, uv, PyInstaller, terminal ni acceso al repositorio.
 El instalador no pide elegir una carpeta: la aplicación se instala para tu usuario
@@ -15,7 +15,7 @@ en `%LOCALAPPDATA%\Programs\AlgebraLineal`, sin solicitar privilegios de
 administrador, y la pantalla **Listo para Instalar** muestra esa ubicación antes
 de continuar. El asistente sigue el tema claro u oscuro de Windows y la aplicación
 funciona sin una consola detrás.
-Para quitarla, usa **Configuración → Aplicaciones → Álgebra Lineal → Desinstalar**.
+Para quitarla, usa **Configuración → Aplicaciones → PyGebra → Desinstalar**.
 
 Requiere Windows 10 1809 o posterior / Windows 11, compatible con aplicaciones x64.
 Si falta **Microsoft Edge WebView2 Runtime**, el instalador te avisa y ejecuta el
@@ -28,8 +28,13 @@ con el instalador **Evergreen Standalone** de
 Si Microsoft no puede instalar el runtime, la instalación muestra instrucciones
 para corregirlo y volver a intentarlo. El ejecutable también comprueba el runtime
 antes de iniciar y muestra un mensaje legible si falta. La desinstalación elimina
-los archivos y accesos directos de Álgebra Lineal; conserva WebView2, que puede ser
+los archivos y accesos directos de PyGebra; conserva WebView2, que puede ser
 utilizado por otras aplicaciones.
+
+PyGebra guarda solo tus preferencias de presentación (tema, Exacto/Decimal y
+precisión) en `%LOCALAPPDATA%\PyGebra\preferencias.json`, fuera de la carpeta
+instalada. Las actualizaciones lo conservan y la desinstalación no lo borra;
+puedes eliminarlo a mano para volver a los valores iniciales.
 
 CI conserva builds temporales; el workflow de [releases](releases.md) publica
 la distribución estable al promover a `main`, tras validar el candidato y superar
@@ -74,6 +79,14 @@ Setup; no se mantiene otra copia manual. El script admite tres o cuatro
 componentes numéricos; la política de publicación usa solo tres (`X.Y.Z`), según
 [Versionado](releases.md#versionado).
 
+El `.spec` también genera `build/windows-version-info.txt` mediante
+`scripts/windows_version_info.py`, sin dependencias adicionales. El recurso
+`VSVersionInfo` identifica `AlgebraLineal.exe` como **PyGebra** en Propiedades →
+Detalles y las APIs de Windows: producto y descripción PyGebra, compañía
+Proyecto PyGebra, nombre original AlgebraLineal.exe y versiones de archivo y
+producto tomadas de `pyproject.toml`. El build verifica estos valores incluso
+con `-Target Installer`, para impedir empaquetar un EXE obsoleto.
+
 También puedes construir por fases:
 
 ```powershell
@@ -111,7 +124,7 @@ o automatizadas sigue funcionando el parámetro estándar de Inno Setup, con o s
 `/VERYSILENT`:
 
 ```powershell
-$installer = Get-Item .\dist\installer\AlgebraLineal-Setup-*.exe
+$installer = Get-Item .\dist\installer\PyGebra-Setup-*.exe
 & $installer.FullName /DIR="C:\Otra\Ruta"
 ```
 
@@ -121,7 +134,7 @@ dist/
 │   ├── AlgebraLineal.exe
 │   └── _internal/              # Python, dependencias, templates y recursos locales
 └── installer/
-    └── AlgebraLineal-Setup-<version>.exe
+    └── PyGebra-Setup-<version>.exe
 ```
 
 `build/` y `dist/` están ignorados por Git. El script descarga el bootstrapper
@@ -141,10 +154,10 @@ sus verificaciones. Ninguno crea una Release.
 
 ## Comprobar la distribución real
 
-En una cuenta Windows **sin una instalación previa de Álgebra Lineal**, ejecuta:
+En una cuenta Windows **sin una instalación previa de PyGebra**, ejecuta:
 
 ```powershell
-$installer = Get-Item .\dist\installer\AlgebraLineal-Setup-*.exe
+$installer = Get-Item .\dist\installer\PyGebra-Setup-*.exe
 .\scripts\test_windows_distribution.ps1 -InstallerPath $installer.FullName
 ```
 
@@ -161,8 +174,39 @@ icono, cierra la ventana y
 verifica que el proceso y el servidor terminan. Repite la apertura y luego
 desinstala comprobando que se eliminaron archivos, registro y accesos directos.
 Si esta máquina ya tiene
-Álgebra Lineal instalada, el script se detiene a propósito: necesita una
+PyGebra instalada, el script se detiene a propósito: necesita una
 cuenta o entorno limpio para no modificar esa instalación.
+
+### Actualizar desde 0.8.0
+
+La actualización mantiene el AppId `{D0455B79-7F5E-4C78-9F3B-F47187E9A83A}`,
+el AUMID `PyGebra.Desktop`, `AlgebraLineal.exe` y la carpeta previa
+(`UsePreviousAppDir=yes`). `UsePreviousGroup=no` crea el grupo PyGebra;
+`[InstallDelete]` elimina únicamente los `.lnk` históricos del usuario:
+`Start Menu\Programs\Álgebra Lineal\Álgebra Lineal.lnk` y
+`Desktop\Álgebra Lineal.lnk`. No borra directorios ni archivos ajenos.
+
+Para probarlo en una cuenta limpia, descarga el instalador **publicado** 0.8.0
+y verifica su SHA-256. Después ejecuta el smoke con ambos instaladores:
+
+```powershell
+$installer = Get-Item .\dist\installer\PyGebra-Setup-*.exe
+.\scripts\test_windows_distribution.ps1 -InstallerPath $installer.FullName `
+  -PreviousInstallerPath 'C:\Pruebas\AlgebraLineal-Setup-0.8.0.exe' -PreviousDesktopIcon
+# Repetir sin -PreviousDesktopIcon para cubrir el acceso opcional ausente.
+```
+
+El script comprueba la identidad histórica y su AUMID, instala el candidato
+**sin `/DIR`** para comprobar que recupera la carpeta previa, exige los accesos
+PyGebra y la ausencia de ambos históricos, consulta nombre/publisher/versión
+en el registro de desinstalación, verifica los metadatos del EXE, abre dos veces
+la aplicación y desinstala sin dejar accesos huérfanos. Un archivo ajeno creado
+por la prueba en el grupo antiguo debe sobrevivir a actualización y
+desinstalación; el script retira únicamente ese archivo de prueba al terminar.
+
+La inspección visual de Inicio, búsqueda de Windows, `shell:AppsFolder`, el
+asistente (incluido «Abrir PyGebra») y Configuración → Aplicaciones complementa
+las comprobaciones automatizadas del registro y los accesos.
 
 Completa esa prueba con una revisión visual: instalar normalmente, abrir desde
 el acceso directo, resolver un sistema, verificar **Columnas pivote: C1, C3**,

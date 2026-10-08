@@ -16,6 +16,7 @@ from backend.seguridad_numerica import (
     MENSAJE_NUMERO_GRANDE,
     MENSAJE_NOTACION_CIENTIFICA,
     validar_literal_numerico,
+    validar_espacios_numericos,
 )
 
 ECUACIONES_MAXIMAS = 12
@@ -59,6 +60,9 @@ def validar_longitud_sistema(texto):
         raise ValueError(
             f"El sistema admite hasta {LONGITUD_SISTEMA_MAXIMA} caracteres."
         )
+    # El parser elimina espacios: inspeccionar el original antes de compactarlo.
+    for linea in texto.split("\n"):
+        validar_espacios_numericos(linea)
 
 
 def validar_valor_agrupado(valor):

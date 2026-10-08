@@ -33,7 +33,7 @@
         }],
         ["Vectores: suma real de tres y procedimiento", "vectores", async (w, frame) => {
             click(w, '[data-agregar-vector]');
-            for (const [n, valores] of [['u',[1,2,3]],['v',[4,5,6]],['v3',[7,8,9]]]) {
+            for (const [n, valores] of [['v1',[1,2,3]],['v2',[4,5,6]],['v3',[7,8,9]]]) {
                 valores.forEach((v, i) => valor(w, `[name="${n}_${i}"]`, v));
             }
             w = await enviar(frame);
@@ -146,7 +146,7 @@
         ["Matrices: cantidad manipulada vuelve a una estructura segura", "matrices", async (w, frame) => {
             w.document.querySelector('[name="cantidad"]').value = '100000';
             w = await enviar(frame);
-            igual(w.document.querySelector('.errorlist').textContent.includes('hasta 50 símbolos'), true);
+            igual(w.document.querySelector('.alert.error').textContent.includes('hasta 50 símbolos'), true);
             igual(cantidad(w, '[data-simbolo]'), 0);
             click(w, '[data-agregar]');
             igual(cantidad(w, '[data-simbolo]'), 1);

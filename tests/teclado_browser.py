@@ -33,9 +33,13 @@ def fixture():
     componente = render_to_string("calculadora/components/math_keyboard.html", {"perfiles_teclado": perfiles})
     return f'''<!doctype html><html lang="es"><meta charset="utf-8"><title>Fixture teclado</title>
     <form id="entrada">
-      <fieldset id="texto" data-perfil="sistema"><textarea aria-label="Texto" id="a"></textarea></fieldset>
+      <fieldset id="texto" data-perfil="sistema"><label for="a">Texto</label><textarea aria-label="Texto" id="a"></textarea></fieldset>
       <fieldset id="celdas" data-perfil="numerico"><input aria-label="Celda" id="b" type="text"></fieldset>
       <input aria-label="Fuera de contexto" id="ajeno" type="text">
+      <input aria-label="Radio" id="radio" type="radio">
+      <input aria-label="Checkbox" id="checkbox" type="checkbox">
+      <select aria-label="Selector" id="select"><option>Opción</option></select>
+      <a href="#entrada" id="enlace">Enlace</a>
       <button type="button" id="otro">Otro control</button>
       {componente}
     </form><script src="/teclado.js"></script></html>'''.encode()
@@ -47,6 +51,10 @@ class PaginaPruebas(BaseHTTPRequestHandler):
             "/": ("text/html", b'<!doctype html><html lang="es"><meta charset="utf-8"><title>Regresiones DOM P17</title><h1>Regresiones DOM P17</h1><ol id="resultados"></ol><p id="total">Ejecutando...</p><script src="/pruebas.js"></script></html>'),
             "/fixture": ("text/html", fixture()),
             "/teclado.js": ("text/javascript", (RAIZ / "frontend/web/calculadora/static/calculadora/teclado.js").read_bytes()),
+            "/dock.css": ("text/css", b"\n".join(
+                (RAIZ / "frontend/web/calculadora/static/calculadora/styles" / nombre).read_bytes()
+                for nombre in ("tokens.css", "components.css")
+            )),
             "/pruebas.js": ("text/javascript", (RAIZ / "tests/teclado_browser.js").read_bytes()),
         }
         if self.path not in recursos:

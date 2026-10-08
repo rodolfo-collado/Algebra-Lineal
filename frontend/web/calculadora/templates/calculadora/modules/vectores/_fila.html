@@ -1,13 +1,13 @@
-{% comment %}Una fila de entrada «u = ( [ ] [ ] [ ] )». vectores.js genera este mismo marcado al cambiar la estructura; si se modifica aquí, hay que reflejarlo allí.{% endcomment %}
+{% comment %}Una fila de entrada «v1 = ( [ ] [ ] [ ] )». vectores.js genera este mismo marcado al cambiar la estructura; si se modifica aquí, hay que reflejarlo allí.{% endcomment %}
 <div class="vector-row{% if fila.objetivo %} vector-row-target{% endif %}" data-vector="{{ fila.nombre }}" role="group" aria-label="Vector {{ fila.nombre }}">
     <span class="vector-name" aria-hidden="true">{{ fila.nombre }} =</span>
     <div class="vector-inputs">
         <span class="vector-fence" aria-hidden="true">(</span>
         {% for componente in fila.componentes %}
-            <input type="text" name="{{ componente.campo }}" data-cell="{{ componente.campo }}" value="{{ componente.valor }}"
-                   class="matrix-input{% if fila.objetivo %} independent-input{% endif %}"
-                   aria-label="Componente {{ componente.indice }} de {{ fila.nombre }}"
-                   autocomplete="off" spellcheck="false" inputmode="text" required>
+            <span class="vector-cell">
+                <label class="sr-only" for="{{ componente.control.id_for_label }}">{{ componente.control.label }}</label>
+                {{ componente.control }}{{ componente.control.errors }}
+            </span>
             {% if not forloop.last %}<span class="vector-sep" aria-hidden="true">,</span>{% endif %}
         {% endfor %}
         <span class="vector-fence" aria-hidden="true">)</span>

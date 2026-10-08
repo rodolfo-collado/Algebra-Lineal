@@ -4,13 +4,9 @@
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title" data-vectores>
         <h2 id="workspace-title" class="sr-only">Entrada</h2>
-        <form id="vectores-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+        <form id="vectores-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
             {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="alert error" role="alert">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
+            {% include "calculadora/components/errores_generales.html" %}
 
             <section class="workspace-section" aria-labelledby="operation-title">
                 <h3 id="operation-title" class="section-title">Operación</h3>
@@ -25,9 +21,7 @@
                     {% for clave, ayuda in ayudas_operacion.items %}
                         <p class="field-help option-help" data-operacion-hint="{{ clave }}" {% if clave != estructura.operacion %}hidden{% endif %}>{{ ayuda }}</p>
                     {% endfor %}
-                    {% for error in form.operacion.errors %}
-                        <p class="field-error" role="alert">{{ error }}</p>
-                    {% endfor %}
+                    {{ form.operacion.errors }}
                 </fieldset>
             </section>
 
@@ -42,9 +36,7 @@
                             {{ form.dimension }}
                             <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar una componente" hidden>+</button>
                         </div>
-                        {% for error in form.dimension.errors %}
-                            <p class="field-error" role="alert">{{ error }}</p>
-                        {% endfor %}
+                        {{ form.dimension.errors }}
                     </div>
                     <div class="dimension-field" data-cantidad-vectores {% if estructura.operacion == "escalar" %}hidden{% endif %}>
                         <label for="{{ form.vectores.id_for_label }}">Número de vectores</label>
@@ -53,10 +45,11 @@
                             {{ form.vectores }}
                             <button type="button" class="stepper-btn" data-paso="1" aria-label="Agregar un vector" hidden>+</button>
                         </div>
+                        {{ form.vectores.errors }}
                     </div>
                 </div>
 
-                <div id="vector-list" class="vector-list" data-dimension="{{ estructura.dimension }}" data-vectores="{{ estructura.vectores }}">
+                <div id="vector-list" class="vector-list" style="--vector-dimension: {{ estructura.dimension }}" data-dimension="{{ estructura.dimension }}" data-vectores="{{ estructura.vectores }}">
                     {% if estructura.operacion == "escalar" %}
                         <div class="vector-row vector-row-scalar" data-escalar role="group" aria-label="Escalar k">
                             <span class="vector-name" aria-hidden="true">k =</span>
@@ -67,18 +60,16 @@
                         {% include "calculadora/modules/vectores/_fila.html" %}
                     {% endfor %}
                 </div>
+                {% include "calculadora/components/errores_grupo.html" %}
                 <button type="button" class="btn btn-secondary" data-agregar-vector hidden>+ Agregar vector</button>
                 <p class="field-help" data-limite-operandos hidden>{{ form.vectores.field.error_messages.max_value }}</p>
-                {% for error in form.vectores.errors %}
-                    <p class="field-error" role="alert">{{ error }}</p>
-                {% endfor %}
-                {% for error in form.escalar.errors %}
-                    <p class="field-error" role="alert">{{ error }}</p>
-                {% endfor %}
+                {% comment %}Qué cambió al agregar o quitar un vector; el foco ya indica dónde seguir.{% endcomment %}
+                <p class="field-help" data-estado-vectores role="status" aria-live="polite"></p>
+                {{ form.escalar.errors }}
                 <p class="field-help vector-help" data-operacion-hint-fields="combinacion" {% if estructura.operacion != "combinacion" %}hidden{% endif %}>
                     ¿Es <strong>b</strong> combinación lineal de los vectores v1, v2, …? Cada vector es una columna del sistema; b es la columna aumentada.
                 </p>
-                <p class="field-help vector-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos.</p>
+                <p class="field-help vector-help">Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>; usa <code>-</code> para negativos.</p>
 
                 {% include "calculadora/components/math_keyboard.html" %}
                 <noscript>
@@ -88,7 +79,7 @@
             </section>
 
             <div class="workspace-actions">
-                <button class="btn btn-primary" type="submit" data-boton-calcular>{{ texto_boton }}</button>
+                <button class="btn btn-primary" type="submit" data-calculo data-boton-calcular>{{ texto_boton }}</button>
             </div>
         </form>
     </section>
@@ -98,9 +89,8 @@
     {% if resultado %}
         {% comment %}Entrada → procedimiento plegable → resultado (una sola vez). numeric_results prepara la vista exacta/decimal de todo el bloque sin recalcular.{% endcomment %}
         {% numeric_results %}
-        <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
-                <p class="section-kicker">{{ resultado.etiqueta }}</p>
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}

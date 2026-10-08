@@ -1,11 +1,18 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 from pathlib import Path
+import runpy
 
 from PyInstaller.building.build_main import Analysis, COLLECT, EXE, PYZ
 
 
 PROJECT_ROOT = Path(SPECPATH).resolve()
+
+# Se regenera también al construir directamente el .spec: no hay versión manual.
+version_info = runpy.run_path(str(PROJECT_ROOT / "scripts" / "windows_version_info.py"))["version_info"]
+version_resource = PROJECT_ROOT / "build" / "windows-version-info.txt"
+version_resource.parent.mkdir(parents=True, exist_ok=True)
+version_resource.write_text(version_info(PROJECT_ROOT / "pyproject.toml"), encoding="utf-8")
 
 datas = [
     (
@@ -102,6 +109,7 @@ exe = EXE(
     upx=False,
     console=False,
     disable_windowed_traceback=True,
+    version=str(version_resource),
     icon=str(PROJECT_ROOT / "assets" / "brand" / "app" / "pygebra.ico"),
 )
 coll = COLLECT(

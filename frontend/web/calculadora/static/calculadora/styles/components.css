@@ -4,7 +4,6 @@
 
 /* —— Encabezado de herramienta —— */
 
-.tool-kicker,
 .section-kicker,
 .matrix-label,
 .final-label {
@@ -14,13 +13,6 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-}
-
-/* El kicker de la herramienta repite la ruta en tono discreto, sin versales. */
-.tool-header .tool-kicker {
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
 }
 
 .tool-header {
@@ -181,11 +173,20 @@
 .field-error,
 .alert {
     color: var(--color-danger);
-    font-size: 0.87rem;
+    font-size: var(--text-sm);
 }
 
 .field-error {
     margin: 0.45rem 0 0;
+}
+
+ul.field-error { padding-left: 1.15rem; }
+.alert .errorlist { margin: 0; padding-left: 1.15rem; }
+[data-calculo][aria-disabled="true"] { cursor: wait; }
+.btn[data-calculo] { min-width: 9rem; }
+:is([data-confirmacion], [data-error-general]):focus {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
 .alert {
@@ -276,7 +277,7 @@
     width: 100%;
     min-height: 2.35rem;
     padding: 0.45rem 0.6rem 0.45rem 2.2rem;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-input);
     border-radius: var(--radius-sm);
     background: var(--color-surface-raised);
     color: var(--color-text);
@@ -290,7 +291,7 @@
 }
 
 .search-input:hover {
-    border-color: var(--color-border-strong);
+    border-color: var(--color-muted);
 }
 
 .search-input:focus {
@@ -320,6 +321,16 @@
 
 .search-status:empty {
     display: none;
+}
+
+[data-busqueda-servidor][hidden],
+.search-suggestions[hidden] {
+    display: none;
+}
+
+#resultados-busqueda:focus {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 4px;
 }
 
 .search-large .search-input {
@@ -632,19 +643,7 @@ a.tool-link .tool-link-name {
     color: var(--color-muted);
 }
 
-/* —— Herramientas relacionadas —— */
-
-.related {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-border);
-}
-
-.related-title {
-    margin: 0 0 0.6rem;
-    font-size: 0.95rem;
-    font-weight: 700;
-}
+/* —— Herramientas relacionadas: comparten sección y título con «También puedes explorar» —— */
 
 .related-list {
     display: flex;
@@ -671,6 +670,13 @@ a.tool-link .tool-link-name {
 .related-name {
     font-size: 0.88rem;
     font-weight: 700;
+}
+
+.related-invitation {
+    display: block;
+    max-width: 32ch;
+    color: var(--color-muted);
+    font-size: 0.85rem;
 }
 
 /* —— También puedes explorar: conexiones educativas con herramientas existentes —— */
@@ -721,7 +727,9 @@ a.tool-link .tool-link-name {
     font-weight: 700;
 }
 
-/* —— Desplegables: teclado y opciones avanzadas aparecen solo cuando se piden —— */
+/* —— Desplegables: un solo componente, {% disclosure %}, para opciones, ayudas,
+   procedimientos, sub-bloques y grupos. Chevrón siempre al inicio, icono opcional
+   (solo opciones de configuración), título como encabezado real y detalle secundario. —— */
 
 .disclosure {
     margin-top: 0.8rem;
@@ -741,7 +749,8 @@ a.tool-link .tool-link-name {
     min-height: 2.5rem;
     padding: 0.45rem 0.8rem;
     border-radius: var(--radius-md);
-    font-size: 0.88rem;
+    background: var(--fondo-summary, transparent);
+    font-size: var(--text-sm);
     font-weight: 700;
     list-style: none;
     cursor: pointer;
@@ -753,8 +762,9 @@ a.tool-link .tool-link-name {
     display: none;
 }
 
+/* El mismo matiz sobre cualquier fondo, también sobre el summary sticky opaco. */
 .disclosure-summary:hover {
-    background: var(--color-surface-muted);
+    background: color-mix(in srgb, var(--color-text) 6%, var(--fondo-summary, transparent));
 }
 
 .disclosure-icon {
@@ -768,8 +778,7 @@ a.tool-link .tool-link-name {
     width: 0.9rem;
     height: 0.9rem;
     flex: none;
-    margin-left: auto;
-    color: var(--color-muted);
+    color: var(--color-brand);
     transition: transform var(--motion-fast);
 }
 
@@ -779,12 +788,6 @@ a.tool-link .tool-link-name {
 
 .disclosure-body {
     padding: 0.15rem 0.8rem 0.85rem;
-}
-
-/* Componente {% disclosure %}: chevrón al inicio y título como encabezado real dentro del summary. */
-.disclosure-summary > .disclosure-chevron:first-child {
-    margin-left: 0;
-    color: var(--color-brand);
 }
 
 .disclosure-title {
@@ -810,28 +813,95 @@ a.tool-link .tool-link-name {
 .disclosure-procedure > .disclosure-summary {
     min-height: 2.75rem;
     padding: 0.55rem 1rem;
-    font-size: 0.95rem;
+    font-size: var(--text-base);
+}
+
+/* Solo el summary principal del procedimiento abierto es sticky (P27.6), con fondo opaco. */
+.disclosure-procedure[open] > .disclosure-summary {
+    --fondo-summary: var(--color-surface-raised);
+    position: sticky;
+    top: var(--header-height);
+    z-index: 10;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .disclosure-procedure > .disclosure-body {
     padding: 0.35rem 1.1rem 1.15rem;
 }
 
-/* Sub-bloques (un método al comparar, comprobación e interpretación): más discretos. */
-.disclosure-nested {
-    margin-top: 0.85rem;
+/* Bajo la cabecera, el summary sticky ocupa otra franja: lo que recibe foco dentro del
+   procedimiento abierto se detiene debajo de ambos. */
+.disclosure-procedure[open] > .disclosure-body :is(a, button, summary, input, select, textarea, [tabindex]) {
+    scroll-margin-top: 2.75rem;
+}
+
+/* Sub-bloques (un método al comparar, comprobación e interpretación) y grupos por fila o
+   columna de un producto: el mismo desplegable, más discreto. */
+.disclosure-nested,
+.procedure-group {
     background: var(--color-surface-muted);
 }
 
-.disclosure-nested > .disclosure-body {
+.disclosure-nested {
+    margin-top: 0.85rem;
+}
+
+.procedure-group {
+    margin-top: 0.6rem;
+}
+
+:is(.disclosure-nested, .procedure-group) > .disclosure-body {
     padding: 0.25rem 0.9rem 0.9rem;
 }
 
 /* —— Teclado matemático contextual —— */
 
 .math-keyboard {
-    padding: 0.15rem 0.8rem 0.7rem;
+    position: fixed;
+    z-index: 20;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(100% - 2rem, var(--content-max));
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-top: 2px solid var(--color-brand);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: 0 -4px 16px var(--color-shadow-strong), var(--shadow-lg);
 }
+
+.math-keyboard-title {
+    display: block;
+    margin-bottom: 0.15rem;
+    color: var(--color-brand);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .math-keyboard {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+        transition: opacity var(--motion-fast), transform var(--motion-fast);
+    }
+
+    .math-keyboard[data-abierto] {
+        opacity: 1;
+        transform: translate(-50%, 0);
+        transition: opacity var(--motion), transform var(--motion);
+        transition-timing-function: ease-out;
+    }
+}
+
+/* Reserva estable al final: mostrar/ocultar nunca desplaza los controles. La de arriba es la
+   global de la cabecera (base.css). */
+html.js:has(.math-keyboard) {
+    scroll-padding-bottom: 8rem;
+}
+
+html.js body:has(.math-keyboard) { padding-bottom: 8rem; }
 
 .math-keyboard[hidden] {
     display: none;
@@ -839,12 +909,14 @@ a.tool-link .tool-link-name {
 
 .math-keyboard-groups {
     display: flex;
-    flex-wrap: wrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
     gap: 0.6rem 1.1rem;
 }
 
 .math-keyboard-group {
     display: grid;
+    flex: none;
     gap: 0.25rem;
 }
 
@@ -858,11 +930,12 @@ a.tool-link .tool-link-name {
 
 .math-keys {
     display: flex;
-    flex-wrap: wrap;
     gap: 0.35rem;
 }
 
 .math-key {
+    flex: none;
+    white-space: nowrap;
     min-width: 2.5rem;
     min-height: 2.35rem;
     padding: 0.3rem 0.6rem;
@@ -884,6 +957,25 @@ a.tool-link .tool-link-name {
     margin: 0.5rem 0 0;
     color: var(--color-muted);
     font-size: 0.76rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 480px) {
+    .math-keyboard { width: calc(100% - 1.5rem); }
+}
+
+@media (max-height: 640px) {
+    .math-keyboard { padding: 0.4rem 0.5rem; }
+    .math-keyboard-title, .math-keyboard-group-name, .math-keyboard-help { display: none; }
+    .math-keyboard-groups { gap: 0.5rem; }
+    html.js:has(.math-keyboard) { scroll-padding-bottom: 4.5rem; }
+    html.js body:has(.math-keyboard) { padding-bottom: 4.5rem; }
+    html.js [data-perfil] textarea {
+        min-height: 4rem;
+        max-height: calc(100dvh - var(--header-height) - 6rem);
+    }
 }
 
 /* —— Controles de estructura (dimensiones), separados del teclado —— */
@@ -922,7 +1014,7 @@ a.tool-link .tool-link-name {
 
 .stepper-btn {
     width: 2.5rem;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-input);
     background: var(--color-surface-raised);
     color: var(--color-text);
     font-size: 1.05rem;
@@ -934,12 +1026,12 @@ a.tool-link .tool-link-name {
     display: none;
 }
 
-.stepper-btn:first-child {
+.stepper > .stepper-btn:first-child {
     border-radius: var(--radius-sm) 0 0 var(--radius-sm);
     border-right: 0;
 }
 
-.stepper-btn:last-child {
+.stepper > .stepper-btn:last-child {
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     border-left: 0;
 }
@@ -952,8 +1044,14 @@ a.tool-link .tool-link-name {
 /* —— Matrices —— */
 
 .matrix {
-    display: inline-flex;
+    display: inline-block;
+    min-width: 0;
     max-width: 100%;
+}
+
+.matrix-content {
+    display: inline-flex;
+    width: max-content;
     align-items: stretch;
 }
 
@@ -977,9 +1075,14 @@ a.tool-link .tool-link-name {
 .matrix-scroll {
     min-width: 0;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: auto;
 }
 
+.matrix-scroll[data-overflow] { border-bottom: 2px solid var(--color-border-strong); }
+
 .matrix-table {
+    flex: none;
     border-collapse: collapse;
     font-size: 0.92rem;
     font-variant-numeric: tabular-nums;
@@ -1047,7 +1150,7 @@ a.tool-link .tool-link-name {
 .numeric-format select {
     min-height: 2.75rem;
     padding: 0.35rem 0.65rem;
-    border: 1px solid var(--color-border-strong);
+    border: 1px solid var(--color-border-input);
     border-radius: var(--radius-sm);
     background: var(--color-surface-raised);
     color: var(--color-text);

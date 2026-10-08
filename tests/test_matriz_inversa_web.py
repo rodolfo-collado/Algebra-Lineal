@@ -223,7 +223,7 @@ class PruebasResultado(SimpleTestCase):
                 self.assertEqual(doc.tablas[TABLA_INVERSA], INVERSA_2X2)
                 self.assertIn(f"Matriz inversa · {titulo} Inversa de A (2×2)", contenido)
                 _, resultado = partes(html)
-                self.assertEqual(resultado, "Resultado A⁻¹ = -3 2 5/2 -3/2")
+                self.assertTrue(resultado.endswith("A⁻¹ = -3 2 5/2 -3/2"))
 
     def test_profesor_3x3_por_gauss_jordan(self):
         html, doc, contenido = self.calcular(PROFESOR_3X3)
@@ -466,6 +466,8 @@ class PruebasVerificacion(SimpleTestCase):
                 html, doc = self.calcular(SINGULAR, metodo)
                 procedimiento, resultado = partes(html)
                 self.assertIn("La matriz no tiene inversa.", resultado)
+                self.assertIn("Verificación no disponible: A no tiene inversa.", resultado)
+                self.assertNotIn("✓", resultado)
                 self.assertIn("No se puede realizar la verificación porque A no tiene inversa.", procedimiento)
                 for tabla in (TABLA_INVERSA, TABLA_A_INVERSA, TABLA_INVERSA_A, TABLA_IDENTIDAD):
                     self.assertNotIn(tabla, doc.tablas)
@@ -483,8 +485,8 @@ class PruebasVerificacion(SimpleTestCase):
                 self.assertIn("A · A⁻¹", procedimiento)
                 self.assertIn("A⁻¹ · A", procedimiento)
                 self.assertNotIn("Resultado", procedimiento)
-                self.assertNotIn("Verificación", resultado)
-                self.assertEqual(resultado, "Resultado A⁻¹ = -3 2 5/2 -3/2")
+                self.assertIn("Verificación: A·A⁻¹ = A⁻¹·A = I ✓", resultado)
+                self.assertTrue(resultado.endswith("A⁻¹ = -3 2 5/2 -3/2"))
                 self.assertEqual(len(re.findall(rf'<table[^>]*aria-label="{TABLA_INVERSA}"', html)), 1)
                 self.assertEqual(texto(html).count("Resultado"), 1)
                 self.assertRegex(html, r'<h[3-6][^>]*id="inverse-verification-title"[^>]*>Verificación</h[3-6]>')
@@ -524,8 +526,10 @@ class PruebasVerificacion(SimpleTestCase):
                                       else (TABLA_INVERSA_A, TABLA_A_INVERSA))
                 self.assertEqual(doc.tablas[tabla_fallida], [["1/3", "0"], ["0", "1"]])
                 self.assertEqual(doc.tablas[otra], identidad_texto(2))
-                procedimiento, _ = partes(html)
+                procedimiento, resultado = partes(html)
                 self.assertIn(mensaje, procedimiento)
+                self.assertIn("≠ I", resultado)
+                self.assertNotIn("✓", resultado)
                 self.assertEqual(procedimiento.count("≠ I"), 1)
                 self.assertNotIn("Ambos productos son la matriz identidad.", procedimiento)
                 bloque = html[html.index('id="inverse-verification-title"'):]
@@ -624,7 +628,7 @@ class PruebasRechazo(SimpleTestCase):
             self.assertIn("campos repetidos", str(form.non_field_errors()))
 
     def test_celdas_vacias_o_invalidas(self):
-        self.rechazar(datos_inversa(celda_A_0_0=""), "Completa matriz a, fila 1, columna 1.")
+        self.rechazar(datos_inversa(celda_A_0_0=""), "Completa matriz A, fila 1, columna 1.")
         for valor in ("abc", "1/0", "1/", "NaN", "--2", "1,5"):
             with self.subTest(valor=valor):
                 self.rechazar(datos_inversa(celda_A_1_0=valor), "no es un número válido")
@@ -673,18 +677,19 @@ class PruebasConfirmacion(SimpleTestCase):
         self.assertEqual(
             leido,
             "Antes de calcular La matriz es válida. Esta operación puede tardar varios segundos porque la matriz "
-            "requiere un procedimiento largo. Tiempo estimado: entre 2 y 18 segundos. ¿Quieres continuar? Cancelar Continuar",
+            "requiere un procedimiento largo. Operación pendiente: Calcular A⁻¹ y la aplicación o propiedad seleccionada. "
+            "El cálculo completo todavía no se ha ejecutado. Tiempo estimado: entre 2 y 18 segundos. ¿Quieres continuar? Cancelar Continuar",
         )
         for tecnico in ("O(", "bits", "operaciones", "celdas", "presupuesto", "categoría", "PESADA"):
             self.assertNotIn(tecnico, leido)
         self.assertRegex(tarjeta, r'<button class="btn btn-secondary" type="submit" name="ajustar" value="1" formnovalidate>Cancelar</button>')
-        self.assertRegex(tarjeta, r'<button class="btn btn-primary" type="submit" name="confirmacion" value="[0-9a-f]{64}">Continuar</button>')
+        self.assertRegex(tarjeta, r'<button class="btn btn-primary" type="submit" data-calculo name="confirmacion" value="[0-9a-f]{64}">Continuar</button>')
 
     def test_la_confirmacion_conserva_matriz_y_metodo_dentro_del_formulario(self):
         html = self.post(datos_inversa(PROFESOR_3X3))
         formulario = elemento_html(html, html.index('id="inversa-form"'), "form")
         self.assertIn("data-confirmacion", formulario)
-        self.assertLess(formulario.index("data-confirmacion"), formulario.index('data-inverse-entry'))
+        self.assertLess(formulario.index("data-confirmacion"), formulario.index('class="workspace-actions"'))
         campos = Contenido(html).campos
         self.assertEqual({k: campos[k]["value"] for k in campos if k.startswith("celda_A_")},
                          {f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(PROFESOR_3X3) for j, v in enumerate(fila)})
@@ -883,7 +888,7 @@ class PruebasRecursos(SimpleTestCase):
         for marca in ("data-inversa", "data-inverse-entry", "data-inverse-shape", "data-aplicar", 'data-dimension="orden"'):
             self.assertIn(marca, html)
         js = (ESTATICOS / "inversa.js").read_text(encoding="utf-8")
-        for fragmento in ("data-inversa", "matrix-entry-template", 'value="directo_2x2"', "data-confirmacion", "#resultado", "ArrowDown", "disabled"):
+        for fragmento in ("data-inversa", "matrix-entry-template", 'value="directo_2x2"', "data-confirmacion", "ArrowDown", "disabled"):
             self.assertIn(fragmento, js)
         self.assertNotIn("innerHTML", js)
         from tests.test_teclado import Pagina

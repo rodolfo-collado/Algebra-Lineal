@@ -23,9 +23,11 @@ plantillas Django, CSS propio y JavaScript mínimo, todos locales.
 
 El tema claro u oscuro se guarda en `localStorage` (`pygebra-tema`). Se lee
 primero esta clave; si falta, se recupera y migra `algebra-lineal-tema`.
+En la app de escritorio también se conserva entre aperturas (ver [Escritorio](#escritorio)).
 Si el almacenamiento está bloqueado, tema y menú siguen funcionando.
 Si el usuario no ha elegido, se respeta `prefers-color-scheme`. El icono del
 selector representa el tema activo: sol en claro, luna en oscuro.
+Tema anuncia la acción de cambiar al tema opuesto y solo aparece cuando JavaScript lo hace operativo.
 
 Todo debe funcionar sin Internet. No uses Google Fonts, CDN ni iconos remotos.
 
@@ -35,6 +37,14 @@ El usuario no tiene por qué conocer la sintaxis del parser. Lo que se muestra
 es notación matemática (`x₁`, `−`, `a⁄b`) y lo que se envía es la sintaxis
 interna (`x1`, `-`, `/`). Cuando una herramienta necesite símbolos, declara un
 teclado contextual (ver abajo) en lugar de pedir al usuario que los escriba.
+
+Los resultados de Reducción por filas, Resolver Ax = b y Combinación lineal
+presentan las incógnitas como `x₁, x₂, …` con el filtro `incognitas`
+(`templatetags/numeros.py`). Solo cambia la presentación: servicios, parser,
+campos, cuadrícula de entrada, placeholders y ayudas de sintaxis siguen en
+`x1`, y una misma salida nunca mezcla ambas formas. Operaciones con matrices
+conserva su notación lineal ASCII (`x1 a1 + x2 a2`, `[3, 1, 0]^T`), coherente
+en sí misma. Los nombres de vectores (`v1`, `v2`, …) son identificadores.
 
 ## Sistema visual
 
@@ -57,6 +67,32 @@ Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-rais
 `--color-pivot`, …) en lugar de hexadecimales sueltos. Cada token existe en el
 bloque claro y en `[data-theme="dark"]`.
 
+### Formularios
+
+Contrato común de los formularios de herramienta (P27.8):
+
+- **Escala.** `--text-xs` (0.8rem) para metadatos, como los encabezados `x1` y `F1`
+  de la cuadrícula; `--text-sm` (0.875rem) para etiquetas, leyendas, ayudas,
+  opciones, errores y títulos de desplegables; `--text-base` (1rem) para títulos de
+  sección y valores. No sustituye todos los tamaños de la aplicación.
+- **Etiquetas.** Una sola regla para `legend` y para todo `label` visible de
+  `.workspace` (las píldoras `.option` y `.segment` tienen la suya): `--text-sm`,
+  peso 600 y `--space-1` hasta su control, también en el campo principal. Son
+  `<label for>` reales: Nombre y Tipo de cada símbolo van encima de su control, como
+  Filas y Columnas, y `expresiones.js` conserva la asociación al reindexar. Los
+  formularios usan `label_suffix = ""`: ninguna etiqueta termina en «:» automático.
+  Las ayudas (`.field-help`) van en `--text-sm`, regulares y en `--color-muted`.
+- **Bordes de campo.** `--color-border-input` (`#858585` en claro, `#7a7a7a` en
+  oscuro) delimita inputs, selects, textareas, celdas, el buscador y los botones del
+  stepper; alcanza al menos 3:1 sobre todas las superficies donde viven (relaciones en
+  la [validación P27.8](validacion-p27-8.md)). Prioridad: normal < hover
+  (`--color-muted`) < foco (`--color-brand` y anillo) < error (`--color-danger`, que
+  se mantiene con hover y foco); deshabilitado vuelve a `--color-border` con
+  opacidad. Paneles, tarjetas, píldoras y botones con texto conservan `--color-border`.
+- **Placeholders.** `::placeholder` usa `--color-muted` con opacidad 1: como mínimo
+  5,49:1 en claro y 6,74:1 en oscuro en los campos probados; sigue siendo más tenue
+  que un valor escrito.
+
 ## Movimiento funcional
 
 Las animaciones son una mejora progresiva. Ningún estado, contenido o acción
@@ -66,7 +102,7 @@ depende de que una animación se ejecute.
   `--motion` (160 ms) se usa para entradas breves. No hay retrasos.
 - Botones, steppers, teclas matemáticas y controles de navegación comparten
   pulsación de 1 px y borde interior; `:disabled` excluye hover y pulsación.
-  El foco visible se conserva. No hay timers ni cambios en el motor del teclado.
+  El foco visible se conserva.
 - Radios, casillas y segmentos conservan controles HTML nativos y transiciones
   de fondo/borde. Seleccionar no cambia el peso de letra ni mueve opciones vecinas.
 - Los chevrons comunican apertura/cierre. Donde el navegador admite
@@ -76,6 +112,12 @@ depende de que una animación se ejecute.
   `<details>/<summary>` conserva todo su comportamiento nativo, también sin JS.
 - El panel final usa la misma entrada, visible desde el primer instante, sin
   desplazamiento, espera ni clase añadida por JavaScript.
+- El dock entra en 160 ms con opacidad y 10 px de desplazamiento, y sale en
+  120 ms. Su etiqueta y acento verde lo identifican; en modo compacto se oculta
+  la etiqueta. Al salir pierde destino e interacción inmediatamente, conserva
+  las teclas durante la transición y aplica `hidden` al finalizar. Un nuevo
+  foco cancela ese cierre; cambiar de campo compatible no reinicia la entrada.
+  Con movimiento reducido la apertura y el cierre son inmediatos.
 - No se animan celdas, cambios de dimensiones, regeneraciones de campos, perfiles
   del teclado, controles condicionales ni el desplazamiento del drawer. `hidden`,
   `disabled`, `inert`, Escape y restauración de foco mantienen sus contratos.
@@ -127,28 +169,52 @@ que también marca la herramienta activa y calcula las relacionadas.
   `inert`; al cerrarse, el foco vuelve al botón Menú. No se guarda ninguna
   preferencia de apertura: un overlay abierto al cargar taparía el contenido.
 - Dentro, `details`/`summary` por categoría: funciona sin JavaScript y es
-  accesible con teclado. `navigation.js` recuerda las categorías abiertas
-  (`algebra-lineal-menu-secciones`) y abre los desplegables que contienen el
+  accesible con teclado. `navigation.js` recuerda las categorías abiertas solo
+  durante la ejecución (`sessionStorage`, clave `algebra-lineal-menu-secciones`):
+  un arranque nuevo parte limpio y se retira la copia en `localStorage` de
+  versiones anteriores. También abre los desplegables que contienen el
   destino de un ancla (`/#bases-numericas`) al llegar por la URL.
+- Una página restaurada del historial (`pageshow` con `persisted`) vuelve con
+  el cajón cerrado, `data-drawer` retirado, fondo oculto, `main` sin `inert`,
+  `aria-expanded="false"` y el foco fuera del cajón (pasa al botón Menú).
 - El contenido ocupa una sola columna (`--content-max`): matrices grandes,
   procedimientos y comparaciones disponen de todo el ancho.
+- La cabecera es fija. `html { scroll-padding-top: cabecera + 1.5rem }` reserva su
+  altura para todo desplazamiento automático: Tab y Shift+Tab, anclas como
+  `#resultado` y `scrollIntoView`. Dentro del procedimiento abierto, lo enfocable
+  añade la franja del summary sticky (`scroll-margin-top`). El teclado matemático solo
+  reserva el final de la página.
 - El buscador (`components/search.html`) es un formulario `GET` a Inicio.
-  `buscador.js` filtra al instante los elementos con `data-indice` de la lista
-  indicada en `data-buscador`; los contenedores con `data-grupo` se ocultan
-  cuando no tienen coincidencias y los `details` con coincidencias se abren.
-  El índice lo calcula `Herramienta.indice`, el mismo que usa
-  `buscar_herramientas` en Python. Solo hay un buscador principal, el del
-  Inicio; el del cajón filtra el árbol y solo se ve con el menú abierto.
+  `buscador.js` consulta el índice completo publicado por `catalogo.py`, incluidas
+  las próximas, con la misma semántica y orden del servidor. Inicio conserva
+  una fila por herramienta: al filtrar traslada esas filas a una lista ordenada;
+  al limpiar restaura los temas y su apertura. El cajón conserva su árbol,
+  oculta grupos sin coincidencias y abre los que coinciden; limpiar restaura
+  los grupos sin alterar la memoria de categorías.
+  Se ignoran `de`, `a`, `al`, `el`, `la`, `los`, `las`, `un`, `una`, `calcular`,
+  `hallar`, `método` y `pasar`. Una consulta formada solo por esos términos
+  no encuentra herramientas. Las acciones útiles se declaran como palabras
+  clave: invertir, multiplicar, sumar, restar, transponer, convertir y reducir.
+  En un GET se ocultan las filas que no coinciden y se enfoca la región de
+  resultados con contorno visible. El status live nace vacío; al editar oculta
+  el encabezado/recuento anterior y anuncia solo la consulta actual. Volver al
+  valor exacto restaura el estado servidor. Los vacíos ofrecen enlaces `?q=`.
+  Escape lateral con texto limpia sin cerrar el Menú; vacío puede cerrarlo.
 
 ### Inicio por temas
 
 `pages/inicio.html` presenta PyGebra, «Aprende resolviendo», «¿Qué quieres
 resolver?» con su buscador y «Explorar por temas». Cada área disponible es
-un `details` cerrado; al abrirla aparecen los temas, también plegados, y
-cada tema despliega las herramientas de `catalogo.py`. Son filas con bordes
+un `details` cerrado; al abrirla aparecen los temas plegados, salvo los que
+tienen exactamente una herramienta disponible (`Categoria.herramienta_unica`):
+nacen abiertos para mostrarla sin otro clic. Esa apertura no se guarda y el
+buscador restaura lo que el usuario abrió o cerró. Cada tema despliega las
+herramientas de `catalogo.py`. Son filas con bordes
 discretos: ninguna cuadrícula de tarjetas ni accesos duplicados. Las áreas
-sin herramientas disponibles quedan dentro del menú y de la búsqueda GET,
-sin ocupar el Inicio. Con `?q=` se muestran los resultados de búsqueda.
+sin herramientas disponibles permanecen ocultas en Inicio y se encuentran
+tanto por GET como en vivo. Cálculo muestra «Próximamente» en el Menú.
+Con `?q=` se muestran únicamente las coincidencias; todas las filas permanecen
+en el DOM para permitir cambiar la consulta sin otro envío.
 
 El recorrido es Inicio → área → tema → herramienta → resultado. Los
 breadcrumbs abren las anclas de área y categoría con todos sus ancestros.
@@ -165,9 +231,10 @@ distintas que comparten el mismo sistema.
 
 ## Estructura de una herramienta
 
-`layouts/herramienta.html` define el orden común: contexto (área, categoría,
-título, descripción), entrada, acción principal, resultado, explicación,
-herramientas relacionadas y «También puedes explorar». Cada bloque es opcional:
+`layouts/herramienta.html` define el orden común: título y descripción (área y
+tema ya están en las migas, así que no hay kicker encima del título), entrada,
+acción principal, resultado, explicación, herramientas relacionadas y «También
+puedes explorar». Cada bloque es opcional:
 
 ```django
 {% extends "calculadora/layouts/herramienta.html" %}
@@ -179,7 +246,7 @@ herramientas relacionadas y «También puedes explorar». Cada bloque es opciona
 
 Tras resolver, todas las herramientas con resultado (Reducción por filas,
 Operaciones con vectores, Operaciones con matrices,
-Resolver Ax = b, Conversión de bases y Conversión de números romanos) siguen
+Resolver Ax = b, Matriz inversa, Conversión de bases y Conversión de números romanos) siguen
 un mismo patrón dentro de `section#resultado`:
 
 ```html
@@ -205,10 +272,40 @@ procedimiento. Al comparar métodos, cada uno es un sub-bloque cerrado
 (`disclosure-nested`) y el resultado común aparece una vez. Inicio conserva su
 presentación. No se guardan preferencias de apertura.
 
+Mientras está abierto, solo el `summary` principal del procedimiento permanece
+sticky bajo la cabecera, con fondo sólido y foco visible. Los disclosures
+anidados conservan su posición. Plegarlo desde abajo acerca el bloque cerrado
+y el Resultado, sin animar el salto ni interferir con el teclado contextual.
+
+P27.6 declara `data-entrada-calculo` en el formulario y
+`data-resultado="vigente"` en el resultado de un POST válido. `resultado.js`
+compara los datos enviados al cálculo cuando recibe `input`, `change` o
+`entrada-cambiada` (cambios estructurales hechos con JS). La primera modificación
+cambia a `desactualizado` y añade una única nota `role="status"`: «Cambiaste los
+datos. Este resultado corresponde a la entrada anterior. Vuelve a calcular para
+actualizarlo». El contenido sigue legible, seleccionable y desplazable; el panel
+final usa un borde secundario discontinuo. Ediciones posteriores no vuelven a
+anunciarlo y el siguiente POST válido entrega un documento vigente.
+
+Números, matrices, vectores, expresiones, operación, método, dimensiones y
+opciones que cambian el cálculo o el procedimiento sí lo desactualizan.
+Exacto/Decimal y precisión son presentación fuera del formulario; tema, Menú,
+foco, apertura de Opciones/procedimiento y teclado sin insertar datos tampoco
+lo desactualizan. CSRF y la firma de confirmación no son entrada matemática.
+No se detecta la vuelta exacta A → B → A. `feedback.js` sigue siendo el único
+responsable de busy, foco de errores y confirmaciones; en `pageshow` restaura
+la espera. Menú, tema y formato numérico tienen su propio `pageshow`,
+independiente e idempotente (ver [Escritorio](#escritorio)).
+
 `components/related_tools.html` muestra las relacionadas como enlaces
 discretos después de resolver y no aparece cuando la herramienta no declara
 ninguna o ya se muestran exploraciones contextuales. Así se evita duplicar
-los destinos. Las relaciones se declaran en el catálogo. Las
+los destinos. Reutiliza la sección y el título de `components/explore.html`:
+ambas dicen «También puedes explorar», sin puntos suspensivos. Cada enlace muestra nombre e `invitacion`: una frase breve que
+explica cuándo usar esa alternativa. Reducción orienta desde el sistema escrito
+o la matriz aumentada; Ax = b desde A y b conocidos. Operaciones con matrices
+también enlaza a Matriz inversa; Ax = b no propone resolver por inversión.
+Las relaciones se declaran en el catálogo. Las
 relaciones se reservan para módulos realmente distintos: las variantes de un
 mismo problema (método, bloques del resultado) son opciones del formulario.
 
@@ -218,33 +315,49 @@ Son enlaces a rutas que ya existen; ningún destino se inventa.
 
 ### Desplegables
 
-Las opciones avanzadas viven en `details.disclosure` con un `summary` real
-(icono, título y chevrón): funcionan sin JavaScript, se abren con Enter o
-Espacio y anuncian su estado. Los controles plegados siguen formando parte
-del formulario, así que sus valores viajan igual en el envío.
-
-Para los bloques plegables del resultado existe el componente
+Todo bloque plegable de una herramienta —opciones, ayuda, aplicaciones,
+procedimiento, sub-bloques y grupos de un producto— usa el componente
 `{% disclosure %}` (`templatetags/componentes.py`, que renderiza
-`components/disclosure.html`):
+`components/disclosure.html`); las plantillas de `modules/` no escriben
+`<details>` a mano. Solo la navegación (Menú e Inicio por temas) conserva sus
+propios `details`, con el chevrón a la derecha de cada fila.
 
 ```django
 {% load componentes %}
-{% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+{% disclosure titulo="Opciones de resultado" id="opciones-resultado" abierto=opciones_abiertas icono="opciones" %}
     …contenido…
 {% enddisclosure %}
 ```
 
-Acepta `nivel=4` (título como `h4`, para sub-bloques), `clase` y `abierto`.
-El título va dentro del `summary` como encabezado real, así que la
-jerarquía h2 → h3 → h4 se conserva y no hay botones dentro del `summary`.
+- El título va dentro del `summary` como encabezado real: h3 por defecto y
+  `nivel=4`, `5` o `6` en sub-bloques y grupos, así que la jerarquía se conserva y
+  no hay botones dentro del `summary`.
+- El chevrón va siempre primero, con el mismo tamaño y color, y gira al abrir.
+- `icono="opciones"` añade el engranaje solo a las opciones de configuración
+  («Opciones de resultado», «Opciones del procedimiento»).
+- `detalle` añade un resumen secundario: los grupos por fila o columna de AB y Ax
+  muestran, por ejemplo, `c₁₁ = 3, c₁₂ = 6`.
+- `clase` elige la variante: `disclosure-procedure` (Ver procedimiento),
+  `disclosure-nested` (un método al comparar) y `procedure-group` (grupos de un
+  producto, abiertos solo cuando el resultado es pequeño). `abierto` decide el
+  estado inicial, como antes.
+- Hover común (un matiz de `--color-text` sobre cualquier fondo, también sobre el
+  summary sticky), foco visible y al menos 2.5rem de alto. Solo el summary
+  principal del procedimiento abierto es sticky.
+
+Funcionan sin JavaScript, se abren con Enter o Espacio y anuncian su estado. Los
+controles plegados siguen formando parte del formulario, así que sus valores viajan
+igual en el envío.
 
 ### Divulgación progresiva en Reducción por filas
 
 La jerarquía del formulario es: Método y Tipo de entrada como selectores
 segmentados (`.segmented`, radios reales, una sola selección) con una pista
 de una línea para la opción elegida (`data-method-hint`, `data-input-hint`;
-`matriz.js` cambia la visible), el problema (texto o cuadrícula), el teclado
-plegado, «Opciones de resultado» plegadas y Resolver. Las opciones conservan
+`matriz.js` cambia la visible), el problema (el campo «Ecuaciones» —la opción
+ya dice «Sistema de ecuaciones»— o la cuadrícula, a 1rem de las pistas),
+«Opciones de resultado» plegadas y Resolver. El teclado aparece al enfocar
+una entrada compatible y desaparece al salir. Las opciones conservan
 sus casillas y predeterminados (todo activo) y se despliegan solas cuando lo
 elegido difiere de lo predeterminado (`opciones_abiertas`).
 
@@ -255,8 +368,12 @@ matriz inicial, las operaciones por filas (`_procedimiento_metodo.html` con
 `_pasos.html`), la matriz final con sus pivotes, el sistema resultante y la
 sustitución regresiva (`_bloques_metodo.html`); al comparar, un sub-bloque
 cerrado por método y la matriz inicial una vez. Después, el panel
-«Resultado final» muestra la clasificación, la solución y las columnas pivote
-(`_pivotes.html`, la lectura directa de la matriz final). Si «Procedimiento»
+«Resultado» muestra la clasificación, la solución y las columnas pivote
+(`_pivotes.html`, la lectura directa de la matriz final). Su leyenda nombra el
+bloque donde se resaltan («Los pivotes se resaltan en la matriz reducida del
+procedimiento.»): matriz escalonada, reducida o ambas al comparar, y «del
+procedimiento» solo cuando la matriz está dentro del desplegable. Sin
+procedimiento ni comparación, la cabecera del resultado no lleva kicker. Si «Procedimiento»
 está desmarcado no hay desplegable y la matriz final se muestra en el panel
 final, para que siga visible sin repetirse; al comparar, cada matriz final y
 sistema resultante nombran su método («Matriz escalonada · Gauss»).
@@ -281,24 +398,37 @@ herramienta incluye **una sola instancia** del componente dentro del formulario:
 
 Los campos heredan `data-perfil` de su contenedor más cercano. En Sistemas,
 `system-fields` declara `sistema` y `matrix-fields` declara `numerico`; el
-teclado queda fuera de ambos fieldsets para poder alternarlos. Matrices,
-Vectores y Ax = b comparten `numerico` (`−`, `a⁄b`). El componente publica los
+teclado queda fuera de ambos fieldsets para poder alternarlos. Celdas de matrices,
+vectores numéricos y Ax = b comparten `numerico` (`−`, `a⁄b`). En Operaciones,
+la expresión usa `expresion` (`( )`, `ᵀ`, `+`, `−`, `=`, `a⁄b`) y las componentes
+de vectores lineales usan `lineal` (x₁…x₆, `+`, `−`, `a⁄b`). Los nombres de
+símbolos y los números romanos no tienen teclado matemático. `sistema` ofrece
+x₁…x₆ y «Nueva ecuación» inserta solo un salto de línea. El componente publica los
 perfiles con `json_script`; sus plantillas HTML inertes generan grupos y botones
 con nombres accesibles y `type="button"`.
 
-`teclado.js` no conoce herramientas ni sintaxis matemática. Delega `focusin`
-en el formulario, conserva el último objetivo válido y observa cambios de
-perfil, estructura, visibilidad o disponibilidad. Las celdas regeneradas heredan
-su perfil; los campos eliminados, ocultos, deshabilitados o de solo lectura no
-reciben inserciones. `setRangeText` respeta cursor y selección; `retroceso`
-recoloca el cursor, se devuelve el foco y se emite un único evento `input`
-que burbujea. No se intercepta la escritura física.
+`teclado.js` no conoce herramientas ni sintaxis matemática. Delega el foco en
+el documento: solo el campo compatible activo puede ser objetivo; no existe
+fallback al primer campo ni se conserva el destino al pasar a otro control.
+Las celdas regeneradas heredan su perfil; un observador invalida campos eliminados,
+ocultos, deshabilitados o de solo lectura y actualiza cambios de perfil.
+`mousedown` de las teclas conserva el foco del campo. `execCommand("insertText")`
+respeta cursor, selección y Ctrl+Z en Chromium; reafirmar la selección antes y
+después separa esta edición de la escritura física. `setRangeText` es el fallback
+de inserción si no está disponible (sin garantía de undo en ese navegador).
+`retroceso` recoloca el cursor y se emite un único `input`. Las teclas usan
+`tabindex="-1"` y nombres accesibles que comienzan con su etiqueta visible.
+Escape oculta sin editar; el teclado físico siempre sigue disponible.
 
-El teclado sigue plegado bajo «Teclado matemático»; tanto el desplegable como
-el teclado nacen con `hidden` y solo se muestran si hay JavaScript y un campo
-válido. Sin JavaScript los formularios y sus POST mantienen el comportamiento
-anterior. Añadir un perfil consiste en registrarlo, publicarlo desde la vista
-y declararlo en los campos, sin modificar el motor. No registres teclas sin
+El dock nace con `hidden`, sin botón de apertura, y aparece al enfocar una
+entrada compatible. Se oculta al pasar a Opciones, Calcular, Menú, Tema u otro
+control. Entre entradas compatibles permanece visible y adapta su perfil.
+Es fijo, alineado con la columna principal y debajo de la cabecera y del menú.
+La reserva estable al final y `scroll-padding` evitan tapar el campo o mover
+Calcular al ocultarlo. Con altura ≤640 px usa una fila compacta; los símbolos
+que no caben se desplazan dentro del dock. Sin JavaScript no se ve el teclado
+y los formularios siguen funcionando. Añadir un perfil consiste en registrarlo,
+publicarlo desde la vista y declararlo en los campos, sin modificar el motor. No registres teclas sin
 una inserción real detrás.
 
 Los controles que cambian la estructura de una entrada (agregar o quitar
@@ -311,17 +441,32 @@ el teclado ni con la acción principal.
 
 `components/vector.html` escribe un vector en horizontal, `(1, 2, 3)`, como
 texto corriente con paréntesis propios: se parte en varias líneas si hace
-falta y nunca provoca scroll horizontal. Acepta `nombre` («u =») y
+falta y nunca provoca scroll horizontal. Acepta `nombre` («v1 =») y
 `destacado` para el resultado.
 
 La entrada de Operaciones con vectores es una fila por vector,
-`u = ( [ ] [ ] [ ] )`, con una celda `nombre_i` por componente
+`v1 = ( [ ] [ ] [ ] )`, con una celda `nombre_i` por componente
 (`modules/vectores/_fila.html`). La dimensión `n` y la cantidad de vectores
 generadores son campos numéricos con botones +/−; `vectores.js` redibuja las
 filas con el mismo marcado del parcial y conserva lo escrito. Sin JavaScript,
 el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructura
 sin calcular. `vector-fields` declara `data-perfil="numerico"`, compartido
 con las celdas de matrices y Ax = b, incluido el escalar cuando está presente.
+
+Los vectores se llaman `v1`, `v2`, … en todas las operaciones (`k·v1` en la
+multiplicación por escalar; `v1 … vk` y `b` en la combinación): agregar uno
+nunca renombra a los anteriores y la memoria por nombre conserva los valores
+al cambiar de operación. La cabecera del resultado es solo su título: un
+kicker con el nombre de la operación lo repetiría.
+
+La lista de vectores se desplaza horizontalmente como una unidad: nombres y
+componentes de cada columna permanecen alineados, también con valores de distinto
+ancho. El × pertenece a su fila y queda después de la última componente; bajo
+760 px caben tres componentes junto a él. **Agregar
+vector** lleva el foco a la primera componente del nuevo; quitar uno lo lleva a la
+fila que ocupa su lugar o, si era el último, a la anterior. Un `role="status"` bajo
+Agregar dice «Se agregó el vector v3.» o «Se eliminó el vector v3.»; los botones ±
+de la cantidad también avisan, sin mover el foco.
 
 ## Operaciones con matrices
 
@@ -343,6 +488,18 @@ propone nombres libres (A … Z, después A1, B1 …) y mueve el foco con las fl
 dentro de la cuadrícula de cada símbolo. El contrato HTTP es estricto: el
 servidor reconstruye el conjunto exacto de campos de la estructura declarada y
 rechaza celdas de más, de menos, campos desconocidos o repetidos.
+
+Cada símbolo es un `fieldset` con nombre accesible («Símbolo A»): Nombre y Tipo
+arriba y, juntas, Filas y Columnas con **Eliminar** a la derecha, lejos de sus + y
+−. Los botones dicen a qué símbolo pertenecen («Eliminar símbolo A», «Agregar una
+fila a A», «Quitar una componente de u»): el servidor los escribe
+(`rotulos_dimension`) y `expresiones.js` los actualiza al renombrar. En escritorio
+van dos tarjetas por fila y una matriz de seis columnas o más ocupa la fila entera;
+el orden del DOM y de Tab no cambia. Al agregar, el foco va al nombre del símbolo
+nuevo; al eliminar, al nombre del siguiente, al del anterior o a **Agregar
+símbolo**, y la región `role="status"` dice «Se agregó el símbolo C.» o «Se eliminó
+el símbolo B.». La expresión mide las dos líneas de `rows`, sin la altura mínima del
+área de texto de sistemas.
 
 Bajo la expresión, una ayuda breve con ejemplos (`A + B`, `2A - B`, `AB`, `Ax`,
 `A(B + C)`, `Aᵀ`, también `A^T`) y un desplegable «Cómo se escribe» con la
@@ -394,8 +551,30 @@ nombres de las lecturas y sus identificadores compartidos entre `AB` y `Ax`.
 inversa) representan cuadrículas editables; `components/matriz.html` muestra
 valores o expresiones con corchetes, sin columna aumentada por defecto, y con
 una sola columna dibuja un vector columna. `matrix.html` es el adaptador de
-sistemas con `aumentada=True`. Cada cuadrícula y cadena ancha tiene scroll local
-accesible con teclado.
+sistemas con `aumentada=True`.
+
+Las celdas editables (`.matrix-input`) crecen con su valor (`field-sizing:
+content`) entre `--celda-min` (4.25rem; bajo 760 px, 3rem en Ax = b y 3.2rem en
+Vectores) y 7rem (18rem en un vector lineal): `-11/13`, `123/456` o `3.14159` se
+leen completos mientras se editan. En tablas y en la cuadrícula aumentada la
+columna toma el ancho de su valor más largo, así que sus celdas siguen alineadas,
+y la cuadrícula se desplaza en lugar de comprimirse. Más allá del máximo, el input
+conserva cursor y desplazamiento. Sin soporte de `field-sizing` queda el ancho fijo. `.matrix-scroll` contiene `.matrix-content` con
+ambos corchetes y todas las columnas. `.matrix-equation` permite wrap sin crear
+otro scroll alrededor de la misma matriz; los hijos flex/grid pueden reducirse
+con `min-width: 0` y columnas `minmax(0, 1fr)`. Las notas largas envuelven texto,
+sin ocultar overflow de la página.
+
+Los pares Antes → Después usan flex con wrap. `presentacion.js` mide el ancho
+natural de ambas matrices y la transición: conserva la fila si cabe y coloca
+la flecha hacia abajo en su propia fila cuando deben apilarse. No depende del
+orden de la matriz ni de un breakpoint específico.
+
+El mismo script observa tamaño/contenido y reevalúa al cargar, redimensionar,
+abrir disclosures o cambiar la presentación numérica. Añade `tabindex="0"`
+solo a salidas con `scrollWidth > clientWidth + 1`, con nombre accesible y anillo
+normal de foco; lo retira al dejar de desbordar. Las entradas se recorren por sus
+inputs, nunca por sus contenedores. Sin JS el HTML no añade paradas Tab mudas.
 
 `/matrices/expresiones/` es solo compatibilidad: GET 301 y POST 308 hacia
 `/matrices/operaciones/`, sin plantilla ni tarjeta propias.
@@ -448,10 +627,24 @@ servidor también lo desactiva y rechaza un envío manipulado). Los nombres de
 los métodos no llevan fórmulas; la regla `ad − bc` solo aparece dentro del
 procedimiento.
 
+En **Aplicaciones y propiedades** (`{% disclosure %}` con `id="aplicaciones"`),
+cada opción dice antes de elegirla qué calcula o comprueba —«Comprueba (AB)⁻¹ =
+B⁻¹A⁻¹.», «Calcula x = A⁻¹b y comprueba Ax = b.»— en una línea secundaria junto a
+su radio, que la describe con `aria-describedby` (`AYUDAS_FUNCIONES` en
+`servicios_inversa.py`, `RadiosConAyuda` en `forms_inversa.py`). Los algoritmos,
+las opciones y la verificación no cambian.
+
 El procedimiento de Gauss-Jordan reutiliza `modules/sistemas/_pasos.html` con
 `columnas_izquierda = n`, así que el separador de `[A | I]` se ve en todas las
 matrices. El resultado (`A⁻¹ =` o «La matriz no tiene inversa.») va al final y
 usa Exacto / Decimal.
+
+Si se solicitó Verificar, Resultado añade la conclusión breve de la
+comprobación real del servicio: `A·A⁻¹ = A⁻¹·A = I ✓` solo cuando ambos
+productos son identidad. Si falla un producto se indica `≠ I`; si A no es
+invertible se indica que la verificación no está disponible. Los productos
+completos siguen dentro del procedimiento. También funciona con la regla 2×2
+y las aplicaciones adicionales, sin recalcular ni duplicar matrices.
 
 Cuando la estimación es pesada, el formulario muestra arriba un aviso
 (`_confirmacion.html`, `.confirmation`) en tonos neutros con acento verde,
@@ -464,7 +657,8 @@ aviso. Consulta [Matriz inversa](matriz-inversa.md#presupuesto-y-confirmación).
 ## Conversión de bases
 
 `/bases/conversion/` (`ConversionBasesForm`, `servicios_bases.py`,
-`modules/bases/`) pide el número, una única base de origen (`<select>`) y las
+`modules/bases/`) pide primero la base de origen (`<select>`), que decide qué
+dígitos valen, el teclado y la validación en vivo; después el número y las
 bases de destino bajo **Convertir a**: un `fieldset` con `legend` y una casilla
 real por base, descrito por su ayuda y sus errores (`aria-describedby`).
 `conversion.js` oculta y desactiva la casilla de la base de origen al cargar y
@@ -492,12 +686,20 @@ el origen; recibe nombres, perfiles y dígitos en `bases-digitos`, derivados
 del mismo registro. No contiene otra tabla de dígitos ni manipula teclados.
 La selección multidestino de P16 mantiene sus controles y su contrato POST.
 
+La expectativa histórica del runner DOM que comprobaba solo `01` se corrigió
+en P27.3: el contrato de `base-N` incluye dígitos, punto decimal y signo (`01.-`
+para base 2), como ya comprobaban las pruebas Python y la validación del número.
+
 ## Conversión de números romanos
 
 `/romanos/conversion/` (`ConversionRomanosForm`, `servicios_romanos.py`,
 `modules/romanos/`) pide la dirección con un `.segmented` (Arábigo → romano o
 Romano → arábigo) y un único campo de hasta 15 caracteres, descrito por su
-ayuda (`aria-describedby`). No tiene teclado matemático ni selector Exacto /
+ayuda (`aria-describedby`). Etiqueta (**Número arábigo** o **Número romano**)
+y ayuda tienen un `span[data-direccion]` por dirección y el CSS (`:has`)
+muestra el de la dirección marcada, también sin JavaScript. Si lo escrito
+solo se convierte en la otra dirección, el error lo sugiere
+(`sugerir_direccion`); si no vale en ninguna, queda el mensaje original. No tiene teclado matemático ni selector Exacto /
 Decimal: trabaja con enteros y símbolos romanos, y no necesita JavaScript.
 Los valores enviados (`decimal_a_romano` y `romano_a_decimal`) llevan el
 nombre de las funciones del backend; lo que se lee siempre es «arábigo».
@@ -529,7 +731,10 @@ No agregues enlaces a pantallas que todavía no existen.
 ## Formato exacto y decimal
 
 Sistemas, Vectores (incluida combinación lineal), Matrices (incluidos AB y Ax),
-Ax=b y Matriz inversa ofrecen un selector discreto junto al resultado. Exacto es el valor
+Ax=b y Matriz inversa ofrecen un selector discreto junto al resultado cuando al
+menos un texto numérico del bloque tiene representaciones distintas. En salidas
+enteras o textuales sin variantes permanece oculto y la preferencia global se conserva.
+Exacto es el valor
 predeterminado y el contenido del HTML sin JavaScript. Decimal permite elegir
 un máximo de 2, 4, 6 u 8 decimales; el valor inicial es 4. Se recortan ceros
 finales: `7/2` → `3.5`, `4` → `4`, `1/3` → `0.3333`.
@@ -549,8 +754,107 @@ usan `≈`; para matrices y cadenas repartidas en celdas, una nota de grupo
 informa la precisión únicamente cuando existe aproximación.
 
 Se guardan `pygebra-formato-numerico` y `pygebra-precision-decimal` en
-`localStorage`, sin cookies ni estado de negocio. Si falla el almacenamiento,
+`localStorage`, sin cookies ni estado de negocio; en escritorio también entre
+aperturas. Al cargar y al restaurar del historial, `numeros.js` aplica la
+preferencia vigente sin recalcular, sin `input`/`change` (el resultado no queda
+desactualizado) y sin repetir el aviso si no cambió. Los dos selectores llevan
+`autocomplete="off"` para que volver con el historial no restaure un valor
+antiguo. Si falla el almacenamiento,
 se parte de Exacto y se pueden cambiar los controles durante esa visita.
 Sin JavaScript los controles permanecen ocultos y la matemática exacta
 continúa visible. Conversión de bases conserva su significado y no incluye
 este selector. Los algoritmos y sus resultados `Fraction` no cambian.
+
+## Escritorio
+
+La app de escritorio muestra esta misma interfaz en WebView2, sin barra de
+navegador. Django publica una única señal declarativa, `<html data-desktop>`,
+solo con `DESKTOP_MODE`; la web normal no la recibe y conserva el
+comportamiento de su navegador.
+
+- **Historial.** No hay botones Atrás/Adelante ni barra de direcciones: la
+  navegación visible siguen siendo migas, Menú, buscador y relacionadas. Los
+  botones laterales del ratón los atiende WebView2. `navigation.js` añade
+  Alt+← (`history.back()`) y Alt+→ (`history.forward()`) solo con
+  `data-desktop` y sin pila propia; ignora Ctrl, Shift, AltGr (Ctrl+Alt),
+  composición IME y eventos ya atendidos. Las cuadrículas dejan Alt+flecha al
+  historial; Ctrl+←/→ y las flechas sin modificador no cambian.
+- **Volver con el historial.** WebView2 no usa bfcache: volver recarga la
+  página desde su caché, también un resultado POST, sin pedir reenvío. Los
+  formularios de cálculo llevan `autocomplete="off"`: al volver muestran los
+  datos que produjeron el resultado, no ediciones posteriores que lo dejarían
+  vigente por error. En navegadores con bfcache, `pageshow` restaura Menú, tema
+  y formato numérico (secciones anteriores).
+- **Preferencias.** Entre aperturas solo se conservan `pygebra-tema`,
+  `pygebra-formato-numerico` y `pygebra-precision-decimal`. WebView2 corre en
+  modo privado y Django las guarda en `%LOCALAPPDATA%\PyGebra\preferencias.json`
+  (`POST /preferencias/` con CSRF, lista blanca de claves y valores, escritura
+  atómica) y las pinta como `data-pygebra-…` en `<html>`. Durante la ejecución
+  manda `localStorage`. No se guardan URL, herramienta, formularios, matrices,
+  resultados, procedimientos, scroll, foco, Menú ni historial: cada arranque
+  abre Inicio con el cajón cerrado.
+- **Clic derecho.** El menú nativo de WebView2 se filtra a Cortar, Copiar,
+  Pegar y Seleccionar todo (sin Imprimir, Emoji ni «Más herramientas»); sin
+  acciones de edición no aparece. Es edición real del navegador: los eventos
+  `input`, deshacer y el aviso de resultado desactualizado funcionan, y el foco
+  no sale del campo, así que el teclado matemático sigue abierto. En la web no
+  se sustituye el menú del navegador.
+- **Atajos del navegador.** Siguen desactivados (F5, Ctrl+R, Ctrl+P, Ctrl+F,
+  F12 y DevTools). `ALGEBRA_DESKTOP_DEBUG=1` devuelve los de pywebview, con su
+  menú completo, solo para diagnóstico.
+
+### Páginas de error
+
+`templates/404.html` reutiliza la interfaz normal: Menú y buscador ayudan a
+encontrar la herramienta. `400.html`, `403.html`, `403_csrf.html` y `500.html`
+extienden `calculadora/errores/base.html`: marca PyGebra, mensaje breve e
+«Ir al inicio» hacia la raíz `/`, sin catálogo, `reverse()` ni JavaScript, porque
+Django renderiza el 500 sin request. Nunca muestran traceback, motivo técnico
+ni datos del error. Django solo las usa con `DEBUG=False`, siempre en escritorio.
+
+## Entrada y edición de datos (P27.9)
+
+`entradas.js` atiende el evento `paste`, tanto de Ctrl+V como del menú contextual,
+con tres adaptaciones pequeñas al DOM existente: tablas editables, matriz
+aumentada y filas de vectores. Solo usa `text/plain`: TAB separa columnas y LF
+o CRLF separan filas. Ignora las líneas vacías de los extremos (la terminación de
+una hoja de cálculo o un salto de más al copiar un resultado); una línea vacía
+interior sigue siendo una fila y se valida igual. Conserva celdas vacías y
+espacios internos, recortando únicamente los extremos. Las comas
+permanecen dentro del valor. Una sola celda conserva el paste nativo.
+
+- **Destino.** Reducción por filas [A | b]; A y b de Ax=b; A y B/b opcionales de
+  Inversa; matrices y vectores editables de Operaciones; componentes de Vectores.
+  Cada tabla se limita a su símbolo. En Vectores, filas = vectores visibles y
+  columnas = componentes: una columna pegada recorre vectores, una fila recorre
+  componentes. No incluye el escalar k, resultados, procedimiento ni incógnitas.
+- **Todo o nada.** Antes de escribir comprueba que el bloque sea rectangular,
+  que quepa completo desde la celda inicial, que todos los destinos sean editables
+  y que ningún valor exceda su `maxlength`. Si falla, conserva todas las entradas
+  y anuncia el motivo; no redimensiona ni hace pegados parciales.
+- **Estado y foco.** Aplica todos los valores antes de emitir un `input` por celda.
+  Reutiliza `resultado.js` para stale, conservando el resultado previo y el teclado
+  contextual. Mantiene el foco inicial. Reutiliza el status de símbolos/vectores
+  o crea un `role=status` en el formulario: «Se pegaron N valores.» No calcula,
+  envía, interpreta HTML ni valida aritmética. Los límites numéricos existentes
+  siguen en el servidor; el límite de 200 caracteres de componentes lineales se
+  conserva también después de reconstruirlas.
+- **Matriz aumentada lista.** La primera elección propone 3 ecuaciones × 3
+  variables: 3 filas con 3 coeficientes y b, visualmente 3×4. Las dimensiones
+  explícitas, valores y errores POST prevalecen. Alternar con texto conserva la
+  memoria durante la página, sin almacenamiento entre herramientas/sesiones.
+  Sin JS, Reducción mantiene el fallback textual; las demás herramientas mantienen
+  Aplicar/POST.
+- **Flechas.** Las cinco cuadrículas comparten la guarda de edición: ← navega
+  solo en posición 0 y → solo al final, sin selección. Modificadores, AltGr,
+  composición y eventos ya atendidos conservan el comportamiento nativo;
+  Alt+←/→ sigue disponible para el historial desktop. ↑/↓ conservan sus destinos.
+- **Forma libre.** La ayuda asociada mediante `aria-describedby` explica x1,
+  x2, … con x minúscula, enteros/fracciones/punto decimal y ecuaciones separadas
+  por `;` o saltos de línea. Advierte sobre x/y/z, X1, coma decimal y `;` final
+  vacío. Ejemplo: `2x1 - x2 = 3; x1 + 4x2 = 7`. El placeholder anterior es válido
+  y se conserva, sin `;` al final del sistema.
+
+Sin transferencia automática (UI-74), CSV/Excel, drag & drop ni gestor de undo.
+El undo de una sola celda queda al navegador; no se promete undo atómico de bloques.
+Evidencia y límites en [validación P27.9](validacion-p27-9.md).

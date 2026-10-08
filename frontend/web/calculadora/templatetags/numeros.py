@@ -6,6 +6,7 @@ interpreta markup de usuario, ni se sustituyen atributos técnicos o enlaces.
 """
 
 import json
+import re
 from html.parser import HTMLParser
 
 from django import template
@@ -13,8 +14,18 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from ..presentacion_numerica import PRECISIONES, representar_texto
+from ..servicios_matrices import SUBINDICES
 
 register = template.Library()
+
+# x1 es la sintaxis que se escribe; x₁, la notación del resultado. Los servicios conservan x1.
+_INCOGNITA = re.compile(r"(?<![A-Za-z])x([0-9]+)")
+
+
+@register.filter
+def incognitas(texto):
+    """«2x1 - x2 = 3» → «2x₁ - x₂ = 3». Solo para salida matemática, nunca para ayudas de sintaxis."""
+    return _INCOGNITA.sub(lambda m: "x" + m[1].translate(SUBINDICES), str(texto))
 
 
 def variantes(texto):

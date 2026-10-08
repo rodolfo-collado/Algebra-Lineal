@@ -51,10 +51,17 @@ el Inicio, los breadcrumbs y las herramientas relacionadas derivan de ahí:
 `context_processors.navegacion` identifica la herramienta activa a partir de la
 ruta resuelta, así que las vistas no arman la navegación a mano.
 
+P27.5 publica `datos_buscador()` con `json_script`: índice, nombre normalizado,
+estado y orden de todas las herramientas, palabras vacías y separador de términos.
+El cliente deriva sus coincidencias de esos datos; no tiene otro catálogo.
+GET y live exigen todos los términos significativos y ordenan por disponibilidad,
+aciertos en el nombre y posición del registro. `tests.buscador_browser` compara
+los IDs del JS real con `buscar_herramientas()` para una tabla generada en Python.
+
 El catálogo permite sumar áreas sin rehacer la navegación. Los módulos marcados
 «Próximamente» no se enlazan como herramientas disponibles.
 
-P26.5 sitúa **Reducción por filas** en **Álgebra Lineal → Matrices**, con ID
+P26.5 sitúa **Reducción por filas** en **Álgebra lineal → Matrices**, con ID
 `reduccion-filas`, ruta `/matrices/reduccion/` y nombre Django
 `calculadora:reduccion-filas`. La categoría pública Sistemas de ecuaciones se
 retira del registro; Inicio, menú, buscador y breadcrumbs cambian juntos.
@@ -132,6 +139,24 @@ la aplicación en un puerto efímero de `127.0.0.1`; el launcher comprueba
 `HTTP GET /` antes de crear la ventana pywebview. Al cerrarla llama a
 `server.close()` y espera el thread de Waitress. El launcher no contiene lógica
 matemática y no usa `runserver` ni abre un navegador externo.
+
+```text
+desktop.py ─ Django (DESKTOP_MODE, DEBUG=False) ─ Waitress 127.0.0.1:<efímero>
+    └─ pywebview/WebView2 (modo privado) ── carga http://127.0.0.1:<puerto>/
+            └─ POST /preferencias/ ─ Django ─ %LOCALAPPDATA%\PyGebra\preferencias.json
+```
+
+WebView2 corre en modo privado: su perfil (historial, caché, formularios,
+autocompletado) se descarta al cerrar. Las únicas preferencias que sobreviven
+—tema, Exacto/Decimal y precisión— las escribe Django en un archivo propio que
+fija `desktop.preferences_path()`; como no dependen del origen, el puerto puede
+seguir siendo efímero y una segunda instancia comparte las mismas preferencias.
+La ventana abre maximizada y, al restaurarla, cabe en el área útil del monitor
+principal. El launcher también deja el menú contextual nativo solo con las
+acciones de edición mediante `ContextMenuRequested` de WebView2, al que llega por
+`window.native.webview` (atributo interno de pywebview: si cambia, la ventana
+queda sin menú, como antes). Los detalles de interfaz están en
+[Interfaz · Escritorio](interfaz.md#escritorio).
 
 PyInstaller reúne el runtime Python y los recursos; Inno Setup transforma esa
 carpeta en el instalador de Windows. El build obtiene la versión únicamente de

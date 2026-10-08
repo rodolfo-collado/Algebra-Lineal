@@ -1,4 +1,4 @@
-"""Divulgación progresiva: Inicio por temas, menú bajo demanda, teclado y opciones plegados,
+"""Divulgación progresiva: Inicio por temas, menú bajo demanda, teclado contextual y opciones plegadas,
 procedimiento plegable antes del resultado (P18, P25.1) y conexiones «También puedes explorar». Contratos HTML, POST y de
 los scripts locales, sin depender de clases decorativas."""
 
@@ -219,11 +219,14 @@ class PruebasInicioPorTemas(SimpleTestCase):
             with self.subTest(categoria=categoria.id):
                 tema = desplegables.por_id(categoria.id)
                 self.assertIn("topic", tema["clases"])
-                self.assertFalse(tema["open"])
+                # UI-21: un tema con una sola herramienta disponible nace abierto; los demás, plegados.
+                self.assertEqual(tema["open"], categoria.herramienta_unica)
                 self.assertIn(categoria.nombre, tema["summary"])
                 self.assertIn(categoria.descripcion, tema["summary"])
                 if not categoria.disponible:
                     self.assertIn("Próximamente", tema["summary"])
+        abiertos = [c.id for c in catalogo.CATEGORIAS if c.area.disponible and desplegables.por_id(c.id)["open"]]
+        self.assertEqual(abiertos, ["vectores", "bases-numericas", "numeracion-romana"])
         # Todas las áreas disponibles empiezan cerradas, independientemente de su orden.
         for area in catalogo.AREAS:
             if area.disponible:
@@ -231,7 +234,8 @@ class PruebasInicioPorTemas(SimpleTestCase):
                 self.assertFalse(grupo["open"])
                 self.assertIn(area.nombre, grupo["summary"])
             else:
-                self.assertNotIn(area.id, [d["id"] for d in desplegables.details])
+                # P27.5 conserva el universo completo para live, ocultando las áreas próximas.
+                self.assertIn("hidden", Documento(respuesta).grupos[area.id])
         # Cada herramienta se descubre dentro de su tema, una sola vez.
         for herramienta in disponibles():
             inicio_tema = html.index(f'id="{herramienta.categoria.id}"')
@@ -288,15 +292,12 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         for ausente in ("Configuración de entrada", ">Datos<", "<h3"):
             self.assertNotIn(ausente, formulario)
 
-    def test_el_teclado_nace_plegado_y_conserva_sus_teclas(self):
+    def test_el_teclado_nace_oculto_sin_desplegable_y_conserva_sus_teclas(self):
         html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         desplegables = Desplegables(html)
         teclados = desplegables.con_clase("disclosure-keyboard")
-        self.assertEqual(len(teclados), 1)
-        for teclado in teclados:
-            self.assertFalse(teclado["open"])
-            self.assertTrue(teclado["hidden"])
-            self.assertEqual(teclado["summary"].strip(), "Teclado matemático")
+        self.assertEqual(teclados, [])
+        self.assertIn("hidden", Pagina(html).teclados[0])
         # El registro conserva las inserciones y los nombres para generar los botones.
         perfiles = Pagina(html).perfiles_publicados
         self.assertEqual(set(perfiles), {"sistema", "numerico"})
@@ -305,21 +306,21 @@ class PruebasFormularioProgresivo(SimpleTestCase):
                 for tecla in grupo["teclas"]:
                     self.assertTrue(tecla["insercion"])
                     self.assertTrue(tecla["nombre"])
-        # teclado.js muestra el desplegable (cerrado) y mantiene la inserción en el cursor.
+        # El dock depende del foco y mantiene la inserción en el cursor.
         script = (STATIC / "teclado.js").read_text(encoding="utf-8")
-        self.assertIn('teclado.closest("details.disclosure")', script)
-        self.assertIn("desplegable.hidden = !objetivo", script)
+        self.assertNotIn('teclado.closest("details.disclosure")', script)
+        self.assertIn("mostrarDock(Boolean(objetivo))", script)
         self.assertIn("setRangeText", script)
         self.assertNotIn("open = true", script)
 
-    def test_el_teclado_plegado_llega_a_todas_las_herramientas(self):
+    def test_el_teclado_contextual_llega_a_todas_las_herramientas(self):
         for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
-                teclados = Desplegables(html).con_clase("disclosure-keyboard")
+                teclados = Pagina(html).teclados
                 self.assertTrue(teclados)
-                self.assertTrue(all(t["hidden"] and not t["open"] for t in teclados))
-                self.assertNotIn("math-keyboard-title", html)
+                self.assertTrue(all("hidden" in t and "details" not in t["antecesores"] for t in teclados))
+                self.assertIn('<span class="math-keyboard-title">Teclado matemático</span>', html)
 
     def test_las_opciones_de_resultado_nacen_plegadas_con_sus_predeterminados(self):
         html = self.client.get("/matrices/reduccion/").content.decode("utf-8")
@@ -349,7 +350,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         explicito = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": METODO_PREDETERMINADO, "mostrar_definido": "1", "mostrar": TODOS})
         texto = seccion_resultado(respuesta)
         self.assertEqual(texto, seccion_resultado(explicito))
-        for presente in ("Ver procedimiento", "Operaciones por filas", "Clasificación", "Columnas pivote: C1, C2", "x1 = 2", "x2 = 1"):
+        for presente in ("Ver procedimiento", "Operaciones por filas", "Clasificación", "Columnas pivote: C1, C2", "x₁ = 2", "x₂ = 1"):
             self.assertIn(presente, texto)
 
     def test_elegir_cada_metodo_desde_el_selector_envia_su_clave(self):
@@ -368,7 +369,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
     def test_cambiar_el_modo_de_entrada_no_pierde_su_comportamiento(self):
         pagina = self.client.get("/matrices/reduccion/").content.decode("utf-8")
         self.assertRegex(pagina, r'<fieldset id="system-fields" data-perfil="sistema" class="input-mode">')
-        self.assertRegex(pagina, r'<fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="\d+" class="input-mode" hidden disabled>')
+        self.assertRegex(pagina, r'<fieldset id="matrix-fields" data-perfil="numerico" data-max-celdas="\d+" data-ecuaciones-inicial="3" data-variables-inicial="3" class="input-mode" hidden disabled>')
         # El modo matricial sigue enviando sus celdas y resolviendo igual que el texto.
         matriz = self.client.post("/matrices/reduccion/", datos_matriz([[1, 1, 3], [1, -1, 1]], "gauss_jordan"))
         texto = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan"})
@@ -395,14 +396,14 @@ class PruebasFormularioProgresivo(SimpleTestCase):
 
 
 class PruebasProcedimientoPlegable(SimpleTestCase):
-    """Entrada → «Ver procedimiento» (details cerrado) → Resultado final, una sola vez y fuera del details."""
+    """Entrada → «Ver procedimiento» (details cerrado) → Resultado, una sola vez y fuera del details."""
 
     def test_el_procedimiento_plegado_precede_al_resultado(self):
         respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
         orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1", "Matriz reducida",
-                 "Resultado final", "Clasificación", "Consistente de solución única", "Solución x1 = 2 x2 = 1",
+                 "Resultado", "Clasificación", "Consistente de solución única", "Solución x₁ = 2 x₂ = 1",
                  "Columnas pivote:")
         posiciones = []
         for fragmento in orden:
@@ -424,7 +425,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         self.assertNotIn('id="procedimiento"', html)
         self.assertNotIn("Ver procedimiento", html)
         texto = seccion_resultado(respuesta)
-        self.assertIn("Resultado final Clasificación Consistente de solución única Solución x1 = 2 x2 = 1", texto)
+        self.assertIn("Resultado Clasificación Consistente de solución única Solución x₁ = 2 x₂ = 1", texto)
         self.assertEqual(texto.count("Matriz escalonada"), 1)
 
     def test_comparar_pliega_cada_metodo_y_deja_un_resultado_comun(self):
@@ -434,7 +435,7 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         texto = seccion_resultado(respuesta)
         texto = texto[texto.index("Ver procedimiento"):]
         orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas", "Matriz escalonada",
-                 "Gauss-Jordan", "Matriz reducida", "Resultado final", "Clasificación", "Solución x1 = 2 x2 = 1",
+                 "Gauss-Jordan", "Matriz reducida", "Resultado", "Clasificación", "Solución x₁ = 2 x₂ = 1",
                  "Columnas pivote:")
         posiciones = []
         for fragmento in orden:
@@ -552,7 +553,8 @@ class PruebasExplorar(SimpleTestCase):
         html = pagina.content.decode("utf-8")
         self.assertRegex(html, rf'name="metodo" value="{METODO_PREDETERMINADO}"[^>]*checked')
         self.assertRegex(html, r'name="tipo_entrada" value="matriz"[^>]*checked')
-        self.assertNotIn('name="ecuaciones" value="', html)
+        self.assertIn('name="ecuaciones" value="3"', html)
+        self.assertIn('name="variables" value="3"', html)
         self.assertEqual(re.findall(r'name="mostrar" value="([^"]+)"[^>]*checked', html), [])
         self.assertIn('id="matrix-initial-values"', html)
         self.assertEqual(SistemaForm.inicial_desde(QueryDict("ecuaciones=0&variables=3&metodo=gauss")), {"metodo": "gauss", "variables": 3})

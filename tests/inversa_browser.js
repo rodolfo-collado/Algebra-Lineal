@@ -14,7 +14,7 @@
     const funcion = (w, value) => {
         // Se sigue el recorrido visible: los radios de una sección plegada
         // no son interactuables por teclado ni dejan enfocar sus entradas.
-        if (!q(w, '[data-inverse-function]').open) click(w, '[data-inverse-function] > summary');
+        if (!q(w, '#aplicaciones').open) click(w, '#aplicaciones > summary');
         click(w, `[name="funcion_adicional"][value="${value}"]`);
     };
     const matriz = (w, nombre, valores) => valores.forEach((fila, i) => fila.forEach((v, j) => valor(w, `[name="celda_${nombre}_${i}_${j}"]`, v)));
@@ -93,14 +93,16 @@
             igual([...w.document.querySelectorAll('.panel-final td')].map(td => td.textContent.trim()), ['5', '-3']);
             igual(q(w, '#procedimiento').compareDocumentPosition(q(w, '.panel-final')) & 4, 4);
             valor(w, '[name="celda_b_0_0"]', 4);
-            igual(q(w, '#resultado').hidden, true);
+            igual(q(w, '#resultado').hidden, false);
+            igual(q(w, '#resultado').dataset.resultado, 'desactualizado');
         }],
         ["Cambio de función invalida resultado anterior", {}, async (w, frame) => {
             matriz(w, 'A', [[3, 4], [5, 6]]);
             w = await post(frame);
             igual(q(w, '#resultado').hidden, false);
             funcion(w, 'traspuesta');
-            igual(q(w, '#resultado').hidden, true);
+            igual(q(w, '#resultado').hidden, false);
+            igual(q(w, '#resultado').dataset.resultado, 'desactualizado');
         }],
         ["Sin JS: Aplicar cambia función y tamaño, conserva B y normaliza método", {sinJS: true}, async (w, frame) => {
             igual(q(w, '[data-aplicar]').hidden, false);

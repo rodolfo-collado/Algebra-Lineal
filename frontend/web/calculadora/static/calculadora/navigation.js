@@ -24,15 +24,30 @@
     window.addEventListener("hashchange", revelarDestino);
     revelarDestino();
 
+    // La app de escritorio no tiene barra del navegador: Alt+←/→ recorren el historial
+    // de WebView2 (los botones laterales del ratón ya lo hacen). En la web, el navegador decide.
+    if (root.hasAttribute("data-desktop")) {
+        document.addEventListener("keydown", (event) => {
+            if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
+                event.isComposing || event.defaultPrevented) return;
+            if (event.key === "ArrowLeft") history.back();
+            else if (event.key === "ArrowRight") history.forward();
+            else return;
+            event.preventDefault();
+        });
+    }
+
     if (!button || !sidebar) return;
 
     // La navegación es un cajón sobre el contenido en cualquier tamaño de pantalla:
     // nace cerrado y un solo botón lo abre y lo cierra.
     let abierto = false;
 
+    // Las categorías abiertas se recuerdan durante la ejecución (sessionStorage), nunca
+    // entre aperturas; se retira la copia persistente que guardaban versiones anteriores.
     function leer(clave) {
         try {
-            return localStorage.getItem(clave);
+            return sessionStorage.getItem(clave);
         } catch (error) {
             return null;
         }
@@ -40,10 +55,16 @@
 
     function guardar(clave, valor) {
         try {
-            localStorage.setItem(clave, valor);
+            sessionStorage.setItem(clave, valor);
         } catch (error) {
             // Sin almacenamiento disponible el menú sigue funcionando; solo no recuerda.
         }
+    }
+
+    try {
+        localStorage.removeItem(STORAGE_SECCIONES);
+    } catch (error) {
+        // Sin almacenamiento no hay copia antigua que retirar.
     }
 
     function aplicar() {
@@ -81,7 +102,16 @@
     }
     if (backdrop) backdrop.addEventListener("click", cerrar);
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && abierto) cerrar();
+        if (event.key === "Escape" && abierto && !event.defaultPrevented) cerrar();
+    });
+    // Una página restaurada del historial (bfcache) vuelve con el cajón cerrado y el
+    // contenido usable; el foco no queda dentro del cajón oculto.
+    window.addEventListener("pageshow", (event) => {
+        if (!event.persisted) return;
+        const foco = sidebar.contains(document.activeElement);
+        abierto = false;
+        aplicar();
+        if (foco) button.focus();
     });
 
     // Las categorías abiertas por el usuario se recuerdan; la categoría activa

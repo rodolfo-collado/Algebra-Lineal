@@ -4,13 +4,9 @@
 {% block tool_input %}
     <section class="panel workspace" aria-labelledby="workspace-title">
         <h2 id="workspace-title" class="sr-only">Entrada</h2>
-        <form id="romanos-form" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate>
+        <form id="romanos-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
             {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="alert error" role="alert">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
+            {% include "calculadora/components/errores_generales.html" %}
 
             <fieldset class="choice-fieldset">
                 <legend>{{ form.direccion.label }}</legend>
@@ -19,22 +15,19 @@
                         <label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
                     {% endfor %}
                 </div>
-                {% for error in form.direccion.errors %}
-                    <p class="field-error" role="alert">{{ error }}</p>
-                {% endfor %}
+                {{ form.direccion.errors }}
             </fieldset>
 
+            {% comment %}Etiqueta y ayuda siguen a la dirección elegida con CSS (:has), también sin JavaScript.{% endcomment %}
             <div class="field-group">
-                <label for="{{ form.numero.id_for_label }}">{{ form.numero.label }}</label>
-                <p id="numero-ayuda" class="field-help">Un entero del 1 al 3999 o un número romano escrito con I, V, X, L, C, D y M.</p>
+                <label for="{{ form.numero.id_for_label }}"><span data-direccion="decimal_a_romano">Número arábigo</span><span data-direccion="romano_a_decimal">Número romano</span></label>
+                <p id="numero-ayuda" class="field-help"><span data-direccion="decimal_a_romano">Un entero del 1 al 3999, escrito con cifras.</span><span data-direccion="romano_a_decimal">Escrito con I, V, X, L, C, D y M, de mayor a menor valor; solo restan IV, IX, XL, XC, CD y CM. Del I al MMMCMXCIX (3999).</span></p>
                 {{ form.numero }}
-                {% for error in form.numero.errors %}
-                    <p class="field-error" role="alert">{{ error }}</p>
-                {% endfor %}
+                {{ form.numero.errors }}
             </div>
 
             <div class="workspace-actions">
-                <button class="btn btn-primary" type="submit">Convertir</button>
+                <button class="btn btn-primary" type="submit" data-calculo>Convertir</button>
             </div>
         </form>
     </section>
@@ -43,7 +36,7 @@
 {% block tool_result %}
     {% if resultado %}
         {% comment %}Entrada → procedimiento plegable → resultado (una sola vez). Las filas y las igualdades llegan como datos del servicio; la plantilla no calcula.{% endcomment %}
-        <section id="resultado" class="results" aria-labelledby="results-title" tabindex="-1">
+        <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
                 <p class="section-kicker">Conversión</p>
                 <h2 id="results-title">{{ resultado.titulo }}</h2>

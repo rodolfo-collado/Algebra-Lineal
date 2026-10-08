@@ -13,6 +13,7 @@
     const matrizTemplate = document.getElementById("matrix-entry-template");
     const celdaTemplate = document.getElementById("matrix-cell-template");
     const memoria = new Map();
+    const { dimensionValida, validarDimension } = window.entradasSeguras;
     const SUBINDICES = "₀₁₂₃₄₅₆₇₈₉";
 
     function campo(nombre) {
@@ -25,16 +26,6 @@
 
     function guardar() {
         entrada.querySelectorAll("input").forEach(input => memoria.set(input.name, input.value));
-    }
-
-    function dimensionValida(input) {
-        const valor = Number(input.value);
-        return Number.isInteger(valor) && valor >= Number(input.min) && valor <= Number(input.max);
-    }
-
-    function ocultarResultado() {
-        const resultado = document.getElementById("resultado");
-        if (resultado) resultado.hidden = true;
     }
 
     function crearMatriz(nombre, m, n, vector) {
@@ -83,17 +74,11 @@
     }
 
     function actualizarBotones() {
-        root.querySelectorAll(".stepper").forEach(stepper => {
-            const input = stepper.querySelector("input");
-            stepper.querySelectorAll("[data-paso]").forEach(button => {
-                const limite = Number(button.dataset.paso) < 0 ? input.min : input.max;
-                button.disabled = Number(input.value) === Number(limite);
-            });
-        });
+        Object.keys(dimensiones).forEach(nombre => validarDimension(campo(nombre)));
     }
 
     function render() {
-        ocultarResultado();
+        actualizarBotones();
         // No se corrigen silenciosamente dimensiones inválidas: el servidor
         // muestra el error. Mientras se escribe, se conserva la ecuación.
         if (!Object.keys(dimensiones).every(nombre => dimensionValida(campo(nombre)))) return;
@@ -114,26 +99,24 @@
             const input = button.closest(".stepper").querySelector("input");
             const actual = dimensionValida(input) ? Number(input.value) : Number(input.min);
             input.value = String(Math.min(Number(input.max), Math.max(Number(input.min), actual + Number(button.dataset.paso))));
-            render();
+            input.dispatchEvent(new Event("input", { bubbles: true }));
         });
     });
-    root.addEventListener("input", ocultarResultado);
     root.querySelector("[data-aplicar]").hidden = true;
+    root.querySelector("[data-aplicar]").disabled = true;
     actualizarBotones();
 
     // Tab recorre todos los campos. Las flechas verticales cambian de fila;
     // las horizontales solo cambian de celda al llegar al extremo del texto.
     entrada.addEventListener("keydown", event => {
         const input = event.target;
-        if (input.tagName !== "INPUT" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (!window.entradasSeguras.flechaDeCelda(event)) return;
         const deltas = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
         const delta = deltas[event.key];
-        if (!delta || input.selectionStart !== input.selectionEnd) return;
-        if (event.key === "ArrowLeft" && input.selectionStart !== 0) return;
-        if (event.key === "ArrowRight" && input.selectionEnd !== input.value.length) return;
+        if (!delta) return;
         const [, nombre, i, j] = input.name.split("_");
         const destino = entrada.querySelector(`[name="celda_${nombre}_${Number(i) + delta[0]}_${Number(j) + delta[1]}"]`);
-        if (destino) {
+        if (destino && !destino.readOnly && !destino.matches(":disabled")) {
             event.preventDefault();
             destino.focus();
         }

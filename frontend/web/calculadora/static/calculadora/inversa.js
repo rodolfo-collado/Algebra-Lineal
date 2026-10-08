@@ -14,18 +14,18 @@
     const matrizTemplate = document.getElementById("matrix-entry-template");
     const celdaTemplate = document.getElementById("matrix-cell-template");
     const memoria = new Map();
+    const { dimensionValida, validarDimension } = window.entradasSeguras;
 
     function guardar() {
         root.querySelectorAll('[name^="celda_"]').forEach(input => memoria.set(input.name, input.value));
     }
 
     function ordenValido() {
-        const valor = Number(orden.value);
-        return Number.isInteger(valor) && valor >= Number(orden.min) && valor <= Number(orden.max);
+        return dimensionValida(orden);
     }
 
-    function ocultarSalida() {
-        document.querySelectorAll("#resultado, [data-confirmacion]").forEach(nodo => { nodo.hidden = true; });
+    function ocultarConfirmacion() {
+        document.querySelectorAll("[data-confirmacion]").forEach(nodo => { nodo.hidden = true; });
     }
 
     function crearMatriz(nombre, n, vector = false) {
@@ -95,14 +95,12 @@
     }
 
     function actualizarBotones() {
-        root.querySelectorAll(".stepper [data-paso]").forEach(button => {
-            const limite = Number(button.dataset.paso) < 0 ? orden.min : orden.max;
-            button.disabled = Number(orden.value) === Number(limite);
-        });
+        validarDimension(orden);
     }
 
     function render() {
-        ocultarSalida();
+        ocultarConfirmacion();
+        actualizarBotones();
         // No se corrige en silencio un tamaño inválido: el servidor muestra el error.
         if (!ordenValido()) return;
         guardar();
@@ -116,7 +114,7 @@
 
     orden.addEventListener("input", render);
     root.addEventListener("change", event => {
-        ocultarSalida();
+        ocultarConfirmacion();
         if (event.target.name !== "funcion_adicional" || !ordenValido()) return;
         guardar();
         actualizarAdicional(Number(orden.value));
@@ -126,11 +124,11 @@
         button.addEventListener("click", () => {
             const actual = ordenValido() ? Number(orden.value) : Number(orden.min);
             orden.value = String(Math.min(Number(orden.max), Math.max(Number(orden.min), actual + Number(button.dataset.paso))));
-            render();
+            orden.dispatchEvent(new Event("input", { bubbles: true }));
         });
     });
-    root.addEventListener("input", ocultarSalida);
-    root.querySelectorAll("[data-aplicar]").forEach(button => { button.hidden = true; });
+    root.addEventListener("input", ocultarConfirmacion);
+    root.querySelectorAll("[data-aplicar]").forEach(button => { button.hidden = true; button.disabled = true; });
     if (ordenValido()) actualizarMetodos(Number(orden.value));
     actualizarBotones();
 
@@ -138,15 +136,13 @@
     // las horizontales solo cambian de celda al llegar al extremo del texto.
     root.addEventListener("keydown", event => {
         const input = event.target;
-        if (input.tagName !== "INPUT" || !input.name.startsWith("celda_") || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (!window.entradasSeguras.flechaDeCelda(event) || !input.name.startsWith("celda_")) return;
         const deltas = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
         const delta = deltas[event.key];
-        if (!delta || input.selectionStart !== input.selectionEnd) return;
-        if (event.key === "ArrowLeft" && input.selectionStart !== 0) return;
-        if (event.key === "ArrowRight" && input.selectionEnd !== input.value.length) return;
+        if (!delta) return;
         const [, nombre, i, j] = input.name.split("_");
         const destino = root.querySelector(`[name="celda_${nombre}_${Number(i) + delta[0]}_${Number(j) + delta[1]}"]`);
-        if (destino) {
+        if (destino && !destino.readOnly && !destino.matches(":disabled")) {
             event.preventDefault();
             destino.focus();
         }

@@ -84,6 +84,10 @@ El launcher inicia Waitress en loopback y abre pywebview. Consulta
    y asigna `data-perfil` al contenedor de sus campos. Incluye una sola vez
    `components/math_keyboard.html` en el formulario, fuera de los bloques
    de entrada que se alternan. No es necesario cambiar `teclado.js`. Los
+   nombres de símbolos quedan fuera de contenedores con perfil; asigna `numerico`
+   a valores, `expresion` a expresiones matriciales y `lineal` a componentes
+   simbólicas. El dock aparece por foco, se oculta al salir y deja disponible
+   la escritura física; no agregues un botón de apertura. Los
    controles que cambian la estructura (más filas, menos columnas) van aparte,
    nunca dentro del teclado.
 6. Si muestra valores exactos, envuelve su `section#resultado` con

@@ -33,7 +33,7 @@ enseña cómo se hace.
 | Dato | Valor |
 | --- | --- |
 | Ruta | `/matrices/inversa/` (`calculadora:matriz-inversa`) |
-| Catálogo | `MATRIZ_INVERSA`, id `matriz-inversa`, en Álgebra Lineal → Matrices, después de Resolver Ax = b |
+| Catálogo | `MATRIZ_INVERSA`, id `matriz-inversa`, en Álgebra lineal → Matrices, después de Resolver Ax = b |
 | Descripción | «Calcula la inversa de una matriz cuadrada y muestra el procedimiento paso a paso.» |
 | Relacionadas | Operaciones con matrices y Resolver Ax = b, tras calcular |
 

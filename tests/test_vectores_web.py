@@ -138,13 +138,15 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         activos = [a["href"] for a in documento.enlaces_en("Herramientas") if a.get("aria-current") == "page"]
         self.assertEqual(activos, [RUTA])
         self.assertEqual([c for c, abierta in documento.categorias.items() if abierta], ["vectores"])
-        self.assertContains(respuesta, "Álgebra Lineal · Vectores")
+        # UI-72: área y tema solo en las migas, sin kicker sobre el título.
+        self.assertNotContains(respuesta, "tool-kicker")
+        self.assertNotContains(respuesta, "Álgebra lineal · Vectores")
         self.assertContains(respuesta, 'name="csrfmiddlewaretoken"', html=False)
         self.assertNotContains(respuesta, "Herramientas relacionadas")
         self.assertNotContains(respuesta, "related-list")
         self.assertEqual(
             [(m.nombre, m.url) for m in catalogo.migas(catalogo.OPERACIONES_VECTORES)][:3],
-            [("Inicio", "/"), ("Álgebra Lineal", "/#algebra-lineal"), ("Vectores", "/#vectores")],
+            [("Inicio", "/"), ("Álgebra lineal", "/#algebra-lineal"), ("Vectores", "/#vectores")],
         )
 
     def test_las_rutas_antiguas_de_sistemas_no_alcanzan_a_vectores(self):
@@ -189,26 +191,26 @@ class PruebasFormulario(SimpleTestCase):
         pagina = self.client.get(RUTA)
         documento = Documento(pagina)
         celdas = [c["name"] for c in documento.controles if c.get("data-cell")]
-        self.assertEqual(celdas, ["u_0", "u_1", "u_2", "v_0", "v_1", "v_2"])
+        self.assertEqual(celdas, ["v1_0", "v1_1", "v1_2", "v2_0", "v2_1", "v2_2"])
         dimension = next(c for c in documento.controles if c.get("name") == "dimension")
         self.assertEqual((dimension["type"], dimension["value"], dimension["min"], dimension["max"]),
                          ("number", "3", "1", str(DIMENSION_MAXIMA)))
         html = pagina.content.decode("utf-8")
         for ausente in ('name="x"', 'name="y"', 'name="z"', "<textarea", "[1, 2, 3]"):
             self.assertNotIn(ausente, html)
-        self.assertIn('aria-label="Componente 1 de u"', html)
-        self.assertIn('aria-label="Componente 3 de v"', html)
-        self.assertRegex(html, r'data-vector="u"[^>]*aria-label="Vector u"')
+        self.assertIn('aria-label="Componente 1 de v1"', html)
+        self.assertIn('aria-label="Componente 3 de v2"', html)
+        self.assertRegex(html, r'data-vector="v1"[^>]*aria-label="Vector v1"')
         self.assertIn('data-cantidad-vectores', html)
         self.assertIn('data-agregar-vector', html)
 
     def test_el_servidor_redibuja_la_estructura_pedida(self):
         # Sin JavaScript, «Aplicar» reajusta dimensión y operación conservando lo escrito, sin calcular.
-        respuesta = self.client.post(RUTA, {"operacion": "escalar", "dimension": "2", "ajustar": "1", "u_0": "7", "u_1": "8", "escalar": "2"})
+        respuesta = self.client.post(RUTA, {"operacion": "escalar", "dimension": "2", "ajustar": "1", "v1_0": "7", "v1_1": "8", "escalar": "2"})
         self.assertEqual(respuesta.status_code, 200)
         documento = Documento(respuesta)
         celdas = [(c["name"], c["value"]) for c in documento.controles if c.get("data-cell")]
-        self.assertEqual(celdas, [("u_0", "7"), ("u_1", "8")])
+        self.assertEqual(celdas, [("v1_0", "7"), ("v1_1", "8")])
         escalar = next(c for c in documento.controles if c.get("name") == "escalar")
         self.assertEqual(escalar["value"], "2")
         self.assertNotContains(respuesta, 'id="resultado"')
@@ -224,21 +226,21 @@ class PruebasFormulario(SimpleTestCase):
         self.assertContains(respuesta, 'class="vector-row vector-row-target"')
 
     def test_tras_un_error_se_conservan_valores_y_estructura(self):
-        respuesta = self.client.post(RUTA, datos_vectores("suma", u=[1, "x", 3], v=[4, 5, 6]))
+        respuesta = self.client.post(RUTA, datos_vectores("suma", v1=[1, "x", 3], v2=[4, 5, 6]))
         celdas = [(c["name"], c["value"]) for c in Documento(respuesta).controles if c.get("data-cell")]
-        self.assertEqual(celdas, [("u_0", "1"), ("u_1", "x"), ("u_2", "3"), ("v_0", "4"), ("v_1", "5"), ("v_2", "6")])
-        self.assertIn("En la componente 2 de u: &#x27;x&#x27; no es un número válido.", errores_formulario(respuesta))
+        self.assertEqual(celdas, [("v1_0", "1"), ("v1_1", "x"), ("v1_2", "3"), ("v2_0", "4"), ("v2_1", "5"), ("v2_2", "6")])
+        self.assertIn("En la componente 2 de v1: &#x27;x&#x27; no es un número válido.", errores_formulario(respuesta))
         self.assertNotContains(respuesta, 'id="resultado"')
 
     def test_estructura_del_formulario_por_operacion(self):
-        self.assertEqual(nombres_vectores("suma", 0), ("u", "v"))
-        self.assertEqual(nombres_vectores("resta", 5), ("u", "v", "v3", "v4", "v5"))
-        self.assertEqual(nombres_vectores("escalar", 0), ("u",))
+        self.assertEqual(nombres_vectores("suma", 2), ("v1", "v2"))
+        self.assertEqual(nombres_vectores("resta", 5), ("v1", "v2", "v3", "v4", "v5"))
+        self.assertEqual(nombres_vectores("escalar", 0), ("v1",))
         self.assertEqual(nombres_vectores("combinacion", 3), ("v1", "v2", "v3", "b"))
         form = VectoresForm()
         estructura = form.estructura()
         self.assertEqual((estructura["operacion"], estructura["dimension"], estructura["vectores"]), ("suma", 3, 2))
-        self.assertEqual([fila["nombre"] for fila in estructura["filas"]], ["u", "v"])
+        self.assertEqual([fila["nombre"] for fila in estructura["filas"]], ["v1", "v2"])
         form = VectoresForm({"operacion": "combinacion", "dimension": "99", "vectores": "-3"})
         estructura = form.estructura()
         self.assertEqual((estructura["dimension"], estructura["vectores"]), (DIMENSION_MAXIMA, 1))
@@ -251,7 +253,7 @@ class PruebasFormulario(SimpleTestCase):
         self.assertEqual(len(pagina.teclados), 1)
         self.assertEqual(pagina.contenedores["vector-fields"], "numerico")
         self.assertEqual(pagina.perfiles_publicados, perfiles_para("numerico"))
-        self.assertIn('role="group" aria-label="Teclado matemático" hidden>', html)
+        self.assertIn("hidden", pagina.teclados[0])
         teclado = pagina.perfiles_publicados["numerico"]["grupos"][0]["teclas"]
         self.assertEqual([t["insercion"] for t in teclado], ["-", "/"])
         estructura = re.findall(r'aria-label="(Quitar una componente|Agregar una componente|Quitar un vector|Agregar un vector)" hidden', html)
@@ -264,7 +266,7 @@ class PruebasFormulario(SimpleTestCase):
         self.assertIn('name="ajustar"', html)
 
     def test_csrf_obligatorio(self):
-        respuesta = Client(enforce_csrf_checks=True).post(RUTA, datos_vectores("suma", u=[1, 2], v=[3, 4]))
+        respuesta = Client(enforce_csrf_checks=True).post(RUTA, datos_vectores("suma", v1=[1, 2], v2=[3, 4]))
         self.assertEqual(respuesta.status_code, 403)
 
     def test_inicio_no_muestra_el_formulario_de_vectores(self):
@@ -275,58 +277,58 @@ class PruebasFormulario(SimpleTestCase):
 
 class PruebasOperacionesWeb(SimpleTestCase):
     def test_suma(self):
-        respuesta = self.client.post(RUTA, datos_vectores("suma", u=[1, 2, 3], v=[4, 5, 6]))
+        respuesta = self.client.post(RUTA, datos_vectores("suma", v1=[1, 2, 3], v2=[4, 5, 6]))
         texto = seccion_resultado(respuesta)
-        self.assertIn("Resultado u + v = (5, 7, 9)", texto)
+        self.assertIn("Resultado v1 + v2 = (5, 7, 9)", texto)
         # El desarrollo va plegado antes del resultado y sustituye los vectores en la propia cadena.
-        self.assertIn("Ver procedimiento Componente a componente u + v = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)", texto)
+        self.assertIn("Ver procedimiento Componente a componente v1 + v2 = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)", texto)
         self.assertNotIn("Vectores de entrada", texto)
-        self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado u + v"))
+        self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado v1 + v2"))
         self.assertContains(respuesta, 'class="vector vector-result"')
         self.assertContains(respuesta, 'class="panel panel-final"')
 
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("suma", u=[1, 2], v=[3, 4])))
-        self.assertIn("u + v = (4, 6)", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("suma", v1=[1, 2], v2=[3, 4])))
+        self.assertIn("v1 + v2 = (4, 6)", texto)
 
     def test_suma_con_fracciones_exactas(self):
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("suma", u=["1/2", "2/3"], v=["1/2", "1/3"])))
-        self.assertIn("u + v = (1, 1)", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("suma", v1=["1/2", "2/3"], v2=["1/2", "1/3"])))
+        self.assertIn("v1 + v2 = (1, 1)", texto)
         self.assertIn("(1/2 + 1/2, 2/3 + 1/3)", texto)
         self.assertNotIn("0.", texto)
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("suma", u=["1/3"], v=["1/3"])))
-        self.assertIn("u + v = (2/3)", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("suma", v1=["1/3"], v2=["1/3"])))
+        self.assertIn("v1 + v2 = (2/3)", texto)
         self.assertNotIn("0.6", texto)
 
     def test_resta(self):
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", u=[4, 6], v=[1, 2])))
-        self.assertIn("Resultado u − v = (3, 4)", texto)
-        self.assertIn("u − v = (4, 6) − (1, 2) = (4 - 1, 6 - 2) = (3, 4)", texto)
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", u=[5, 7, 9], v=[1, 2, 3])))
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", v1=[4, 6], v2=[1, 2])))
+        self.assertIn("Resultado v1 − v2 = (3, 4)", texto)
+        self.assertIn("v1 − v2 = (4, 6) − (1, 2) = (4 - 1, 6 - 2) = (3, 4)", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", v1=[5, 7, 9], v2=[1, 2, 3])))
         self.assertIn("= (4, 5, 6)", texto)
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", u=[5], v=[-1])))
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("resta", v1=[5], v2=[-1])))
         self.assertIn("(5 - (-1)) = (6)", texto)
 
     def test_escalar(self):
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="3", u=[1, -2, 4])))
-        self.assertIn("Resultado k·u = (3, -6, 12)", texto)
-        self.assertIn("k·u = 3·(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)", texto)
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="0", u=[1, 2, 3])))
-        self.assertIn("k·u = (0, 0, 0)", texto)
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="1/2", u=["1/3", -4])))
-        self.assertIn("k·u = (1/6, -2)", texto)
-        self.assertIn("k·u = (1/2)·(1/3, -4) = ((1/2)·(1/3), (1/2)·(-4))", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="3", v1=[1, -2, 4])))
+        self.assertIn("Resultado k·v1 = (3, -6, 12)", texto)
+        self.assertIn("k·v1 = 3·(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="0", v1=[1, 2, 3])))
+        self.assertIn("k·v1 = (0, 0, 0)", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="1/2", v1=["1/3", -4])))
+        self.assertIn("k·v1 = (1/6, -2)", texto)
+        self.assertIn("k·v1 = (1/2)·(1/3, -4) = ((1/2)·(1/3), (1/2)·(-4))", texto)
 
     def test_dimension_grande_y_dimension_uno(self):
         u = list(range(1, 9))
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("suma", u=u, v=u)))
-        self.assertIn("u + v = (2, 4, 6, 8, 10, 12, 14, 16)", texto)
-        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="-2", u=[5])))
-        self.assertIn("k·u = (-10)", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("suma", v1=u, v2=u)))
+        self.assertIn("v1 + v2 = (2, 4, 6, 8, 10, 12, 14, 16)", texto)
+        texto = seccion_resultado(self.client.post(RUTA, datos_vectores("escalar", escalar="-2", v1=[5])))
+        self.assertIn("k·v1 = (-10)", texto)
 
     def test_sin_excepciones_internas(self):
         for datos in (
-            datos_vectores("suma", u=[1, 2], v=[3, 4]),
-            datos_vectores("suma", u=[1, "abc"], v=[3, 4]),
+            datos_vectores("suma", v1=[1, 2], v2=[3, 4]),
+            datos_vectores("suma", v1=[1, "abc"], v2=[3, 4]),
             {"operacion": "suma", "dimension": "abc"},
             {},
         ):
@@ -342,16 +344,16 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         respuesta = self.client.post(RUTA, combinacion([[1, 0], [0, 1]], [3, 4]))
         texto = seccion_resultado(respuesta)
         self.assertIn("Resultado Sí: b es combinación lineal de v1 y v2. Existe una única combinación.", texto)
-        self.assertIn("Coeficientes x1 = 3 x2 = 4", texto)
+        self.assertIn("Coeficientes x₁ = 3 x₂ = 4", texto)
         self.assertIn("b como combinación lineal (3, 4) = 3(1, 0) + 4(0, 1)", texto)
-        self.assertIn("1 · Planteamiento Buscamos x1 y x2 tales que: x1(1, 0) + x2(0, 1) = (3, 4)", texto)
+        self.assertIn("1 · Planteamiento Buscamos x₁ y x₂ tales que: x₁(1, 0) + x₂(0, 1) = (3, 4)", texto)
         self.assertIn("2 · Sistema equivalente", texto)
-        self.assertIn("x1 = 3 x2 = 4 Cada vector generador es una columna y b es la columna aumentada", texto)
+        self.assertIn("x₁ = 3 x₂ = 4 Cada vector generador es una columna y b es la columna aumentada", texto)
         self.assertIn("3 · Gauss-Jordan No fue necesario realizar operaciones por filas.", texto)
         self.assertIn("4 · Lectura de la matriz El sistema es consistente de solución única.", texto)
         # Procedimiento plegado antes; la conclusión y los coeficientes solo en el resultado.
         self.assertLess(texto.index("Ver procedimiento"), texto.index("Resultado Sí:"))
-        self.assertEqual(texto.count("x1 = 3 x2 = 4"), 2)  # sistema equivalente y coeficientes
+        self.assertEqual(texto.count("x₁ = 3 x₂ = 4"), 2)  # sistema equivalente y coeficientes
         self.assertContains(respuesta, 'data-kind="unica"')
         # Las incógnitas son x1, x2, … como en Reducción por filas, no c1, c2, …
         self.assertNotRegex(texto, INCOGNITA_C)
@@ -359,10 +361,10 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
 
     def test_solucion_unica_con_eliminacion_y_coeficiente_negativo(self):
         texto = seccion_resultado(self.client.post(RUTA, combinacion([[1, 2], [3, 4]], [-1, 0])))
-        self.assertIn("Coeficientes x1 = 2 x2 = -1", texto)
+        self.assertIn("Coeficientes x₁ = 2 x₂ = -1", texto)
         self.assertIn("(-1, 0) = 2(1, 2) - (3, 4)", texto)
         self.assertIn("Paso 1", texto)
-        self.assertIn("x1 + 3x2 = -1 2x1 + 4x2 = 0", texto)
+        self.assertIn("x₁ + 3x₂ = -1 2x₁ + 4x₂ = 0", texto)
         self.assertIn("Matriz reducida", texto)
 
     def test_no_es_combinacion_lineal(self):
@@ -379,30 +381,30 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         respuesta = self.client.post(RUTA, combinacion([[1, 2], [2, 4]], [3, 6]))
         texto = seccion_resultado(respuesta)
         self.assertIn("Sí: b es combinación lineal de v1 y v2. Existen infinitas combinaciones posibles.", texto)
-        self.assertIn("Solución general x1 = 3 - 2x2 x2 es libre", texto)
-        self.assertIn("Por ejemplo, con x2 = 0: (3, 6) = 3(1, 2) + 0(2, 4)", texto)
-        self.assertIn("La variable x2 no tiene pivote, por lo que es libre.", texto)
+        self.assertIn("Solución general x₁ = 3 - 2x₂ x₂ es libre", texto)
+        self.assertIn("Por ejemplo, con x₂ = 0: (3, 6) = 3(1, 2) + 0(2, 4)", texto)
+        self.assertIn("La variable x₂ no tiene pivote, por lo que es libre.", texto)
         self.assertContains(respuesta, 'data-kind="infinitas"')
         self.assertNotIn("No:", texto)
 
     def test_mas_de_dos_generadores_y_dimension_mayor(self):
         texto = seccion_resultado(self.client.post(RUTA, combinacion([[1, 0, 2], [0, 1, 3], [1, 1, 0]], [4, 5, 6])))
-        self.assertIn("Buscamos x1, x2 y x3 tales que: x1(1, 0, 2) + x2(0, 1, 3) + x3(1, 1, 0) = (4, 5, 6)", texto)
-        self.assertIn("x1 + x3 = 4 x2 + x3 = 5 2x1 + 3x2 = 6", texto)
+        self.assertIn("Buscamos x₁, x₂ y x₃ tales que: x₁(1, 0, 2) + x₂(0, 1, 3) + x₃(1, 1, 0) = (4, 5, 6)", texto)
+        self.assertIn("x₁ + x₃ = 4 x₂ + x₃ = 5 2x₁ + 3x₂ = 6", texto)
         self.assertIn("Sí: b es combinación lineal de v1, v2 y v3.", texto)
 
         generadores = [[1, 0, 0, 0, 1], [0, 1, 0, 0, 1], [0, 0, 1, 0, 1], [0, 0, 0, 1, 1]]
         texto = seccion_resultado(self.client.post(RUTA, combinacion(generadores, [1, 2, 3, 4, 10])))
-        self.assertIn("Coeficientes x1 = 1 x2 = 2 x3 = 3 x4 = 4", texto)
+        self.assertIn("Coeficientes x₁ = 1 x₂ = 2 x₃ = 3 x₄ = 4", texto)
         self.assertIn("(1, 2, 3, 4, 10) = (1, 0, 0, 0, 1) + 2(0, 1, 0, 0, 1) + 3(0, 0, 1, 0, 1) + 4(0, 0, 0, 1, 1)", texto)
         self.assertIn("cada una de las 5 componentes", texto)
 
     def test_fracciones_en_componentes_y_coeficientes(self):
         texto = seccion_resultado(self.client.post(RUTA, combinacion([[2, 0], [0, 3]], [1, 1])))
-        self.assertIn("Coeficientes x1 = 1/2 x2 = 1/3", texto)
+        self.assertIn("Coeficientes x₁ = 1/2 x₂ = 1/3", texto)
         self.assertIn("(1, 1) = 1/2(2, 0) + 1/3(0, 3)", texto)
         texto = seccion_resultado(self.client.post(RUTA, combinacion([["1/2", 0], [0, "1/3"]], [1, 1])))
-        self.assertIn("Coeficientes x1 = 2 x2 = 3", texto)
+        self.assertIn("Coeficientes x₁ = 2 x₂ = 3", texto)
         self.assertNotIn("0.5", texto)
 
     def test_reutiliza_el_motor_de_sistemas_sin_pasar_por_su_interfaz(self):
@@ -413,7 +415,7 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
         self.assertEqual(motor.call_args.args[0], [[1, 3, 5], [2, 4, 6]])
         sistemas_web.assert_not_called()
         texto = seccion_resultado(respuesta)
-        self.assertIn("Coeficientes x1 = -1 x2 = 2", texto)
+        self.assertIn("Coeficientes x₁ = -1 x₂ = 2", texto)
         self.assertIn("(5, 6) = -(1, 2) + 2(3, 4)", texto)
         # La matriz reducida resalta las columnas pivote igual que en Reducción por filas.
         self.assertContains(respuesta, ' pivot"')
@@ -421,8 +423,8 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
     def test_un_solo_generador(self):
         texto = seccion_resultado(self.client.post(RUTA, combinacion([[2, 4]], [1, 2])))
         self.assertIn("Sí: b es combinación lineal de v1.", texto)
-        self.assertIn("Coeficientes x1 = 1/2", texto)
-        self.assertIn("Buscamos x1 tales que", texto)
+        self.assertIn("Coeficientes x₁ = 1/2", texto)
+        self.assertIn("Buscamos x₁ tales que", texto)
 
     def test_dimensiones_incompatibles_se_rechazan_antes_de_resolver(self):
         datos = combinacion([[1, 2], [1, 2]], [4, 5])
@@ -450,7 +452,7 @@ class PruebasCombinacionLinealWeb(SimpleTestCase):
             with self.subTest(objetivo=objetivo):
                 texto = strip_tags(self.client.post(RUTA, combinacion(generadores, objetivo)).content.decode("utf-8"))
                 self.assertIn("¿Existen x1, …, xk tales que x1·v1 + … + xk·vk = b?", texto)
-                self.assertIn("Buscamos x1 y x2 tales que", texto)
+                self.assertIn("Buscamos x₁ y x₂ tales que", texto)
                 self.assertNotRegex(texto, INCOGNITA_C)
 
 
@@ -464,18 +466,18 @@ class PruebasValidacionWeb(SimpleTestCase):
 
     def test_entrada_vacia_y_componentes_invalidas(self):
         self.assertIn("Indica la dimensión de los vectores.", self.post({"operacion": "suma"}))
-        errores = self.post(datos_vectores("suma", u=[1, ""], v=["x", "1/0"]))
-        self.assertIn("Falta la componente 2 de u.", errores)
-        self.assertIn("En la componente 1 de v: &#x27;x&#x27; no es un número válido.", errores)
-        self.assertIn("En la componente 2 de v: &#x27;1/0&#x27; no es un número válido.", errores)
+        errores = self.post(datos_vectores("suma", v1=[1, ""], v2=["x", "1/0"]))
+        self.assertIn("Falta la componente 2 de v1.", errores)
+        self.assertIn("En la componente 1 de v2: &#x27;x&#x27; no es un número válido.", errores)
+        self.assertIn("En la componente 2 de v2: &#x27;1/0&#x27; no es un número válido.", errores)
 
     def test_dimensiones_incompatibles_y_estructuras_manipuladas(self):
         # Menos celdas que la dimensión, celdas de más y nombres ajenos: siempre se rechazan.
         mensaje = "La cantidad de componentes no coincide con la dimensión y los vectores indicados."
-        self.assertIn(mensaje, self.post(datos_vectores("suma", dimension=3, u=[1, 2, 3], v=[4, 5])))
-        self.assertIn(mensaje, self.post(datos_vectores("suma", u=[1, 2], v=[3, 4]) | {"v_7": "1"}))
-        self.assertIn(mensaje, self.post(datos_vectores("suma", u=[1, 2], v=[3, 4]) | {"b_0": "1"}))
-        self.assertIn(mensaje, self.post(datos_vectores("escalar", escalar="2", u=[1, 2], v=[3, 4])))
+        self.assertIn(mensaje, self.post(datos_vectores("suma", dimension=3, v1=[1, 2, 3], v2=[4, 5])))
+        self.assertIn(mensaje, self.post(datos_vectores("suma", v1=[1, 2], v2=[3, 4]) | {"v2_7": "1"}))
+        self.assertIn(mensaje, self.post(datos_vectores("suma", v1=[1, 2], v2=[3, 4]) | {"b_0": "1"}))
+        self.assertIn(mensaje, self.post(datos_vectores("escalar", escalar="2", v1=[1, 2], v2=[3, 4])))
         self.assertIn(mensaje, self.post(combinacion([[1, 2], [3, 4]], [5, 6]) | {"v3_0": "1", "v3_1": "2"}))
 
     def test_limites_de_dimension_y_vectores(self):
@@ -489,17 +491,17 @@ class PruebasValidacionWeb(SimpleTestCase):
     def test_vector_objetivo_incompleto_y_escalar_invalido(self):
         errores = self.post(combinacion([[1, 0], [0, 1]], ["3", ""]))
         self.assertIn("Falta la componente 2 de b.", errores)
-        self.assertIn("Ingresa el escalar k.", self.post(datos_vectores("escalar", u=[1, 2])))
-        self.assertIn("El escalar: &#x27;abc&#x27; no es un número válido.", self.post(datos_vectores("escalar", escalar="abc", u=[1, 2])))
-        self.assertIn("Selecciona una operación válida.", self.post(datos_vectores("otra", u=[1, 2], v=[3, 4])))
-        self.assertIn("Selecciona una operación.", self.post({"dimension": "2", "u_0": "1", "u_1": "2", "v_0": "1", "v_1": "2"}))
+        self.assertIn("Ingresa el escalar k.", self.post(datos_vectores("escalar", v1=[1, 2])))
+        self.assertIn("El escalar: &#x27;abc&#x27; no es un número válido.", self.post(datos_vectores("escalar", escalar="abc", v1=[1, 2])))
+        self.assertIn("Selecciona una operación válida.", self.post(datos_vectores("otra", v1=[1, 2], v2=[3, 4])))
+        self.assertIn("Selecciona una operación.", self.post({"dimension": "2", "v1_0": "1", "v1_1": "2", "v2_0": "1", "v2_1": "2"}))
 
     def test_valores_manipulados_desde_cliente_no_rompen_la_pagina(self):
         for datos in (
-            {"operacion": "suma", "dimension": "2", "vectores": "abc", "u_0": "1", "u_1": "2", "v_0": "1", "v_1": "2"},
+            {"operacion": "suma", "dimension": "2", "vectores": "abc", "v1_0": "1", "v1_1": "2", "v2_0": "1", "v2_1": "2"},
             {"operacion": "combinacion", "dimension": "2", "vectores": "2", "v1_0": "1", "v1_1": "2", "v2_0": "3", "v2_1": "4", "b_0": "5", "b_1": "6", "ajustar": ""},
-            {"operacion": "escalar", "dimension": "1", "escalar": "1e400", "u_0": "1"},
-            {"operacion": "escalar", "dimension": "1", "escalar": "<script>", "u_0": "1"},
+            {"operacion": "escalar", "dimension": "1", "escalar": "1e400", "v1_0": "1"},
+            {"operacion": "escalar", "dimension": "1", "escalar": "<script>", "v1_0": "1"},
         ):
             with self.subTest(datos=datos):
                 respuesta = self.client.post(RUTA, datos)

@@ -224,11 +224,11 @@ class PruebasResultadosProducto(SimpleTestCase):
 
     def test_grupos_abiertos_solo_con_resultados_pequenos(self):
         html, _ = self.calcular(datos_producto())
-        self.assertEqual(html.count('<details class="procedure-group" open>'), 2)
+        self.assertEqual(html.count('<details class="disclosure procedure-group" open>'), 2)
         grande = [[1] * 4 for _ in range(4)]
         html, _ = self.calcular(datos_producto(a=grande, b=grande, metodo="comparar"))
-        self.assertNotIn('<details class="procedure-group" open>', html)
-        self.assertEqual(html.count('<details class="procedure-group">'), 8)
+        self.assertNotIn('<details class="disclosure procedure-group" open>', html)
+        self.assertEqual(html.count('<details class="disclosure procedure-group">'), 8)
         self.assertEqual(ENTRADAS_DESPLEGADAS, 12)
 
     def test_procedimiento_plegado_antes_del_resultado_y_recursos_locales(self):
@@ -239,7 +239,7 @@ class PruebasResultadosProducto(SimpleTestCase):
             self.assertIn(f"/static/calculadora/{recurso}", html)
         self.assertNotIn('src="https://', html)
         self.assertNotIn('href="https://', html)
-        self.assertIn('id="expression-fields" data-perfil="numerico"', html)
+        self.assertIn('class="expression-field" data-perfil="expresion"', html)
 
     def test_subindices_legibles_hasta_diez(self):
         self.assertEqual(subindice(2, 3), "₂₃")
@@ -274,7 +274,7 @@ class PruebasRechazoProducto(SimpleTestCase):
         self.rechazar(datos_matriz_vector(celda_1_1_0=""), "Completa vector x, componente 2.")
 
     def test_celdas_de_b_vacias_o_invalidas(self):
-        self.rechazar(datos_producto(celda_1_0_0=""), "Completa matriz b, fila 1, columna 1.")
+        self.rechazar(datos_producto(celda_1_0_0=""), "Completa matriz B, fila 1, columna 1.")
         self.rechazar(datos_producto(celda_1_1_1="1/0"), "no es un número válido")
 
     def test_estructura_de_b_manipulada(self):
@@ -320,11 +320,13 @@ class PruebasAccesibilidadProducto(SimpleTestCase):
 
     def test_procedimiento_comprensible_sin_color(self):
         html = self.client.post(RUTA, datos_producto(metodo="comparar")).content.decode()
-        # Cada igualdad nombra la fila y la columna; los grupos son details/summary reales con texto.
+        # Cada igualdad nombra la fila y la columna; los grupos son el {% disclosure %} común,
+        # con su título como encabezado y el resumen de valores como detalle (P27.8).
         self.assertIn("c₂₁ = fila₂(A) · columna₁(B)", html)
-        self.assertIn('<summary class="procedure-summary">', html)
+        self.assertIn('<h6 class="disclosure-title">Fila 2 de AB</h6>', html)
+        self.assertNotIn("procedure-summary", html)
         self.assertIn('role="region" aria-label="Desarrollo de Ab₁"', html)
         self.assertIn('aria-label="Columnas de A"', html)
-        self.assertIn('tabindex="0"', html)
+        self.assertNotIn('tabindex="0"', html)
         for etiqueta in ("Columna 1 de A", "Columna 1 de AB", "Resultado ensamblado"):
             self.assertIn(f'aria-label="{etiqueta}"', html)
