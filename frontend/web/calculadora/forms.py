@@ -63,8 +63,9 @@ class SistemaForm(FormularioConErrores):
     # Un navegador omite las casillas desmarcadas: este marcador distingue
     # «no quiero ningún bloque» de un envío que no incluye la sección Mostrar.
     mostrar_definido = forms.BooleanField(required=False, widget=forms.HiddenInput)
+    # El tipo de entrada ya se llama «Sistema de ecuaciones»: el campo nombra lo que se escribe.
     sistema = forms.CharField(
-        label="Sistema de ecuaciones",
+        label="Ecuaciones",
         required=False,
         max_length=LONGITUD_SISTEMA_MAXIMA,
         strip=True,
@@ -397,14 +398,14 @@ class ConversionBasesForm(FormularioConErrores):
 class VectoresForm(FormularioConErrores):
     """Operación, dimensión y componentes de los vectores, como celdas `nombre_i`.
 
-    Las componentes viajan como campos sueltos (u_0, u_1, …, v1_0, …, b_0, …)
+    Las componentes viajan como campos sueltos (v1_0, v1_1, …, v2_0, …, b_0, …)
     generados según la dimensión y la cantidad de vectores. El servidor
     reconstruye la estructura esperada y la compara con lo recibido, así que un
     POST manipulado (celdas de más, de menos o con otros nombres) se rechaza.
     """
 
     OPERACIONES = OPERACIONES
-    _CELDA = re.compile(r"^(u|v|b|v[1-9]\d*)_(\d+)$")
+    _CELDA = re.compile(r"^(b|v[1-9]\d*)_(\d+)$")
 
     operacion = forms.ChoiceField(
         label="Operación",

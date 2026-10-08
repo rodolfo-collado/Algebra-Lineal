@@ -50,6 +50,11 @@ class Categoria:
     def disponible(self) -> bool:
         return any(herramienta.disponible for herramienta in herramientas_de(self))
 
+    @property
+    def herramienta_unica(self) -> bool:
+        """Con una sola herramienta disponible, Inicio abre el tema: no hay nada que elegir."""
+        return sum(herramienta.disponible for herramienta in herramientas_de(self)) == 1
+
 
 @dataclass(frozen=True)
 class Herramienta:
@@ -125,7 +130,7 @@ def datos_buscador() -> dict:
 
 
 ALGEBRA_LINEAL = Area(
-    "algebra-lineal", "Álgebra Lineal",
+    "algebra-lineal", "Álgebra lineal",
     "Vectores, matrices, sistemas de ecuaciones y sus aplicaciones.",
 )
 SISTEMAS_NUMERICOS = Area(

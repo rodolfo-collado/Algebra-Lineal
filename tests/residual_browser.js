@@ -37,9 +37,9 @@
             assert(all(w,".vector-row[data-vector]").length === 3, "Tres vectores");
             assert(w.document.activeElement.name === "v3_0", "Foco al agregar");
             // Un valor largo en una sola fila también comparte el ancho de su columna.
-            input(w,'[name="v_0"]',"-123456");
+            input(w,'[name="v2_0"]',"-123456");
             aligned(w); pageFits(w);
-            q(w,`[name="u_${dimension - 1}"]`).focus();
+            q(w,`[name="v1_${dimension - 1}"]`).focus();
             aligned(w);
             list.scrollLeft = list.scrollWidth;
             aligned(w); pageFits(w);
@@ -48,7 +48,7 @@
             assert(rect(remove).left > rect(last).right, "× no tapa la última componente");
             assert(rect(remove).right <= rect(list).right + 1, "× accesible al final del scroll");
             remove.click();
-            assert(all(w,".vector-row[data-vector]").length === 2 && w.document.activeElement.name === "v_0", "Eliminar y foco contextual");
+            assert(all(w,".vector-row[data-vector]").length === 2 && w.document.activeElement.name === "v2_0", "Eliminar y foco contextual");
         }]);
     }
     for (const ruta of ["/matrices/reduccion/","/matrices/ecuaciones/","/matrices/inversa/","/bases/conversion/","/romanos/conversion/"]) {

@@ -329,7 +329,7 @@ class PruebasIntegracionServicios(SimpleTestCase):
         self.assertEqual(categoria(estimar_entrada_web("sistema", "comparar", texto=sistema)), Categoria.MUY_PESADA)
         respuesta = self.client.post("/matrices/reduccion/", {"sistema": sistema, "metodo": "comparar"})
         self.assertContains(respuesta, 'id="resultado"')
-        self.assertContains(respuesta, "x1 = 2")
+        self.assertContains(respuesta, "x₁ = 2")
 
         entrada = {"a": [[1, 1], [1, -1]], "b": [5, 1], "metodo": "comparar"}
         self.assertEqual(categoria(estimar_ecuacion_web(entrada)), Categoria.MUY_PESADA)

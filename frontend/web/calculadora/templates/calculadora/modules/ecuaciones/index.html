@@ -29,7 +29,7 @@
                 {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.1.nombre filas=form.matrices.1.filas vector=True only %}
             </div>
             {% include "calculadora/components/errores_grupo.html" %}
-            <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos. A puede ser rectangular: más ecuaciones que incógnitas o más incógnitas que ecuaciones.</p>
+            <p class="field-help">Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>; usa <code>-</code> para negativos. A puede ser rectangular: más ecuaciones que incógnitas o más incógnitas que ecuaciones.</p>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
         <section class="workspace-section">
@@ -77,13 +77,13 @@
                 <h4 class="final-label">{% if resultado.clasificacion_clave == "unica" %}Solución{% elif resultado.clasificacion_clave == "infinitas" %}Conjunto solución{% else %}Contradicción{% endif %}</h4>
                 {% if resultado.justificacion %}
                     <div class="explanation">
-                        {% for parrafo in resultado.justificacion %}{% if parrafo %}<p>{{ parrafo }}</p>{% endif %}{% endfor %}
+                        {% for parrafo in resultado.justificacion %}{% if parrafo %}<p>{{ parrafo|incognitas }}</p>{% endif %}{% endfor %}
                     </div>
                 {% endif %}
                 {% if resultado.solucion_general %}
                     <div class="solution-pair">
                         <ul class="equations solution-list">
-                            {% for linea in resultado.solucion_general %}<li><code>{{ linea }}</code></li>{% endfor %}
+                            {% for linea in resultado.solucion_general %}<li><code>{{ linea|incognitas }}</code></li>{% endfor %}
                         </ul>
                         {% if resultado.x %}
                             <div class="matrix-equation" role="region" aria-label="Vector solución x">
@@ -111,7 +111,7 @@
             {% enddisclosure %}
         {% endif %}
         {% disclosure titulo="Interpretar Ax = b" id="interpretacion" clase="disclosure-procedure" %}
-            <p class="interpretation">{{ resultado.interpretacion.texto }}</p>
+            <p class="interpretation">{{ resultado.interpretacion.texto|incognitas }}</p>
             {% if resultado.interpretacion.igualdad %}<p class="combination-equality"><code>{{ resultado.interpretacion.igualdad }}</code></p>{% endif %}
         {% enddisclosure %}
     </section>

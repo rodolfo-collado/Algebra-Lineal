@@ -208,8 +208,12 @@ esté orientado a resolver sistemas.
 En **Operaciones con vectores** (`/vectores/operaciones/`) la operación se
 elige dentro, igual que el método en Reducción por filas. La dimensión `n`
 no está fijada, así que cada vector se escribe como una fila de
-celdas, `u = ( [ ] [ ] [ ] )`, y los botones **+/−** agregan o quitan
+celdas, `v1 = ( [ ] [ ] [ ] )`, y los botones **+/−** agregan o quitan
 componentes (de 1 a 10). No hay campos `x`, `y`, `z` ni sintaxis de listas.
+Los vectores se llaman `v1`, `v2`, `v3`, … en todas las operaciones (`k·v1` en
+la multiplicación por escalar): agregar uno nunca renombra a los anteriores.
+Las componentes admiten enteros, fracciones y decimales con punto; una coma
+decimal (`0,5`) se rechaza con la sugerencia de escribir `0.5`.
 
 - **Suma** y **resta** operan componente a componente y exigen la misma
   dimensión: `(1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)`.
@@ -221,18 +225,18 @@ componentes (de 1 a 10). No hay campos `x`, `y`, `z` ni sintaxis de listas.
   `[v1 v2 … vk | b]` —cada generador es una columna y `b` la columna
   aumentada— y se resuelve con el Gauss-Jordan de `backend/sistemas.py`. La
   clasificación del sistema decide la respuesta:
-  - solución única: **sí**, y se muestran `x1, x2, …` y la igualdad
+  - solución única: **sí**, y se muestran `x₁, x₂, …` y la igualdad
     `(3, 4) = 3(1, 0) + 4(0, 1)`;
   - soluciones infinitas: **sí**, con la solución general en función de los
     coeficientes libres y una combinación concreta (libres en cero);
   - inconsistente: **no**, porque el sistema asociado no tiene solución.
 
 El procedimiento, plegado bajo «Ver procedimiento», habla el lenguaje del
-ejercicio —los coeficientes son las incógnitas `x1, x2, …`—: planteamiento,
+ejercicio —los coeficientes son las incógnitas `x₁, x₂, …`—: planteamiento,
 sistema equivalente, matriz aumentada, operaciones por filas, matriz reducida
 y lectura de la matriz; la conclusión y los coeficientes solo aparecen en el
 resultado. En suma, resta y escalar el desarrollo es una sola cadena,
-`u + v = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)`.
+`v1 + v2 = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)`.
 Todo se calcula con `fractions.Fraction`: `(1/2, 2/3) + (1/2, 1/3) = (1, 1)`.
 
 El núcleo vive en `backend/vectores.py` (listas, ciclos y `Fraction`, sin
@@ -244,8 +248,9 @@ dimensiones incompatibles se detectan antes de intentar resolver.
 ## Sistemas numéricos
 
 La herramienta **Conversión de bases** (`/bases/conversion/`) convierte números
-entre binario, octal, decimal y hexadecimal: se escribe el número,
-se elige una única base de origen y, bajo **Convertir a**, se marcan una, varias
+entre binario, octal, decimal y hexadecimal: primero se elige la base de
+origen (decide qué dígitos valen), después se escribe el número y, bajo
+**Convertir a**, se marcan una, varias
 o todas las demás bases (la de origen no se ofrece como destino y hace falta al
 menos una). Solo hay dos algoritmos, y cualquier par de bases se resuelve con
 ellos:
@@ -296,7 +301,10 @@ caracteres.
 La herramienta **Conversión de números romanos** (`/romanos/conversion/`) tiene
 su propio tema, **Numeración romana**, porque no es un sistema posicional de
 base n. Se elige la dirección (**Arábigo → romano** o **Romano → arábigo**), se
-escribe un número y se obtiene un único resultado, precedido del procedimiento plegado:
+escribe un número y se obtiene un único resultado, precedido del procedimiento plegado.
+La etiqueta y la ayuda del campo siguen a la dirección (**Número arábigo** o
+**Número romano**); si lo escrito solo vale en la otra dirección, el error lo
+dice (`XIV parece un número romano. Cambia a Romano → arábigo.`), sin convertir:
 
 - **Arábigo → romano:** el número se separa por órdenes decimales y cada parte
   se escribe con la tabla romana: `1963 = 1000 + 900 + 60 + 3`, con `1000 → M`,
@@ -314,8 +322,9 @@ de su valor: `IIII` se rechaza indicando que 4 se escribe `IV`, y `VV`, `IC` o
 ## Reducción por filas en la interfaz visual
 
 Inicio de PyGebra permite buscar una herramienta o abrir un área y después
-un tema (Vectores, Matrices, Bases numéricas); el menú ☰ abre el mismo árbol
-en cualquier página. **Álgebra Lineal → Matrices → Reducción por filas**
+un tema (Vectores, Matrices, Bases numéricas); los temas con una sola
+herramienta ya llegan abiertos. El menú ☰ abre el mismo árbol en cualquier
+página. **Álgebra lineal → Matrices → Reducción por filas**
 (`/matrices/reduccion/`) reduce específicamente una matriz aumentada `[A | b]`.
 Puede ingresarse como **Sistema de ecuaciones** (el parser lo convierte a
 `[A | b]`) o como **Matriz aumentada**. El backend de sistemas conserva la
@@ -334,11 +343,11 @@ Se configura en el propio formulario:
 La matriz final y la solución se muestran siempre. Las casillas de Mostrar
 esperan plegadas bajo «Opciones de resultado». Tras resolver, la página lee
 Entrada → «Ver procedimiento» (plegado: matriz inicial, operaciones por filas,
-matriz final, sistema resultante y sustitución regresiva) → Resultado final
+matriz final, sistema resultante y sustitución regresiva) → Resultado
 (clasificación, solución y columnas pivote), siempre visible y una sola vez;
 si «Procedimiento» se desmarca, la matriz final pasa al resultado. Si alguna
 ecuación se escribió con términos en ambos lados, el procedimiento empieza por
-su forma estándar (`x1 - 6 = -x2 → x1 + x2 = 6`), antes de la matriz inicial;
+su forma estándar (`x₁ - 6 = -x₂ → x₁ + x₂ = 6`), antes de la matriz inicial;
 las que ya estaban normalizadas no repiten ese paso.
 «También puedes explorar» ofrece el mismo sistema con el otro método o
 comparando, los bloques omitidos y Resolver Ax = b. **Comparar ambos** resuelve

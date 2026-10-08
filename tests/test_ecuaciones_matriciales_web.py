@@ -202,7 +202,7 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         html, doc, texto = self.resolver(datos_ecuacion(*UNICA))
         self.assertIn("Ax = b tiene solución única.", texto)
         self.assertIn("El sistema equivalente es consistente de solución única.", texto)
-        self.assertIn("x1 = 3 x2 = 2", texto)
+        self.assertIn("x₁ = 3 x₂ = 2", texto)
         self.assertEqual(doc.tablas["Vector solución x"], [["3"], ["2"]])
         self.assertEqual(doc.tablas["Producto Ax"], [["5"], ["1"]])
         self.assertEqual(doc.tablas["Vector b de la comprobación"], [["5"], ["1"]])
@@ -225,10 +225,10 @@ class PruebasResultadosEcuacion(SimpleTestCase):
     def test_infinitas_rectangular_con_solucion_general_de_sistemas(self):
         html, doc, texto = self.resolver(datos_ecuacion(*INFINITAS))
         self.assertIn("Ax = b tiene infinitas soluciones.", texto)
-        self.assertIn("x1 = 2 - x3 x2 = 3 - x3 x3 es libre", texto)
-        self.assertIn("La variable x3 no tiene pivote, por lo que es libre.", texto)
+        self.assertIn("x₁ = 2 - x₃ x₂ = 3 - x₃ x₃ es libre", texto)
+        self.assertIn("La variable x₃ no tiene pivote, por lo que es libre.", texto)
         self.assertIn("b es combinación lineal de las columnas de A de infinitas maneras", texto)
-        self.assertIn("cada valor de x3", texto)
+        self.assertIn("cada valor de x₃", texto)
         self.assertIn('data-kind="infinitas"', html)
         self.assertNotIn("Vector solución x", doc.tablas)
         self.assertNotIn("Comprobación", texto)
@@ -245,12 +245,12 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         self.assertIn('data-kind="inconsistente"', html)
         self.assertNotIn("Vector solución x", doc.tablas)
         self.assertNotIn("Producto Ax", doc.tablas)
-        # Sin solución no se muestra ningún vector x ni líneas x1 = … en el resultado (antes del procedimiento plegado).
-        self.assertNotIn("x1 =", texto[texto.index("Resultado Ax = b no tiene solución."):texto.index("Ver procedimiento")])
+        # Sin solución no se muestra ningún vector x ni líneas x₁ = … en el resultado (antes del procedimiento plegado).
+        self.assertNotIn("x₁ =", texto[texto.index("Resultado Ax = b no tiene solución."):texto.index("Ver procedimiento")])
 
     def test_fracciones_exactas(self):
         html, doc, texto = self.resolver(datos_ecuacion(*FRACCIONES))
-        self.assertIn("x1 = 1/2 x2 = 1/3", texto)
+        self.assertIn("x₁ = 1/2 x₂ = 1/3", texto)
         self.assertEqual(doc.tablas["Vector solución x"], [["1/2"], ["1/3"]])
         self.assertIn("b = (1/2)a₁ + (1/3)a₂", texto)
         self.assertNotIn("0.5", texto)
@@ -274,7 +274,7 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         self.assertIn("x₁a₁ + x₂a₂ = b", texto)
         self.assertEqual(doc.tablas["Columna 1 de A"], [["1"], ["1"]])
         self.assertEqual(doc.tablas["Columna 2 de A"], [["1"], ["-1"]])
-        self.assertIn("x1 + x2 = 5 x1 - x2 = 1", texto)
+        self.assertIn("x₁ + x₂ = 5 x₁ - x₂ = 1", texto)
         self.assertEqual(doc.tablas["Matriz aumentada A barra b"], [["1", "1", "5"], ["1", "-1", "1"]])
         self.assertEqual(doc.tablas["Matriz A"], [["1", "1"], ["1", "-1"]])
         self.assertEqual(doc.tablas["Vector b"], [["5"], ["1"]])
@@ -288,7 +288,7 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         self.assertNotIn("Gauss-Jordan", texto[texto.index("Eliminación por Gauss"):])
         self.assertIn("Matriz escalonada", texto)
         self.assertIn("Sustitución regresiva", texto)
-        self.assertIn("x2 = 2", texto)
+        self.assertIn("x₂ = 2", texto)
         self.assertEqual(doc.tablas["Matriz escalonada"], [["1", "1", "5"], ["0", "1", "2"]])
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertNotIn("disclosure-nested", html)
@@ -305,7 +305,7 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         html, doc, texto = self.resolver(datos_ecuacion(*INFINITAS, metodo="comparar"))
         self.assertEqual(html.count('id="results-title"'), 1)
         self.assertEqual(texto.count("Ax = b tiene infinitas soluciones."), 1)
-        self.assertEqual(texto.count("x3 es libre"), 1)
+        self.assertEqual(texto.count("x₃ es libre"), 1)
         self.assertEqual(html.count('id="procedimiento"'), 1)
         # Un sub-bloque cerrado por método dentro del procedimiento, en orden.
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
@@ -319,15 +319,15 @@ class PruebasResultadosEcuacion(SimpleTestCase):
 
     def test_una_por_una_y_una_por_n(self):
         html, doc, texto = self.resolver(datos_ecuacion(a=[[4]], b=[6]))
-        self.assertIn("x1 = 3/2", texto)
+        self.assertIn("x₁ = 3/2", texto)
         self.assertIn("b es combinación lineal de la columna de A de una única manera.", texto)
         self.assertIn("A (1×1) · x (1) = b (1)", texto)
         self.assertIn("una ecuación por cada una de las 1 fila de A, con 1 incógnita:", texto)
         html, doc, texto = self.resolver(datos_ecuacion(a=[[1, 2, 3]], b=[6], metodo="comparar"))
         self.assertIn("Ax = b tiene infinitas soluciones.", texto)
-        self.assertIn("x2 es libre", texto)
-        self.assertIn("x3 es libre", texto)
-        self.assertIn("cada valor de x2 y x3", texto)
+        self.assertIn("x₂ es libre", texto)
+        self.assertIn("x₃ es libre", texto)
+        self.assertIn("cada valor de x₂ y x₃", texto)
 
     def test_diez_columnas_con_subindices_legibles(self):
         html, doc, texto = self.resolver(datos_ecuacion(a=[[1] * 10], b=[1]))

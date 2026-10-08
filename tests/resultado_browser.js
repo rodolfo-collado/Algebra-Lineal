@@ -23,7 +23,7 @@
     const casos = [];
     const entradas = {
         reduccion: '[name="matriz_0_0"]', axb: '[name="celda_A_0_0"]', inversa: '[name="celda_A_0_0"]',
-        operaciones: '[name="celda_0_0_0"]', vectores: '[name="u_0"]', bases: '[name="numero"]', romanos: '[name="numero"]',
+        operaciones: '[name="celda_0_0_0"]', vectores: '[name="v1_0"]', bases: '[name="numero"]', romanos: '[name="numero"]',
     };
     for (const [nombre, selector] of Object.entries(entradas)) {
         casos.push([`${nombre}: vigente → entrada anterior → nuevo POST vigente`, nombre, async (w, frame) => {

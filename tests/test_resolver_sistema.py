@@ -25,6 +25,7 @@ from frontend.web.calculadora.opciones_sistemas import (
     RUTAS_ANTIGUAS,
 )
 from frontend.web.calculadora.servicios import resolver_entrada_web
+from frontend.web.calculadora.templatetags.numeros import incognitas
 from tests.ayudas import elemento_html
 from tests.test_columnas_pivote import CASOS
 from tests.test_navegacion import PSEUDO_HERRAMIENTAS, Documento
@@ -192,7 +193,7 @@ class PruebasMetodos(SimpleTestCase):
         self.assertEqual(metodos, ["gauss"])
         texto = seccion_resultado(respuesta)
         self.assertIn("Procedimiento y resultado Gauss ", texto)
-        for presente in ("Matriz escalonada", "Sustitución regresiva", "Columnas pivote: C1, C2", "Consistente de solución única", "x1 = 2", "x2 = 1"):
+        for presente in ("Matriz escalonada", "Sustitución regresiva", "Columnas pivote: C1, C2", "Consistente de solución única", "x₁ = 2", "x₂ = 1"):
             self.assertIn(presente, texto)
         self.assertNotIn("Matriz reducida", texto)
         self.assertNotIn("Gauss-Jordan", texto)
@@ -202,7 +203,7 @@ class PruebasMetodos(SimpleTestCase):
         self.assertEqual(metodos, ["gauss_jordan"])
         texto = seccion_resultado(respuesta)
         self.assertIn("Procedimiento y resultado Gauss-Jordan ", texto)
-        for presente in ("Matriz reducida", "Columnas pivote: C1, C2", "x1 = 2", "x2 = 1"):
+        for presente in ("Matriz reducida", "Columnas pivote: C1, C2", "x₁ = 2", "x₂ = 1"):
             self.assertIn(presente, texto)
         self.assertNotIn("Matriz escalonada", texto)
         self.assertNotIn("Sustitución regresiva", texto)
@@ -220,10 +221,10 @@ class PruebasMetodos(SimpleTestCase):
         # Pivotes, clasificación y solución son comunes: aparecen una sola vez, en el resultado
         # que sigue al procedimiento plegado.
         self.assertEqual(texto.count("Columnas pivote:"), 1)
-        self.assertLess(texto.index("Resultado final"), texto.index("Columnas pivote:"))
+        self.assertLess(texto.index("Resultado"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count('class="classification"'), 1)
-        self.assertEqual(texto.count("Solución x1 = 2 x2 = 1"), 1)
-        self.assertLess(texto.index("Matriz escalonada"), texto.index("Resultado final"))
+        self.assertEqual(texto.count("Solución x₁ = 2 x₂ = 1"), 1)
+        self.assertLess(texto.index("Matriz escalonada"), texto.index("Resultado"))
         # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
         self.assertEqual(html.count(' pivot"'), 8)
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
@@ -242,7 +243,7 @@ class PruebasMetodos(SimpleTestCase):
                 for metodo in ("gauss", "gauss_jordan"):
                     resultado = resolver_entrada_web("matriz", metodo, matriz_aumentada=matriz)
                     for linea in resultado["solucion_general"]:
-                        self.assertIn(linea, texto)
+                        self.assertIn(incognitas(linea), texto)
 
     def test_comparar_no_repite_las_columnas_pivote(self):
         """Regresión: el análisis de pivotes es común y no se muestra por método."""
@@ -251,7 +252,7 @@ class PruebasMetodos(SimpleTestCase):
         texto = seccion_resultado(con)
         self.assertEqual(texto.count("Columnas pivote:"), 1)
         self.assertEqual(html.count('class="pivot-block"'), 1)
-        self.assertLess(texto.index("Resultado final"), texto.index("Solución"))
+        self.assertLess(texto.index("Resultado"), texto.index("Solución"))
         self.assertLess(texto.index("Solución"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count(' pivot"'), 8)
 
@@ -261,7 +262,7 @@ class PruebasMetodos(SimpleTestCase):
         self.assertNotIn("Columnas pivote", texto)
         self.assertNotIn('class="pivot-block"', html)
         self.assertNotIn(' pivot"', html)
-        self.assertIn("Resultado final Clasificación Consistente de solución única Solución x1 = 2 x2 = 1", texto)
+        self.assertIn("Resultado Clasificación Consistente de solución única Solución x₁ = 2 x₂ = 1", texto)
 
     def test_la_misma_entrada_da_los_mismos_resultados_que_antes(self):
         """Sin la sección Mostrar (clientes antiguos) se muestra todo, como hasta ahora."""
@@ -276,7 +277,7 @@ class PruebasMetodos(SimpleTestCase):
                     self.assertIn("Operaciones por filas", texto)
                     resultado = resolver_entrada_web("matriz", metodo, matriz_aumentada=matriz)
                     for linea in resultado["solucion_general"]:
-                        self.assertIn(linea, texto)
+                        self.assertIn(incognitas(linea), texto)
                     if resultado["mostrar_sistema_resultante"]:
                         self.assertIn("Sistema resultante", texto)
 
@@ -291,7 +292,7 @@ class PruebasBloquesDelResultado(SimpleTestCase):
         respuesta = self.resolver([])
         texto = seccion_resultado(respuesta)
         # La solución encabeza el resultado; la matriz final la acompaña después.
-        self.assertIn("Resultado final Solución x1 = 2 x2 = 1 Matriz escalonada", texto)
+        self.assertIn("Resultado Solución x₁ = 2 x₂ = 1 Matriz escalonada", texto)
         for ausente in ("Matriz inicial", "Procedimiento paso a paso", "Columnas pivote", "Sistema resultante",
                         "Sustitución regresiva", "Clasificación", "Consistente"):
             self.assertNotIn(ausente, texto)
@@ -309,7 +310,7 @@ class PruebasBloquesDelResultado(SimpleTestCase):
             self.assertNotIn(bloque, sin)
         self.assertIn("Procedimiento y resultado", con)
         self.assertNotIn("Procedimiento y resultado", sin)
-        self.assertIn("Solución x1 = 2 x2 = 1", sin)
+        self.assertIn("Solución x₁ = 2 x₂ = 1", sin)
 
     def test_mostrar_u_ocultar_clasificacion(self):
         con = self.resolver(["clasificacion"], sistema=INCONSISTENTE)
@@ -335,10 +336,10 @@ class PruebasBloquesDelResultado(SimpleTestCase):
     def test_mostrar_u_ocultar_sistema_resultante(self):
         con = seccion_resultado(self.resolver(["sistema-resultante"], sistema=INFINITAS))
         sin = seccion_resultado(self.resolver(["procedimiento", "clasificacion", "pivotes"], sistema=INFINITAS))
-        self.assertIn("Sistema resultante x1 + x2 = 2 0 = 0", con)
+        self.assertIn("Sistema resultante x₁ + x₂ = 2 0 = 0", con)
         self.assertNotIn("Sistema resultante", sin)
         for texto in (con, sin):
-            self.assertIn("x2 es libre", texto)
+            self.assertIn("x₂ es libre", texto)
 
     def test_sin_contenedores_vacios(self):
         combinaciones = ([], ["procedimiento"], ["pivotes"], ["clasificacion"], ["sistema-resultante"], TODOS)
@@ -363,7 +364,7 @@ class PruebasBloquesDelResultado(SimpleTestCase):
                     for ausente in ("Entender este resultado", "entender-resultado", "concept-guide", "insight",
                                     'class="related"', "related-title"):
                         self.assertNotContains(respuesta, ausente)
-                    for presente in ("Resultado final", "Ver procedimiento", "Operaciones por filas", "Solución"):
+                    for presente in ('class="panel-title">Resultado</h3>', "Ver procedimiento", "Operaciones por filas", "Solución"):
                         self.assertContains(respuesta, presente)
 
     def test_entrada_invalida_muestra_el_error_sin_resultado(self):
@@ -394,7 +395,7 @@ class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
         libre, normal = self.resolver(self.LIBRE), self.resolver(self.NORMAL)
         self.assertEqual(libre.status_code, 200)
         resultado = self.bloque(libre, "panel-final", "section")
-        self.assertIn("Consistente de solución única Solución x1 = 4 x2 = 2", resultado)
+        self.assertIn("Consistente de solución única Solución x₁ = 4 x₂ = 2", resultado)
         self.assertEqual(resultado, self.bloque(normal, "panel-final", "section"))
         for respuesta in (libre, normal):
             self.assertIn("Matriz inicial 1 1 6 -1 1 -2", self.bloque(respuesta, 'id="procedimiento"', "details"))
@@ -405,8 +406,8 @@ class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
         respuesta = self.resolver(self.LIBRE)
         procedimiento = self.bloque(respuesta, 'id="procedimiento"', "details")
         self.assertIn("Forma estándar", procedimiento)
-        self.assertIn("Ecuación 1: x1 - 6 = -x2 →, en forma estándar, x1 + x2 = 6", procedimiento)
-        self.assertIn("Ecuación 2: x2 = x1 - 2 →, en forma estándar, -x1 + x2 = -2", procedimiento)
+        self.assertIn("Ecuación 1: x₁ - 6 = -x₂ →, en forma estándar, x₁ + x₂ = 6", procedimiento)
+        self.assertIn("Ecuación 2: x₂ = x₁ - 2 →, en forma estándar, -x₁ + x₂ = -2", procedimiento)
         self.assertLess(procedimiento.index("Forma estándar"), procedimiento.index("Matriz inicial"))
         self.assertIn("un término que cruza el signo = cambia de signo", procedimiento)
         # El resultado no repite la normalización y el desplegable sigue cerrado.
@@ -415,7 +416,7 @@ class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
 
     def test_solo_aparecen_las_ecuaciones_que_cambiaron(self):
         procedimiento = self.bloque(self.resolver("x1 + x2 = 6; 6 = x1 - x2"), 'id="procedimiento"', "details")
-        self.assertIn("Ecuación 2: 6 = x1 - x2 →, en forma estándar, x1 - x2 = 6", procedimiento)
+        self.assertIn("Ecuación 2: 6 = x₁ - x₂ →, en forma estándar, x₁ - x₂ = 6", procedimiento)
         self.assertNotIn("Ecuación 1", procedimiento)
 
     def test_sin_pasos_redundantes_si_ya_esta_normalizada(self):
@@ -436,13 +437,13 @@ class PruebasEcuacionesEnFormaLibreWeb(SimpleTestCase):
     def test_sin_procedimiento_no_hay_forma_estandar_y_el_resultado_sigue(self):
         respuesta = self.resolver(self.LIBRE, mostrar=["clasificacion"])
         self.assertNotContains(respuesta, "Forma estándar")
-        self.assertIn("Solución x1 = 4 x2 = 2", seccion_resultado(respuesta))
+        self.assertIn("Solución x₁ = 4 x₂ = 2", seccion_resultado(respuesta))
 
     def test_exacto_y_decimal_llegan_a_la_forma_estandar(self):
         html = self.resolver("1/2x1 + 1 = x2; x1 = 2").content.decode("utf-8")
         bloque = unescape(elemento_html(html, html.index("Forma estándar"), "div"))
-        self.assertIn("1/2x1 - x2 = -1", strip_tags(bloque))
-        self.assertIn("0.5x1 - x2 = -1", bloque)
+        self.assertIn("1/2x₁ - x₂ = -1", strip_tags(bloque))
+        self.assertIn("0.5x₁ - x₂ = -1", bloque)
         self.assertIn("data-numeric", bloque)
 
     def test_no_lineal_se_rechaza_en_el_campo_del_sistema(self):
@@ -474,8 +475,8 @@ class PruebasUnaEcuacionPorLineaWeb(SimpleTestCase):
 
     def test_una_por_linea_resuelve_lo_mismo_que_con_punto_y_coma(self):
         esperado = seccion_resultado(self.resolver(self.CON_PUNTO_Y_COMA))
-        self.assertIn("Solución x1 = 2 x2 = 4", esperado)
-        self.assertIn("Ecuación 1: x1 - 6 = -x2 →, en forma estándar, x1 + x2 = 6", esperado)
+        self.assertIn("Solución x₁ = 2 x₂ = 4", esperado)
+        self.assertIn("Ecuación 1: x₁ - 6 = -x₂ →, en forma estándar, x₁ + x₂ = 6", esperado)
         for sistema in (
             "x1 - 6 = -x2\r\n2x1 + x2 = 8",
             "x1 - 6 = -x2\n2x1 + x2 = 8",

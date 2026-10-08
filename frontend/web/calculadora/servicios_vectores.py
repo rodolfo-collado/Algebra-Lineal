@@ -16,7 +16,7 @@ from backend.vectores import (
     operar_vectores as calcular_vectores,
 )
 
-from .opciones_vectores import NOMBRE_ESCALAR, NOMBRE_OBJETIVO, etiqueta_operacion
+from .opciones_vectores import NOMBRE_ESCALAR, NOMBRE_OBJETIVO
 from .servicios import adaptar_pasos, clave_clasificacion, formatear_matriz
 
 TITULOS = {
@@ -63,12 +63,12 @@ def _operacion_componente_a_componente(entrada):
     vectores = entrada["vectores"]
 
     if operacion == "escalar":
-        u = vectores["u"]
+        [(nombre, vector)] = vectores.items()
         escalar = entrada["escalar"]
-        resultado = multiplicar_escalar(escalar, u)
-        desarrollo = desarrollo_escalar(escalar, u)
-        expresion = f"{NOMBRE_ESCALAR}·u"
-        sustitucion = f"{_con_parentesis(escalar, tambien_fracciones=True)}·{texto_vector(u)}"
+        resultado = multiplicar_escalar(escalar, vector)
+        desarrollo = desarrollo_escalar(escalar, vector)
+        expresion = f"{NOMBRE_ESCALAR}·{nombre}"
+        sustitucion = f"{_con_parentesis(escalar, tambien_fracciones=True)}·{texto_vector(vector)}"
     else:
         coleccion = list(vectores.values())
         resultado = calcular_vectores(operacion, coleccion)
@@ -81,11 +81,10 @@ def _operacion_componente_a_componente(entrada):
 
     return {
         "operacion": operacion,
-        "etiqueta": etiqueta_operacion(operacion),
         "titulo": TITULOS[operacion],
         "dimension": entrada["dimension"],
         "expresion": expresion,
-        # «u + v = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)», una igualdad por línea.
+        # «v1 + v2 = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)», una igualdad por línea.
         "sustitucion": sustitucion,
         "desarrollo": f"({', '.join(desarrollo)})",
         "resultado": componentes(resultado),
@@ -170,7 +169,6 @@ def _combinacion_lineal(entrada):
 
     return {
         "operacion": "combinacion",
-        "etiqueta": etiqueta_operacion("combinacion"),
         "titulo": TITULOS["combinacion"],
         "dimension": entrada["dimension"],
         "generadores": [_entrada(nombre, vector) for nombre, vector in zip(nombres, generadores)],

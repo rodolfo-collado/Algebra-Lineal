@@ -7,10 +7,11 @@ import re
 import shutil
 import subprocess
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 
-from scripts.validate_release import main, validate_release
+from scripts.validate_release import main, validate_release, version_numbers
 
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -185,6 +186,18 @@ class PruebasCandidatoRelease(unittest.TestCase):
             main()
         self.assertEqual(output.read_text(encoding="utf-8"),
                          f"version=1.2.3\ntag=v1.2.3\ncommit={self.commit}\n")
+
+
+class PruebasVersionPreparada(unittest.TestCase):
+    """La versión del repositorio es un candidato estable coherente con su lockfile."""
+
+    def test_version_estable_sincronizada_con_uv_lock(self):
+        version = tomllib.loads((RAIZ / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+        bloqueado = tomllib.loads((RAIZ / "uv.lock").read_text(encoding="utf-8"))
+        raiz = next(paquete for paquete in bloqueado["package"] if paquete["name"] == "algebra-lineal")
+        self.assertEqual(raiz["version"], version)
+        # P27 se publica como 0.9.0; las versiones siguientes solo pueden subir.
+        self.assertGreaterEqual(version_numbers(version), (0, 9, 0))
 
 
 class PruebasWorkflowRelease(unittest.TestCase):

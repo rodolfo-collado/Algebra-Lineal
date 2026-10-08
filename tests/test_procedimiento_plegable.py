@@ -24,6 +24,7 @@ from django.test import SimpleTestCase
 from django.utils.html import strip_tags
 
 from frontend.web.calculadora.opciones_sistemas import BLOQUES_PREDETERMINADOS
+from frontend.web.calculadora.templatetags.numeros import incognitas
 from tests.ayudas import elemento_html
 from tests.test_ecuaciones_matriciales_web import INCONSISTENTE as AXB_INCONSISTENTE
 from tests.test_ecuaciones_matriciales_web import INFINITAS as AXB_INFINITAS
@@ -247,18 +248,18 @@ class PruebasSistemas(SimpleTestCase):
                         self.assertIn(f"Paso {paso['numero']}", procedimiento)
                         self.assertIn(paso["operacion"], procedimiento)
                     for linea in esperado["sustitucion"]:
-                        self.assertIn(linea, procedimiento)
+                        self.assertIn(incognitas(linea), procedimiento)
                     if esperado["mostrar_sistema_resultante"]:
                         self.assertIn("Sistema resultante", procedimiento)
                         for ecuacion in esperado["ecuaciones_resultantes"]:
-                            self.assertIn(ecuacion, procedimiento)
+                            self.assertIn(incognitas(ecuacion), procedimiento)
                     # El procedimiento explica cómo; la clasificación y la solución viven solo en el resultado.
                     self.assertNotIn("Clasificación", procedimiento)
                     self.assertNotIn(esperado["clasificacion"], procedimiento)
                     self.assertNotIn("Solución", procedimiento)
                     self.assertIn(f"Clasificación {esperado['clasificacion']}", resultado)
                     for linea in esperado["solucion_general"]:
-                        self.assertIn(linea, resultado)
+                        self.assertIn(incognitas(linea), resultado)
                     self.assertNotIn("Paso 1", resultado)
                     self.assertNotIn("Matriz inicial", resultado)
                     self.assertNotIn(esperado["etiqueta_matriz"], resultado)
@@ -281,7 +282,7 @@ class PruebasSistemas(SimpleTestCase):
         self.assertEqual(procedimiento.count("Operaciones por filas"), 2)
         self.assertNotIn("Consistente", procedimiento)
         self.assertEqual(resultado.count("Consistente de solución única"), 1)
-        self.assertEqual(resultado.count("Solución x1 = 2 x2 = 1"), 1)
+        self.assertEqual(resultado.count("Solución x₁ = 2 x₂ = 1"), 1)
         self.assertEqual(texto_resultado(html).count("Columnas pivote:"), 1)
 
     def test_sin_el_bloque_procedimiento_la_matriz_final_sigue_visible_una_vez(self):
@@ -296,16 +297,16 @@ class PruebasSistemas(SimpleTestCase):
                 self.assertEqual(todo.count("Matriz escalonada"), 1)
                 self.assertNotIn("Paso 1", todo)
                 self.assertNotIn("Sustitución regresiva", todo)
-                self.assertLess(todo.index("Solución x1 = 2 x2 = 1"), todo.index("Matriz escalonada"))
+                self.assertLess(todo.index("Solución x₁ = 2 x₂ = 1"), todo.index("Matriz escalonada"))
 
 
 class PruebasVectores(SimpleTestCase):
     def test_operaciones_desarrollo_plegado_y_vector_resultante_una_vez(self):
         casos = (
-            (datos_vectores("suma", u=[1, 2, 3], v=[4, 5, 6]), "u + v", "(1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)"),
-            (datos_vectores("resta", u=[4, 6], v=[1, 2]), "u − v", "(4, 6) − (1, 2) = (4 - 1, 6 - 2) = (3, 4)"),
-            (datos_vectores("escalar", escalar="3", u=[1, -2, 4]), "k·u", "3·(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)"),
-            (datos_vectores("escalar", escalar="-1/2", u=["1/3", -4]), "k·u", "(-1/2)·(1/3, -4) = ((-1/2)·(1/3), (-1/2)·(-4)) = (-1/6, 2)"),
+            (datos_vectores("suma", v1=[1, 2, 3], v2=[4, 5, 6]), "v1 + v2", "(1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)"),
+            (datos_vectores("resta", v1=[4, 6], v2=[1, 2]), "v1 − v2", "(4, 6) − (1, 2) = (4 - 1, 6 - 2) = (3, 4)"),
+            (datos_vectores("escalar", escalar="3", v1=[1, -2, 4]), "k·v1", "3·(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)"),
+            (datos_vectores("escalar", escalar="-1/2", v1=["1/3", -4]), "k·v1", "(-1/2)·(1/3, -4) = ((-1/2)·(1/3), (-1/2)·(-4)) = (-1/6, 2)"),
         )
         for datos, expresion, cadena in casos:
             with self.subTest(operacion=datos["operacion"]):
@@ -321,8 +322,8 @@ class PruebasVectores(SimpleTestCase):
 
     def test_combinacion_lineal_conserva_las_etapas_sin_duplicar_la_conclusion(self):
         casos = (
-            (combinacion([[1, 2], [3, 4]], [-1, 0]), "Sí: b es combinación lineal de v1 y v2.", "x1 = 2"),
-            (combinacion([[1, 2], [2, 4]], [3, 6]), "Sí: b es combinación lineal de v1 y v2.", "x1 = 3 - 2x2"),
+            (combinacion([[1, 2], [3, 4]], [-1, 0]), "Sí: b es combinación lineal de v1 y v2.", "x₁ = 2"),
+            (combinacion([[1, 2], [2, 4]], [3, 6]), "Sí: b es combinación lineal de v1 y v2.", "x₁ = 3 - 2x₂"),
             (combinacion([[1, 2], [2, 4]], [3, 7]), "No: b no es combinación lineal de v1 y v2.", "0 = 1"),
         )
         for datos, conclusion, linea in casos:
@@ -436,7 +437,7 @@ class PruebasEcuacionMatricial(SimpleTestCase):
                         self.assertNotIn(ausente, procedimiento)
                     self.assertEqual(resultado.count(esperado["enunciado"]), 1)
                     for linea in esperado["solucion_general"]:
-                        self.assertEqual(resultado.count(linea), 1)
+                        self.assertEqual(resultado.count(incognitas(linea)), 1)
                     todo = texto_resultado(html)
                     self.assertEqual(todo.count(esperado["enunciado"]), 1)
                     self.assertEqual(todo.count(f"El sistema equivalente es {esperado['clasificacion'].lower()}"), 1)
@@ -469,7 +470,7 @@ class PruebasTransversales(SimpleTestCase):
         return (
             ("/matrices/reduccion/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS}),
             ("/matrices/reduccion/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "sistema-resultante"]}),
-            (RUTA_VECTORES, datos_vectores("escalar", escalar="2", u=[1, 2])),
+            (RUTA_VECTORES, datos_vectores("escalar", escalar="2", v1=[1, 2])),
             (RUTA_VECTORES, combinacion([[1, 2], [3, 4]], [-1, 0])),
             (RUTA_MATRICES, datos_matrices("traspuesta")),
             (RUTA_MATRICES, datos_producto(metodo="comparar")),
@@ -570,13 +571,13 @@ class PruebasComparacionSinProcedimiento(SimpleTestCase):
         # Un único resultado canónico: clasificación y solución una sola vez, antes de las matrices.
         self.assertEqual(texto.count("Consistente de soluciones infinitas"), 1)
         self.assertEqual(texto.count("Solución "), 1)
-        self.assertEqual(texto.count("x2 es libre"), 1)
+        self.assertEqual(texto.count("x₂ es libre"), 1)
         self.assertLess(texto.index("Solución "), texto.index("Matriz escalonada · Gauss"))
         self.assertEqual(len(Estructura(html).paneles_finales), 1)
 
     def test_con_un_solo_metodo_o_con_procedimiento_no_se_repite_el_nombre(self):
         solo = texto_resultado(self.client.post("/matrices/reduccion/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["sistema-resultante"]}).content.decode("utf-8"))
-        self.assertIn("Matriz escalonada 1 1 2 0 0 0 Sistema resultante x1 + x2 = 2 0 = 0", solo)
+        self.assertIn("Matriz escalonada 1 1 2 0 0 0 Sistema resultante x₁ + x₂ = 2 0 = 0", solo)
         self.assertNotIn("· Gauss", solo)
         con_procedimiento = texto_resultado(self.resolver(INFINITAS, TODOS))
         # Con procedimiento, el sub-bloque «Gauss»/«Gauss-Jordan» ya nombra el método: los encabezados no lo repiten.

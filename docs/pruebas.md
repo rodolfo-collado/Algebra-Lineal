@@ -584,3 +584,38 @@ selección/cursor reales con `-12/7`, el teclado contextual y los cuatro tamaño
 No sustituye una prueba nativa del menú de WebView2; el handler no depende de Ctrl+V.
 Se ejecutan además los diez runners anteriores, 225 casos. Comandos, resultados
 y límites: [validación P27.9](validacion-p27-9.md).
+
+## P27.11 — Claridad de entrada y candidato 0.9.0
+
+```bash
+uv run --locked python -m tests.claridad_browser
+uv run --locked python -m unittest tests.test_claridad_p2711 -v
+```
+
+Abrir `http://127.0.0.1:8887/__pruebas/`. Sus 30 casos usan formularios, CSS y
+scripts reales: temas de una herramienta abiertos en Inicio y restaurados tras el
+filtro; las siete herramientas sin kicker (migas → título → descripción);
+«Ecuaciones» y la separación tras Método/Entrada a 1280 y 390 px en ambos modos;
+etiqueta y ayuda de Romanos por dirección, también sin JavaScript, y sus errores
+orientativos; Base de origen antes del número, perfil del teclado y validación al
+cambiarla y conversión de `1A`; vectores `v1…v4` al agregar, quitar, cambiar de
+operación y con dimensión 10; ayudas numéricas con decimales; y 390×650 en claro y
+oscuro sin desborde.
+
+`test_claridad_p2711` fija los contratos en Python: «Álgebra lineal» desde el
+catálogo, `herramienta_unica`, layout sin kicker, título común de relacionadas y
+exploraciones, sugerencia de dirección solo cuando la otra conversión es válida,
+orden de Bases, ayudas, coma decimal sin conversión (y sin sugerencia para
+`1,000` o listas), vectores `v1`…, filtro `incognitas`, Ax = b sin mezcla de `x1`
+y `x₁`, «Resultado» y la leyenda de pivotes. `entrada_edicion_browser` suma seis
+casos de pegado: líneas vacías exteriores con LF, CRLF y varias, una fila vacía
+interior que se sigue rechazando y un valor rodeado de saltos que conserva el
+paste nativo. Las capturas congeladas de P26.3 y P26.4 aplican
+`tests.ayudas.antes_de_p2711`, que deshace solo el título del panel, la leyenda y
+la notación. `test_release` comprueba que la versión preparada coincide con
+`uv.lock` y no retrocede de 0.9.0.
+
+Los casos que necesitan foco real (teclado contextual tras `focus()`) requieren una
+ventana con foco: con el panel de Browser oculto se ejecutan en Chrome headless con
+emulación de foco por CDP, sin dependencias nuevas. Véase
+[validación P27.11](validacion-p27-11.md).

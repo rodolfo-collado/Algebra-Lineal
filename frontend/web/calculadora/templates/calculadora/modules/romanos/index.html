@@ -18,9 +18,10 @@
                 {{ form.direccion.errors }}
             </fieldset>
 
+            {% comment %}Etiqueta y ayuda siguen a la dirección elegida con CSS (:has), también sin JavaScript.{% endcomment %}
             <div class="field-group">
-                <label for="{{ form.numero.id_for_label }}">{{ form.numero.label }}</label>
-                <p id="numero-ayuda" class="field-help">Un entero del 1 al 3999 o un número romano escrito con I, V, X, L, C, D y M.</p>
+                <label for="{{ form.numero.id_for_label }}"><span data-direccion="decimal_a_romano">Número arábigo</span><span data-direccion="romano_a_decimal">Número romano</span></label>
+                <p id="numero-ayuda" class="field-help"><span data-direccion="decimal_a_romano">Un entero del 1 al 3999, escrito con cifras.</span><span data-direccion="romano_a_decimal">Escrito con I, V, X, L, C, D y M, de mayor a menor valor; solo restan IV, IX, XL, XC, CD y CM. Del I al MMMCMXCIX (3999).</span></p>
                 {{ form.numero }}
                 {{ form.numero.errors }}
             </div>

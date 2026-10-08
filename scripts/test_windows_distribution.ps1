@@ -173,7 +173,7 @@ try {
                 sistema = 'x1 + 2x2 + x3 = 4; x3 = 2'
             }
             $text = [regex]::Replace($response.Content, '<[^>]+>', '')
-            foreach ($expected in @('Columnas pivote: C1, C3', 'Consistente de soluciones infinitas', 'x3 = 2')) {
+            foreach ($expected in @('Columnas pivote: C1, C3', 'Consistente de soluciones infinitas', 'x₃ = 2')) {
                 if (-not $text.Contains($expected)) { throw "Falta '$expected' en $method ($url)." }
             }
         }
@@ -248,7 +248,7 @@ try {
         )
         $expectedEquations = @(
             @{ x = @('1/2', '1/3'); markers = @('Ax = b tiene solución única.', 'b = (1/2)a₁ + (1/3)a₂', 'id="procedimiento"', 'class="disclosure disclosure-nested"') },
-            @{ x = @('2', '3'); markers = @('Ax = b tiene solución única.', 'A (3×2) · x (2) = b (3)', 'x1 = 2', 'x2 = 3', 'id="procedimiento"') }
+            @{ x = @('2', '3'); markers = @('Ax = b tiene solución única.', 'A (3×2) · x (2) = b (3)', 'x₁ = 2', 'x₂ = 3', 'id="procedimiento"') }
         )
         for ($case = 0; $case -lt $equationBodies.Count; $case++) {
             $equationBody = $equationBodies[$case]

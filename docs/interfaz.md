@@ -38,6 +38,14 @@ es notación matemática (`x₁`, `−`, `a⁄b`) y lo que se envía es la sinta
 interna (`x1`, `-`, `/`). Cuando una herramienta necesite símbolos, declara un
 teclado contextual (ver abajo) en lugar de pedir al usuario que los escriba.
 
+Los resultados de Reducción por filas, Resolver Ax = b y Combinación lineal
+presentan las incógnitas como `x₁, x₂, …` con el filtro `incognitas`
+(`templatetags/numeros.py`). Solo cambia la presentación: servicios, parser,
+campos, cuadrícula de entrada, placeholders y ayudas de sintaxis siguen en
+`x1`, y una misma salida nunca mezcla ambas formas. Operaciones con matrices
+conserva su notación lineal ASCII (`x1 a1 + x2 a2`, `[3, 1, 0]^T`), coherente
+en sí misma. Los nombres de vectores (`v1`, `v2`, …) son identificadores.
+
 ## Sistema visual
 
 Los estilos están organizados así:
@@ -63,7 +71,7 @@ bloque claro y en `[data-theme="dark"]`.
 
 Contrato común de los formularios de herramienta (P27.8):
 
-- **Escala.** `--text-xs` (0.8rem) para metadatos, como los encabezados `x₁` y `F1`
+- **Escala.** `--text-xs` (0.8rem) para metadatos, como los encabezados `x1` y `F1`
   de la cuadrícula; `--text-sm` (0.875rem) para etiquetas, leyendas, ayudas,
   opciones, errores y títulos de desplegables; `--text-base` (1rem) para títulos de
   sección y valores. No sustituye todos los tamaños de la aplicación.
@@ -197,8 +205,11 @@ que también marca la herramienta activa y calcula las relacionadas.
 
 `pages/inicio.html` presenta PyGebra, «Aprende resolviendo», «¿Qué quieres
 resolver?» con su buscador y «Explorar por temas». Cada área disponible es
-un `details` cerrado; al abrirla aparecen los temas, también plegados, y
-cada tema despliega las herramientas de `catalogo.py`. Son filas con bordes
+un `details` cerrado; al abrirla aparecen los temas plegados, salvo los que
+tienen exactamente una herramienta disponible (`Categoria.herramienta_unica`):
+nacen abiertos para mostrarla sin otro clic. Esa apertura no se guarda y el
+buscador restaura lo que el usuario abrió o cerró. Cada tema despliega las
+herramientas de `catalogo.py`. Son filas con bordes
 discretos: ninguna cuadrícula de tarjetas ni accesos duplicados. Las áreas
 sin herramientas disponibles permanecen ocultas en Inicio y se encuentran
 tanto por GET como en vivo. Cálculo muestra «Próximamente» en el Menú.
@@ -220,9 +231,10 @@ distintas que comparten el mismo sistema.
 
 ## Estructura de una herramienta
 
-`layouts/herramienta.html` define el orden común: contexto (área, categoría,
-título, descripción), entrada, acción principal, resultado, explicación,
-herramientas relacionadas y «También puedes explorar». Cada bloque es opcional:
+`layouts/herramienta.html` define el orden común: título y descripción (área y
+tema ya están en las migas, así que no hay kicker encima del título), entrada,
+acción principal, resultado, explicación, herramientas relacionadas y «También
+puedes explorar». Cada bloque es opcional:
 
 ```django
 {% extends "calculadora/layouts/herramienta.html" %}
@@ -288,7 +300,8 @@ independiente e idempotente (ver [Escritorio](#escritorio)).
 `components/related_tools.html` muestra las relacionadas como enlaces
 discretos después de resolver y no aparece cuando la herramienta no declara
 ninguna o ya se muestran exploraciones contextuales. Así se evita duplicar
-los destinos. Cada enlace muestra nombre e `invitacion`: una frase breve que
+los destinos. Reutiliza la sección y el título de `components/explore.html`:
+ambas dicen «También puedes explorar», sin puntos suspensivos. Cada enlace muestra nombre e `invitacion`: una frase breve que
 explica cuándo usar esa alternativa. Reducción orienta desde el sistema escrito
 o la matriz aumentada; Ax = b desde A y b conocidos. Operaciones con matrices
 también enlaza a Matriz inversa; Ax = b no propone resolver por inversión.
@@ -341,7 +354,8 @@ igual en el envío.
 La jerarquía del formulario es: Método y Tipo de entrada como selectores
 segmentados (`.segmented`, radios reales, una sola selección) con una pista
 de una línea para la opción elegida (`data-method-hint`, `data-input-hint`;
-`matriz.js` cambia la visible), el problema (texto o cuadrícula),
+`matriz.js` cambia la visible), el problema (el campo «Ecuaciones» —la opción
+ya dice «Sistema de ecuaciones»— o la cuadrícula, a 1rem de las pistas),
 «Opciones de resultado» plegadas y Resolver. El teclado aparece al enfocar
 una entrada compatible y desaparece al salir. Las opciones conservan
 sus casillas y predeterminados (todo activo) y se despliegan solas cuando lo
@@ -354,8 +368,12 @@ matriz inicial, las operaciones por filas (`_procedimiento_metodo.html` con
 `_pasos.html`), la matriz final con sus pivotes, el sistema resultante y la
 sustitución regresiva (`_bloques_metodo.html`); al comparar, un sub-bloque
 cerrado por método y la matriz inicial una vez. Después, el panel
-«Resultado final» muestra la clasificación, la solución y las columnas pivote
-(`_pivotes.html`, la lectura directa de la matriz final). Si «Procedimiento»
+«Resultado» muestra la clasificación, la solución y las columnas pivote
+(`_pivotes.html`, la lectura directa de la matriz final). Su leyenda nombra el
+bloque donde se resaltan («Los pivotes se resaltan en la matriz reducida del
+procedimiento.»): matriz escalonada, reducida o ambas al comparar, y «del
+procedimiento» solo cuando la matriz está dentro del desplegable. Sin
+procedimiento ni comparación, la cabecera del resultado no lleva kicker. Si «Procedimiento»
 está desmarcado no hay desplegable y la matriz final se muestra en el panel
 final, para que siga visible sin repetirse; al comparar, cada matriz final y
 sistema resultante nombran su método («Matriz escalonada · Gauss»).
@@ -423,17 +441,23 @@ el teclado ni con la acción principal.
 
 `components/vector.html` escribe un vector en horizontal, `(1, 2, 3)`, como
 texto corriente con paréntesis propios: se parte en varias líneas si hace
-falta y nunca provoca scroll horizontal. Acepta `nombre` («u =») y
+falta y nunca provoca scroll horizontal. Acepta `nombre` («v1 =») y
 `destacado` para el resultado.
 
 La entrada de Operaciones con vectores es una fila por vector,
-`u = ( [ ] [ ] [ ] )`, con una celda `nombre_i` por componente
+`v1 = ( [ ] [ ] [ ] )`, con una celda `nombre_i` por componente
 (`modules/vectores/_fila.html`). La dimensión `n` y la cantidad de vectores
 generadores son campos numéricos con botones +/−; `vectores.js` redibuja las
 filas con el mismo marcado del parcial y conserva lo escrito. Sin JavaScript,
 el botón «Aplicar» (`name="ajustar"`) pide al servidor redibujar la estructura
 sin calcular. `vector-fields` declara `data-perfil="numerico"`, compartido
 con las celdas de matrices y Ax = b, incluido el escalar cuando está presente.
+
+Los vectores se llaman `v1`, `v2`, … en todas las operaciones (`k·v1` en la
+multiplicación por escalar; `v1 … vk` y `b` en la combinación): agregar uno
+nunca renombra a los anteriores y la memoria por nombre conserva los valores
+al cambiar de operación. La cabecera del resultado es solo su título: un
+kicker con el nombre de la operación lo repetiría.
 
 La lista de vectores se desplaza horizontalmente como una unidad: nombres y
 componentes de cada columna permanecen alineados, también con valores de distinto
@@ -633,7 +657,8 @@ aviso. Consulta [Matriz inversa](matriz-inversa.md#presupuesto-y-confirmación).
 ## Conversión de bases
 
 `/bases/conversion/` (`ConversionBasesForm`, `servicios_bases.py`,
-`modules/bases/`) pide el número, una única base de origen (`<select>`) y las
+`modules/bases/`) pide primero la base de origen (`<select>`), que decide qué
+dígitos valen, el teclado y la validación en vivo; después el número y las
 bases de destino bajo **Convertir a**: un `fieldset` con `legend` y una casilla
 real por base, descrito por su ayuda y sus errores (`aria-describedby`).
 `conversion.js` oculta y desactiva la casilla de la base de origen al cargar y
@@ -670,7 +695,11 @@ para base 2), como ya comprobaban las pruebas Python y la validación del númer
 `/romanos/conversion/` (`ConversionRomanosForm`, `servicios_romanos.py`,
 `modules/romanos/`) pide la dirección con un `.segmented` (Arábigo → romano o
 Romano → arábigo) y un único campo de hasta 15 caracteres, descrito por su
-ayuda (`aria-describedby`). No tiene teclado matemático ni selector Exacto /
+ayuda (`aria-describedby`). Etiqueta (**Número arábigo** o **Número romano**)
+y ayuda tienen un `span[data-direccion]` por dirección y el CSS (`:has`)
+muestra el de la dirección marcada, también sin JavaScript. Si lo escrito
+solo se convierte en la otra dirección, el error lo sugiere
+(`sugerir_direccion`); si no vale en ninguna, queda el mensaje original. No tiene teclado matemático ni selector Exacto /
 Decimal: trabaja con enteros y símbolos romanos, y no necesita JavaScript.
 Los valores enviados (`decimal_a_romano` y `romano_a_decimal`) llevan el
 nombre de las funciones del backend; lo que se lee siempre es «arábigo».
@@ -788,8 +817,10 @@ ni datos del error. Django solo las usa con `DEBUG=False`, siempre en escritorio
 `entradas.js` atiende el evento `paste`, tanto de Ctrl+V como del menú contextual,
 con tres adaptaciones pequeñas al DOM existente: tablas editables, matriz
 aumentada y filas de vectores. Solo usa `text/plain`: TAB separa columnas y LF
-o CRLF separan filas. Ignora una terminación de línea de hoja de cálculo; conserva
-celdas vacías y espacios internos, recortando únicamente los extremos. Las comas
+o CRLF separan filas. Ignora las líneas vacías de los extremos (la terminación de
+una hoja de cálculo o un salto de más al copiar un resultado); una línea vacía
+interior sigue siendo una fila y se valida igual. Conserva celdas vacías y
+espacios internos, recortando únicamente los extremos. Las comas
 permanecen dentro del valor. Una sola celda conserva el paste nativo.
 
 - **Destino.** Reducción por filas [A | b]; A y b de Ax=b; A y B/b opcionales de

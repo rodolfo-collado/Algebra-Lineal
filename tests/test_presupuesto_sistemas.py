@@ -170,7 +170,7 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
             with self.subTest(metodo=metodo):
                 respuesta = self.client.post("/matrices/reduccion/", datos_matriz(matriz, metodo))
                 self.assertContains(respuesta, 'id="resultado"')
-                self.assertContains(respuesta, "x9 = 1")
+                self.assertContains(respuesta, "x₉ = 1")
                 self.assertContains(respuesta, "Consistente de solución única")
 
     def test_maximo_denso_se_resuelve_con_aritmetica_exacta(self):
@@ -201,12 +201,12 @@ class PruebasPresupuestoSistemas(SimpleTestCase):
         self.assertLess(len(pares), settings.DATA_UPLOAD_MAX_NUMBER_FIELDS)
         # urlencoded cuenta las cuatro apariciones de mostrar, no solo claves.
         respuesta = cliente.post("/matrices/reduccion/", urlencode(pares), content_type="application/x-www-form-urlencoded")
-        self.assertContains(respuesta, "x9 = 1")
+        self.assertContains(respuesta, "x₉ = 1")
         self.assertEqual(sum(len(v) for _, v in respuesta.wsgi_request.POST.lists()), 130)
         # También se procesa con el mismo parser multipart que usa Client.post.
         datos = Formulario(html, "sistema-form").como_datos()
         datos.update(dict(celdas))
-        self.assertContains(cliente.post("/matrices/reduccion/", datos), "x9 = 1")
+        self.assertContains(cliente.post("/matrices/reduccion/", datos), "x₉ = 1")
 
     def test_html_transmite_la_politica_al_navegador(self):
         html = self.client.get("/matrices/reduccion/").content.decode()
@@ -228,8 +228,8 @@ class PruebasPresupuestoTexto(SimpleTestCase):
         for metodo in ("gauss", "gauss_jordan", "comparar"):
             with self.subTest(metodo=metodo):
                 respuesta = self.client.post("/matrices/reduccion/", {"sistema": "x1+x2=3;x1-x2=1", "metodo": metodo})
-                self.assertContains(respuesta, "x1 = 2")
-                self.assertContains(respuesta, "x2 = 1")
+                self.assertContains(respuesta, "x₁ = 2")
+                self.assertContains(respuesta, "x₂ = 1")
 
     def test_texto_excesivo_y_espacios_no_llegan_al_servicio(self):
         for texto in ("x1=1" * (LONGITUD_SISTEMA_MAXIMA // 4 + 1), " " * LONGITUD_SISTEMA_MAXIMA + "x1=1"):

@@ -4,7 +4,6 @@
 
 /* —— Encabezado de herramienta —— */
 
-.tool-kicker,
 .section-kicker,
 .matrix-label,
 .final-label {
@@ -14,13 +13,6 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-}
-
-/* El kicker de la herramienta repite la ruta en tono discreto, sin versales. */
-.tool-header .tool-kicker {
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
 }
 
 .tool-header {
@@ -651,19 +643,7 @@ a.tool-link .tool-link-name {
     color: var(--color-muted);
 }
 
-/* —— Herramientas relacionadas —— */
-
-.related {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-border);
-}
-
-.related-title {
-    margin: 0 0 0.6rem;
-    font-size: 0.95rem;
-    font-weight: 700;
-}
+/* —— Herramientas relacionadas: comparten sección y título con «También puedes explorar» —— */
 
 .related-list {
     display: flex;

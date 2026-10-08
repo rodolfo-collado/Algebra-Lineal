@@ -1,7 +1,7 @@
 """Opciones de «Operaciones con vectores»: operación, dimensión y cantidad de vectores.
 
 Una sola herramienta para todo el flujo de vectores. La operación decide qué
-vectores se piden (u y v; un escalar y u; o v1 … vk y el objetivo b) y la
+vectores se piden (v1, v2, …; un escalar y v1; o v1 … vk y el objetivo b) y la
 dimensión `n` es libre: el profesor no la fija, así que la elige el usuario.
 """
 
@@ -17,7 +17,7 @@ OPERACION_PREDETERMINADA = "suma"
 AYUDAS = {
     "suma": "Suma dos o más vectores componente a componente.",
     "resta": "Resta dos o más vectores en el orden indicado, componente a componente.",
-    "escalar": "k·u multiplica cada componente de u por el escalar k.",
+    "escalar": "k·v1 multiplica cada componente de v1 por el escalar k.",
     "combinacion": "¿Existen x1, …, xk tales que x1·v1 + … + xk·vk = b?",
 }
 
@@ -28,11 +28,10 @@ DIMENSION_MAXIMA = 10
 VECTORES_PREDETERMINADOS = 2
 VECTORES_MINIMOS = 1
 
-# Nombres de los vectores de entrada según la operación.
+# Nombres de los vectores de entrada: v1, v2, … en todas las operaciones, así que
+# agregar uno nunca renombra los anteriores; k es el escalar y b, el objetivo.
 NOMBRE_ESCALAR = "k"
 NOMBRE_OBJETIVO = "b"
-VECTORES_BINARIOS = ("u", "v")
-VECTOR_ESCALAR = ("u",)
 
 
 def nombres_generadores(cantidad: int) -> tuple[str, ...]:
@@ -44,12 +43,8 @@ def nombres_vectores(operacion: str, cantidad: int) -> tuple[str, ...]:
     if operacion == "combinacion":
         return (*nombres_generadores(cantidad), NOMBRE_OBJETIVO)
     if operacion == "escalar":
-        return VECTOR_ESCALAR
-    return (*VECTORES_BINARIOS, *(f"v{i}" for i in range(3, cantidad + 1)))
-
-
-def etiqueta_operacion(operacion: str) -> str:
-    return dict(OPERACIONES)[operacion]
+        return nombres_generadores(1)
+    return nombres_generadores(cantidad)
 
 
 def texto_boton(operacion: str) -> str:

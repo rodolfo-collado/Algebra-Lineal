@@ -1,4 +1,5 @@
 {% comment %}Bloques finales de un método: la matriz final siempre (resaltando sus pivotes si se piden), el sistema resultante y la sustitución regresiva según lo elegido en Mostrar. Van al final del procedimiento o, si este no se muestra, en el panel del resultado; nunca en los dos. `con_metodo` añade el método a los encabezados cuando no hay otro bloque que lo nombre (Comparar ambos sin procedimiento).{% endcomment %}
+{% load numeros %}
 {% firstof resultado.columnas_izquierda columnas_izquierda as corte_aumentado %}
 <div class="final-block">
     <h4 class="final-label">{{ resultado.etiqueta_matriz }}{% if con_metodo %} · {{ resultado.metodo }}{% endif %}</h4>
@@ -14,7 +15,7 @@
         <h4 class="final-label">Sistema resultante{% if con_metodo %} · {{ resultado.metodo }}{% endif %}</h4>
         <ul class="equations">
             {% for ecuacion in resultado.ecuaciones_resultantes %}
-                <li><code>{{ ecuacion }}</code></li>
+                <li><code>{{ ecuacion|incognitas }}</code></li>
             {% endfor %}
         </ul>
     </div>
@@ -25,7 +26,7 @@
         <h4 class="final-label">Sustitución regresiva</h4>
         <ul class="equations">
             {% for linea in resultado.sustitucion %}
-                <li><code>{{ linea }}</code></li>
+                <li><code>{{ linea|incognitas }}</code></li>
             {% endfor %}
         </ul>
     </div>

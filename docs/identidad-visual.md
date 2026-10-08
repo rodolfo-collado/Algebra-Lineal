@@ -25,8 +25,8 @@ conservan `ALGEBRA_DESKTOP`, `ALGEBRA_DESKTOP_DEBUG`, el thread
 El AppId de Inno Setup y el AUMID `PyGebra.Desktop` son estables entre versiones.
 Al actualizar desde 0.8.0, el instalador conserva la carpeta previa y sustituye
 los accesos históricos de **Álgebra Lineal** por **PyGebra**. El área académica
-**Álgebra Lineal** del catálogo sigue siendo un concepto temático; su nombre
-queda fuera de P27.2 (UI-07).
+**Álgebra lineal** del catálogo es un concepto temático, no la marca: desde
+P27.11 (UI-07) se escribe con minúscula inicial en la segunda palabra.
 
 ## Símbolo
 

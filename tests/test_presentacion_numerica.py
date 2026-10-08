@@ -113,8 +113,8 @@ class PruebasIntegracionNumerica(SimpleTestCase):
             ("/matrices/reduccion/", {"sistema": "3x1 = 1; 2x2 = 1", "metodo": m})
             for m in ("gauss", "gauss_jordan", "comparar")
         ] + [
-            ("/vectores/operaciones/", datos_vectores("suma", u=["1/3", "1/2"], v=[0, 0])),
-            ("/vectores/operaciones/", datos_vectores("escalar", escalar="1/3", u=[1, 2])),
+            ("/vectores/operaciones/", datos_vectores("suma", v1=["1/3", "1/2"], v2=[0, 0])),
+            ("/vectores/operaciones/", datos_vectores("escalar", escalar="1/3", v1=[1, 2])),
             ("/vectores/operaciones/", combinacion([[3, 0], [0, 2]], [1, 1])),
             ("/vectores/operaciones/", combinacion([[3, 0], [1, 0]], [1, 0])),
             ("/matrices/operaciones/", datos_matrices("suma", a=[["1/3"]], b=[[0]])),

@@ -57,15 +57,11 @@
         return marcada ? marcada.value : "suma";
     }
 
+    // opciones_vectores.nombres_vectores: v1, v2, … siempre; agregar no renombra a los anteriores.
     function nombresVectores(operacion, cantidad) {
-        if (operacion === "combinacion") {
-            const nombres = [];
-            for (let indice = 1; indice <= cantidad; indice += 1) nombres.push(`v${indice}`);
-            nombres.push(OBJETIVO);
-            return nombres;
-        }
-        if (operacion === "escalar") return ["u"];
-        return ["u", "v", ...Array.from({length: Math.max(0, cantidad - 2)}, (_, i) => `v${i + 3}`)];
+        const nombres = Array.from({length: operacion === "escalar" ? 1 : cantidad}, (_, i) => `v${i + 1}`);
+        if (operacion === "combinacion") nombres.push(OBJETIVO);
+        return nombres;
     }
 
     function valoresActuales() {

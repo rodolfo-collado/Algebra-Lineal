@@ -172,7 +172,7 @@
         assert(w.document.activeElement === q(w, '[name="v3_0"]') && w.document.activeElement.value === "9", "Foco en la fila que ocupa su lugar");
         assert(estado.textContent === "Se eliminó el vector v3.", `Aviso de baja: ${estado.textContent}`);
         q(w, '[aria-label="Quitar vector v3"]').click();
-        assert(w.document.activeElement === q(w, '[name="v_0"]'), "Era la última: foco en la anterior");
+        assert(w.document.activeElement === q(w, '[name="v2_0"]'), "Era la última: foco en la anterior");
         const mas = q(w, '[data-estructura="vectores"] [data-paso="1"]');
         mas.focus(); mas.click();
         assert(w.document.activeElement === mas && estado.textContent === "Se agregó el vector v3.", "El stepper avisa sin mover el foco");

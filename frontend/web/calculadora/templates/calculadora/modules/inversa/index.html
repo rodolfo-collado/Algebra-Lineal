@@ -20,7 +20,7 @@
                 {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.0.nombre filas=form.matrices.0.filas vector=False only %}
             </div>
             {% include "calculadora/components/errores_grupo.html" %}
-            <p class="field-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos.</p>
+            <p class="field-help">Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>; usa <code>-</code> para negativos.</p>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
         <section class="workspace-section" data-inverse-method{% if not form.metodo_2x2_disponible %} hidden{% endif %}>

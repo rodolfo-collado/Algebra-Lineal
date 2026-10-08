@@ -69,7 +69,7 @@
                 <p class="field-help vector-help" data-operacion-hint-fields="combinacion" {% if estructura.operacion != "combinacion" %}hidden{% endif %}>
                     ¿Es <strong>b</strong> combinación lineal de los vectores v1, v2, …? Cada vector es una columna del sistema; b es la columna aumentada.
                 </p>
-                <p class="field-help vector-help">Escribe enteros o fracciones como <code>1/2</code>; usa <code>-</code> para negativos.</p>
+                <p class="field-help vector-help">Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>; usa <code>-</code> para negativos.</p>
 
                 {% include "calculadora/components/math_keyboard.html" %}
                 <noscript>
@@ -91,7 +91,6 @@
         {% numeric_results %}
         <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
-                <p class="section-kicker">{{ resultado.etiqueta }}</p>
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}
