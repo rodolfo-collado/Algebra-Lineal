@@ -10,6 +10,11 @@
         input.dispatchEvent(new w.Event("input", {bubbles: true}));
     };
     const cantidad = (w, selector) => w.document.querySelectorAll(selector).length;
+    const turno = () => new Promise(resolve => setTimeout(resolve, 0));
+    const expresion = w => w.document.querySelector('[name="expresion"]');
+    const operandos = w => [...w.document.querySelectorAll('.math-keyboard-operands button')];
+    const nombres = w => operandos(w).map(b => b.dataset.insercion);
+    const enfocarExpresion = w => expresion(w).focus();
     const enviar = frame => new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error("Sin respuesta al calcular")), 10000);
         frame.onload = () => { clearTimeout(timeout); resolve(frame.contentWindow); };
@@ -54,7 +59,83 @@
             for (let i = 0; i < 11; i++) click(w, '[data-agregar-vector]');
             igual(cantidad(w, '[data-vector]'), 13);
         }],
-        // Operaciones con matrices (P26.6): símbolos con nombre y una expresión; el presupuesto común vive en expresiones.js.
+        // Operaciones con matrices (P26.6): operandos con nombre y una expresión; el presupuesto común vive en expresiones.js.
+        ["Teclado: operandos iniciales y grupos separados", "matrices", w => {
+            enfocarExpresion(w);
+            igual(nombres(w), ['A','B']);
+            igual([...w.document.querySelectorAll('.math-keyboard-group')].map(g => g.getAttribute('aria-label')),
+                ['Operandos','Notación','Operadores']);
+            igual(operandos(w).every(b => b.textContent === b.dataset.insercion && b.tabIndex === -1
+                && b.getAttribute('aria-label').startsWith(b.textContent)), true);
+        }],
+        ["Teclado: agregar operando sincroniza sin abrir en Nombre", "matrices", async w => {
+            enfocarExpresion(w); click(w, '[data-agregar]'); await turno();
+            igual(w.document.activeElement.name, 'nombre_2');
+            igual(w.document.querySelector('.math-keyboard').hasAttribute('data-abierto'), false);
+            enfocarExpresion(w); igual(nombres(w), ['A','B','C']);
+        }],
+        ["Teclado: nombres largos, mayúsculas y cambio de tipo", "matrices", async w => {
+            click(w, '[data-agregar]'); click(w, '[data-agregar]');
+            ['A','Manzana','David','k'].forEach((n,i) => valor(w, `[name="nombre_${i}"]`, n));
+            for (const [i,tipo] of [[2,'vector'],[3,'escalar']]) {
+                const campo = w.document.querySelector(`[name="tipo_${i}"]`);
+                campo.value = tipo; campo.dispatchEvent(new w.Event('change', {bubbles:true}));
+            }
+            enfocarExpresion(w); await turno(); igual(nombres(w), ['A','Manzana','David','k']);
+            operandos(w)[1].click(); igual(expresion(w).value, 'Manzana');
+            valor(w, '[name="nombre_1"]', 'manzana'); await turno();
+            igual(nombres(w), ['A','manzana','David','k']);
+            igual(w.document.activeElement === expresion(w), true);
+        }],
+        ["Teclado: renombrar y eliminar invalidan teclas antiguas", "matrices", async w => {
+            enfocarExpresion(w); const anterior = operandos(w)[1];
+            valor(w, '[name="nombre_1"]', 'David'); anterior.click(); await turno();
+            igual(expresion(w).value, ''); igual(nombres(w), ['A','David']);
+            w.document.querySelectorAll('[data-eliminar]')[1].click(); await turno();
+            enfocarExpresion(w); igual(nombres(w), ['A']);
+            anterior.click(); igual(expresion(w).value, '');
+        }],
+        ["Teclado: inserción en medio, selección, cursor e input", "matrices", w => {
+            valor(w, '[name="nombre_1"]', 'Manzana'); enfocarExpresion(w);
+            const campo = expresion(w); let eventos = 0;
+            campo.addEventListener('input', () => eventos++);
+            campo.value = 'A + 2'; campo.setSelectionRange(2,2); operandos(w)[1].click();
+            igual([campo.value,campo.selectionStart,campo.selectionEnd], ['A Manzana+ 2',9,9]);
+            campo.setSelectionRange(2,9); operandos(w)[0].click();
+            igual([campo.value,campo.selectionStart,campo.selectionEnd,eventos,w.document.activeElement === campo],
+                ['A A+ 2',3,3,2,true]);
+        }],
+        ["Teclado: lista vacía conserva notación, valores no reciben operandos", "matrices", async w => {
+            enfocarExpresion(w);
+            w.document.querySelector('[name="celda_0_0_0"]').focus();
+            igual(nombres(w), []);
+            igual([...w.document.querySelectorAll('.math-key')].map(b => b.dataset.insercion), ['-','/']);
+            while (cantidad(w,'[data-simbolo]')) click(w,'[data-eliminar]');
+            enfocarExpresion(w); await turno(); igual(nombres(w), []);
+            igual([...w.document.querySelectorAll('.math-key')].map(b => b.dataset.insercion), ['()','ᵀ','+','-','=','/']);
+        }],
+        ["Teclado: Opciones, Nombre, Tipo y Escape conservan ocultación contextual", "matrices", async w => {
+            const dock = w.document.querySelector('.math-keyboard');
+            click(w, '#opciones-procedimiento summary'); await turno();
+            igual(dock.hasAttribute('data-abierto'), false);
+            for (const selector of ['[name="nombre_0"]','[name="tipo_0"]','#opciones-procedimiento summary']) {
+                enfocarExpresion(w); w.document.querySelector(selector).focus(); await turno();
+                igual(dock.hasAttribute('data-abierto'), false);
+            }
+            enfocarExpresion(w);
+            expresion(w).dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape',bubbles:true}));
+            valor(w, '[name="nombre_0"]', 'Otra'); await turno();
+            igual(dock.hasAttribute('data-abierto'), false);
+        }],
+        ["Teclado: traspuesta visual en el cursor conserva foco y Undo", "matrices", w => {
+            enfocarExpresion(w); const campo = expresion(w);
+            campo.value = 'Manzana + B'; campo.setSelectionRange(7,7);
+            const tecla = [...w.document.querySelectorAll('.math-key')].find(b => b.dataset.insercion === 'ᵀ');
+            igual(tecla.textContent, 'ᵀ'); tecla.click();
+            igual([campo.value,campo.selectionStart,campo.selectionEnd,w.document.activeElement === campo],
+                ['Manzanaᵀ + B',8,8,true]);
+            w.document.execCommand('undo'); igual(campo.value, 'Manzana + B');
+        }],
         ["Matrices: agregar, eliminar uno intermedio, conservar valores y nombres", "matrices", w => {
             igual(cantidad(w, '[data-simbolo]'), 2);
             click(w, '[data-agregar]'); click(w, '[data-agregar]');
@@ -82,20 +163,26 @@
             const texto = w.document.querySelector('#procedimiento').textContent;
             igual([texto.includes('10 − 3'), texto.includes('7 − 2')], [true, true]);
         }],
-        ["Matrices: más de diez símbolos y nombres después de Z", "matrices", w => {
+        ["Matrices: más de diez operandos y nombres después de Z", "matrices", w => {
             for (let i = 2; i < 28; i++) click(w, '[data-agregar]');
             igual(cantidad(w, '[data-simbolo]'), 28);
             igual(w.document.querySelector('[name="nombre_26"]').value, 'A1');
             igual(w.document.querySelector('[name="nombre_27"]').value, 'B1');
             igual(cantidad(w, '[name="celda_27_1_1"]'), 1);
         }],
-        ["Matrices: tope de 50 símbolos", "matrices", w => {
+        ["Matrices: tope de 50 operandos", "matrices", w => {
             for (let i = 2; i < 60; i++) click(w, '[data-agregar]');
             igual(cantidad(w, '[data-simbolo]'), 50);
             igual(w.document.querySelector('[data-agregar]').disabled, true);
             igual(w.document.querySelector('[name="cantidad"]').value, '50');
+            enfocarExpresion(w);
+            igual(nombres(w).length, 50);
+            igual(nombres(w).slice(-2), ['W1','X1']);
+            const teclas = w.document.querySelector('.math-keyboard-operands .math-keys');
+            igual(teclas.scrollWidth > teclas.clientWidth, true);
             w.document.querySelectorAll('[data-eliminar]')[49].click();
             igual(w.document.querySelector('[data-agregar]').disabled, false);
+            enfocarExpresion(w); igual(nombres(w).length, 49);
         }],
         ["Matrices: el presupuesto de celdas detiene Agregar", "matrices", w => {
             for (let i = 2; i < 9; i++) click(w, '[data-agregar]');
@@ -103,7 +190,7 @@
             igual(cantidad(w, '[name^="celda_"]'), 900);
             click(w, '[data-agregar]');
             igual(cantidad(w, '[data-simbolo]'), 9);
-            igual(w.document.querySelector('[data-presupuesto]').textContent.includes('Los 10 símbolos sumarían 904 celdas'), true);
+            igual(w.document.querySelector('[data-presupuesto]').textContent.includes('Los 10 operandos sumarían 904 celdas'), true);
             valor(w, '[name="filas_8"]', 9);
             click(w, '[data-agregar]');
             igual(cantidad(w, '[data-simbolo]'), 10);
@@ -132,21 +219,21 @@
             igual(tipo.value, 'matriz_desconocida');
             igual(cantidad(w, '[name^="celda_9_"]'), 0);
         }],
-        ["Matrices: las flechas recorren la cuadrícula de un símbolo", "matrices", w => {
+        ["Matrices: las flechas recorren la cuadrícula de un operando", "matrices", w => {
             const tecla = (selector, key) => w.document.querySelector(selector).dispatchEvent(new w.KeyboardEvent('keydown', {key, bubbles: true}));
             w.document.querySelector('[name="celda_0_0_0"]').focus();
             tecla('[name="celda_0_0_0"]', 'ArrowRight');
             igual(w.document.activeElement.name, 'celda_0_0_1');
             tecla('[name="celda_0_0_1"]', 'ArrowDown');
             igual(w.document.activeElement.name, 'celda_0_1_1');
-            // El borde no salta a otro símbolo.
+            // El borde no salta a otro operando.
             tecla('[name="celda_0_1_1"]', 'ArrowDown');
             igual(w.document.activeElement.name, 'celda_0_1_1');
         }],
         ["Matrices: cantidad manipulada vuelve a una estructura segura", "matrices", async (w, frame) => {
             w.document.querySelector('[name="cantidad"]').value = '100000';
             w = await enviar(frame);
-            igual(w.document.querySelector('.alert.error').textContent.includes('hasta 50 símbolos'), true);
+            igual(w.document.querySelector('.alert.error').textContent.includes('hasta 50 operandos'), true);
             igual(cantidad(w, '[data-simbolo]'), 0);
             click(w, '[data-agregar]');
             igual(cantidad(w, '[data-simbolo]'), 1);

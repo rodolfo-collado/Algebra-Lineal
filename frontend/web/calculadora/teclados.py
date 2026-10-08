@@ -87,9 +87,10 @@ VARIABLES = GrupoTeclas("Variables", variables(6))
 OPERACIONES = GrupoTeclas("Operaciones", (MAS, MENOS, FRACCION, IGUAL))
 ECUACIONES = GrupoTeclas("Ecuaciones", (Tecla("Nueva ecuación", "\n", "Separar la siguiente ecuación"),))
 LINEALES = GrupoTeclas("Operaciones", (MAS, MENOS, FRACCION))
-EXPRESIONES = GrupoTeclas("Expresión", (
-    Tecla("( )", "()", "Paréntesis", 1), Tecla("ᵀ", "^T", "Traspuesta"), MAS, MENOS, IGUAL, FRACCION,
+EXPRESIONES = GrupoTeclas("Notación", (
+    Tecla("( )", "()", "Paréntesis", 1), Tecla("ᵀ", "ᵀ", "Traspuesta"),
 ))
+OPERADORES_EXPRESION = GrupoTeclas("Operadores", (MAS, MENOS, IGUAL, FRACCION))
 VALORES = GrupoTeclas("Valores", (MENOS, FRACCION))
 SEPARADOR = GrupoTeclas("Separador", (Tecla(".", ".", "Punto decimal"),))
 SIGNO = GrupoTeclas("Signo", (MENOS,))
@@ -101,7 +102,7 @@ def grupo_digitos(base: int) -> GrupoTeclas:
 
 PERFIL_SISTEMA = Perfil("sistema", (VARIABLES, OPERACIONES, ECUACIONES))
 PERFIL_NUMERICO = Perfil("numerico", (VALORES,), ayuda="Inserta en la celda donde está el cursor.")
-PERFIL_EXPRESION = Perfil("expresion", (EXPRESIONES,))
+PERFIL_EXPRESION = Perfil("expresion", (EXPRESIONES, OPERADORES_EXPRESION))
 PERFIL_LINEAL = Perfil("lineal", (VARIABLES, LINEALES))
 PERFILES_BASE = {
     base: Perfil(

@@ -18,7 +18,7 @@ from backend.matrices import multiplicar_matriz_vector, sumar_matrices
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm
 from frontend.web.calculadora.servicios_expresiones import evaluar_expresion_web
-from tests.test_matrices_web import datos_simbolos
+from tests.test_matrices_web import Contenido, datos_simbolos
 
 RUTA = "/matrices/operaciones/"
 ANTIGUA = "/matrices/expresiones/"
@@ -71,6 +71,17 @@ class PruebasCatalogo(SimpleTestCase):
 
 
 class PruebasPagina(SimpleTestCase):
+    def test_vocabulario_visible_y_fuente_de_operandos_del_teclado(self):
+        respuesta = self.client.get(RUTA)
+        self.assertContains(respuesta, '>Operandos</h3>')
+        self.assertContains(respuesta, '>Agregar operando</button>')
+        self.assertContains(respuesta, 'Define las matrices, vectores y escalares que usarás en la expresión.')
+        self.assertContains(respuesta, 'data-operandos="#symbol-list"')
+        for texto in ('Símbolos', 'Agregar símbolo', 'Eliminar símbolo'):
+            self.assertNotContains(respuesta, texto)
+        vacio = self.client.post(RUTA, datos_expresion('', EJEMPLO[:1], eliminar='0'))
+        self.assertContains(vacio, 'Sin operandos:')
+
     def test_get_empieza_con_dos_matrices_y_sin_resultado(self):
         respuesta = self.client.get(RUTA)
         self.assertContains(respuesta, 'id="expresiones-form"')
@@ -103,8 +114,8 @@ class PruebasPagina(SimpleTestCase):
         html = re.sub(r"<template\b.*?</template>", "", self.client.get(RUTA).content.decode(), flags=re.S)
         for nombre in ("A", "B"):
             with self.subTest(nombre=nombre):
-                self.assertIn(f'<fieldset class="symbol-card" data-simbolo aria-label="Símbolo {nombre}">', html)
-                self.assertIn(f'aria-label="Eliminar símbolo {nombre}">Eliminar</button>', html)
+                self.assertIn(f'<fieldset class="symbol-card" data-simbolo aria-label="Operando {nombre}">', html)
+                self.assertIn(f'aria-label="Eliminar operando {nombre}">Eliminar</button>', html)
                 for etiqueta in (f"Quitar una fila de {nombre}", f"Agregar una fila a {nombre}",
                                  f"Quitar una columna de {nombre}", f"Agregar una columna a {nombre}"):
                     self.assertIn(f'aria-label="{etiqueta}"', html)
@@ -115,10 +126,10 @@ class PruebasPagina(SimpleTestCase):
             "cantidad": "1", "nombre_0": "u", "tipo_0": "vector", "filas_0": "2",
             "celda_0_0_0": "1", "celda_0_1_0": "2", "expresion": "u", "ajustar": "1",
         }).content.decode()
-        self.assertIn('aria-label="Símbolo u"', renombrado)
+        self.assertIn('aria-label="Operando u"', renombrado)
         self.assertIn('aria-label="Quitar una componente de u"', renombrado)
         self.assertIn('aria-label="Agregar una componente a u"', renombrado)
-        self.assertIn('aria-label="Eliminar símbolo u"', renombrado)
+        self.assertIn('aria-label="Eliminar operando u"', renombrado)
 
     def test_nombre_tipo_y_dimensiones_tienen_label_asociado_sin_dos_puntos(self):
         # P27.8 (UI-62): etiquetas reales encima de cada control y sin «:» automático.
@@ -131,6 +142,18 @@ class PruebasPagina(SimpleTestCase):
 
 
 class PruebasCalculo(SimpleTestCase):
+    def test_traspuesta_visual_y_manual_de_nombre_largo_son_equivalentes(self):
+        matriz = ({'nombre': 'Manzana', 'tipo': 'matriz', 'valor': [[1, 2, 3], [4, 5, 6]]},)
+        resultados = []
+        for sufijo in ('^T', 'ᵀ'):
+            with self.subTest(sufijo=sufijo):
+                respuesta = self.client.post(RUTA, datos_expresion('Manzana' + sufijo, matriz))
+                self.assertNotContains(respuesta, 'data-respuesta-errores')
+                self.assertContains(respuesta, 'Manzanaᵀ')
+                resultados.append(Contenido(respuesta.content.decode()).tablas['Resultado'])
+        self.assertEqual(resultados[0], [['1', '4'], ['2', '5'], ['3', '6']])
+        self.assertEqual(resultados[0], resultados[1])
+
     def test_ejemplo_obligatorio_y_la_suma_equivalente(self):
         for expresion, fragmentos in (
             ("A(u + v)", ("u + v = [1, 4]", "A(u + v) = [22, 7]")),
@@ -197,7 +220,7 @@ class PruebasSeguridad(SimpleTestCase):
             {"nombre": "A", "tipo": "escalar", "valor": "2"},
         ))
         self.rechazar(repetido, "está repetido")
-        self.rechazar(datos_expresion("A + Z", EJEMPLO[:1]), "El símbolo Z no está definido")
+        self.rechazar(datos_expresion("A + Z", EJEMPLO[:1]), "El operando Z no está definido")
         self.rechazar(datos_expresion("A + * B", EJEMPLO[:1] + ({"nombre": "B", "tipo": "matriz", "valor": [[1, 0], [0, 1]]},)), "operando")
 
     def test_dimensiones_incompatibles_en_la_subexpresion(self):
@@ -321,7 +344,7 @@ class PruebasIgualdadWeb(SimpleTestCase):
         self.rechazar(datos_expresion("A = A = A", EJEMPLO[:1]), "una igualdad")
         self.rechazar(datos_expresion("A == A", EJEMPLO[:1]), "==")
         self.rechazar(datos_expresion("A + = A", EJEMPLO[:1]), "lado izquierdo")
-        self.rechazar(datos_expresion("A = Z", EJEMPLO[:1]), "El símbolo Z no está definido")
+        self.rechazar(datos_expresion("A = Z", EJEMPLO[:1]), "El operando Z no está definido")
         self.rechazar(datos_expresion("(A = A", EJEMPLO[:1]), "paréntesis")
         self.rechazar(datos_expresion("A(B + C) = D", (
             {"nombre": "A", "tipo": "matriz", "valor": [[1, 0], [0, 1]]},

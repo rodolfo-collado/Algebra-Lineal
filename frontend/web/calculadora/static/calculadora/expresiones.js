@@ -53,7 +53,7 @@
         if (firma) firma.value = "";
     }
 
-    // Lo que cada símbolo dibuja y envía, con la misma regla que forms_expresiones.py.
+    // Lo que cada operando dibuja y envía, con la misma regla que forms_expresiones.py.
     function forma(tipo, filas, columnas) {
         if (tipo === "matriz_desconocida" || tipo === "vector_simbolico") return [0, 0];
         if (tipo === "escalar") return [1, 1];
@@ -84,10 +84,10 @@
             campos += alto * ancho + camposEstructura(tipo);
         });
         if (celdas > maximos.celdas) {
-            return `Los ${estructuras.length} símbolos sumarían ${celdas} celdas y la interfaz admite hasta ${maximos.celdas}: quita símbolos o reduce sus dimensiones.`;
+            return `Los ${estructuras.length} operandos sumarían ${celdas} celdas y la interfaz admite hasta ${maximos.celdas}: quita operandos o reduce sus dimensiones.`;
         }
         if (campos > maximos.campos) {
-            return `Los ${estructuras.length} símbolos ocuparían ${campos} campos del formulario (nombre, tipo, dimensiones y celdas) y la interfaz admite hasta ${maximos.campos}: quita símbolos o reduce sus dimensiones.`;
+            return `Los ${estructuras.length} operandos ocuparían ${campos} campos del formulario (nombre, tipo, dimensiones y celdas) y la interfaz admite hasta ${maximos.campos}: quita operandos o reduce sus dimensiones.`;
         }
         return "";
     }
@@ -172,7 +172,7 @@
         rejilla.hidden = false;
     }
 
-    // Los mismos textos que forms_expresiones.rotulos_dimension: cada control dice a qué símbolo pertenece.
+    // Los mismos textos que forms_expresiones.rotulos_dimension: cada control dice a qué operando pertenece.
     const UNIDADES = { Filas: "una fila", Componentes: "una componente", Columnas: "una columna" };
 
     function simbolo(card, indice) {
@@ -181,8 +181,8 @@
 
     function rotular(card, indice) {
         const nombre = simbolo(card, indice);
-        card.setAttribute("aria-label", `Símbolo ${nombre}`);
-        card.querySelector("[data-eliminar]").setAttribute("aria-label", `Eliminar símbolo ${nombre}`);
+        card.setAttribute("aria-label", `Operando ${nombre}`);
+        card.querySelector("[data-eliminar]").setAttribute("aria-label", `Eliminar operando ${nombre}`);
         card.querySelectorAll("[data-dimension]").forEach(caja => {
             const unidad = UNIDADES[caja.querySelector("label").textContent.trim()];
             caja.querySelector('[data-paso="-1"]').setAttribute("aria-label", `Quitar ${unidad} de ${nombre}`);
@@ -228,7 +228,7 @@
         const cuerpo = card.querySelector("tbody");
         cuerpo.replaceChildren();
         if (conCeldas) {
-            const nombre = campo(card, "nombre").value || "símbolo";
+            const nombre = campo(card, "nombre").value || "operando";
             const ancho = tipo === "matriz" ? columnas : 1;
             const alto = tipo === "escalar" ? 1 : filas;
             for (let i = 0; i < alto; i += 1) {
@@ -314,12 +314,12 @@
             const cards = tarjetas();
             const indice = cards.indexOf(card);
             const nombre = simbolo(card, indice);
-            // El foco sigue en el símbolo vecino (el siguiente o, si no hay, el anterior);
-            // sin símbolos, en Agregar. Nunca queda en body.
+            // El foco sigue en el operando vecino (el siguiente o, si no hay, el anterior);
+            // sin operandos, en Agregar. Nunca queda en body.
             const vecina = cards[indice + 1] || cards[indice - 1];
             card.remove();
             reindex();
-            aviso.textContent = `Se eliminó el símbolo ${nombre}.`;
+            aviso.textContent = `Se eliminó el operando ${nombre}.`;
             (vecina ? campo(vecina, "nombre") : agregar).focus();
             root.querySelector("form").dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
             ocultarConfirmacion();
@@ -329,12 +329,12 @@
             event.preventDefault();
             const actuales = tarjetas();
             if (actuales.length >= maximos.simbolos) {
-                aviso.textContent = `La interfaz admite hasta ${maximos.simbolos} símbolos.`;
+                aviso.textContent = `La interfaz admite hasta ${maximos.simbolos} operandos.`;
                 return;
             }
             const mensaje = presupuesto([...actuales.map(estructura), { tipo: "matriz", filas: DIMENSION, columnas: DIMENSION }]);
             if (mensaje) {
-                aviso.textContent = `No se puede agregar otro símbolo: una matriz 2×2 más no cabe. ${mensaje}`;
+                aviso.textContent = `No se puede agregar otro operando: una matriz 2×2 más no cabe. ${mensaje}`;
                 return;
             }
             lista.append(plantilla.content.cloneNode(true));
@@ -342,8 +342,8 @@
             const nombre = nombreLibre(new Set(actuales.map(card => campo(card, "nombre").value)));
             campo(nueva, "nombre").value = nombre;
             reconstruir(nueva);
-            // El usuario continúa en el nuevo símbolo: primero su nombre, luego sus celdas.
-            aviso.textContent = `Se agregó el símbolo ${nombre}.`;
+            // El usuario continúa en el nuevo operando: primero su nombre, luego sus celdas.
+            aviso.textContent = `Se agregó el operando ${nombre}.`;
             campo(nueva, "nombre").focus();
             root.querySelector("form").dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
             ocultarConfirmacion();
@@ -373,7 +373,7 @@
         if (event.target.dataset.campo === "nombre") {
             rotular(card, tarjetas().indexOf(card));
             const tipo = campo(card, "tipo").value;
-            const nombre = event.target.value || "símbolo";
+            const nombre = event.target.value || "operando";
             if (tipo === "vector_simbolico") {
                 actualizarNota(card, "vector_simbolico", entero(campo(card, "filas")) || 0);
             }
@@ -387,7 +387,7 @@
     root.addEventListener("change", ocultarConfirmacion);
 
     // Tab recorre todos los campos. Las flechas verticales cambian de fila dentro del
-    // símbolo; las horizontales solo cambian de celda al llegar al extremo del texto.
+    // operando; las horizontales solo cambian de celda al llegar al extremo del texto.
     lista.addEventListener("keydown", (event) => {
         const input = event.target;
         if (input.dataset.campo !== "celda" || !window.entradasSeguras.flechaDeCelda(event)) return;

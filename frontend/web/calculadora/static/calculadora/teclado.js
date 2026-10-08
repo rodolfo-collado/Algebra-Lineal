@@ -15,6 +15,42 @@
         let perfilActual = null;
         let cambioVisual = 0;
 
+        function crearTecla(tecla) {
+            const boton = plantillaTecla.content.firstElementChild.cloneNode(true);
+            boton.textContent = tecla.etiqueta;
+            boton.setAttribute("data-insercion", tecla.insercion);
+            boton.setAttribute("data-retroceso", tecla.retroceso || 0);
+            boton.setAttribute("aria-label", `${tecla.etiqueta} — ${tecla.nombre}`);
+            boton.title = `${tecla.etiqueta} — ${tecla.nombre}`;
+            return boton;
+        }
+
+        function sincronizarOperandos() {
+            const selector = objetivo?.closest("[data-operandos]")?.dataset.operandos;
+            const fuente = selector ? contenedor.querySelector(selector) : null;
+            const nombres = fuente ? [...fuente.querySelectorAll('[data-campo="nombre"]')]
+                .map(campo => campo.value.trim()).filter(Boolean) : [];
+            let bloque = grupos.querySelector(".math-keyboard-operands");
+            if (!nombres.length) {
+                bloque?.remove();
+                return;
+            }
+            if (!bloque) {
+                bloque = plantillaGrupo.content.firstElementChild.cloneNode(true);
+                bloque.classList.add("math-keyboard-operands");
+                bloque.setAttribute("aria-label", "Operandos");
+                bloque.querySelector(".math-keyboard-group-name").textContent = "Operandos";
+                grupos.prepend(bloque);
+            }
+            const teclas = bloque.querySelector(".math-keys");
+            // El DOM de entrada es la fuente; conservar botones sin cambios preserva la pulsación.
+            const actuales = [...teclas.children].map(boton => boton.dataset.insercion);
+            if (nombres.length === actuales.length && nombres.every((nombre, i) => nombre === actuales[i])) return;
+            teclas.replaceChildren(...nombres.map(nombre => crearTecla({
+                etiqueta: nombre, insercion: nombre, nombre: `Operando ${nombre}`,
+            })));
+        }
+
         function perfilDe(campo) {
             return campo?.closest("[data-perfil]")?.dataset.perfil;
         }
@@ -39,13 +75,7 @@
                 bloque.querySelector(".math-keyboard-group-name").textContent = grupo.nombre;
                 const teclas = bloque.querySelector(".math-keys");
                 grupo.teclas.forEach((tecla) => {
-                    const boton = plantillaTecla.content.firstElementChild.cloneNode(true);
-                    boton.textContent = tecla.etiqueta;
-                    boton.setAttribute("data-insercion", tecla.insercion);
-                    boton.setAttribute("data-retroceso", tecla.retroceso);
-                    boton.setAttribute("aria-label", `${tecla.etiqueta} — ${tecla.nombre}`);
-                    boton.title = `${tecla.etiqueta} — ${tecla.nombre}`;
-                    teclas.appendChild(boton);
+                    teclas.appendChild(crearTecla(tecla));
                 });
                 grupos.appendChild(bloque);
             });
@@ -80,7 +110,10 @@
 
         function sincronizar() {
             if (!esValido(objetivo) || document.activeElement !== objetivo) objetivo = null;
-            if (objetivo) mostrarPerfil(perfilDe(objetivo));
+            if (objetivo) {
+                mostrarPerfil(perfilDe(objetivo));
+                sincronizarOperandos();
+            }
             mostrarDock(Boolean(objetivo));
         }
 
@@ -105,6 +138,8 @@
             requestAnimationFrame(revelarCampo);
         });
         document.addEventListener("focusout", () => queueMicrotask(sincronizar));
+        contenedor.addEventListener("input", sincronizar);
+        contenedor.addEventListener("change", sincronizar);
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 objetivo = null;

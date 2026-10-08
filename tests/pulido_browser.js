@@ -1,4 +1,4 @@
-/* P27.8: celdas, Operaciones, foco al agregar/quitar, nombres por símbolo, ayudas de Inversa,
+/* P27.8: celdas, Operaciones, foco al agregar/quitar, nombres por operando, ayudas de Inversa,
    desplegables, etiquetas, contraste y foco bajo la cabecera, con la app y sus scripts reales.
    Se comparan medidas entre sí (alineación, orden, contraste calculado), no píxeles fijos. */
 (async () => {
@@ -143,23 +143,23 @@
     }]);
 
     // —— UI-33: agregar y quitar ——
-    casos.push(["UI-33: agregar y eliminar símbolos dejan el foco en contexto y lo anuncian", "/matrices/operaciones/", async w => {
+    casos.push(["UI-33: agregar y eliminar operandos dejan el foco en contexto y lo anuncian", "/matrices/operaciones/", async w => {
         const aviso = q(w, "[data-presupuesto]");
         const nombre = tarjeta => tarjeta.querySelector('[data-campo="nombre"]');
         assert(aviso.getAttribute("role") === "status", "Región de estado existente");
         q(w, "[data-agregar]").click();
         let tarjetas = todos(w, "[data-simbolo]");
-        assert(tarjetas.length === 3 && w.document.activeElement === nombre(tarjetas[2]), "Foco en el nombre del nuevo símbolo");
-        assert(aviso.textContent === "Se agregó el símbolo C.", `Aviso de alta: ${aviso.textContent}`);
+        assert(tarjetas.length === 3 && w.document.activeElement === nombre(tarjetas[2]), "Foco en el nombre del nuevo operando");
+        assert(aviso.textContent === "Se agregó el operando C.", `Aviso de alta: ${aviso.textContent}`);
         tarjetas[1].querySelector("[data-eliminar]").click();
         tarjetas = todos(w, "[data-simbolo]");
-        assert(w.document.activeElement === nombre(tarjetas[1]) && tarjetas[1].getAttribute("aria-label") === "Símbolo C", "Foco en el símbolo siguiente");
-        assert(aviso.textContent === "Se eliminó el símbolo B.", `Aviso de baja: ${aviso.textContent}`);
+        assert(w.document.activeElement === nombre(tarjetas[1]) && tarjetas[1].getAttribute("aria-label") === "Operando C", "Foco en el operando siguiente");
+        assert(aviso.textContent === "Se eliminó el operando B.", `Aviso de baja: ${aviso.textContent}`);
         tarjetas[1].querySelector("[data-eliminar]").click();
         assert(w.document.activeElement === nombre(todos(w, "[data-simbolo]")[0]), "Sin siguiente, foco en el anterior");
         todos(w, "[data-simbolo]")[0].querySelector("[data-eliminar]").click();
-        assert(w.document.activeElement === q(w, "[data-agregar]"), "Sin símbolos, foco en Agregar");
-        assert(aviso.textContent === "Se eliminó el símbolo A.", "Último aviso");
+        assert(w.document.activeElement === q(w, "[data-agregar]"), "Sin operandos, foco en Agregar");
+        assert(aviso.textContent === "Se eliminó el operando A.", "Último aviso");
     }]);
     casos.push(["UI-33: Vectores — agregar y quitar llevan el foco a una componente y lo anuncian", "/vectores/operaciones/", async w => {
         const estado = q(w, "[data-estado-vectores]");
@@ -198,11 +198,11 @@
     }]);
 
     // —— UI-34: nombres accesibles ——
-    casos.push(["UI-34: cada control nombra su símbolo y renombrar A → M lo actualiza", "/matrices/operaciones/", async w => {
+    casos.push(["UI-34: cada control nombra su operando y renombrar A → M lo actualiza", "/matrices/operaciones/", async w => {
         const nombres = tarjeta => [tarjeta.getAttribute("aria-label"), ...[...tarjeta.querySelectorAll("button")].map(b => b.getAttribute("aria-label"))];
         const a = todos(w, "[data-simbolo]")[0];
-        assert(a.tagName === "FIELDSET", "Cada símbolo es un grupo nativo");
-        const esperados = ["Símbolo A", "Quitar una fila de A", "Agregar una fila a A", "Quitar una columna de A", "Agregar una columna a A", "Eliminar símbolo A"];
+        assert(a.tagName === "FIELDSET", "Cada operando es un grupo nativo");
+        const esperados = ["Operando A", "Quitar una fila de A", "Agregar una fila a A", "Quitar una columna de A", "Agregar una columna a A", "Eliminar operando A"];
         assert(JSON.stringify(nombres(a)) === JSON.stringify(esperados), `Nombres: ${nombres(a)}`);
         escribir(w, a.querySelector('[data-campo="nombre"]'), "M");
         assert(nombres(a).every(n => n.endsWith(" M")) && a.querySelector("td label").textContent.startsWith("Matriz M"), "Renombrar actualiza grupo, botones y celdas");
@@ -210,7 +210,7 @@
         assert(nombres(a).includes("Quitar una componente de M"), "Un vector habla de componentes");
         q(w, "[data-agregar]").click();
         const nueva = todos(w, "[data-simbolo]").at(-1);
-        assert(nombres(nueva)[0] === "Símbolo A" && nombres(nueva).at(-1) === "Eliminar símbolo A", "La plantilla también se rotula");
+        assert(nombres(nueva)[0] === "Operando A" && nombres(nueva).at(-1) === "Eliminar operando A", "La plantilla también se rotula");
         const botones = visibles(w, "[data-simbolo] button").map(b => b.getAttribute("aria-label"));
         assert(new Set(botones).size === botones.length, "Ningún nombre de botón se repite");
     }]);

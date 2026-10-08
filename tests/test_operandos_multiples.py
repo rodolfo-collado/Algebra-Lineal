@@ -29,7 +29,7 @@ from tests.test_matrices_web import Contenido, datos_simbolos, matriz, RUTA as M
 
 
 def nombres(cantidad):
-    """A … Z, A1 …: los nombres que la interfaz propone al agregar símbolos."""
+    """A … Z, A1 …: los nombres que la interfaz propone al agregar operandos."""
     usados = []
     for _ in range(cantidad):
         usados.append(nombre_libre(set(usados)))
@@ -247,7 +247,7 @@ class PruebasWebColecciones(SimpleTestCase):
 
 
 class PruebasPresupuesto(SimpleTestCase):
-    """Presupuesto común (P26.6): símbolos, celdas y campos antes de construir; apariciones al calcular."""
+    """Presupuesto común (P26.6): operandos, celdas y campos antes de construir; apariciones al calcular."""
 
     def post(self, ruta, datos):
         # El cliente de pruebas relanza cualquier excepción de la vista: un 500 haría fallar la prueba.
@@ -256,7 +256,7 @@ class PruebasPresupuesto(SimpleTestCase):
         return respuesta.content.decode()
 
     def test_mas_de_ocho_simbolos_y_mas_de_diez_operandos(self):
-        # El tope histórico de Expresiones (8 símbolos) ya no limita: el presupuesto es el común.
+        # El tope histórico de Expresiones (8 operandos) ya no limita: el presupuesto es el común.
         html = self.post(MATRICES, datos_coleccion("suma", [llena(3, 4)] * 12))
         self.assertEqual(Contenido(html).tablas["Resultado"], [["12"] * 4] * 3)
         html = self.post(MATRICES, datos_coleccion("producto", [llena(3, 3)] * 12, "fila_columna"))
@@ -273,7 +273,7 @@ class PruebasPresupuesto(SimpleTestCase):
                 self.assertEqual(form.bloques, [])
                 self.assertEqual(form.nombres_celdas, [])
                 self.assertFalse(form.is_valid())
-                self.assertEqual(form.errors["cantidad"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} símbolos."])
+                self.assertEqual(form.errors["cantidad"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} operandos."])
         with patch("frontend.web.calculadora.forms.nombres_vectores", wraps=nombres_vectores) as nombrar:
             form = VectoresForm({"operacion": "suma", "vectores": "100000", "dimension": "10"})
             self.assertFalse(form.is_valid())
@@ -303,10 +303,10 @@ class PruebasPresupuesto(SimpleTestCase):
         # Envíos manipulados que Django aún deja pasar (menos de 1000 campos): la interfaz nunca los dibuja.
         casos = (
             # Nueve 10×10 y una 1×1: 901 celdas.
-            ([llena(10, 10)] * 9 + [[[1]]], "Los 10 símbolos suman 901 celdas y la interfaz admite hasta 900: quita símbolos o reduce sus dimensiones."),
+            ([llena(10, 10)] * 9 + [[[1]]], "Los 10 operandos suman 901 celdas y la interfaz admite hasta 900: quita operandos o reduce sus dimensiones."),
             # 50 matrices con 791 celdas caben en celdas, pero no en campos: 200 de estructura + 791 = 991.
             ([llena(4, 4)] * 45 + [llena(2, 7)] * 4 + [llena(3, 5)],
-             f"Los 50 símbolos ocupan 991 campos del formulario (nombre, tipo, dimensiones y celdas) y la interfaz admite hasta {CAMPOS_MAXIMOS}: quita símbolos o reduce sus dimensiones."),
+             f"Los 50 operandos ocupan 991 campos del formulario (nombre, tipo, dimensiones y celdas) y la interfaz admite hasta {CAMPOS_MAXIMOS}: quita operandos o reduce sus dimensiones."),
         )
         for matrices, mensaje in casos:
             datos = datos_coleccion("suma", matrices)
@@ -315,7 +315,7 @@ class PruebasPresupuesto(SimpleTestCase):
                     form = ExpresionMatricialForm(datos | extra, accion="ajustar" if extra else None)
                     self.assertFalse(form.is_valid())
                     self.assertEqual(form.non_field_errors(), [mensaje])
-                    # Se dibujan los mismos símbolos con las dimensiones iniciales, dentro del presupuesto.
+                    # Se dibujan los mismos operandos con las dimensiones iniciales, dentro del presupuesto.
                     self.assertEqual(len(form.bloques), len(matrices))
                     self.assertEqual(len(form.nombres_celdas), len(matrices) * 4)
                     html = self.post(MATRICES, datos | extra)
@@ -332,14 +332,14 @@ class PruebasPresupuesto(SimpleTestCase):
         demasiadas = desconocidas + [{"nombre": "Z9", "tipo": "matriz_desconocida", "filas": 1, "columnas": 1}]
         form = ExpresionMatricialForm(datos_simbolos("A", demasiadas, ajustar="1"), accion="ajustar")
         self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors["cantidad"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} símbolos."])
+        self.assertEqual(form.errors["cantidad"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} operandos."])
 
     def test_agregar_respeta_el_tope_y_el_presupuesto(self):
         cincuenta = datos_coleccion("suma", [[[1]]] * OPERANDOS_MAXIMOS) | {"agregar": "1"}
-        self.assertIn(f"No se puede agregar otro símbolo: la interfaz admite hasta {OPERANDOS_MAXIMOS}.", self.post(MATRICES, cincuenta))
+        self.assertIn(f"No se puede agregar otro operando: la interfaz admite hasta {OPERANDOS_MAXIMOS}.", self.post(MATRICES, cincuenta))
         llenos = datos_coleccion("suma", [llena(10, 10)] * 9) | {"agregar": "1"}
         html = self.post(MATRICES, llenos)
-        self.assertIn("No se puede agregar otro símbolo: una matriz 2×2 más no cabe.", html)
+        self.assertIn("No se puede agregar otro operando: una matriz 2×2 más no cabe.", html)
         self.assertEqual(celdas_dibujadas(html), 900)
 
     def test_repetir_un_simbolo_no_elude_los_topes(self):
@@ -401,7 +401,7 @@ class PruebasPresupuesto(SimpleTestCase):
         self.assertEqual(form.errors["vectores"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} vectores por operación."])
 
     def test_lo_que_la_interfaz_dibuja_siempre_se_puede_enviar(self):
-        # Peor envío de símbolos: 50 matrices con 790 celdas llenan los 990 campos de estructura y celdas.
+        # Peor envío de operandos: 50 matrices con 790 celdas llenan los 990 campos de estructura y celdas.
         matrices = [llena(4, 4)] * 45 + [llena(2, 7)] * 5
         datos = datos_coleccion("suma", matrices)
         self.assertEqual(sum(len(m) * len(m[0]) for m in matrices) + 4 * OPERANDOS_MAXIMOS, CAMPOS_MAXIMOS)

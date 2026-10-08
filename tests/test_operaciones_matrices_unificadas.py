@@ -41,7 +41,7 @@ def json_plano(valor):
 
 
 def entrada_unificada(caso):
-    """El POST del módulo anterior escrito como símbolos y expresión del formulario unificado."""
+    """El POST del módulo anterior escrito como operandos y expresión del formulario unificado."""
     celdas = {}
     for clave, valor in caso["post"].items():
         partes = _CELDA_ANTIGUA.fullmatch(clave)
