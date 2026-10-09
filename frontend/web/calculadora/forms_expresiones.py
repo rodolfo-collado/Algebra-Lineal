@@ -96,11 +96,11 @@ def presupuesto_estructura(estructuras):
     celdas = sum(alto * ancho for alto, ancho in (forma(*estructura) for estructura in estructuras))
     campos = celdas + sum(campos_estructura(tipo) for tipo, _, _ in estructuras)
     if celdas > CELDAS_MAXIMAS:
-        return (f"Los {len(estructuras)} símbolos suman {celdas} celdas y la interfaz admite hasta "
-                f"{CELDAS_MAXIMAS}: quita símbolos o reduce sus dimensiones.")
+        return (f"Los {len(estructuras)} operandos suman {celdas} celdas y la interfaz admite hasta "
+                f"{CELDAS_MAXIMAS}: quita operandos o reduce sus dimensiones.")
     if campos > CAMPOS_MAXIMOS:
-        return (f"Los {len(estructuras)} símbolos ocupan {campos} campos del formulario (nombre, tipo, dimensiones "
-                f"y celdas) y la interfaz admite hasta {CAMPOS_MAXIMOS}: quita símbolos o reduce sus dimensiones.")
+        return (f"Los {len(estructuras)} operandos ocupan {campos} campos del formulario (nombre, tipo, dimensiones "
+                f"y celdas) y la interfaz admite hasta {CAMPOS_MAXIMOS}: quita operandos o reduce sus dimensiones.")
     return None
 
 
@@ -114,7 +114,7 @@ def presupuesto_expresion(arbol, tamanos):
     operandos = [nodo for nodo in todos if not nodo.hijos()]
     if len(operandos) > OPERANDOS_MAXIMOS:
         return (f"La expresión tiene {len(operandos)} operandos y la interfaz admite hasta {OPERANDOS_MAXIMOS}: "
-                "cada aparición de un símbolo o de un número cuenta.")
+                "cada aparición de un operando o de un número cuenta.")
     operaciones = len(todos) - len(operandos)
     if operaciones > OPERANDOS_MAXIMOS - 1:
         return (f"La expresión tiene {operaciones} operaciones y la interfaz admite hasta {OPERANDOS_MAXIMOS - 1}: "
@@ -122,7 +122,7 @@ def presupuesto_expresion(arbol, tamanos):
     entradas = sum(tamanos[hoja.nombre] if isinstance(hoja, Simbolo) else 1 for hoja in operandos)
     if entradas > CELDAS_MAXIMAS:
         return (f"Los operandos de la expresión suman {entradas} entradas y la interfaz admite hasta {CELDAS_MAXIMAS}: "
-                "cada aparición de un símbolo cuenta todas sus entradas.")
+                "cada aparición de un operando cuenta todas sus entradas.")
     return None
 
 
@@ -149,10 +149,10 @@ class ExpresionMatricialForm(FormularioCeldas):
             "data-campos-maximos": CAMPOS_MAXIMOS,
         }),
         error_messages={
-            "required": "Indica cuántos símbolos hay.",
-            "invalid": "La cantidad de símbolos debe ser un entero.",
-            "min_value": "La cantidad de símbolos no puede ser negativa.",
-            "max_value": f"La interfaz admite hasta {OPERANDOS_MAXIMOS} símbolos.",
+            "required": "Indica cuántos operandos hay.",
+            "invalid": "La cantidad de operandos debe ser un entero.",
+            "min_value": "La cantidad de operandos no puede ser negativa.",
+            "max_value": f"La interfaz admite hasta {OPERANDOS_MAXIMOS} operandos.",
         },
     )
     # Solo presentación: el producto se calcula una vez y cambia cómo se explica.
@@ -218,16 +218,16 @@ class ExpresionMatricialForm(FormularioCeldas):
 
     def _bloque(self, indice, tipo, filas, columnas):
         self.fields[f"nombre_{indice}"] = forms.CharField(
-            label=f"Nombre del símbolo {indice + 1}", max_length=12,
+            label=f"Nombre del operando {indice + 1}", max_length=12,
             initial=self.initial.get(f"nombre_{indice}", nombre_matriz(indice)),
             widget=forms.TextInput(attrs={
                 "class": "field-input symbol-field-name", "autocomplete": "off",
                 "spellcheck": "false", "maxlength": "12", "data-campo": "nombre",
             }),
-            error_messages={"required": "Indica el nombre del símbolo."},
+            error_messages={"required": "Indica el nombre del operando."},
         )
         self.fields[f"tipo_{indice}"] = forms.ChoiceField(
-            label=f"Tipo del símbolo {indice + 1}", choices=TIPOS,
+            label=f"Tipo del operando {indice + 1}", choices=TIPOS,
             initial=self.initial.get(f"tipo_{indice}", "matriz"),
             widget=forms.Select(attrs={"class": "field-input symbol-field-type", "data-campo": "tipo"}),
             error_messages={"invalid_choice": "El tipo debe ser matriz, vector o escalar, matriz desconocida, vector simbólico o vector lineal."},
@@ -322,7 +322,7 @@ class ExpresionMatricialForm(FormularioCeldas):
                 self.add_error(f"nombre_{indice}", "Usa una letra seguida de letras o dígitos, como A, u o k.")
                 continue
             if nombre in vistos:
-                self.add_error(f"nombre_{indice}", f"El símbolo {nombre} está repetido.")
+                self.add_error(f"nombre_{indice}", f"El operando {nombre} está repetido.")
             vistos.add(nombre)
             filas = datos.get(f"filas_{indice}") if tipo != "escalar" else 1
             columnas = datos.get(f"columnas_{indice}") if tipo in _CON_COLUMNAS else 1
@@ -337,22 +337,22 @@ class ExpresionMatricialForm(FormularioCeldas):
         if self.errors:
             return datos
         if self.accion == "eliminar" and not self._indice_eliminar(len(simbolos)):
-            self.add_error(None, "No se puede eliminar ese símbolo.")
+            self.add_error(None, "No se puede eliminar ese operando.")
             return datos
         if not self._contrato(simbolos):
             self.grupo_error = "symbol-list"
-            self.add_error(None, "Las celdas recibidas no coinciden con los símbolos indicados. Pulsa Aplicar para ajustar la estructura.")
+            self.add_error(None, "Las celdas recibidas no coinciden con los operandos indicados. Pulsa Aplicar para ajustar la estructura.")
             return datos
         if self.accion == "agregar":
             if len(simbolos) >= OPERANDOS_MAXIMOS:
-                self.add_error(None, f"No se puede agregar otro símbolo: la interfaz admite hasta {OPERANDOS_MAXIMOS}.")
+                self.add_error(None, f"No se puede agregar otro operando: la interfaz admite hasta {OPERANDOS_MAXIMOS}.")
                 return datos
             otra = presupuesto_estructura([
                 *((s["tipo"], s["filas"], s["columnas"]) for s in simbolos),
                 ("matriz", DIMENSION_PREDETERMINADA, DIMENSION_PREDETERMINADA),
             ])
             if otra:
-                self.add_error(None, f"No se puede agregar otro símbolo: una matriz 2×2 más no cabe. {otra}")
+                self.add_error(None, f"No se puede agregar otro operando: una matriz 2×2 más no cabe. {otra}")
                 return datos
         if self.accion:
             datos["estado"] = self._estado(simbolos, datos.get("metodo"))

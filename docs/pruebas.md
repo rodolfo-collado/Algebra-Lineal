@@ -155,6 +155,15 @@ cambios de perfil, campos agregados/eliminados y objetivos no editables; incluye
 un perfil de prueba ajeno a las herramientas para comprobar la extensibilidad.
 Este ejecutor es local y manual; `unittest discover` y CI no lanzan un navegador.
 
+El incremento de operandos y notación visual amplía estos mismos runners:
+`tests.operandos_browser` comprueba nombres iniciales y largos, mayúsculas,
+altas, renombrados, cambios de tipo y bajas, selección/cursor/foco, deshacer,
+lista vacía y ocultación al abrir Opciones o editar la estructura.
+`tests.teclado_browser` comprueba la inserción literal de `ᵀ` y la fuente
+de operandos también sobre un `input` compatible. Las suites
+`test_traspuesta_expresiones` y `test_expresiones_matriciales_web` conservan
+la equivalencia `A^T`/`Aᵀ`; las inversas y potencias siguen fuera del lenguaje.
+
 Completa con la revisión de las cinco herramientas: Sistemas texto ↔ matriz,
 dimensiones y operaciones que regeneran campos, bases 2 → 8 → 10 → 16 y uno,
 varios o todos los destinos. Comprueba teclado físico, temas claro/oscuro,

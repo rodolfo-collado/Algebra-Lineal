@@ -123,12 +123,26 @@
                 await turno(); igual(inserciones().join(''), digitos + '.-');
             }
         }],
-        ["Expresión: paréntesis con retroceso y traspuesta ^T", async ({d, b, tecla, inserciones}) => {
+        ["Expresión: paréntesis con retroceso y traspuesta visual", async ({d, b, tecla, inserciones}) => {
             d.getElementById('celdas').dataset.perfil = 'expresion'; b.focus(); await turno();
-            igual(inserciones(), ['()','^T','+','-','=','/']);
+            igual(inserciones(), ['()','ᵀ','+','-','=','/']);
             b.value = 'AB'; b.setSelectionRange(1,1); tecla('()').click();
             igual([b.value,b.selectionStart,b.selectionEnd], ['A()B',2,2]);
-            tecla('^T').click(); igual(b.value, 'A(^T)B');
+            tecla('ᵀ').click(); igual(b.value, 'A(ᵀ)B');
+        }],
+        ["Traspuesta visual reemplaza selección en un input compatible", ({d, b, tecla}) => {
+            d.getElementById('celdas').dataset.perfil = 'expresion'; b.focus();
+            b.value = 'A^T + B'; b.setSelectionRange(1,3); tecla('ᵀ').click();
+            igual([b.value,b.selectionStart,b.selectionEnd,d.activeElement === b], ['Aᵀ + B',2,2,true]);
+        }],
+        ["Fuente declarativa de operandos en un input, sin depender de Expresión", async ({d, b, tecla, inserciones}) => {
+            const contexto = d.getElementById('celdas');
+            contexto.dataset.perfil = 'expresion'; contexto.dataset.operandos = '#operandos';
+            b.value = 'AB'; b.focus(); b.setSelectionRange(1,1);
+            igual(inserciones().slice(0,2), ['Manzana','k']); tecla('Manzana').click();
+            igual([b.value,b.selectionStart,d.activeElement === b], ['AManzanaB',8,true]);
+            d.querySelector('[data-campo="nombre"]').remove(); await turno();
+            igual(inserciones().slice(0,1), ['k']);
         }],
         ["Lineal: seis variables, signos y fracción", async ({d, b, inserciones}) => {
             d.getElementById('celdas').dataset.perfil = 'lineal'; b.focus(); await turno();

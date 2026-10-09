@@ -50,7 +50,7 @@ def segmentar(fragmento, nombres):
 
 def _lectura(partes):
     if len(partes) == 1:
-        return f"el símbolo {partes[0]}"
+        return f"el operando {partes[0]}"
     return "*".join(partes)
 
 
@@ -73,9 +73,9 @@ def mensaje_desconocido(fragmento, nombres):
             j += 1
         tramo = fragmento[i:j]
         if nombre_valido(tramo):
-            return f"El símbolo {tramo} no está definido."
-        return f"No se reconoce «{fragmento}» con los símbolos definidos."
-    return f"El símbolo {fragmento} no está definido."
+            return f"El operando {tramo} no está definido."
+        return f"No se reconoce «{fragmento}» con los operandos definidos."
+    return f"El operando {fragmento} no está definido."
 
 
 class Parser:
@@ -167,7 +167,7 @@ class Parser:
             raise ValueError("Hay un paréntesis de cierre sin apertura.")
         if token.tipo == "traspuesta":
             raise ValueError(f"Falta la matriz antes de «{token.valor}»: la traspuesta se escribe después, como Aᵀ o A^T.")
-        raise ValueError(f"«{token.valor}» está donde se esperaba un número, un símbolo o un paréntesis.")
+        raise ValueError(f"«{token.valor}» está donde se esperaba un número, un operando o un paréntesis.")
 
     def _postfijos(self, nodo):
         """Cada `ᵀ` o `^T` seguido envuelve al operando anterior; `Aᵀᵀ` traspone dos veces."""

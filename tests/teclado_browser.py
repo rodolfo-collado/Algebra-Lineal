@@ -41,6 +41,7 @@ def fixture():
       <select aria-label="Selector" id="select"><option>Opción</option></select>
       <a href="#entrada" id="enlace">Enlace</a>
       <button type="button" id="otro">Otro control</button>
+      <div id="operandos"><input type="text" data-campo="nombre" value="Manzana"><input type="text" data-campo="nombre" value="k"></div>
       {componente}
     </form><script src="/teclado.js"></script></html>'''.encode()
 

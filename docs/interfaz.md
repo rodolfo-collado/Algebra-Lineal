@@ -402,7 +402,7 @@ teclado queda fuera de ambos fieldsets para poder alternarlos. Celdas de matrice
 vectores numéricos y Ax = b comparten `numerico` (`−`, `a⁄b`). En Operaciones,
 la expresión usa `expresion` (`( )`, `ᵀ`, `+`, `−`, `=`, `a⁄b`) y las componentes
 de vectores lineales usan `lineal` (x₁…x₆, `+`, `−`, `a⁄b`). Los nombres de
-símbolos y los números romanos no tienen teclado matemático. `sistema` ofrece
+operandos y los números romanos no tienen teclado matemático. `sistema` ofrece
 x₁…x₆ y «Nueva ecuación» inserta solo un salto de línea. El componente publica los
 perfiles con `json_script`; sus plantillas HTML inertes generan grupos y botones
 con nombres accesibles y `type="button"`.
@@ -420,13 +420,23 @@ de inserción si no está disponible (sin garantía de undo en ese navegador).
 `tabindex="-1"` y nombres accesibles que comienzan con su etiqueta visible.
 Escape oculta sin editar; el teclado físico siempre sigue disponible.
 
+En Operaciones, el contenedor de la expresión declara `data-operandos="#symbol-list"`.
+El teclado lee los campos `data-campo="nombre"` de esa lista, respetando sus nombres
+y mayúsculas, y se actualiza con `input`, `change` y cambios de estructura. No guarda
+otro catálogo de operandos. Separa **Operandos**, **Notación** y **Operadores**;
+la traspuesta muestra e inserta `ᵀ`, que el lexer interpreta igual que `^T`.
+No ofrece inversas ni potencias: no pertenecen al lenguaje de expresiones.
+Los operandos se desplazan en su propia fila; en móvil ocupan una fila sobre las
+herramientas matemáticas, con reserva inferior para mantener visible el campo.
+
 El dock nace con `hidden`, sin botón de apertura, y aparece al enfocar una
 entrada compatible. Se oculta al pasar a Opciones, Calcular, Menú, Tema u otro
 control. Entre entradas compatibles permanece visible y adapta su perfil.
 Es fijo, alineado con la columna principal y debajo de la cabecera y del menú.
 La reserva estable al final y `scroll-padding` evitan tapar el campo o mover
-Calcular al ocultarlo. Con altura ≤640 px usa una fila compacta; los símbolos
-que no caben se desplazan dentro del dock. Sin JavaScript no se ve el teclado
+Calcular al ocultarlo. Con altura ≤640 px oculta título y ayuda; en móvil, los
+operandos conservan su fila y los nombres de los grupos. Las teclas que no caben
+se desplazan dentro del dock. Sin JavaScript no se ve el teclado
 y los formularios siguen funcionando. Añadir un perfil consiste en registrarlo,
 publicarlo desde la vista y declararlo en los campos, sin modificar el motor. No registres teclas sin
 una inserción real detrás.
@@ -471,7 +481,7 @@ de la cantidad también avisan, sin mover el foco.
 ## Operaciones con matrices
 
 Una sola herramienta, `/matrices/operaciones/`, para operaciones simples y
-compuestas (P26.6): el formulario es el de símbolos y expresión, así que `A + B`,
+compuestas (P26.6): el formulario es el de operandos y expresión, así que `A + B`,
 `2A`, `AB`, `Ax`, `Aᵀ` y `A(B + C) - 2D` siguen el mismo flujo. No hay un modo
 «sencillo» aparte ni un selector de operación. Las plantillas viven en
 `modules/expresiones/` (el motor es el de expresiones) y reutilizan los
@@ -489,16 +499,16 @@ dentro de la cuadrícula de cada símbolo. El contrato HTTP es estricto: el
 servidor reconstruye el conjunto exacto de campos de la estructura declarada y
 rechaza celdas de más, de menos, campos desconocidos o repetidos.
 
-Cada símbolo es un `fieldset` con nombre accesible («Símbolo A»): Nombre y Tipo
+Cada operando es un `fieldset` con nombre accesible («Operando A»): Nombre y Tipo
 arriba y, juntas, Filas y Columnas con **Eliminar** a la derecha, lejos de sus + y
-−. Los botones dicen a qué símbolo pertenecen («Eliminar símbolo A», «Agregar una
+−. Los botones dicen a qué operando pertenecen («Eliminar operando A», «Agregar una
 fila a A», «Quitar una componente de u»): el servidor los escribe
 (`rotulos_dimension`) y `expresiones.js` los actualiza al renombrar. En escritorio
 van dos tarjetas por fila y una matriz de seis columnas o más ocupa la fila entera;
-el orden del DOM y de Tab no cambia. Al agregar, el foco va al nombre del símbolo
+el orden del DOM y de Tab no cambia. Al agregar, el foco va al nombre del operando
 nuevo; al eliminar, al nombre del siguiente, al del anterior o a **Agregar
-símbolo**, y la región `role="status"` dice «Se agregó el símbolo C.» o «Se eliminó
-el símbolo B.». La expresión mide las dos líneas de `rows`, sin la altura mínima del
+operando**, y la región `role="status"` dice «Se agregó el operando C.» o «Se eliminó
+el operando B.». La expresión mide las dos líneas de `rows`, sin la altura mínima del
 área de texto de sistemas.
 
 Bajo la expresión, una ayuda breve con ejemplos (`A + B`, `2A - B`, `AB`, `Ax`,
@@ -509,7 +519,7 @@ del procedimiento** es un `{% disclosure %}` cerrado con la presentación de los
 productos (radios `metodo`: fila por columna, por columnas o comparar ambos) y se
 abre solo cuando el valor enviado no es el predeterminado.
 
-El presupuesto común (50 símbolos, 900 celdas, 990 campos) se comprueba antes de
+El presupuesto común (50 operandos, 900 celdas, 990 campos) se comprueba antes de
 crear campos; los topes viajan como `data-*` del campo oculto `cantidad` y
 `expresiones.js` aplica la misma regla: agregar, redimensionar o cambiar de tipo
 no se aplican si no caben, y un aviso `role="status"` lo explica. La expresión se

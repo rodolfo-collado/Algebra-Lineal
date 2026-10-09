@@ -10,30 +10,30 @@
         {% if not confirmacion %}{{ form.confirmacion }}{% endif %}
         {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="expression-fields" aria-labelledby="simbolos-title">
-            <h3 class="section-title" id="simbolos-title">Símbolos</h3>
-            <p class="field-help">Define solo las matrices, vectores y escalares que vas a usar, con el nombre que tendrán en la expresión.</p>
+            <h3 class="section-title" id="simbolos-title">Operandos</h3>
+            <p class="field-help">Define las matrices, vectores y escalares que usarás en la expresión.</p>
             <div id="symbol-list" class="symbol-list" data-simbolos>
                 {% for bloque in form.bloques %}
                     {% include "calculadora/modules/expresiones/_simbolo.html" %}
                 {% empty %}
-                    <p class="field-help" data-vacio>Sin símbolos: la expresión solo puede usar números, como <code>2 + 1/2</code>.</p>
+                    <p class="field-help" data-vacio>Sin operandos: la expresión solo puede usar números, como <code>2 + 1/2</code>.</p>
                 {% endfor %}
             </div>
             {% include "calculadora/components/errores_grupo.html" %}
             <div class="symbol-actions">
-                <button class="btn btn-secondary" type="submit" name="agregar" value="1" data-agregar>Agregar símbolo</button>
+                <button class="btn btn-secondary" type="submit" name="agregar" value="1" data-agregar>Agregar operando</button>
                 <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
             </div>
             <p class="field-help" data-presupuesto role="status" aria-live="polite"></p>
-            <noscript><p class="field-help">Cambia un tipo o las dimensiones y pulsa <strong>Aplicar</strong> antes de calcular. <strong>Agregar símbolo</strong> y <strong>Eliminar</strong> también funcionan sin JavaScript.</p></noscript>
-            <div class="expression-field" data-perfil="expresion">
+            <noscript><p class="field-help">Cambia un tipo o las dimensiones y pulsa <strong>Aplicar</strong> antes de calcular. <strong>Agregar operando</strong> y <strong>Eliminar</strong> también funcionan sin JavaScript.</p></noscript>
+            <div class="expression-field" data-perfil="expresion" data-operandos="#symbol-list">
                 <label for="{{ form.expresion.id_for_label }}">Expresión</label>
                 {{ form.expresion }}
                 {{ form.expresion.errors }}
                 <p class="field-help">Por ejemplo <code>A + B</code>, <code>2A - B</code>, <code>AB</code>, <code>Ax</code>, <code>A(B + C)</code> o <code>Aᵀ</code> (también <code>A^T</code>).</p>
                 {% disclosure titulo="Cómo se escribe" nivel=4 clase="disclosure-help" %}
                     <ul class="syntax-help">
-                        <li><code>2A</code>, <code>AB</code> y <code>A(B + C)</code> multiplican sin escribir <code>*</code>. Si un texto admite más de una lectura, como <code>AB</code> cuando también existe un símbolo llamado AB, escribe <code>A*B</code>.</li>
+                        <li><code>2A</code>, <code>AB</code> y <code>A(B + C)</code> multiplican sin escribir <code>*</code>. Si un texto admite más de una lectura, como <code>AB</code> cuando también existe un operando llamado AB, escribe <code>A*B</code>.</li>
                         <li>La traspuesta va después de lo que traspone: <code>Aᵀ</code> o <code>A^T</code>. <code>ABᵀ</code> es A por Bᵀ; para trasponer el producto escribe <code>(AB)ᵀ</code>. <code>^</code> no calcula potencias ni inversas.</li>
                         <li>En cada nivel se opera de izquierda a derecha: <code>A - B - C</code> es <code>(A - B) - C</code> y <code>ABC</code> es <code>(AB)C</code>.</li>
                         <li>Escribe fracciones como <code>1/2</code>, decimales como <code>0.5</code> y negativos con <code>-</code>.</li>

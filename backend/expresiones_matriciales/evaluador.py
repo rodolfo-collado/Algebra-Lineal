@@ -127,9 +127,9 @@ def _dimension(definicion, clave, nombre):
 def preparar_simbolo(nombre, definicion):
     """Normaliza un símbolo definido a un valor exacto o a un objeto simbólico declarado."""
     if not nombre_valido(nombre):
-        raise ValueError(f"«{nombre}» no es un nombre de símbolo. Usa una letra seguida de letras o dígitos, como A, u o k.")
+        raise ValueError(f"«{nombre}» no es un nombre de operando. Usa una letra seguida de letras o dígitos, como A, u o k.")
     if not isinstance(definicion, dict):
-        raise ValueError(f"El símbolo {nombre} necesita un tipo: matriz, vector o escalar.")
+        raise ValueError(f"El operando {nombre} necesita un tipo: matriz, vector o escalar.")
     tipo = definicion.get("tipo")
     if tipo == "matriz_desconocida":
         return Valor(
@@ -168,7 +168,7 @@ def preparar_simbolo(nombre, definicion):
             raise ValueError(mensaje)
         matriz = [[Fraction(entrada) for entrada in fila] for fila in valor]
         return Valor("matriz", matriz, len(matriz), len(matriz[0]))
-    raise ValueError(f"El símbolo {nombre} necesita un tipo: matriz, vector o escalar.")
+    raise ValueError(f"El operando {nombre} necesita un tipo: matriz, vector o escalar.")
 
 
 def evaluar(texto, simbolos, nodo=None):
@@ -180,7 +180,7 @@ def evaluar(texto, simbolos, nodo=None):
     entorno = {}
     for nombre, definicion in simbolos.items():
         if nombre in entorno:
-            raise ValueError(f"El símbolo {nombre} está repetido.")
+            raise ValueError(f"El operando {nombre} está repetido.")
         entorno[nombre] = preparar_simbolo(nombre, definicion)
     entrada = analizar_entrada(texto, entorno)
     if isinstance(entrada, Igualdad):

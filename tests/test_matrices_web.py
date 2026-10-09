@@ -24,12 +24,12 @@ from tests.test_navegacion import Documento
 
 RUTA = "/matrices/operaciones/"
 RAIZ = Path(__file__).resolve().parents[1]
-# Cada operación del módulo anterior es ahora una expresión sobre los mismos símbolos.
+# Cada operación del módulo anterior es ahora una expresión sobre los mismos operandos.
 EXPRESIONES = {"suma": "A + B", "resta": "A - B", "escalar": "kA", "traspuesta": "Aᵀ", "producto": "AB", "matriz_vector": "Ax"}
 
 
 def datos_simbolos(expresion, simbolos, **extra):
-    """POST del formulario unificado: un bloque por símbolo, en orden, con su tipo y sus celdas."""
+    """POST del formulario unificado: un bloque por operando, en orden, con su tipo y sus celdas."""
     datos = {"expresion": expresion, "cantidad": str(len(simbolos))}
     for indice, simbolo in enumerate(simbolos):
         tipo = simbolo["tipo"]

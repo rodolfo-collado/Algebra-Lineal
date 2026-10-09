@@ -81,7 +81,7 @@ class PruebasIntegracion(TestCase):
             evaluar("Ax = b", simbolos(3, 2, ("x1", "x2", "x3"), 3))
         with self.assertRaisesRegex(ValueError, r"Ax tiene 3 componentes pero b tiene 4"):
             evaluar("Ax = b", simbolos(3, 2, ("x1", "x2", "x1", "x2")))
-        with self.assertRaisesRegex(ValueError, "El símbolo Z no está definido"):
+        with self.assertRaisesRegex(ValueError, "El operando Z no está definido"):
             evaluar("Z*x = b", simbolos())
         with self.assertRaisesRegex(ValueError, "vector de expresiones lineales"):
             evaluar("Ax = u", {**simbolos(), "u": {"tipo": "vector", "valor": [1, 2, 3]}})
