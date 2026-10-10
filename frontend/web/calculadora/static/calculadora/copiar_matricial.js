@@ -58,15 +58,15 @@
         return `<td${valor && !numero ? ' style="mso-number-format:\'\\@\'"' : ""}>${escapar(valor)}</td>`;
     }
 
-    function serializar(seleccion) {
+    function serializarValores(seleccion) {
         if (!seleccion?.celdas.length || !seleccion.limites) return null;
         const { filaInicio, filaFin, columnaInicio, columnaFin } = seleccion.limites;
         const filas = filaFin - filaInicio + 1, columnas = columnaFin - columnaInicio + 1;
         if (filas < 1 || filas > MAX_FILAS || columnas < 1 || columnas > MAX_COLUMNAS || filas * columnas > MAX_CELDAS) return null;
-        if (seleccion.celdas.reduce((total, { input }) => total + input.value.length, filas * columnas - 1) > MAX_TEXTO) return null;
+        if (seleccion.celdas.reduce((total, { valor }) => total + valor.length, filas * columnas - 1) > MAX_TEXTO) return null;
         const bloque = Array.from({ length: filas }, () => Array(columnas).fill(""));
-        const celdas = seleccion.celdas.map(({ fila, columna, input }) => {
-            bloque[fila - filaInicio][columna - columnaInicio] = input.value;
+        const celdas = seleccion.celdas.map(({ fila, columna, valor }) => {
+            bloque[fila - filaInicio][columna - columnaInicio] = valor;
             return [fila - filaInicio, columna - columnaInicio];
         });
         const texto = bloque.map(fila => fila.join("\t")).join("\n");
@@ -77,7 +77,13 @@
         return { texto, html, metadata };
     }
 
-    window.copiadoMatricial = { TIPO, parsear, serializar, textoAdmitido };
+    function serializar(seleccion) {
+        if (!seleccion) return null;
+        return serializarValores({ ...seleccion, celdas: seleccion.celdas.map(({ fila, columna, input }) =>
+            ({ fila, columna, valor: input.value })) });
+    }
+
+    window.copiadoMatricial = { TIPO, parsear, serializar, serializarValores, textoAdmitido };
 
     document.addEventListener("copy", event => {
         if (event.defaultPrevented || !event.cancelable || !event.clipboardData) return;
