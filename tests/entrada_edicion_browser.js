@@ -59,7 +59,7 @@
         observados.forEach(valores => igual(valores, esperado)); // Observadores ven el bloque completo.
         igual(eventos, texto.trimEnd().split(/\r?\n|\t/).length);
         igual(envios, 0); igual(w.document.activeElement === celdas[0], true);
-        igual(q(w, '[data-estado-pegado]').textContent, `Se pegaron ${eventos} valores.`);
+        igual(q(w, '[data-estado-pegado]').textContent, `${eventos} celdas pegadas.`);
         igual(q(w, '[data-estado-pegado]').getAttribute("role"), "status");
     });
     caso("Paste: 2×2 desde celda interior de 4×4", inversa, w => {
@@ -94,7 +94,7 @@
         let eventos = 0; celdas[0].form.addEventListener("input", () => eventos++);
         igual(pegar(w, celdas[0], texto), true);
         igual(celdas.map(c => c.value), ["1", "2", "3", "4"]); igual(eventos, 4);
-        igual(q(w, '[data-estado-pegado]').textContent, "Se pegaron 4 valores.");
+        igual(q(w, '[data-estado-pegado]').textContent, "4 celdas pegadas.");
         igual(w.document.activeElement === celdas[0], true);
     });
     caso("Paste P27.11: una fila vacía interior sigue siendo una fila, todo o nada", inversa, w => {
@@ -114,7 +114,7 @@
     caso("Paste P27.11: columna de Vectores con salto de más", vectores, w => {
         pegar(w, q(w, '[name="v1_1"]'), "\n-11/13\n3.14\n");
         igual([q(w, '[name="v1_1"]').value, q(w, '[name="v2_1"]').value], ["-11/13", "3.14"]);
-        igual(q(w, '[data-estado-vectores]').textContent, "Se pegaron 2 valores.");
+        igual(q(w, '[data-estado-pegado]').textContent, "2 celdas pegadas.");
     });
     caso("Paste: maxlength real de vector lineal, también después de reconstruir", operaciones, w => {
         const tipo = q(w, '[name="tipo_0"]'); tipo.value = "vector_lineal";
@@ -123,7 +123,7 @@
         igual(celdas[0].maxLength, 200); celdas.forEach(c => { c.value = "3x1 - 2x2"; });
         pegar(w, celdas[0], `x1\n${"x".repeat(201)}`);
         igual(celdas.map(c => c.value), ["3x1 - 2x2", "3x1 - 2x2"]);
-        igual(q(w, '[data-presupuesto]').textContent.includes("límite de texto"), true);
+        igual(q(w, '[data-estado-pegado]').textContent.includes("límite de texto"), true);
     });
     for (const propiedad of ["readOnly", "disabled"]) {
         caso(`Paste: origen ${propiedad} no interceptado`, inversa, w => {
@@ -167,7 +167,7 @@
         igual(todos(w, '#vector-list input[data-cell]').map(c => c.value), ["1", "2", "3", "4", "5", "6"]);
         pegar(w, q(w, '[name="v1_1"]'), "-11/13\n3.14");
         igual([q(w, '[name="v1_1"]').value, q(w, '[name="v2_1"]').value], ["-11/13", "3.14"]);
-        igual(q(w, '[data-estado-vectores]').textContent, "Se pegaron 2 valores.");
+        igual(q(w, '[data-estado-pegado]').textContent, "2 celdas pegadas.");
     });
     caso("Paste: resultado visible → stale compartido, teclado/foco y errores numéricos", inversa, async (w, frame) => {
         pegar(w, q(w, A), "1\t0\n0\t1"); w = await post(frame);
@@ -763,7 +763,7 @@
     const sustituir = (w, coords, g = matriz(w)) => {
         igual(w.seleccionMatricial.reemplazar(g, coords.map(([fila,columna])=>({fila,columna}))),true);
     };
-    const avisoPegado = w => q(w,'[data-presupuesto], [data-estado-pegado]').textContent;
+    const avisoPegado = w => q(w,'[data-estado-pegado]').textContent;
     const copiarCoords = (w, coords, g = matriz(w)) => {
         sustituir(w,coords,g);
         const input = filas(w,g)[coords[0][0]][coords[0][1]];
@@ -783,7 +783,7 @@
         igual(pegar(w,foco,"1\t2\n3\t4"),true);
         igual(f.flat().map(c=>c.value),esperado); igual(eventos,4); igual(changes,0); igual(envios,0);
         igual(seleccion(w),antes); igual(w.document.activeElement===foco,true);
-        igual(avisoPegado(w),"Se pegaron 4 valores.");
+        igual(avisoPegado(w),"4 celdas pegadas.");
     });
     for (const [m,n,ok] of [[2,3,true],[3,2,false]]) caso(`P28.3 2×3 → ${m}×${n}, dimensiones exactas`, inversa,w=>{
         valor(w,'[name="orden"]',3); const f=filas(w);
@@ -1007,7 +1007,293 @@
         igual(registro.map(({anterior,nuevo})=>[anterior,nuevo]),[["7","1"],["8",""]]);
         igual(registro.map(({input})=>input.value),["1",""]);
     });
+    // P28.4: un único registro, sin historial de edición ni Ctrl+Z propio.
+    const accionUndo = w => q(w, "[data-deshacer-pegado]");
+    const disponible = w => w.deshacerPegado.puedeDeshacer();
+    const valores = (w, g = matriz(w)) => filas(w, g).flat().map(c => c.value);
+    const restaurar = (w, esperado, g = matriz(w)) => {
+        igual(disponible(w), true);
+        accionUndo(w).focus(); accionUndo(w).click();
+        igual(valores(w, g), esperado); igual(disponible(w), false);
+        igual(accionUndo(w).hidden, true);
+        igual(w.getComputedStyle(accionUndo(w)).display, "none");
+        igual(w.deshacerPegado.deshacer(), false);
+        accionUndo(w).click(); igual(valores(w, g), esperado);
+    };
+    for (const ruta of [inversa, operaciones, axb, reduccion]) {
+        caso(`P28.4 rectangular, valores exactos, eventos atómicos y un solo uso: ${ruta}`, ruta, w => {
+            if (ruta === reduccion) modo(w, "matriz");
+            const g = matriz(w), f = filas(w, g);
+            ["", "-11/13", "3.14", "2"].forEach((v, i) => { f[Math.floor(i / 2)][i % 2].value = v; });
+            const antes = valores(w), coords = [[0,0],[0,1],[1,0],[1,1]];
+            mouse(w, f[0][0]); mouse(w, f[1][1], { shiftKey: true });
+            const foco = w.document.activeElement;
+            pegar(w, foco, "5\t6\n7\t8");
+            const eventos = []; let envios = 0, changes = 0;
+            foco.form.addEventListener("input", e => {
+                eventos.push(e.target); igual(valores(w), antes);
+            });
+            foco.form.addEventListener("submit", e => { e.preventDefault(); envios++; });
+            foco.form.addEventListener("change", () => changes++);
+            restaurar(w, antes); igual(eventos.map(c => c.name), coords.map(([i,j]) => f[i][j].name));
+            igual(envios, 0); igual(changes, 0); igual(seleccion(w), coords);
+            igual(w.document.activeElement === foco, true);
+            igual(avisoPegado(w), "Pegado deshecho: 4 celdas restauradas.");
+        });
+        caso(`P28.4 bloque tradicional P27 sin selección: ${ruta}`, ruta, w => {
+            if (ruta === reduccion) modo(w, "matriz");
+            const antes = valores(w), input = filas(w)[0][0];
+            pegar(w, input, "-1/2\t3.14\n4\t5"); restaurar(w, antes);
+            igual(w.document.activeElement === input, true); igual(seleccion(w), []);
+        });
+        caso(`P28.4 cambio de dimensión invalida sin restaurar estructura: ${ruta}`, ruta, async w => {
+            if (ruta === reduccion) modo(w, "matriz");
+            pegar(w, filas(w)[0][0], "1\t2\n3\t4");
+            const campo = ruta === inversa ? '[name="orden"]' : ruta === operaciones ? '[name="filas_0"]' :
+                ruta === axb ? '[name="filas"]' : '[name="ecuaciones"]';
+            valor(w, campo, 1); await turno(w);
+            const antes = valores(w); igual(disponible(w), false); igual(accionUndo(w).hidden, true);
+            igual(w.deshacerPegado.deshacer(), false); igual(valores(w), antes); igual(filas(w).length, 1);
+        });
+    }
+    for (const [comando] of comandos) caso(`P28.4 valor único sobre ${comando}`, inversa, w => {
+        valor(w, '[name="orden"]', 3); const antes = valores(w), contexto = filas(w)[0][0]; contexto.focus(); elegir(w, comando);
+        const coords = seleccion(w); pegar(w, w.document.activeElement, "1");
+        igual(avisoPegado(w), `${coords.length} celdas pegadas.`); restaurar(w, antes);
+        igual(seleccion(w), coords); igual(w.document.activeElement === contexto, true);
+    });
+    caso("P28.4 Ctrl+clic inverso: orden de input fila por fila", inversa, w => {
+        const f = filas(w), antes = valores(w);
+        mouse(w, f[1][1], { ctrlKey: true }); mouse(w, f[0][0], { ctrlKey: true });
+        pegar(w, f[0][0], "3.14"); const eventos = [];
+        f[0][0].form.addEventListener("input", e => eventos.push(e.target));
+        restaurar(w, antes); igual(eventos.map(c => c.name), [f[0][0].name, f[1][1].name]); igual(seleccion(w), [[0,0],[1,1]]);
+    });
+    for (const [nombre, coords] of [["diagonal", [[0,0],[1,1],[2,2]]],
+        ["triangular", [[0,0],[1,0],[1,1],[2,0],[2,1],[2,2]]], ["irregular", [[0,1],[1,0],[2,2]]]]) {
+        for (const destino of ["celda", "selección"]) caso(`P28.4 máscara ${nombre} → ${destino}, huecos y vacíos`, inversa, w => {
+            valor(w, '[name="orden"]', 3); const f = filas(w);
+            f.flat().forEach((c, i) => { c.value = i === 4 ? "" : i === 0 ? "-1/2" : String(i + 1); });
+            const data = copiarCoords(w, coords);
+            w.seleccionMatricial.limpiar(); f.flat().forEach(c => { c.value = "3.14"; });
+            if (destino === "selección") sustituir(w, coords);
+            const antes = valores(w), actual = seleccion(w);
+            pegarDatos(w, f[0][0], data); restaurar(w, antes); igual(seleccion(w), actual);
+        });
+    }
+    caso("P28.4 selección manual aumentada incluye b", reduccion, w => {
+        modo(w, "matriz"); const f = filas(w), antes = valores(w);
+        mouse(w, f[0][2]); mouse(w, f[1][3], { shiftKey: true }); const coords = seleccion(w);
+        pegar(w, f[1][3], "1\t2\n3\t4"); restaurar(w, antes); igual(seleccion(w), coords);
+    });
+    caso("P28.4 Ax=b: bloque P27 del vector b separado", axb, w => {
+        const g = q(w, '[data-matriz="b"] table'), antes = valores(w, g);
+        pegar(w, filas(w, g)[0][0], "1/2\n3.14"); restaurar(w, antes, g);
+    });
+    caso("P28.4 Inversa B adicional independiente", inversa, w => {
+        q(w, '#aplicaciones').open = true; q(w, '[name="funcion_adicional"][value="producto"]').click();
+        const g = matriz(w, 1), antes = valores(w, g);
+        elegir(w, "toda", 1); pegar(w, w.document.activeElement, "1/2"); restaurar(w, antes, g);
+    });
+    caso("P28.4 foco en B vuelve a abrir Aplicaciones si se cerró después del paste", inversa, w => {
+        const aplicaciones=q(w,'#aplicaciones'); aplicaciones.open=true;
+        q(w,'[name="funcion_adicional"][value="producto"]').click();
+        const g=matriz(w,1),input=filas(w,g)[0][0],antes=valores(w,g);
+        pegar(w,input,"1\t2\n3\t4"); aplicaciones.open=false;
+        restaurar(w,antes,g); igual(aplicaciones.open,true); igual(w.document.activeElement===input,true);
+    });
+    caso("P28.4 P27 Vectores usa la misma aplicación atómica", vectores, w => {
+        const g = q(w, '#vector-list'), antes = valores(w, g);
+        pegar(w, filas(w, g)[0][0], "1\t2"); restaurar(w, antes, g);
+    });
+    caso("P28.4 vacío sobre selección restaura literales exactos", inversa, w => {
+        const f = filas(w); ["1/2", "", "3.14", "-2"].forEach((v, i) => { f.flat()[i].value = v; });
+        const antes = valores(w); elegir(w, "toda"); pegar(w, w.document.activeElement, "");
+        igual(avisoPegado(w), "3 celdas pegadas."); restaurar(w, antes);
+    });
+    caso("P28.4 solo celdas modificadas y cantidad coherente", inversa, w => {
+        const f = filas(w); ["1", "", "3", ""].forEach((v, i) => { f.flat()[i].value = v; });
+        const antes = valores(w); pegar(w, f[0][0], "1\t2\n3\t4");
+        igual(avisoPegado(w), "2 celdas pegadas."); const eventos = [];
+        f[0][0].form.addEventListener("input", e => eventos.push(e.target));
+        restaurar(w, antes); igual(eventos.map(c => c.name), [f[0][1].name, f[1][1].name]);
+    });
+    caso("P28.4 valor idéntico: no crea acción y reemplaza el registro previo", inversa, w => {
+        const f = filas(w); elegir(w, "principal"); pegar(w, w.document.activeElement, "1");
+        igual(disponible(w), true); pegar(w, w.document.activeElement, "1");
+        igual(avisoPegado(w), "Pegado sin cambios."); igual(disponible(w), false);
+        // El summary conserva foco; la acción anterior ya no es accesible.
+        igual(accionUndo(w).hidden, true); igual(w.getComputedStyle(accionUndo(w)).display,"none");
+        igual(w.deshacerPegado.deshacer(), false);
+        igual([f[0][0].value, f[1][1].value], ["1", "1"]);
+    });
+    caso("P28.4 una celda modificada genera mensaje singular", inversa, w => {
+        sustituir(w, [[0,0]]); const input = filas(w)[0][0]; pegar(w, input, "5");
+        igual(avisoPegado(w), "1 celda pegada."); restaurar(w, Array(4).fill(""));
+        igual(avisoPegado(w), "Pegado deshecho: 1 celda restaurada.");
+    });
+    caso("P28.4 paste A → paste B: solo B, sin volver al registro A", operaciones, w => {
+        const a = matriz(w), b = matriz(w, 1), antesB = valores(w, b);
+        pegar(w, filas(w, a)[0][0], "1\t2\n3\t4"); const despuesA = valores(w, a);
+        pegar(w, filas(w, b)[0][0], "5\t6\n7\t8"); restaurar(w, antesB, b); igual(valores(w, a), despuesA);
+    });
+    caso("P28.4 nuevo paste en A sustituye el anterior, un solo nivel", inversa, w => {
+        const input = filas(w)[0][0]; pegar(w, input, "1\t2\n3\t4"); const primero = valores(w);
+        pegar(w, input, "5\t6\n7\t8"); restaurar(w, primero);
+    });
+    caso("P28.4 segundo paste anuncia solo el éxito, sin invalidación redundante", inversa, async w => {
+        elegir(w,"principal"); const input=w.document.activeElement; pegar(w,input,"1");
+        const anuncios=[], observador=new w.MutationObserver(mutaciones=>{
+            mutaciones.forEach(m=>anuncios.push(...[...m.addedNodes].map(n=>n.textContent)));
+        });
+        observador.observe(q(w,'[data-estado-pegado]'),{childList:true});
+        pegar(w,input,"2"); await turno(w); observador.disconnect(); igual(anuncios,["2 celdas pegadas."]);
+    });
+    caso("P28.4 paste rechazado conserva undo previo", inversa, w => {
+        const input = filas(w)[0][0], antes = valores(w); pegar(w, input, "1\t2\n3\t4");
+        pegar(w, input, "1\t2\t3\n4\t5\t6"); restaurar(w, antes);
+    });
+    for (const [i,j] of [[0,0],[1,1]]) caso(`P28.4 edición posterior de la misma matriz (${i},${j}) invalida sin robar foco`, inversa, w => {
+        const f = filas(w); sustituir(w, [[0,0]]); pegar(w, f[0][0], "5");
+        f[i][j].focus(); valor(w, `#${f[i][j].id}`, "8");
+        const antes = valores(w); igual(disponible(w), false); igual(accionUndo(w).hidden, true);
+        igual(w.document.activeElement === f[i][j], true); igual(w.deshacerPegado.deshacer(), false); igual(valores(w), antes);
+    });
+    caso("P28.4 edición independiente de B conserva undo de A", operaciones, async w => {
+        const a = matriz(w), b = matriz(w, 1), antes = valores(w, a);
+        pegar(w, filas(w, a)[0][0], "1\t2\n3\t4"); const inputB = filas(w, b)[0][0];
+        valor(w, `#${inputB.id}`, "8"); await turno(w); restaurar(w, antes, a); igual(inputB.value, "8");
+    });
+    const defectosUndo = [
+        ["valor incoherente sin input", (w, f) => { f[1][1].value = "9"; }],
+        ["readonly", (w, f) => { f[1][1].readOnly = true; }],
+        ["disabled", (w, f) => { f[1][1].disabled = true; }],
+        ["fieldset disabled", (w, f) => { f[1][1].closest("fieldset").disabled = true; }],
+        ["hidden", (w, f) => { f[1][1].parentElement.hidden = true; }],
+        ["maxlength incompatible", (w, f) => { f[1][1].maxLength = 1; }],
+        ["celda inexistente", (w, f) => f[1][1].remove()],
+        ["input reconstruido", (w, f) => f[1][1].replaceWith(f[1][1].cloneNode(true))],
+        ["cuadrícula reconstruida", (w, f, g) => g.replaceChildren(...[...g.children].map(c => c.cloneNode(true)))],
+        ["matriz reemplazada", (w, f, g) => g.replaceWith(g.cloneNode(true))],
+        ["matriz eliminada", (w, f, g) => g.remove()],
+        ["matriz retirada y reinsertada", (w, f, g) => { const p = g.parentElement, n = g.nextSibling; g.remove(); p.insertBefore(g,n); }],
+        ["filas movidas", (w, f, g) => g.querySelector("tbody").prepend(g.querySelector("tbody tr:last-child"))],
+    ];
+    for (const [nombre, defecto] of defectosUndo) {
+        for (const esperar of [false, true]) caso(`P28.4 atomicidad ${nombre}, observer ${esperar ? "entregado" : "pendiente"}`, inversa, async w => {
+            const g = matriz(w), f = filas(w); f.flat().forEach(c => { c.value = "123"; });
+            pegar(w, f[0][0], "5\t6\n7\t8"); let eventos = 0;
+            f[0][0].form.addEventListener("input", () => eventos++); defecto(w, f, g);
+            const esperado = f.flat().map(c => c.value);
+            if (esperar) await turno(w);
+            igual(w.deshacerPegado.deshacer(), false); igual(f.flat().map(c => c.value), esperado);
+            igual(eventos, 0); igual(disponible(w), false); igual(accionUndo(w).hidden, true);
+            igual(w.getComputedStyle(accionUndo(w)).display,"none");
+            igual(avisoPegado(w).includes("ya no puede deshacerse"), true);
+        });
+    }
+    for (const tipo of ["vector", "escalar", "matriz_desconocida"]) caso(`P28.4 cambio de tipo ${tipo} invalida`, operaciones, async w => {
+        pegar(w, filas(w)[0][0], "1\t2\n3\t4"); const input = q(w, '[data-campo="tipo"]');
+        input.value = tipo; input.dispatchEvent(new w.Event("change", { bubbles: true })); await turno(w);
+        igual(disponible(w), false); igual(accionUndo(w).hidden, true); igual(w.deshacerPegado.deshacer(), false);
+    });
+    caso("P28.4 eliminación real de operando no restaura sobre B reindexada", operaciones, async w => {
+        pegar(w, filas(w)[0][0], "1\t2\n3\t4"); const b = matriz(w,1), antes = valores(w,b);
+        q(w, '[data-eliminar]').click(); await turno(w); igual(disponible(w), false);
+        igual(valores(w,matriz(w)), antes); igual(w.document.activeElement !== w.document.body, true);
+    });
+    caso("P28.4 Inversa: retirar B al cambiar aplicación", inversa, async w => {
+        q(w, '#aplicaciones').open = true; q(w, '[name="funcion_adicional"][value="producto"]').click();
+        pegar(w, filas(w,matriz(w,1))[0][0], "1\t2\n3\t4");
+        q(w, '[name="funcion_adicional"][value="vector"]').click(); await turno(w); igual(disponible(w), false);
+    });
+    caso("P28.4 selección nueva conservada, Escape y flechas no invalidan", inversa, w => {
+        const f = filas(w), antes = valores(w); pegar(w,f[0][0],"1\t2\n3\t4");
+        f[0][0].focus(); f[0][0].setSelectionRange(1,1); key(w,f[0][0],"ArrowRight");
+        igual(w.document.activeElement === f[0][1], true); igual(disponible(w),true);
+        elegir(w,"secundaria"); const coords = seleccion(w); restaurar(w,antes); igual(seleccion(w),coords);
+        pegar(w,f[0][0],"9"); key(w,f[0][0],"Escape"); igual(seleccion(w),[]); igual(disponible(w),true);
+        restaurar(w,antes);
+    });
+    caso("P28.4 foco del summary vuelve a celda de contexto; control fuera de live region", inversa, w => {
+        const f=filas(w); f[1][1].focus(); elegir(w,"principal"); pegar(w,w.document.activeElement,"5");
+        const boton=accionUndo(w), aviso=q(w,'[data-estado-pegado]');
+        igual(boton.type,"button"); igual(boton.textContent,"Deshacer"); igual(boton.closest('[role="status"], [aria-live]'),null);
+        igual(aviso.getAttribute("aria-live"),"polite"); igual(aviso.getAttribute("aria-atomic"),"true");
+        restaurar(w,Array(4).fill("")); igual(w.document.activeElement===f[1][1],true);
+    });
+    caso("P28.4 invalidación pasiva con botón enfocado mantiene un foco válido", inversa, async w => {
+        pegar(w,filas(w)[0][0],"1\t2\n3\t4"); const boton=accionUndo(w); boton.focus();
+        filas(w)[1][1].readOnly=true; await turno(w);
+        igual(w.document.activeElement===boton,true); igual(boton.hidden,false); igual(boton.getAttribute("aria-disabled"),"true");
+        boton.click(); igual(valores(w),["1","2","3","4"]); filas(w)[0][0].focus(); igual(boton.hidden,true);
+    });
+    caso("P28.4 comprobación final incoherente devuelve foco seguro al activarse", inversa, w => {
+        pegar(w,filas(w)[0][0],"1\t2\n3\t4"); const boton=accionUndo(w); boton.focus();
+        filas(w)[1][1].value="8"; boton.click(); igual(valores(w),["1","2","3","8"]);
+        igual(w.document.activeElement===filas(w)[0][0],true); igual(boton.hidden,true);
+    });
+    caso("P28.4 fallback seguro con todas las celdas bloqueadas y Calcular disabled", inversa, w => {
+        const f=filas(w); pegar(w,f[0][0],"1\t2\n3\t4"); accionUndo(w).focus();
+        f.flat().forEach(c=>{c.readOnly=true;}); q(w,'[data-calculo]').disabled=true; accionUndo(w).click();
+        igual(valores(w),["1","2","3","4"]); igual(w.document.activeElement===q(w,'[name="orden"]'),true);
+        igual(w.getComputedStyle(accionUndo(w)).display,"none");
+    });
+    caso("P28.4 editar con teclado matemático invalida, Ctrl+Z queda nativo", inversa, async w => {
+        const f=filas(w); pegar(w,f[0][0],"1\t2\n3\t4"); f[0][0].focus();
+        igual(key(w,f[0][0],"z",{ctrlKey:true}),false); igual(disponible(w),true);
+        f[0][0].setSelectionRange(1,1); const tecla=q(w,'.math-keyboard [data-insercion="-"]');
+        tecla.dispatchEvent(new w.MouseEvent("mousedown",{bubbles:true,cancelable:true})); tecla.click(); await turno(w);
+        igual(disponible(w),false); igual(f[0][0].value,"1-");
+    });
+    caso("P28.4 borrar manualmente no crea undo", inversa, w => {
+        const input=filas(w)[0][0]; valor(w,`#${input.id}`,"2"); valor(w,`#${input.id}`,"");
+        igual(disponible(w),false); igual(q(w,'[data-deshacer-pegado]'),null);
+    });
+    caso("P28.4 stale sigue stale al restaurar entradas originales", inversa, async(w,frame) => {
+        pegar(w,q(w,A),"1\t0\n0\t1"); w=await post(frame);
+        const resultado=q(w,'[data-resultado]'),contenido=q(w,'.panel-final').textContent,antes=valores(w);
+        elegir(w,"principal"); pegar(w,w.document.activeElement,"2"); igual(resultado.dataset.resultado,"desactualizado");
+        restaurar(w,antes); igual(resultado.dataset.resultado,"desactualizado"); igual(q(w,'.panel-final').textContent,contenido);
+        igual(q(w,'.result-notice').textContent.includes("Vuelve a calcular"),true);
+        igual(q(w,'.math-keyboard').hasAttribute("data-abierto"),true);
+    });
+    caso("P28.4 POST/navegación no conservan undo", inversa, async(w,frame) => {
+        pegar(w,q(w,A),"1\t0\n0\t1"); w=await post(frame); igual(disponible(w),false);
+        igual(q(w,'[data-deshacer-pegado]'),null); pegar(w,q(w,A),"2\t0\n0\t2");
+        const loaded=new Promise(resolve=>{frame.onload=resolve;}); frame.src=operaciones; await loaded;
+        igual(disponible(frame.contentWindow),false); igual(q(frame.contentWindow,'[data-deshacer-pegado]'),null);
+    });
+    caso("P28.4 pagehide descarta el registro incluso con bfcache", inversa, w => {
+        pegar(w,filas(w)[0][0],"1\t2\n3\t4"); const antes=valores(w);
+        w.dispatchEvent(new w.PageTransitionEvent("pagehide",{persisted:true}));
+        igual(disponible(w),false); igual(valores(w),antes); igual(avisoPegado(w),"");
+        igual(w.getComputedStyle(accionUndo(w)).display,"none");
+    });
+    for (const [ancho,alto] of [[1280,650],[744,521],[320,650]]) {
+        for (const theme of ["light","dark"]) for (const ruta of [inversa,operaciones,axb,reduccion]) {
+            caso(`P28.4 feedback y foco ${theme} ${ancho}×${alto}: ${ruta}`,ruta,async(w,frame)=>{
+                frame.width=ancho; frame.height=alto; w.document.documentElement.dataset.theme=theme;
+                if(ruta===reduccion) modo(w,"matriz"); elegir(w,"toda");
+                pegar(w,w.document.activeElement,"1"); accionUndo(w).focus(); await turno(w);
+                const pagina=w.document.documentElement, rect=accionUndo(w).getBoundingClientRect();
+                igual(pagina.scrollWidth<=pagina.clientWidth,true); igual(rect.left>=0&&rect.right<=ancho,true);
+                const estilo=w.getComputedStyle(accionUndo(w)); igual(estilo.outlineStyle,"solid");
+                igual(parseFloat(estilo.outlineWidth)>0,true); accionUndo(w).click();
+                igual(w.document.activeElement.matches('input.matrix-input'),true);
+                igual(pagina.scrollWidth<=pagina.clientWidth,true);
+            });
+        }
+    }
     if (new URLSearchParams(location.search).has("forced-colors")) {
+        for (const ruta of [inversa,operaciones,axb,reduccion]) caso(`P28.4 forced-colors control, foco y live region: ${ruta}`,ruta,async w=>{
+            igual(w.matchMedia("(forced-colors: active)").matches,true);
+            if(ruta===reduccion) modo(w,"matriz"); pegar(w,filas(w)[0][0],"1\t2\n3\t4");
+            const boton=accionUndo(w); boton.focus(); await turno(w); const estilo=w.getComputedStyle(boton);
+            igual(estilo.borderStyle,"solid"); igual(parseFloat(estilo.borderWidth)>0,true);
+            igual(estilo.outlineStyle,"solid"); igual(parseFloat(estilo.outlineWidth)>0,true);
+            igual(estilo.color!==estilo.backgroundColor,true); boton.click(); igual(disponible(w),false);
+        });
         for (const ruta of [inversa, operaciones, axb, reduccion]) caso(`P28.1 forced-colors: ${ruta}`, ruta, async w => {
             igual(w.matchMedia("(forced-colors: active)").matches, true);
             if (ruta === reduccion) modo(w, "matriz");

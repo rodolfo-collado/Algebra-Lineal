@@ -101,23 +101,25 @@ observa el bloque completo y marca un resultado previo como desactualizado si
 cambiaron sus entradas. Las flechas, Escape y el teclado matemático conservan
 P28.1/P27; un paste no limpia la selección ni cierra el teclado.
 
-Se reutilizan las regiones de estado del formulario, `role=status` y
-`aria-live=polite`, visibles junto a las acciones. No hay alertas ni modales:
+P28.4 usa una región exclusiva de pegado del formulario, `role=status` y
+`aria-live=polite`, visible junto a las acciones y sin sobrescribir presupuesto
+u otros avisos. No hay alertas ni modales:
 
 - «El bloque copiado es de 2×3 y la selección es de 3×2.»
 - «Se copiaron 6 celdas, pero hay 5 seleccionadas.»
 - «La selección copiada no cabe desde esta celda.»
 - «Los datos copiados no son compatibles con esta selección.»
 
-Los errores añaden «No se pegó ningún valor.». El éxito anuncia el número de
-valores aplicados, incluyendo vacíos seleccionados.
+Los errores añaden «No se pegó ningún valor.». P28.4 anuncia el número de celdas
+realmente modificadas, incluidos vacíos que sustituyen un literal, y ofrece
+Deshacer. Un éxito sin modificaciones anuncia «Pegado sin cambios.».
 
-## Preparación para P28.4
+## Aplicación común y P28.4
 
 `entradasSeguras.aplicarPegado(cambios)` recibe pares `[input, valor]` ya
 validados, aplica todos y después emite los eventos. Devuelve un registro de
-`{input, anterior, nuevo}` para cada destino. P28.3 no retiene ese registro,
-no implementa historial ni expone un control para deshacer. P28.4 podrá usarlo
-sin duplicar la aplicación, con sus propias comprobaciones del DOM vigente.
+`{input, anterior, nuevo}` para cada destino. [P28.4](deshacer-pegado.md) consume
+esa información para Deshacer último pegado, con un solo registro y comprobaciones
+del DOM vigente; reutiliza la aplicación común también para restaurar.
 
 Pruebas y límites de QA: [validación P28.3](validacion-p28-3.md).
