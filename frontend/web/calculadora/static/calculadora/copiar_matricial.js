@@ -8,10 +8,13 @@
     const escapar = texto => texto.replace(/[&<>"']/g, c =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
+    function textoAdmitido(texto) {
+        return typeof texto === "string" && texto.length <= MAX_TEXTO && bytes(texto) <= MAX_TEXTO;
+    }
+
     function parsear(metadata, texto) {
-        if (typeof metadata !== "string" || typeof texto !== "string" ||
-            metadata.length > MAX_METADATA || texto.length > MAX_TEXTO ||
-            bytes(metadata) > MAX_METADATA || bytes(texto) > MAX_TEXTO) return null;
+        if (typeof metadata !== "string" || metadata.length > MAX_METADATA ||
+            bytes(metadata) > MAX_METADATA || !textoAdmitido(texto)) return null;
         let datos;
         try { datos = JSON.parse(metadata); } catch { return null; }
         const campos = ["version", "filas", "columnas", "forma", "celdas"];
@@ -22,7 +25,7 @@
             datos.filas * datos.columnas > MAX_CELDAS ||
             !["rectangulo", "mascara"].includes(datos.forma) || !Array.isArray(datos.celdas) ||
             !datos.celdas.length || datos.celdas.length > datos.filas * datos.columnas) return null;
-        const bloque = texto.replace(/\r\n/g, "\n").split("\n").map(fila => fila.split("\t"));
+        const bloque = window.entradasSeguras.bloqueDeTexto(texto, true);
         if (texto.replace(/\r\n/g, "").includes("\r") || bloque.length !== datos.filas ||
             bloque.some(fila => fila.length !== datos.columnas)) return null;
         let anterior = -1;
@@ -74,7 +77,7 @@
         return { texto, html, metadata };
     }
 
-    window.copiadoMatricial = { TIPO, parsear, serializar };
+    window.copiadoMatricial = { TIPO, parsear, serializar, textoAdmitido };
 
     document.addEventListener("copy", event => {
         if (event.defaultPrevented || !event.cancelable || !event.clipboardData) return;

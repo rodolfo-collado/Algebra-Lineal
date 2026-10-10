@@ -115,8 +115,8 @@
             estado.aumentada = matriz.id === "matrix-grid";
             estado.columnasA = estado.filas[0].length - Number(estado.aumentada);
             const cantidad = estado.celdas.size;
-            const validas = celdas(estado).filter(c => existe(estado, c) &&
-                (estado.tipo !== "comando" || c.columna < estado.columnasA));
+            // Bloquear una celda existente no cambia el destino de un paste pendiente.
+            const validas = celdas(estado).filter(c => estado.tipo !== "comando" || c.columna < estado.columnasA);
             estado.celdas = new Set(validas.map(clave));
             if (!estado.celdas.size) {
                 limpiarEstado(estado);
@@ -190,8 +190,8 @@
         reemplazar(estado.matriz, seleccion, { tipo: "comando", comando, etiqueta });
     }
 
-    function obtener(matriz) {
-        sincronizar();
+    function obtener(matriz, actualizar = true) {
+        if (actualizar) sincronizar();
         const estado = estados.get(matriz);
         if (!estado) return null;
         const seleccion = celdas(estado);
