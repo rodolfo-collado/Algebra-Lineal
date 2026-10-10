@@ -35,6 +35,8 @@
   de bloques durante el procedimiento.
 - [Matriz inversa](matriz-inversa.md): Gauss-Jordan sobre `[A | I]`, la regla
   2×2, verificación, propiedades y aplicación `x = A⁻¹b`.
+- [Selección matricial](seleccion-matricial.md): modelo de entrada, gestos,
+  comandos sobre A, dimensiones y API interna preparada para P28.2.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   publicación desde main con tag/release automáticos y checksums.
 

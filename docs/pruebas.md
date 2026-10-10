@@ -628,3 +628,27 @@ Los casos que necesitan foco real (teclado contextual tras `focus()`) requieren 
 ventana con foco: con el panel de Browser oculto se ejecutan en Chrome headless con
 emulación de foco por CDP, sin dependencias nuevas. Véase
 [validación P27.11](validacion-p27-11.md).
+
+## P28.1 — Selección matricial
+
+Se amplía `tests.entrada_edicion_browser`, sin otro servidor ni dependencia:
+
+```bash
+uv run --locked python -m tests.entrada_edicion_browser
+```
+
+Abrir `http://127.0.0.1:8889/__pruebas/`. Incluye gestos en las cuatro herramientas,
+texto dentro del input, navegación P27, Escape del teclado/buscador/cajón,
+siete comandos sobre A, matrices rectangulares, A/b, API, dimensiones,
+reemplazos, bajas/reindexado, tipos excluidos, B adicional de inversa, resultado
+vigente, edición con teclado matemático y POST sin persistencia. Comprueba
+menú, foco y desborde a 1280×650, 744×521 y 320×650 en claro y oscuro.
+
+En un navegador con `(forced-colors: active)`, abrir
+`/__pruebas/?forced-colors=1` añade cuatro casos que exigen la emulación activa
+y comparan bordes/foco con Highlight y CanvasText. No simulan alto contraste
+inyectando una paleta en la página. El contrato HTTP está en
+`tests.test_entrada_edicion`: plantilla única, siete botones sin nombre/submit,
+región viva y alcance de scripts. Ejecutar también la suite completa y los
+runners anteriores. API: [selección matricial](seleccion-matricial.md).
+Resultados y límites: [validación P28.1](validacion-p28-1.md).
