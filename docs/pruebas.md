@@ -659,7 +659,7 @@ El mismo `tests.entrada_edicion_browser` incorpora TSV, HTML y tipo propio,
 los siete comandos, una celda vacía, huecos, rangos Shift, orden Ctrl inverso,
 matrices rectangulares, A/b, fracciones, escape HTML, texto/fórmulas ajenas,
 prioridad textual, round-trip y metadata corrupta/incoherente/fuera de límites.
-Comprueba también que paste siga ignorando el tipo propio y no cambie su destino.
+La compatibilidad sin selección sigue comprobando el fallback del tipo inválido.
 Los límites UTF-8 se prueban inclusive en 4096/65536 bytes y en 120 celdas.
 
 Para la comprobación real entre páginas, abrir una herramienta en ese servidor,
@@ -671,3 +671,32 @@ Excel/Sheets, WebView2 y menú nativo requieren sus respectivas aplicaciones rea
 
 Contrato: [copiado matricial](copiado-matricial.md).
 Evidencia: [validación P28.2](validacion-p28-2.md).
+
+## P28.3 — Pegado sobre selecciones
+
+Se amplía `tests.entrada_edicion_browser`, con el mismo servidor y sin dependencias:
+
+```bash
+uv run --locked python -m tests.entrada_edicion_browser
+uv run --locked python -m unittest discover -v
+```
+
+Abrir `http://127.0.0.1:8889/__pruebas/`. Los casos anteriores de P27/P28.1/P28.2
+se conservan; el caso de paste P28.2 ahora prueba metadata inválida sin selección.
+Los negativos del parser también verifican paste y fallback. Los nuevos casos
+comprueban rectángulos compatibles e incompatibles, llenado por valor único,
+los siete comandos y gestos manuales, máscaras con huecos/vacíos, orden por filas,
+cardinal distinto, límites UTF-8, 120 celdas, 13 columnas aumentadas, A/b y A/B,
+destinos readonly/disabled/fieldset/ocultos/retirados/maxlength, observadores del
+bloque completo, selección tras microtareas, foco, stale, dimensiones, Escape,
+flechas y registro de valores anteriores/nuevos sin historial.
+
+Para QA con portapapeles real, abrir dos páginas de herramienta, seleccionar y
+copiar con Ctrl+C, pegar con Ctrl+V sobre una celda o selección. Probar rango,
+diagonal, triangular, Ctrl+clic y una celda vacía seleccionada. Los huecos deben
+conservar valores existentes. Texto externo sin metadata debe seguir P27.
+Ejecutar también los doce runners anteriores; sus eventos sintéticos no sustituyen
+estas comprobaciones de Ctrl+C/Ctrl+V ni pruebas físicas de aplicaciones externas.
+
+Contrato: [pegado matricial](pegado-matricial.md).
+Evidencia y límites: [validación P28.3](validacion-p28-3.md).

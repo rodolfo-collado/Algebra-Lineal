@@ -107,7 +107,9 @@ La forma se comprueba contra la cantidad efectiva: no se confía en la etiqueta.
 `window.copiadoMatricial` expone `TIPO`, `serializar(snapshot)` y
 `parsear(metadata, texto)`. Serializar devuelve `{texto, html, metadata}` o
 `null` si no es representable. Parsear devuelve los cinco campos validados o
-`null`; no cambia el DOM y **no está conectado a paste**.
+`null`; no cambia el DOM. P28.3 lo usa en el listener compartido de paste.
+`textoAdmitido(texto)` comparte la comprobación de 64 KiB UTF-8 con esa ruta.
+La lectura TSV se reutiliza desde `entradasSeguras.bloqueDeTexto(texto, true)`.
 
 Límites del protocolo v1:
 
@@ -133,17 +135,17 @@ La metadata no autentica al emisor: cualquier página puede escribir ese tipo.
 La coherencia significa forma/dimensiones/huecos compatibles con el TSV. No
 prueba la procedencia ni detecta un cambio en valores seleccionados que preserve
 esas propiedades; no transporta un segundo ejemplar de los valores ni una firma.
-La validación de números y capacidad del destino seguirá siendo necesaria en P28.3.
+La capacidad y editabilidad del destino se comprueban en P28.3; la validación
+numérica de los literales continúa en formularios/backend al calcular.
 
 Si no se pueden generar los formatos o escribirlos, se anuncia el fallo sin éxito
 parcial; no se cancela la copia nativa. En un fallo de escritura se limpia el
 DataTransfer del evento. No se promete conservar el portapapeles anterior si el
 motor efectúa la acción nativa.
 
-Para P28.3: metadata ausente, desconocida o inválida debe ignorarse y dar paso al
-fallback rectangular de texto existente. **Nunca se debe deducir la máscara de
-los vacíos de TSV.** P28.2 mantiene el paste P27, incluidos su recorte de líneas
-vacías exteriores, destino desde una celda y validaciones atómicas; por ello
-todavía no promete restaurar máscaras ni rellenar selecciones.
+P28.3 ignora metadata ausente, desconocida o inválida y aplica el fallback
+rectangular de texto existente. **Nunca deduce una máscara de los vacíos de TSV.**
+Sin selección ni máscara válida se mantiene el paste P27. La tabla de decisión,
+atomicidad y diferencia hueco/vacío están en [pegado matricial](pegado-matricial.md).
 
 Pruebas y límites de QA: [validación P28.2](validacion-p28-2.md).

@@ -8,8 +8,8 @@ envía formularios ni marca un resultado como desactualizado.
 No incluye resultados, procedimientos, vectores, escalares, matrices simbólicas,
 selección entre matrices, arrastre, persistencia ni deshacer. P28.2 consume este
 modelo para [copiar al portapapeles](copiado-matricial.md), sin cambiar su API.
-El pegado tabulado de P27 sigue usando su origen y capacidad habituales;
-la selección todavía no cambia su destino.
+P28.3 consume el mismo modelo para [pegar sobre selecciones](pegado-matricial.md).
+Sin selección ni máscara válida, P27 conserva su origen y capacidad habituales.
 
 ## Modelo y arquitectura
 
@@ -84,7 +84,10 @@ su label ni las ayudas de error.
 Los renderizadores notifican cambios estructurales. Operaciones y Reducción
 conservan la identidad de su cuadrícula; Inversa y Ax=b llaman `redimensionar`
 cuando sus renderizadores de dimensiones reemplazan la tabla. Se recortan las
-coordenadas que ya no existen o no son editables. Si se pierde la referencia o
+coordenadas que ya no existen. P28.3 conserva las celdas seleccionadas que pasan
+a readonly/disabled sin retirarse del DOM: un pegado falla completo, sin cambiar
+su conjunto. Los gestos/API de sustitución siguen rechazando celdas no editables.
+Si se pierde la referencia o
 el extremo o la celda actual, se usa una celda sobreviviente; si desaparece todo
 el conjunto por redimensionado, se limpian tipo, comando, referencia, extremo y
 celda actual. Crecer no vuelve
@@ -107,7 +110,7 @@ menú y sus descripciones; los nombres/reindexados no cambian la identidad.
 | Método | Contrato |
 | --- | --- |
 | `activa()` | Snapshot de la única selección activa o `null`. |
-| `obtener(matriz)` | Snapshot de esa tabla/`#matrix-grid`, incluso sin celdas seleccionadas; `null` si no pertenece al alcance o fue retirada. |
+| `obtener(matriz, actualizar = true)` | Snapshot de esa tabla/`#matrix-grid`, incluso sin celdas seleccionadas; `null` si no pertenece al alcance o fue retirada. P28.3 usa `false` para planificar antes de reconciliar cambios pendientes y poder rechazar destinos ausentes sin cambiar el conjunto durante paste. |
 | `limpiar(matriz)` | Limpia ese conjunto. Sin argumento limpia el activo. Conserva referencia y celda actual válidas para continuar editando. |
 | `reemplazar(matriz, celdas, opciones = {})` | Sustituye y activa un conjunto, sin enfocar ni editar inputs; devuelve `true`. Devuelve `false`, sin aplicar una parte, ante coordenadas inválidas/no editables o b dentro de un comando. Acepta conjunto vacío y elimina duplicados. |
 | `sincronizar()` | Reconcilia cuadrículas, dimensiones, referencias, menús y estados retirados. |
