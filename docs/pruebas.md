@@ -729,3 +729,29 @@ Ctrl+C/Ctrl+V reales. Los eventos sintéticos del runner no sustituyen ese QA.
 
 Contrato: [deshacer último pegado](deshacer-pegado.md).
 Evidencia y límites: [validación P28.4](validacion-p28-4.md).
+
+## P28.5 — Copiar matrices finales
+
+```bash
+uv run --locked python -m unittest tests.test_resultado_presentacion tests.test_procedimiento_plegable -v
+uv run --locked python -m tests.resultado_browser
+uv run --locked python -m tests.entrada_edicion_browser
+```
+
+Abrir `http://127.0.0.1:8883/__pruebas/` y `http://127.0.0.1:8889/__pruebas/`.
+El runner de resultados conserva sus 66 casos anteriores y cubre suma, resta,
+producto, expresión, determinación, igualdades con dos matrices, ambos métodos
+de Reducción, propiedades matriciales de Inversa y las exclusiones deliberadas.
+Compara los tres formatos completos en Exacto, Decimal, precisión 2/8, vuelta a
+Exacto y un nuevo cálculo que inicia en Decimal. Incluye TSV exacto, HTML con
+fracciones, metadata v1 completa, round-trip a entradas por P28.3, stale, inputs y
+foco intactos, feedback único, independencia de undo, fallos de escritura, escape,
+límites reales 10×10/12×10/9×13 y los tres viewports en claro/oscuro.
+
+El runner matricial conserva los casos P28.1–P28.4 y compara el adaptador de
+inputs con el nuevo núcleo de valores. Las fixtures matemáticas históricas
+permanecen congeladas: `antes_de_p285` normaliza únicamente ubicación de la matriz
+final y botones para comprobar los hashes previos; el contrato actual se prueba
+separadamente. Los eventos sintéticos viven exclusivamente en los runners.
+Tab/Enter/Space y el transporte efectivo entre páginas requieren QA con acciones
+de navegador y portapapeles real. Evidencia: [validación P28.5](validacion-p28-5.md).

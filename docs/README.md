@@ -37,8 +37,8 @@
   2×2, verificación, propiedades y aplicación `x = A⁻¹b`.
 - [Selección matricial](seleccion-matricial.md): modelo de entrada, gestos,
   comandos sobre A, dimensiones y API interna compartida.
-- [Copiado matricial](copiado-matricial.md): copia exacta TSV/HTML, metadata v1,
-  prioridad textual y validación estricta de geometría.
+- [Copiado matricial](copiado-matricial.md): selección de entrada y matrices finales,
+  copia exacta TSV/HTML, metadata v1, prioridad textual y validación de geometría.
 - [Pegado matricial](pegado-matricial.md): reglas sobre selecciones, fallback TSV,
   máscaras, atomicidad y huecos/vacíos.
 - [Deshacer último pegado](deshacer-pegado.md): un solo nivel por página,
