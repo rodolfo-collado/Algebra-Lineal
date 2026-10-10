@@ -700,3 +700,32 @@ estas comprobaciones de Ctrl+C/Ctrl+V ni pruebas físicas de aplicaciones extern
 
 Contrato: [pegado matricial](pegado-matricial.md).
 Evidencia y límites: [validación P28.3](validacion-p28-3.md).
+
+## P28.4 — Deshacer último pegado
+
+Se amplía `tests.entrada_edicion_browser`, con el mismo servidor y sin dependencias:
+
+```bash
+uv run --locked python -m tests.entrada_edicion_browser
+uv run --locked python -m unittest discover -v
+```
+
+Abrir `http://127.0.0.1:8889/__pruebas/` en Browser. Mantiene todos los casos
+P27/P28.1/P28.2/P28.3 y añade restauración exacta, un solo uso, reemplazo A/B,
+rectángulos/diagonales/triangulares/Ctrl/máscaras, vacíos y valores idénticos,
+b aumentado y separado, eventos atómicos, foco, selección actual, teclado,
+Escape/flechas, stale irreversible sin recalcular, POST/navegación y pagehide
+con bfcache. Prueba invalidación de ediciones, dimensiones, tipos, bajas,
+reemplazos, movimiento y reconstrucción DOM, readonly/disabled/fieldset/hidden
+y maxlength tanto antes como después de entregar las mutaciones del observer.
+La comparación final también se prueba con cambios de valor sin evento input.
+
+Se comprueban visibilidad CSS real del botón consumido, región viva separada,
+foco y ausencia de desborde en las cuatro herramientas a 1280×650, 744×521 y
+320×650 en claro/oscuro. Con emulación forced-colors activa, abrir
+`/__pruebas/?forced-colors=1` añade casos de control, bordes, contraste y foco.
+Ejecutar además los doce runners anteriores y los siete flujos manuales con
+Ctrl+C/Ctrl+V reales. Los eventos sintéticos del runner no sustituyen ese QA.
+
+Contrato: [deshacer último pegado](deshacer-pegado.md).
+Evidencia y límites: [validación P28.4](validacion-p28-4.md).

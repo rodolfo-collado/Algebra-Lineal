@@ -40,7 +40,9 @@
 - [Copiado matricial](copiado-matricial.md): copia exacta TSV/HTML, metadata v1,
   prioridad textual y validación estricta de geometría.
 - [Pegado matricial](pegado-matricial.md): reglas sobre selecciones, fallback TSV,
-  máscaras, atomicidad, huecos/vacíos y preparación para P28.4.
+  máscaras, atomicidad y huecos/vacíos.
+- [Deshacer último pegado](deshacer-pegado.md): un solo nivel por página,
+  comprobación de coherencia, invalidación, foco y resultados stale.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   publicación desde main con tag/release automáticos y checksums.
 

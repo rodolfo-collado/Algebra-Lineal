@@ -9,6 +9,8 @@ No incluye resultados, procedimientos, vectores, escalares, matrices simbólicas
 selección entre matrices, arrastre, persistencia ni deshacer. P28.2 consume este
 modelo para [copiar al portapapeles](copiado-matricial.md), sin cambiar su API.
 P28.3 consume el mismo modelo para [pegar sobre selecciones](pegado-matricial.md).
+P28.4 permite [deshacer el último pegado](deshacer-pegado.md) sin depender de
+la selección original ni recrearla.
 Sin selección ni máscara válida, P27 conserva su origen y capacidad habituales.
 
 ## Modelo y arquitectura
