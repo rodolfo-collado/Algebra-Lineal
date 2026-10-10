@@ -319,6 +319,24 @@
             igual(input.value, "-12/7");
         });
     }
+    for (const ruta of [inversa, operaciones, axb, reduccion]) caso(`P28.1 fila/columna siguen la celda actual, Shift conserva referencia: ${ruta}`, ruta, w => {
+        if (ruta === reduccion) modo(w, "matriz");
+        const g = matriz(w); const f = filas(w, g);
+        mouse(w, f[0][0]); mouse(w, f[1][1], {shiftKey:true});
+        igual(w.seleccionMatricial.obtener(g).referencia, {fila:0,columna:0});
+        igual(w.seleccionMatricial.obtener(g).celdaActual, {fila:1,columna:1});
+        elegir(w, "fila");
+        igual(seleccion(w), ruta === reduccion ? [[1,0],[1,1],[1,2]] : [[1,0],[1,1]]);
+        elegir(w, "columna");
+        igual(seleccion(w), ruta === reduccion ? [[0,1],[1,1],[2,1]] : [[0,1],[1,1]]);
+        f[0][0].focus();
+        igual(w.seleccionMatricial.obtener(g).referencia, {fila:0,columna:0});
+        igual(w.seleccionMatricial.obtener(g).celdaActual, {fila:0,columna:0});
+        elegir(w, "fila");
+        igual(seleccion(w), ruta === reduccion ? [[0,0],[0,1],[0,2]] : [[0,0],[0,1]]);
+        const copia = w.seleccionMatricial.obtener(g); copia.celdaActual.fila = 99;
+        igual(w.seleccionMatricial.obtener(g).celdaActual.fila, 0);
+    });
     const comandos = [
         ["toda", [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]],
         ["fila", [[1, 0], [1, 1], [1, 2]]], ["columna", [[0, 1], [1, 1], [2, 1]]],

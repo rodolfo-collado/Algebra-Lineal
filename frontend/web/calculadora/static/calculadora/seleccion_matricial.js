@@ -52,7 +52,7 @@
             else input.removeAttribute("aria-describedby");
         }));
         const cuadrada = estado.filas.length === estado.columnasA;
-        const referencia = estado.referencia;
+        const referencia = estado.celdaActual;
         estado.menu.querySelector("summary").setAttribute("aria-label", `Seleccionar celdas de ${nombre(estado)}`);
         estado.menu.querySelectorAll("[data-seleccionar]").forEach(boton => {
             const comando = boton.dataset.seleccionar;
@@ -73,7 +73,7 @@
         menu.append(descripcion);
         const caja = matriz.id === "matrix-grid" ? matriz.closest("#matrix-grid-wrapper") : matriz.closest(".matrix");
         caja.prepend(menu);
-        const estado = { matriz, menu, descripcion, celdas: new Set(), referencia: null, extremo: null,
+        const estado = { matriz, menu, descripcion, celdas: new Set(), referencia: null, extremo: null, celdaActual: null,
             tipo: null, comando: null, filas: [] };
         estados.set(matriz, estado);
         menu.addEventListener("toggle", () => {
@@ -120,11 +120,12 @@
             estado.celdas = new Set(validas.map(clave));
             if (!estado.celdas.size) {
                 limpiarEstado(estado);
-                if (cantidad) estado.referencia = null;
+                if (cantidad) estado.referencia = estado.celdaActual = null;
             }
             if (!existe(estado, estado.referencia)) estado.referencia = validas[0] ?
                 { fila: validas[0].fila, columna: validas[0].columna } : null;
             if (!existe(estado, estado.extremo)) estado.extremo = estado.referencia;
+            if (!existe(estado, estado.celdaActual)) estado.celdaActual = estado.referencia;
             pintar(estado);
             if (cantidad !== estado.celdas.size && actual === estado) anunciar(estado);
         });
@@ -163,10 +164,12 @@
             !existe(estado, c) || (opciones.tipo === "comando" && c.columna >= estado.columnasA))) return false;
         const referencia = opciones.referencia ?? estado.referencia ?? seleccion[0] ?? null;
         const extremo = opciones.extremo ?? referencia;
+        const celdaActual = opciones.extremo ?? opciones.referencia ?? estado.celdaActual ?? referencia;
         if ((referencia && !existe(estado, referencia)) || (extremo && !existe(estado, extremo))) return false;
         estado.celdas = new Set(seleccion.map(clave));
         estado.referencia = referencia ? { fila: referencia.fila, columna: referencia.columna } : null;
         estado.extremo = extremo ? { fila: extremo.fila, columna: extremo.columna } : null;
+        estado.celdaActual = celdaActual ? { fila: celdaActual.fila, columna: celdaActual.columna } : null;
         estado.tipo = estado.celdas.size ? opciones.tipo || "arbitraria" : null;
         estado.comando = estado.celdas.size ? opciones.comando || null : null;
         activar(estado);
@@ -176,7 +179,7 @@
 
     function seleccionarComando(estado, comando, etiqueta) {
         sincronizar();
-        const referencia = estado.referencia;
+        const referencia = estado.celdaActual;
         const n = estado.columnasA;
         const seleccion = estado.filas.flatMap((fila, i) => fila.flatMap((input, j) => {
             if (j >= n) return [];
@@ -199,6 +202,7 @@
         return { matriz, nombre: nombre(estado), activa: actual === estado && seleccion.length > 0,
             filas: estado.filas.length, columnas: estado.filas[0].length, columnasA: estado.columnasA,
             referencia: estado.referencia && { ...estado.referencia }, extremo: estado.extremo && { ...estado.extremo },
+            celdaActual: estado.celdaActual && { ...estado.celdaActual },
             tipo: estado.tipo, comando: estado.comando, celdas: seleccion, limites,
             rectangular: Boolean(limites && seleccion.length ===
                 (limites.filaFin - limites.filaInicio + 1) * (limites.columnaFin - limites.columnaInicio + 1)) };
@@ -219,7 +223,7 @@
         const previo = estados.get(anterior);
         if (previo && esMatriz(nueva)) {
             const estado = registrar(nueva);
-            for (const propiedad of ["celdas", "referencia", "extremo", "tipo", "comando"]) estado[propiedad] = previo[propiedad];
+            for (const propiedad of ["celdas", "referencia", "extremo", "celdaActual", "tipo", "comando"]) estado[propiedad] = previo[propiedad];
             if (actual === previo) actual = estado;
             estados.delete(anterior);
             previo.menu.remove();
@@ -239,6 +243,7 @@
     document.addEventListener("focusin", event => {
         const estado = estadoDe(event.target);
         if (!estado || enGesto) return;
+        estado.celdaActual = coordenadas(estado, event.target);
         if (!estado.celdas.size) estado.referencia = coordenadas(estado, event.target);
         activar(estado);
     });
@@ -260,6 +265,7 @@
             limpiar(estado.matriz);
             estado.referencia = destino;
             estado.extremo = destino;
+            estado.celdaActual = destino;
             activar(estado);
             return;
         }
