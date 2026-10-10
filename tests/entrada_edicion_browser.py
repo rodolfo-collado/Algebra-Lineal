@@ -1,4 +1,4 @@
-"""P27.9 y P28.1/P28.2 en DOM real: uv run --locked python -m tests.entrada_edicion_browser.
+"""P27.9 y P28.1/P28.2/P28.3 en DOM real: uv run --locked python -m tests.entrada_edicion_browser.
 
 Abrir http://127.0.0.1:8889/__pruebas/. Sin dependencias nuevas.
 El ClipboardEvent sintético vive solo en el runner; Ctrl+C/Ctrl+V se validan en Browser.
@@ -17,7 +17,7 @@ def pruebas(environ, start_response):
     if ruta == "/__pruebas/":
         contenido = ('<!doctype html><html lang="es"><meta charset="utf-8">'
                      '<link rel="icon" href="/static/calculadora/favicon.svg">'
-                     '<title>PyGebra: entrada, selección y copia</title><h1>Entrada, selección y copia P27.9 / P28</h1>'
+                     '<title>PyGebra: entrada, selección, copia y pegado</title><h1>Entrada, selección, copia y pegado P27.9 / P28</h1>'
                      '<ol id="resultados"></ol><p id="total">Ejecutando…</p>'
                      '<script src="/__pruebas/pruebas.js"></script></html>').encode()
         tipo = "text/html"
