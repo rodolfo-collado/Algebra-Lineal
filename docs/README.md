@@ -38,7 +38,9 @@
 - [Selección matricial](seleccion-matricial.md): modelo de entrada, gestos,
   comandos sobre A, dimensiones y API interna compartida.
 - [Copiado matricial](copiado-matricial.md): copia exacta TSV/HTML, metadata v1,
-  prioridad textual y validación de máscaras preparada para P28.3.
+  prioridad textual y validación estricta de geometría.
+- [Pegado matricial](pegado-matricial.md): reglas sobre selecciones, fallback TSV,
+  máscaras, atomicidad, huecos/vacíos y preparación para P28.4.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   publicación desde main con tag/release automáticos y checksums.
 
