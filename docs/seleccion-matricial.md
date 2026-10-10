@@ -6,8 +6,9 @@ Resolver Ax=b (A) y Reducción por filas ([A | b]). No modifica valores, calcula
 envía formularios ni marca un resultado como desactualizado.
 
 No incluye resultados, procedimientos, vectores, escalares, matrices simbólicas,
-selección entre matrices, arrastre, persistencia, formatos de portapapeles ni
-deshacer. El pegado tabulado de P27 sigue usando su origen y capacidad habituales;
+selección entre matrices, arrastre, persistencia ni deshacer. P28.2 consume este
+modelo para [copiar al portapapeles](copiado-matricial.md), sin cambiar su API.
+El pegado tabulado de P27 sigue usando su origen y capacidad habituales;
 la selección todavía no cambia su destino.
 
 ## Modelo y arquitectura
