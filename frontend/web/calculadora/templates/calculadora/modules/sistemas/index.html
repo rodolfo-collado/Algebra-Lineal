@@ -123,7 +123,7 @@
 
 {% block tool_result %}
     {% if resultados %}
-        {% comment %}Entrada → procedimiento plegable → resultado. El procedimiento explica cómo se llega (matriz inicial, operaciones, matriz final, sistema resultante, sustitución); el panel final, fuera del desplegable, dice qué se obtuvo (clasificación, solución, pivotes) una sola vez. Al comparar, la matriz inicial es común y cada método va en su propio sub-bloque. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+        {% comment %}Entrada → procedimiento plegable → resultado. El procedimiento conserva matriz inicial, operaciones, sistema resultante y sustitución; el panel final muestra clasificación, solución, pivotes y la matriz final copiable por método. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
         {% numeric_results %}
         <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
@@ -155,10 +155,10 @@
                     {% for resultado in resultados %}
                         {% if comparando %}
                             {% disclosure titulo=resultado.metodo nivel=4 clase="disclosure-nested" %}
-                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                                {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" with sin_matriz=True %}
                             {% enddisclosure %}
                         {% else %}
-                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" %}
+                            {% include "calculadora/modules/sistemas/_procedimiento_metodo.html" with sin_matriz=True %}
                         {% endif %}
                     {% endfor %}
                 {% enddisclosure %}
@@ -173,15 +173,20 @@
                 {% if "pivotes" in mostrar %}
                     {% comment %}Las columnas pivote son la lectura directa de la matriz final y coinciden entre métodos: se toman del primer resultado.{% endcomment %}
                     <div class="final-block">
-                        {% include "calculadora/modules/sistemas/_pivotes.html" with metodos=resultados %}
+                        {% include "calculadora/modules/sistemas/_pivotes.html" with metodos=resultados en_resultado=True %}
                     </div>
                 {% endif %}
-                {% if "procedimiento" not in mostrar %}
-                    {% comment %}Sin procedimiento, la matriz final (y el sistema resultante) se muestran aquí: siempre están, y una sola vez. Al comparar, cada bloque nombra su método.{% endcomment %}
-                    {% for resultado in resultados %}
-                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" with con_metodo=comparando %}
-                    {% endfor %}
-                {% endif %}
+                {% comment %}P28.5: la matriz final siempre está en Resultado, una por método; los pasos permanecen explicativos.{% endcomment %}
+                {% for resultado in resultados %}
+                    {% if "pivotes" in mostrar %}
+                        {% include "calculadora/modules/sistemas/_matriz_final.html" with con_metodo=comparando copiable=True columnas_pivote=resultado.columnas_pivote %}
+                    {% else %}
+                        {% include "calculadora/modules/sistemas/_matriz_final.html" with con_metodo=comparando copiable=True %}
+                    {% endif %}
+                    {% if "procedimiento" not in mostrar %}
+                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" with con_metodo=comparando sin_matriz=True %}
+                    {% endif %}
+                {% endfor %}
             </section>
         </section>
         {% endnumeric_results %}

@@ -10,6 +10,6 @@
         {% endfor %}
     </ul>
     {% if resultado.columnas_pivote %}
-        <p class="pivot-legend muted">Los pivotes se resaltan en la {% for metodo in metodos %}{% if not forloop.first %} y en la {% endif %}{{ metodo.etiqueta_matriz|lower }}{% endfor %}{% if "procedimiento" in mostrar %} del procedimiento{% endif %}.</p>
+        <p class="pivot-legend muted">Los pivotes se resaltan en la {% for metodo in metodos %}{% if not forloop.first %} y en la {% endif %}{{ metodo.etiqueta_matriz|lower }}{% endfor %}{% if "procedimiento" in mostrar and not en_resultado %} del procedimiento{% endif %}.</p>
     {% endif %}
 </div>

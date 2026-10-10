@@ -243,7 +243,7 @@ class PruebasSistemas(SimpleTestCase):
                     esperado = resolver_entrada_web("sistema", metodo, texto=sistema)
                     procedimiento, resultado = partes(html)
                     self.assertIn("Matriz inicial", procedimiento)
-                    self.assertIn(esperado["etiqueta_matriz"], procedimiento)
+                    self.assertNotIn(esperado["etiqueta_matriz"], procedimiento)
                     for paso in esperado["pasos"]:
                         self.assertIn(f"Paso {paso['numero']}", procedimiento)
                         self.assertIn(paso["operacion"], procedimiento)
@@ -262,7 +262,7 @@ class PruebasSistemas(SimpleTestCase):
                         self.assertIn(incognitas(linea), resultado)
                     self.assertNotIn("Paso 1", resultado)
                     self.assertNotIn("Matriz inicial", resultado)
-                    self.assertNotIn(esperado["etiqueta_matriz"], resultado)
+                    self.assertIn(esperado["etiqueta_matriz"], resultado)
                     todo = texto_resultado(html)
                     self.assertEqual(todo.count(esperado["clasificacion"]), 1)
                     self.assertEqual(todo.count("Columnas pivote:"), 1)
@@ -276,9 +276,11 @@ class PruebasSistemas(SimpleTestCase):
         self.assertEqual({d["encabezado"] for d in metodos}, {"h4"})
         procedimiento, resultado = partes(html)
         self.assertEqual(procedimiento.count("Matriz inicial"), 1)
-        for bloque in ("Matriz escalonada", "Sustitución regresiva", "Matriz reducida"):
-            self.assertIn(bloque, procedimiento)
-            self.assertNotIn(bloque, resultado)
+        for bloque in ("Matriz escalonada", "Matriz reducida"):
+            self.assertNotIn(bloque, procedimiento)
+            self.assertIn(bloque, resultado)
+        self.assertIn("Sustitución regresiva", procedimiento)
+        self.assertNotIn("Sustitución regresiva", resultado)
         self.assertEqual(procedimiento.count("Operaciones por filas"), 2)
         self.assertNotIn("Consistente", procedimiento)
         self.assertEqual(resultado.count("Consistente de solución única"), 1)
@@ -503,8 +505,9 @@ class PruebasTransversales(SimpleTestCase):
             with self.subTest(ruta=ruta):
                 html = self.client.post(ruta, datos).content.decode("utf-8")
                 seccion = html[html.index('id="resultado"'):html.index("</main>")]
-                # Solo los controles de formato son una mejora progresiva; la matemática sigue visible.
+                # Formato y Copiar son mejoras progresivas; la matemática sigue visible.
                 sin_controles = re.sub(r'<div class="numeric-format"[\s\S]*?</div>', '', seccion)
+                sin_controles = re.sub(r'<button\b[^>]*data-copiar-resultado[^>]*>.*?</button>', '', sin_controles)
                 self.assertNotIn(" hidden", sin_controles)
                 self.assertIn('data-numeric-controls hidden', seccion)
                 self.assertNotIn("<script", seccion)
@@ -577,9 +580,9 @@ class PruebasComparacionSinProcedimiento(SimpleTestCase):
 
     def test_con_un_solo_metodo_o_con_procedimiento_no_se_repite_el_nombre(self):
         solo = texto_resultado(self.client.post("/matrices/reduccion/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["sistema-resultante"]}).content.decode("utf-8"))
-        self.assertIn("Matriz escalonada 1 1 2 0 0 0 Sistema resultante x₁ + x₂ = 2 0 = 0", solo)
+        self.assertIn("Matriz escalonada Copiar 1 1 2 0 0 0 Sistema resultante x₁ + x₂ = 2 0 = 0", solo)
         self.assertNotIn("· Gauss", solo)
         con_procedimiento = texto_resultado(self.resolver(INFINITAS, TODOS))
-        # Con procedimiento, el sub-bloque «Gauss»/«Gauss-Jordan» ya nombra el método: los encabezados no lo repiten.
-        self.assertNotIn("Matriz escalonada · Gauss", con_procedimiento)
+        # P28.5: las matrices finales están fuera del procedimiento y nombran su método.
+        self.assertIn("Matriz escalonada · Gauss", con_procedimiento)
         self.assertNotIn("Sistema resultante · Gauss", con_procedimiento)

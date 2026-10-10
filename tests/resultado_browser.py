@@ -17,6 +17,7 @@ from tests.test_matriz_inversa_web import datos_inversa
 from tests.test_expresiones_matriciales_web import datos_expresion
 from tests.test_vectores_web import datos_vectores
 from tests.test_web import datos_matriz
+from tests.test_expresiones_lineales_web import PRINCIPAL, datos as datos_lineales
 
 CSRF_TOKEN = token_hex(16)
 
@@ -47,6 +48,33 @@ CASOS = {
     "rectangular": ("/matrices/operaciones/", datos_expresion("A", (
         {"nombre": "A", "tipo": "matriz", "valor": [[f"{i + j + 1}/123456789" for j in range(10)] for i in range(2)]},))),
 }
+
+# P28.5: valores calculados por Django, incluyendo resultados con varios paneles.
+A = {"nombre": "A", "tipo": "matriz", "valor": [["1/3", -2, 0], [5, "7/2", -1]]}
+B = {"nombre": "B", "tipo": "matriz", "valor": [[0, 1, 2], [-5, "1/2", 3]]}
+for nombre, expresion in (("suma", "A+B"), ("resta", "A-B"), ("expresion", "2A-B"), ("igualdad", "A=B")):
+    CASOS["p28-" + nombre] = ("/matrices/operaciones/", datos_expresion(expresion, (A, B)))
+CASOS.update({
+    "p28-producto": ("/matrices/operaciones/", datos_expresion("AB", (A,
+        {"nombre": "B", "tipo": "matriz", "valor": [[1, 0], [0, 1], [0, 1]]}))),
+    "p28-determinacion": ("/matrices/operaciones/", datos_lineales("Ax=b", PRINCIPAL)),
+    "p28-inversa": ("/matrices/inversa/", datos_inversa([[3, 0], [0, -2]], verificar="on")),
+    "p28-operaciones-10": ("/matrices/operaciones/", datos_expresion("A", (
+        {"nombre": "A", "tipo": "matriz", "valor": matriz(10)},))),
+    "p28-reduccion-12": ("/matrices/reduccion/", datos_matriz([
+        [int(i == j) for j in range(9)] + ["1/3" if i < 9 else 0] for i in range(12)], "gauss_jordan")),
+    "p28-reduccion-13": ("/matrices/reduccion/", datos_matriz([
+        [int(i == j) for j in range(12)] + ["-2/3"] for i in range(9)], "gauss_jordan")),
+})
+for metodo in ("gauss", "gauss_jordan", "comparar"):
+    CASOS["p28-" + metodo] = ("/matrices/reduccion/", datos_matriz([[1, 1, "1/3"], [0, 1, "-2/3"]], metodo))
+for funcion in ("inversa_inversa", "traspuesta", "producto", "vector"):
+    datos = datos_inversa([[3, 0], [0, -2]], funcion_adicional=funcion)
+    if funcion == "producto":
+        datos |= {f"celda_B_{i}_{j}": str(int(i == j)) for i in range(2) for j in range(2)}
+    if funcion == "vector":
+        datos |= {"celda_b_0_0": "1", "celda_b_1_0": "2"}
+    CASOS["p28-inversa-" + funcion] = ("/matrices/inversa/", datos)
 
 
 @lru_cache(maxsize=None)
@@ -83,6 +111,10 @@ def pruebas(environ, start_response):
     elif ruta.startswith("/__pruebas/casos/"):
         contenido, cookie = caso(ruta.rstrip("/").split("/")[-1], environ.get("QUERY_STRING") == "sin-js")
         tipo = "text/html"
+    elif ruta in ("/__pruebas/portapapeles/", "/__pruebas/visual/"):
+        # Reutiliza el receptor TSV y los viewports de P28.2/P28.4.
+        from tests.entrada_edicion_browser import pruebas as entrada_pruebas
+        return entrada_pruebas(environ, start_response)
     else:
         return aplicacion(environ, start_response)
     headers = [("Content-Type", tipo + "; charset=utf-8"), ("Cache-Control", "no-store")]

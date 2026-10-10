@@ -168,10 +168,10 @@ class PruebasResultado(SimpleTestCase):
     def test_ui53_la_leyenda_nombra_la_matriz_y_donde_esta(self):
         sistema = {"sistema": "x1 + x2 = 3; x1 - x2 = 1", "mostrar_definido": "1"}
         for metodo, mostrar, leyenda in (
-            ("gauss", ["pivotes", "procedimiento"], "Los pivotes se resaltan en la matriz escalonada del procedimiento."),
-            ("gauss_jordan", ["pivotes", "procedimiento"], "Los pivotes se resaltan en la matriz reducida del procedimiento."),
+            ("gauss", ["pivotes", "procedimiento"], "Los pivotes se resaltan en la matriz escalonada."),
+            ("gauss_jordan", ["pivotes", "procedimiento"], "Los pivotes se resaltan en la matriz reducida."),
             ("comparar", ["pivotes", "procedimiento"],
-             "Los pivotes se resaltan en la matriz escalonada y en la matriz reducida del procedimiento."),
+             "Los pivotes se resaltan en la matriz escalonada y en la matriz reducida."),
             ("gauss_jordan", ["pivotes"], "Los pivotes se resaltan en la matriz reducida."),
         ):
             with self.subTest(metodo=metodo, mostrar=mostrar):
