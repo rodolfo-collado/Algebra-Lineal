@@ -1,4 +1,4 @@
-# Copiado matricial de entrada (P28.2)
+# Copiado matricial (P28.2 y P28.5)
 
 `copiar_matricial.js` consume inmediatamente `seleccionMatricial.activa()` de
 [P28.1](seleccion-matricial.md): `celdas`, `input.value`, `limites` y `rectangular`.
@@ -104,7 +104,7 @@ Rectángulos también enumeran todas sus posiciones. No se incluyen valores,
 HTML, nombre de matriz, coordenadas originales, comando, estado UI ni DOM.
 La forma se comprueba contra la cantidad efectiva: no se confía en la etiqueta.
 
-`window.copiadoMatricial` expone `TIPO`, `serializar(snapshot)` y
+`window.copiadoMatricial` expone `TIPO`, `serializar(snapshot)`, `serializarValores(snapshot)` y
 `parsear(metadata, texto)`. Serializar devuelve `{texto, html, metadata}` o
 `null` si no es representable. Parsear devuelve los cinco campos validados o
 `null`; no cambia el DOM. P28.3 lo usa en el listener compartido de paste.
@@ -149,3 +149,61 @@ Sin selección ni máscara válida se mantiene el paste P27. La tabla de decisi�
 atomicidad y diferencia hueco/vacío están en [pegado matricial](pegado-matricial.md).
 
 Pruebas y límites de QA: [validación P28.2](validacion-p28-2.md).
+
+## Matrices del resultado final (P28.5)
+
+Cada matriz final tiene su propio botón **Copiar**, situado encima de esa matriz,
+con nombre accesible específico y una región `role=status` para «Matriz copiada.».
+El botón nativo funciona con Tab, Enter y Space; conserva el foco y permite repetir
+la acción. Sin JavaScript queda oculto y la matriz sigue visible.
+
+| Herramienta | Matrices copiables |
+| --- | --- |
+| Operaciones | Resultado de suma, resta, producto, traspuesta y cualquier expresión cuyo tipo sea matriz; matriz determinada simbólicamente; cada lado matricial de una igualdad, con nombre propio. |
+| Reducción | Matriz escalonada de Gauss o reducida de Gauss-Jordan, incluido el bloque aumentado completo. Al comparar hay un botón por método. |
+| Inversa | A⁻¹ o la matriz final de inversa de la inversa, traspuesta o producto, cuando la propiedad sea aplicable. |
+| Ax=b | Ninguna: la salida reutilizable es un vector solución, fuera del alcance. A, aumentadas y comprobación son explicativas. |
+| Vectores, bases y romanos | Ninguna: vectores, escalares, ecuaciones y texto quedan fuera. |
+
+La matriz final de Reducción se muestra siempre en el panel Resultado. Sus
+operaciones Antes/Después, sistemas resultantes y sustitución permanecen en
+Procedimiento. No se agregan acciones a ejemplos, matrices ilustrativas,
+verificaciones de Inversa ni pasos intermedios. Una matriz de una columna que
+sea de tipo matriz sigue siendo copiable; un vector no cambia de tipo para copiarse.
+
+`matriz.html` recibe `copiar` únicamente en los lugares finales autorizados y
+guarda `data-valor-exacto` en cada `td`, usando el mismo literal exacto del backend
+que renderiza su contenido. El valor se escapa con Django y nunca se obtiene del
+texto Decimal visible. `numeric_results` solo adapta la presentación (`data-numeric`
+con exacto/decimales); `numeros.js` no cambia el atributo exacto. Los enteros,
+negativos y cero también publican su fuente, aunque no necesiten variantes.
+No hay conversión a float ni reconstrucción de fracciones desde decimales.
+
+`serializar(snapshot)` adapta `input.value` a `{fila, columna, valor}` y llama al
+núcleo `serializarValores`. El botón de resultado obtiene todas las filas/celdas
+del DOM, incluidas las desplazadas fuera del viewport, y llama al mismo núcleo
+con límites desde cero, todas las coordenadas y `rectangular: true`. No hay otro
+generador TSV, HTML o JSON. Los límites v1 (12 filas, 13 columnas, 120 posiciones,
+64 KiB de TSV y 4 KiB de metadata) y el tratamiento HTML de fracciones para Excel
+son los de P28.2. Un límite excedido produce feedback de fallo, sin anunciar éxito.
+
+La acción explícita del botón invoca `document.execCommand("copy")` para disparar
+el listener `copy` compartido y su escritura de los tres MIME. El intento temporal
+se libera al terminar; esa acción copia su matriz aunque exista selección de
+entrada/texto. Las copias normales conservan la prioridad textual de P28.2.
+El comando y los eventos asociados están descritos en el
+[contrato de Clipboard de W3C](https://www.w3.org/TR/clipboard-apis/).
+Si el motor no admite el comando o la escritura, el botón anuncia el fallo.
+No se introducen permisos persistentes ni una API de portapapeles adicional.
+
+El resultado copiado entra en P28.3 como un rectángulo v1 normal. No existe una
+ruta de paste especial para resultados ni se convierte el resultado en inputs.
+Las celdas no adoptan gestos, rangos o selección parcial de P28.1.
+
+Editar entradas conserva la matriz anterior y el aviso stale existente:
+«Este resultado corresponde a la entrada anterior». Copiar sigue disponible
+y transporta precisamente ese cálculo anterior, sin recalcular ni marcar stale.
+No emite `input`/`change`, no modifica entradas ni crea o invalida el registro
+privado de P28.4. El feedback de copia es independiente del de Deshacer pegado.
+
+Evidencia y límites de plataformas: [validación P28.5](validacion-p28-5.md).

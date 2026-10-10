@@ -1,5 +1,11 @@
 {% comment %}Matriz genérica de valores o expresiones. columnas_izquierda separa bloques en un solo table; aumentada sin corte conserva la última columna de [A | b]. Los índices de columnas_pivote son de base uno. add:0 normaliza el entero si llega capturado por firstof.{% endcomment %}{% with columnas_izquierda=columnas_izquierda|add:0 %}
-<div class="matrix">
+<div class="matrix"{% if copiar %} data-matriz-copiable{% endif %}>
+    {% if copiar %}
+    <div class="matrix-copy-actions">
+        <button type="button" class="btn btn-secondary" data-copiar-resultado aria-label="Copiar {{ copiar }}" hidden>Copiar</button>
+        <span class="field-help" role="status" aria-live="polite" aria-atomic="true" data-estado-copia></span>
+    </div>
+    {% endif %}
     <div class="matrix-scroll" data-matrix-output role="region" aria-label="{{ etiqueta|default:'Matriz' }}, desplazamiento horizontal">
         <div class="matrix-content">
         <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
@@ -8,7 +14,7 @@
                 {% for fila in matriz %}
                     <tr>
                         {% for valor in fila %}
-                            <td class="{% if columnas_izquierda %}{% if forloop.counter0 == columnas_izquierda %}constant{% elif forloop.counter0 > columnas_izquierda %}augmented{% endif %}{% elif aumentada and forloop.last %}constant{% endif %}{% if columnas_pivote and forloop.counter in columnas_pivote %} pivot{% endif %}">{{ valor }}</td>
+                            <td{% if copiar %} data-valor-exacto="{{ valor }}"{% endif %} class="{% if columnas_izquierda %}{% if forloop.counter0 == columnas_izquierda %}constant{% elif forloop.counter0 > columnas_izquierda %}augmented{% endif %}{% elif aumentada and forloop.last %}constant{% endif %}{% if columnas_pivote and forloop.counter in columnas_pivote %} pivot{% endif %}">{{ valor }}</td>
                         {% endfor %}
                     </tr>
                 {% endfor %}

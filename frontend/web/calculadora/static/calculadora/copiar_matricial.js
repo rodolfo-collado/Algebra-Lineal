@@ -58,15 +58,15 @@
         return `<td${valor && !numero ? ' style="mso-number-format:\'\\@\'"' : ""}>${escapar(valor)}</td>`;
     }
 
-    function serializar(seleccion) {
+    function serializarValores(seleccion) {
         if (!seleccion?.celdas.length || !seleccion.limites) return null;
         const { filaInicio, filaFin, columnaInicio, columnaFin } = seleccion.limites;
         const filas = filaFin - filaInicio + 1, columnas = columnaFin - columnaInicio + 1;
         if (filas < 1 || filas > MAX_FILAS || columnas < 1 || columnas > MAX_COLUMNAS || filas * columnas > MAX_CELDAS) return null;
-        if (seleccion.celdas.reduce((total, { input }) => total + input.value.length, filas * columnas - 1) > MAX_TEXTO) return null;
+        if (seleccion.celdas.reduce((total, { valor }) => total + valor.length, filas * columnas - 1) > MAX_TEXTO) return null;
         const bloque = Array.from({ length: filas }, () => Array(columnas).fill(""));
-        const celdas = seleccion.celdas.map(({ fila, columna, input }) => {
-            bloque[fila - filaInicio][columna - columnaInicio] = input.value;
+        const celdas = seleccion.celdas.map(({ fila, columna, valor }) => {
+            bloque[fila - filaInicio][columna - columnaInicio] = valor;
             return [fila - filaInicio, columna - columnaInicio];
         });
         const texto = bloque.map(fila => fila.join("\t")).join("\n");
@@ -77,10 +77,62 @@
         return { texto, html, metadata };
     }
 
-    window.copiadoMatricial = { TIPO, parsear, serializar, textoAdmitido };
+    function serializar(seleccion) {
+        if (!seleccion) return null;
+        return serializarValores({ ...seleccion, celdas: seleccion.celdas.map(({ fila, columna, input }) =>
+            ({ fila, columna, valor: input.value })) });
+    }
+
+    window.copiadoMatricial = { TIPO, parsear, serializar, serializarValores, textoAdmitido };
+
+    function escribir(event, datos) {
+        try {
+            event.clipboardData.setData("text/plain", datos.texto);
+            event.clipboardData.setData("text/html", datos.html);
+            event.clipboardData.setData(TIPO, datos.metadata);
+        } catch {
+            event.clipboardData.clearData();
+            return false;
+        }
+        event.preventDefault();
+        return true;
+    }
+
+    let copiaResultado = null;
+    document.querySelectorAll("[data-copiar-resultado]").forEach(boton => {
+        boton.hidden = false;
+        boton.addEventListener("click", () => {
+            const matriz = boton.closest("[data-matriz-copiable]");
+            const aviso = matriz.querySelector("[data-estado-copia]");
+            const filas = [...matriz.querySelector("table").rows];
+            const celdas = filas.flatMap((tr, fila) => [...tr.cells].map((td, columna) =>
+                ({ fila, columna, valor: td.dataset.valorExacto })));
+            const datos = serializarValores({ celdas, rectangular: true,
+                limites: { filaInicio: 0, filaFin: filas.length - 1,
+                    columnaInicio: 0, columnaFin: filas[0].cells.length - 1 } });
+            if (!datos) {
+                aviso.textContent = "No se pudo copiar la matriz: supera los límites de tamaño o contiene tabuladores.";
+                return;
+            }
+            copiaResultado = { datos, copiada: false };
+            try {
+                // El evento de P28.2 conserva el MIME propio v1 sin el prefijo «web ».
+                document.execCommand("copy");
+                aviso.textContent = copiaResultado.copiada ? "Matriz copiada." : "No se pudo copiar la matriz al portapapeles.";
+            } catch {
+                aviso.textContent = "No se pudo copiar la matriz al portapapeles.";
+            } finally {
+                copiaResultado = null;
+            }
+        });
+    });
 
     document.addEventListener("copy", event => {
         if (event.defaultPrevented || !event.cancelable || !event.clipboardData) return;
+        if (copiaResultado) {
+            copiaResultado.copiada = escribir(event, copiaResultado.datos);
+            return;
+        }
         const input = document.activeElement;
         if ((input?.selectionStart != null && input.selectionStart !== input.selectionEnd) ||
             (event.target.selectionStart != null && event.target.selectionStart !== event.target.selectionEnd) ||
@@ -93,16 +145,10 @@
             aviso.textContent = "No se pudo copiar la selección: supera los límites de tamaño o contiene tabuladores.";
             return;
         }
-        try {
-            event.clipboardData.setData("text/plain", datos.texto);
-            event.clipboardData.setData("text/html", datos.html);
-            event.clipboardData.setData(TIPO, datos.metadata);
-        } catch {
-            event.clipboardData.clearData();
+        if (!escribir(event, datos)) {
             aviso.textContent = "No se pudo copiar la selección al portapapeles.";
             return;
         }
-        event.preventDefault();
         const cantidad = seleccion.celdas.length;
         aviso.textContent = `${cantidad} ${cantidad === 1 ? "celda copiada" : "celdas copiadas"}.`;
     });

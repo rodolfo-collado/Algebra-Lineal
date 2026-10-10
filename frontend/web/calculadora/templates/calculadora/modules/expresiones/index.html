@@ -104,7 +104,11 @@
                 <div class="matrix-equation">
                     <span class="matrix-expression">{{ resultado.igualdad }}</span>
                     {% if resultado.matriz %}
-                        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" only %}
+                        {% if resultado.tipo == "matriz" %}
+                            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" copiar="matriz" only %}
+                        {% else %}
+                            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" only %}
+                        {% endif %}
                     {% endif %}
                 </div>
             </section>

@@ -224,7 +224,7 @@ class PruebasMetodos(SimpleTestCase):
         self.assertLess(texto.index("Resultado"), texto.index("Columnas pivote:"))
         self.assertEqual(html.count('class="classification"'), 1)
         self.assertEqual(texto.count("Solución x₁ = 2 x₂ = 1"), 1)
-        self.assertLess(texto.index("Matriz escalonada"), texto.index("Resultado"))
+        self.assertLess(texto.index("Resultado"), texto.index("Matriz escalonada"))
         # Cada matriz final sigue resaltando sus columnas pivote (2 filas x 2 pivotes por método).
         self.assertEqual(html.count(' pivot"'), 8)
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)

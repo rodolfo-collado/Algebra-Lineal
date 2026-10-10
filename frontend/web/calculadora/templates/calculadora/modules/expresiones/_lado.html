@@ -3,7 +3,13 @@
     <div class="matrix-equation">
         <span class="matrix-expression">{{ lado.igualdad }}</span>
         {% if lado.matriz %}
-            {% include "calculadora/components/matriz.html" with matriz=lado.matriz etiqueta=lado.texto only %}
+            {% if lado.tipo == "matriz" %}
+                {% with contexto="matriz del "|add:titulo|lower %}
+                    {% include "calculadora/components/matriz.html" with matriz=lado.matriz etiqueta=lado.texto copiar=contexto only %}
+                {% endwith %}
+            {% else %}
+                {% include "calculadora/components/matriz.html" with matriz=lado.matriz etiqueta=lado.texto only %}
+            {% endif %}
         {% endif %}
     </div>
 </section>

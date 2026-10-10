@@ -539,6 +539,9 @@
         let cambios = 0;
         antes.matriz.closest("form").addEventListener("input", () => cambios++);
         const { data, impedido } = copiar(w);
+        const valores = api.serializarValores({ ...antes,
+            celdas: antes.celdas.map(({ fila, columna, input }) => ({ fila, columna, valor: input.value })) });
+        igual(valores, api.serializar(antes));
         igual(impedido, true); igual(data.getData("text/plain"), esperado);
         igual([...data.types], ["text/plain", "text/html", api.TIPO]);
         igual(api.TIPO, "application/x-pygebra-matrix-selection");

@@ -107,7 +107,11 @@
             {% if resultado.invertible and resultado.adicional.aplicable %}
                 <div class="matrix-equation" role="region" aria-label="{{ resultado.etiqueta_final }}">
                     <span class="matrix-expression">{{ resultado.expresion_final }} =</span>
-                    {% include "calculadora/components/matriz.html" with matriz=resultado.adicional.resultado etiqueta=resultado.etiqueta_final only %}
+                    {% if resultado.funcion_adicional == "vector" %}
+                        {% include "calculadora/components/matriz.html" with matriz=resultado.adicional.resultado etiqueta=resultado.etiqueta_final only %}
+                    {% else %}
+                        {% include "calculadora/components/matriz.html" with matriz=resultado.adicional.resultado etiqueta=resultado.etiqueta_final copiar=resultado.etiqueta_final only %}
+                    {% endif %}
                 </div>
             {% elif not resultado.invertible %}
                 <p class="classification-value">La matriz no tiene inversa.</p>

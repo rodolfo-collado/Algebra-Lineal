@@ -223,7 +223,7 @@ class PruebasResultado(SimpleTestCase):
                 self.assertEqual(doc.tablas[TABLA_INVERSA], INVERSA_2X2)
                 self.assertIn(f"Matriz inversa · {titulo} Inversa de A (2×2)", contenido)
                 _, resultado = partes(html)
-                self.assertTrue(resultado.endswith("A⁻¹ = -3 2 5/2 -3/2"))
+                self.assertTrue(resultado.endswith("A⁻¹ = Copiar -3 2 5/2 -3/2"))
 
     def test_profesor_3x3_por_gauss_jordan(self):
         html, doc, contenido = self.calcular(PROFESOR_3X3)
@@ -486,7 +486,7 @@ class PruebasVerificacion(SimpleTestCase):
                 self.assertIn("A⁻¹ · A", procedimiento)
                 self.assertNotIn("Resultado", procedimiento)
                 self.assertIn("Verificación: A·A⁻¹ = A⁻¹·A = I ✓", resultado)
-                self.assertTrue(resultado.endswith("A⁻¹ = -3 2 5/2 -3/2"))
+                self.assertTrue(resultado.endswith("A⁻¹ = Copiar -3 2 5/2 -3/2"))
                 self.assertEqual(len(re.findall(rf'<table[^>]*aria-label="{TABLA_INVERSA}"', html)), 1)
                 self.assertEqual(texto(html).count("Resultado"), 1)
                 self.assertRegex(html, r'<h[3-6][^>]*id="inverse-verification-title"[^>]*>Verificación</h[3-6]>')

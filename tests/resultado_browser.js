@@ -164,6 +164,169 @@
         assert(w.document.activeElement === q(w, '[name="numero"]'), "Foco en campo inválido");
         assert(!q(w, '[aria-busy="true"]'), "Sin busy residual");
     }]);
+    // Solo se simula el transporte del portapapeles; se ejecuta el botón de producción.
+    const copiarResultado = (w, boton = q(w, "[data-copiar-resultado]"), preparar = () => {}) => {
+        const original = w.document.execCommand;
+        let data, impedido;
+        w.document.execCommand = comando => {
+            assert(comando === "copy", "Solo comando copy");
+            data = new w.DataTransfer();
+            const event = new w.ClipboardEvent("copy", { clipboardData: data, bubbles: true, cancelable: true });
+            preparar(event); boton.dispatchEvent(event); impedido = event.defaultPrevented;
+            return impedido;
+        };
+        try { boton.click(); } finally { w.document.execCommand = original; }
+        return { data, impedido };
+    };
+    const formatos = (w, data) => [...data.types].map(tipo => [tipo, data.getData(tipo)]);
+    const iguales = (a, b, mensaje) => assert(JSON.stringify(a) === JSON.stringify(b), mensaje);
+    const exactos = matriz => [...matriz.querySelectorAll("tr")].map(tr => [...tr.cells].map(td => td.dataset.valorExacto));
+    const comprobarResultado = (w, boton, esperado) => {
+        const matriz = boton.closest("[data-matriz-copiable]");
+        const antes = [...new w.FormData(q(w, "[data-entrada-calculo]"))];
+        const foco = w.document.activeElement;
+        const estado = q(w, "[data-resultado]").dataset.resultado;
+        let cambios = 0; const contar = () => cambios++;
+        q(w, "[data-entrada-calculo]").addEventListener("input", contar);
+        const {data, impedido} = copiarResultado(w, boton);
+        q(w, "[data-entrada-calculo]").removeEventListener("input", contar);
+        assert(impedido, "Evento copy completado");
+        iguales([...data.types], ["text/plain", "text/html", w.copiadoMatricial.TIPO], "Tres formatos P28.2");
+        iguales(data.getData("text/plain"), esperado.map(f=>f.join("\t")).join("\n"), "TSV exacto completo");
+        const celdas = esperado.flatMap((f,i)=>f.map((v,j)=>[i,j]));
+        iguales(w.copiadoMatricial.parsear(data.getData(w.copiadoMatricial.TIPO), data.getData("text/plain")),
+            {version:1, filas:esperado.length, columnas:esperado[0].length, forma:"rectangulo", celdas}, "Metadata v1 completa");
+        const tabla = new w.DOMParser().parseFromString(data.getData("text/html"), "text/html");
+        iguales([...tabla.querySelectorAll("tr")].map(tr=>[...tr.cells].map(td=>td.textContent)),
+            esperado.map(f=>f.map(v=>v.includes("/")?`=${v}`:v)), "HTML y fracciones para Excel");
+        assert(q(w,"[data-resultado]").dataset.resultado === estado && cambios === 0, "Copiar no marca stale ni emite input");
+        iguales([...new w.FormData(q(w,"[data-entrada-calculo]"))], antes, "Inputs intactos");
+        assert(w.document.activeElement === foco && !boton.disabled, "Foco y repetición conservados");
+        const aviso = matriz.querySelector("[data-estado-copia]");
+        assert(aviso.textContent === "Matriz copiada." && aviso.getAttribute("role") === "status" && aviso.getAttribute("aria-atomic") === "true", "Feedback accesible");
+        assert(!q(w,"#procedimiento [data-copiar-resultado]"), "Procedimiento sin botones");
+        assert(!matriz.querySelector("input, .matrix-selection, [data-celda-seleccionada]"), "Resultado sin selección ni inputs");
+        return data;
+    };
+    const salidas = {
+        "p28-suma": [[["1/3","-1","2"],["0","4","2"]]],
+        "p28-resta": [[["1/3","-3","-2"],["10","3","-4"]]],
+        "p28-producto": [[["1/3","-2"],["5","5/2"]]],
+        "p28-expresion": [[["2/3","-5","-2"],["15","13/2","-5"]]],
+        "p28-igualdad": [[["1/3","-2","0"],["5","7/2","-1"]], [["0","1","2"],["-5","1/2","3"]]],
+        "p28-determinacion": [[["3","-2"],["1","4"],["0","1"]]],
+        "p28-inversa": [[["1/3","0"],["0","-1/2"]]],
+        "p28-gauss": [[["1","1","1/3"],["0","1","-2/3"]]],
+        "p28-gauss_jordan": [[["1","0","1"],["0","1","-2/3"]]],
+        "p28-comparar": [[["1","1","1/3"],["0","1","-2/3"]], [["1","0","1"],["0","1","-2/3"]]],
+        "p28-inversa-inversa_inversa": [[["3","0"],["0","-2"]]],
+        "p28-inversa-traspuesta": [[["1/3","0"],["0","-1/2"]]],
+        "p28-inversa-producto": [[["1/3","0"],["0","-1/2"]]],
+    };
+    for (const [nombre, matrices] of Object.entries(salidas)) {
+        casos.push([`P28.5 ${nombre}: exacto/decimal, formatos y vuelta a entrada`, nombre, w => {
+            const botones = [...w.document.querySelectorAll("[data-copiar-resultado]")];
+            assert(botones.length === matrices.length, "Un botón por matriz final");
+            if(botones.length > 1) assert(new Set(botones.map(b=>b.getAttribute("aria-label"))).size === botones.length, "Nombres específicos distintos");
+            botones.forEach((boton,i) => {
+                boton.focus();
+                const modo = q(w,"[data-numeric-mode]");
+                valor(w,modo,"exacto","change");
+                const exacto = comprobarResultado(w,boton,matrices[i]);
+                valor(w,modo,"decimal","change");
+                valor(w,q(w,"[data-numeric-precision]"),"2","change");
+                const decimal = comprobarResultado(w,boton,matrices[i]);
+                iguales(formatos(w,exacto),formatos(w,decimal),"Portapapeles Exacto === Decimal");
+                valor(w,q(w,"[data-numeric-precision]"),"8","change");
+                iguales(formatos(w,copiarResultado(w,boton).data),formatos(w,exacto),"Precisión 8 conserva exactitud");
+                valor(w,modo,"exacto","change");
+                iguales(formatos(w,copiarResultado(w,boton).data),formatos(w,exacto),"Decimal → Exacto idéntico");
+                const tabla = q(w,"[data-entrada-calculo] table.matrix-entry-table") || q(w,"#matrix-grid");
+                const input = tabla.querySelector("input.matrix-input");
+                // Determinación usa una matriz simbólica sin inputs; su vuelta se cubre en Operaciones numéricas.
+                if (input && nombre !== "p28-determinacion") {
+                    input.focus(); w.seleccionMatricial.limpiar();
+                    const event = new w.ClipboardEvent("paste",{clipboardData:decimal,bubbles:true,cancelable:true});
+                    input.dispatchEvent(event);
+                    assert(event.defaultPrevented,"P28.3 recibe metadata normal");
+                    const filas = w.entradasSeguras.filasDeMatriz(tabla).map(fila=>fila.map(c=>c.value));
+                    matrices[i].forEach((fila,j)=>iguales(filas[j].slice(0,fila.length),fila,"Round-trip exacto"));
+                }
+            });
+        }]);
+    }
+    for (const [nombre,filas,columnas] of [["p28-operaciones-10",10,10],["inversa-10",10,10],["p28-reduccion-12",12,10],["p28-reduccion-13",9,13]]) {
+        casos.push([`P28.5 límite ${filas}×${columnas}: datos completos fuera del viewport`,nombre,async(w,frame)=>{
+            frame.style.width="320px"; await turno(w);
+            const boton=q(w,"[data-copiar-resultado]"),matriz=boton.closest(".matrix");
+            const valores=exactos(matriz); assert(valores.length===filas && valores[0].length===columnas,"Límite real");
+            matriz.querySelector(".matrix-scroll").scrollLeft=10000;
+            comprobarResultado(w,boton,valores); pagina(w);
+        }]);
+    }
+    casos.push(["P28.5 calcular con preferencia Decimal inicial conserva el portapapeles", "p28-inversa", async(w,frame)=>{
+        valor(w,q(w,"[data-numeric-mode]"),"exacto","change");
+        const exacto=comprobarResultado(w,q(w,"[data-copiar-resultado]"),salidas["p28-inversa"][0]);
+        valor(w,q(w,"[data-numeric-mode]"),"decimal","change");
+        w=await post(frame);
+        assert(q(w,"[data-numeric-mode]").value==="decimal","Nuevo cálculo inicia en Decimal");
+        const decimal=comprobarResultado(w,q(w,"[data-copiar-resultado]"),salidas["p28-inversa"][0]);
+        iguales(formatos(w,decimal),formatos(w,exacto),"Portapapeles idéntico tras POST en Decimal");
+    }]);
+    casos.push(["P28.5 stale y copiar conserva undo del pegado", "p28-inversa", w=>{
+        const input=q(w,'[name="celda_A_0_0"]');
+        const data=new w.DataTransfer(); data.setData("text/plain","1\t2\n3\t4");
+        input.dispatchEvent(new w.ClipboardEvent("paste",{clipboardData:data,bubbles:true,cancelable:true}));
+        assert(w.deshacerPegado.puedeDeshacer(),"Undo disponible");
+        const aviso=q(w,"[data-estado-pegado]").textContent;
+        assert(q(w,"[data-resultado]").dataset.resultado==="desactualizado" && q(w,".result-notice").textContent.includes("anterior"),"Stale comunica cálculo previo");
+        comprobarResultado(w,q(w,"[data-copiar-resultado]"),salidas["p28-inversa"][0]);
+        assert(w.deshacerPegado.puedeDeshacer() && !q(w,"[data-deshacer-pegado]").hidden,"Copiar conserva Deshacer");
+        assert(q(w,"[data-estado-pegado]").textContent===aviso,"Feedback separado");
+        q(w,"[data-deshacer-pegado]").click();
+        iguales([...w.document.querySelectorAll('[data-matriz="A"] input.matrix-input')].map(c=>c.value),["3","0","0","-2"],"Undo todavía restaura");
+    }]);
+    casos.push(["P28.5 botón prevalece sobre selección de entrada/texto y anuncia una vez", "p28-inversa",async w=>{
+        const input=q(w,'[name="celda_A_0_0"]'); input.focus();
+        q(w,'[data-matriz="A"] .matrix-selection summary').click();
+        q(w,'[data-matriz="A"] [data-seleccionar="toda"]').click();
+        input.focus(); input.select();
+        const seleccion=w.seleccionMatricial.activa().celdas.map(c=>[c.fila,c.columna]);
+        const mensaje=q(w,"[data-estado-seleccion]").textContent;
+        const boton=q(w,"[data-copiar-resultado]"),aviso=boton.closest(".matrix").querySelector("[data-estado-copia]");
+        let anuncios=0;const observer=new w.MutationObserver(()=>anuncios++);observer.observe(aviso,{childList:true});
+        comprobarResultado(w,boton,salidas["p28-inversa"][0]);await turno(w);observer.disconnect();
+        assert(anuncios===1 && q(w,"[data-estado-seleccion]").textContent===mensaje,"Una sola región actualizada");
+        iguales(w.seleccionMatricial.activa().celdas.map(c=>[c.fila,c.columna]),seleccion,"Selección de entrada intacta");
+    }]);
+    for(const fallo of ["sin-evento","cancelado","escritura"]) casos.push([`P28.5 fallo ${fallo}: sin éxito parcial y recuperable`,"p28-inversa",w=>{
+        const boton=q(w,"[data-copiar-resultado]"),aviso=q(w,"[data-estado-copia]");
+        if(fallo==="sin-evento") {const original=w.document.execCommand;w.document.execCommand=()=>false;boton.click();w.document.execCommand=original;}
+        else {const {data}=copiarResultado(w,boton,e=>{if(fallo==="cancelado")e.preventDefault();else dataFalla(e.clipboardData);});assert(data.types.length===0,"Sin formatos parciales");}
+        assert(aviso.textContent.includes("No se pudo copiar"),"Fallo anunciado");
+        comprobarResultado(w,boton,salidas["p28-inversa"][0]);
+    }]);
+    const dataFalla=data=>{const escribir=data.setData.bind(data);data.setData=(tipo,valor)=>{if(tipo==="text/html")throw new Error("QA");escribir(tipo,valor);};};
+    casos.push(["P28.5 escape y límites comparten el núcleo P28.2","p28-inversa",w=>{
+        const serializar=valor=>w.copiadoMatricial.serializarValores({celdas:[{fila:0,columna:0,valor}],rectangular:true,limites:{filaInicio:0,filaFin:0,columnaInicio:0,columnaFin:0}});
+        const valor='&<>"\'';const datos=serializar(valor);
+        assert(datos.html.includes("&amp;&lt;&gt;&quot;&#39;") && !datos.html.includes("<script"),"Escape compartido");
+        assert(serializar("x".repeat(65537))===null && serializar("1\t2")===null,"Límites de texto P28.2");
+        const boton=q(w,"[data-copiar-resultado]");q(w,"[data-valor-exacto]").dataset.valorExacto="x".repeat(65537);boton.click();
+        assert(q(w,"[data-estado-copia]").textContent.includes("límites"),"Resultado excesivo rechazado");
+    }]);
+    for (const nombre of ["axb","p28-inversa-vector","vectores","bases","romanos"]) casos.push([`P28.5 ${nombre}: fuera del alcance`,nombre,w=>{
+        assert(!q(w,"[data-copiar-resultado], [data-matriz-copiable]"),"Sin controles en vectores/texto");
+    }]);
+    for(const nombre of ["p28-suma","p28-comparar","p28-inversa"]) for(const tema of ["light","dark"]) for(const [ancho,alto] of [[1280,650],[744,521],[320,650]]) {
+        casos.push([`P28.5 ${nombre} ${tema} ${ancho}×${alto}`,nombre,async(w,frame)=>{
+            frame.style.width=`${ancho}px`;frame.style.height=`${alto}px`;
+            if(w.document.documentElement.dataset.theme!==tema) q(w,"#theme-toggle").click(); await turno(w);
+            pagina(w);
+            const botones=[...w.document.querySelectorAll("[data-copiar-resultado]")];
+            for(const boton of botones){boton.focus();comprobarResultado(w,boton,exactos(boton.closest(".matrix")));pagina(w);assert(w.getComputedStyle(boton).outlineStyle!=="none","Foco visible");}
+        }]);
+    }
     let fallos = 0;
     for (const [titulo, nombre, test] of casos) {
         const frame = document.createElement("iframe"); frame.title = titulo;

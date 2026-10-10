@@ -365,18 +365,18 @@ Tras resolver, «Ver procedimiento» (`#procedimiento`, cerrado) reúne la
 forma estándar de las ecuaciones escritas con términos en ambos lados (solo si
 alguna cambió: `resultado.reescritas`, que da `analizar_sistema`), la
 matriz inicial, las operaciones por filas (`_procedimiento_metodo.html` con
-`_pasos.html`), la matriz final con sus pivotes, el sistema resultante y la
+`_pasos.html`), el sistema resultante y la
 sustitución regresiva (`_bloques_metodo.html`); al comparar, un sub-bloque
 cerrado por método y la matriz inicial una vez. Después, el panel
-«Resultado» muestra la clasificación, la solución y las columnas pivote
+«Resultado» muestra la clasificación, la solución, las columnas pivote y
+la matriz final de cada método, con su botón Copiar
 (`_pivotes.html`, la lectura directa de la matriz final). Su leyenda nombra el
-bloque donde se resaltan («Los pivotes se resaltan en la matriz reducida del
-procedimiento.»): matriz escalonada, reducida o ambas al comparar, y «del
-procedimiento» solo cuando la matriz está dentro del desplegable. Sin
-procedimiento ni comparación, la cabecera del resultado no lleva kicker. Si «Procedimiento»
-está desmarcado no hay desplegable y la matriz final se muestra en el panel
-final, para que siga visible sin repetirse; al comparar, cada matriz final y
-sistema resultante nombran su método («Matriz escalonada · Gauss»).
+bloque donde se resaltan («Los pivotes se resaltan en la matriz reducida.»):
+matriz escalonada, reducida o ambas al comparar. P28.5 sitúa esas matrices
+siempre en el panel final, sin repetir el bloque en Procedimiento. Sin
+procedimiento ni comparación, la cabecera del resultado no lleva kicker.
+Si «Procedimiento» está desmarcado no hay desplegable; al comparar, cada
+matriz final y sistema resultante nombran su método («Matriz escalonada · Gauss»).
 
 `exploraciones.py` construye «También puedes explorar» tras resolver: el
 mismo sistema con el otro método o comparando, los bloques que se dejaron sin

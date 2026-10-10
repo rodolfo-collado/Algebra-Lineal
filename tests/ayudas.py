@@ -53,3 +53,28 @@ def elemento_html(html, posicion, etiqueta):
         if not profundidad:
             return html[inicio:inicio + marca.end()]
     raise AssertionError(f"<{etiqueta}> sin cerrar")
+
+
+def antes_de_p285(html):
+    """Solo para snapshots históricos: devuelve cada matriz final a su posición previa.
+
+    Conserva las fixtures congeladas y todos sus valores/pasos. El contrato nuevo
+    de ubicación y botones se prueba por separado en test_resultado_presentacion.
+    """
+    matrices = []
+    patron = r'<div class="final-block">\s*<h4 class="final-label">Matriz (?:escalonada|reducida)'
+    for marca in re.finditer(patron, html):
+        bloque = elemento_html(html, marca.end(), "div")
+        if "data-matriz-copiable" in bloque:
+            matrices.append(bloque)
+    for bloque in matrices:
+        html = html.replace(bloque, "", 1)
+    operaciones = list(re.finditer(r'<div class="final-block">\s*<h4 class="final-label">Operaciones por filas', html))
+    assert len(matrices) == len(operaciones)
+    for marca, bloque in reversed(list(zip(operaciones, matrices))):
+        operaciones_html = elemento_html(html, marca.end(), "div")
+        fin = marca.start() + len(operaciones_html)
+        bloque = re.sub(r'<div class="matrix-copy-actions">[\s\S]*?</div>', "", bloque)
+        bloque = re.sub(r" · Gauss(?:-Jordan)?(?=</h4>)", "", bloque)
+        html = html[:fin] + bloque + html[fin:]
+    return html

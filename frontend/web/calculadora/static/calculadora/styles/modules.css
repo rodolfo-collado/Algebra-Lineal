@@ -153,6 +153,18 @@
 }
 
 .matrix-equation > .matrix { flex-shrink: 1; }
+.matrix-copy-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.matrix-copy-actions .btn { font-size: var(--text-sm); padding: 0.3rem 0.6rem; }
+.matrix-copy-actions [hidden] { display: none; }
+.matrix-copy-actions .field-help { margin: 0; }
+
 .matrix-operand { min-width: 0; max-width: 100%; }
 .matrix-expression { overflow-x: auto; }
 
