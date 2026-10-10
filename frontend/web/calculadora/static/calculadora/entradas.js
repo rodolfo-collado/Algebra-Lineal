@@ -114,15 +114,7 @@
             (!texto.includes("\t") && bloque.length <= 1))) return;
         event.preventDefault();
 
-        let estado = form.querySelector('[data-presupuesto], [data-estado-vectores], [data-estado-pegado]');
-        if (!estado) {
-            estado = document.createElement("p");
-            estado.className = "field-help";
-            estado.dataset.estadoPegado = "";
-            estado.setAttribute("role", "status");
-            estado.setAttribute("aria-live", "polite");
-            form.querySelector(".workspace-actions").before(estado);
-        }
+        const estado = window.deshacerPegado.estado(form);
         if (!textoValido) {
             estado.textContent = "Los datos copiados superan el límite de 64 KiB. No se pegó ningún valor.";
             return;
@@ -183,8 +175,7 @@
             estado.textContent = "Un valor supera el límite de texto de su celda. No se pegó ningún valor.";
             return;
         }
-        aplicarPegado(cambios);
-        estado.textContent = cambios.length === 1 ? "Se pegó 1 valor." : `Se pegaron ${cambios.length} valores.`;
+        window.deshacerPegado.pegar(cambios, grid, input);
         // Se conserva el campo activo y el perfil del teclado contextual.
     });
 

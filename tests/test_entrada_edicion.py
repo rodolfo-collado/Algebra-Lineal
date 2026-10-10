@@ -19,6 +19,15 @@ EJEMPLO = "2x1 - x2 = 3; x1 + 4x2 = 7"
 
 
 class PruebasEntradaEdicion(SimpleTestCase):
+    def test_deshacer_comparte_carga_con_el_pegado_atomico(self):
+        for ruta in ("/matrices/operaciones/", "/matrices/inversa/", "/matrices/ecuaciones/",
+                     "/matrices/reduccion/", "/vectores/operaciones/"):
+            with self.subTest(ruta=ruta):
+                respuesta = self.client.get(ruta)
+                self.assertContains(respuesta, 'deshacer_pegado.js', count=1)
+                html = respuesta.content.decode()
+                self.assertLess(html.index("entradas.js"), html.index("deshacer_pegado.js"))
+
     def test_seleccion_compartida_solo_en_las_cuatro_herramientas(self):
         for ruta in ("/matrices/operaciones/", "/matrices/inversa/", "/matrices/ecuaciones/", "/matrices/reduccion/"):
             with self.subTest(ruta=ruta):

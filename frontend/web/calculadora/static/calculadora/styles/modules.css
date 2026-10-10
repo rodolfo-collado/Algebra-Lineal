@@ -4,6 +4,27 @@
     padding-bottom: 1rem;
 }
 
+.paste-feedback {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block: 0.75rem;
+}
+
+.paste-feedback .field-help {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.paste-feedback [hidden] { display: none; }
+
+.paste-feedback [aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 /* Matrices: el scroll pertenece a cada cuadrícula o igualdad, nunca a la página. */
 .matrix-entry-list {
     display: flex;
