@@ -115,6 +115,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{% include "calculadora/components/seleccion_matricial.html" %}
 <script src="{% static 'calculadora/numeros.js' %}" defer></script>
 <template id="symbol-template">{% include "calculadora/modules/expresiones/_simbolo_plantilla.html" %}</template>
 <template id="expression-cell-template" data-longitud-lineal="{{ form.longitud_lineal_maxima }}"><td><label class="sr-only"></label><input type="text" class="matrix-input" autocomplete="off" spellcheck="false" inputmode="text" data-campo="celda" data-fila="" data-columna=""></td></template>

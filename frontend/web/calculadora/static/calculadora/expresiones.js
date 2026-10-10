@@ -201,6 +201,7 @@
         const tipo = campo(card, "tipo").value;
         card.querySelector("[data-rejilla]").dataset.perfil = tipo === "vector_lineal" ? "lineal" : "numerico";
         const estado = memoria(card);
+        if (estado.tipo !== tipo) window.seleccionMatricial.limpiar(card.querySelector("table"));
         const guardado = estado.tipos.get(tipo) || new Map();
         const vector = esVector(tipo);
         const conColumnas = tipo === "matriz" || tipo === "matriz_desconocida";
@@ -250,6 +251,7 @@
         }
         actualizarNota(card, tipo, filas);
         reindex();
+        window.seleccionMatricial.sincronizar();
     }
 
     function reindex() {
@@ -319,6 +321,7 @@
             const vecina = cards[indice + 1] || cards[indice - 1];
             card.remove();
             reindex();
+            window.seleccionMatricial.sincronizar();
             aviso.textContent = `Se eliminó el operando ${nombre}.`;
             (vecina ? campo(vecina, "nombre") : agregar).focus();
             root.querySelector("form").dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
@@ -381,6 +384,7 @@
                 const label = input.closest("td") && input.closest("td").querySelector("label");
                 if (label) label.textContent = etiquetaCelda(tipo, nombre, Number(input.dataset.fila), Number(input.dataset.columna));
             });
+            window.seleccionMatricial.sincronizar();
         }
     });
     root.addEventListener("input", ocultarConfirmacion);

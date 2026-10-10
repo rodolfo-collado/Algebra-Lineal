@@ -33,6 +33,89 @@
     white-space: normal;
 }
 
+/* Un borde doble identifica la selección; el anillo exterior sigue siendo el foco. */
+.matrix-input[data-celda-seleccionada] {
+    border-width: 3px;
+    border-style: dashed;
+    padding: calc(0.5rem - 2px) calc(var(--celda-padding-inline) - 2px);
+}
+
+[data-seleccion-activa] .matrix-input[data-celda-seleccionada] {
+    border-style: double;
+    border-color: var(--color-brand);
+}
+
+[data-seleccion-activa] .matrix-input[data-celda-seleccionada][aria-invalid="true"] {
+    border-color: var(--color-danger);
+}
+
+.matrix-input[data-celda-seleccionada]:focus {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.matrix:has(> .matrix-selection),
+.matrix-grid-wrapper:has(> .matrix-selection):not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.matrix:has(> .matrix-selection) > .matrix-scroll,
+.matrix-grid-wrapper:has(> .matrix-selection) > .matrix-grid-frame {
+    max-width: 100%;
+}
+
+.matrix-selection {
+    width: fit-content;
+    max-width: min(100%, 22rem);
+    min-width: 0;
+    margin: 0;
+}
+
+.matrix-selection .disclosure-summary {
+    gap: 0.35rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.matrix-selection-commands {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+}
+
+.matrix-selection-commands .btn {
+    justify-content: flex-start;
+    white-space: normal;
+    text-align: left;
+    font-size: var(--text-sm);
+    padding: 0.35rem 0.5rem;
+}
+
+.matrix-selection .disclosure-chevron {
+    order: 1;
+    transform: rotate(90deg);
+}
+
+.matrix-selection[open] .disclosure-chevron {
+    transform: rotate(270deg);
+}
+
+@media (forced-colors: active) {
+    .matrix-input[data-celda-seleccionada] {
+        border-color: CanvasText;
+    }
+
+    [data-seleccion-activa] .matrix-input[data-celda-seleccionada] {
+        border-color: Highlight;
+    }
+
+    .matrix-input[data-celda-seleccionada]:focus {
+        outline-color: CanvasText;
+    }
+}
+
 .matrix-equation {
     display: flex;
     flex-wrap: wrap;
@@ -417,8 +500,9 @@ textarea,
 .matrix-input {
     /* Ancho mínimo cómodo; los contextos compactos lo reducen. */
     --celda-min: 4.25rem;
+    --celda-padding-inline: 0.4rem;
     width: var(--celda-min);
-    padding: 0.5rem 0.4rem;
+    padding: 0.5rem var(--celda-padding-inline);
     border: 1px solid var(--color-border-input);
     border-radius: 7px;
     color: var(--color-text);
@@ -1359,7 +1443,7 @@ textarea:focus {
 
     .vector-inputs .matrix-input {
         --celda-min: 3.2rem;
-        padding-inline: 0.3rem;
+        --celda-padding-inline: 0.3rem;
     }
 
     .vector-name {
@@ -1374,7 +1458,7 @@ textarea:focus {
 
     .equation-entry .matrix-input {
         --celda-min: 3rem;
-        padding-inline: 0.3rem;
+        --celda-padding-inline: 0.3rem;
     }
 
     .equation-entry .matrix-entry-table td {

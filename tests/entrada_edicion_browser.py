@@ -1,7 +1,8 @@
-"""P27.9 en DOM real: uv run --locked python -m tests.entrada_edicion_browser.
+"""P27.9 y P28.1 en DOM real: uv run --locked python -m tests.entrada_edicion_browser.
 
 Abrir http://127.0.0.1:8889/__pruebas/. Sin dependencias nuevas.
 El ClipboardEvent sintético vive solo en el runner; Ctrl+V se valida en Browser.
+Con forced-colors activo, abrir /__pruebas/?forced-colors=1 para verificar colores de sistema.
 """
 
 from pathlib import Path
@@ -15,7 +16,7 @@ def pruebas(environ, start_response):
     if ruta == "/__pruebas/":
         contenido = ('<!doctype html><html lang="es"><meta charset="utf-8">'
                      '<link rel="icon" href="/static/calculadora/favicon.svg">'
-                     '<title>PyGebra: entrada y edición P27.9</title><h1>Entrada y edición P27.9</h1>'
+                     '<title>PyGebra: entrada y selección</title><h1>Entrada y selección P27.9 / P28.1</h1>'
                      '<ol id="resultados"></ol><p id="total">Ejecutando…</p>'
                      '<script src="/__pruebas/pruebas.js"></script></html>').encode()
         tipo = "text/html"

@@ -1,0 +1,18 @@
+{% load static componentes %}
+<template id="matrix-selection-template">
+    {% disclosure titulo="Seleccionar" clase="matrix-selection" %}
+        <div class="matrix-selection-commands">
+            <button type="button" class="btn btn-secondary" data-seleccionar="toda">Toda la matriz</button>
+            <button type="button" class="btn btn-secondary" data-seleccionar="fila">Fila actual</button>
+            <button type="button" class="btn btn-secondary" data-seleccionar="columna">Columna actual</button>
+            <button type="button" class="btn btn-secondary" data-seleccionar="principal">Diagonal principal</button>
+            <button type="button" class="btn btn-secondary" data-seleccionar="secundaria">Diagonal secundaria</button>
+            <button type="button" class="btn btn-secondary" data-seleccionar="superior">Triangular superior</button>
+            <button type="button" class="btn btn-secondary" data-seleccionar="inferior">Triangular inferior</button>
+        </div>
+        <p class="field-help">Shift+clic: rango. Ctrl+clic: agregar o quitar. Escape: limpiar. Secundaria y triangulares: solo en matrices cuadradas.</p>
+        <p class="field-help" data-seleccion-aumentada hidden>Los comandos seleccionan solo A; la selección manual puede incluir b.</p>
+    {% enddisclosure %}
+</template>
+<p class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-estado-seleccion></p>
+<script src="{% static 'calculadora/seleccion_matricial.js' %}" defer></script>

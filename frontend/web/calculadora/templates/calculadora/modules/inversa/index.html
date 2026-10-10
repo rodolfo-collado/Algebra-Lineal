@@ -124,6 +124,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{% include "calculadora/components/seleccion_matricial.html" %}
 <script src="{% static 'calculadora/numeros.js' %}" defer></script>
 <template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
 <template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>

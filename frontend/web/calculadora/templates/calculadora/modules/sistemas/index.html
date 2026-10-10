@@ -189,6 +189,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{% include "calculadora/components/seleccion_matricial.html" %}
 <script src="{% static 'calculadora/numeros.js' %}" defer></script>
     {{ matrix_values|json_script:"matrix-initial-values" }}
     <script src="{% static 'calculadora/matriz.js' %}" defer></script>
