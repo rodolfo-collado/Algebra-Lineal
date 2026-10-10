@@ -652,3 +652,22 @@ inyectando una paleta en la página. El contrato HTTP está en
 región viva y alcance de scripts. Ejecutar también la suite completa y los
 runners anteriores. API: [selección matricial](seleccion-matricial.md).
 Resultados y límites: [validación P28.1](validacion-p28-1.md).
+
+## P28.2 — Copiado matricial
+
+El mismo `tests.entrada_edicion_browser` incorpora TSV, HTML y tipo propio,
+los siete comandos, una celda vacía, huecos, rangos Shift, orden Ctrl inverso,
+matrices rectangulares, A/b, fracciones, escape HTML, texto/fórmulas ajenas,
+prioridad textual, round-trip y metadata corrupta/incoherente/fuera de límites.
+Comprueba también que paste siga ignorando el tipo propio y no cambie su destino.
+Los límites UTF-8 se prueban inclusive en 4096/65536 bytes y en 120 celdas.
+
+Para la comprobación real entre páginas, abrir una herramienta en ese servidor,
+seleccionar y pulsar Ctrl+C; abrir `/__pruebas/portapapeles/` y pulsar Ctrl+V en
+Editor de texto. El receptor, exclusivo del runner, muestra tipos/valores del
+evento sin cancelar paste: el textarea recibe el TSV nativo. No usa la API
+asíncrona ni escribe el portapapeles por su cuenta. Esto comprueba el navegador;
+Excel/Sheets, WebView2 y menú nativo requieren sus respectivas aplicaciones reales.
+
+Contrato: [copiado matricial](copiado-matricial.md).
+Evidencia: [validación P28.2](validacion-p28-2.md).

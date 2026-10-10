@@ -36,7 +36,9 @@
 - [Matriz inversa](matriz-inversa.md): Gauss-Jordan sobre `[A | I]`, la regla
   2×2, verificación, propiedades y aplicación `x = A⁻¹b`.
 - [Selección matricial](seleccion-matricial.md): modelo de entrada, gestos,
-  comandos sobre A, dimensiones y API interna preparada para P28.2.
+  comandos sobre A, dimensiones y API interna compartida.
+- [Copiado matricial](copiado-matricial.md): copia exacta TSV/HTML, metadata v1,
+  prioridad textual y validación de máscaras preparada para P28.3.
 - [Releases](releases.md): SemVer, fuente de versión, promoción por PR,
   publicación desde main con tag/release automáticos y checksums.
 

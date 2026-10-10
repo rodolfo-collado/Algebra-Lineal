@@ -1,4 +1,4 @@
-/* P27.9: eventos de portapapeles solo en el runner, formularios/POST reales. */
+/* P27.9/P28: eventos de portapapeles solo en el runner, formularios/POST reales. */
 (async () => {
     "use strict";
     const q = (w, s) => w.document.querySelector(s);
@@ -521,6 +521,228 @@
         igual(key(w, buscar, "Escape"), true); igual(buscar.value, "");
         igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "true");
         key(w, buscar, "Escape"); igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "false");
+    });
+    const copiar = (w, destino = w.document.activeElement, preparar = () => {}) => {
+        const data = new w.DataTransfer();
+        const event = new w.ClipboardEvent("copy", { clipboardData: data, bubbles: true, cancelable: true });
+        preparar(event); destino.dispatchEvent(event);
+        return { data, impedido: event.defaultPrevented };
+    };
+    const comprobarCopia = (w, esperado, coordenadas, forma = "rectangulo") => {
+        const api = w.copiadoMatricial;
+        const antes = w.seleccionMatricial.activa();
+        const foco = w.document.activeElement;
+        let cambios = 0;
+        antes.matriz.closest("form").addEventListener("input", () => cambios++);
+        const { data, impedido } = copiar(w);
+        igual(impedido, true); igual(data.getData("text/plain"), esperado);
+        igual([...data.types], ["text/plain", "text/html", api.TIPO]);
+        igual(api.TIPO, "application/x-pygebra-matrix-selection");
+        const metadata = api.parsear(data.getData(api.TIPO), esperado);
+        igual(metadata, { version: 1, filas: esperado.split("\n").length,
+            columnas: esperado.split("\n")[0].split("\t").length, forma, celdas: coordenadas });
+        const tabla = new w.DOMParser().parseFromString(data.getData("text/html"), "text/html");
+        igual([...tabla.querySelectorAll("tr")].map(tr => tr.querySelectorAll("td").length),
+            Array(metadata.filas).fill(metadata.columnas));
+        igual(cambios, 0); igual(w.document.activeElement === foco, true);
+        igual(seleccion(w), antes.celdas.map(c => [c.fila, c.columna]));
+        igual(q(w, "[data-estado-seleccion]").textContent,
+            `${coordenadas.length} ${coordenadas.length === 1 ? "celda copiada" : "celdas copiadas"}.`);
+        igual(q(w, "[data-estado-seleccion]").getAttribute("role"), "status");
+        return data;
+    };
+    for (const ruta of [inversa, operaciones, axb, reduccion]) caso(`P28.2 Toda desde menú: ${ruta}`, ruta, w => {
+        if (ruta === reduccion) modo(w, "matriz");
+        const f = filas(w); f.flat().forEach((c, i) => { c.value = String(i + 1); });
+        elegir(w, "toda"); const seleccionada = w.seleccionMatricial.activa();
+        const texto = f.map(fila => fila.slice(0, seleccionada.columnasA).map(c => c.value).join("\t")).join("\n");
+        comprobarCopia(w, texto, seleccion(w)); // Solo el modelo decide si b pertenece al bloque.
+        igual(w.document.activeElement.matches("summary"), true);
+    });
+    for (const [comando, texto, coords, forma] of [
+        ["fila", "4\t5\t6", [[0,0],[0,1],[0,2]], "rectangulo"],
+        ["columna", "2\n5\n8", [[0,0],[1,0],[2,0]], "rectangulo"],
+        ["principal", "1\t\t\n\t5\t\n\t\t9", [[0,0],[1,1],[2,2]], "mascara"],
+        ["secundaria", "\t\t3\n\t5\t\n7\t\t", [[0,2],[1,1],[2,0]], "mascara"],
+        ["superior", "1\t2\t3\n\t5\t6\n\t\t9", [[0,0],[0,1],[0,2],[1,1],[1,2],[2,2]], "mascara"],
+        ["inferior", "1\t\t\n4\t5\t\n7\t8\t9", [[0,0],[1,0],[1,1],[2,0],[2,1],[2,2]], "mascara"],
+    ]) caso(`P28.2 ${comando}: TSV, HTML y round-trip`, inversa, w => {
+        valor(w, '[name="orden"]', 3); const f = filas(w);
+        f.flat().forEach((c, i) => { c.value = String(i + 1); });
+        f[1][1].focus(); elegir(w, comando);
+        comprobarCopia(w, texto, coords, forma);
+    });
+    caso("P28.2 una celda vacía seleccionada: tres formatos 1×1", inversa, w => {
+        const f = filas(w); mouse(w, f[1][1], {ctrlKey:true});
+        const data = comprobarCopia(w, "", [[0,0]]);
+        igual(data.getData("text/html"), "<table><tr><td></td></tr></table>");
+        const antes = q(w, "[data-estado-seleccion]").textContent;
+        copiar(w); igual(q(w, "[data-estado-seleccion]").textContent, antes);
+    });
+    caso("P28.2 Ctrl+clic inverso: orden, hueco y celda seleccionada vacía", inversa, w => {
+        const f = filas(w); f[1][1].value = "9";
+        mouse(w, f[1][1], {ctrlKey:true}); mouse(w, f[0][0], {ctrlKey:true});
+        comprobarCopia(w, "\t\n\t9", [[0,0],[1,1]], "mascara");
+    });
+    caso("P28.2 Shift+clic: rectángulo interior y coordenadas relativas", inversa, w => {
+        valor(w, '[name="orden"]', 4); const f = filas(w);
+        f.flat().forEach((c, i) => { c.value = String(i + 1); });
+        mouse(w, f[2][2]); mouse(w, f[1][1], {shiftKey:true});
+        f[1][1].setSelectionRange(0,0);
+        comprobarCopia(w, "6\t7\n10\t11", [[0,0],[0,1],[1,0],[1,1]]);
+    });
+    caso("P28.2 Shift+flechas: copia no altera Escape ni teclado matemático", inversa, w => {
+        const f = filas(w); mouse(w, f[0][0], {ctrlKey:true});
+        key(w, f[0][0], "ArrowRight", {shiftKey:true});
+        comprobarCopia(w, "\t", [[0,0],[0,1]]);
+        igual(q(w, ".math-keyboard").hasAttribute("data-abierto"), true);
+        igual(key(w, f[0][1], "Escape"), true); igual(seleccion(w), []);
+        igual(copiar(w).impedido, false);
+        igual(q(w, ".math-keyboard").hasAttribute("data-abierto"), true);
+        key(w, f[0][1], "Escape"); igual(q(w, ".math-keyboard").hasAttribute("data-abierto"), false);
+    });
+    caso("P28.2 [A | b]: manual incluye b, comandos excluyen b", reduccion, w => {
+        modo(w, "matriz"); const f = filas(w);
+        f[0][2].value = "2/4"; f[0][3].value = "13/2";
+        mouse(w, f[0][2]); mouse(w, f[0][3], {shiftKey:true});
+        f[0][3].setSelectionRange(0,0);
+        comprobarCopia(w, "2/4\t13/2", [[0,0],[0,1]]);
+        elegir(w, "fila"); comprobarCopia(w, "\t\t2/4", [[0,0],[0,1],[0,2]]);
+    });
+    caso("P28.2 matriz rectangular y principal", axb, w => {
+        valor(w, '[name="filas"]', 2); valor(w, '[name="columnas"]', 3);
+        const f = filas(w); f.flat().forEach((c,i) => { c.value = String(i+1); });
+        elegir(w,"toda"); comprobarCopia(w,"1\t2\t3\n4\t5\t6",[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]);
+        elegir(w,"principal"); comprobarCopia(w,"1\t\n\t5",[[0,0],[1,1]],"mascara");
+    });
+    caso("P28.2 HTML exacto: enteros, decimales, fracciones, espacios, escape y fórmulas ajenas", inversa, w => {
+        valor(w, '[name="orden"]', 3); const f = filas(w);
+        const valores = ["1/2","3/2","2/4","13/2"," -11 / 13 ","3.1400","-2",'<&>"\'',"=1+2"];
+        f.flat().forEach((c,i) => { c.value = valores[i]; }); elegir(w,"toda");
+        const data = comprobarCopia(w, "1/2\t3/2\t2/4\n13/2\t -11 / 13 \t3.1400\n-2\t<&>\"'\t=1+2", seleccion(w));
+        const html = data.getData("text/html");
+        igual(html.includes("<td>=1/2</td><td>=3/2</td><td>=2/4</td>"), true);
+        igual(html.includes("<td>=13/2</td><td>= -11 / 13 </td><td>3.1400</td>"), true);
+        igual(html.includes("&lt;&amp;&gt;&quot;&#39;"), true);
+        const dom = new w.DOMParser().parseFromString(html,"text/html");
+        igual([...dom.querySelectorAll("td")].map(c => c.textContent), valores.map((v,i) => i<5 ? `=${v}` : v));
+        igual(dom.querySelectorAll("td")[8].getAttribute("style"), "mso-number-format:'\\@'");
+        igual(dom.querySelectorAll("td")[7].childElementCount, 0);
+    });
+    for (const texto of ["1/0","1/000","1/2+WEBSERVICE(\"https://example.com\")","1 2/3","9".repeat(101)+"/2"]) {
+        caso(`P28.2 HTML: fracción inválida no genera fórmula: ${texto.slice(0,35)}`, inversa, w => {
+            const f = filas(w); f[0][0].value = texto; mouse(w, f[0][0], {ctrlKey:true}); f[0][0].setSelectionRange(0,0);
+            const data = comprobarCopia(w, texto, [[0,0]]);
+            const td = new w.DOMParser().parseFromString(data.getData("text/html"),"text/html").querySelector("td");
+            igual(td.textContent,texto); igual(td.getAttribute("style"),"mso-number-format:'\\@'");
+        });
+    }
+    for (const destino of ["celda", "textarea", "otro input", "texto DOM"]) caso(`P28.2 prioridad textual: ${destino}`, inversa, w => {
+        elegir(w,"toda"); const f = filas(w);
+        let target = f[0][0];
+        if (destino === "texto DOM") {
+            const p = w.document.createElement("p"); p.textContent = "texto normal"; w.document.body.append(p);
+            const range = w.document.createRange(); range.selectNodeContents(p); w.getSelection().addRange(range);
+            target = p;
+        } else {
+            if (destino !== "celda") { target = w.document.createElement(destino === "textarea" ? "textarea" : "input"); w.document.body.append(target); }
+            target.value = "-11/13"; target.focus(); target.setSelectionRange(1,3);
+        }
+        const antes = q(w,"[data-estado-seleccion]").textContent;
+        const resultado = copiar(w,target); igual(resultado.impedido,false); igual([...resultado.data.types],[]);
+        igual(q(w,"[data-estado-seleccion]").textContent,antes);
+    });
+    caso("P28.2 copy normal, cut, evento cancelado y clipboardData ausente", inversa, w => {
+        const f = filas(w); f[0][0].focus(); igual(copiar(w).impedido,false);
+        elegir(w,"toda"); igual(copiar(w,undefined,e => e.preventDefault()).data.types.length,0);
+        const sinDatos = new w.ClipboardEvent("copy",{bubbles:true,cancelable:true});
+        f[0][0].dispatchEvent(sinDatos); igual(sinDatos.defaultPrevented,false);
+        const cut = new w.ClipboardEvent("cut",{clipboardData:new w.DataTransfer(),bubbles:true,cancelable:true});
+        f[0][0].dispatchEvent(cut); igual(cut.defaultPrevented,false);
+    });
+    caso("P28.2 paste ignora metadata: conserva destino y bloque P27", inversa, w => {
+        const f = filas(w); elegir(w,"principal");
+        const data = new w.DataTransfer(); data.setData("text/plain","7\t8");
+        data.setData(w.copiadoMatricial.TIPO,JSON.stringify({version:99,filas:1000}));
+        const event = new w.ClipboardEvent("paste",{clipboardData:data,bubbles:true,cancelable:true});
+        f[1][0].dispatchEvent(event);
+        igual(f.flat().map(c=>c.value),["","","7","8"]); igual(seleccion(w),[[0,0],[1,1]]);
+    });
+    caso("P28.2 copia solo matriz activa e inputs actuales al redimensionar", inversa, w => {
+        elegir(w,"toda"); valor(w,'[name="orden"]',3); const f = filas(w);
+        f[0][0].value = "nuevo"; comprobarCopia(w,"nuevo\t\n\t",[[0,0],[0,1],[1,0],[1,1]]);
+    });
+    caso("P28.2 dos matrices: solo se copia el conjunto activo", operaciones, w => {
+        const a = filas(w,matriz(w,0)), b = filas(w,matriz(w,1));
+        a[0][0].value = "A"; b[1][1].value = "B";
+        mouse(w,a[0][0],{ctrlKey:true}); mouse(w,b[1][1],{ctrlKey:true});
+        comprobarCopia(w,"B",[[0,0]]);
+        a[0][0].focus(); a[0][0].setSelectionRange(0,0); comprobarCopia(w,"A",[[0,0]]);
+    });
+    caso("P28.2 fallo setData: limpia datos parciales y no anuncia éxito", inversa, w => {
+        elegir(w,"toda");
+        const resultado = copiar(w,undefined,event => {
+            const data = event.clipboardData, escribir = data.setData.bind(data);
+            data.setData = (tipo,texto) => { if (tipo === w.copiadoMatricial.TIPO) throw new Error("denegado"); escribir(tipo,texto); };
+        });
+        igual(resultado.impedido,false); igual([...resultado.data.types],[]);
+        igual(q(w,"[data-estado-seleccion]").textContent,"No se pudo copiar la selección al portapapeles.");
+    });
+    const baseMetadata = {version:1,filas:2,columnas:2,forma:"mascara",celdas:[[0,0],[1,1]]};
+    for (const [nombre, cambio, texto = "1\t\n\t4"] of [
+        ["versión",{version:2}], ["versión string",{version:"1"}], ["dimensión cero",{filas:0}],
+        ["dimensión negativa",{columnas:-1}], ["dimensión fraccionaria",{filas:1.5}],
+        ["filas excesivas",{filas:13}], ["columnas excesivas",{columnas:14}], ["booleano",{filas:true}],
+        ["área excesiva",{filas:12,columnas:13}],
+        ["coordenada negativa",{celdas:[[-1,0],[1,1]]}], ["coordenada fuera",{celdas:[[0,0],[2,1]]}],
+        ["coordenada no entera",{celdas:[[0,0],[1,1.1]]}], ["coordenada string",{celdas:[[0,"0"],[1,1]]}],
+        ["duplicadas",{celdas:[[0,0],[0,0]]}], ["sin orden",{celdas:[[1,1],[0,0]]}],
+        ["demasiadas posiciones",{celdas:Array(5).fill([0,0])}], ["sin posiciones",{celdas:[]}],
+        ["celda con extra",{celdas:[[0,0,0],[1,1]]}], ["celdas objeto",{celdas:{}}],
+        ["celda objeto",{celdas:[{fila:0,columna:0}]}], ["forma falsa",{forma:"rectangulo"}],
+        ["forma desconocida",{forma:"principal"}], ["rectángulo no mínimo",{celdas:[[0,0]]}],
+        ["máscara sin huecos",{celdas:[[0,0],[0,1],[1,0],[1,1]]}],
+        ["campo extra",{html:"<table>"}], ["columna TSV de más",{},"1\t\t\n\t4"],
+        ["fila TSV de más",{},"1\t\n\t4\n"], ["fila desigual",{},"1\t\n4"],
+        ["hueco con valor",{},"1\t2\n\t4"], ["CR aislado",{},"1\r\t\n\t4"],
+    ]) caso(`P28.2 validador rechaza ${nombre}`, inversa, w => {
+        igual(w.copiadoMatricial.parsear(JSON.stringify({...baseMetadata,...cambio}),texto),null);
+    });
+    for (const metadata of ["{", "null", "[]", "1", '"texto"', "{}", JSON.stringify({...baseMetadata,celdas:null})]) {
+        caso(`P28.2 JSON/estructura corrupta ${metadata}`, inversa, w => igual(w.copiadoMatricial.parsear(metadata,"1\t\n\t4"),null));
+    }
+    caso("P28.2 límites UTF-8, máximo 120 celdas, vacíos y CRLF sin recorte", reduccion, w => {
+        modo(w,"matriz"); valor(w,'[name="ecuaciones"]',12); valor(w,'[name="variables"]',9);
+        const f = filas(w); const coords = f.flatMap((fila,i)=>fila.map((c,j)=>({fila:i,columna:j})));
+        w.seleccionMatricial.reemplazar(matriz(w),coords); f[11][9].focus(); f[11][9].setSelectionRange(0,0);
+        const texto = f.map(fila=>fila.map(()=>"").join("\t")).join("\n");
+        const data = comprobarCopia(w,texto,coords.map(c=>[c.fila,c.columna])); const api = w.copiadoMatricial;
+        igual(api.parsear(data.getData(api.TIPO),texto.replace(/\n/g,"\r\n")) !== null,true);
+        const m = JSON.stringify(baseMetadata);
+        igual(api.parsear(m.padEnd(4096," "),"1\t\n\t4") !== null,true);
+        igual(api.parsear(m.padEnd(4097," "),"1\t\n\t4"),null);
+        igual(api.parsear(m+"\u2000".repeat(1500),"1\t\n\t4"),null);
+        const uno = JSON.stringify({version:1,filas:1,columnas:1,forma:"rectangulo",celdas:[[0,0]]});
+        igual(api.parsear(uno,"x".repeat(65536)) !== null,true);
+        igual(api.parsear(uno,"x".repeat(65537)),null); igual(api.parsear(uno,"é".repeat(32769)),null);
+        igual(api.parsear(undefined,"1"),null); igual(api.parsear(uno,null),null);
+    });
+    caso("P28.2 máximo 13 columnas aumentadas: copia manual", reduccion, w => {
+        modo(w,"matriz"); valor(w,'[name="ecuaciones"]',9); valor(w,'[name="variables"]',12);
+        const f = filas(w); const coords = f.flatMap((fila,i)=>fila.map((c,j)=>({fila:i,columna:j})));
+        w.seleccionMatricial.reemplazar(matriz(w),coords);
+        const texto = f.map(fila=>fila.map(()=>"").join("\t")).join("\n");
+        comprobarCopia(w,texto,coords.map(c=>[c.fila,c.columna]));
+    });
+    caso("P28.2 valores excesivos/tabulador: sin copia parcial ni anuncio de éxito", inversa, w => {
+        const f = filas(w); elegir(w,"toda");
+        for (const texto of ["x".repeat(65537),"valor\tinterior"]) {
+            f[0][0].value = texto; const resultado = copiar(w);
+            igual(resultado.impedido,false); igual([...resultado.data.types],[]);
+            igual(q(w,"[data-estado-seleccion]").textContent.startsWith("No se pudo copiar"),true);
+        }
+        f.flat().forEach(c=>{c.value="x".repeat(17000);});
+        const resultado = copiar(w); igual(resultado.impedido,false); igual([...resultado.data.types],[]);
     });
     if (new URLSearchParams(location.search).has("forced-colors")) {
         for (const ruta of [inversa, operaciones, axb, reduccion]) caso(`P28.1 forced-colors: ${ruta}`, ruta, async w => {

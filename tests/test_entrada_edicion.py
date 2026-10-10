@@ -26,6 +26,7 @@ class PruebasEntradaEdicion(SimpleTestCase):
                 self.assertContains(respuesta, 'id="matrix-selection-template"', count=1)
                 self.assertContains(respuesta, 'data-estado-seleccion', count=1)
                 self.assertContains(respuesta, 'seleccion_matricial.js', count=1)
+                self.assertContains(respuesta, 'copiar_matricial.js', count=1)
                 plantilla = re.search(r'<template id="matrix-selection-template">(.*?)</template>',
                                      respuesta.content.decode(), re.S).group(1)
                 botones = [e for e in Pagina(plantilla).elementos if "data-seleccionar" in e]
@@ -34,6 +35,7 @@ class PruebasEntradaEdicion(SimpleTestCase):
         for ruta in ("/", "/vectores/operaciones/", "/bases/conversion/", "/romanos/conversion/"):
             with self.subTest(ruta=ruta):
                 self.assertNotContains(self.client.get(ruta), 'seleccion_matricial.js')
+                self.assertNotContains(self.client.get(ruta), 'copiar_matricial.js')
 
     def test_sintaxis_real_aceptada(self):
         for texto, esperado in (
