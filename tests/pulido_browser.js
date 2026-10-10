@@ -199,13 +199,16 @@
 
     // —— UI-34: nombres accesibles ——
     casos.push(["UI-34: cada control nombra su operando y renombrar A → M lo actualiza", "/matrices/operaciones/", async w => {
-        const nombres = tarjeta => [tarjeta.getAttribute("aria-label"), ...[...tarjeta.querySelectorAll("button")].map(b => b.getAttribute("aria-label"))];
+        const nombres = tarjeta => [tarjeta.getAttribute("aria-label"), ...[...tarjeta.querySelectorAll("button:not([data-seleccionar])")].map(b => b.getAttribute("aria-label"))];
+        const comandos = tarjeta => [...tarjeta.querySelectorAll("[data-seleccionar]")].map(b => b.getAttribute("aria-label"));
         const a = todos(w, "[data-simbolo]")[0];
         assert(a.tagName === "FIELDSET", "Cada operando es un grupo nativo");
         const esperados = ["Operando A", "Quitar una fila de A", "Agregar una fila a A", "Quitar una columna de A", "Agregar una columna a A", "Eliminar operando A"];
         assert(JSON.stringify(nombres(a)) === JSON.stringify(esperados), `Nombres: ${nombres(a)}`);
+        assert(comandos(a).length === 7 && comandos(a).every(n => n.endsWith(" de A")), "Cada comando identifica su matriz");
         escribir(w, a.querySelector('[data-campo="nombre"]'), "M");
         assert(nombres(a).every(n => n.endsWith(" M")) && a.querySelector("td label").textContent.startsWith("Matriz M"), "Renombrar actualiza grupo, botones y celdas");
+        assert(comandos(a).every(n => n.endsWith(" de M")), "Renombrar también actualiza los siete comandos");
         escribir(w, a.querySelector('[data-campo="tipo"]'), "vector", "change");
         assert(nombres(a).includes("Quitar una componente de M"), "Un vector habla de componentes");
         q(w, "[data-agregar]").click();

@@ -84,14 +84,18 @@
         }
     }
 
-    function actualizarAdicional(n) {
+    function actualizarAdicional(n, conservar = false) {
         const funcion = root.querySelector('[name="funcion_adicional"]:checked')?.value ?? "ninguna";
         // Se retiran las entradas inactivas del DOM y del POST. La memoria
         // local permite recuperar lo escrito al cambiar temporalmente de radio.
+        const anterior = adicional.querySelector("table");
         adicional.replaceChildren();
         if (funcion === "producto") adicional.append(crearMatriz("B", n));
         if (funcion === "vector") adicional.append(crearMatriz("b", n, true));
         adicional.hidden = funcion !== "producto" && funcion !== "vector";
+        const nueva = adicional.querySelector("table");
+        if (conservar && anterior && nueva) window.seleccionMatricial.redimensionar(anterior, nueva);
+        else window.seleccionMatricial.sincronizar();
     }
 
     function actualizarBotones() {
@@ -105,8 +109,11 @@
         if (!ordenValido()) return;
         guardar();
         const n = Number(orden.value);
-        entrada.querySelector('[data-matriz="A"]').replaceWith(crearMatriz("A", n));
-        actualizarAdicional(n);
+        const anterior = entrada.querySelector('[data-matriz="A"]');
+        const nueva = crearMatriz("A", n);
+        anterior.replaceWith(nueva);
+        window.seleccionMatricial.redimensionar(anterior.querySelector("table"), nueva.querySelector("table"));
+        actualizarAdicional(n, true);
         actualizarMetodos(n);
         root.querySelector("[data-inverse-shape]").textContent = `A es ${n}×${n}. De ${orden.min} a ${orden.max} filas y columnas.`;
         actualizarBotones();

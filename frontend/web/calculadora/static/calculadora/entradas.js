@@ -53,7 +53,20 @@
         return true;
     }
 
-    window.entradasSeguras = { dimensionValida, validarDimension, flechaDeCelda };
+    function filasDeMatriz(grid) {
+        if (grid.id === "matrix-grid") {
+            const filas = [];
+            grid.querySelectorAll("input[data-cell]").forEach(celda => {
+                const fila = Number(celda.name.split("_")[1]);
+                (filas[fila] ??= []).push(celda);
+            });
+            return filas;
+        }
+        return [...grid.querySelectorAll(grid.id === "vector-list" ? ".vector-row[data-vector]" : "tbody tr")]
+            .map(fila => [...fila.querySelectorAll("input.matrix-input")]);
+    }
+
+    window.entradasSeguras = { dimensionValida, validarDimension, flechaDeCelda, filasDeMatriz };
 
     // Solo texto tabulado; las filas/celdas existentes deciden el destino.
     // Las líneas vacías de los extremos (la terminación de una hoja de cálculo o un salto
@@ -88,17 +101,7 @@
             estado.textContent = "Cada fila del bloque debe tener la misma cantidad de columnas. No se pegó ningún valor.";
             return;
         }
-        let filas;
-        if (grid.id === "matrix-grid") {
-            filas = [];
-            grid.querySelectorAll("input[data-cell]").forEach(celda => {
-                const fila = Number(celda.name.split("_")[1]);
-                (filas[fila] ??= []).push(celda);
-            });
-        } else {
-            filas = [...grid.querySelectorAll(grid.id === "vector-list" ? ".vector-row[data-vector]" : "tbody tr")]
-                .map(fila => [...fila.querySelectorAll("input.matrix-input")]);
-        }
+        const filas = filasDeMatriz(grid);
         const inicio = filas.findIndex(fila => fila.includes(input));
         if (inicio < 0) return;
         const columna = filas[inicio].indexOf(input);

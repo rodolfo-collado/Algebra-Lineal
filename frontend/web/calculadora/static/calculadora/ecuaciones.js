@@ -85,7 +85,10 @@
         guardar();
         const m = Number(campo("filas").value);
         const n = Number(campo("columnas").value);
-        entrada.querySelector('[data-matriz="A"]').replaceWith(crearMatriz("A", m, n, false));
+        const anterior = entrada.querySelector('[data-matriz="A"]');
+        const nueva = crearMatriz("A", m, n, false);
+        anterior.replaceWith(nueva);
+        window.seleccionMatricial.redimensionar(anterior.querySelector("table"), nueva.querySelector("table"));
         entrada.querySelector('[data-matriz="b"]').replaceWith(crearMatriz("b", m, 1, true));
         actualizarIncognita(n);
         root.querySelector("[data-equation-shape]").textContent = `A (${m}×${n}) · x (${n}) = b (${m}). De ${campo("filas").min} a ${campo("filas").max} filas y columnas.`;

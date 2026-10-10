@@ -1,6 +1,7 @@
 """P27.9: contrato real del parser, ayudas, dimensiones y fallback HTTP."""
 
 import os
+import re
 from fractions import Fraction
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
@@ -18,6 +19,22 @@ EJEMPLO = "2x1 - x2 = 3; x1 + 4x2 = 7"
 
 
 class PruebasEntradaEdicion(SimpleTestCase):
+    def test_seleccion_compartida_solo_en_las_cuatro_herramientas(self):
+        for ruta in ("/matrices/operaciones/", "/matrices/inversa/", "/matrices/ecuaciones/", "/matrices/reduccion/"):
+            with self.subTest(ruta=ruta):
+                respuesta = self.client.get(ruta)
+                self.assertContains(respuesta, 'id="matrix-selection-template"', count=1)
+                self.assertContains(respuesta, 'data-estado-seleccion', count=1)
+                self.assertContains(respuesta, 'seleccion_matricial.js', count=1)
+                plantilla = re.search(r'<template id="matrix-selection-template">(.*?)</template>',
+                                     respuesta.content.decode(), re.S).group(1)
+                botones = [e for e in Pagina(plantilla).elementos if "data-seleccionar" in e]
+                self.assertEqual(len(botones), 7)
+                self.assertTrue(all(e.get("type") == "button" and "name" not in e for e in botones))
+        for ruta in ("/", "/vectores/operaciones/", "/bases/conversion/", "/romanos/conversion/"):
+            with self.subTest(ruta=ruta):
+                self.assertNotContains(self.client.get(ruta), 'seleccion_matricial.js')
+
     def test_sintaxis_real_aceptada(self):
         for texto, esperado in (
             ("x1 = 2", [[1, 2]]), ("x2 = 2", [[0, 1, 2]]),
