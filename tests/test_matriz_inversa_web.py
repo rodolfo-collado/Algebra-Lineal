@@ -247,7 +247,9 @@ class PruebasResultado(SimpleTestCase):
             with self.subTest(metodo=metodo):
                 html, doc, _ = self.calcular(SINGULAR, metodo)
                 procedimiento, resultado = partes(html)
-                self.assertEqual(resultado, f"Resultado La matriz no tiene inversa. {explicacion}")
+                # El criterio del determinante cierra el resultado, sin repetir la explicación del método.
+                self.assertEqual(resultado, f"Resultado La matriz no tiene inversa. {explicacion} "
+                                            "det(A) = 0: una matriz es invertible solo cuando det(A) ≠ 0.")
                 self.assertNotIn(TABLA_INVERSA, doc.tablas)
                 self.assertNotIn("A⁻¹ =", resultado)
                 self.assertNotIn("no tiene inversa", procedimiento)
