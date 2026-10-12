@@ -67,6 +67,13 @@ columnas_pivote=n)` y lee el bloque derecho cuando el izquierdo llega a la
 identidad. Para 2×2 ofrece además la regla con `ad − bc`, un cálculo aparte y
 sin eliminación. Consulta [Matriz inversa](matriz-inversa.md).
 
+Determinantes reutiliza las mismas operaciones por filas: Reducción por filas
+llama a `aplicar_gauss` y corrige det(A) con la `correccion_determinante` que
+anotan los intercambios y las normalizaciones; LU reutiliza el reemplazo de
+fila sin normalizar. La fórmula `ad − bc` vive una sola vez en
+`backend/determinantes/comun.py` y la usan Determinantes y la regla 2×2 de la
+inversa. Consulta [Determinantes](determinantes.md).
+
 `ecuaciones_matriciales.py` construye `[A | b]` y llama al motor de sistemas.
 `vectores.py` hace lo mismo para preguntar si b es combinación de sus generadores,
 nombrando las incógnitas `x1`, `x2`, etc. Solución única o infinitas significa que

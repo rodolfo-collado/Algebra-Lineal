@@ -697,9 +697,29 @@ a 10×10, y calcula su inversa exacta. El método se elige en el formulario:
   `1/(ad − bc)`.
 
 Si A no tiene inversa, el resultado lo dice con una explicación breve según el
-método. Un cálculo con Gauss-Jordan que se estima largo pide confirmación antes
-de ejecutarse. Los detalles, los ejemplos y la API están en
+método. El resultado muestra también det(A): A es invertible solo si
+det(A) ≠ 0. Un cálculo con Gauss-Jordan que se estima largo pide confirmación
+antes de ejecutarse. Los detalles, los ejemplos y la API están en
 [Matriz inversa](matriz-inversa.md).
+
+## Determinantes
+
+**Determinantes** (`/matrices/determinantes/`) calcula det(A) de una matriz
+cuadrada de 1×1 a 10×10, con aritmética exacta. Los métodos aparecen según el
+tamaño de A:
+
+- **Fórmula directa 2×2**: `ad − bc` (solo 2×2).
+- **Regla de Sarrus**: seis diagonales (solo 3×3).
+- **Cofactores**: por una fila, una columna o Automático (la que tiene más
+  ceros); hasta 6×6.
+- **Factorización LU**: `A = LU` sin intercambios; si un pivote 0 exigiría
+  intercambiar filas, se detiene y lo explica.
+- **Reducción por filas**: Gauss con la corrección de cada intercambio y cada
+  normalización.
+
+Con det(A) ≠ 0 el resultado ofrece **Calcular su matriz inversa**, que abre
+Matriz inversa con A ya cargada. El recorrido completo está en
+[Determinantes](determinantes.md).
 
 ## Visualización de resultados en PyGebra
 
