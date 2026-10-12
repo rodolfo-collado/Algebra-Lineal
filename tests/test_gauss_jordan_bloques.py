@@ -97,16 +97,20 @@ class PruebasContratoMultiplesColumnas(unittest.TestCase):
                 "antes": [[0, 2, 5, 7], [3, 1, 11, 13]],
                 "operacion": "F1 <-> F2",
                 "despues": [[3, 1, 11, 13], [0, 2, 5, 7]],
+                # Cada intercambio o normalización anota el factor que recupera det(A).
+                "correccion_determinante": -1,
             },
             {
                 "antes": [[3, 1, 11, 13], [0, 2, 5, 7]],
                 "operacion": "F1 = (1/3)F1",
                 "despues": [[1, Fraction(1, 3), Fraction(11, 3), Fraction(13, 3)], [0, 2, 5, 7]],
+                "correccion_determinante": 3,
             },
             {
                 "antes": [[1, Fraction(1, 3), Fraction(11, 3), Fraction(13, 3)], [0, 2, 5, 7]],
                 "operacion": "F2 = (1/2)F2",
                 "despues": [[1, Fraction(1, 3), Fraction(11, 3), Fraction(13, 3)], [0, 1, Fraction(5, 2), Fraction(7, 2)]],
+                "correccion_determinante": 2,
             },
             {
                 "antes": [[1, Fraction(1, 3), Fraction(11, 3), Fraction(13, 3)], [0, 1, Fraction(5, 2), Fraction(7, 2)]],
