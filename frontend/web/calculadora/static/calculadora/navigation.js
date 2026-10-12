@@ -21,6 +21,21 @@
         }
     }
 
+    // Explorar por temas: un <details> cerrado conserva el `open` de sus hijos. Al cerrar un
+    // área, sus temas vuelven al estado con que llegaron del servidor (antes de abrir por #ancla);
+    // las demás áreas no cambian y nada se guarda.
+    const catalogo = document.getElementById("catalogo-inicio");
+    if (catalogo) {
+        const temas = Array.from(catalogo.querySelectorAll("details.topic"));
+        const iniciales = new Map(temas.map((tema) => [tema, tema.open]));
+        catalogo.querySelectorAll("details.home-area").forEach((area) => {
+            area.addEventListener("toggle", () => {
+                if (area.open) return;
+                area.querySelectorAll("details.topic").forEach((tema) => { tema.open = iniciales.get(tema); });
+            });
+        });
+    }
+
     window.addEventListener("hashchange", revelarDestino);
     revelarDestino();
 

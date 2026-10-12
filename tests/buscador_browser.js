@@ -23,7 +23,7 @@
         "keydown", { key: "Escape", bubbles: true, cancelable: true }));
     const casos = [
         ["GET tiene todo el universo, solo Gauss visible y un recuento estático", "/?q=gauss", w => {
-            igual(todos(w, "#catalogo-inicio [data-herramienta]").length, 8);
+            igual(todos(w, "#catalogo-inicio [data-herramienta]").length, 9);
             igual(ids(w), ["reduccion-filas"]);
             igual(q(w, "[data-busqueda-servidor]").hidden, false);
             todos(w, ".search-status").forEach(n => igual(n.textContent, ""));
@@ -36,7 +36,7 @@
                 valor(w, texto); igual(ids(w), esperado);
                 igual(w.document, documento); igual(w.location.search, "?q=gauss");
                 igual(q(w, "[data-busqueda-servidor]").hidden, true);
-                igual(todos(w, "#catalogo-inicio [data-herramienta]").length, 8);
+                igual(todos(w, "#catalogo-inicio [data-herramienta]").length, 9);
             }
             igual(q(w, '#catalogo-inicio [data-herramienta="limites-funciones"] .badge').textContent, "Próximamente");
         }],
@@ -48,7 +48,7 @@
             valor(w, " gauss"); igual(q(w, "[data-busqueda-servidor]").hidden, true);
         }],
         ["Limpiar GET y volver a buscar no limita el universo", "/?q=gauss", w => {
-            valor(w, ""); igual(ids(w).length, 8);
+            valor(w, ""); igual(ids(w).length, 9);
             valor(w, "invertir matriz"); igual(ids(w), ["matriz-inversa"]);
         }],
         ["GET vacío sin heading huérfano tiene sugerencias funcionales", "/?q=zzz", async (w, frame) => {
@@ -123,6 +123,20 @@
             valor(w, "", true); await turno(w);
             igual(todos(w, "#arbol-herramientas details").map(n => n.open), abiertos);
             igual(w.sessionStorage.getItem("algebra-lineal-menu-secciones"), memoria);
+        }],
+        ["Explorar por temas: cerrar un área reinicia sus temas y no toca las demás", "/", async w => {
+            const area = q(w, "#algebra-lineal"); const otra = q(w, "#sistemas-numericos");
+            const matrices = q(w, "#matrices"); const vectores = q(w, "#vectores"); const bases = q(w, "#bases-numericas");
+            const inicial = vectores.open; const claves = Object.keys(w.localStorage).sort();
+            for (let vuelta = 0; vuelta < 3; vuelta++) {
+                area.open = true; otra.open = true; await turno(w);
+                matrices.open = true; vectores.open = !inicial; bases.open = false; await turno(w);
+                area.open = false; await turno(w);
+                area.open = true; await turno(w);
+                igual([matrices.open, vectores.open], [false, inicial]);
+                igual([otra.open, bases.open], [true, false]);
+            }
+            igual(Object.keys(w.localStorage).sort(), claves);
         }],
         ["Grupos y herramientas ocultos no se pueden enfocar", "/", w => {
             menu(w); valor(w, "inversa", true); const input = q(w, "#buscador-lateral"); input.focus();
