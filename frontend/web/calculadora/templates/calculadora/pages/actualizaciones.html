@@ -1,0 +1,27 @@
+{% extends "calculadora/base.html" %}
+{% load static %}
+
+{% block title %}Actualizaciones · PyGebra{% endblock %}
+
+{% block content %}
+    <header class="tool-header">
+        <h1 class="tool-title">Actualizaciones</h1>
+        <p class="tool-lead">Versión instalada: <strong>PyGebra {{ actualizacion.version_instalada|default:"desconocida" }}</strong></p>
+    </header>
+
+    {# El servidor pinta el estado actual; actualizaciones.js lo mantiene al día sin recargar. #}
+    <section class="panel actualizador" data-actualizador data-estado="{{ actualizacion.estado }}" aria-labelledby="actualizador-titulo">
+        <h2 id="actualizador-titulo" class="sr-only">Estado de la actualización</h2>
+        <p class="actualizador-mensaje" data-mensaje role="status" aria-live="polite">{{ actualizacion.mensaje }}</p>
+        <progress class="actualizador-progreso" data-progreso max="100"{% if actualizacion.progreso is not None %} value="{{ actualizacion.progreso }}"{% endif %} hidden>{{ actualizacion.progreso|default:0 }} %</progress>
+        <div class="actualizador-acciones">
+            <button type="button" class="btn btn-primary" data-accion="buscar">Buscar actualizaciones</button>
+            <button type="button" class="btn btn-primary" data-accion="descargar" hidden>Descargar actualización</button>
+            <button type="button" class="btn btn-primary" data-accion="instalar" hidden>Instalar y reiniciar PyGebra</button>
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'calculadora/actualizaciones.js' %}" defer></script>
+{% endblock %}

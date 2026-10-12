@@ -163,7 +163,8 @@ class PruebasFlujoDelAsistente(unittest.TestCase):
         self.assertIn("Se instalará como requisito", cuerpo)
 
     def test_ofrece_abrir_la_aplicacion_al_terminar(self):
-        ejecuciones = secciones()["Run"]
+        # La segunda entrada es solo la reapertura tras una actualización desde la app.
+        ejecuciones = [linea for linea in secciones()["Run"] if "RelaunchAfterUpdate" not in linea]
 
         self.assertEqual(len(ejecuciones), 1)
         self.assertIn(r"{app}\{#AppExe}", ejecuciones[0])
@@ -225,6 +226,7 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
         self.assertEqual(setup["DefaultGroupName"], "{#AppName}")
         self.assertEqual(setup["UsePreviousAppDir"], "yes")
         self.assertEqual(secciones()["InstallDelete"], [
+            'Type: filesandordirs; Name: "{app}\\_internal"',
             'Type: files; Name: "{userprograms}\\Álgebra Lineal\\Álgebra Lineal.lnk"',
             'Type: files; Name: "{userdesktop}\\Álgebra Lineal.lnk"',
         ])
@@ -246,8 +248,19 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
         self.assertIn("'PyGebra\\PyGebra.lnk'", smoke)
         self.assertIn("'PyGebra.lnk'", smoke)
 
+    def test_smoke_de_actualizacion_detecta_obsoletos_y_duplicados(self):
+        smoke = SCRIPT_PRUEBA.read_text(encoding="utf-8")
+        for marcador in ("$obsoleteFile", r"'_internal\obsoleto-'", "Get-PyGebraRegistrations",
+                         "$registrations.Count -ne 1", "$links.Count -ne 1"):
+            self.assertIn(marcador, smoke)
+        # La base ya no está limitada a 0.8.0: cualquier PyGebra publicada vale.
+        self.assertIn("$oldRegistration.DisplayName -eq 'Álgebra Lineal'", smoke)
+        self.assertIn("$oldRegistration.DisplayName -ne 'PyGebra'", smoke)
+
     def test_spec_genera_recurso_desde_pyproject_y_build_verifica_exe(self):
         spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
+        # El actualizador lee la versión instalada de este archivo empaquetado.
+        self.assertIn('(str(PROJECT_ROOT / "pyproject.toml"), ".")', spec)
         self.assertIn('"windows_version_info.py"', spec)
         self.assertIn('version_info(PROJECT_ROOT / "pyproject.toml")', spec)
         self.assertIn('version=str(version_resource)', spec)
@@ -299,6 +312,37 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
         smoke = SCRIPT_PRUEBA.read_text(encoding="utf-8")
         self.assertIn(r"_internal\assets\brand\app\pygebra.ico", smoke)
         self.assertIn("PyGebra.Desktop", smoke)
+
+    def test_actualizacion_limpia_espera_a_la_app_y_la_reabre(self):
+        from actualizador.instalador import ARGUMENTOS
+        import desktop
+
+        texto = SCRIPT_INNO.read_text(encoding="utf-8")
+        setup = directivas_setup()
+        codigo = codigo_pascal()
+        self.assertIn(f'#define AppMutexName "{desktop.APP_MUTEX_NAME}"', texto)
+        self.assertEqual(setup["SetupMutex"], "PyGebra.Setup")
+        self.assertEqual(setup["CloseApplications"], "yes")
+        # _internal se borra antes que nada: [InstallDelete] corre antes de [Files].
+        self.assertEqual(secciones()["InstallDelete"][0], 'Type: filesandordirs; Name: "{app}\\_internal"')
+        self.assertIn("function InitializeSetup: Boolean;", codigo)
+        self.assertIn("CheckForMutexes('{#AppMutexName}')", codigo)
+        self.assertIn("SuppressibleMsgBox(", codigo)
+        self.assertIn("IDCANCEL) = IDCANCEL", codigo)
+        # El parámetro que pasa el actualizador es el mismo que lee el instalador.
+        self.assertIn("/ACTUALIZAR=1", ARGUMENTOS)
+        self.assertIn("/SILENT", ARGUMENTOS)
+        self.assertIn("ExpandConstant('{param:ACTUALIZAR|0}') = '1'", codigo)
+        reapertura = [linea for linea in secciones()["Run"] if "RelaunchAfterUpdate" in linea]
+        self.assertEqual(reapertura, ['Filename: "{app}\\{#AppExe}"; Flags: nowait; Check: RelaunchAfterUpdate'])
+        self.assertIn("Result := IsUpdateRun and WebView2Installed;", codigo)
+
+    def test_ci_prueba_la_actualizacion_desde_la_ultima_release(self):
+        ci = WORKFLOW_CI.read_text(encoding="utf-8")
+        self.assertIn("gh release download --repo $env:GITHUB_REPOSITORY", ci)
+        self.assertIn("Get-FileHash -LiteralPath $previous[0].FullName -Algorithm SHA256", ci)
+        self.assertIn("-PreviousInstallerPath $previous[0].FullName -PreviousDesktopIcon", ci)
+        self.assertLess(ci.index("-InstallerPath $installers[0].FullName\n"), ci.index("-PreviousInstallerPath"))
 
     def test_ci_compila_con_la_version_de_inno_setup_documentada(self):
         ci = WORKFLOW_CI.read_text(encoding="utf-8")

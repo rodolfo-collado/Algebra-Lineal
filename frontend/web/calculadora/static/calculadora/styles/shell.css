@@ -180,8 +180,10 @@
     box-shadow: var(--shadow-lg);
 }
 
+/* Columna: el pie de funciones de la app queda abajo aunque haya pocas áreas abiertas. */
 .js[data-drawer] .app-sidebar {
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 .app-sidebar[hidden] {
@@ -218,6 +220,12 @@
 
 .sidebar-nav {
     padding: 0.35rem 0.6rem 1.25rem;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 0.6rem 0.6rem 0.85rem;
+    border-top: 1px solid var(--color-border);
 }
 
 .nav-link {

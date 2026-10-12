@@ -50,12 +50,12 @@ jobs:
         run: uv run --locked python manage.py check
 
       - name: Verificar la compilacion
-        run: uv run --locked python -m compileall -q backend frontend tests main.py manage.py desktop.py
+        run: uv run --locked python -m compileall -q actualizador backend frontend tests main.py manage.py desktop.py
 
   windows:
     name: Distribución de Windows
     runs-on: windows-2025
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - name: Clonar el repositorio
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -97,6 +97,28 @@ jobs:
           $installers = @(Get-ChildItem dist/installer/PyGebra-Setup-*.exe)
           if ($installers.Count -ne 1) { throw 'Se esperaba exactamente un instalador.' }
           .\scripts\test_windows_distribution.ps1 -InstallerPath $installers[0].FullName
+
+      # La prueba anterior desinstaló todo: la cuenta vuelve a estar limpia.
+      - name: Probar actualización desde la última release publicada
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $directory = Join-Path $env:RUNNER_TEMP 'release-anterior'
+          New-Item -ItemType Directory -Path $directory -Force | Out-Null
+          # Sin tag, gh descarga la release estable marcada como más reciente.
+          gh release download --repo $env:GITHUB_REPOSITORY --pattern 'PyGebra-Setup-*.exe' --pattern SHA256SUMS.txt --dir $directory
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo descargar la última release publicada.' }
+          $previous = @(Get-ChildItem -LiteralPath $directory -Filter 'PyGebra-Setup-*.exe')
+          if ($previous.Count -ne 1) { throw 'Se esperaba exactamente un instalador publicado.' }
+          # Misma verificación que hace el actualizador antes de ejecutar un instalador.
+          $line = @(Get-Content -LiteralPath (Join-Path $directory 'SHA256SUMS.txt') | Where-Object { ($_ -split '\s+')[1] -eq $previous[0].Name })
+          if ($line.Count -ne 1) { throw 'SHA256SUMS.txt no tiene una entrada única para el instalador publicado.' }
+          if ((Get-FileHash -LiteralPath $previous[0].FullName -Algorithm SHA256).Hash -ne ($line[0] -split '\s+')[0]) { throw 'El instalador publicado no coincide con su SHA-256.' }
+          $installers = @(Get-ChildItem dist/installer/PyGebra-Setup-*.exe)
+          if ($installers.Count -ne 1) { throw 'Se esperaba exactamente un instalador.' }
+          .\scripts\test_windows_distribution.ps1 -InstallerPath $installers[0].FullName -PreviousInstallerPath $previous[0].FullName -PreviousDesktopIcon
 
       - name: Conservar instalador para revisión
         if: ${{ !cancelled() }}
