@@ -187,7 +187,8 @@ class PruebasMenuBajoDemanda(SimpleTestCase):
     def test_el_css_esconde_el_cajon_cerrado_sin_dejar_hueco(self):
         shell = (STATIC / "styles" / "shell.css").read_text(encoding="utf-8")
         self.assertRegex(shell, r"\.js \.app-sidebar \{[^}]*position: fixed;[^}]*display: none;")
-        self.assertRegex(shell, r"\.js\[data-drawer\] \.app-sidebar \{\s*display: block;")
+        # Abierto es una columna: el pie de funciones de la app queda abajo.
+        self.assertRegex(shell, r"\.js\[data-drawer\] \.app-sidebar \{\s*display: flex;\s*flex-direction: column;")
         self.assertNotIn("data-menu", shell)
         self.assertNotIn("grid-template-columns: var(--nav-width)", shell)
         tokens = (STATIC / "styles" / "tokens.css").read_text(encoding="utf-8")
