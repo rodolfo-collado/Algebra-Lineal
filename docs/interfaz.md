@@ -205,10 +205,10 @@ que también marca la herramienta activa y calcula las relacionadas.
 
 `pages/inicio.html` presenta PyGebra, «Aprende resolviendo», «¿Qué quieres
 resolver?» con su buscador y «Explorar por temas». Cada área disponible es
-un `details` cerrado; al abrirla aparecen los temas plegados, salvo los que
-tienen exactamente una herramienta disponible (`Categoria.herramienta_unica`):
-nacen abiertos para mostrarla sin otro clic. Esa apertura no se guarda y el
-buscador restaura lo que el usuario abrió o cerró. Cada tema despliega las
+un `details` cerrado; al abrirla aparecen todos sus temas plegados, también
+los de una sola herramienta. Al cerrar un área, `navigation.js` cierra sus
+temas, así que al reabrirla vuelven plegados; nada se guarda y el buscador
+restaura lo que el usuario abrió o cerró. Cada tema despliega las
 herramientas de `catalogo.py`. Son filas con bordes
 discretos: ninguna cuadrícula de tarjetas ni accesos duplicados. Las áreas
 sin herramientas disponibles permanecen ocultas en Inicio y se encuentran

@@ -37,16 +37,14 @@ class PruebasNavegacion(SimpleTestCase):
                 self.assertNotContains(respuesta, "Álgebra Lineal")
         self.assertContains(self.client.get("/?q=gauss"), "Álgebra lineal · Matrices")
 
-    def test_ui21_solo_los_temas_de_una_herramienta_nacen_abiertos(self):
-        unicos = {c.id: c.herramienta_unica for c in catalogo.CATEGORIAS}
-        self.assertEqual(unicos, {"vectores": True, "matrices": False, "bases-numericas": True,
-                                  "numeracion-romana": True, "limites": False})
+    def test_todos_los_temas_nacen_cerrados_aunque_tengan_una_sola_herramienta(self):
         html = self.client.get("/").content.decode("utf-8")
+        # Vectores, Bases numéricas y Numeración romana tienen una sola herramienta: antes nacían abiertos.
         for categoria in catalogo.CATEGORIAS:
             with self.subTest(categoria=categoria.id):
                 etiqueta = re.search(rf'<details class="topic[^"]*" id="{categoria.id}"[^>]*>', html).group()
-                self.assertEqual(" open" in etiqueta, categoria.herramienta_unica)
-        # Las áreas siguen plegadas: abrir el tema evita un clic, no reordena Inicio.
+                self.assertNotIn(" open", etiqueta)
+        # Las áreas también llegan plegadas.
         self.assertNotRegex(html, r'<details class="home-area"[^>]* open')
 
     def test_ui72_herramientas_sin_kicker_con_migas_y_titulo(self):

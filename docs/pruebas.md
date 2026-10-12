@@ -634,7 +634,7 @@ operación y con dimensión 10; ayudas numéricas con decimales; y 390×650 en c
 oscuro sin desborde.
 
 `test_claridad_p2711` fija los contratos en Python: «Álgebra lineal» desde el
-catálogo, `herramienta_unica`, layout sin kicker, título común de relacionadas y
+catálogo, temas que nacen cerrados, layout sin kicker, título común de relacionadas y
 exploraciones, sugerencia de dirección solo cuando la otra conversión es válida,
 orden de Bases, ayudas, coma decimal sin conversión (y sin sugerencia para
 `1,000` o listas), vectores `v1`…, filtro `incognitas`, Ax = b sin mezcla de `x1`

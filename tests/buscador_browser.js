@@ -127,14 +127,16 @@
         ["Explorar por temas: cerrar un área reinicia sus temas y no toca las demás", "/", async w => {
             const area = q(w, "#algebra-lineal"); const otra = q(w, "#sistemas-numericos");
             const matrices = q(w, "#matrices"); const vectores = q(w, "#vectores"); const bases = q(w, "#bases-numericas");
-            const inicial = vectores.open; const claves = Object.keys(w.localStorage).sort();
+            const claves = Object.keys(w.localStorage).sort();
+            // Vectores tiene una sola herramienta y aun así llega cerrado.
+            igual(todos(w, "#catalogo-inicio details.topic").some(t => t.open), false);
             for (let vuelta = 0; vuelta < 3; vuelta++) {
                 area.open = true; otra.open = true; await turno(w);
-                matrices.open = true; vectores.open = !inicial; bases.open = false; await turno(w);
+                matrices.open = true; vectores.open = true; bases.open = true; await turno(w);
                 area.open = false; await turno(w);
                 area.open = true; await turno(w);
-                igual([matrices.open, vectores.open], [false, inicial]);
-                igual([otra.open, bases.open], [true, false]);
+                igual([matrices.open, vectores.open], [false, false]);
+                igual([otra.open, bases.open], [true, true]);
             }
             igual(Object.keys(w.localStorage).sort(), claves);
         }],
