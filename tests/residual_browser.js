@@ -70,7 +70,7 @@
             }
         }]);
     }
-    casos.push(["UI-68: Tema acción, nombres y pageshow; Menú con tres bordes", "/", async (w,frame) => {
+    casos.push(["UI-68: Tema acción, nombres y pageshow; Menú con tres trazos SVG", "/", async (w,frame) => {
         const theme = q(w,"#theme-toggle");
         assert(!theme.hidden && !theme.hasAttribute("aria-pressed"),"Tema operativo sin estado contradictorio");
         for (let i=0;i<2;i++) {
@@ -84,9 +84,16 @@
         for (const [width,height] of viewports) {
             await viewport(frame,width,height);
             const icon = q(w,".navigation-toggle-icon");
-            for (const pseudo of [null,"::before","::after"]) {
-                const css = w.getComputedStyle(icon,pseudo);
-                assert(css.borderTopStyle === "solid" && parseFloat(css.borderTopWidth) > 0,"Línea por borde compatible con forced-colors");
+            const path = icon.querySelector("path");
+            assert(icon.getAttribute("viewBox") === "0 0 24 24" && rect(icon).width === 24 && rect(icon).height === 24,"Icono de 24×24");
+            assert(path.getAttribute("d") === "M4 6h16M4 12h16M4 18h16" && path.getAttribute("stroke-width") === "2","Tres líneas uniformes y equidistantes");
+            for (const theme of ["light","dark"]) {
+                w.document.documentElement.dataset.theme = theme;
+                assert(style(w,path).stroke === style(w,q(w,"#navigation-toggle")).color,"Trazos heredan el color del botón");
+                if (width > 480) {
+                    const text = rect(q(w,".navigation-toggle-text")), box = rect(icon);
+                    assert(Math.abs(box.top + box.height / 2 - text.top - text.height / 2) < 1,"Icono centrado con Menú");
+                }
             }
             pageFits(w);
         }
