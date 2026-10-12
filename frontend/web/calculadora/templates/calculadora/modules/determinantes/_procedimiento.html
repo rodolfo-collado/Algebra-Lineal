@@ -1,0 +1,102 @@
+{% comment %}Procedimiento del método elegido dentro de «Ver procedimiento». Cada etapa usa los textos que preparó servicios_determinantes; la conclusión solo aparece en el resultado.{% endcomment %}
+{% if resultado.metodo == "directo_2x2" %}
+    <div class="procedure-stage">
+        <h4 class="stage-title">1 · La fórmula para matrices 2×2</h4>
+        <p class="procedure-lead">Se nombran las entradas de A con letras. El determinante es el producto de la diagonal principal menos el de la otra diagonal.</p>
+        <div class="matrix-equation" role="region" aria-label="Entradas a, b, c y d de A">
+            <span class="matrix-expression">A =</span>
+            {% include "calculadora/components/matriz.html" with matriz=resultado.simbolica etiqueta="A con letras" only %}
+            <span class="matrix-expression">=</span>
+            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Matriz A" only %}
+        </div>
+    </div>
+    <div class="procedure-stage">
+        <h4 class="stage-title">2 · Calcular ad − bc</h4>
+        <p class="procedure-line">{{ resultado.desarrollo }}</p>
+    </div>
+{% elif resultado.metodo == "sarrus" %}
+    <div class="procedure-stage">
+        <h4 class="stage-title">1 · Repetir las dos primeras columnas</h4>
+        <p class="procedure-lead">Sarrus solo existe para matrices 3×3. A la derecha se copian C1 y C2, atenuadas: siguen siendo C1 y C2, no columnas nuevas, por eso conservan sus índices (a₁₁, no a₁₄). Así cada diagonal tiene tres entradas seguidas.</p>
+        {% include "calculadora/modules/determinantes/_sarrus_matriz.html" with extendida=resultado.extendida etiqueta="A con C1 y C2 repetidas a la derecha" only %}
+    </div>
+    <div class="procedure-stage">
+        <h4 class="stage-title">2 · Diagonales que suman (↘)</h4>
+        <p class="procedure-lead">Tres diagonales bajan hacia la derecha; cada trazo del dibujo corresponde a una línea de la lista.</p>
+        {% include "calculadora/modules/determinantes/_sarrus_matriz.html" with extendida=resultado.extendida diagonales=resultado.positivas etiqueta="Diagonales que suman, hacia abajo y a la derecha" only %}
+        <ol class="procedure-lines sarrus-lista">{% for diagonal in resultado.positivas %}<li><svg class="sarrus-muestra" viewBox="0 0 28 8" aria-hidden="true" focusable="false"><line x1="1" y1="4" x2="27" y2="4" data-trazo="{{ diagonal.linea.trazo }}"/></svg>↘ {{ diagonal.texto }}</li>{% endfor %}</ol>
+        <p class="procedure-line">Suma: {{ resultado.suma_positivas }}</p>
+    </div>
+    <div class="procedure-stage">
+        <h4 class="stage-title">3 · Diagonales que restan (↙)</h4>
+        <p class="procedure-lead">Tres diagonales bajan hacia la izquierda; las que empiezan en C1 o C2 salen de sus copias.</p>
+        {% include "calculadora/modules/determinantes/_sarrus_matriz.html" with extendida=resultado.extendida diagonales=resultado.negativas etiqueta="Diagonales que restan, hacia abajo y a la izquierda" only %}
+        <ol class="procedure-lines sarrus-lista">{% for diagonal in resultado.negativas %}<li><svg class="sarrus-muestra" viewBox="0 0 28 8" aria-hidden="true" focusable="false"><line x1="1" y1="4" x2="27" y2="4" data-trazo="{{ diagonal.linea.trazo }}"/></svg>↙ {{ diagonal.texto }}</li>{% endfor %}</ol>
+        <p class="procedure-line">Suma: {{ resultado.suma_negativas }}</p>
+    </div>
+    <div class="procedure-stage">
+        <h4 class="stage-title">4 · Restar las dos sumas</h4>
+        <p class="procedure-line">{{ resultado.resta }}</p>
+    </div>
+{% elif resultado.metodo == "cofactores" %}
+    {% include "calculadora/modules/determinantes/_cofactores.html" with nodo=resultado only %}
+{% elif resultado.metodo == "lu" %}
+    <div class="procedure-stage">
+        <h4 class="stage-title">1 · Eliminar debajo de cada pivote, sin intercambiar filas</h4>
+        <p class="procedure-lead">Cada paso resta a una fila un múltiplo de la fila del pivote. Ese múltiplo, el multiplicador, se guarda en L en la misma posición; los pivotes no se normalizan.</p>
+        {% include "calculadora/modules/sistemas/_pasos.html" %}
+    </div>
+    {% if resultado.aplicable %}
+        <div class="procedure-stage">
+            <h4 class="stage-title">2 · A = LU</h4>
+            <p class="procedure-lead">L es triangular inferior con unos en la diagonal y los multiplicadores debajo. U es la matriz triangular superior que quedó.</p>
+            <div class="matrix-equation" role="region" aria-label="Factorización A = LU">
+                <span class="matrix-expression">A =</span>
+                {% include "calculadora/components/matriz.html" with matriz=resultado.l etiqueta="Matriz L" only %}
+                {% include "calculadora/components/matriz.html" with matriz=resultado.u etiqueta="Matriz U" only %}
+            </div>
+        </div>
+        <div class="procedure-stage">
+            <h4 class="stage-title">3 · Multiplicar la diagonal de U</h4>
+            <p class="procedure-lead">det(L) = 1 porque L es triangular con unos en la diagonal, y el determinante de una matriz triangular es el producto de su diagonal.</p>
+            <p class="procedure-line">{{ resultado.diagonal }}</p>
+        </div>
+    {% else %}
+        <div class="procedure-stage">
+            <h4 class="stage-title">2 · LU se detiene</h4>
+            <p class="procedure-lead">{{ resultado.motivo }}</p>
+            <div class="matrix-equation" role="region" aria-label="Avance de L y U al detenerse">
+                <span class="matrix-expression">L =</span>
+                {% include "calculadora/components/matriz.html" with matriz=resultado.l etiqueta="L al detenerse" only %}
+                <span class="matrix-expression">U =</span>
+                {% include "calculadora/components/matriz.html" with matriz=resultado.u etiqueta="U al detenerse" only %}
+            </div>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="procedure-stage">
+        <h4 class="stage-title">1 · Reducir A a una matriz triangular U</h4>
+        <p class="procedure-lead">Se aplica Gauss: intercambia filas cuando el pivote es 0, divide cada fila entre su pivote y elimina debajo.</p>
+        {% include "calculadora/modules/sistemas/_pasos.html" %}
+    </div>
+    <div class="procedure-stage">
+        <h4 class="stage-title">2 · Cómo cambió el determinante</h4>
+        <p class="procedure-lead">Sumar a una fila un múltiplo de otra no cambia det. Intercambiar dos filas cambia su signo y dividir una fila entre su pivote divide det entre ese número. Para recuperar det(A) se multiplica por −1 en cada intercambio y por el pivote en cada división.</p>
+        {% if resultado.correcciones %}
+            <ul class="procedure-lines">{% for correccion in resultado.correcciones %}<li>{{ correccion }}</li>{% endfor %}</ul>
+        {% else %}
+            <p class="procedure-note">No hubo intercambios ni divisiones: det(A) = det(U).</p>
+        {% endif %}
+    </div>
+    <div class="procedure-stage">
+        <h4 class="stage-title">3 · Multiplicar la diagonal de U y corregir</h4>
+        {% include "calculadora/components/matriz.html" with matriz=resultado.u etiqueta="Matriz triangular U" only %}
+        <p class="procedure-lead">U es triangular: su determinante es el producto de su diagonal.</p>
+        <p class="procedure-line">{{ resultado.diagonal }}</p>
+        {% if resultado.singular %}
+            <p class="procedure-note">La diagonal de U tiene un 0. Las correcciones solo multiplican por números distintos de 0, así que det(A) = 0.</p>
+        {% else %}
+            <p class="procedure-line">{{ resultado.final }}</p>
+        {% endif %}
+    </div>
+{% endif %}

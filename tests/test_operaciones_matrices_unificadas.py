@@ -225,7 +225,7 @@ class PruebasCatalogoFinal(ContextoHTTP):
     def test_matrices_tiene_cuatro_herramientas_en_orden(self):
         self.assertEqual(
             [h.nombre for h in catalogo.herramientas_de(catalogo.MATRICES)],
-            ["Operaciones con matrices", "Reducción por filas", "Resolver Ax = b", "Matriz inversa"],
+            ["Operaciones con matrices", "Reducción por filas", "Resolver Ax = b", "Matriz inversa", "Determinantes"],
         )
         herramienta = catalogo.OPERACIONES_MATRICES
         self.assertEqual(herramienta.descripcion, "Realiza y combina operaciones con matrices, vectores y escalares paso a paso.")
@@ -237,7 +237,8 @@ class PruebasCatalogoFinal(ContextoHTTP):
         html = inicio.content.decode()
         self.assertIn(f'href="{RUTA}"', elemento_html(html, html.index('id="matrices"'), "details"))
         enlaces = [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link" and a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/", "/matrices/inversa/"])
+        self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/", "/matrices/inversa/",
+                                   "/matrices/determinantes/"])
         menu = [a["href"] for a in Documento(inicio).enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
         self.assertEqual(menu, enlaces)
         pagina = self.client.get(RUTA)

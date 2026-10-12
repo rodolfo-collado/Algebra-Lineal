@@ -87,7 +87,8 @@ rango_de_a = len(pivotes)
 En el ejemplo, la izquierda es `I_2` y la derecha es
 `[[-3, 2], [5/2, -3/2]]`, con fracciones exactas. Para `A` cuadrada, si
 `len(pivotes) < n`, la izquierda no llegó a `I_n`; compararla exactamente con
-la identidad aporta la misma evidencia. No se calculan determinantes. P26.4
+la identidad aporta la misma evidencia; det(A) se recupera de los mismos pasos
+(ver [Determinantes](determinantes.md)). P26.4
 compone exactamente este flujo en `backend/matriz_inversa.py`, interpreta el
 bloque derecho y define el mensaje de una matriz sin inversa: consulta
 [Matriz inversa](matriz-inversa.md).

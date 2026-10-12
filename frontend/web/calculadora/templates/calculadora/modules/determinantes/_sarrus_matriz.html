@@ -1,0 +1,23 @@
+{% comment %}Matriz extendida de Sarrus: C1 C2 C3 | C1 C2. Las copias se atenúan y conservan sus índices (a₁₁, no a₁₄); el lector de pantalla las omite porque repiten C1 y C2. Con `diagonales`, un SVG detrás de los números traza cada diagonal con su propio trazo (continuo, discontinuo, punteado), igual que la muestra de su línea en la lista.{% endcomment %}
+<div class="matrix-scroll sarrus-scroll" role="region" aria-label="{{ etiqueta }}, desplazamiento horizontal">
+    <div class="sarrus" style="--sarrus-col: {{ extendida.ancho }}ch" role="group" aria-label="{{ etiqueta }}">
+        <span class="sarrus-esquina" aria-hidden="true"></span>
+        <div class="sarrus-cabecera" aria-hidden="true">
+            <span>C1</span><span>C2</span><span>C3</span><span class="sarrus-copia">C1</span><span class="sarrus-copia">C2</span>
+            <span class="sarrus-nota">copias</span>
+        </div>
+        <div class="sarrus-filas" aria-hidden="true"><span>F1</span><span>F2</span><span>F3</span></div>
+        <div class="sarrus-matriz">
+            <span class="matrix-fence matrix-fence-start" aria-hidden="true"></span>
+            <div class="sarrus-celdas" data-sarrus-celdas>
+                {% if diagonales %}
+                    <svg class="sarrus-diagonales" viewBox="0 0 5 3" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                        {% for diagonal in diagonales %}<line x1="{{ diagonal.linea.x1 }}" y1="{{ diagonal.linea.y1 }}" x2="{{ diagonal.linea.x2 }}" y2="{{ diagonal.linea.y2 }}" data-trazo="{{ diagonal.linea.trazo }}"/>{% endfor %}
+                    </svg>
+                {% endif %}
+                {% for fila in extendida.filas %}{% for celda in fila %}<span class="sarrus-celda{% if celda.copia %} sarrus-copia{% endif %}"{% if celda.copia %} aria-hidden="true"{% endif %}><span class="sarrus-indice">{{ celda.indice }}</span><span class="sarrus-valor">{{ celda.valor }}</span></span>{% endfor %}{% endfor %}
+            </div>
+            <span class="matrix-fence matrix-fence-end" aria-hidden="true"></span>
+        </div>
+    </div>
+</div>

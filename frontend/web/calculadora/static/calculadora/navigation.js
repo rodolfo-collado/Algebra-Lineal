@@ -21,6 +21,14 @@
         }
     }
 
+    // Explorar por temas: un <details> cerrado conserva el `open` de sus hijos. Al cerrar un
+    // área se cierran todos sus temas; las demás áreas no cambian y nada se guarda.
+    document.querySelectorAll("#catalogo-inicio details.home-area").forEach((area) => {
+        area.addEventListener("toggle", () => {
+            if (!area.open) area.querySelectorAll("details.topic").forEach((tema) => { tema.open = false; });
+        });
+    });
+
     window.addEventListener("hashchange", revelarDestino);
     revelarDestino();
 

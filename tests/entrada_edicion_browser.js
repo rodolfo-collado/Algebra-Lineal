@@ -421,7 +421,8 @@
         mouse(w, filas(w, a)[0][1], { ctrlKey: true }); igual(w.seleccionMatricial.activa().matriz === a, true);
         igual(w.seleccionMatricial.obtener(b).celdas.length, 2);
         q(w, '[name="nombre_0"]').value = "C"; valor(w, '[name="nombre_0"]', "C");
-        igual(todos(w, ".matrix-selection summary")[0].getAttribute("aria-label"), "Seleccionar celdas de C");
+        // El nombre sigue al símbolo; el chip añade cuántas celdas hay seleccionadas.
+        igual(todos(w, ".matrix-selection summary")[0].getAttribute("aria-label"), "Seleccionar celdas de C, 3 celdas seleccionadas");
         q(w, '[data-eliminar]').click(); await turno(w);
         igual(w.seleccionMatricial.obtener(a), null); igual(w.seleccionMatricial.obtener(b).nombre, "B");
         igual(q(w, '[name="celda_0_0_0"]').closest("table") === b, true);
@@ -475,6 +476,39 @@
                 igual(todos(w, ".matrix-entry-table[role=grid]").length, 0);
             });
         }
+    }
+    // Selección compacta: «Seleccionar» es un chip; sus opciones flotan sin mover la matriz,
+    // la celda elegida cambia de fondo sin cambiar de tamaño y «Limpiar» vacía la selección.
+    for (const ruta of [inversa, operaciones, axb, reduccion]) {
+        caso(`UX selección compacta, estado visible y Limpiar: ${ruta}`, ruta, async w => {
+            if (ruta === reduccion) modo(w, "matriz");
+            const g = matriz(w); const menu = q(w, ".matrix-selection");
+            const cuerpo = menu.querySelector(".disclosure-body");
+            igual(menu.open, false); igual(cuerpo.checkVisibility(), false);
+            const antes = g.getBoundingClientRect();
+            menu.open = true; await turno(w);
+            igual(w.getComputedStyle(cuerpo).position, "absolute");
+            const despues = g.getBoundingClientRect();
+            igual([despues.top, despues.left], [antes.top, antes.left]);
+            const celda = filas(w, g)[0][0];
+            const normal = w.getComputedStyle(celda).backgroundColor;
+            const tamano = [celda.offsetWidth, celda.offsetHeight];
+            elegir(w, "principal"); await turno(w);
+            igual(celda.hasAttribute("data-celda-seleccionada"), true);
+            igual(w.getComputedStyle(celda).backgroundColor !== normal, true);
+            igual(w.getComputedStyle(celda).borderStyle, "double");
+            igual([celda.offsetWidth, celda.offsetHeight], tamano);
+            igual(menu.querySelector("[data-seleccion-resumen]").hidden, false);
+            igual(menu.querySelector("[data-seleccion-texto]").textContent.startsWith("Diagonal principal · "), true);
+            igual(menu.querySelector(".matrix-selection-count").hidden, false);
+            igual(menu.querySelector("summary").getAttribute("aria-label").includes("seleccionada"), true);
+            menu.open = true; await turno(w);
+            menu.querySelector("[data-limpiar-seleccion]").click(); await turno(w);
+            igual(seleccion(w), []); igual(g.querySelector("[data-celda-seleccionada]"), null);
+            igual(menu.open, false);
+            igual(menu.querySelector("[data-seleccion-resumen]").hidden, true);
+            igual(menu.querySelector(".matrix-selection-count").hidden, true);
+        });
     }
     caso("P28.1 columnas: recortar selección y referencia de A sin seguir a b", reduccion, w => {
         modo(w, "matriz"); const g = matriz(w);

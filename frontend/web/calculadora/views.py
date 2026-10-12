@@ -13,6 +13,7 @@ from backend.presupuesto_sistemas import CELDAS_MAXIMAS, dimensiones_admitidas
 from . import catalogo, preferencias
 from .exploraciones import exploraciones_sistema
 from .forms import ConversionBasesForm, SistemaForm, VectoresForm
+from .forms_determinantes import DeterminantesForm
 from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_expresiones import ExpresionMatricialForm
 from .forms_inversa import InversaForm
@@ -21,6 +22,7 @@ from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .servicios_ecuaciones import resolver_ecuacion_web
 from .servicios_expresiones import evaluar_expresion_web
 from .presupuesto_expresiones import confirmacion_pendiente as confirmar_expresion
+from .servicios_determinantes import calcular_determinante_web, confirmacion_pendiente as confirmar_determinante
 from .servicios_inversa import calcular_inversa_web, confirmacion_pendiente
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
@@ -35,6 +37,7 @@ from .servicios_bases import convertir_entrada
 from .servicios_romanos import convertir_romanos
 from .servicios_vectores import operar_vectores
 from .teclados import PERFILES_BASE, perfiles_para
+from .transferencia_matriz import recibir_matriz
 
 
 @require_GET
@@ -245,9 +248,14 @@ def matriz_inversa(request):
     el aviso conserva la matriz y el método porque vive dentro del mismo formulario.
     """
     ajustar = request.method == "POST" and "ajustar" in request.POST
-    form = InversaForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
+    # «Calcular su matriz inversa» desde Determinantes: carga A sin calcular nada.
+    transferencia = request.method == "POST" and "cargar_matriz" in request.POST
+    if transferencia:
+        form = recibir_matriz(request.POST)
+    else:
+        form = InversaForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
     resultado = confirmacion = None
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST" and not transferencia and form.is_valid():
         if ajustar:
             # «Aplicar» sin JavaScript y «Cancelar» del aviso: redibujan con lo escrito, sin calcular.
             form = InversaForm(initial=form.iniciales())
@@ -261,6 +269,33 @@ def matriz_inversa(request):
                     form.grupo_error = "inverse-matrix"
                     form.add_error(None, str(error))
     return render(request, "calculadora/modules/inversa/index.html", {
+        "form": form, "resultado": resultado, "confirmacion": confirmacion,
+        "perfiles_teclado": perfiles_para("numerico"),
+    })
+
+
+@require_http_methods(["GET", "POST"])
+def determinantes(request):
+    """Determinantes: cinco métodos sobre A cuadrada; avisa antes de un cálculo largo.
+
+    Igual que Matriz inversa: Aplicar redibuja sin calcular y «Continuar» confirma con firma.
+    """
+    ajustar = request.method == "POST" and "ajustar" in request.POST
+    form = DeterminantesForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
+    resultado = confirmacion = None
+    if request.method == "POST" and form.is_valid():
+        if ajustar:
+            form = DeterminantesForm(initial=form.iniciales())
+        else:
+            entrada = form.cleaned_data["entrada"]
+            try:
+                confirmacion = confirmar_determinante(entrada, form.cleaned_data["confirmacion"])
+                if confirmacion is None:
+                    resultado = calcular_determinante_web(entrada)
+            except ValueError as error:
+                form.grupo_error = "determinant-matrix"
+                form.add_error(None, str(error))
+    return render(request, "calculadora/modules/determinantes/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
         "perfiles_teclado": perfiles_para("numerico"),
     })

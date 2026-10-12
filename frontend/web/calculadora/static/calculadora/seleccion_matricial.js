@@ -4,7 +4,7 @@
     const plantilla = document.getElementById("matrix-selection-template");
     const aviso = document.querySelector("[data-estado-seleccion]");
     if (!plantilla || !aviso) return;
-    const forms = [...document.querySelectorAll("#expresiones-form, #inversa-form, #ecuacion-form, #sistema-form")];
+    const forms = [...document.querySelectorAll("#expresiones-form, #inversa-form, #determinantes-form, #ecuacion-form, #sistema-form")];
     const estados = new Map();
     const { filasDeMatriz } = window.entradasSeguras;
     const clave = ({ fila, columna }) => `${fila}_${columna}`;
@@ -40,6 +40,10 @@
             estado.celdas.has(`${i}_${j}`) ? [{ fila: i, columna: j, input }] : []));
     }
 
+    function escribir(nodo, texto) {
+        if (nodo.textContent !== texto) nodo.textContent = texto;
+    }
+
     function pintar(estado) {
         estado.matriz.toggleAttribute("data-seleccion-activa", actual === estado && estado.celdas.size > 0);
         estado.filas.forEach((fila, i) => fila.forEach((input, j) => {
@@ -53,7 +57,19 @@
         }));
         const cuadrada = estado.filas.length === estado.columnasA;
         const referencia = estado.celdaActual;
-        estado.menu.querySelector("summary").setAttribute("aria-label", `Seleccionar celdas de ${nombre(estado)}`);
+        // Resumen visible: el chip muestra cuántas celdas hay y el panel, qué se seleccionó y «Limpiar».
+        const cantidad = estado.celdas.size;
+        const texto = `${cantidad} ${cantidad === 1 ? "celda" : "celdas"}`;
+        const etiqueta = estado.comando ?
+            estado.menu.querySelector(`[data-seleccionar="${estado.comando}"]`)?.textContent : "Selección manual";
+        // Solo se escribe si cambia: asignar textContent siempre crea un nodo nuevo, el
+        // MutationObserver del formulario volvería a sincronizar y pintar sin fin.
+        escribir(estado.cuenta, cantidad ? String(cantidad) : "");
+        estado.cuenta.hidden = !cantidad;
+        estado.menu.querySelector("[data-seleccion-resumen]").hidden = !cantidad;
+        escribir(estado.menu.querySelector("[data-seleccion-texto]"), cantidad ? `${etiqueta} · ${texto}` : "");
+        estado.menu.querySelector("summary").setAttribute("aria-label",
+            `Seleccionar celdas de ${nombre(estado)}${cantidad ? `, ${texto} ${cantidad === 1 ? "seleccionada" : "seleccionadas"}` : ""}`);
         estado.menu.querySelectorAll("[data-seleccionar]").forEach(boton => {
             const comando = boton.dataset.seleccionar;
             boton.setAttribute("aria-label", `${boton.textContent} de ${nombre(estado)}`);
@@ -71,15 +87,26 @@
         descripcion.className = "sr-only";
         descripcion.textContent = "Celda incluida en la selección matricial.";
         menu.append(descripcion);
+        const cuenta = document.createElement("span");
+        cuenta.className = "matrix-selection-count";
+        cuenta.setAttribute("aria-hidden", "true");
+        cuenta.hidden = true;
+        menu.querySelector("summary").append(cuenta);
         const caja = matriz.id === "matrix-grid" ? matriz.closest("#matrix-grid-wrapper") : matriz.closest(".matrix");
         caja.prepend(menu);
-        const estado = { matriz, menu, descripcion, celdas: new Set(), referencia: null, extremo: null, celdaActual: null,
+        const estado = { matriz, menu, descripcion, cuenta, celdas: new Set(), referencia: null, extremo: null, celdaActual: null,
             tipo: null, comando: null, filas: [] };
         estados.set(matriz, estado);
         menu.addEventListener("toggle", () => {
             if (menu.open) for (const otro of estados.values()) if (otro !== estado) otro.menu.open = false;
         });
         menu.addEventListener("click", event => {
+            if (event.target.closest("[data-limpiar-seleccion]")) {
+                limpiar(estado.matriz);
+                menu.open = false;
+                menu.querySelector("summary").focus();
+                return;
+            }
             const boton = event.target.closest("[data-seleccionar]");
             if (!boton || boton.disabled) return;
             seleccionarComando(estado, boton.dataset.seleccionar, boton.textContent);

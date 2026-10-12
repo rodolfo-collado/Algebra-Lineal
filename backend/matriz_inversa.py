@@ -6,9 +6,14 @@ Son dos métodos distintos, no dos lecturas del mismo cálculo:
   a A, reduce [A | I] con el motor de siempre (`aplicar_gauss_jordan`, con los
   pivotes limitados a las columnas de A) y lee el resultado: si el bloque
   izquierdo llegó a la identidad, el derecho es A⁻¹; si no, A no tiene inversa.
-  No usa determinantes.
-- La regla 2×2 calcula ad − bc y, si no es 0, A⁻¹ = 1/(ad − bc) · [[d, −b], [−c, a]].
+  Además recupera det(A) de las operaciones ya registradas, sin otra reducción.
+- La regla 2×2 calcula det(A) = ad − bc con la fórmula compartida de
+  Determinantes y, si no es 0, A⁻¹ = 1/(ad − bc) · [[d, −b], [−c, a]].
   Esa escritura solo existe para matrices 2×2.
+
+Ambos devuelven `determinante`: A es invertible ⇔ det(A) ≠ 0. La comparación
+con la identidad (o el factor 1/(ad − bc)) sigue siendo la evidencia que
+construye A⁻¹.
 
 Toda la aritmética pasa por las operaciones exactas protegidas de
 `backend.seguridad_numerica`. Este módulo es lógica pura: recibe listas de
@@ -18,13 +23,14 @@ un mensaje legible.
 
 from fractions import Fraction
 
+from backend.determinantes.comun import directo_2x2, determinante_desde_reduccion
 from backend.gauss_jordan import aplicar_gauss_jordan
 from backend.matrices import (
     aumentar_matrices, matriz_identidad, resolver_operacion_matrices,
     separar_bloques, validar_matriz, validar_vector, vector_columna,
 )
 from backend.seguridad_numerica import (
-    dividir_exacto, multiplicar_exacto, restar_exacto, validar_matriz_exacta,
+    dividir_exacto, multiplicar_exacto, validar_matriz_exacta,
     validar_valor_exacto,
 )
 
@@ -60,6 +66,7 @@ def inversa_gauss_jordan(a):
     `izquierda` y `derecha`, `invertible` (la izquierda es exactamente I_n) e
     `inversa` (el bloque derecho, o None). Con A cuadrada, llegar a I_n equivale
     a encontrar n pivotes; la comparación exacta es la evidencia que se muestra.
+    `determinante` sale de los mismos pasos (ver `determinante_desde_reduccion`).
     """
     n = _orden(a)
     identidad = matriz_identidad(n)
@@ -68,6 +75,7 @@ def inversa_gauss_jordan(a):
     izquierda, derecha = separar_bloques(reducida, n)
     invertible = izquierda == identidad
     return {
+        "determinante": determinante_desde_reduccion(pasos, [izquierda[i][i] for i in range(n)]),
         "metodo": GAUSS_JORDAN,
         "orden": n,
         "matriz": [fila[:n] for fila in aumentada],
@@ -88,15 +96,17 @@ def inversa_metodo_2x2(a):
     Devuelve `metodo`, `orden`, `matriz`, las `entradas` a, b, c y d, los
     productos `ad` y `bc`, su diferencia `ad_menos_bc`, la matriz
     `intercambiada` [[d, −b], [−c, a]], el `factor` 1/(ad − bc), `invertible` e
-    `inversa`. Con ad − bc = 0 no hay factor ni inversa.
+    `inversa`. Con ad − bc = 0 no hay factor ni inversa. `determinante` es
+    ad − bc, calculado una sola vez por `directo_2x2`.
     """
     if _orden(a) != 2:
         raise ValueError("El método para matrices 2×2 solo se aplica a matrices 2×2.")
     validar_matriz_exacta(a)
     (a11, a12), (a21, a22) = ([Fraction(valor) for valor in fila] for fila in a)
-    ad = multiplicar_exacto(a11, a22)
-    bc = multiplicar_exacto(a12, a21)
-    ad_menos_bc = restar_exacto(ad, bc)
+    # Reutiliza el determinante 2×2 de Determinantes: no hay otro ad − bc.
+    determinante = directo_2x2(a)
+    ad, bc = determinante["ad"], determinante["bc"]
+    ad_menos_bc = determinante["determinante"]
     # Cambiar el signo conserva el tamaño del número: no necesita otra validación.
     intercambiada = [[a22, -a12], [-a21, a11]]
     factor = inversa = None
@@ -111,6 +121,7 @@ def inversa_metodo_2x2(a):
         "ad": ad,
         "bc": bc,
         "ad_menos_bc": ad_menos_bc,
+        "determinante": ad_menos_bc,
         "intercambiada": intercambiada,
         "factor": factor,
         "invertible": inversa is not None,

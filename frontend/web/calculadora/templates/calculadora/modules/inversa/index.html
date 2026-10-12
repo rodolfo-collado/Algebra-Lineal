@@ -92,6 +92,8 @@
 
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
+            {% comment %}El determinante explica la invertibilidad; la reducción (o la regla 2×2) construye A⁻¹. Ambos salen del mismo cálculo.{% endcomment %}
+            {% if resultado.invertible %}<p class="muted inverse-reason" data-determinante>det(A) = {{ resultado.determinante }} ≠ 0: A es invertible.</p>{% endif %}
             {% if resultado.verificar_solicitado %}
                 <p data-verificacion>
                     {% if resultado.verificacion.verificada %}
@@ -121,6 +123,7 @@
                 <p class="classification-value">La propiedad no puede aplicarse.</p>
                 <p class="muted inverse-reason">{{ resultado.adicional.motivo }}</p>
             {% endif %}
+            {% if not resultado.invertible %}<p class="muted inverse-reason" data-determinante>det(A) = 0: una matriz es invertible solo cuando det(A) ≠ 0.</p>{% endif %}
         </section>
     </section>
     {% endnumeric_results %}

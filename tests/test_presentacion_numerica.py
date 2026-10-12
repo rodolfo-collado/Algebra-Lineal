@@ -127,6 +127,7 @@ class PruebasIntegracionNumerica(SimpleTestCase):
             ("/matrices/inversa/", {"orden": "1", "metodo": "gauss_jordan", "celda_A_0_0": "3"}),
             ("/matrices/inversa/", {"orden": "2", "metodo": "directo_2x2", "celda_A_0_0": "3", "celda_A_0_1": "0",
                                     "celda_A_1_0": "0", "celda_A_1_1": "1"}),
+            ("/matrices/determinantes/", {"orden": "1", "metodo": "cofactores", "celda_A_0_0": "1/3"}),
             ("/matrices/operaciones/", {
                 "expresion": "(1/3)*A", "cantidad": "1", "nombre_0": "A", "tipo_0": "matriz",
                 "filas_0": "1", "columnas_0": "1", "celda_0_0_0": "1",
@@ -152,7 +153,7 @@ class PruebasIntegracionNumerica(SimpleTestCase):
                 self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
 
     def test_bases_entrada_y_errores_no_reciben_selector(self):
-        for ruta in ("/", "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
+        for ruta in ("/", "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/"):
             self.assertNotContains(self.client.get(ruta), "data-numeric-controls")
         self.assertNotContains(self.client.post("/matrices/reduccion/", {"sistema": "x1+=1"}), "data-numeric-controls")
         conversion = self.client.post("/bases/conversion/", {

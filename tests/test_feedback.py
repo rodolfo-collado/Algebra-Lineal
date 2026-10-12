@@ -12,11 +12,12 @@ from tests.test_matrices_web import datos_simbolos
 
 
 class PruebasFeedback(SimpleTestCase):
-    def test_campos_invalidos_asociados_en_las_siete_herramientas(self):
+    def test_campos_invalidos_asociados_en_todas_las_herramientas(self):
         casos = [
             ("/matrices/reduccion/", {"sistema": "", "metodo": "gauss"}, "sistema"),
             ("/matrices/ecuaciones/", datos_ecuacion(celda_A_0_0=""), "celda_A_0_0"),
             ("/matrices/inversa/", datos_inversa(celda_A_0_0=""), "celda_A_0_0"),
+            ("/matrices/determinantes/", {"orden": "1", "metodo": "lu", "celda_A_0_0": ""}, "celda_A_0_0"),
             ("/matrices/operaciones/", datos_matrices(""), "expresion"),
             ("/vectores/operaciones/", datos_vectores("suma", v1=[1, "x"], v2=[1, 2]), "v1_1"),
             ("/bases/conversion/", {"numero": "1", "base_origen": "10"}, "bases_destino"),

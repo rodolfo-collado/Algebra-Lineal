@@ -54,16 +54,21 @@
     white-space: normal;
 }
 
-/* Un borde doble identifica la selección; el anillo exterior sigue siendo el foco. */
+/* Selección: fondo de acento suave + borde doble (discontinuo si la matriz no es la activa).
+   El borde de 3 px se compensa en el padding para no cambiar el tamaño de la celda; el anillo
+   exterior sigue siendo el foco. */
 .matrix-input[data-celda-seleccionada] {
     border-width: 3px;
     border-style: dashed;
     padding: calc(0.5rem - 2px) calc(var(--celda-padding-inline) - 2px);
+    background-color: var(--color-surface-muted);
 }
 
-[data-seleccion-activa] .matrix-input[data-celda-seleccionada] {
+[data-seleccion-activa] .matrix-input[data-celda-seleccionada],
+[data-seleccion-activa] .matrix-input[data-celda-seleccionada]:hover {
     border-style: double;
     border-color: var(--color-brand);
+    background-color: var(--color-brand-soft);
 }
 
 [data-seleccion-activa] .matrix-input[data-celda-seleccionada][aria-invalid="true"] {
@@ -75,12 +80,13 @@
     outline-offset: 2px;
 }
 
+/* «Seleccionar» es un chip secundario: en una matriz con leyenda va en su misma línea, a la
+   derecha; en las demás, encima de la cuadrícula. Sus opciones flotan sin desplazar nada. */
 .matrix:has(> .matrix-selection),
 .matrix-grid-wrapper:has(> .matrix-selection):not([hidden]) {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.5rem;
+    display: grid;
+    justify-items: start;
+    gap: 0.35rem;
 }
 
 .matrix:has(> .matrix-selection) > .matrix-scroll,
@@ -88,30 +94,122 @@
     max-width: 100%;
 }
 
-.matrix-selection {
-    width: fit-content;
-    max-width: min(100%, 22rem);
-    min-width: 0;
-    margin: 0;
+.matrix-entry:has(> .matrix > .matrix-selection) {
+    position: relative;
+    /* Lo justo para la leyenda y el chip con su contador en la misma línea. */
+    min-width: min(100%, 12.5rem);
 }
 
-.matrix-selection .disclosure-summary {
-    gap: 0.35rem;
-    padding: 0.25rem 0.5rem;
+/* La leyenda vive en el borde del fieldset: bottom: 100% sube el chip hasta su línea. */
+.matrix-entry > .matrix > .matrix-selection {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+}
+
+.matrix-selection {
+    position: relative;
+    z-index: 15;
+    width: fit-content;
+    margin: 0;
+    border: 0;
+    background: transparent;
+}
+
+.matrix-selection > .disclosure-summary {
+    min-height: 1.85rem;
+    gap: 0.3rem;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.matrix-selection > .disclosure-summary .disclosure-title {
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+.matrix-selection[open] > .disclosure-summary,
+.matrix-selection > .disclosure-summary:hover {
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+
+.matrix-selection-count {
+    min-width: 1.25rem;
+    padding: 0 0.35rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-brand);
+    color: var(--color-brand-text);
+    font-size: 0.72rem;
+    line-height: 1.25rem;
+    text-align: center;
+}
+
+.matrix-selection-count[hidden] { display: none; }
+
+.matrix-selection > .disclosure-body {
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    left: 0;
+    width: 14rem;
+    padding: 0.6rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+    box-shadow: 0 8px 24px var(--color-shadow-strong);
+}
+
+.matrix-entry > .matrix > .matrix-selection > .disclosure-body {
+    right: 0;
+    left: auto;
+}
+
+.matrix-selection-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem 0.5rem;
+    margin: 0 0 0.5rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.matrix-selection-status[hidden] { display: none; }
+
+.matrix-selection-clear {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-brand-strong);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .matrix-selection-commands {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.25rem;
 }
 
 .matrix-selection-commands .btn {
     justify-content: flex-start;
+    min-height: 2rem;
+    padding: 0.3rem 0.55rem;
     white-space: normal;
     text-align: left;
     font-size: var(--text-sm);
-    padding: 0.35rem 0.5rem;
+}
+
+.matrix-selection .field-help {
+    margin-top: 0.5rem;
 }
 
 .matrix-selection .disclosure-chevron {
@@ -210,6 +308,8 @@
 .procedure-line {
     margin: 0.2rem 0 0.5rem;
     font-weight: 600;
+    /* Productos largos de fracciones (LU, Sarrus, ad − bc) no desbordan en móvil. */
+    overflow-wrap: anywhere;
 }
 
 .procedure-lines {
@@ -997,6 +1097,152 @@ textarea:focus {
     margin: 0;
     color: var(--color-muted);
     font-size: var(--text-sm);
+}
+
+/* Determinantes: la fila o columna de Cofactores y el paso a Matriz inversa. */
+.expansion-selector {
+    max-width: 18rem;
+    margin-top: 1rem;
+}
+
+.expansion-selector[hidden],
+[data-determinant-methods] .option[hidden] { display: none; }
+
+.final-action {
+    margin-top: 0.85rem;
+}
+
+/* Sarrus: A | C1 C2 con las copias atenuadas, F1–F3 y C1–C3 discretos y las diagonales
+   en un SVG detrás de los números. Columnas de igual ancho (--sarrus-col, en ch de la fuente
+   matemática): así el SVG usa coordenadas de celda (viewBox 0 0 5 3). */
+.sarrus-scroll {
+    margin-block: 0.35rem 0.6rem;
+}
+
+.sarrus {
+    --sarrus-fila: 2.75rem;
+    --sarrus-llave: 0.45rem;
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    column-gap: 0.35rem;
+    width: max-content;
+    font-family: var(--font-math);
+}
+
+.sarrus-cabecera,
+.sarrus-filas {
+    color: var(--color-muted);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.sarrus-cabecera,
+.sarrus-celdas {
+    display: grid;
+    grid-template-columns: repeat(5, var(--sarrus-col));
+}
+
+.sarrus-cabecera {
+    position: relative;
+    padding-inline: var(--sarrus-llave);
+    padding-bottom: 0.2rem;
+    text-align: center;
+}
+
+.sarrus-nota {
+    grid-column: 4 / 6;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.sarrus-filas {
+    display: grid;
+    grid-auto-rows: var(--sarrus-fila);
+    align-items: center;
+}
+
+.sarrus-matriz {
+    display: flex;
+}
+
+.sarrus-celdas {
+    position: relative;
+    grid-auto-rows: var(--sarrus-fila);
+}
+
+/* La separación vertical entre A y las copias, en la cabecera y en la matriz. */
+.sarrus-cabecera::after,
+.sarrus-celdas::after {
+    content: "";
+    position: absolute;
+    inset-block: 0.15rem;
+    left: calc(3 * var(--sarrus-col));
+    border-left: 2px solid var(--color-border-strong);
+}
+
+.sarrus-cabecera::after {
+    left: calc(var(--sarrus-llave) + 3 * var(--sarrus-col));
+}
+
+.sarrus-celda {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+}
+
+/* Fondo opaco: la diagonal pasa entre los números, nunca por encima. */
+.sarrus-indice,
+.sarrus-valor {
+    padding-inline: 0.2rem;
+    background: var(--color-surface-raised);
+    line-height: 1.15;
+}
+
+.sarrus-indice {
+    color: var(--color-muted);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+}
+
+.sarrus-valor {
+    color: var(--color-text);
+    font-size: 1rem;
+}
+
+/* Copias de C1 y C2 al 60 %: en las celdas solo el color, para que su fondo siga tapando las líneas. */
+.sarrus-cabecera .sarrus-copia { opacity: 0.6; }
+.sarrus-copia .sarrus-indice { color: color-mix(in srgb, var(--color-muted) 60%, transparent); }
+.sarrus-copia .sarrus-valor { color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+
+.sarrus-diagonales {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.sarrus-diagonales line,
+.sarrus-muestra line {
+    stroke: var(--color-brand);
+    stroke-width: 2;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+:is(.sarrus-diagonales, .sarrus-muestra) [data-trazo="discontinuo"] { stroke-dasharray: 8 5; }
+:is(.sarrus-diagonales, .sarrus-muestra) [data-trazo="punteado"] { stroke-dasharray: 0.5 5; stroke-width: 2.5; }
+
+.sarrus-muestra {
+    width: 1.75rem;
+    height: 0.5rem;
+    margin-right: 0.4rem;
+    overflow: visible;
+    vertical-align: middle;
 }
 
 /* Una entrada adicional vacía no deja hueco dentro del desplegable. */

@@ -220,14 +220,14 @@ class PruebasInicioPorTemas(SimpleTestCase):
             with self.subTest(categoria=categoria.id):
                 tema = desplegables.por_id(categoria.id)
                 self.assertIn("topic", tema["clases"])
-                # UI-21: un tema con una sola herramienta disponible nace abierto; los demás, plegados.
-                self.assertEqual(tema["open"], categoria.herramienta_unica)
+                # Todos los temas nacen plegados, también los de una sola herramienta.
+                self.assertFalse(tema["open"])
                 self.assertIn(categoria.nombre, tema["summary"])
                 self.assertIn(categoria.descripcion, tema["summary"])
                 if not categoria.disponible:
                     self.assertIn("Próximamente", tema["summary"])
         abiertos = [c.id for c in catalogo.CATEGORIAS if c.area.disponible and desplegables.por_id(c.id)["open"]]
-        self.assertEqual(abiertos, ["vectores", "bases-numericas", "numeracion-romana"])
+        self.assertEqual(abiertos, [])
         # Todas las áreas disponibles empiezan cerradas, independientemente de su orden.
         for area in catalogo.AREAS:
             if area.disponible:
@@ -315,7 +315,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         self.assertNotIn("open = true", script)
 
     def test_el_teclado_contextual_llega_a_todas_las_herramientas(self):
-        for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/"):
+        for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
                 teclados = Pagina(html).teclados

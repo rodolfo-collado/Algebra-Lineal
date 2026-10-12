@@ -35,6 +35,13 @@ def _sumando(numero):
     return f"({texto})" if numero < 0 else texto
 
 
+def desarrollo_ad_menos_bc(matriz, ad, bc, diferencia):
+    """«ad − bc = 3·6 − 4·5 = 18 − 20 = −2», la misma lectura en Determinantes y Matriz inversa."""
+    (a, b), (c, d) = matriz
+    return (f"ad − bc = {_operando(a)}·{_operando(d)} − {_operando(b)}·{_operando(c)} "
+            f"= {formatear_exacto(ad)} − {_sumando(bc)} = {formatear_exacto(diferencia)}")
+
+
 def _coeficiente(numero, primero):
     """(signo, factor) de un término de la combinación: 2a₁ − a₂ + (1/2)a₃ − 0a₄."""
     magnitud = formatear_exacto(abs(numero))

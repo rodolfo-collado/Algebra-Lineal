@@ -49,7 +49,8 @@ class PruebasNavegacionUnificada(SimpleTestCase):
     def test_la_navegacion_no_lista_las_pseudo_herramientas(self):
         rutas = (
             "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
-            "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/",
+            "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
+            "/romanos/conversion/",
         )
         for ruta in ("/", *rutas):
             with self.subTest(ruta=ruta):
@@ -75,7 +76,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
             ["/vectores/operaciones/", "/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/",
-             "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/"],
+             "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/", "/romanos/conversion/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")
         for consulta in ("gauss", "clasificación", "columnas pivote"):

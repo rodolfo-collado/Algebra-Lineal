@@ -50,11 +50,6 @@ class Categoria:
     def disponible(self) -> bool:
         return any(herramienta.disponible for herramienta in herramientas_de(self))
 
-    @property
-    def herramienta_unica(self) -> bool:
-        """Con una sola herramienta disponible, Inicio abre el tema: no hay nada que elegir."""
-        return sum(herramienta.disponible for herramienta in herramientas_de(self)) == 1
-
 
 @dataclass(frozen=True)
 class Herramienta:
@@ -286,8 +281,26 @@ MATRIZ_INVERSA = Herramienta(
         "inversa", "matriz inversa", "inversa de una matriz", "a⁻¹", "a^-1", "invertible",
         "no invertible", "matriz singular", "matriz identidad", "identidad", "matriz cuadrada", "2x2", "2×2", "invertir",
     ),
-    relacionadas=("operaciones-matrices", "ecuaciones-matriciales"),
+    relacionadas=("operaciones-matrices", "ecuaciones-matriciales", "determinantes"),
     invitacion="Si necesitas invertir una matriz cuadrada, sigue el procedimiento.",
+)
+
+# Cinco métodos con el mismo det(A): fórmula 2×2, Sarrus (3×3), cofactores, LU y
+# reducción. Comparte ad − bc con Matriz inversa y lleva A hasta ella cuando det(A) ≠ 0.
+# Como Matriz inversa, evita «gauss», «pivote» y «reducción», que llevan a Reducción por filas.
+DETERMINANTES = Herramienta(
+    id="determinantes",
+    nombre="Determinantes",
+    categoria=MATRICES,
+    descripcion="Calcula el determinante de una matriz cuadrada y muestra el procedimiento paso a paso.",
+    estado="disponible",
+    route_name="calculadora:determinantes",
+    palabras_clave=(
+        "determinante", "det", "det(a)", "cofactores", "cofactor", "menores", "laplace",
+        "sarrus", "regla de sarrus", "lu", "factorización lu", "matriz triangular",
+    ),
+    relacionadas=("matriz-inversa", "reduccion-filas"),
+    invitacion="Calcula det(A) y comprueba si una matriz cuadrada es invertible.",
 )
 
 HERRAMIENTAS = (
@@ -296,6 +309,7 @@ HERRAMIENTAS = (
     REDUCCION_FILAS,
     ECUACIONES_MATRICIALES,
     MATRIZ_INVERSA,
+    DETERMINANTES,
     CONVERSION_BASES,
     CONVERSION_ROMANOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,

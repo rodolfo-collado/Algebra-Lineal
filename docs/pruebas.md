@@ -320,6 +320,28 @@ En el navegador, verifica manualmente la 2×2 del profesor por ambos métodos,
 la 3×3, una singular, una 10×10 de enteros (que hoy pide confirmación: prueba
 Cancelar y Continuar), 375 px y escritorio, y ambos temas.
 
+## Determinantes
+
+```bash
+uv run python -m unittest tests.test_determinantes tests.test_determinantes_web -v
+```
+
+`test_determinantes` compara los cinco métodos entre sí y con la fórmula de
+Leibniz (matrices aleatorias con fracciones hasta 5×5) y cubre cada método por
+separado: la fórmula 2×2 compartida con la inversa, Sarrus solo 3×3,
+cofactores por fila, columna y Automático, LU con `A = LU` y el pivote nulo
+que exigiría intercambio, y la reducción con sus correcciones. También cubre
+propiedades (intercambio, escalado, triangular), entradas inválidas,
+seguridad numérica y el presupuesto de cofactores frente a su árbol real.
+
+`test_determinantes_web` cubre catálogo y navegación, métodos según el tamaño,
+Aplicar, POST manipulados, errores por celda, el procedimiento y el resultado
+de cada método, la confirmación con firma y la transferencia de A a Matriz
+inversa (cargada, validada y sin calcular). Las pruebas transversales de
+teclado, feedback, presentación numérica, seguridad y procedimiento plegable
+incluyen también `/matrices/determinantes/`. Detalle en
+[Determinantes](determinantes.md#pruebas).
+
 ## Numeración romana
 
 `uv run python -m unittest tests.test_numeros_romanos tests.test_numeros_romanos_web -v`
@@ -612,7 +634,7 @@ operación y con dimensión 10; ayudas numéricas con decimales; y 390×650 en c
 oscuro sin desborde.
 
 `test_claridad_p2711` fija los contratos en Python: «Álgebra lineal» desde el
-catálogo, `herramienta_unica`, layout sin kicker, título común de relacionadas y
+catálogo, temas que nacen cerrados, layout sin kicker, título común de relacionadas y
 exploraciones, sugerencia de dirección solo cuando la otra conversión es válida,
 orden de Bases, ayudas, coma decimal sin conversión (y sin sugerencia para
 `1,000` o listas), vectores `v1`…, filtro `incognitas`, Ax = b sin mezcla de `x1`
