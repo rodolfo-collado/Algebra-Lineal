@@ -45,7 +45,8 @@ class PruebasCatalogoP13B(SimpleTestCase):
         # AB y Ax se escriben en Operaciones con matrices; Resolver Ax = b busca x, no un producto.
         documento = Documento(self.client.get(RUTA))
         enlaces = [a["href"] for a in documento.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, [RUTA, "/matrices/reduccion/", "/matrices/ecuaciones/", "/matrices/inversa/"])
+        self.assertEqual(enlaces, [RUTA, "/matrices/reduccion/", "/matrices/ecuaciones/", "/matrices/inversa/",
+                                   "/matrices/determinantes/"])
         self.assertNotIn("Multiplicación de matrices", [a.get("title") for a in documento.enlaces_en("Herramientas")])
 
     def test_busqueda_encuentra_los_productos(self):

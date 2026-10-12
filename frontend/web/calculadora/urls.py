@@ -19,6 +19,7 @@ urlpatterns = [
     path("matrices/expresiones/", views.expresiones_ruta_antigua, name="expresiones-matriciales"),
     path("matrices/ecuaciones/", views.ecuaciones_matriciales, name="ecuaciones-matriciales"),
     path("matrices/inversa/", views.matriz_inversa, name="matriz-inversa"),
+    path("matrices/determinantes/", views.determinantes, name="determinantes"),
     path("bases/conversion/", views.conversion_bases, name="conversion-bases"),
     path("romanos/conversion/", views.conversion_romanos, name="conversion-romanos"),
     # Solo la app de escritorio: tema y formato numérico entre aperturas (404 en la web).

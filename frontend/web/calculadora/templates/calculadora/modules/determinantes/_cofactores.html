@@ -1,0 +1,43 @@
+{% load componentes %}
+{% comment %}Un nivel del desarrollo por cofactores. Los menores de 2×2 se leen con ad − bc; los de 3×3 o más repiten esta plantilla dentro de un desplegable cerrado. nodo.nivel es el encabezado de ese desplegable (h4…h6); solo el primer nivel numera sus etapas con h4.{% endcomment %}
+{% if not nodo.terminos %}
+    <div class="procedure-stage">
+        <p class="procedure-lead">En una matriz 1×1, el determinante es su única entrada: {{ nodo.valor }}.</p>
+    </div>
+{% else %}
+    <div class="procedure-stage">
+        {% if not nodo.anidado %}<h4 class="stage-title">1 · Elegir una fila o una columna</h4>{% endif %}
+        <p class="procedure-lead">{{ nodo.eleccion }} Cada entrada se multiplica por su cofactor Cᵢⱼ = (−1)ⁱ⁺ʲ·Mᵢⱼ; Mᵢⱼ, el menor, es el determinante de lo que queda al quitar la fila i y la columna j.{% if nodo.anidado %} Aquí las posiciones mᵢⱼ se cuentan dentro de este menor.{% endif %}</p>
+        <p class="procedure-line">{{ nodo.formula }}</p>
+    </div>
+    {% for termino in nodo.terminos %}
+        <div class="procedure-stage">
+            {% if nodo.anidado %}<p class="stage-title">{{ termino.entrada }} = {{ termino.elemento }}</p>{% else %}<h4 class="stage-title">{{ forloop.counter|add:1 }} · {{ termino.entrada }} = {{ termino.elemento }}</h4>{% endif %}
+            {% if not termino.calculo_menor %}
+                <p class="procedure-note">{{ termino.entrada }} = 0: su término vale 0 y no hace falta calcular su menor.</p>
+            {% else %}
+                <div class="matrix-equation" role="region" aria-label="Menor M{{ termino.posicion }}">
+                    <span class="matrix-expression">M{{ termino.posicion }} = det</span>
+                    {% include "calculadora/components/matriz.html" with matriz=termino.menor etiqueta="Menor sin la fila y la columna de la entrada" only %}
+                </div>
+                {% if termino.calculo_menor.tipo == "2x2" %}
+                    <p class="procedure-line">M{{ termino.posicion }} = {{ termino.calculo_menor.desarrollo }}</p>
+                {% else %}
+                    <p class="procedure-line">{{ termino.menor_valor }}</p>
+                    {% if termino.calculo_menor.tipo == "cofactores" %}
+                        {% disclosure titulo=termino.titulo_menor nivel=termino.calculo_menor.nivel clase="disclosure-nested" %}
+                            {% include "calculadora/modules/determinantes/_cofactores.html" with nodo=termino.calculo_menor only %}
+                        {% enddisclosure %}
+                    {% endif %}
+                {% endif %}
+                <p class="procedure-line">Signo: {{ termino.signo }}</p>
+                <p class="procedure-line">{{ termino.cofactor }}</p>
+                <p class="procedure-line">{{ termino.contribucion }}</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+    <div class="procedure-stage">
+        {% if not nodo.anidado %}<h4 class="stage-title">{{ nodo.terminos|length|add:2 }} · Sumar los términos</h4>{% endif %}
+        <p class="procedure-line">{{ nodo.suma }}</p>
+    </div>
+{% endif %}

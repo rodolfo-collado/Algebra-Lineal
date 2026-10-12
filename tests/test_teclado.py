@@ -44,6 +44,7 @@ HERRAMIENTAS = {
     "/matrices/operaciones/": {"numerico", "expresion", "lineal"},
     "/matrices/ecuaciones/": {"numerico"},
     "/matrices/inversa/": {"numerico"},
+    "/matrices/determinantes/": {"numerico"},
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
 }
 
@@ -73,6 +74,10 @@ CONTROLES = {
     "/matrices/inversa/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "csrfmiddlewaretoken",
         "metodo", "orden", "verificar", "funcion_adicional",  # P26.8/P26.9: opciones cerradas.
+    },
+    "/matrices/determinantes/": {
+        "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "csrfmiddlewaretoken",
+        "expansion", "metodo", "orden",
     },
     "/bases/conversion/": {"base_origen", "bases_destino", "csrfmiddlewaretoken", "numero"},
 }
@@ -395,6 +400,7 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
             ("/matrices/operaciones/", "data-rejilla", "", "expresiones-form"),
             ("/matrices/ecuaciones/", "data-equation-entry", "", "ecuacion-form"),
             ("/matrices/inversa/", "data-inverse-entry", "", "inversa-form"),
+            ("/matrices/determinantes/", "data-determinant-entry", "", "determinantes-form"),
             ("/vectores/operaciones/", "id", "vector-list", "vectores-form"),
         ):
             with self.subTest(ruta=ruta):

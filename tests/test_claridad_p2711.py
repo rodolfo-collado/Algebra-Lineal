@@ -23,7 +23,8 @@ from tests.test_vectores_web import combinacion, datos_vectores
 RAIZ = Path(__file__).resolve().parents[1]
 ESTATICOS = RAIZ / "frontend/web/calculadora/static/calculadora"
 HERRAMIENTAS = ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
-                "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/")
+                "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
+                "/romanos/conversion/")
 
 
 class PruebasNavegacion(SimpleTestCase):
@@ -102,7 +103,7 @@ class PruebasEntrada(SimpleTestCase):
         self.assertIn("11010₂", seccion_resultado(respuesta))
 
     def test_ui42_ayudas_numericas_nombran_decimales_con_punto(self):
-        for ruta in ("/vectores/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/"):
+        for ruta in ("/vectores/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/"):
             with self.subTest(ruta=ruta):
                 self.assertContains(self.client.get(ruta), "Escribe enteros, fracciones como <code>1/2</code> o decimales con punto")
         texto = "Completa todas las celdas con enteros, fracciones o decimales con punto."

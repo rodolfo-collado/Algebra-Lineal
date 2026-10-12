@@ -131,6 +131,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES), (
             catalogo.OPERACIONES_MATRICES,
             catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA,
+            catalogo.DETERMINANTES,
         ))
         self.assertEqual(catalogo.REDUCCION_FILAS.ruta, "/matrices/reduccion/")
         self.assertEqual(catalogo.REDUCCION_FILAS.relacionadas, ("ecuaciones-matriciales",))

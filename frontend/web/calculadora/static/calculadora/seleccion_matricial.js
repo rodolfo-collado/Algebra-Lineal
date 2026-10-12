@@ -4,7 +4,7 @@
     const plantilla = document.getElementById("matrix-selection-template");
     const aviso = document.querySelector("[data-estado-seleccion]");
     if (!plantilla || !aviso) return;
-    const forms = [...document.querySelectorAll("#expresiones-form, #inversa-form, #ecuacion-form, #sistema-form")];
+    const forms = [...document.querySelectorAll("#expresiones-form, #inversa-form, #determinantes-form, #ecuacion-form, #sistema-form")];
     const estados = new Map();
     const { filasDeMatriz } = window.entradasSeguras;
     const clave = ({ fila, columna }) => `${fila}_${columna}`;
