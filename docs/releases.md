@@ -17,11 +17,15 @@ Usamos [Semantic Versioning](https://semver.org/lang/es/) estable `X.Y.Z`:
 
 No se admiten prereleases, metadatos extra, cuatro componentes ni ceros
 iniciales. Durante la etapa `0.x`, describe cualquier cambio de compatibilidad
-en las notas. El incremento preparado de 0.8.0 a 0.9.0 es MINOR: P27 amplía
+en las notas. El incremento de 0.8.0 a 0.9.0 fue MINOR: P27 amplía
 de forma compatible la experiencia (identidad PyGebra, teclado contextual,
 entradas sin pérdida, pegado y edición de celdas, buscador, resultados,
 escritorio, preferencias y accesibilidad) sin cambiar la matemática ni los
-contratos de cálculo. Una versión preparada en `develop` aún no es una
+contratos de cálculo.
+
+El incremento preparado de 0.9.0 a 0.10.0 es MINOR: incorpora las mejoras de
+portapapeles matricial de P28 y es la primera release que incluirá el
+actualizador de escritorio de P29. Una versión preparada en `develop` aún no es una
 release publicada.
 
 ## Flujo de integración y entrega
