@@ -258,7 +258,7 @@ class PruebasWorkflowRelease(unittest.TestCase):
         for command in ("uv lock --check", "uv sync --locked",
                         "uv run --locked python -m unittest discover -v",
                         "uv run --locked python manage.py check",
-                        "uv run --locked python -m compileall -q backend frontend tests main.py manage.py desktop.py"):
+                        "uv run --locked python -m compileall -q actualizador backend frontend tests main.py manage.py desktop.py"):
             self.assertIn(command, self.ci)
         windows = bloque(bloque(self.ci, "jobs"), "windows")
         self.assertIn("python -m unittest discover -v", windows)

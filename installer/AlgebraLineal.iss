@@ -9,6 +9,8 @@
 #define AppExe "AlgebraLineal.exe"
 ; Mismo identificador que desktop.APP_USER_MODEL_ID. No depende de la versión.
 #define AppUserModelId "PyGebra.Desktop"
+; Mismo nombre que desktop.APP_MUTEX_NAME: existe mientras alguna instancia está abierta.
+#define AppMutexName "PyGebra.Desktop.Ejecutandose"
 
 [Setup]
 AppId={{D0455B79-7F5E-4C78-9F3B-F47187E9A83A}
@@ -43,6 +45,8 @@ SolidCompression=yes
 WizardStyle=modern dynamic windows11
 CloseApplications=yes
 RestartApplications=no
+; Dos instaladores de PyGebra no se ejecutan a la vez.
+SetupMutex=PyGebra.Setup
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
@@ -56,6 +60,10 @@ Source: "{#ProjectRoot}\build\prerequisites\MicrosoftEdgeWebview2Setup.exe"; Des
 Source: "{#ProjectRoot}\dist\AlgebraLineal\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [InstallDelete]
+; onedir: sobrescribir dejaría módulos y DLL de la versión anterior en _internal. La
+; carpeta solo contiene archivos generados por PyInstaller; los datos del usuario viven
+; en %LOCALAPPDATA%\PyGebra. Corre después de cerrar la app y antes de copiar [Files].
+Type: filesandordirs; Name: "{app}\_internal"
 ; Solo los accesos de la instalación histórica por usuario, nunca su contenido.
 Type: files; Name: "{userprograms}\Álgebra Lineal\Álgebra Lineal.lnk"
 Type: files; Name: "{userdesktop}\Álgebra Lineal.lnk"
@@ -69,6 +77,8 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "Abrir {#AppName}"; Flags: nowait postinstall skipifsilent; Check: WebView2Installed
+; Actualización lanzada desde PyGebra (/SILENT /ACTUALIZAR=1): vuelve a abrirla al terminar.
+Filename: "{app}\{#AppExe}"; Flags: nowait; Check: RelaunchAfterUpdate
 
 [Code]
 const
@@ -93,6 +103,39 @@ end;
 function NeedsWebView2: Boolean;
 begin
   Result := not WebView2Installed;
+end;
+
+function IsUpdateRun: Boolean;
+begin
+  Result := ExpandConstant('{param:ACTUALIZAR|0}') = '1';
+end;
+
+function RelaunchAfterUpdate: Boolean;
+begin
+  Result := IsUpdateRun and WebView2Installed;
+end;
+
+{ PyGebra lanza el instalador y se cierra justo después: en ese caso se espera hasta
+  15 s a que termine. Si sigue abierta (o es una instalación manual) se pide cerrarla.
+  En modo /SUPPRESSMSGBOXES la respuesta es Cancelar: nunca se reemplazan archivos en uso. }
+function InitializeSetup: Boolean;
+var
+  Attempts: Integer;
+begin
+  Result := True;
+  Attempts := 0;
+  while IsUpdateRun and CheckForMutexes('{#AppMutexName}') and (Attempts < 30) do
+  begin
+    Sleep(500);
+    Attempts := Attempts + 1;
+  end;
+  while CheckForMutexes('{#AppMutexName}') do
+    if SuppressibleMsgBox('PyGebra está abierto. Ciérralo y pulsa Aceptar para continuar, ' +
+      'o pulsa Cancelar para salir del instalador.', mbError, MB_OKCANCEL, IDCANCEL) = IDCANCEL then
+    begin
+      Result := False;
+      Exit;
+    end;
 end;
 
 { Como no se pregunta la carpeta, el resumen es el único lugar donde se informa.

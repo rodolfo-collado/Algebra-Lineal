@@ -1,7 +1,10 @@
 ﻿#requires -Version 5.1
 <# Prueba real en una cuenta limpia de Windows sin una instalación previa de PyGebra.
    Instala, abre el acceso directo, resuelve por HTTP, cierra, reabre y desinstala.
-   -PreviousInstallerPath prueba además la actualización desde la release 0.8.0.
+   -PreviousInstallerPath prueba además la actualización desde una release publicada: la
+   histórica 0.8.0 (Álgebra Lineal) o cualquier PyGebra posterior. Comprueba que no quedan
+   archivos obsoletos en _internal, que no se duplican accesos ni registros y que la
+   identidad (AppId, AUMID) se conserva.
    La revisión visual de pywebview se realiza además de esta prueba automatizada. #>
 [CmdletBinding()]
 param(
@@ -30,6 +33,14 @@ if (-not $installDirectory.StartsWith($installRoot + '\', [StringComparison]::Or
 $process = $null
 $appPath = Join-Path $installDirectory 'AlgebraLineal.exe'
 $unrelatedFile = $null
+$obsoleteFile = $null
+$uninstallRoot = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
+
+function Get-PyGebraRegistrations {
+    return @(Get-ChildItem -LiteralPath $uninstallRoot -ErrorAction SilentlyContinue | ForEach-Object {
+        Get-ItemProperty -LiteralPath $_.PSPath } | Where-Object {
+        $_.PSObject.Properties['DisplayName'] -and $_.DisplayName -in @('PyGebra', 'Álgebra Lineal') })
+}
 
 function Wait-AppUrl {
     param([Diagnostics.Process]$AppProcess)
@@ -66,22 +77,37 @@ try {
         $previousTasks = '/TASKS='
         if ($PreviousDesktopIcon) { $previousTasks = '/TASKS=desktopicon' }
         $baseline = Start-Process -FilePath $previous -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', $previousTasks, ('/DIR="' + $installDirectory + '"')) -WindowStyle Hidden -PassThru -Wait
-        if ($baseline.ExitCode -ne 0) { throw "La instalación 0.8.0 falló: $($baseline.ExitCode)" }
+        if ($baseline.ExitCode -ne 0) { throw "La instalación previa falló: $($baseline.ExitCode)" }
         $oldRegistration = Get-ItemProperty -LiteralPath $registryPath
-        if ($oldRegistration.DisplayName -ne 'Álgebra Lineal' -or $oldRegistration.Publisher -ne 'Proyecto Álgebra Lineal' -or
-            $oldRegistration.DisplayVersion -ne '0.8.0' -or -not (Test-Path -LiteralPath $appPath) -or
-            -not (Test-Path -LiteralPath $legacyStartShortcut)) { throw 'La base no es la instalación histórica publicada 0.8.0.' }
-        if ((Test-Path -LiteralPath $legacyDesktopShortcut) -ne [bool]$PreviousDesktopIcon) { throw 'El acceso histórico de escritorio no coincide con la tarea seleccionada.' }
+        $oldVersion = $oldRegistration.DisplayVersion
+        if (-not (Test-Path -LiteralPath $appPath)) { throw 'La base no instaló AlgebraLineal.exe.' }
         $oldDirectory = $oldRegistration.InstallLocation.TrimEnd('\')
-        if ($oldDirectory -ne $installDirectory) { throw '0.8.0 no usó la carpeta de prueba.' }
-        $legacyShell = New-Object -ComObject Shell.Application
-        $legacyItem = $legacyShell.NameSpace((Split-Path $legacyStartShortcut)).ParseName((Split-Path $legacyStartShortcut -Leaf))
-        if ($legacyItem.ExtendedProperty('System.AppUserModel.ID') -ne 'PyGebra.Desktop') { throw 'El AUMID histórico no es PyGebra.Desktop.' }
-        # Un archivo ajeno en el grupo antiguo debe sobrevivir a la migración.
-        $unrelatedFile = Join-Path (Split-Path $legacyStartShortcut) ('P27.2-preserve-' + [guid]::NewGuid().ToString('N') + '.txt')
+        if ($oldDirectory -ne $installDirectory) { throw 'La base no usó la carpeta de prueba.' }
+        if ($oldRegistration.DisplayName -eq 'Álgebra Lineal') {
+            # Base histórica 0.8.0: otro nombre, mismo AppId y accesos «Álgebra Lineal».
+            if ($oldRegistration.Publisher -ne 'Proyecto Álgebra Lineal' -or $oldVersion -ne '0.8.0' -or
+                -not (Test-Path -LiteralPath $legacyStartShortcut)) { throw 'La base no es la instalación histórica publicada 0.8.0.' }
+            $baseStartShortcut = $legacyStartShortcut
+            $baseDesktopShortcut = $legacyDesktopShortcut
+        } else {
+            if ($oldRegistration.DisplayName -ne 'PyGebra' -or $oldRegistration.Publisher -ne 'Proyecto PyGebra' -or
+                -not (Test-Path -LiteralPath $startShortcut)) { throw "La base $oldVersion no es una instalación publicada de PyGebra." }
+            $baseStartShortcut = $startShortcut
+            $baseDesktopShortcut = $desktopShortcut
+        }
+        if ((Test-Path -LiteralPath $baseDesktopShortcut) -ne [bool]$PreviousDesktopIcon) { throw 'El acceso de escritorio de la base no coincide con la tarea seleccionada.' }
+        $baseShell = New-Object -ComObject Shell.Application
+        $baseItem = $baseShell.NameSpace((Split-Path $baseStartShortcut)).ParseName((Split-Path $baseStartShortcut -Leaf))
+        if ($baseItem.ExtendedProperty('System.AppUserModel.ID') -ne 'PyGebra.Desktop') { throw 'El AUMID de la base no es PyGebra.Desktop.' }
+        # Un archivo ajeno en el grupo del menú Inicio debe sobrevivir a la actualización.
+        $unrelatedFile = Join-Path (Split-Path $baseStartShortcut) ('P27.2-preserve-' + [guid]::NewGuid().ToString('N') + '.txt')
         [IO.File]::WriteAllText($unrelatedFile, 'preservar')
-        Write-Host "Base 0.8.0 verificada: Álgebra Lineal, Proyecto Álgebra Lineal, mismo AppId, AUMID PyGebra.Desktop, $oldDirectory (escritorio: $PreviousDesktopIcon)."
-        # Sin /DIR: el candidato debe recuperar la carpeta de 0.8.0 por AppId.
+        # Simula un módulo de la versión anterior que ya no forma parte de la nueva.
+        $obsoleteFile = Join-Path $installDirectory ('_internal\obsoleto-' + [guid]::NewGuid().ToString('N') + '\modulo.pyd')
+        New-Item -ItemType Directory -Path (Split-Path $obsoleteFile) -Force | Out-Null
+        [IO.File]::WriteAllText($obsoleteFile, 'obsoleto')
+        Write-Host "Base $oldVersion verificada: $($oldRegistration.DisplayName), mismo AppId, AUMID PyGebra.Desktop, $oldDirectory (escritorio: $PreviousDesktopIcon)."
+        # Sin /DIR: el candidato debe recuperar la carpeta de la base por AppId.
     } else {
         $arguments += ('/DIR="' + $installDirectory + '"')
     }
@@ -94,6 +120,16 @@ try {
         if (Test-Path -LiteralPath $path) { throw "La actualización dejó un acceso histórico: $path" }
     }
     if ($unrelatedFile -and [IO.File]::ReadAllText($unrelatedFile) -ne 'preservar') { throw 'La migración modificó un archivo ajeno.' }
+    if ($obsoleteFile -and (Test-Path -LiteralPath (Split-Path $obsoleteFile))) { throw "La actualización conservó un archivo obsoleto en _internal: $obsoleteFile" }
+    # Una sola entrada de desinstalación (el mismo AppId) y un solo acceso por ubicación.
+    $registrations = @(Get-PyGebraRegistrations)
+    if ($registrations.Count -ne 1) { throw "Se esperaba una sola entrada de PyGebra en Aplicaciones; hay $($registrations.Count)." }
+    $linkShell = New-Object -ComObject WScript.Shell
+    foreach ($folder in @((Split-Path $startShortcut), [Environment]::GetFolderPath('Desktop'))) {
+        $links = @(Get-ChildItem -LiteralPath $folder -Filter '*.lnk' -ErrorAction SilentlyContinue | Where-Object {
+            $linkShell.CreateShortcut($_.FullName).TargetPath -eq $appPath })
+        if ($links.Count -ne 1) { throw "Se esperaba un acceso a PyGebra en $folder; hay $($links.Count)." }
+    }
     $details = (Get-Item -LiteralPath $appPath).VersionInfo
     if ($details.ProductName -ne 'PyGebra' -or $details.FileDescription -ne 'PyGebra' -or
         $details.CompanyName -ne 'Proyecto PyGebra' -or $details.OriginalFilename -ne 'AlgebraLineal.exe' -or
