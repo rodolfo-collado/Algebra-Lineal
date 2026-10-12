@@ -1,11 +1,12 @@
 """Vistas HTTP de la interfaz web."""
 
 from django.conf import settings
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponsePermanentRedirect
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from actualizador.servicio import ACTUALIZADOR
 from backend.sistemas_numericos import NOMBRES_BASE
 from backend.presupuesto_sistemas import CELDAS_MAXIMAS, dimensiones_admitidas
 
@@ -345,3 +346,39 @@ def guardar_preferencia(request):
                                 request.headers.get("X-PyGebra-Escritura")):
         return HttpResponseBadRequest()
     return HttpResponse(status=204)
+
+
+ACCIONES_ACTUALIZACION = {
+    "buscar": ACTUALIZADOR.buscar,
+    "descargar": ACTUALIZADOR.descargar,
+    "instalar": ACTUALIZADOR.instalar,
+}
+
+
+def _solo_escritorio():
+    if not settings.DESKTOP_MODE:
+        raise Http404("Solo la app de escritorio se actualiza a sí misma.")
+
+
+@require_GET
+def actualizaciones(request):
+    """Página de actualizaciones: nada se consulta hasta que el usuario lo pide."""
+    _solo_escritorio()
+    return render(request, "calculadora/pages/actualizaciones.html", {
+        "actualizacion": ACTUALIZADOR.estado(),
+        "pagina_actualizaciones": True,
+    })
+
+
+@require_GET
+def estado_actualizacion(request):
+    _solo_escritorio()
+    return JsonResponse(ACTUALIZADOR.estado())
+
+
+@require_POST
+def accion_actualizacion(request, accion):
+    _solo_escritorio()
+    if accion not in ACCIONES_ACTUALIZACION:
+        raise Http404()
+    return JsonResponse(ACCIONES_ACTUALIZACION[accion]())

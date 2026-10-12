@@ -23,4 +23,8 @@ urlpatterns = [
     path("romanos/conversion/", views.conversion_romanos, name="conversion-romanos"),
     # Solo la app de escritorio: tema y formato numérico entre aperturas (404 en la web).
     path("preferencias/", views.guardar_preferencia, name="preferencias"),
+    # Solo la app de escritorio: buscar, descargar e instalar actualizaciones (404 en la web).
+    path("actualizaciones/", views.actualizaciones, name="actualizaciones"),
+    path("actualizaciones/estado/", views.estado_actualizacion, name="actualizaciones-estado"),
+    path("actualizaciones/<slug:accion>/", views.accion_actualizacion, name="actualizaciones-accion"),
 ]
