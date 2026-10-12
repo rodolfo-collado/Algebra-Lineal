@@ -42,6 +42,6 @@
     <h3 id="final-title" class="panel-title">{{ resultado.nombre }} =</h3>
     <p class="equality-message">Esta matriz hace que la igualdad se cumpla para todos los valores de {{ resultado.variables_texto }}, no solo para unos valores de prueba.</p>
     <div class="matrix-equation">
-        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta=resultado.nombre only %}
+        {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta=resultado.nombre copiar="matriz" only %}
     </div>
 </section>

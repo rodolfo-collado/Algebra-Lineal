@@ -103,7 +103,7 @@ class PruebasParser(TestCase):
                     analizar(texto, NOMBRES)
 
     def test_simbolo_inexistente(self):
-        with self.assertRaisesRegex(ValueError, "El símbolo Z no está definido"):
+        with self.assertRaisesRegex(ValueError, "El operando Z no está definido"):
             analizar("A + Z", {"A"})
 
     def test_multiplicacion_implicita_ambigua(self):
@@ -339,9 +339,9 @@ class PruebasIgualdad(TestCase):
             evaluar("A(B + C) = D", ancho)
         with self.assertRaisesRegex(ValueError, r"En el lado derecho: No se puede calcular B \+ C"):
             evaluar("D = A(B + C)", ancho)
-        with self.assertRaisesRegex(ValueError, r"En el lado derecho: El símbolo Z no está definido"):
+        with self.assertRaisesRegex(ValueError, r"En el lado derecho: El operando Z no está definido"):
             evaluar("A = Z", {"A": MATRICES["A"]})
-        with self.assertRaisesRegex(ValueError, r"\AEl símbolo Z no está definido"):
+        with self.assertRaisesRegex(ValueError, r"\AEl operando Z no está definido"):
             evaluar("A + Z", {"A": MATRICES["A"]})
 
     def test_sintaxis_invalida(self):

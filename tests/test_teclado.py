@@ -272,7 +272,8 @@ class PruebasRegistro(unittest.TestCase):
         self.assertEqual(convertir_a_numero(menos + "1" + fraccion + "2"), Fraction(-1, 2))
 
     def test_perfiles_expresion_y_lineal_reutilizan_teclas_y_sintaxis(self):
-        self.assertEqual([t.insercion for t in PERFIL_EXPRESION.teclas], ["()", "^T", "+", "-", "=", "/"])
+        self.assertEqual([t.insercion for t in PERFIL_EXPRESION.teclas], ["()", "ᵀ", "+", "-", "=", "/"])
+        self.assertEqual([g.nombre for g in PERFIL_EXPRESION.grupos], ["Notación", "Operadores"])
         self.assertEqual(PERFIL_EXPRESION.teclas[0].retroceso, 1)
         self.assertEqual([t.insercion for t in PERFIL_LINEAL.teclas], [f"x{i}" for i in range(1, 7)] + ["+", "-", "/"])
         self.assertIs(PERFIL_LINEAL.grupos[0], PERFIL_SISTEMA.grupos[0])

@@ -1,5 +1,5 @@
-{% comment %}Cada símbolo es un grupo con su nombre («Símbolo A»); sus botones dicen a qué símbolo pertenecen y expresiones.js los renombra al cambiar el nombre.{% endcomment %}
-<fieldset class="symbol-card" data-simbolo aria-label="Símbolo {{ bloque.simbolo }}">
+{% comment %}Cada operando es un grupo con su nombre («Operando A»); sus botones dicen a qué operando pertenecen y expresiones.js los renombra al cambiar el nombre.{% endcomment %}
+<fieldset class="symbol-card" data-simbolo aria-label="Operando {{ bloque.simbolo }}">
     <div class="symbol-head">
         <div class="field-group">
             <label for="{{ bloque.nombre.id_for_label }}">Nombre</label>
@@ -17,7 +17,7 @@
                 {% include "calculadora/modules/matrices/_dimension.html" with campo=bloque.columnas_campo quitar=bloque.quitar_columnas agregar=bloque.agregar_columnas %}
             {% endif %}
         </div>
-        <button class="btn btn-secondary" type="submit" name="eliminar" value="{{ bloque.indice }}" data-eliminar aria-label="Eliminar símbolo {{ bloque.simbolo }}">Eliminar</button>
+        <button class="btn btn-secondary" type="submit" name="eliminar" value="{{ bloque.indice }}" data-eliminar aria-label="Eliminar operando {{ bloque.simbolo }}">Eliminar</button>
     </div>
     <p class="field-help" data-nota {% if not bloque.nota %}hidden{% endif %}>{{ bloque.nota }}</p>
     <div class="matrix" data-rejilla data-perfil="{% if bloque.tipo == 'vector_lineal' %}lineal{% else %}numerico{% endif %}" {% if not bloque.celdas_visibles %}hidden{% endif %}>

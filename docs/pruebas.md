@@ -155,6 +155,15 @@ cambios de perfil, campos agregados/eliminados y objetivos no editables; incluye
 un perfil de prueba ajeno a las herramientas para comprobar la extensibilidad.
 Este ejecutor es local y manual; `unittest discover` y CI no lanzan un navegador.
 
+El incremento de operandos y notación visual amplía estos mismos runners:
+`tests.operandos_browser` comprueba nombres iniciales y largos, mayúsculas,
+altas, renombrados, cambios de tipo y bajas, selección/cursor/foco, deshacer,
+lista vacía y ocultación al abrir Opciones o editar la estructura.
+`tests.teclado_browser` comprueba la inserción literal de `ᵀ` y la fuente
+de operandos también sobre un `input` compatible. Las suites
+`test_traspuesta_expresiones` y `test_expresiones_matriciales_web` conservan
+la equivalencia `A^T`/`Aᵀ`; las inversas y potencias siguen fuera del lenguaje.
+
 Completa con la revisión de las cinco herramientas: Sistemas texto ↔ matriz,
 dimensiones y operaciones que regeneran campos, bases 2 → 8 → 10 → 16 y uno,
 varios o todos los destinos. Comprueba teclado físico, temas claro/oscuro,
@@ -619,3 +628,130 @@ Los casos que necesitan foco real (teclado contextual tras `focus()`) requieren 
 ventana con foco: con el panel de Browser oculto se ejecutan en Chrome headless con
 emulación de foco por CDP, sin dependencias nuevas. Véase
 [validación P27.11](validacion-p27-11.md).
+
+## P28.1 — Selección matricial
+
+Se amplía `tests.entrada_edicion_browser`, sin otro servidor ni dependencia:
+
+```bash
+uv run --locked python -m tests.entrada_edicion_browser
+```
+
+Abrir `http://127.0.0.1:8889/__pruebas/`. Incluye gestos en las cuatro herramientas,
+texto dentro del input, navegación P27, Escape del teclado/buscador/cajón,
+siete comandos sobre A, matrices rectangulares, A/b, API, dimensiones,
+reemplazos, bajas/reindexado, tipos excluidos, B adicional de inversa, resultado
+vigente, edición con teclado matemático y POST sin persistencia. Comprueba
+menú, foco y desborde a 1280×650, 744×521 y 320×650 en claro y oscuro.
+
+En un navegador con `(forced-colors: active)`, abrir
+`/__pruebas/?forced-colors=1` añade cuatro casos que exigen la emulación activa
+y comparan bordes/foco con Highlight y CanvasText. No simulan alto contraste
+inyectando una paleta en la página. El contrato HTTP está en
+`tests.test_entrada_edicion`: plantilla única, siete botones sin nombre/submit,
+región viva y alcance de scripts. Ejecutar también la suite completa y los
+runners anteriores. API: [selección matricial](seleccion-matricial.md).
+Resultados y límites: [validación P28.1](validacion-p28-1.md).
+
+## P28.2 — Copiado matricial
+
+El mismo `tests.entrada_edicion_browser` incorpora TSV, HTML y tipo propio,
+los siete comandos, una celda vacía, huecos, rangos Shift, orden Ctrl inverso,
+matrices rectangulares, A/b, fracciones, escape HTML, texto/fórmulas ajenas,
+prioridad textual, round-trip y metadata corrupta/incoherente/fuera de límites.
+La compatibilidad sin selección sigue comprobando el fallback del tipo inválido.
+Los límites UTF-8 se prueban inclusive en 4096/65536 bytes y en 120 celdas.
+
+Para la comprobación real entre páginas, abrir una herramienta en ese servidor,
+seleccionar y pulsar Ctrl+C; abrir `/__pruebas/portapapeles/` y pulsar Ctrl+V en
+Editor de texto. El receptor, exclusivo del runner, muestra tipos/valores del
+evento sin cancelar paste: el textarea recibe el TSV nativo. No usa la API
+asíncrona ni escribe el portapapeles por su cuenta. Esto comprueba el navegador;
+Excel/Sheets, WebView2 y menú nativo requieren sus respectivas aplicaciones reales.
+
+Contrato: [copiado matricial](copiado-matricial.md).
+Evidencia: [validación P28.2](validacion-p28-2.md).
+
+## P28.3 — Pegado sobre selecciones
+
+Se amplía `tests.entrada_edicion_browser`, con el mismo servidor y sin dependencias:
+
+```bash
+uv run --locked python -m tests.entrada_edicion_browser
+uv run --locked python -m unittest discover -v
+```
+
+Abrir `http://127.0.0.1:8889/__pruebas/`. Los casos anteriores de P27/P28.1/P28.2
+se conservan; el caso de paste P28.2 ahora prueba metadata inválida sin selección.
+Los negativos del parser también verifican paste y fallback. Los nuevos casos
+comprueban rectángulos compatibles e incompatibles, llenado por valor único,
+los siete comandos y gestos manuales, máscaras con huecos/vacíos, orden por filas,
+cardinal distinto, límites UTF-8, 120 celdas, 13 columnas aumentadas, A/b y A/B,
+destinos readonly/disabled/fieldset/ocultos/retirados/maxlength, observadores del
+bloque completo, selección tras microtareas, foco, stale, dimensiones, Escape,
+flechas y registro de valores anteriores/nuevos sin historial.
+
+Para QA con portapapeles real, abrir dos páginas de herramienta, seleccionar y
+copiar con Ctrl+C, pegar con Ctrl+V sobre una celda o selección. Probar rango,
+diagonal, triangular, Ctrl+clic y una celda vacía seleccionada. Los huecos deben
+conservar valores existentes. Texto externo sin metadata debe seguir P27.
+Ejecutar también los doce runners anteriores; sus eventos sintéticos no sustituyen
+estas comprobaciones de Ctrl+C/Ctrl+V ni pruebas físicas de aplicaciones externas.
+
+Contrato: [pegado matricial](pegado-matricial.md).
+Evidencia y límites: [validación P28.3](validacion-p28-3.md).
+
+## P28.4 — Deshacer último pegado
+
+Se amplía `tests.entrada_edicion_browser`, con el mismo servidor y sin dependencias:
+
+```bash
+uv run --locked python -m tests.entrada_edicion_browser
+uv run --locked python -m unittest discover -v
+```
+
+Abrir `http://127.0.0.1:8889/__pruebas/` en Browser. Mantiene todos los casos
+P27/P28.1/P28.2/P28.3 y añade restauración exacta, un solo uso, reemplazo A/B,
+rectángulos/diagonales/triangulares/Ctrl/máscaras, vacíos y valores idénticos,
+b aumentado y separado, eventos atómicos, foco, selección actual, teclado,
+Escape/flechas, stale irreversible sin recalcular, POST/navegación y pagehide
+con bfcache. Prueba invalidación de ediciones, dimensiones, tipos, bajas,
+reemplazos, movimiento y reconstrucción DOM, readonly/disabled/fieldset/hidden
+y maxlength tanto antes como después de entregar las mutaciones del observer.
+La comparación final también se prueba con cambios de valor sin evento input.
+
+Se comprueban visibilidad CSS real del botón consumido, región viva separada,
+foco y ausencia de desborde en las cuatro herramientas a 1280×650, 744×521 y
+320×650 en claro/oscuro. Con emulación forced-colors activa, abrir
+`/__pruebas/?forced-colors=1` añade casos de control, bordes, contraste y foco.
+Ejecutar además los doce runners anteriores y los siete flujos manuales con
+Ctrl+C/Ctrl+V reales. Los eventos sintéticos del runner no sustituyen ese QA.
+
+Contrato: [deshacer último pegado](deshacer-pegado.md).
+Evidencia y límites: [validación P28.4](validacion-p28-4.md).
+
+## P28.5 — Copiar matrices finales
+
+```bash
+uv run --locked python -m unittest tests.test_resultado_presentacion tests.test_procedimiento_plegable -v
+uv run --locked python -m tests.resultado_browser
+uv run --locked python -m tests.entrada_edicion_browser
+```
+
+Abrir `http://127.0.0.1:8883/__pruebas/` y `http://127.0.0.1:8889/__pruebas/`.
+El runner de resultados conserva sus 66 casos anteriores y cubre suma, resta,
+producto, expresión, determinación, igualdades con dos matrices, ambos métodos
+de Reducción, propiedades matriciales de Inversa y las exclusiones deliberadas.
+Compara los tres formatos completos en Exacto, Decimal, precisión 2/8, vuelta a
+Exacto y un nuevo cálculo que inicia en Decimal. Incluye TSV exacto, HTML con
+fracciones, metadata v1 completa, round-trip a entradas por P28.3, stale, inputs y
+foco intactos, feedback único, independencia de undo, fallos de escritura, escape,
+límites reales 10×10/12×10/9×13 y los tres viewports en claro/oscuro.
+
+El runner matricial conserva los casos P28.1–P28.4 y compara el adaptador de
+inputs con el nuevo núcleo de valores. Las fixtures matemáticas históricas
+permanecen congeladas: `antes_de_p285` normaliza únicamente ubicación de la matriz
+final y botones para comprobar los hashes previos; el contrato actual se prueba
+separadamente. Los eventos sintéticos viven exclusivamente en los runners.
+Tab/Enter/Space y el transporte efectivo entre páginas requieren QA con acciones
+de navegador y portapapeles real. Evidencia: [validación P28.5](validacion-p28-5.md).

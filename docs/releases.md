@@ -17,11 +17,15 @@ Usamos [Semantic Versioning](https://semver.org/lang/es/) estable `X.Y.Z`:
 
 No se admiten prereleases, metadatos extra, cuatro componentes ni ceros
 iniciales. Durante la etapa `0.x`, describe cualquier cambio de compatibilidad
-en las notas. El incremento preparado de 0.8.0 a 0.9.0 es MINOR: P27 amplía
+en las notas. El incremento de 0.8.0 a 0.9.0 fue MINOR: P27 amplía
 de forma compatible la experiencia (identidad PyGebra, teclado contextual,
 entradas sin pérdida, pegado y edición de celdas, buscador, resultados,
 escritorio, preferencias y accesibilidad) sin cambiar la matemática ni los
-contratos de cálculo. Una versión preparada en `develop` aún no es una
+contratos de cálculo.
+
+El incremento preparado de 0.9.0 a 0.10.0 es MINOR: incorpora las mejoras de
+portapapeles matricial de P28 y es la primera release que incluirá el
+actualizador de escritorio de P29. Una versión preparada en `develop` aún no es una
 release publicada.
 
 ## Flujo de integración y entrega
@@ -101,7 +105,10 @@ CI conserva todas las comprobaciones:
 - Ubuntu: lockfile, entorno locked, suite completa, Django y compilación.
 - Windows: [build de aplicación e instalador](../scripts/build_windows.ps1),
   suite completa y [smoke de instalación/desinstalación](../scripts/test_windows_distribution.ps1),
-  con dos aperturas, accesos directos, recursos y cálculos por HTTP.
+  con dos aperturas, accesos directos, recursos y cálculos por HTTP. Un segundo
+  smoke instala la última release publicada (verificando su SHA-256) y actualiza
+  encima con el candidato: sin obsoletos en `_internal`, sin accesos ni entradas
+  duplicadas y con la misma identidad.
 
 CI corre en push a `develop`, PR hacia `develop` o `main` y `workflow_call`.
 Después del merge a `main`, Release lo llama una sola vez; no hay otro CI por
@@ -201,3 +208,9 @@ sha256sum --check SHA256SUMS.txt
 
 El checksum detecta diferencias con el archivo publicado. No es una firma
 digital; Windows puede mostrar un editor desconocido.
+
+La app de escritorio hace esta misma comprobación al actualizarse
+(**Menú → Actualizaciones**): consume solo releases estables, descarga
+`PyGebra-Setup-<versión>.exe` y `SHA256SUMS.txt` de la misma release y no ejecuta
+el instalador si el SHA-256 no coincide. Por eso cada release debe seguir
+publicando exactamente esos dos assets con esos nombres.

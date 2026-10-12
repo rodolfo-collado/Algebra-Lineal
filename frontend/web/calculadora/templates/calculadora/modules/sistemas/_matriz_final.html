@@ -1,0 +1,13 @@
+{% firstof resultado.columnas_izquierda columnas_izquierda as corte_aumentado %}
+{% with titulo=resultado.etiqueta_matriz %}
+<div class="final-block">
+    <h4 class="final-label">{{ titulo }}{% if con_metodo %} · {{ resultado.metodo }}{% endif %}</h4>
+    {% if copiable %}
+        {% with contexto=titulo|lower|add:" por "|add:resultado.metodo %}
+            {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_final etiqueta=titulo columnas_izquierda=corte_aumentado columnas_pivote=columnas_pivote copiar=contexto %}
+        {% endwith %}
+    {% else %}
+        {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_final etiqueta=titulo columnas_izquierda=corte_aumentado columnas_pivote=columnas_pivote %}
+    {% endif %}
+</div>
+{% endwith %}

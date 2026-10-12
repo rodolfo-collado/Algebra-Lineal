@@ -187,7 +187,8 @@ class PruebasMenuBajoDemanda(SimpleTestCase):
     def test_el_css_esconde_el_cajon_cerrado_sin_dejar_hueco(self):
         shell = (STATIC / "styles" / "shell.css").read_text(encoding="utf-8")
         self.assertRegex(shell, r"\.js \.app-sidebar \{[^}]*position: fixed;[^}]*display: none;")
-        self.assertRegex(shell, r"\.js\[data-drawer\] \.app-sidebar \{\s*display: block;")
+        # Abierto es una columna: el pie de funciones de la app queda abajo.
+        self.assertRegex(shell, r"\.js\[data-drawer\] \.app-sidebar \{\s*display: flex;\s*flex-direction: column;")
         self.assertNotIn("data-menu", shell)
         self.assertNotIn("grid-template-columns: var(--nav-width)", shell)
         tokens = (STATIC / "styles" / "tokens.css").read_text(encoding="utf-8")
@@ -402,9 +403,9 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
-        orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1", "Matriz reducida",
+        orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1",
                  "Resultado", "Clasificación", "Consistente de solución única", "Solución x₁ = 2 x₂ = 1",
-                 "Columnas pivote:")
+                 "Columnas pivote:", "Matriz reducida")
         posiciones = []
         for fragmento in orden:
             posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
@@ -434,9 +435,9 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         # El título «Gauss y Gauss-Jordan» va antes; el orden se mide desde el desplegable.
         texto = seccion_resultado(respuesta)
         texto = texto[texto.index("Ver procedimiento"):]
-        orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas", "Matriz escalonada",
-                 "Gauss-Jordan", "Matriz reducida", "Resultado", "Clasificación", "Solución x₁ = 2 x₂ = 1",
-                 "Columnas pivote:")
+        orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas",
+                 "Gauss-Jordan", "Resultado", "Clasificación", "Solución x₁ = 2 x₂ = 1",
+                 "Columnas pivote:", "Matriz escalonada", "Matriz reducida")
         posiciones = []
         for fragmento in orden:
             posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))

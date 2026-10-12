@@ -157,6 +157,7 @@
                 matrixGrid.children[matrixGrid.children.length - 1]
             );
         }
+        window.seleccionMatricial.sincronizar();
     }
 
     function focusCell(row, column) {
@@ -192,6 +193,7 @@
             renderMatrix();
         } else {
             matrixWrapper.hidden = true;
+            window.seleccionMatricial.sincronizar();
         }
     }
 

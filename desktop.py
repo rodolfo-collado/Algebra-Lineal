@@ -36,6 +36,11 @@ WINDOW_BACKGROUND = "#EEF3F0"
 ICON_RELATIVE_PATH = Path("assets") / "brand" / "app" / "pygebra.ico"
 # Estable entre versiones: Windows agrupa las actualizaciones como la misma aplicación.
 APP_USER_MODEL_ID = "PyGebra.Desktop"
+# Mismo nombre que AppMutexName en installer/AlgebraLineal.iss: el instalador espera
+# a que ninguna instancia lo tenga abierto antes de reemplazar archivos.
+APP_MUTEX_NAME = "PyGebra.Desktop.Ejecutandose"
+# Margen para que la página reciba la respuesta antes de cerrar la ventana.
+UPDATE_CLOSE_DELAY_SECONDS = 1.0
 STARTUP_TIMEOUT_SECONDS = 10.0
 SHUTDOWN_TIMEOUT_SECONDS = 5.0
 WAITRESS_THREADS = 4
@@ -106,6 +111,31 @@ def set_windows_app_user_model_id() -> None:
     if shell32 is None:
         return
     shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
+
+
+def create_running_mutex() -> Any:
+    """Abre el mutex que señala una instancia viva; Windows lo libera al terminar el proceso."""
+    if sys.platform != "win32":
+        return None
+    import ctypes
+
+    kernel32 = getattr(getattr(ctypes, "windll", None), "kernel32", None)
+    if kernel32 is None:
+        return None
+    # Varias instancias comparten el mismo mutex con nombre; ninguna lo adquiere.
+    return kernel32.CreateMutexW(None, False, APP_MUTEX_NAME)
+
+
+def install_update_close(window: Any) -> None:
+    """Permite que el actualizador cierre la ventana tras lanzar el instalador."""
+    from actualizador.servicio import ACTUALIZADOR
+
+    def cerrar() -> None:
+        timer = threading.Timer(UPDATE_CLOSE_DELAY_SECONDS, window.destroy)
+        timer.daemon = True
+        timer.start()
+
+    ACTUALIZADOR.cerrar_aplicacion = cerrar
 
 
 def application_icon_path() -> str | None:
@@ -508,6 +538,8 @@ def desktop_debug_enabled() -> bool:
 def run_desktop() -> None:
     """Ejecuta el ciclo completo de Django, Waitress y pywebview."""
     set_windows_app_user_model_id()
+    # Se conserva la referencia mientras corre la app; no se cierra a mano.
+    running_mutex = create_running_mutex()  # noqa: F841
     server = None
     thread = None
     shutdown = None
@@ -528,6 +560,7 @@ def run_desktop() -> None:
         # En diagnóstico se conserva el menú completo de pywebview (con Inspeccionar).
         if sys.platform == "win32" and not desktop_debug_enabled():
             install_edit_context_menu(window)
+        install_update_close(window)
         shutdown = make_shutdown_callback(server, thread)
         window.events.closing += shutdown
         # start() bloquea en el thread principal hasta que el usuario cierra la ventana.

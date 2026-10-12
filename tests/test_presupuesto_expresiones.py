@@ -90,7 +90,7 @@ class PruebasPresupuestoExpresiones(TestCase):
                 self.assertTrue(analisis.simbolica)
                 self.assertIsNone(analisis.total)
                 self.assertEqual(analisis.productos, ())
-        self.assertFalse(self.analizar("AA", simbolos).simbolica)  # símbolo simbólico sin usar
+        self.assertFalse(self.analizar("AA", simbolos).simbolica)  # operando simbólico sin usar
 
     def test_solo_la_parte_seleccionada_y_sus_descendientes(self):
         simbolos = {"A": matriz(2, 3), "B": matriz(3, 4), "C": matriz(4, 5), "D": matriz(5, 2)}

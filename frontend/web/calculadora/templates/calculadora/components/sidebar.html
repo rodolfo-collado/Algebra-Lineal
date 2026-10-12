@@ -4,7 +4,7 @@
         <button type="button" id="sidebar-close" class="sidebar-close" hidden>Cerrar</button>
     </div>
     <nav id="arbol-herramientas" class="sidebar-nav" aria-label="Herramientas">
-        <a class="nav-link nav-link-home" href="{% url 'calculadora:inicio' %}"{% if not herramienta_actual %} aria-current="page"{% endif %}>
+        <a class="nav-link nav-link-home" href="{% url 'calculadora:inicio' %}"{% if not herramienta_actual and not pagina_actualizaciones %} aria-current="page"{% endif %}>
             <svg class="nav-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path fill="currentColor" d="M4 11.2 12 4l8 7.2V20h-5.5v-5.2h-5V20H4z"/>
             </svg>
@@ -49,4 +49,15 @@
             </details>
         {% endfor %}
     </nav>
+    {% if escritorio %}
+        {# Funciones de la aplicación: separadas de las áreas matemáticas, al pie del cajón. #}
+        <nav class="sidebar-footer" aria-label="Aplicación">
+            <a class="nav-link" href="{% url 'calculadora:actualizaciones' %}"{% if pagina_actualizaciones %} aria-current="page"{% endif %}>
+                <svg class="nav-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M12 4a8 8 0 0 1 7.4 5H17v2h6V5h-2v2.3A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8zm8 8a8 8 0 0 1-15.4 3H7v-2H1v6h2v-2.3A10 10 0 0 0 22 12h-2z"/>
+                </svg>
+                <span>Actualizaciones</span>
+            </a>
+        </nav>
+    {% endif %}
 </aside>

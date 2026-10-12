@@ -53,62 +53,121 @@
         return true;
     }
 
-    window.entradasSeguras = { dimensionValida, validarDimension, flechaDeCelda };
+    function filasDeMatriz(grid) {
+        if (grid.id === "matrix-grid") {
+            const filas = [];
+            grid.querySelectorAll("input[data-cell]").forEach(celda => {
+                const fila = Number(celda.name.split("_")[1]);
+                (filas[fila] ??= []).push(celda);
+            });
+            return filas;
+        }
+        return [...grid.querySelectorAll(grid.id === "vector-list" ? ".vector-row[data-vector]" : "tbody tr")]
+            .map(fila => [...fila.querySelectorAll("input.matrix-input")]);
+    }
+
+    function bloqueDeTexto(texto, conservar = false) {
+        const lineas = texto.split(/\r?\n/);
+        if (!conservar) {
+            while (lineas.length && lineas[0] === "") lineas.shift();
+            while (lineas.length && lineas.at(-1) === "") lineas.pop();
+        }
+        return lineas.map(linea => linea.split("\t").map(valor => conservar ? valor : valor.trim()));
+    }
+
+    function aplicarPegado(cambios) {
+        const registro = cambios.map(([input, nuevo]) => ({ input, anterior: input.value, nuevo }));
+        // Aplicar todo antes de emitir input: los observadores ven el bloque completo.
+        registro.forEach(({ input, nuevo }) => { input.value = nuevo; });
+        registro.forEach(({ input }) => input.dispatchEvent(new Event("input", { bubbles: true })));
+        return registro;
+    }
+
+    window.entradasSeguras = { dimensionValida, validarDimension, flechaDeCelda, filasDeMatriz,
+        bloqueDeTexto, aplicarPegado };
 
     // Solo texto tabulado; las filas/celdas existentes deciden el destino.
     // Las líneas vacías de los extremos (la terminación de una hoja de cálculo o un salto
     // de más al copiar un resultado) no son filas; una línea vacía interior sí lo es.
     document.addEventListener("paste", event => {
         const input = event.target;
-        if (event.defaultPrevented || !input.matches?.('input.matrix-input[type="text"]') ||
-            input.readOnly || input.matches(":disabled") || input.closest("[hidden], [data-escalar]")) return;
+        const esCelda = input.matches?.('input.matrix-input[type="text"]');
+        const esControl = input.matches?.(".matrix-selection summary");
+        if (event.defaultPrevented || (!esCelda && !esControl) || input.closest("[hidden], [data-escalar]")) return;
         const form = input.closest("[data-entrada-calculo]");
-        const grid = input.closest(".matrix-entry-table, #matrix-grid, #vector-list");
+        const grid = esCelda ? input.closest(".matrix-entry-table, #matrix-grid, #vector-list") :
+            input.closest(".matrix, #matrix-grid-wrapper")?.querySelector(".matrix-entry-table, #matrix-grid");
         if (!form || !grid || !event.clipboardData) return;
         const texto = event.clipboardData.getData("text/plain");
-        const lineas = texto.split(/\r?\n/);
-        while (lineas.length && lineas[0] === "") lineas.shift();
-        while (lineas.length && lineas.at(-1) === "") lineas.pop();
-        if (!texto.includes("\t") && lineas.length <= 1) return;
+        // Consultar sin recortar readonly/disabled: un fallo no debe cambiar la selección.
+        const snapshot = window.seleccionMatricial?.obtener(grid, false);
+        const seleccion = snapshot?.activa ? snapshot : null;
+        const copia = window.copiadoMatricial;
+        const propio = copia && event.clipboardData.getData(copia.TIPO);
+        const metadata = propio ? copia.parsear(propio, texto) : null;
+        if (!texto && !metadata && ![...event.clipboardData.types].includes("text/plain")) return;
+        const mascara = snapshot && metadata?.forma === "mascara" ? metadata : null;
+        const nuevo = Boolean(seleccion || mascara);
+        const textoValido = !nuevo || copia.textoAdmitido(texto);
+        const bloque = textoValido ? bloqueDeTexto(texto, nuevo && Boolean(metadata)) : [];
+        if (!nuevo && (!esCelda || input.readOnly || input.matches(":disabled") ||
+            (!texto.includes("\t") && bloque.length <= 1))) return;
         event.preventDefault();
 
-        let estado = form.querySelector('[data-presupuesto], [data-estado-vectores], [data-estado-pegado]');
-        if (!estado) {
-            estado = document.createElement("p");
-            estado.className = "field-help";
-            estado.dataset.estadoPegado = "";
-            estado.setAttribute("role", "status");
-            estado.setAttribute("aria-live", "polite");
-            form.querySelector(".workspace-actions").before(estado);
+        const estado = window.deshacerPegado.estado(form);
+        if (!textoValido) {
+            estado.textContent = "Los datos copiados superan el límite de 64 KiB. No se pegó ningún valor.";
+            return;
         }
-        const bloque = lineas.map(linea => linea.split("\t").map(valor => valor.trim()));
+        if (nuevo && texto === "" && !bloque.length) bloque.push([""]);
         const alto = bloque.length;
-        const ancho = bloque[0].length;
-        if (bloque.some(fila => fila.length !== ancho)) {
+        const ancho = bloque[0]?.length;
+        if (!alto || bloque.some(fila => fila.length !== ancho)) {
             estado.textContent = "Cada fila del bloque debe tener la misma cantidad de columnas. No se pegó ningún valor.";
             return;
         }
-        let filas;
-        if (grid.id === "matrix-grid") {
-            filas = [];
-            grid.querySelectorAll("input[data-cell]").forEach(celda => {
-                const fila = Number(celda.name.split("_")[1]);
-                (filas[fila] ??= []).push(celda);
-            });
+        const filas = filasDeMatriz(grid);
+        let cambios;
+        if (seleccion) {
+            let valores;
+            if (alto === 1 && ancho === 1) {
+                valores = seleccion.celdas.map(() => bloque[0][0]);
+            } else if (mascara) {
+                if (mascara.celdas.length !== seleccion.celdas.length) {
+                    estado.textContent = `Se copiaron ${mascara.celdas.length} celdas, pero hay ${seleccion.celdas.length} seleccionadas. No se pegó ningún valor.`;
+                    return;
+                }
+                valores = mascara.celdas.map(([i, j]) => bloque[i][j]);
+            } else {
+                if (!seleccion.rectangular) {
+                    estado.textContent = "Los datos copiados no son compatibles con esta selección. No se pegó ningún valor.";
+                    return;
+                }
+                const { filaInicio, filaFin, columnaInicio, columnaFin } = seleccion.limites;
+                const m = filaFin - filaInicio + 1, n = columnaFin - columnaInicio + 1;
+                if (alto !== m || ancho !== n) {
+                    estado.textContent = `El bloque copiado es de ${alto}×${ancho} y la selección es de ${m}×${n}. No se pegó ningún valor.`;
+                    return;
+                }
+                valores = bloque.flat();
+            }
+            cambios = seleccion.celdas.map(({ fila, columna }, i) => [filas[fila]?.[columna], valores[i]]);
         } else {
-            filas = [...grid.querySelectorAll(grid.id === "vector-list" ? ".vector-row[data-vector]" : "tbody tr")]
-                .map(fila => [...fila.querySelectorAll("input.matrix-input")]);
+            const inicio = filas.findIndex(fila => fila.includes(input));
+            if (inicio < 0) return;
+            const columna = filas[inicio].indexOf(input);
+            const disponibles = filas[inicio].length - columna;
+            if (inicio + alto > filas.length || filas.slice(inicio, inicio + alto).some(fila => columna + ancho > fila.length)) {
+                estado.textContent = mascara ? "La selección copiada no cabe desde esta celda. No se pegó ningún valor." :
+                    `El bloque no cabe en la cuadrícula. Lo pegado ocupa ${alto}×${ancho} y desde esta celda solo caben ${filas.length - inicio}×${disponibles}. No se pegó ningún valor.`;
+                return;
+            }
+            cambios = mascara ? mascara.celdas.map(([i, j]) => [filas[inicio + i][columna + j], bloque[i][j]]) :
+                bloque.flatMap((fila, i) => fila.map((valor, j) => [filas[inicio + i][columna + j], valor]));
         }
-        const inicio = filas.findIndex(fila => fila.includes(input));
-        if (inicio < 0) return;
-        const columna = filas[inicio].indexOf(input);
-        const disponibles = filas[inicio].length - columna;
-        if (inicio + alto > filas.length || filas.slice(inicio, inicio + alto).some(fila => columna + ancho > fila.length)) {
-            estado.textContent = `El bloque no cabe en la cuadrícula. Lo pegado ocupa ${alto}×${ancho} y desde esta celda solo caben ${filas.length - inicio}×${disponibles}. No se pegó ningún valor.`;
-            return;
-        }
-        const cambios = bloque.flatMap((fila, i) => fila.map((valor, j) => [filas[inicio + i][columna + j], valor]));
-        if (cambios.some(([celda]) => celda.readOnly || celda.matches(":disabled") || celda.closest("[hidden]"))) {
+        if ((esCelda && (input.readOnly || input.matches(":disabled"))) || cambios.some(([celda]) =>
+            !celda?.isConnected || celda.closest(".matrix-entry-table, #matrix-grid, #vector-list") !== grid ||
+            celda.readOnly || celda.matches(":disabled") || celda.closest("[hidden]"))) {
             estado.textContent = "El bloque incluye celdas que no se pueden editar. No se pegó ningún valor.";
             return;
         }
@@ -116,10 +175,7 @@
             estado.textContent = "Un valor supera el límite de texto de su celda. No se pegó ningún valor.";
             return;
         }
-        // Aplicar todo antes de emitir input: los observadores ven el bloque completo.
-        cambios.forEach(([celda, valor]) => { celda.value = valor; });
-        cambios.forEach(([celda]) => celda.dispatchEvent(new Event("input", { bubbles: true })));
-        estado.textContent = `Se pegaron ${cambios.length} valores.`;
+        window.deshacerPegado.pegar(cambios, grid, input);
         // Se conserva el campo activo y el perfil del teclado contextual.
     });
 

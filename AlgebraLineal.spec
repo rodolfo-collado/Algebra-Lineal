@@ -27,6 +27,8 @@ datas = [
         str(PROJECT_ROOT / "assets" / "brand" / "app" / "pygebra.ico"),
         "assets/brand/app",
     ),
+    # El actualizador lee de aquí la versión instalada (actualizador/versiones.py).
+    (str(PROJECT_ROOT / "pyproject.toml"), "."),
 ]
 
 hiddenimports = [

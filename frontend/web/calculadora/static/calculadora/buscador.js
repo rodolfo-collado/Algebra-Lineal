@@ -113,7 +113,7 @@
         input.addEventListener("input", filtrar);
         input.addEventListener("search", filtrar);
         if (!principal) input.addEventListener("keydown", (event) => {
-            if (event.key !== "Escape" || !input.value) return;
+            if (event.defaultPrevented || event.key !== "Escape" || !input.value) return;
             event.preventDefault();
             event.stopPropagation();
             input.value = "";
