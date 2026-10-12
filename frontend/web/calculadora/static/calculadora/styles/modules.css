@@ -1014,6 +1014,139 @@ textarea:focus {
     margin-top: 0.85rem;
 }
 
+/* Sarrus: A | C1 C2 con las copias atenuadas, F1–F3 y C1–C3 discretos y las diagonales
+   en un SVG detrás de los números. Columnas de igual ancho (--sarrus-col, en ch de la fuente
+   matemática): así el SVG usa coordenadas de celda (viewBox 0 0 5 3). */
+.sarrus-scroll {
+    margin-block: 0.35rem 0.6rem;
+}
+
+.sarrus {
+    --sarrus-fila: 2.75rem;
+    --sarrus-llave: 0.45rem;
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    column-gap: 0.35rem;
+    width: max-content;
+    font-family: var(--font-math);
+}
+
+.sarrus-cabecera,
+.sarrus-filas {
+    color: var(--color-muted);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.sarrus-cabecera,
+.sarrus-celdas {
+    display: grid;
+    grid-template-columns: repeat(5, var(--sarrus-col));
+}
+
+.sarrus-cabecera {
+    position: relative;
+    padding-inline: var(--sarrus-llave);
+    padding-bottom: 0.2rem;
+    text-align: center;
+}
+
+.sarrus-nota {
+    grid-column: 4 / 6;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.sarrus-filas {
+    display: grid;
+    grid-auto-rows: var(--sarrus-fila);
+    align-items: center;
+}
+
+.sarrus-matriz {
+    display: flex;
+}
+
+.sarrus-celdas {
+    position: relative;
+    grid-auto-rows: var(--sarrus-fila);
+}
+
+/* La separación vertical entre A y las copias, en la cabecera y en la matriz. */
+.sarrus-cabecera::after,
+.sarrus-celdas::after {
+    content: "";
+    position: absolute;
+    inset-block: 0.15rem;
+    left: calc(3 * var(--sarrus-col));
+    border-left: 2px solid var(--color-border-strong);
+}
+
+.sarrus-cabecera::after {
+    left: calc(var(--sarrus-llave) + 3 * var(--sarrus-col));
+}
+
+.sarrus-celda {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+}
+
+/* Fondo opaco: la diagonal pasa entre los números, nunca por encima. */
+.sarrus-indice,
+.sarrus-valor {
+    padding-inline: 0.2rem;
+    background: var(--color-surface-raised);
+    line-height: 1.15;
+}
+
+.sarrus-indice {
+    color: var(--color-muted);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+}
+
+.sarrus-valor {
+    color: var(--color-text);
+    font-size: 1rem;
+}
+
+/* Copias de C1 y C2 al 60 %: en las celdas solo el color, para que su fondo siga tapando las líneas. */
+.sarrus-cabecera .sarrus-copia { opacity: 0.6; }
+.sarrus-copia .sarrus-indice { color: color-mix(in srgb, var(--color-muted) 60%, transparent); }
+.sarrus-copia .sarrus-valor { color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+
+.sarrus-diagonales {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.sarrus-diagonales line,
+.sarrus-muestra line {
+    stroke: var(--color-brand);
+    stroke-width: 2;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+:is(.sarrus-diagonales, .sarrus-muestra) [data-trazo="discontinuo"] { stroke-dasharray: 8 5; }
+:is(.sarrus-diagonales, .sarrus-muestra) [data-trazo="punteado"] { stroke-dasharray: 0.5 5; stroke-width: 2.5; }
+
+.sarrus-muestra {
+    width: 1.75rem;
+    height: 0.5rem;
+    margin-right: 0.4rem;
+    overflow: visible;
+    vertical-align: middle;
+}
+
 /* Una entrada adicional vacía no deja hueco dentro del desplegable. */
 .matrix-entry-list:not(:has(*)) {
     display: none;

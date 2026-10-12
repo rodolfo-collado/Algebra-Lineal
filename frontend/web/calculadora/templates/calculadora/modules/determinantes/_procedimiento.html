@@ -17,17 +17,21 @@
 {% elif resultado.metodo == "sarrus" %}
     <div class="procedure-stage">
         <h4 class="stage-title">1 · Repetir las dos primeras columnas</h4>
-        <p class="procedure-lead">Sarrus solo existe para matrices 3×3. Al copiar las columnas 1 y 2 a la derecha, cada diagonal tiene tres entradas seguidas.</p>
-        {% include "calculadora/components/matrix.html" with matriz=resultado.ampliada etiqueta="A con sus dos primeras columnas repetidas" columnas_izquierda=3 %}
+        <p class="procedure-lead">Sarrus solo existe para matrices 3×3. A la derecha se copian C1 y C2, atenuadas: siguen siendo C1 y C2, no columnas nuevas, por eso conservan sus índices (a₁₁, no a₁₄). Así cada diagonal tiene tres entradas seguidas.</p>
+        {% include "calculadora/modules/determinantes/_sarrus_matriz.html" with extendida=resultado.extendida etiqueta="A con C1 y C2 repetidas a la derecha" only %}
     </div>
     <div class="procedure-stage">
         <h4 class="stage-title">2 · Diagonales que suman (↘)</h4>
-        <ol class="procedure-lines">{% for diagonal in resultado.positivas %}<li>{{ diagonal }}</li>{% endfor %}</ol>
+        <p class="procedure-lead">Tres diagonales bajan hacia la derecha; cada trazo del dibujo corresponde a una línea de la lista.</p>
+        {% include "calculadora/modules/determinantes/_sarrus_matriz.html" with extendida=resultado.extendida diagonales=resultado.positivas etiqueta="Diagonales que suman, hacia abajo y a la derecha" only %}
+        <ol class="procedure-lines sarrus-lista">{% for diagonal in resultado.positivas %}<li><svg class="sarrus-muestra" viewBox="0 0 28 8" aria-hidden="true" focusable="false"><line x1="1" y1="4" x2="27" y2="4" data-trazo="{{ diagonal.linea.trazo }}"/></svg>↘ {{ diagonal.texto }}</li>{% endfor %}</ol>
         <p class="procedure-line">Suma: {{ resultado.suma_positivas }}</p>
     </div>
     <div class="procedure-stage">
         <h4 class="stage-title">3 · Diagonales que restan (↙)</h4>
-        <ol class="procedure-lines">{% for diagonal in resultado.negativas %}<li>{{ diagonal }}</li>{% endfor %}</ol>
+        <p class="procedure-lead">Tres diagonales bajan hacia la izquierda; las que empiezan en C1 o C2 salen de sus copias.</p>
+        {% include "calculadora/modules/determinantes/_sarrus_matriz.html" with extendida=resultado.extendida diagonales=resultado.negativas etiqueta="Diagonales que restan, hacia abajo y a la izquierda" only %}
+        <ol class="procedure-lines sarrus-lista">{% for diagonal in resultado.negativas %}<li><svg class="sarrus-muestra" viewBox="0 0 28 8" aria-hidden="true" focusable="false"><line x1="1" y1="4" x2="27" y2="4" data-trazo="{{ diagonal.linea.trazo }}"/></svg>↙ {{ diagonal.texto }}</li>{% endfor %}</ol>
         <p class="procedure-line">Suma: {{ resultado.suma_negativas }}</p>
     </div>
     <div class="procedure-stage">

@@ -278,6 +278,12 @@ En [`sarrus.py`](../backend/determinantes/sarrus.py) las posiciones se
 calculan con `(i, (j + dirección·i) % 3)`: con dirección 1 salen las diagonales
 ↘ y con −1 las ↙. El módulo 3 hace el papel de las columnas repetidas.
 
+En la interfaz (`_sarrus_matriz.html`), las copias se rotulan otra vez **C1** y
+**C2**, atenuadas y detrás de una línea vertical, y conservan sus índices
+(`a₁₁`, nunca `a₁₄`): no son columnas nuevas. Cada diagonal se dibuja con un SVG
+detrás de los números, con un trazo propio (continuo, discontinuo o punteado)
+que se repite junto a su producto en la lista, así que no depende del color.
+
 ### Factorización LU
 
 $A = LU$, donde:

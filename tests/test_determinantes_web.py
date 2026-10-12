@@ -176,11 +176,45 @@ class PruebasResultado(SimpleTestCase):
         self.assertIn("det(A) = ad − bc = 3·6 − 4·5 = 18 − 20 = -2", procedimiento)
 
     def test_sarrus_repite_columnas_y_resta_sumas(self):
-        html, procedimiento, _ = self.calcular([[1, 2, 3], [4, 5, 6], [7, 8, 10]], "sarrus")
-        self.assertEqual(Contenido(html).tablas["A con sus dos primeras columnas repetidas"][0], ["1", "2", "3", "1", "2"])
-        for linea in ("a₁₁a₂₂a₃₃ = 1·5·10 = 50", "Suma: 50 + 84 + 96 = 230", "a₁₃a₂₂a₃₁ = 3·5·7 = 105",
+        _, procedimiento, _ = self.calcular([[1, 2, 3], [4, 5, 6], [7, 8, 10]], "sarrus")
+        for linea in ("a₁₁·a₂₂·a₃₃ = 1·5·10 = 50", "Suma: 50 + 84 + 96 = 230", "a₁₃·a₂₂·a₃₁ = 3·5·7 = 105",
                       "Suma: 48 + 80 + 105 = 233", "det(A) = 230 − 233 = -3"):
             self.assertIn(linea, procedimiento)
+
+    def test_sarrus_las_copias_siguen_siendo_c1_y_c2(self):
+        html = self.client.post(RUTA, datos_det([[1, 2, 3], [4, 5, 6], [7, 8, 10]], "sarrus")).content.decode()
+        figuras = re.findall(r'<div class="sarrus" .*?</div>\s*</div>\s*</div>', html, re.S)
+        self.assertEqual(len(figuras), 3)
+        figura = figuras[0]
+        cabecera = re.search(r'<div class="sarrus-cabecera"[^>]*>(.*?)</div>', figura, re.S)[1]
+        self.assertEqual(re.findall(r">(C\d)<", cabecera), ["C1", "C2", "C3", "C1", "C2"])
+        self.assertEqual(re.findall(r'class="sarrus-copia">(C\d)<', cabecera), ["C1", "C2"])
+        self.assertIn(">copias<", cabecera)
+        self.assertEqual(re.findall(r">(F\d)<", figura), ["F1", "F2", "F3"])
+        celdas = re.findall(r'<span class="sarrus-celda( sarrus-copia)?"[^>]*><span class="sarrus-indice">(.*?)</span>', figura)
+        self.assertEqual([indice for _, indice in celdas[:5]], ["a₁₁", "a₁₂", "a₁₃", "a₁₁", "a₁₂"])
+        self.assertEqual([bool(copia) for copia, _ in celdas], [False, False, False, True, True] * 3)
+        # Las copias conservan su índice original: nunca aparecen a₁₄ ni a₃₅.
+        self.assertNotRegex(figura, "a[₁₂₃][₄₅]")
+        self.assertEqual(len(re.findall(r'class="sarrus-celda sarrus-copia" aria-hidden="true"', figura)), 6)
+
+    def test_sarrus_cada_linea_recorre_los_factores_de_su_producto(self):
+        html = self.client.post(RUTA, datos_det([[1, 2, 3], [4, 5, 6], [7, 8, 10]], "sarrus")).content.decode()
+        indices = [re.findall(r'<span class="sarrus-indice">(.*?)</span>', f)
+                   for f in re.findall(r'<div class="sarrus" .*?</div>\s*</div>\s*</div>', html, re.S)]
+        extendida = [indices[0][fila * 5:(fila + 1) * 5] for fila in range(3)]
+        for grupo, figura in (("↘", 1), ("↙", 2)):
+            svg = re.findall(r'<svg class="sarrus-diagonales".*?</svg>', html, re.S)[figura - 1]
+            lineas = re.findall(r'<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)" data-trazo="(\w+)"', svg)
+            lista = re.findall(rf'data-trazo="(\w+)"/></svg>{grupo} (a\S+) =', html)
+            self.assertEqual(len(lineas), 3)
+            self.assertEqual(len({trazo for *_, trazo in lineas}), 3)
+            for (x1, y1, x2, y2, trazo), (trazo_lista, producto) in zip(lineas, lista):
+                with self.subTest(grupo=grupo, producto=producto):
+                    x1, y1, x2, y2 = map(float, (x1, y1, x2, y2))
+                    recorridas = [extendida[fila][int(x1 + (fila + 0.5 - y1) * (x2 - x1) / (y2 - y1))] for fila in range(3)]
+                    self.assertEqual("·".join(recorridas), producto)
+                    self.assertEqual(trazo, trazo_lista)
 
     def test_cofactores_por_fila_columna_y_automatico(self):
         _, procedimiento, _ = self.calcular(A3, "cofactores", "columna_1")

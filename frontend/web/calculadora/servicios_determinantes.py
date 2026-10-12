@@ -73,20 +73,46 @@ def _directo_2x2(calculo):
     }
 
 
+# Cada diagonal de Sarrus tiene su trazo: se distinguen sin depender del color.
+TRAZOS = ("continuo", "discontinuo", "punteado")
+
+
+def _sarrus_extendida(matriz):
+    """A con C1 y C2 repetidas a la derecha: las copias conservan sus índices (a₁₁, no a₁₄)."""
+    filas = [[{"indice": f"a{subindice(i + 1, k % 3 + 1)}", "valor": formatear_exacto(fila[k % 3]), "copia": k >= 3}
+              for k in range(5)] for i, fila in enumerate(matriz)]
+    # Ancho común de columna en ch (fuente monoespaciada): cabe el valor más largo y el índice.
+    ancho = max(3, *(len(celda["valor"]) for fila in filas for celda in fila)) + 2
+    return {"filas": filas, "ancho": ancho}
+
+
+def _linea_sarrus(diagonal, numero, hacia_derecha):
+    """Coordenadas de una diagonal sobre la matriz extendida (columna 0…4, fila 0…2)."""
+    inicio = diagonal["posiciones"][0][1]
+    if not hacia_derecha and inicio < 2:
+        # Una diagonal ↙ que empieza en C1 o C2 baja desde su copia, a la derecha.
+        inicio += 3
+    paso = 1 if hacia_derecha else -1
+    # Del centro de la primera celda al de la última, alargada un poco por ambos extremos. Texto con
+    # punto decimal: la plantilla localizaría un float como «0,2» y el SVG no lo entendería.
+    x1, x2 = inicio + 0.5 - 0.3 * paso, inicio + 2 * paso + 0.5 + 0.3 * paso
+    return {"x1": f"{x1:.1f}", "y1": "0.2", "x2": f"{x2:.1f}", "y2": "2.8", "trazo": TRAZOS[numero]}
+
+
 def _sarrus(calculo):
-    def diagonales(grupo):
-        return [
-            "".join(f"a{subindice(i + 1, k + 1)}" for i, k in d["posiciones"])
-            + f" = {_producto(d['valores'])} = {formatear_exacto(d['producto'])}"
-            for d in grupo["diagonales"]
-        ]
+    def diagonales(grupo, hacia_derecha):
+        return [{
+            "texto": "·".join(f"a{subindice(i + 1, k + 1)}" for i, k in d["posiciones"])
+                     + f" = {_producto(d['valores'])} = {formatear_exacto(d['producto'])}",
+            "linea": _linea_sarrus(d, numero, hacia_derecha),
+        } for numero, d in enumerate(grupo["diagonales"])]
 
     positivas, negativas = calculo["positivas"], calculo["negativas"]
     return {
         # Las dos primeras columnas repetidas a la derecha dejan ver las seis diagonales completas.
-        "ampliada": formatear_matriz([fila + fila[:2] for fila in calculo["matriz"]]),
-        "positivas": diagonales(positivas),
-        "negativas": diagonales(negativas),
+        "extendida": _sarrus_extendida(calculo["matriz"]),
+        "positivas": diagonales(positivas, True),
+        "negativas": diagonales(negativas, False),
         "suma_positivas": f"{_suma(d['producto'] for d in positivas['diagonales'])} = {formatear_exacto(positivas['suma'])}",
         "suma_negativas": f"{_suma(d['producto'] for d in negativas['diagonales'])} = {formatear_exacto(negativas['suma'])}",
         "resta": (f"det(A) = {formatear_exacto(positivas['suma'])} − {_sumando(negativas['suma'])} "
