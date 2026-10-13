@@ -334,13 +334,25 @@ que exigiría intercambio, y la reducción con sus correcciones. También cubre
 propiedades (intercambio, escalado, triangular), entradas inválidas,
 seguridad numérica y el presupuesto de cofactores frente a su árbol real.
 
-`test_determinantes_web` cubre catálogo y navegación, métodos según el tamaño,
-Aplicar, POST manipulados, errores por celda, el procedimiento y el resultado
+`test_determinantes_web` cubre catálogo y navegación, entrada sin métodos,
+análisis sin cálculo ni presupuesto, elección preseleccionada, textos pedagógicos,
+libertad de método y expansión, firmas invalidadas al editar A, dos POST sin JS,
+disponibilidad real de un único método, Aplicar, POST manipulados, errores por celda, el procedimiento y el resultado
 de cada método, la confirmación con firma y la transferencia de A a Matriz
 inversa (cargada, validada y sin calcular). Las pruebas transversales de
 teclado, feedback, presentación numérica, seguridad y procedimiento plegable
 incluyen también `/matrices/determinantes/`. Detalle en
 [Determinantes](determinantes.md#pruebas).
+
+```bash
+uv run --locked python -m tests.determinantes_browser
+```
+
+Abre `http://127.0.0.1:8891/__pruebas/`: prueba el flujo con POST reales,
+foco en la elección, disclosure, selector de Cofactores, invalidación por
+celdas y dimensiones, menú contextual/Deshacer y presupuesto del método elegido.
+Complementa con `tests.menu_edicion_browser` en el puerto 8890, escritorio,
+tableta, móvil, consola y un navegador con JavaScript desactivado.
 
 ## Numeración romana
 
