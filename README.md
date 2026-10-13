@@ -36,7 +36,8 @@ manualmente con Python estándar. Una vez instalado, funciona sin Internet.
 - **Reducción por filas:** Gauss, Gauss-Jordan o comparación de ambos, desde
   ecuaciones o una matriz aumentada; muestra pivotes, variables libres y solución.
 - **Resolver Ax = b:** encuentra x con A y b conocidos, también para matrices
-  rectangulares, y explica la relación con el sistema lineal.
+  rectangulares, y explica la relación con el sistema lineal. Para A cuadrada
+  ofrece LU y Regla de Cramer, con un método elegible para sus determinantes.
 - **Matriz inversa:** Gauss-Jordan o regla directa para 2×2; explica cuándo no
   existe y permite verificar `A·A⁻¹ = I` y `A⁻¹·A = I`.
 - **Propiedades y aplicación de la inversa:** `(A⁻¹)⁻¹ = A`,

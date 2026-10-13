@@ -68,7 +68,7 @@ CONTROLES = {
     },
     "/matrices/ecuaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",
-        "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo",
+        "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo", "metodo_determinante",
     },
     # «confirmacion» solo aparece en el aviso de un cálculo largo, nunca en el GET.
     "/matrices/inversa/": {

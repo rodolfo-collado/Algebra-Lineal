@@ -606,9 +606,24 @@ ancha; en pantallas estrechas las celdas se compactan para que 2×2 quepa
 entero. `ecuaciones.js` regenera A, b y x con las mismas plantillas inertes
 de matrices y actualiza `A (m×n) · x (n) = b (m)`; sin JavaScript, Aplicar
 redibuja la misma estructura. El método (`opciones_ecuaciones.py`) amplía las
-opciones de `opciones_sistemas.py` con Factorización LU; conserva el
+opciones de `opciones_sistemas.py` con Factorización LU y Regla de Cramer; conserva el
 predeterminado y `metodos_a_resolver`: Comparar ambos sigue siendo solo Gauss
-y Gauss-Jordan. Formulario y backend exigen A cuadrada únicamente para LU.
+y Gauss-Jordan. Formulario y backend exigen A cuadrada para LU y Cramer.
+
+Al seleccionar Cramer, aparece **Método para los determinantes**, con
+`RadiosPorTamano`, `metodo_disponible` y `metodo_sugerido` de
+`forms_determinantes.py`. `metodos_determinantes.js` comparte la actualización
+de opciones con Determinantes; los tamaños y las sugerencias llegan del
+servidor, sin duplicar esas reglas. Sin JavaScript el selector permanece
+visible y explica que solo se usa con Cramer. Cofactores usa expansión automática.
+`_cramer.html` muestra D y cada Aᵢ y anida el mismo `_procedimiento.html` de
+Determinantes dentro de «Ver cálculo de D/Dᵢ». `presentar_determinante` recibe
+evidencia ya calculada y permite nombrar D o Dᵢ sin recalcular. La notación A
+del desarrollo embebido representa la Aᵢ indicada en ese bloque. Los cocientes
+van en el procedimiento y solo el vector x va en Resultado; Exacto/Decimal
+usa la presentación común en ambos lugares. D=0 detiene el procedimiento y
+recomienda Gauss o Gauss-Jordan; una LU detenida conserva su evidencia y pide
+elegir otro método para todos los determinantes.
 
 `servicios_ecuaciones.py` no calcula: llama a
 `backend.ecuaciones_matriciales.resolver_ecuacion_matricial` por cada método

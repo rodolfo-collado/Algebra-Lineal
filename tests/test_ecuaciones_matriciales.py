@@ -85,10 +85,10 @@ class PruebasValidacion(unittest.TestCase):
                     resolver_ecuacion_matricial(a, b)
 
     def test_metodo_desconocido(self):
-        for metodo in ("cramer", "inversa", "comparar", "", None, 3):
+        for metodo in ("inventado", "inversa", "comparar", "", None, 3):
             with self.subTest(metodo=metodo), self.assertRaisesRegex(ValueError, "método de resolución válido"):
                 resolver_ecuacion_matricial([[1]], [1], metodo)
-        self.assertEqual(set(METODOS), {"gauss", "gauss_jordan", "lu"})
+        self.assertEqual(set(METODOS), {"gauss", "gauss_jordan", "lu", "cramer"})
         self.assertEqual(METODO_PREDETERMINADO, "gauss_jordan")
 
 

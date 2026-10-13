@@ -41,9 +41,17 @@
                 {{ form.metodo.errors }}
                 <p class="field-help option-help">{{ ayuda_metodos }}</p>
             </fieldset>
+            <fieldset class="choice-fieldset" data-cramer-methods>
+                <legend>{{ form.metodo_determinante.label }}</legend>
+                <div class="option-list" data-determinant-methods>
+                    {% for radio in form.metodo_determinante %}<label class="option"{% if radio.data.attrs.disabled %} hidden{% endif %}>{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                {{ form.metodo_determinante.errors }}
+                <p class="field-help">Solo para Regla de Cramer. D y todos los Dᵢ usan el mismo método de Determinantes. Cofactores elige automáticamente la fila o columna con más ceros; LU no intercambia filas.</p>
+            </fieldset>
         </section>
         {% if confirmacion %}
-            {% include "calculadora/components/confirmacion_costo.html" with operacion="Resolver Ax = b por LU: A = LU, Ly = b y Ux = y" %}
+            {% include "calculadora/components/confirmacion_costo.html" with operacion=confirmacion.operacion %}
         {% else %}
             <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Resolver</button></div>
         {% endif %}
@@ -63,7 +71,9 @@
         {% include "calculadora/components/numeric_format.html" %}
 
         {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-            {% if resultado.lu %}
+            {% if resultado.cramer %}
+                {% include "calculadora/modules/ecuaciones/_cramer.html" %}
+            {% elif resultado.lu %}
                 <p class="stage-chain">A = LU → Ly = b → Ux = y</p>
                 {% include "calculadora/modules/ecuaciones/_lu.html" %}
             {% else %}
@@ -89,11 +99,13 @@
                         {% for parrafo in resultado.justificacion %}{% if parrafo %}<p>{{ parrafo|incognitas }}</p>{% endif %}{% endfor %}
                     </div>
                 {% endif %}
-                {% if resultado.solucion_general %}
+                {% if resultado.solucion_general or resultado.x %}
                     <div class="solution-pair">
+                        {% if resultado.solucion_general %}
                         <ul class="equations solution-list">
                             {% for linea in resultado.solucion_general %}<li><code>{{ linea|incognitas }}</code></li>{% endfor %}
                         </ul>
+                        {% endif %}
                         {% if resultado.x %}
                             <div class="matrix-equation" role="region" aria-label="Vector solución x">
                                 <span class="matrix-expression">x =</span>
@@ -133,6 +145,7 @@
 <script src="{% static 'calculadora/numeros.js' %}" defer></script>
 <template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
 <template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
+<script src="{% static 'calculadora/metodos_determinantes.js' %}" defer></script>
 <script src="{% static 'calculadora/ecuaciones.js' %}" defer></script>
 <script src="{% static 'calculadora/teclado.js' %}" defer></script>
 {% endblock %}

@@ -10,6 +10,7 @@ from django import forms
 from backend.determinantes import ORDEN_EXIGIDO, ORDEN_MAXIMO_COFACTORES
 
 from .forms_matrices import FormularioCeldas, campo_dimension
+from .opciones_matrices import DIMENSION_MAXIMA, DIMENSION_MINIMA
 
 METODOS = (
     ("directo_2x2", "Fórmula directa 2×2"),
@@ -49,6 +50,9 @@ class RadiosPorTamano(forms.RadioSelect):
     def create_option(self, *args, **kwargs):
         opcion = super().create_option(*args, **kwargs)
         metodo = opcion["value"]
+        opcion["attrs"]["data-sugerido"] = ",".join(
+            str(n) for n in range(DIMENSION_MINIMA, DIMENSION_MAXIMA + 1) if metodo_sugerido(n) == metodo
+        )
         if metodo in ORDEN_EXIGIDO:
             opcion["attrs"]["data-orden"] = ORDEN_EXIGIDO[metodo]
         elif metodo == "cofactores":

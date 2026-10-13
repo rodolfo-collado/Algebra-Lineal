@@ -14,12 +14,15 @@ solucion unica, infinitas o ninguna, es decir, si b es combinacion lineal de
 las columnas de A. A m×n admite m = n, m < n y m > n; x tiene n componentes
 y b tiene m. LU se limita aquí a A cuadrada: factorizar_lu obtiene A=LU y
 aplicar_gauss_jordan reduce por separado [L|b] y [U|y], conservando sus pasos.
+Cramer también exige A cuadrada y llama al motor de Determinantes para A y
+cada A_i; si D=0, se detiene sin clasificar el sistema.
 Este modulo es logica pura: recibe listas y devuelve listas o
 diccionarios, o lanza ValueError con un mensaje legible.
 """
 
 from fractions import Fraction
 
+from backend.determinantes import METODO_PREDETERMINADO as DETERMINANTE_PREDETERMINADO, calcular_determinante
 from backend.factorizacion_lu import factorizar_lu
 from backend.gauss_jordan import aplicar_gauss_jordan
 from backend.matrices import (
@@ -39,11 +42,75 @@ from backend.sistemas import (
     resolver_sistema_gauss,
     resolver_sistema_gauss_jordan,
 )
+from backend.seguridad_numerica import dividir_exacto
 
 MENSAJE_LU_CUADRADA = (
     "Factorización LU en Resolver Ax = b requiere una matriz A cuadrada. "
     "Para matrices rectangulares usa Gauss o Gauss-Jordan."
 )
+MENSAJE_CRAMER_CUADRADA = (
+    "Regla de Cramer requiere una matriz A cuadrada. "
+    "Para matrices rectangulares usa Gauss o Gauss-Jordan."
+)
+
+
+def matrices_de_cramer(a, b):
+    """A_i sustituye solo la columna i por b; las entradas originales no se modifican."""
+    _exigir_ecuacion(a, b)
+    if len(a) != len(a[0]):
+        raise ValueError(MENSAJE_CRAMER_CUADRADA)
+    return [
+        [[b[i] if j == columna else valor for j, valor in enumerate(fila)]
+         for i, fila in enumerate(a)]
+        for columna in range(len(a))
+    ]
+
+
+def _resolver_cramer(matriz_aumentada, metodo_determinante=DETERMINANTE_PREDETERMINADO):
+    """Conserva la evidencia del motor de Determinantes; nunca clasifica si D es cero."""
+    a = [fila[:-1] for fila in matriz_aumentada]
+    b = [fila[-1] for fila in matriz_aumentada]
+    reemplazos = matrices_de_cramer(a, b)
+    principal = calcular_determinante(a, metodo_determinante)
+    cramer = {"principal": principal, "reemplazos": [], "motivo": None}
+    resultado = {
+        "cramer": cramer, "clasificacion": None, "soluciones": [],
+        "solucion_general": [], "variables_libres": [], "columnas_pivote": [],
+        "justificacion": [],
+    }
+    if not principal["aplicable"]:
+        cramer["motivo"] = "metodo_determinante"
+        resultado["justificacion"] = [
+            "LU sin intercambios no puede calcular D. Elige otro método para los determinantes, "
+            "como Reducción por filas, o resuelve por Gauss o Gauss-Jordan."
+        ]
+        return resultado
+    d = principal["determinante"]
+    if d == 0:
+        cramer["motivo"] = "determinante_nulo"
+        resultado["justificacion"] = [
+            "Cramer requiere det(A) ≠ 0. Como D = 0, la Regla de Cramer no es aplicable. "
+            "Usa Gauss o Gauss-Jordan para clasificar el sistema: Cramer no determina "
+            "si tiene cero o infinitas soluciones."
+        ]
+        return resultado
+    soluciones = []
+    for columna, matriz in enumerate(reemplazos, start=1):
+        calculo = calcular_determinante(matriz, metodo_determinante)
+        etapa = {"columna": columna, "calculo": calculo, "valor": None}
+        cramer["reemplazos"].append(etapa)
+        if not calculo["aplicable"]:
+            cramer["motivo"] = "metodo_determinante"
+            resultado["justificacion"] = [
+                f"LU sin intercambios no puede calcular D{columna} de A{columna}. "
+                "Elige otro método para todos los determinantes, como Reducción por filas, "
+                "o resuelve por Gauss o Gauss-Jordan."
+            ]
+            return resultado
+        etapa["valor"] = dividir_exacto(calculo["determinante"], d)
+        soluciones.append(etapa["valor"])
+    resultado.update(clasificacion=SOLUCION_UNICA, soluciones=soluciones)
+    return resultado
 
 
 def _resolver_lu(matriz_aumentada):
@@ -85,11 +152,12 @@ def _resolver_lu(matriz_aumentada):
     }
 
 
-# Gauss-Jordan conserva el valor predeterminado; LU solo pertenece a Ax=b.
+# Gauss-Jordan conserva el valor predeterminado; LU y Cramer pertenecen a Ax=b.
 METODOS = {
     "gauss": resolver_sistema_gauss,
     "gauss_jordan": resolver_sistema_gauss_jordan,
     "lu": _resolver_lu,
+    "cramer": _resolver_cramer,
 }
 METODO_PREDETERMINADO = "gauss_jordan"
 
@@ -140,8 +208,9 @@ def columnas_de(a):
     return tuple(tuple(columna) for columna in trasponer_matriz(a))
 
 
-def resolver_ecuacion_matricial(a, b, metodo=METODO_PREDETERMINADO):
-    """Resuelve Ax = b con el motor de sistemas indicado y lo lee como ecuación matricial.
+def resolver_ecuacion_matricial(a, b, metodo=METODO_PREDETERMINADO,
+                              metodo_determinante=DETERMINANTE_PREDETERMINADO):
+    """Resuelve Ax = b y conserva la evidencia del método elegido.
 
     Devuelve el resultado completo de `resolver_sistema_gauss` o de
     `resolver_sistema_gauss_jordan` sobre [A | b] —pasos, matriz final,
@@ -164,17 +233,19 @@ def resolver_ecuacion_matricial(a, b, metodo=METODO_PREDETERMINADO):
     intercambio, no ejecuta las reducciones: `clasificacion`, `x`,
     `verificacion` y `b_en_generado` son None; `justificacion` explica el límite.
 
-    No se recalcula nada por otro camino: la clasificación del sistema es la
-    única fuente de todas esas conclusiones.
+    Cramer añade `cramer`: `principal` es la evidencia de D y cada `reemplazo`
+    contiene columna, cálculo de D_i y cociente exacto. Todos usan el mismo
+    `metodo_determinante`. Si D=0 o LU no permite calcular un determinante,
+    la clasificación queda en None; no se intenta resolver por otro motor.
     """
     try:
         resolver = METODOS[metodo]
     except (KeyError, TypeError):
-        raise ValueError("Selecciona un método de resolución válido: Gauss, Gauss-Jordan o Factorización LU.") from None
+        raise ValueError("Selecciona un método de resolución válido: Gauss, Gauss-Jordan, Factorización LU o Regla de Cramer.") from None
 
     matriz_aumentada = matriz_aumentada_de_ax_b(a, b)
     filas, columnas = dimensiones(a)
-    resolucion = resolver(matriz_aumentada)
+    resolucion = resolver(matriz_aumentada, metodo_determinante) if metodo == "cramer" else resolver(matriz_aumentada)
 
     x = None
     verificacion = None

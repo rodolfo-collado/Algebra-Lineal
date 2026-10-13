@@ -1,0 +1,36 @@
+{% load componentes %}
+<p class="stage-chain">A y b → D = det(A) → Dᵢ = det(Aᵢ) → xᵢ = Dᵢ/D</p>
+<div class="procedure-stage">
+    <h4 class="stage-title">1 · Identificar A y b</h4>
+    <div class="matrix-equation" role="region" aria-label="Datos de Ax = b">
+        <span class="matrix-expression">A =</span>
+        {% include "calculadora/components/matriz.html" with matriz=resultado.a etiqueta="Matriz A de Cramer" only %}
+        <span class="matrix-expression">b =</span>
+        {% include "calculadora/components/matriz.html" with matriz=resultado.b etiqueta="Vector b de Cramer" only %}
+    </div>
+</div>
+<div class="procedure-stage">
+    <h4 class="stage-title">2 · Calcular el determinante principal</h4>
+    <p class="procedure-line">D = det(A){% if resultado.cramer.principal.aplicable %} = {{ resultado.cramer.principal.determinante }}{% endif %}</p>
+    {% include "calculadora/components/matriz.html" with matriz=resultado.cramer.principal.matriz etiqueta="Matriz del determinante D" only %}
+    {% disclosure titulo="Ver cálculo de D" nivel=4 clase="disclosure-nested" %}
+        {% include "calculadora/modules/determinantes/_procedimiento.html" with resultado=resultado.cramer.principal only %}
+    {% enddisclosure %}
+</div>
+{% for etapa in resultado.cramer.reemplazos %}
+    <div class="procedure-stage">
+        <h4 class="stage-title">{{ forloop.counter|add:2 }} · Reemplazar la columna {{ etapa.columna }} de A por b</h4>
+        <p class="procedure-lead">{{ etapa.nombre_matriz }} conserva todas las demás columnas de A.</p>
+        <div class="matrix-equation" role="region" aria-label="Matriz reemplazada {{ etapa.nombre_matriz }}">
+            <span class="matrix-expression">{{ etapa.nombre_matriz }} =</span>
+            {% include "calculadora/components/matriz.html" with matriz=etapa.determinante.matriz etiqueta=etapa.nombre_matriz only %}
+        </div>
+        <p class="procedure-line">{{ etapa.nombre }} = det({{ etapa.nombre_matriz }}){% if etapa.determinante.aplicable %} = {{ etapa.determinante.determinante }}{% endif %}</p>
+        {% disclosure titulo=etapa.titulo nivel=4 clase="disclosure-nested" %}
+            <p class="procedure-note">En este desarrollo, A representa {{ etapa.nombre_matriz }}.</p>
+            {% include "calculadora/modules/determinantes/_procedimiento.html" with resultado=etapa.determinante only %}
+        {% enddisclosure %}
+        {% if etapa.cociente %}<p class="procedure-line">{{ etapa.cociente }}</p>{% endif %}
+    </div>
+{% endfor %}
+{% if resultado.cramer.mensaje %}<p class="procedure-note">{{ resultado.cramer.mensaje }}</p>{% else %}<p class="procedure-note">Estos cocientes forman el vector x que aparece en Resultado.</p>{% endif %}
