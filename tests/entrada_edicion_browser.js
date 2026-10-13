@@ -281,10 +281,21 @@
         const event = new w.KeyboardEvent("keydown", { key: tecla, bubbles: true, cancelable: true, ...opciones });
         input.dispatchEvent(event); return event.defaultPrevented;
     };
+    // Los comandos viven en el menú de edición: clic derecho (caret colapsado, como un clic real)
+    // sobre la celda actual de esa matriz o la primera. elegir() dice si el comando estaba disponible.
+    const abrirMenu = (w, input) => {
+        input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+        const event = new w.MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2 });
+        input.dispatchEvent(event); return event.defaultPrevented;
+    };
+    const menuVisible = w => [...q(w, "[data-edicion-menu]").querySelectorAll('[role="menuitem"]')]
+        .filter(item => !item.hidden && !item.closest('[role="group"]')?.hidden);
     const elegir = (w, comando, indice = 0) => {
-        const menu = todos(w, ".matrix-selection")[indice]; menu.open = true;
-        const boton = menu.querySelector(`[data-seleccionar="${comando}"]`); boton.click();
-        return boton;
+        const g = matriz(w, indice), f = filas(w, g), actual = w.seleccionMatricial.obtener(g).celdaActual;
+        abrirMenu(w, actual ? f[actual.fila][actual.columna] : f[0][0]);
+        const item = menuVisible(w).find(i => i.dataset.seleccionar === comando);
+        if (item) item.click(); else key(w, w.document.activeElement, "Escape");
+        return Boolean(item);
     };
     const filas = (w, g = matriz(w)) => w.entradasSeguras.filasDeMatriz(g);
 
@@ -352,26 +363,30 @@
         caso(`P28.1 comando ${comando}, A y [A|b]: ${ruta}`, ruta, w => {
             if (ruta === inversa) valor(w, '[name="orden"]', 3); else modo(w, "matriz");
             const g = matriz(w); mouse(w, filas(w, g)[1][1]);
-            const boton = elegir(w, comando); igual(boton.disabled, false); igual(seleccion(w), esperado);
+            igual(elegir(w, comando), true); igual(seleccion(w), esperado);
             const estado = w.seleccionMatricial.obtener(g);
             igual(estado.tipo, "comando"); igual(estado.comando, comando);
             igual(estado.columnasA, 3); igual(estado.columnas, ruta === inversa ? 3 : 4);
             igual(todos(w, "input.independent-input[data-celda-seleccionada]").length, 0);
             igual(q(w, "[data-estado-seleccion]").getAttribute("role"), "status");
             igual(q(w, "[data-estado-seleccion]").textContent.includes(`${esperado.length} celdas.`), true);
-            igual(w.document.activeElement.matches(".matrix-selection summary"), true);
-            igual(q(w, ".matrix-selection").open, false);
+            igual(w.document.activeElement === filas(w, g)[1][1], true); // El comando devuelve el foco a la celda.
+            igual(q(w, "[data-edicion-menu]").hidden, true);
         });
     }
     for (const [m, n] of [[2, 4], [4, 2]]) caso(`P28.1 rectangular ${m}×${n}: principal min y opciones imposibles`, axb, w => {
         valor(w, '[name="filas"]', m); valor(w, '[name="columnas"]', n);
         elegir(w, "principal"); igual(seleccion(w), [[0, 0], [1, 1]]);
-        for (const comando of ["secundaria", "superior", "inferior"]) igual(elegir(w, comando).disabled, true);
+        for (const comando of ["secundaria", "superior", "inferior"]) igual(elegir(w, comando), false);
         igual(seleccion(w), [[0, 0], [1, 1]]);
-        igual(todos(w, ".matrix-selection").length, 1); // b y x no son matrices seleccionables.
+        // b y x no son matrices seleccionables: el menú de b no ofrece comandos de selección.
+        abrirMenu(w, q(w, '[data-matriz="b"] input.matrix-input'));
+        igual(menuVisible(w).map(i => i.textContent.trim()), ["Rellenar aleatoriamente"]);
+        key(w, w.document.activeElement, "Escape"); igual(seleccion(w), [[0, 0], [1, 1]]);
     });
-    caso("P28.1 fila/columna sin referencia y Ctrl único", inversa, w => {
-        igual(elegir(w, "fila").disabled, true); igual(elegir(w, "columna").disabled, true);
+    caso("P28.1 fila/columna solo con celda actual y Ctrl único", inversa, w => {
+        const comandos = w.seleccionMatricial.obtener(matriz(w)).comandos;
+        igual([comandos.includes("fila"), comandos.includes("columna")], [false, false]);
         const input = filas(w)[0][0]; mouse(w, input, { ctrlKey: true });
         igual(seleccion(w), [[0, 0]]); igual(w.seleccionMatricial.obtener(matriz(w)).rectangular, true);
         mouse(w, input, { ctrlKey: true }); igual(w.seleccionMatricial.activa(), null);
@@ -380,10 +395,11 @@
     caso("P28.1 [A|b]: manual incluye b, comandos solo A", reduccion, w => {
         modo(w, "matriz"); const f = filas(w);
         mouse(w, f[0][3], { ctrlKey: true }); igual(seleccion(w), [[0, 3]]);
-        igual(elegir(w, "columna").disabled, true);
+        igual(elegir(w, "columna"), false);
         elegir(w, "fila"); igual(seleccion(w), [[0, 0], [0, 1], [0, 2]]);
         mouse(w, f[1][3], { shiftKey: true }); igual(seleccion(w).some(c => c[1] === 3), true);
-        igual(q(w, "[data-seleccion-aumentada]").hidden, false);
+        abrirMenu(w, f[1][3]); igual(q(w, "[data-seleccion-aumentada]").hidden, false);
+        key(w, w.document.activeElement, "Escape");
     });
     caso("P28.1 API: orden, límites, sustitución atómica y limpieza", inversa, w => {
         const g = matriz(w); const api = w.seleccionMatricial;
@@ -421,14 +437,15 @@
         mouse(w, filas(w, a)[0][1], { ctrlKey: true }); igual(w.seleccionMatricial.activa().matriz === a, true);
         igual(w.seleccionMatricial.obtener(b).celdas.length, 2);
         q(w, '[name="nombre_0"]').value = "C"; valor(w, '[name="nombre_0"]', "C");
-        // El nombre sigue al símbolo; el chip añade cuántas celdas hay seleccionadas.
-        igual(todos(w, ".matrix-selection summary")[0].getAttribute("aria-label"), "Seleccionar celdas de C, 3 celdas seleccionadas");
+        // El nombre sigue al símbolo: el menú se titula con el nombre vigente y ofrece quitar la selección.
+        abrirMenu(w, filas(w, a)[0][1]); igual(q(w, "[data-edicion-titulo]").textContent, "Matriz C");
+        igual(menuVisible(w).some(i => i.dataset.accion === "deseleccionar"), true);
+        key(w, w.document.activeElement, "Escape");
         q(w, '[data-eliminar]').click(); await turno(w);
         igual(w.seleccionMatricial.obtener(a), null); igual(w.seleccionMatricial.obtener(b).nombre, "B");
         igual(q(w, '[name="celda_0_0_0"]').closest("table") === b, true);
         q(w, '[data-eliminar]').click(); await turno(w);
         igual(w.seleccionMatricial.obtener(b), null); igual(w.seleccionMatricial.activa(), null);
-        igual(todos(w, ".matrix-selection").length, 0);
     });
     for (const tipo of ["vector", "vector_lineal", "escalar", "matriz_desconocida", "vector_simbolico"]) {
         caso(`P28.1 cambio de tipo ${tipo} limpia selección sin volver a restaurarla`, operaciones, async w => {
@@ -453,10 +470,12 @@
         elegir(w, "toda", 1); valor(w, '[name="orden"]', 1);
         igual(w.seleccionMatricial.activa().nombre, "B"); igual(seleccion(w), [[0, 0]]);
         q(w, '[name="funcion_adicional"][value="vector"]').click(); await turno(w);
-        igual(w.seleccionMatricial.activa(), null); igual(todos(w, ".matrix-selection").length, 1);
+        igual(w.seleccionMatricial.activa(), null); igual(w.seleccionMatricial.obtener(q(w, '[data-matriz="b"] table')), null);
     });
     caso("P28.1 sin selección en Vectores", vectores, w => {
-        igual(w.seleccionMatricial, undefined); igual(q(w, ".matrix-selection"), null);
+        igual(w.seleccionMatricial, undefined); abrirMenu(w, q(w, '[name="v1_0"]'));
+        igual(menuVisible(w).some(i => i.dataset.seleccionar), false); igual(q(w, "[data-seleccion-menu]").hidden, true);
+        key(w, w.document.activeElement, "Escape");
     });
     for (const theme of ["light", "dark"]) for (const ruta of [inversa, operaciones, axb, reduccion]) {
         for (const [ancho, alto] of [[1280, 650], [744, 521], [320, 650]]) {
@@ -469,28 +488,31 @@
                 igual(w.getComputedStyle(input).outlineStyle, "solid");
                 igual(Math.abs(parseFloat(w.getComputedStyle(input).outlineWidth) - 3) < 0.5, true); // Redondeo físico con zoom/DPR.
                 igual(input.getAttribute("aria-describedby").includes("seleccion-celda-"), true);
-                const menu = q(w, ".matrix-selection"); menu.open = true; await turno(w);
+                abrirMenu(w, input); await turno(w);
+                const menu = q(w, "[data-edicion-menu]"), caja = menu.getBoundingClientRect();
                 const doc = w.document.documentElement; igual(doc.scrollWidth <= doc.clientWidth + 1, true);
-                igual(menu.getBoundingClientRect().width <= doc.clientWidth, true);
-                igual(todos(w, ".matrix-selection button").every(b => b.type === "button" && !b.name), true);
+                igual(caja.left >= 0 && caja.right <= doc.clientWidth && caja.top >= 0 && caja.bottom <= doc.clientHeight, true);
+                igual([...menu.querySelectorAll("button")].every(b => b.type === "button" && !b.name), true);
                 igual(todos(w, ".matrix-entry-table[role=grid]").length, 0);
+                key(w, w.document.activeElement, "Escape");
             });
         }
     }
-    // Selección compacta: «Seleccionar» es un chip; sus opciones flotan sin mover la matriz,
-    // la celda elegida cambia de fondo sin cambiar de tamaño y «Limpiar» vacía la selección.
+    // Sin chip: el menú contextual flota sin mover la matriz, la celda elegida cambia de fondo sin
+    // cambiar de tamaño y «Quitar selección» solo aparece cuando hay una selección.
     for (const ruta of [inversa, operaciones, axb, reduccion]) {
-        caso(`UX selección compacta, estado visible y Limpiar: ${ruta}`, ruta, async w => {
+        caso(`UX selección desde el menú contextual, estado visible y Quitar selección: ${ruta}`, ruta, async w => {
             if (ruta === reduccion) modo(w, "matriz");
-            const g = matriz(w); const menu = q(w, ".matrix-selection");
-            const cuerpo = menu.querySelector(".disclosure-body");
-            igual(menu.open, false); igual(cuerpo.checkVisibility(), false);
+            const g = matriz(w); const celda = filas(w, g)[0][0]; const menu = q(w, "[data-edicion-menu]");
+            igual(menu.hidden, true); igual(g.closest("form").querySelector("details.matrix-selection, summary[aria-label^='Seleccionar']"), null);
+            celda.focus(); await turno(w); // El foco puede desplazar la página; abrir el menú no.
             const antes = g.getBoundingClientRect();
-            menu.open = true; await turno(w);
-            igual(w.getComputedStyle(cuerpo).position, "absolute");
+            abrirMenu(w, celda); await turno(w);
+            igual(w.getComputedStyle(menu).position, "fixed");
+            igual(menuVisible(w).some(i => i.dataset.accion === "deseleccionar"), false);
             const despues = g.getBoundingClientRect();
             igual([despues.top, despues.left], [antes.top, antes.left]);
-            const celda = filas(w, g)[0][0];
+            key(w, w.document.activeElement, "Escape");
             const normal = w.getComputedStyle(celda).backgroundColor;
             const tamano = [celda.offsetWidth, celda.offsetHeight];
             elegir(w, "principal"); await turno(w);
@@ -498,16 +520,12 @@
             igual(w.getComputedStyle(celda).backgroundColor !== normal, true);
             igual(w.getComputedStyle(celda).borderStyle, "double");
             igual([celda.offsetWidth, celda.offsetHeight], tamano);
-            igual(menu.querySelector("[data-seleccion-resumen]").hidden, false);
-            igual(menu.querySelector("[data-seleccion-texto]").textContent.startsWith("Diagonal principal · "), true);
-            igual(menu.querySelector(".matrix-selection-count").hidden, false);
-            igual(menu.querySelector("summary").getAttribute("aria-label").includes("seleccionada"), true);
-            menu.open = true; await turno(w);
-            menu.querySelector("[data-limpiar-seleccion]").click(); await turno(w);
+            abrirMenu(w, celda);
+            const quitar = menuVisible(w).find(i => i.dataset.accion === "deseleccionar");
+            igual(quitar.textContent.trim(), "Quitar selección"); quitar.click(); await turno(w);
             igual(seleccion(w), []); igual(g.querySelector("[data-celda-seleccionada]"), null);
-            igual(menu.open, false);
-            igual(menu.querySelector("[data-seleccion-resumen]").hidden, true);
-            igual(menu.querySelector(".matrix-selection-count").hidden, true);
+            igual(menu.hidden, true); igual(w.document.activeElement === celda, true);
+            igual(q(w, "[data-estado-seleccion]").textContent, "Selección eliminada.");
         });
     }
     caso("P28.1 columnas: recortar selección y referencia de A sin seguir a b", reduccion, w => {
@@ -541,7 +559,7 @@
         pegar(w, q(w, A), "1\t0\n0\t1"); w = await post(frame);
         let cambios = 0; q(w, "#inversa-form").addEventListener("input", () => cambios++);
         elegir(w, "principal"); igual(cambios, 0); igual(q(w, "[data-resultado]").dataset.resultado, "vigente");
-        igual(q(w, "#resultado .matrix-selection"), null);
+        igual(q(w, "#resultado [data-celda-seleccionada]"), null);
         const input = filas(w)[0][0]; input.focus();
         const tecla = q(w, '.math-keyboard [data-insercion="-"]');
         tecla.dispatchEvent(new w.MouseEvent("mousedown", {bubbles:true,cancelable:true})); tecla.click();
@@ -598,7 +616,7 @@
         elegir(w, "toda"); const seleccionada = w.seleccionMatricial.activa();
         const texto = f.map(fila => fila.slice(0, seleccionada.columnasA).map(c => c.value).join("\t")).join("\n");
         comprobarCopia(w, texto, seleccion(w)); // Solo el modelo decide si b pertenece al bloque.
-        igual(w.document.activeElement.matches("summary"), true);
+        igual(w.document.activeElement.matches("input.matrix-input"), true);
     });
     for (const [comando, texto, coords, forma] of [
         ["fila", "4\t5\t6", [[0,0],[0,1],[0,2]], "rectangulo"],
@@ -682,8 +700,11 @@
         elegir(w,"toda"); const f = filas(w);
         let target = f[0][0];
         if (destino === "texto DOM") {
+            // Seleccionar texto de la página con el ratón saca el foco de la celda a la que volvió el comando.
+            w.document.activeElement.blur();
             const p = w.document.createElement("p"); p.textContent = "texto normal"; w.document.body.append(p);
-            const range = w.document.createRange(); range.selectNodeContents(p); w.getSelection().addRange(range);
+            // addRange no reemplaza un rango existente (el caret de la celda): se vacía antes.
+            const range = w.document.createRange(); range.selectNodeContents(p); w.getSelection().removeAllRanges(); w.getSelection().addRange(range);
             target = p;
         } else {
             if (destino !== "celda") { target = w.document.createElement(destino === "textarea" ? "textarea" : "input"); w.document.body.append(target); }
@@ -839,7 +860,7 @@
         igual(seleccion(w),antes); igual(avisoPegado(w).includes("no son compatibles"),true);
         elegir(w,"toda"); pegar(w,f[0][0],"1\t2\n3\t4"); igual(f.flat().map(c=>c.value),Array(9).fill("7"));
     });
-    for(const [comando] of comandos) caso(`P28.3 valor único → ${comando}, desde summary`,inversa,w=>{
+    for(const [comando] of comandos) caso(`P28.3 valor único → ${comando}, desde la celda de contexto`,inversa,w=>{
         valor(w,'[name="orden"]',3); const f=filas(w); f.flat().forEach(c=>{c.value="7";});
         f[1][1].focus(); elegir(w,comando); const coords=seleccion(w), foco=w.document.activeElement;
         igual(pegar(w,foco,"-11/13"),true);
@@ -1159,7 +1180,7 @@
         const f = filas(w); elegir(w, "principal"); pegar(w, w.document.activeElement, "1");
         igual(disponible(w), true); pegar(w, w.document.activeElement, "1");
         igual(avisoPegado(w), "Pegado sin cambios."); igual(disponible(w), false);
-        // El summary conserva foco; la acción anterior ya no es accesible.
+        // La celda conserva foco; la acción anterior ya no es accesible.
         igual(accionUndo(w).hidden, true); igual(w.getComputedStyle(accionUndo(w)).display,"none");
         igual(w.deshacerPegado.deshacer(), false);
         igual([f[0][0].value, f[1][1].value], ["1", "1"]);
@@ -1252,7 +1273,7 @@
         pegar(w,f[0][0],"9"); key(w,f[0][0],"Escape"); igual(seleccion(w),[]); igual(disponible(w),true);
         restaurar(w,antes);
     });
-    caso("P28.4 foco del summary vuelve a celda de contexto; control fuera de live region", inversa, w => {
+    caso("P28.4 foco vuelve a la celda de contexto; control fuera de live region", inversa, w => {
         const f=filas(w); f[1][1].focus(); elegir(w,"principal"); pegar(w,w.document.activeElement,"5");
         const boton=accionUndo(w), aviso=q(w,'[data-estado-pegado]');
         igual(boton.type,"button"); igual(boton.textContent,"Deshacer"); igual(boton.closest('[role="status"], [aria-live]'),null);

@@ -91,12 +91,10 @@
     // de más al copiar un resultado) no son filas; una línea vacía interior sí lo es.
     document.addEventListener("paste", event => {
         const input = event.target;
-        const esCelda = input.matches?.('input.matrix-input[type="text"]');
-        const esControl = input.matches?.(".matrix-selection summary");
-        if (event.defaultPrevented || (!esCelda && !esControl) || input.closest("[hidden], [data-escalar]")) return;
+        if (event.defaultPrevented || !input.matches?.('input.matrix-input[type="text"]') ||
+            input.closest("[hidden], [data-escalar]")) return;
         const form = input.closest("[data-entrada-calculo]");
-        const grid = esCelda ? input.closest(".matrix-entry-table, #matrix-grid, #vector-list") :
-            input.closest(".matrix, #matrix-grid-wrapper")?.querySelector(".matrix-entry-table, #matrix-grid");
+        const grid = input.closest(".matrix-entry-table, #matrix-grid, #vector-list");
         if (!form || !grid || !event.clipboardData) return;
         const texto = event.clipboardData.getData("text/plain");
         // Consultar sin recortar readonly/disabled: un fallo no debe cambiar la selección.
@@ -110,7 +108,7 @@
         const nuevo = Boolean(seleccion || mascara);
         const textoValido = !nuevo || copia.textoAdmitido(texto);
         const bloque = textoValido ? bloqueDeTexto(texto, nuevo && Boolean(metadata)) : [];
-        if (!nuevo && (!esCelda || input.readOnly || input.matches(":disabled") ||
+        if (!nuevo && (input.readOnly || input.matches(":disabled") ||
             (!texto.includes("\t") && bloque.length <= 1))) return;
         event.preventDefault();
 
@@ -165,7 +163,7 @@
             cambios = mascara ? mascara.celdas.map(([i, j]) => [filas[inicio + i][columna + j], bloque[i][j]]) :
                 bloque.flatMap((fila, i) => fila.map((valor, j) => [filas[inicio + i][columna + j], valor]));
         }
-        if ((esCelda && (input.readOnly || input.matches(":disabled"))) || cambios.some(([celda]) =>
+        if (input.readOnly || input.matches(":disabled") || cambios.some(([celda]) =>
             !celda?.isConnected || celda.closest(".matrix-entry-table, #matrix-grid, #vector-list") !== grid ||
             celda.readOnly || celda.matches(":disabled") || celda.closest("[hidden]"))) {
             estado.textContent = "El bloque incluye celdas que no se pueden editar. No se pegó ningún valor.";

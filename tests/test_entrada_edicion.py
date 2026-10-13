@@ -33,11 +33,11 @@ class PruebasEntradaEdicion(SimpleTestCase):
                      "/matrices/reduccion/"):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
-                self.assertContains(respuesta, 'id="matrix-selection-template"', count=1)
                 self.assertContains(respuesta, 'data-estado-seleccion', count=1)
                 self.assertContains(respuesta, 'seleccion_matricial.js', count=1)
                 self.assertContains(respuesta, 'copiar_matricial.js', count=1)
-                plantilla = re.search(r'<template id="matrix-selection-template">(.*?)</template>',
+                # Los siete comandos viven en el menú de edición del clic derecho (test_menu_edicion).
+                plantilla = re.search(r'<template id="menu-edicion-template">(.*?)</template>',
                                      respuesta.content.decode(), re.S).group(1)
                 botones = [e for e in Pagina(plantilla).elementos if "data-seleccionar" in e]
                 self.assertEqual(len(botones), 7)

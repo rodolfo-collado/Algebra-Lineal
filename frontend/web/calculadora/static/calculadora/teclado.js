@@ -14,6 +14,8 @@
         let objetivo = null;
         let perfilActual = null;
         let cambioVisual = 0;
+        // El menú de edición (clic derecho) prolonga la edición del campo: no cierra el dock.
+        const enMenuEdicion = (nodo) => Boolean(nodo?.closest?.("[data-edicion-menu]"));
 
         function crearTecla(tecla) {
             const boton = plantillaTecla.content.firstElementChild.cloneNode(true);
@@ -109,7 +111,7 @@
         }
 
         function sincronizar() {
-            if (!esValido(objetivo) || document.activeElement !== objetivo) objetivo = null;
+            if (!esValido(objetivo) || (document.activeElement !== objetivo && !enMenuEdicion(document.activeElement))) objetivo = null;
             if (objetivo) {
                 mostrarPerfil(perfilDe(objetivo));
                 sincronizarOperandos();
@@ -132,7 +134,7 @@
 
         // Delegación: los campos nuevos heredan el perfil de su contenedor.
         document.addEventListener("focusin", (event) => {
-            if (teclado.contains(event.target)) return;
+            if (teclado.contains(event.target) || enMenuEdicion(event.target)) return;
             objetivo = esValido(event.target) ? event.target : null;
             sincronizar();
             requestAnimationFrame(revelarCampo);
@@ -149,7 +151,7 @@
         // También cubre controles que no toman foco al pulsarlos (por ejemplo, un label).
         document.addEventListener("pointerdown", (event) => {
             const campo = event.target.closest("label")?.control || event.target;
-            if (!teclado.contains(event.target) && !esValido(campo)) {
+            if (!teclado.contains(event.target) && !enMenuEdicion(event.target) && !esValido(campo)) {
                 objetivo = null;
                 sincronizar();
             }

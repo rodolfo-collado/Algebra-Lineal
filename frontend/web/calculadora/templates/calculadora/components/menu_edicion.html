@@ -1,0 +1,24 @@
+{% load static %}
+{% comment %}Menú contextual de edición: menu_edicion.js lo clona una vez y lo abre con clic derecho (o Shift+F10 / tecla Menú) sobre una entrada compatible, ocultando lo que no aplica a ese tipo de entrada. Las acciones se identifican por data-accion y data-seleccionar; sin JavaScript no existe.{% endcomment %}
+<template id="menu-edicion-template">
+    <div class="menu-edicion" role="menu" aria-labelledby="menu-edicion-titulo" data-edicion-menu hidden>
+        <p class="menu-edicion-titulo" id="menu-edicion-titulo" aria-hidden="true" data-edicion-titulo></p>
+        <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-accion="rellenar">Rellenar aleatoriamente</button>
+        <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-accion="limpiar">Limpiar</button>
+        <div class="menu-edicion-separador" role="separator" data-seleccion-menu></div>
+        <div class="menu-edicion-grupo" role="group" aria-labelledby="menu-edicion-seleccionar" data-seleccion-menu>
+            <p class="menu-edicion-grupo-titulo" id="menu-edicion-seleccionar" aria-hidden="true">Seleccionar</p>
+            <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-seleccionar="toda">Toda la matriz</button>
+            <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-seleccionar="fila">Fila actual</button>
+            <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-seleccionar="columna">Columna actual</button>
+            <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-seleccionar="principal">Diagonal principal</button>
+            <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-seleccionar="secundaria">Diagonal secundaria</button>
+            <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-seleccionar="superior">Triangular superior</button>
+            <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-seleccionar="inferior">Triangular inferior</button>
+            <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-accion="deseleccionar">Quitar selección</button>
+        </div>
+        <p class="menu-edicion-ayuda" id="menu-edicion-gestos" aria-hidden="true" data-seleccion-menu>Shift+clic: rango. Ctrl+clic: agregar o quitar celdas. Esc: quitar la selección.</p>
+        <p class="menu-edicion-ayuda" id="menu-edicion-aumentada" aria-hidden="true" data-seleccion-aumentada>Los comandos seleccionan solo A; la selección manual puede incluir b.</p>
+    </div>
+</template>
+<script src="{% static 'calculadora/menu_edicion.js' %}" defer></script>

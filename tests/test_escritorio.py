@@ -324,10 +324,11 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
         formato = (TEMPLATES / "calculadora" / "components" / "numeric_format.html").read_text(encoding="utf-8")
         self.assertEqual(len(re.findall(r'<select[^>]*autocomplete="off"', formato)), 2)
 
-    def test_la_web_conserva_el_menu_contextual_del_navegador(self):
-        for archivo in STATIC.glob("*.js"):
-            with self.subTest(script=archivo.name):
-                self.assertNotIn("contextmenu", archivo.read_text(encoding="utf-8"))
+    def test_solo_el_menu_de_edicion_sustituye_el_menu_contextual_del_navegador(self):
+        # Fuera de las entradas compatibles (y con texto seleccionado en ellas) sigue el del navegador.
+        con_menu = sorted(archivo.name for archivo in STATIC.glob("*.js")
+                          if "contextmenu" in archivo.read_text(encoding="utf-8"))
+        self.assertEqual(con_menu, ["menu_edicion.js"])
 
 
 if __name__ == "__main__":
