@@ -205,10 +205,22 @@ Los servicios pueden consultar la estimación antes de ejecutar:
   método, la reducción de [A | b] más el producto A·x de la comprobación, que se
   cuenta siempre porque antes de resolver no se sabe si la solución es única.
 
-Las vistas de esas dos herramientas todavía no las llaman: no hay aviso,
-confirmación ni cambio en su flujo, y ninguna entrada válida se rechaza por su
-costo. Una prueba lo fija forzando que todo sea muy pesado y comprobando que
-ambas páginas siguen resolviendo.
+Gauss, Gauss-Jordan y Comparar ambos conservan su flujo sin confirmación por
+costo en esas dos herramientas. Ninguna entrada válida se rechaza por su costo.
+
+Para **Factorización LU de Ax=b**, `estimar_ecuacion_web` suma cuatro partes:
+`estimar_lu(n, n)`, dos cotas de `estimar_gauss_jordan(n, n+1,
+columnas_pivote=n)` y el producto A·x de comprobación. `estimar_lu` es el
+estimador compartido con Determinantes; contempla los reemplazos, estados
+de U, cocientes para L y verificación L→I. Las reducciones cuentan todos
+los pasos y las matrices Antes/Después almacenadas. Los perfiles intermedios
+se aproximan con el crecimiento de bits de los racionales, sin factorizar ni
+reducir para estimar. Son cotas densas conservadoras, incluso con muchos ceros.
+
+La vista consulta este presupuesto antes de ejecutar LU. Si es PESADA o
+MUY_PESADA, pide Continuar con una firma HMAC SHA-256 ligada a A, b y método.
+Cambiar cualquiera de esos datos invalida la confirmación; Cancelar conserva
+las celdas y no calcula. El aviso funciona también sin JavaScript.
 
 Matriz inversa (P26.4) es la primera integración visible.
 `servicios_inversa.estimar_inversa_web(entrada)` estima Gauss-Jordan sobre

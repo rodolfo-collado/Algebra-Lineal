@@ -103,7 +103,11 @@ vectores; `vectores.py` la importa de ahí. Los productos `AB` y `Ax` no
 dependen de `vectores.py`: la explicación por columnas es la misma combinación
 lineal, y las pruebas comprueban que coincide con `combinar` de ese módulo.
 `ecuaciones_matriciales.py` tampoco escalona: escribe `Ax = b` como `[A | b]`
-y llama al motor de sistemas elegido; al vivir por encima de `sistemas.py` y
+y llama al motor de sistemas elegido. Para LU, llama a `factorizar_lu` y
+reduce por separado `[L | b]` y `[U | y]` con `aplicar_gauss_jordan`, hasta
+`[I | y]` y `[I | x]` cuando hay solución única. Reutiliza la interpretación
+de sistemas para clasificar una U singular. LU en Ax=b requiere A cuadrada
+y se detiene si la factorización necesita intercambio. Al vivir por encima de `sistemas.py` y
 de `matrices.py`, `matrices.py` no necesita importar `sistemas.py`.
 
 `expresiones_matriciales` no recalcula los productos numéricos. El parser arma

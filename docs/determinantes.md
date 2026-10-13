@@ -343,9 +343,9 @@ llamar al helper. Como $\det(L) = 1$, $\det(A) = \det(L)\det(U) = \det(U)$.
 El producto de la diagonal se muestra en el procedimiento y el determinante
 final en Resultado.
 
-El helper está fuera del paquete `determinantes` y no depende de él. Podrá
-reutilizarse para resolver $Ax = b$ con $Ly = b$ y $Ux = y$; ese nuevo método
-de Resolver Ax = b queda para una tarea separada.
+El helper está fuera del paquete `determinantes` y no depende de él.
+Resolver Ax = b también lo reutiliza para obtener $A=LU$, antes de resolver
+$Ly=b$ y $Ux=y$ mediante las matrices aumentadas de ambas etapas.
 
 ### Reducción por filas
 
