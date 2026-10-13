@@ -20,7 +20,7 @@ que explicar el código: cada sección dice **qué archivo** hace el trabajo,
 | Regla de Sarrus | solo 3×3 | tres diagonales que suman menos tres que restan |
 | Cofactores | 1×1 a 6×6 | desarrollar por una fila o una columna |
 | Factorización LU | todos | $A = LU$ sin intercambios; $\det(A) = \det(U)$ |
-| Reducción por filas | todos | Gauss + corrección de intercambios y normalizaciones |
+| Reducción por filas | todos | triangularizar sin normalizar; producto de la diagonal y signo de los intercambios |
 
 Todos los métodos que se pueden aplicar a la misma A dan **exactamente** el
 mismo determinante; las pruebas lo comprueban contra una fórmula independiente.
@@ -140,9 +140,10 @@ seguro aunque alguien lo use sin la interfaz.
 | [`comun.py`](../backend/determinantes/comun.py) | `preparar`, `producto`, `directo_2x2`, `determinante_desde_reduccion` | `ad`, `bc` |
 | [`sarrus.py`](../backend/determinantes/sarrus.py) | `sarrus` | `positivas` y `negativas`: posiciones, valores y producto de cada diagonal |
 | [`cofactores.py`](../backend/determinantes/cofactores.py) | `cofactores`, `menor`, `elegir_expansion` | `eje`, `indice`, `automatico` y la lista de `terminos` |
-| [`lu.py`](../backend/determinantes/lu.py) | `lu` | `l`, `u`, `pasos`, `diagonal` o `pivote_nulo` |
-| [`reduccion.py`](../backend/determinantes/reduccion.py) | `reduccion` | `u`, `pasos`, `diagonal`, `producto_diagonal` |
-| [`factorizacion_lu.py`](../backend/factorizacion_lu.py) | `factorizar_lu` | `aplicable`, `l`, `u`, `pasos`, `pivote_nulo` |
+| [`lu.py`](../backend/determinantes/lu.py) | `lu` | `l`, `u`, `pasos`, `etapas`, `verificacion`, `diagonal` o `pivote_nulo` |
+| [`reduccion.py`](../backend/determinantes/reduccion.py) | `reduccion` | `u`, `pasos`, `intercambios`, `signo`, `diagonal`, `producto_diagonal` |
+| [`triangularizacion.py`](../backend/determinantes/triangularizacion.py) | `triangularizar` | `u`, `pasos`, `intercambios` (sin calcular el determinante) |
+| [`factorizacion_lu.py`](../backend/factorizacion_lu.py) | `factorizar_lu` | `aplicable`, `l`, `u`, `pasos`, `etapas`, `verificacion`, `pivote_nulo` |
 | [`presupuesto.py`](../backend/determinantes/presupuesto.py) | `estimar_determinante` | una `Estimacion` (no calcula) |
 
 Toda la aritmética usa `sumar_exacto`, `restar_exacto`, `multiplicar_exacto`
@@ -168,10 +169,11 @@ copia de la matriz antes y después:
  "despues": [[3, 4], [0, 2]], "correccion_determinante": -1}
 ```
 
-Los intercambios y las normalizaciones añaden `correccion_determinante`: el
-número por el que hay que multiplicar para recuperar det(A) (ver la
-[sección de Reducción](#reducción-por-filas)). Los reemplazos
-`Fi = Fi − k·Fj` no lo añaden porque no cambian el determinante.
+En Determinantes los intercambios añaden `correccion_determinante = -1`.
+Los reemplazos `Fi = Fi − k·Fj` no lo añaden porque no cambian el determinante.
+La primitiva compartida conserva además la anotación de las normalizaciones
+que usan Gauss y Gauss-Jordan en otros módulos, incluida Matriz inversa.
+El método de Determinantes por reducción no las ejecuta.
 
 **Árbol de cofactores.** Cada término guarda su posición, el elemento, la
 matriz `menor`, el `signo`, el valor del menor, el `cofactor`, la
@@ -286,57 +288,97 @@ que se repite junto a su producto en la lista, así que no depende del color.
 
 ### Factorización LU
 
-$A = LU$, donde:
+[`factorizacion_lu.py`](../backend/factorizacion_lu.py) recibe una A de
+$m\times n$ y construye $A = LU$: L tiene tamaño $m\times m$ y es triangular
+inferior **unitaria**; U tiene tamaño $m\times n$ y queda **escalonada**.
+Para una A cuadrada, U es triangular superior.
 
-- **U** es triangular superior y se obtiene solo con **reemplazos**
-  $F_i \leftarrow F_i - m_{ij}F_j$, sin normalizar pivotes;
-- **L** es triangular inferior con **unos en la diagonal** y guarda cada
-  **multiplicador** $m_{ij} = u_{ij}/u_{jj}$ en la posición $(i, j)$.
+La construcción sigue el procedimiento de clase:
 
-```python
-# L guarda los multiplicadores usados para construir U.
-l[i][j] = dividir_exacto(u[i][j], u[j][j])
-reemplazar_fila(u, pasos, i, j, l[i][j])
+1. L empieza como la identidad y U como una copia exacta de A.
+2. En la fila pivote $r$ y columna pivote $c$, se toma $p = u_{rc}$ y las
+   entradas $u_{ic}$ desde esa fila hacia abajo, **antes** de eliminarlas.
+3. Se divide cada entrada entre $p$: $l_{ir} = u_{ic}/p$. El primer cociente
+   es $p/p = 1$ y los siguientes completan la **columna r de L**.
+4. Con esos cocientes se aplican $F_i \leftarrow F_i - l_{ir}F_r$ a U.
+   No se intercambia ni se normaliza ninguna fila.
+5. Se avanza la fila pivote. Las columnas nulas desde esa fila hacia abajo
+   se saltan sin avanzar la fila: $r$ y $c$ pueden ser distintos.
+
+Cada `etapa` guarda `u_antes`, `fila_pivote`, `columna_pivote`, `pivote`,
+`columna_l`, las `entradas` con su `entrada`, `cociente` y `posicion_l`, y
+las `operaciones` con fila destino, fila pivote y factor exacto. Todas las
+posiciones de esta evidencia empiezan en 1. Los `pasos` conservan además
+las matrices antes y después de cada reemplazo.
+
+La interfaz muestra las divisiones y los reemplazos por columna antes de
+presentar $A = LU$. El backend aplica **la misma secuencia** de reemplazos
+a L y guarda una `verificacion` compacta: `l_reducida`, `es_identidad` y
+cantidad de `reemplazos`, sin guardar otro historial de matrices.
+Se muestra el estado final $L\to I$: como las mismas operaciones llevan
+$A\to U$, esto verifica $A = LU$.
+
+**Ejemplo de las diapositivas (4×5).**
+
+```text
+A = [ 2   4  -1   5  -2 ]    L = [ 1   0   0   0 ]    U = [ 2   4  -1   5  -2 ]
+    [-4  -5   3  -8   1 ]        [-2   1   0   0 ]        [ 0   3   1   2  -3 ]
+    [ 2  -5  -4   1   8 ]        [ 1  -3   1   0 ]        [ 0   0   0   2   1 ]
+    [-6   0   7  -3   1 ]        [-3   4   2   1 ]        [ 0   0   0   0   5 ]
 ```
 
-Como $\det(L) = 1$, $\det(A) = \det(L)\det(U) = \det(U)$.
+Los pivotes están en (1,1), (2,2), (3,4) y (4,5). En la tercera etapa se
+divide 2/2 = 1 y 4/2 = 2: esos cocientes van a la **columna 3 de L**,
+aunque provengan de la columna 4 de U. Las pruebas verifican exactamente
+el producto $LU = A$ y los reemplazos $A\to U$, $L\to I$.
 
-**Por qué no intercambia.** Si se intercambiaran filas ya no sería $A = LU$,
-sino $PA = LU$, con una matriz de permutación $P$. Este método es la
-factorización sin permutar, así que cuando un pivote $u_{jj}$ es 0 y debajo
-hay un número distinto de 0, `factorizar_lu` se detiene y devuelve
-`aplicable = False` y `pivote_nulo = {"fila": j, "columna": j}`. La interfaz lo
-explica y sugiere Reducción por filas o Cofactores. Si el pivote es 0 y debajo
-solo hay ceros, no hay nada que eliminar y LU continúa; U tendrá un 0 en la
-diagonal y det(A) = 0.
+**Por qué no intercambia.** Si $u_{rc}$ es 0 y hay una entrada no nula
+debajo, el helper se detiene con `aplicable = False` y
+`pivote_nulo = {"fila": r, "columna": c}`. No transforma el problema en
+$PA = LU$. La interfaz explica el motivo y sugiere Reducción por filas o
+Cofactores. Si toda la columna restante es nula, se salta esa columna.
 
-[`factorizacion_lu.py`](../backend/factorizacion_lu.py) está fuera del
-paquete `determinantes` y no depende de él: podrá reutilizarse, por ejemplo,
-para resolver $Ax = b$ con $Ly = b$ y $Ux = y$.
+**Determinantes sigue siendo cuadrado:** `lu` valida esa condición antes de
+llamar al helper. Como $\det(L) = 1$, $\det(A) = \det(L)\det(U) = \det(U)$.
+El producto de la diagonal se muestra en el procedimiento y el determinante
+final en Resultado.
+
+El helper está fuera del paquete `determinantes` y no depende de él. Podrá
+reutilizarse para resolver $Ax = b$ con $Ly = b$ y $Ux = y$; ese nuevo método
+de Resolver Ax = b queda para una tarea separada.
 
 ### Reducción por filas
 
-Reutiliza `aplicar_gauss` de [`gauss.py`](../backend/gauss.py) tal como lo
-usan Reducción por filas y Resolver Ax = b. Ese Gauss hace tres operaciones y
-cada una afecta a det de forma distinta:
+[`triangularizacion.py`](../backend/determinantes/triangularizacion.py)
+obtiene U con las operaciones de clase: conserva los pivotes y elimina
+debajo mediante reemplazos $F_i \leftarrow F_i - kF_r$, con
+$k = u_{ic}/u_{rc}$. Solo intercambia cuando el pivote actual es 0 y hay
+una entrada no nula debajo. Si toda la columna restante es nula, la salta.
 
-| Operación | Ejemplo | Efecto en det | Corrección para recuperar det(A) |
-| --- | --- | --- | --- |
-| Intercambio | `F1 <-> F2` | lo multiplica por −1 | ×(−1) |
-| Normalización | `F1 = (1/3)F1` | lo divide entre el pivote 3 | ×3 (el pivote) |
-| Reemplazo | `F2 = F2 - (2)F1` | no cambia | ninguna |
+| Operación | Ejemplo | Efecto en det |
+| --- | --- | --- |
+| Reemplazo | `F2 = F2 - (2)F1` | no cambia |
+| Intercambio necesario | `F1 <-> F2` | cambia el signo |
 
-Gauss **normaliza** cada pivote, así que la diagonal de la U final solo tiene
-unos (o un 0 si A es singular). Multiplicar esa diagonal **no basta**: para
-$A = \begin{pmatrix} 0 & 2 \\ 3 & 4 \end{pmatrix}$ la diagonal es $1 \cdot 1$
-y el determinante es −6. Por eso
-`determinante_desde_reduccion(pasos, diagonal)` multiplica la diagonal por
-todas las correcciones registradas:
+**No normaliza filas.** Comparte `buscar_fila_pivote`, `intercambiar_filas`
+y `reemplazar_fila` con los otros algoritmos, pero no llama a
+`aplicar_gauss` ni cambia el Gauss/Gauss-Jordan de Reducción, Matriz inversa
+o Resolver Ax = b.
 
-$$\det(A) = \det(U)\cdot\prod \text{correcciones} = 1 \cdot (-1)\cdot 3 \cdot 2 = -6$$
+[`reduccion.py`](../backend/determinantes/reduccion.py) toma esa evidencia,
+calcula el producto exacto de la diagonal y aplica el signo correspondiente
+a la cantidad `intercambios` ($s$):
 
-Si la diagonal tiene un 0, det(U) = 0 y det(A) = 0: las correcciones son
-números distintos de 0 y no pueden cambiarlo.
+$$\det(U) = \prod_i u_{ii}, \qquad \det(A) = (-1)^s\det(U).$$
+
+Para $A = \begin{pmatrix} 0 & 2 \\ 3 & 4 \end{pmatrix}$ solo hace
+`F1 <-> F2`, deja $U = \begin{pmatrix} 3 & 4 \\ 0 & 2 \end{pmatrix}$,
+obtiene $\det(U) = 3\cdot2 = 6$ y aplica $(-1)^1\cdot6 = -6$.
+La interfaz muestra las operaciones, cada cambio de signo, U, su producto
+diagonal y el ajuste $(-1)^s$. El determinante final aparece en Resultado.
+
+Si la diagonal tiene un 0, el producto es nulo y el ajuste de signo lo
+conserva.
 
 ## Por qué se multiplica la diagonal de una matriz triangular
 
@@ -402,7 +444,9 @@ sequenceDiagram
   procedimiento que se mostrará. Una 6×6 de enteros pequeños queda en
   «perceptible» (≈1 s de referencia); con números grandes pide confirmación.
   Por encima de 6×6 se rechaza siempre.
-- LU y Reducción usan la cota de Gauss (`estimar_gauss`) más las correcciones.
+- LU y Reducción parten de la cota de Gauss (`estimar_gauss`). LU añade las
+  divisiones, una U por etapa y la repetición de los reemplazos sobre L;
+  conserva solo L, U y la identidad final de esa verificación.
 - Los límites de entrada no cambian: 1 a 10 filas y columnas, el parser común
   y `BITS_MAXIMOS` para cada resultado intermedio.
 
@@ -410,15 +454,16 @@ sequenceDiagram
 
 | Archivo | Qué cubre |
 | --- | --- |
-| [`test_determinantes.py`](../tests/test_determinantes.py) | cada método; 1×1, 2×2, singular, negativos, fracciones; Sarrus solo 3×3; cofactores por fila, columna y Automático; ceros; signos; A = LU, L con unos, LU que necesitaría intercambio; reducción con y sin intercambios, normalización; propiedades (intercambio, escalado, triangular); consistencia de todos los métodos contra la fórmula de Leibniz; no cuadrada, método inválido, seguridad numérica y presupuesto; la regla 2×2 de la inversa usa `directo_2x2` |
-| [`test_determinantes_web.py`](../tests/test_determinantes_web.py) | catálogo y navegación; métodos contextuales; Aplicar; POST manipulados; errores por celda; procedimiento y resultado de cada método; menores anidados; LU detenida; confirmación con firma; transferencia de A a Matriz inversa (sin calcular y validada) |
+| [`test_determinantes.py`](../tests/test_determinantes.py) | cada método; 1×1, 2×2, singular, negativos, fracciones; Sarrus solo 3×3; cofactores por fila, columna y Automático; ceros; signos; LU cuadrada; reducción sin normalizaciones con 0, 1, 2 y 3 intercambios; diagonal y signo; propiedades y consistencia contra Leibniz; validación, seguridad y presupuesto de las etapas LU; reutilización de `directo_2x2` por la inversa |
+| [`test_factorizacion_lu.py`](../tests/test_factorizacion_lu.py) | ejemplo 4×5 de las diapositivas; matrices altas y anchas; L m×m y U m×n; columnas saltadas; evidencia exacta por etapa; A = LU; mismos reemplazos A→U y L→I; intercambio no aplicable; validación y límites numéricos |
+| [`test_determinantes_web.py`](../tests/test_determinantes_web.py) | catálogo y navegación; métodos contextuales; Aplicar; POST manipulados; errores por celda; divisiones de L antes de A = LU y verificación compacta; LU detenida; reducción con signos y fracciones sin normalizar; procedimiento plegable y resultado único; menores anidados; confirmación con firma; transferencia a Matriz inversa |
 | [`test_gauss_jordan_bloques.py`](../tests/test_gauss_jordan_bloques.py) | el contrato de pasos incluye `correccion_determinante` |
 | [`test_regresion_sistemas_bloques.py`](../tests/test_regresion_sistemas_bloques.py) | Reducción por filas y Ax = b no cambian (la base congelada ignora solo la anotación nueva) |
 | [`test_matriz_inversa_web.py`](../tests/test_matriz_inversa_web.py) | la línea de det(A) en el resultado de la inversa y la regresión de Gauss-Jordan y de la regla 2×2 |
 | Pruebas transversales | teclado, feedback, seguridad numérica, presentación numérica, procedimiento plegable y navegación incluyen la nueva ruta |
 
 ```bash
-uv run python -m unittest tests.test_determinantes tests.test_determinantes_web -v
+uv run --locked python -m unittest tests.test_factorizacion_lu tests.test_determinantes tests.test_determinantes_web -v
 ```
 
 ## Guía rápida para exponer
@@ -442,9 +487,10 @@ uv run python -m unittest tests.test_determinantes tests.test_determinantes_web 
 7. **[`sarrus.py`](../backend/determinantes/sarrus.py)**: las seis diagonales.
 8. **[`factorizacion_lu.py`](../backend/factorizacion_lu.py)** y
    **[`lu.py`](../backend/determinantes/lu.py)**: L, U y el pivote nulo.
-9. **[`reduccion.py`](../backend/determinantes/reduccion.py)** y
+9. **[`reduccion.py`](../backend/determinantes/reduccion.py)**,
+   **[`triangularizacion.py`](../backend/determinantes/triangularizacion.py)** y
    **[`operaciones_filas.py`](../backend/operaciones_filas.py)**: las
-   correcciones de intercambios y normalizaciones.
+   operaciones sin normalizar, el producto diagonal y el signo de los intercambios.
 10. **[`servicios_determinantes.py`](../frontend/web/calculadora/servicios_determinantes.py)**:
     de datos exactos a textos; el presupuesto.
 11. **Plantillas** `index.html`, `_procedimiento.html` y `_cofactores.html`.
@@ -462,13 +508,14 @@ uv run python -m unittest tests.test_determinantes tests.test_determinantes_web 
   presupuesto que avisa antes de calcular.
 - **Sarrus solo vale para 3×3**: en 4×4 las «diagonales» no dan el
   determinante.
-- **LU**: L guarda los multiplicadores, U sale de los reemplazos,
-  $\det(L) = 1$ y por qué un pivote 0 detiene el método sin intercambios.
-- **Reducción**: qué hace cada operación elemental con det y por qué no basta
-  multiplicar la diagonal de un Gauss que normaliza.
+- **LU**: las divisiones de una columna pivote de U construyen la columna
+  de L correspondiente a la fila pivote; los mismos reemplazos llevan
+  A→U y L→I; $\det(L) = 1$; un intercambio necesario detiene el método.
+- **Reducción**: los reemplazos conservan det, los intercambios cambian su
+  signo y $\det(A) = (-1)^s\det(U)$, sin normalizar filas.
 - **Matriz triangular**: su determinante es el producto de la diagonal.
 - **Invertibilidad**: $\det(A) \neq 0 \Leftrightarrow A$ invertible, y por qué
   Matriz inversa conserva también Gauss-Jordan (construye A⁻¹).
-- **Reutilización**: una sola `ad − bc`, los pasos de Gauss compartidos y una
+- **Reutilización**: una sola `ad − bc`, las operaciones elementales compartidas y una
   LU independiente para usos futuros.
 - **Transferencia sin almacenamiento**: un POST validado lleva A a la inversa.
