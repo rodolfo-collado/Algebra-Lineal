@@ -38,7 +38,10 @@ def exactos(valor):
     if isinstance(valor, Fraction):
         return str(valor)
     if isinstance(valor, dict):
-        return {clave: exactos(elemento) for clave, elemento in valor.items()}
+        # La base congelada es anterior a la anotación de det(A) en los pasos; la cubren
+        # test_gauss_jordan_bloques y test_determinantes.
+        return {clave: exactos(elemento) for clave, elemento in valor.items()
+                if clave != "correccion_determinante"}
     if isinstance(valor, (list, tuple)):
         return [exactos(elemento) for elemento in valor]
     return valor

@@ -185,7 +185,7 @@
         if (input && input === document.activeElement) input.blur();
     }, { capture: true, passive: true });
 
-    document.querySelectorAll("#expresiones-form, #ecuacion-form, #inversa-form, #vectores-form, #sistema-form").forEach(form => {
+    document.querySelectorAll("#expresiones-form, #ecuacion-form, #inversa-form, #determinantes-form, #vectores-form, #sistema-form").forEach(form => {
         form.querySelectorAll("[data-aplicar]").forEach(button => {
             button.hidden = true;
             // Un submit oculto todavía puede ser el botón por defecto de Enter.

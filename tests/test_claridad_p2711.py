@@ -23,7 +23,8 @@ from tests.test_vectores_web import combinacion, datos_vectores
 RAIZ = Path(__file__).resolve().parents[1]
 ESTATICOS = RAIZ / "frontend/web/calculadora/static/calculadora"
 HERRAMIENTAS = ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
-                "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/")
+                "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
+                "/romanos/conversion/")
 
 
 class PruebasNavegacion(SimpleTestCase):
@@ -36,16 +37,14 @@ class PruebasNavegacion(SimpleTestCase):
                 self.assertNotContains(respuesta, "Álgebra Lineal")
         self.assertContains(self.client.get("/?q=gauss"), "Álgebra lineal · Matrices")
 
-    def test_ui21_solo_los_temas_de_una_herramienta_nacen_abiertos(self):
-        unicos = {c.id: c.herramienta_unica for c in catalogo.CATEGORIAS}
-        self.assertEqual(unicos, {"vectores": True, "matrices": False, "bases-numericas": True,
-                                  "numeracion-romana": True, "limites": False})
+    def test_todos_los_temas_nacen_cerrados_aunque_tengan_una_sola_herramienta(self):
         html = self.client.get("/").content.decode("utf-8")
+        # Vectores, Bases numéricas y Numeración romana tienen una sola herramienta: antes nacían abiertos.
         for categoria in catalogo.CATEGORIAS:
             with self.subTest(categoria=categoria.id):
                 etiqueta = re.search(rf'<details class="topic[^"]*" id="{categoria.id}"[^>]*>', html).group()
-                self.assertEqual(" open" in etiqueta, categoria.herramienta_unica)
-        # Las áreas siguen plegadas: abrir el tema evita un clic, no reordena Inicio.
+                self.assertNotIn(" open", etiqueta)
+        # Las áreas también llegan plegadas.
         self.assertNotRegex(html, r'<details class="home-area"[^>]* open')
 
     def test_ui72_herramientas_sin_kicker_con_migas_y_titulo(self):
@@ -102,7 +101,7 @@ class PruebasEntrada(SimpleTestCase):
         self.assertIn("11010₂", seccion_resultado(respuesta))
 
     def test_ui42_ayudas_numericas_nombran_decimales_con_punto(self):
-        for ruta in ("/vectores/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/"):
+        for ruta in ("/vectores/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/"):
             with self.subTest(ruta=ruta):
                 self.assertContains(self.client.get(ruta), "Escribe enteros, fracciones como <code>1/2</code> o decimales con punto")
         texto = "Completa todas las celdas con enteros, fracciones o decimales con punto."

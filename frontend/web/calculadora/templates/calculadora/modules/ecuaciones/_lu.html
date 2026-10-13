@@ -1,0 +1,30 @@
+<div class="procedure-stage">
+    <h4 class="stage-title">1 · Factorización A = LU</h4>
+    <p class="procedure-lead">La factorización usa únicamente reemplazos de filas, sin intercambios.</p>
+    {% if resultado.lu.aplicable %}
+        <div class="matrix-equation" role="region" aria-label="Factorización A igual a L por U">
+            <div class="matrix-operand"><span class="muted">A</span>{% include "calculadora/components/matriz.html" with matriz=resultado.a etiqueta="Matriz A" only %}</div>
+            <span class="matrix-expression">=</span>
+            <div class="matrix-operand"><span class="muted">L</span>{% include "calculadora/components/matriz.html" with matriz=resultado.lu.l etiqueta="Matriz L" only %}</div>
+            <span class="matrix-expression">·</span>
+            <div class="matrix-operand"><span class="muted">U</span>{% include "calculadora/components/matriz.html" with matriz=resultado.lu.u etiqueta="Matriz U" only %}</div>
+        </div>
+        {% for etapa in resultado.lu.etapas %}
+            <div class="procedure-stage">
+                <h4 class="stage-title">{{ forloop.counter|add:"1" }} · {{ etapa.titulo }}</h4>
+                <p class="procedure-lead">Matriz inicial: {{ etapa.inicial }}.</p>
+                {% include "calculadora/components/matrix.html" with matriz=etapa.matriz_inicial etiqueta=etapa.inicial columnas_izquierda=etapa.columnas_izquierda only %}
+                {% include "calculadora/modules/sistemas/_pasos.html" with resultado=etapa only %}
+                <p class="procedure-lead">Matriz final: {{ etapa.final }}. {{ etapa.lectura }}</p>
+                {% include "calculadora/components/matrix.html" with matriz=etapa.matriz_final etiqueta=etapa.final columnas_izquierda=etapa.columnas_izquierda only %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="procedure-lead">Matriz inicial A:</p>
+        {% include "calculadora/components/matriz.html" with matriz=resultado.a etiqueta="Matriz A" only %}
+        {% include "calculadora/modules/sistemas/_pasos.html" with resultado=resultado.lu only %}
+        <p class="procedure-lead">La reducción se detiene aquí:</p>
+        {% include "calculadora/components/matriz.html" with matriz=resultado.lu.u etiqueta="Matriz al detener LU" only %}
+    {% endif %}
+    {% if resultado.lu.mensaje %}<p class="procedure-note">{{ resultado.lu.mensaje }}</p>{% endif %}
+</div>

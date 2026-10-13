@@ -15,6 +15,18 @@
     const memoria = new Map();
     const { dimensionValida, validarDimension } = window.entradasSeguras;
     const SUBINDICES = "₀₁₂₃₄₅₆₇₈₉";
+    const cramer = root.querySelector('[name="metodo"][value="cramer"]');
+    const metodosDeterminantes = root.querySelector("[data-cramer-methods]");
+
+    function actualizarMetodos() {
+        if (!Object.keys(dimensiones).every(nombre => dimensionValida(campo(nombre)))) return;
+        const m = Number(campo("filas").value);
+        const n = Number(campo("columnas").value);
+        cramer.disabled = m !== n;
+        if (cramer.disabled && cramer.checked) root.querySelector('[name="metodo"][value="gauss_jordan"]').checked = true;
+        metodosDeterminantes.hidden = !cramer.checked;
+        window.metodosDeterminantes.actualizar([...metodosDeterminantes.querySelectorAll("input")], m);
+    }
 
     function campo(nombre) {
         return dimensiones[nombre].querySelector("input");
@@ -93,6 +105,7 @@
         actualizarIncognita(n);
         root.querySelector("[data-equation-shape]").textContent = `A (${m}×${n}) · x (${n}) = b (${m}). De ${campo("filas").min} a ${campo("filas").max} filas y columnas.`;
         actualizarBotones();
+        actualizarMetodos();
     }
 
     Object.keys(dimensiones).forEach(nombre => campo(nombre).addEventListener("input", render));
@@ -108,6 +121,10 @@
     root.querySelector("[data-aplicar]").hidden = true;
     root.querySelector("[data-aplicar]").disabled = true;
     actualizarBotones();
+    actualizarMetodos();
+    root.addEventListener("change", event => {
+        if (event.target.name === "metodo") actualizarMetodos();
+    });
 
     // Tab recorre todos los campos. Las flechas verticales cambian de fila;
     // las horizontales solo cambian de celda al llegar al extremo del texto.

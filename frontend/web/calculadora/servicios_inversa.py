@@ -19,7 +19,7 @@ from backend.presupuesto_computacional import (
 from .presentacion_numerica import formatear_exacto
 from .servicios import adaptar_pasos, formatear_matriz
 from .servicios_bases import enumerar
-from .servicios_matrices import _operando, _sumando, subindice
+from .servicios_matrices import _operando, desarrollo_ad_menos_bc, subindice
 from .servicios_presupuesto import texto_intervalo
 
 METODOS = ((GAUSS_JORDAN, "Gauss-Jordan"), (DIRECTO_2X2, "Método para matrices 2×2"))
@@ -76,6 +76,8 @@ def estimar_inversa_web(entrada):
     def invertir(perfil):
         if entrada["metodo"] == DIRECTO_2X2:
             return Estimacion("inversa_2x2", (2, 2), 4, 14, 24)
+        # det(A) se recupera de los pasos ya registrados con a lo sumo n + pasos productos:
+        # un término de orden menor que esta cota de peor caso, que no hace falta sumar.
         return estimar_gauss_jordan(orden, 2 * orden, columnas_pivote=orden, perfil=perfil)
 
     def perfil_inversa(perfil):
@@ -180,17 +182,13 @@ def _gauss_jordan(calculo, nombre="A"):
 def _metodo_2x2(calculo):
     """La regla con letras, ad − bc con los números de A, el intercambio y el factor."""
     entradas = calculo["entradas"]
-    a, b, c, d = (entradas[nombre] for nombre in "abcd")
     diferencia = formatear_exacto(calculo["ad_menos_bc"])
     datos = {
         "simbolica": SIMBOLICA,
         "simbolica_intercambiada": SIMBOLICA_INTERCAMBIADA,
         "matriz": formatear_matriz(calculo["matriz"]),
         "entradas": enumerar(f"{nombre} = {formatear_exacto(valor)}" for nombre, valor in entradas.items()),
-        "ad_menos_bc": (
-            f"ad − bc = {_operando(a)}·{_operando(d)} − {_operando(b)}·{_operando(c)} "
-            f"= {formatear_exacto(calculo['ad'])} − {_sumando(calculo['bc'])} = {diferencia}"
-        ),
+        "ad_menos_bc": desarrollo_ad_menos_bc(calculo["matriz"], calculo["ad"], calculo["bc"], calculo["ad_menos_bc"]),
         "diferencia": diferencia,
         "intercambiada": formatear_matriz(calculo["intercambiada"]),
     }
@@ -285,6 +283,7 @@ def calcular_inversa_web(entrada):
         "titulo_metodo": dict(METODOS)[calculo["metodo"]],
         "forma": f"{orden}×{orden}",
         "invertible": calculo["invertible"],
+        "determinante": formatear_exacto(calculo["determinante"]),
         "verificar_solicitado": verificar_solicitado,
         "verificacion": verificacion,
         "funcion_adicional": funcion, "adicional": adicional,

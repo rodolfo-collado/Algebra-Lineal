@@ -85,10 +85,10 @@ class PruebasValidacion(unittest.TestCase):
                     resolver_ecuacion_matricial(a, b)
 
     def test_metodo_desconocido(self):
-        for metodo in ("cramer", "inversa", "comparar", "", None, 3):
+        for metodo in ("inventado", "inversa", "comparar", "", None, 3):
             with self.subTest(metodo=metodo), self.assertRaisesRegex(ValueError, "método de resolución válido"):
                 resolver_ecuacion_matricial([[1]], [1], metodo)
-        self.assertEqual(set(METODOS), {"gauss", "gauss_jordan"})
+        self.assertEqual(set(METODOS), {"gauss", "gauss_jordan", "lu", "cramer"})
         self.assertEqual(METODO_PREDETERMINADO, "gauss_jordan")
 
 
@@ -128,7 +128,7 @@ class PruebasMatrizAumentada(unittest.TestCase):
 class PruebasResolucion(unittest.TestCase):
     def test_casos_del_enunciado_con_ambos_metodos(self):
         for nombre, a, b, clasificacion, x, libres in CASOS:
-            for metodo in METODOS:
+            for metodo in ("gauss", "gauss_jordan"):
                 with self.subTest(caso=nombre, metodo=metodo):
                     r = resolver_ecuacion_matricial(a, b, metodo)
                     self.assertEqual(r["clasificacion"], clasificacion)
@@ -204,7 +204,7 @@ class PruebasVerificacion(unittest.TestCase):
         for nombre, a, b, clasificacion, x, _ in CASOS:
             if clasificacion != SOLUCION_UNICA:
                 continue
-            for metodo in METODOS:
+            for metodo in ("gauss", "gauss_jordan"):
                 with self.subTest(caso=nombre, metodo=metodo):
                     r = resolver_ecuacion_matricial(a, b, metodo)
                     self.assertEqual(r["verificacion"], [F(componente) for componente in b])

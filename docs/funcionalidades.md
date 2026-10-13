@@ -646,14 +646,53 @@ herramienta enseña que estas formas son la misma ecuación:
 Ax = b  ↔  x₁a₁ + x₂a₂ + … + xₙaₙ = b  ↔  sistema lineal  ↔  [A | b]
 ```
 
-No hay un segundo solucionador: `backend/ecuaciones_matriciales.py` valida la
+Para Gauss y Gauss-Jordan, `backend/ecuaciones_matriciales.py` valida la
 ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
 `resolver_sistema_gauss` o `resolver_sistema_gauss_jordan` de
 `backend/sistemas.py`, cuyo resultado se amplía con la lectura de `Ax = b`.
 Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
 `matrices.py`. El método se elige como en Reducción por filas (Gauss,
 Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
-sola vez y los dos procedimientos plegados). El procedimiento va plegado
+sola vez y los dos procedimientos plegados). **Factorización LU** es otro
+método, independiente de Comparar ambos. Requiere A cuadrada en esta herramienta:
+usa exclusivamente `factorizar_lu` para obtener `A = LU`, y después
+`aplicar_gauss_jordan` para reducir `[L | b] → [I | y]` y
+`[U | y] → [I | x]`. Cada etapa muestra su matriz inicial, todas las operaciones
+y matrices intermedias y la matriz final; su última columna contiene y o x.
+La interfaz enseña ambas resoluciones por matrices aumentadas.
+
+**Regla de Cramer** es un método de Resolver Ax = b, disponible solo para A
+cuadrada. Calcula `D = det(A)` y forma `Aᵢ` reemplazando únicamente la columna
+i de A por b. Calcula `Dᵢ = det(Aᵢ)` y obtiene `xᵢ = Dᵢ / D`. Se exige
+`det(A) ≠ 0` para poder dividir y garantizar una solución única. Si D es cero,
+se detiene y recomienda Gauss o Gauss-Jordan para clasificar el sistema;
+Cramer no deduce si tiene cero o infinitas soluciones.
+
+El segundo selector, **Método para los determinantes**, reutiliza las reglas
+y la sugerencia de [Determinantes](determinantes.md): fórmula directa en 2×2,
+Sarrus en 3×3, Cofactores hasta 6×6, LU o Reducción. **Todos los determinantes
+del cálculo usan el mismo método elegido**, mediante `calcular_determinante`;
+Cofactores elige automáticamente su expansión para cada matriz. LU conserva
+su límite sin intercambios: puede detenerse en A o en una Aᵢ. En ese caso se
+recomienda elegir otro método para los determinantes y no se cambia de motor
+automáticamente.
+
+El procedimiento identifica A y b, muestra D y cada Aᵢ completa, Dᵢ y su
+cociente. Los desplegables anidados **Ver cálculo de D** y **Ver cálculo de Dᵢ**
+incluyen el procedimiento real de Determinantes. El vector x aparece una sola
+vez en Resultado; después puede abrirse la comprobación Ax=b. El presupuesto
+previo asume siempre n+1 determinantes con todos sus desarrollos, incluso si
+al calcular D resulta cero, y solicita confirmación cuando el costo es alto.
+
+Por ejemplo, `A = [[3, -2], [-5, 4]]` y `b = [6, 8]` dan `D = 2`,
+`D₁ = 40`, `D₂ = 54` y `x = [20, 27]ᵀ`; la comprobación reproduce `[6, 8]ᵀ`.
+
+LU no intercambia filas ni convierte el método en `PA = LU`. Si un pivote
+exige intercambio, se detiene y recomienda Gauss o Gauss-Jordan, sin afirmar
+que el sistema carece de solución. Si U es singular, muestra la forma reducida
+real y la clasificación (infinitas soluciones o inconsistente); no presenta
+`[I | x]` ni inventa una solución única. Gauss, Gauss-Jordan y Comparar ambos
+siguen admitiendo matrices rectangulares. El procedimiento va plegado
 primero y el resultado después, siempre visible:
 
 - solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
@@ -697,9 +736,29 @@ a 10×10, y calcula su inversa exacta. El método se elige en el formulario:
   `1/(ad − bc)`.
 
 Si A no tiene inversa, el resultado lo dice con una explicación breve según el
-método. Un cálculo con Gauss-Jordan que se estima largo pide confirmación antes
-de ejecutarse. Los detalles, los ejemplos y la API están en
+método. El resultado muestra también det(A): A es invertible solo si
+det(A) ≠ 0. Un cálculo con Gauss-Jordan que se estima largo pide confirmación
+antes de ejecutarse. Los detalles, los ejemplos y la API están en
 [Matriz inversa](matriz-inversa.md).
+
+## Determinantes
+
+**Determinantes** (`/matrices/determinantes/`) calcula det(A) de una matriz
+cuadrada de 1×1 a 10×10, con aritmética exacta. Los métodos aparecen según el
+tamaño de A:
+
+- **Fórmula directa 2×2**: `ad − bc` (solo 2×2).
+- **Regla de Sarrus**: seis diagonales (solo 3×3).
+- **Cofactores**: por una fila, una columna o Automático (la que tiene más
+  ceros); hasta 6×6.
+- **Factorización LU**: `A = LU` sin intercambios; si un pivote 0 exigiría
+  intercambiar filas, se detiene y lo explica.
+- **Reducción por filas**: Gauss con la corrección de cada intercambio y cada
+  normalización.
+
+Con det(A) ≠ 0 el resultado ofrece **Calcular su matriz inversa**, que abre
+Matriz inversa con A ya cargada. El recorrido completo está en
+[Determinantes](determinantes.md).
 
 ## Visualización de resultados en PyGebra
 

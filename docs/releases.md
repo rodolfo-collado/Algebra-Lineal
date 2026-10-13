@@ -23,10 +23,20 @@ entradas sin pérdida, pegado y edición de celdas, buscador, resultados,
 escritorio, preferencias y accesibilidad) sin cambiar la matemática ni los
 contratos de cálculo.
 
-El incremento preparado de 0.9.0 a 0.10.0 es MINOR: incorpora las mejoras de
-portapapeles matricial de P28 y es la primera release que incluirá el
-actualizador de escritorio de P29. Una versión preparada en `develop` aún no es una
-release publicada.
+El incremento de 0.9.0 a 0.10.0 fue MINOR: incorporó las mejoras de
+portapapeles matricial de P28 y fue la primera release que incluyó el
+actualizador de escritorio de P29.
+
+El incremento preparado de 0.10.0 a 0.11.0 es MINOR: añade Determinantes
+(fórmula directa 2×2, Sarrus, Cofactores, LU y reducción por filas, con
+procedimientos alineados con los de clase), el criterio det(A) ≠ 0 en Matriz
+inversa, una factorización LU exacta sin intercambios que también admite A
+rectangular, y Factorización LU y Regla de Cramer como métodos de Resolver
+Ax = b. Mantiene Exacto/Decimal, los procedimientos plegables, las
+confirmaciones de cálculos largos y la seguridad numérica, e incluye ajustes
+de interfaz (icono del menú, temas del Inicio cerrados y selección de matrices
+más compacta). Las herramientas existentes conservan sus métodos y resultados.
+Una versión preparada en `develop` aún no es una release publicada.
 
 ## Flujo de integración y entrega
 

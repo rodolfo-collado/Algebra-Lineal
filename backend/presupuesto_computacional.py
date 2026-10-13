@@ -156,6 +156,19 @@ def estimar_gauss_jordan(filas, columnas, *, columnas_pivote=None, perfil=None):
 ESTIMADORES = {"gauss": estimar_gauss, "gauss_jordan": estimar_gauss_jordan}
 
 
+def estimar_lu(filas, columnas, *, perfil=None):
+    """Cota de factorizar_lu: reemplazos, etapas de L y verificación L→I."""
+    base = estimar_gauss(filas, columnas, perfil=perfil)
+    factor = base.factor_numerico
+    pivotes = min(filas, columnas)
+    entradas = pivotes * filas - pivotes * (pivotes - 1) // 2
+    eliminaciones = entradas - pivotes
+    calculo = base.calculo + (2 * filas * eliminaciones + entradas) * factor
+    celdas = pivotes * filas * columnas + 2 * filas * filas + filas * columnas + 6 * entradas
+    return Estimacion("lu", (filas, columnas), base.pasos + pivotes,
+                      calculo, base.procedimiento + celdas * factor, factor)
+
+
 def estimar_producto(filas, comunes, columnas, *, perfil=None):
     """AB con A filas×comunes y B comunes×columnas, como `resolver_operacion_matrices`.
 

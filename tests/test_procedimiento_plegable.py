@@ -481,6 +481,11 @@ class PruebasTransversales(SimpleTestCase):
             # P26.4: los dos métodos de la matriz inversa, con inversa y sin ella.
             *((RUTA_INVERSA, {"orden": "2", "metodo": metodo, **{f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(a) for j, v in enumerate(fila)}})
               for metodo in ("gauss_jordan", "directo_2x2") for a in ([[3, 4], [5, 6]], [[1, 2], [2, 4]])),
+            # Determinantes: cofactores con menores anidados, Sarrus, LU detenida y reducción.
+            *(("/matrices/determinantes/", {"orden": str(len(a)), "metodo": metodo, **{f"celda_A_{i}_{j}": str(v) for i, fila in enumerate(a) for j, v in enumerate(fila)}})
+              for metodo, a in (("cofactores", [[2, 1, 3, 0], [0, 4, 2, 1], [1, 0, 5, 2], [3, 1, 0, 1]]),
+                                ("sarrus", [[1, 2, 3], [4, 5, 6], [7, 8, 10]]), ("lu", [[0, 1], [1, 0]]),
+                                ("reduccion", [[0, 2], [3, 4]]))),
         )
 
     def test_ancla_y_foco_del_resultado_se_conservan(self):

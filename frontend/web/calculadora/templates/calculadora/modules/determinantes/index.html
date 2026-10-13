@@ -1,0 +1,98 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static componentes numeros %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-labelledby="workspace-title" data-determinantes>
+    <h2 id="workspace-title" class="sr-only">Entrada</h2>
+    <form id="determinantes-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        {% csrf_token %}
+        {% include "calculadora/components/errores_generales.html" %}
+        <section class="workspace-section" id="determinant-fields" data-perfil="numerico" aria-labelledby="determinant-title">
+            <h3 class="section-title" id="determinant-title">Matriz de entrada</h3>
+            <p class="field-help">Solo una matriz cuadrada tiene determinante: A tiene tantas filas como columnas.</p>
+            <div class="structure-controls structure-controls-matrices" role="group" aria-label="Tamaño de A">
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.orden quitar="Quitar una fila y una columna de A" agregar="Agregar una fila y una columna de A" %}
+            </div>
+            <p class="field-help" data-determinant-shape aria-live="polite">{{ form.forma_texto }}. De {{ form.orden.field.min_value }} a {{ form.orden.field.max_value }} filas y columnas.</p>
+            <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
+            <noscript><p class="field-help">Cambia el número de filas y columnas y pulsa <strong>Aplicar</strong> antes de calcular. Se conservan las celdas que siguen en la matriz.</p></noscript>
+            <div id="determinant-matrix" class="matrix-entry-list" data-determinant-entry>
+                {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.0.nombre filas=form.matrices.0.filas vector=False only %}
+            </div>
+            {% include "calculadora/components/errores_grupo.html" %}
+            <p class="field-help">Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>; usa <code>-</code> para negativos.</p>
+            {% include "calculadora/components/math_keyboard.html" %}
+        </section>
+        <section class="workspace-section">
+            <fieldset class="choice-fieldset">
+                <legend>{{ form.metodo.label }}</legend>
+                <div class="option-list" data-determinant-methods>
+                    {% comment %}Los métodos que no existen para el tamaño de A llegan desactivados y ocultos; determinantes.js los muestra al cambiar el tamaño.{% endcomment %}
+                    {% for radio in form.metodo %}<label class="option" for="{{ radio.id_for_label }}"{% if radio.data.attrs.disabled %} hidden{% endif %}>{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                {{ form.metodo.errors }}
+                <p class="field-help option-help">La fórmula directa solo existe para 2×2 y Sarrus para 3×3. Cofactores admite hasta 6×6. LU no intercambia filas.</p>
+            </fieldset>
+            <div class="expansion-selector" data-expansion>
+                <label for="{{ form.expansion.id_for_label }}">{{ form.expansion.label }}</label>
+                {{ form.expansion }}
+                <p class="field-help" id="expansion-help">Solo para Cofactores. Automático elige la fila o columna con más ceros.</p>
+                {{ form.expansion.errors }}
+            </div>
+        </section>
+        {% if confirmacion %}{% include "calculadora/components/confirmacion_costo.html" with prefacio="La matriz es válida." operacion="Calcular det(A) y su procedimiento" %}{% endif %}
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Calcular determinante</button></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+    {% comment %}Entrada → procedimiento plegable del método elegido → resultado único. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+    {% numeric_results %}
+    <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
+        <header class="results-heading">
+            <p class="section-kicker">Determinantes · {{ resultado.titulo_metodo }}</p>
+            <h2 id="results-title">Determinante de A ({{ resultado.forma }})</h2>
+        </header>
+        {% include "calculadora/components/numeric_format.html" %}
+
+        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+            {% include "calculadora/modules/determinantes/_procedimiento.html" %}
+        {% enddisclosure %}
+
+        <section class="panel panel-final" aria-labelledby="final-title">
+            <h3 id="final-title" class="panel-title">Resultado</h3>
+            {% if resultado.aplicable %}
+                <p class="classification-value" data-determinante>det(A) = {{ resultado.determinante }}</p>
+                {% if resultado.invertible %}
+                    <p class="muted">Como det(A) ≠ 0, A es invertible.</p>
+                    {% comment %}POST efímero: Matriz inversa valida A con su propio formulario y solo la carga; nada se guarda.{% endcomment %}
+                    <form class="final-action" action="{% url 'calculadora:matriz-inversa' %}#inversa-form" method="post" data-transferencia>
+                        {% csrf_token %}
+                        {% for nombre, valor in resultado.transferencia %}<input type="hidden" name="{{ nombre }}" value="{{ valor }}">{% endfor %}
+                        <button type="submit" class="btn btn-secondary" name="cargar_matriz" value="1">Calcular su matriz inversa</button>
+                    </form>
+                {% else %}
+                    <p class="muted">Como det(A) = 0, A no es invertible: no tiene matriz inversa.</p>
+                {% endif %}
+            {% else %}
+                <p class="classification-value">LU sin intercambios no puede continuar con esta matriz.</p>
+                <p class="muted">{{ resultado.motivo }}</p>
+                <p class="muted">Reducción por filas sí intercambia filas{% if resultado.matriz|length <= 6 %}, y Cofactores no necesita pivotes{% endif %}: cualquiera de los dos calcula det(A).</p>
+            {% endif %}
+        </section>
+    </section>
+    {% endnumeric_results %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% include "calculadora/components/seleccion_matricial.html" %}
+<script src="{% static 'calculadora/numeros.js' %}" defer></script>
+<template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
+<template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
+<script src="{% static 'calculadora/metodos_determinantes.js' %}" defer></script>
+<script src="{% static 'calculadora/determinantes.js' %}" defer></script>
+<script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}

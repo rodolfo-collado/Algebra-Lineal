@@ -67,6 +67,13 @@ columnas_pivote=n)` y lee el bloque derecho cuando el izquierdo llega a la
 identidad. Para 2×2 ofrece además la regla con `ad − bc`, un cálculo aparte y
 sin eliminación. Consulta [Matriz inversa](matriz-inversa.md).
 
+Determinantes reutiliza las mismas operaciones por filas: Reducción por filas
+llama a `aplicar_gauss` y corrige det(A) con la `correccion_determinante` que
+anotan los intercambios y las normalizaciones; LU reutiliza el reemplazo de
+fila sin normalizar. La fórmula `ad − bc` vive una sola vez en
+`backend/determinantes/comun.py` y la usan Determinantes y la regla 2×2 de la
+inversa. Consulta [Determinantes](determinantes.md).
+
 `ecuaciones_matriciales.py` construye `[A | b]` y llama al motor de sistemas.
 `vectores.py` hace lo mismo para preguntar si b es combinación de sus generadores,
 nombrando las incógnitas `x1`, `x2`, etc. Solución única o infinitas significa que
@@ -96,8 +103,18 @@ vectores; `vectores.py` la importa de ahí. Los productos `AB` y `Ax` no
 dependen de `vectores.py`: la explicación por columnas es la misma combinación
 lineal, y las pruebas comprueban que coincide con `combinar` de ese módulo.
 `ecuaciones_matriciales.py` tampoco escalona: escribe `Ax = b` como `[A | b]`
-y llama al motor de sistemas elegido; al vivir por encima de `sistemas.py` y
+y llama al motor de sistemas elegido. Para LU, llama a `factorizar_lu` y
+reduce por separado `[L | b]` y `[U | y]` con `aplicar_gauss_jordan`, hasta
+`[I | y]` y `[I | x]` cuando hay solución única. Reutiliza la interpretación
+de sistemas para clasificar una U singular. LU en Ax=b requiere A cuadrada
+y se detiene si la factorización necesita intercambio. Al vivir por encima de `sistemas.py` y
 de `matrices.py`, `matrices.py` no necesita importar `sistemas.py`.
+
+Para Cramer, ese mismo módulo construye Aᵢ sustituyendo solo su columna i por b,
+y llama a `backend.determinantes.calcular_determinante` para D y todos los Dᵢ
+con el mismo método elegido. Conserva íntegra su evidencia y divide mediante
+`dividir_exacto`; no implementa otro algoritmo de determinantes. Si D=0 se
+detiene sin clasificar. La comprobación reutiliza `multiplicar_matriz_vector`.
 
 `expresiones_matriciales` no recalcula los productos numéricos. El parser arma
 un árbol; cada nodo llama a `sumar_matrices`, `restar_matrices`,

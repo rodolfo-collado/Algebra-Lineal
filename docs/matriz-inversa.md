@@ -35,7 +35,7 @@ enseña cómo se hace.
 | Ruta | `/matrices/inversa/` (`calculadora:matriz-inversa`) |
 | Catálogo | `MATRIZ_INVERSA`, id `matriz-inversa`, en Álgebra lineal → Matrices, después de Resolver Ax = b |
 | Descripción | «Calcula la inversa de una matriz cuadrada y muestra el procedimiento paso a paso.» |
-| Relacionadas | Operaciones con matrices y Resolver Ax = b, tras calcular |
+| Relacionadas | Operaciones con matrices, Resolver Ax = b y Determinantes, tras calcular |
 
 Inicio, menú, migas y buscador salen del catálogo, como en el resto de las
 herramientas. El buscador la encuentra por «inversa», «invertible», «no
@@ -126,13 +126,19 @@ P26.3; no hay un segundo Gauss-Jordan:
 6. compara exactamente el bloque izquierdo con `I_n`.
 
 Si la izquierda es la identidad, la derecha es `A⁻¹`. Si no, A no tiene
-inversa. No se calculan determinantes. Con A cuadrada, llegar a `I_n` equivale
-a encontrar n pivotes; la comparación con la identidad es la evidencia que se
-muestra.
+inversa. Con A cuadrada, llegar a `I_n` equivale a encontrar n pivotes; la
+comparación con la identidad es la evidencia que construye y comprueba A⁻¹.
+
+Además, `determinante_desde_reduccion` recupera det(A) de esos mismos pasos,
+sin otra reducción: los intercambios y las normalizaciones anotan su
+`correccion_determinante` y las eliminaciones no cambian det. Así el resultado
+puede explicar la invertibilidad con det(A) ≠ 0 (ver
+[Determinantes](determinantes.md#relación-con-matriz-inversa)).
 
 Devuelve `metodo`, `orden`, `matriz` (A exacta), `aumentada` (`[A | I]`),
 `pasos` y `pivotes` del motor, `reducida`, sus bloques `izquierda` y
-`derecha`, `invertible` e `inversa` (el bloque derecho o `None`).
+`derecha`, `invertible`, `inversa` (el bloque derecho o `None`) y
+`determinante`.
 
 El procedimiento tiene tres etapas cortas:
 
@@ -156,8 +162,9 @@ A = [a  b]
     [c  d]
 ```
 
-calcula `ad − bc` con `multiplicar_exacto` y `restar_exacto`. Si vale 0, A no
-tiene inversa. Si no:
+calcula `ad − bc` con `directo_2x2`, la misma fórmula de Determinantes (con
+`multiplicar_exacto` y `restar_exacto`): no hay otra implementación de
+`ad − bc`. Si vale 0, A no tiene inversa. Si no:
 
 ```text
 A⁻¹ = 1/(ad − bc) · [ d  −b]
@@ -166,8 +173,9 @@ A⁻¹ = 1/(ad − bc) · [ d  −b]
 
 El factor se obtiene con `dividir_exacto` y cada entrada se multiplica con
 `multiplicar_exacto`. Devuelve `entradas` (a, b, c y d), `ad`, `bc`,
-`ad_menos_bc`, la matriz `intercambiada` `[[d, −b], [−c, a]]`, el `factor`,
-`invertible` e `inversa`. Es un segundo método de verdad: no llama a
+`ad_menos_bc` (también como `determinante`), la matriz `intercambiada`
+`[[d, −b], [−c, a]]`, el `factor`, `invertible` e `inversa`. Es un segundo
+método de verdad: no llama a
 Gauss-Jordan (una prueba lo sustituye por un error y el método sigue
 funcionando).
 
@@ -181,10 +189,10 @@ La fórmula aparece aquí, dentro del procedimiento, y nunca en el selector.
 
 Intercambiar a y d y cambiar el signo de b y c es exactamente cómo se ve la
 fórmula general de la inversa en el caso 2×2. Para n > 2, esa fórmula necesita
-cofactores y determinantes de submatrices, que PyGebra todavía no tiene y que
-este incremento no introduce. Gauss-Jordan ya cubre cualquier tamaño, así que
-el método directo queda como lo que enseña el curso: una regla propia de las
-matrices 2×2.
+la matriz de cofactores completa (la adjunta). Determinantes ya calcula
+cofactores, pero la inversa por adjunta no se implementa: Gauss-Jordan cubre
+cualquier tamaño, así que el método directo queda como lo que enseña el curso:
+una regla propia de las matrices 2×2.
 
 ## Matrices sin inversa
 
@@ -195,6 +203,12 @@ explicación breve según el método:
 | --- | --- | --- |
 | Gauss-Jordan | «Con Gauss-Jordan, el lado izquierdo no pudo convertirse en la matriz identidad: A es una matriz no invertible.» | Qué filas del lado izquierdo quedaron con solo ceros. |
 | 2×2 | «Como ad − bc = 0, A es una matriz no invertible.» | La sustitución que da 0 y por qué la regla no se puede aplicar. |
+
+Al final, el resultado recuerda el criterio: «det(A) = 0: una matriz es
+invertible solo cuando det(A) ≠ 0.». Con A invertible, antes de A⁻¹ aparece
+«det(A) = … ≠ 0: A es invertible.». El determinante explica la
+invertibilidad; Gauss-Jordan (o la regla 2×2) sigue siendo lo que construye la
+inversa.
 
 No se usan términos como rango, conteo de pivotes o excepciones. Con
 `[[1, 2], [2, 4]]`, ambos métodos concluyen que no hay inversa; las pruebas
@@ -409,7 +423,8 @@ numérica común.
 | | `firmar_entrada(entrada)` | Firma de A exacta, método, verificar, función y B/b activos. |
 | | `calcular_inversa_web(entrada)` | Calcula A⁻¹ una vez, verifica si se pidió, aplica la función y formatea. |
 | `forms_inversa.py` | `InversaForm` | Tamaño, celdas activas A/B/b, método, función, verificar y confirmación. |
-| `views.py` | `matriz_inversa` | Valida, confirma si hace falta y calcula. |
+| `transferencia_matriz.py` | `recibir_matriz(post)` | Carga la A que envía Determinantes (`cargar_matriz`), validada con `InversaForm`, sin calcular ni guardar nada. |
+| `views.py` | `matriz_inversa` | Valida, confirma si hace falta y calcula; con `cargar_matriz` solo carga A. |
 
 Las plantillas están en `templates/calculadora/modules/inversa/`: `index.html`,
 `_confirmacion.html`, `_gauss_jordan.html`, `_metodo_2x2.html` y
@@ -419,7 +434,7 @@ Las plantillas están en `templates/calculadora/modules/inversa/`: `index.html`,
 
 P26.9 cierra los tres teoremas y la aplicación `x = A⁻¹b` como implementados.
 Siguen fuera de alcance `AX = B`,
-`XA = B`, la entrada por ecuaciones, los determinantes generales, las
+`XA = B`, la entrada por ecuaciones, la inversa por adjunta, las
 potencias, nuevas formas de calcular A⁻¹, las dimensiones mayores que 10 y
 la generación diferida de procedimientos, un parser de expresiones y las
 combinaciones arbitrarias de funciones adicionales.
