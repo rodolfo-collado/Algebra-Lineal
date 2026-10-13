@@ -1,10 +1,18 @@
 # Deshacer último pegado matricial (P28.4)
 
 PyGebra ofrece **un solo nivel global por página**. El botón Deshacer revierte
-únicamente el último pegado matricial atómico que cambió valores. No hay pila,
-redo, Ctrl+Z global, persistencia, localStorage ni sessionStorage. Escribir,
-borrar manualmente, usar el teclado matemático, cambiar opciones o dimensiones
-no crea operaciones deshacibles.
+únicamente la última edición en bloque que cambió valores: un pegado matricial
+atómico o, desde el [menú de edición](edicion-entradas.md), Rellenar
+aleatoriamente o Limpiar sobre una cuadrícula. No hay pila, redo, Ctrl+Z global,
+persistencia, localStorage ni sessionStorage. Escribir, borrar manualmente, usar
+el teclado matemático, cambiar opciones o dimensiones no crea operaciones
+deshacibles.
+
+Rellenar y Limpiar llaman a `pegar(destinos, matriz, contexto, textos)` con sus
+propios mensajes («Matriz A: 4 celdas vaciadas.», «Limpieza deshecha: 4 celdas
+restauradas.», «La limpieza ya no puede deshacerse porque la entrada cambió.»);
+el resto del contrato de esta página se aplica igual. Sin `textos`, `pegar`
+conserva los del pegado.
 
 ## Integración y registro
 
@@ -87,7 +95,8 @@ se emite un `input` con propagación por cada celda restaurada, en orden. No hay
 
 ## Mensaje, selección, foco y resultado
 
-Antes de Calcular aparece «4 celdas pegadas.» junto al botón real **Deshacer**,
+Antes de Calcular aparece «4 celdas pegadas.» junto al botón real **Deshacer**
+(si una confirmación de costo pendiente reemplaza las acciones, antes de ella),
 con `type=button`, alcanzable mediante Tab y activable con Enter/Espacio. No hay
 modal, confirmación, alerta ni temporizador. La región `role=status`,
 `aria-live=polite`, `aria-atomic=true` contiene solo el mensaje; el botón está

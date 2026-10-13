@@ -734,7 +734,9 @@ y ayuda tienen un `span[data-direccion]` por dirección y el CSS (`:has`)
 muestra el de la dirección marcada, también sin JavaScript. Si lo escrito
 solo se convierte en la otra dirección, el error lo sugiere
 (`sugerir_direccion`); si no vale en ninguna, queda el mensaje original. No tiene teclado matemático ni selector Exacto /
-Decimal: trabaja con enteros y símbolos romanos, y no necesita JavaScript.
+Decimal: trabaja con enteros y símbolos romanos, y no necesita JavaScript. Con
+JavaScript, el clic derecho sobre el número abre el [menú de edición](edicion-entradas.md)
+(Rellenar aleatoriamente, con la tabla del backend, y Limpiar).
 Los valores enviados (`decimal_a_romano` y `romano_a_decimal`) llevan el
 nombre de las funciones del backend; lo que se lee siempre es «arábigo».
 Sigue Entrada → Procedimiento plegable → Resultado: `{% disclosure %}` guarda
@@ -831,8 +833,10 @@ comportamiento de su navegador.
   Pegar y Seleccionar todo (sin Imprimir, Emoji ni «Más herramientas»); sin
   acciones de edición no aparece. Es edición real del navegador: los eventos
   `input`, deshacer y el aviso de resultado desactualizado funcionan, y el foco
-  no sale del campo, así que el teclado matemático sigue abierto. En la web no
-  se sustituye el menú del navegador.
+  no sale del campo, así que el teclado matemático sigue abierto. Solo sobre las
+  entradas del [menú de edición](edicion-entradas.md) (celdas de matrices,
+  vectores y escalares, y el número romano) aparece el menú de PyGebra, salvo
+  que el puntero lo abra con texto seleccionado dentro del campo.
 - **Atajos del navegador.** Siguen desactivados (F5, Ctrl+R, Ctrl+P, Ctrl+F,
   F12 y DevTools). `ALGEBRA_DESKTOP_DEBUG=1` devuelve los de pywebview, con su
   menú completo, solo para diagnóstico.
@@ -892,3 +896,7 @@ permanecen dentro del valor. Una sola celda conserva el paste nativo.
 Sin transferencia automática (UI-74), CSV/Excel, drag & drop ni gestor de undo.
 El undo de una sola celda queda al navegador; no se promete undo atómico de bloques.
 Evidencia y límites en [validación P27.9](validacion-p27-9.md).
+
+El clic derecho sobre una celda abre el [menú de edición](edicion-entradas.md):
+Rellenar aleatoriamente, Limpiar y, en matrices, los comandos de selección que
+antes estaban en el chip «Seleccionar». No añade botones permanentes.
