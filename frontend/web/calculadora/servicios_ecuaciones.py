@@ -9,16 +9,25 @@ El procedimiento de cada método se adapta con `servicios.presentar_resolucion`,
 las mismas piezas que usa Reducción por filas.
 """
 
-from backend.ecuaciones_matriciales import resolver_ecuacion_matricial
+import json
+
+from django.utils.crypto import constant_time_compare, salted_hmac
+
+from backend.ecuaciones_matriciales import MENSAJE_LU_CUADRADA, resolver_ecuacion_matricial
 from backend.matrices import vector_columna
-from backend.presupuesto_computacional import ESTIMADORES, combinar_estimaciones, estimar_producto, perfil_numerico
+from backend.presupuesto_computacional import (
+    ESTIMADORES, Categoria, PerfilNumerico, categoria, combinar_estimaciones,
+    estimar_gauss_jordan, estimar_lu, estimar_producto, intervalo_segundos, perfil_numerico,
+)
 from backend.sistemas import enumerar_variables
 
 from .opciones_ecuaciones import NOMBRE_INCOGNITA, forma_texto, metodos_a_resolver, titulo_resultado
-from .servicios import clave_clasificacion, formatear_matriz, presentar_resolucion
+from .servicios import adaptar_pasos, clave_clasificacion, formatear_matriz, presentar_resolucion
 from .servicios_matrices import combinacion_columnas, subindice
+from .servicios_presupuesto import texto_intervalo
 
 ENUNCIADOS = {
+    "no_aplicable": "Factorización LU sin permutaciones no aplicable.",
     "unica": "Ax = b tiene solución única.",
     "infinitas": "Ax = b tiene infinitas soluciones.",
     "inconsistente": "Ax = b no tiene solución.",
@@ -103,11 +112,78 @@ def estimar_ecuacion_web(entrada):
     a, b = entrada["a"], entrada["b"]
     filas, columnas = len(a), len(a[0])
     perfil = perfil_numerico(a, [b])
+    if entrada["metodo"] == "lu":
+        if filas != columnas:
+            raise ValueError(MENSAJE_LU_CUADRADA)
+        # Los resultados aún no existen: aproximamos su crecimiento, como en Inversa.
+        bits_lu = filas * (perfil.bits_numerador + (columnas - 1) * perfil.bits_denominador)
+        perfil_lu = PerfilNumerico(bits_lu, bits_lu)
+        bits_y = filas * (bits_lu + columnas * bits_lu)
+        perfil_y = PerfilNumerico(bits_y, bits_y)
+        bits_x = filas * (bits_y + columnas * bits_y)
+        return combinar_estimaciones(
+            estimar_lu(filas, columnas, perfil=perfil_numerico(a)),
+            estimar_gauss_jordan(filas, columnas + 1, columnas_pivote=columnas, perfil=perfil_lu),
+            estimar_gauss_jordan(filas, columnas + 1, columnas_pivote=columnas, perfil=perfil_y),
+            estimar_producto(filas, columnas, 1, perfil=PerfilNumerico(bits_x, bits_x)),
+            operacion="lu",
+        )
     comprobacion = estimar_producto(filas, columnas, 1, perfil=perfil)
     partes = []
     for clave in metodos_a_resolver(entrada["metodo"]):
         partes += [ESTIMADORES[clave](filas, columnas + 1, columnas_pivote=columnas, perfil=perfil), comprobacion]
     return combinar_estimaciones(*partes, operacion=entrada["metodo"])
+
+
+def confirmacion_pendiente(entrada, firma=""):
+    """LU estima las tres etapas antes de ejecutarlas; la firma liga A, b y método."""
+    if entrada["metodo"] != "lu":
+        return None
+    estimacion = estimar_ecuacion_web(entrada)
+    if categoria(estimacion) < Categoria.PESADA:
+        return None
+    calculo = {
+        "a": [[str(valor) for valor in fila] for fila in entrada["a"]],
+        "b": [str(valor) for valor in entrada["b"]], "metodo": entrada["metodo"],
+    }
+    esperada = salted_hmac(
+        "pygebra.ecuaciones-lu.confirmacion",
+        json.dumps(calculo, sort_keys=True, separators=(",", ":")), algorithm="sha256",
+    ).hexdigest()
+    if constant_time_compare(firma or "", esperada):
+        return None
+    return {
+        "firma": esperada, "tiempo": texto_intervalo(*intervalo_segundos(estimacion)),
+        "mensaje": "La factorización y las dos reducciones pueden tardar porque conservan un procedimiento largo.",
+    }
+
+
+def _presentar_lu(calculo):
+    factorizacion = calculo["factorizacion"]
+    aplicable = factorizacion["aplicable"]
+    return {
+        "aplicable": aplicable,
+        "l": formatear_matriz(factorizacion["l"]) if aplicable else None,
+        "u": formatear_matriz(factorizacion["u"]),
+        "pasos": adaptar_pasos(factorizacion["pasos"]) if not aplicable else [],
+        "mensaje": " ".join(calculo["justificacion"]) if not aplicable else (
+            "U es singular: el bloque izquierdo no puede convertirse en I, por lo que "
+            "no se obtiene [I | x] ni una solución única. La reducción permite clasificar el sistema."
+            if calculo["x"] is None else ""
+        ),
+        "etapas": [{
+            "titulo": "Resolver Ly = b" if etapa["nombre"] == "y" else "Resolver Ux = y",
+            "inicial": "[L | b]" if etapa["nombre"] == "y" else "[U | y]",
+            "final": f"[I | {etapa['nombre']}]" if etapa["es_identidad"] else "Forma reducida de [U | y]",
+            "lectura": (
+                f"La última columna contiene {etapa['nombre']}."
+                if etapa["es_identidad"] else "El bloque izquierdo no es la identidad."
+            ),
+            "matriz_inicial": formatear_matriz(etapa["matriz_inicial"]),
+            "matriz_final": formatear_matriz(etapa["matriz_final"]),
+            "columnas_izquierda": calculo["columnas"], "pasos": adaptar_pasos(etapa["pasos"]),
+        } for etapa in calculo["etapas_lu"]],
+    }
 
 
 def resolver_ecuacion_web(entrada):
@@ -117,11 +193,11 @@ def resolver_ecuacion_web(entrada):
     # conjunto solución coinciden por construcción y el resultado se muestra una sola vez.
     calculos = [resolver_ecuacion_matricial(a, b, clave) for clave in metodos_a_resolver(metodo)]
     principal = calculos[0]
-    clave = clave_clasificacion(principal["clasificacion"])
+    clave = clave_clasificacion(principal["clasificacion"]) if principal["clasificacion"] else "no_aplicable"
     filas, columnas = principal["filas"], principal["columnas"]
     unica = principal["x"] is not None
 
-    return {
+    resultado = {
         "metodo": metodo,
         "titulo_metodo": titulo_resultado(metodo),
         "comparando": len(calculos) > 1,
@@ -137,7 +213,7 @@ def resolver_ecuacion_web(entrada):
         "variables_libres": [f"{NOMBRE_INCOGNITA}{indice}" for indice in principal["variables_libres"]],
         "x": _columna_texto(principal["x"]) if unica else None,
         "comprobacion": _comprobacion(a, principal) if unica else None,
-        "interpretacion": _interpretacion(principal, clave),
+        "interpretacion": _interpretacion(principal, clave) if principal["clasificacion"] else None,
         # Cadena de equivalencias: ecuación matricial → vectorial → sistema → [A | b].
         "a": formatear_matriz(a),
         "b": _columna_texto(b),
@@ -151,7 +227,10 @@ def resolver_ecuacion_web(entrada):
         },
         "ecuaciones": principal["ecuaciones"],
         "matriz_aumentada": formatear_matriz(principal["matriz_aumentada"]),
-        "metodos": [
+        "metodos": [] if metodo == "lu" else [
             presentar_resolucion(calculo, calculo["metodo"], calculo["matriz_aumentada"]) for calculo in calculos
         ],
     }
+    if metodo == "lu":
+        resultado["lu"] = _presentar_lu(principal)
+    return resultado

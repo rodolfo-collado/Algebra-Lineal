@@ -9,6 +9,7 @@ matricial no es una operación más.
 
 from django import forms
 
+from backend.ecuaciones_matriciales import MENSAJE_LU_CUADRADA
 from .forms_matrices import FormularioCeldas, campo_dimension
 from .opciones_ecuaciones import ENTRADAS, METODO_PREDETERMINADO, METODOS, forma_texto
 from .servicios_ecuaciones import vector_incognita
@@ -21,6 +22,7 @@ class EcuacionMatricialForm(FormularioCeldas):
         label="Método", choices=METODOS, initial=METODO_PREDETERMINADO, widget=forms.RadioSelect,
         error_messages={"required": "Selecciona un método.", "invalid_choice": "Selecciona un método válido."},
     )
+    confirmacion = forms.CharField(required=False, strip=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -53,6 +55,9 @@ class EcuacionMatricialForm(FormularioCeldas):
 
         matriz, vector = ENTRADAS
         filas, columnas = self.estructura["filas"], self.estructura["columnas"]
+        if datos["metodo"] == "lu" and filas != columnas:
+            self.add_error("metodo", MENSAJE_LU_CUADRADA)
+            return datos
         datos["entrada"] = {
             "a": self.leer_matriz(datos, matriz, filas, columnas),
             # b se entrega como lista de componentes, no como matriz m×1.
@@ -63,6 +68,6 @@ class EcuacionMatricialForm(FormularioCeldas):
 
     def iniciales(self):
         """Conserva las celdas que sobreviven a Aplicar; la estructura ya está saneada."""
-        iniciales = {nombre: self.data.get(nombre, "") for nombre in self.fields}
+        iniciales = {nombre: self.data.get(nombre, "") for nombre in self.fields if nombre != "confirmacion"}
         iniciales.update(self.estructura)
         return iniciales
