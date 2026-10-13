@@ -967,6 +967,9 @@ textarea:focus {
 .expansion-selector[hidden],
 [data-determinant-methods] .option[hidden] { display: none; }
 
+[data-eleccion][hidden],
+[data-eleccion]:not(:has([name="metodo"][value="cofactores"]:checked)) [data-expansion] { display: none; }
+
 .final-action {
     margin-top: 0.85rem;
 }

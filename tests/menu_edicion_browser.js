@@ -217,6 +217,10 @@
         preparar?.(w);
         for (const selector of selectores) rellenar(w, q(w, selector));
         w = await post(frame);
+        if (ruta === determinantes) {
+            ok(q(w, "[data-eleccion]") && !q(w, "#resultado"), "Analiza antes de calcular");
+            w = await post(frame);
+        }
         ok(q(w, "#resultado"), "Sin resultado");
         igual(todos(w, ".field-error, .alert.error").filter(e => !e.hidden && e.textContent.trim()).map(e => e.textContent.trim()), []);
     });

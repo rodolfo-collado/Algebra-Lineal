@@ -2,16 +2,17 @@
     "use strict";
 
     // Solo interacción: el servidor valida y calcula. Igual que inversa.js, A
-    // se redibuja con las plantillas inertes; aquí además cada método se
-    // muestra solo si existe para el tamaño de A (data-orden, data-orden-maximo)
-    // y «Desarrollar por» solo acompaña a Cofactores.
+    // se redibuja con las plantillas inertes. Editar A invalida la elección;
+    // «Desarrollar por» solo acompaña a Cofactores.
     const root = document.querySelector("[data-determinantes]");
     if (!root) return;
     const entrada = root.querySelector("[data-determinant-entry]");
     const orden = root.querySelector('[data-dimension="orden"] input');
     const radios = [...root.querySelectorAll('[name="metodo"]')];
+    const eleccion = root.querySelector("[data-eleccion]");
+    const boton = root.querySelector("[data-boton-determinante]");
     const expansion = root.querySelector("[data-expansion]");
-    const selectorExpansion = expansion.querySelector("select");
+    const selectorExpansion = expansion?.querySelector("select");
     const matrizTemplate = document.getElementById("matrix-entry-template");
     const celdaTemplate = document.getElementById("matrix-cell-template");
     const memoria = new Map();
@@ -51,20 +52,18 @@
         return matriz;
     }
 
-    function actualizarMetodos(n) {
-        window.metodosDeterminantes.actualizar(radios, n);
+    function invalidarEleccion() {
+        ocultarConfirmacion();
+        if (!eleccion || eleccion.hidden) return;
+        eleccion.hidden = true;
+        eleccion.querySelectorAll("input, select").forEach(campo => { campo.disabled = true; });
+        boton.textContent = "Calcular determinante";
+        boton.setAttribute("formaction", `${boton.form.action.split("#")[0]}#eleccion-determinante`);
+        root.querySelector("[data-estado-eleccion]").textContent = "Cambiaste A. Pulsa Calcular determinante para volver a analizarla.";
     }
 
-    function actualizarExpansion(n) {
-        if (n !== undefined && selectorExpansion.options.length !== 2 * n + 1) {
-            const anterior = selectorExpansion.value;
-            const opciones = [["auto", "Automático"]];
-            for (const eje of ["fila", "columna"]) {
-                for (let i = 1; i <= n; i += 1) opciones.push([`${eje}_${i}`, `${eje === "fila" ? "Fila" : "Columna"} ${i}`]);
-            }
-            selectorExpansion.replaceChildren(...opciones.map(([valor, texto]) => new Option(texto, valor)));
-            selectorExpansion.value = opciones.some(([valor]) => valor === anterior) ? anterior : "auto";
-        }
+    function actualizarExpansion() {
+        if (!expansion || eleccion.hidden) return;
         const cofactores = radios.some(radio => radio.checked && radio.value === "cofactores");
         // Fuera de Cofactores no se envía: no es una decisión de ese método.
         expansion.hidden = !cofactores;
@@ -73,6 +72,7 @@
 
     function render() {
         ocultarConfirmacion();
+        invalidarEleccion();
         validarDimension(orden);
         // No se corrige en silencio un tamaño inválido: el servidor muestra el error.
         if (!dimensionValida(orden)) return;
@@ -82,8 +82,6 @@
         const nueva = crearMatriz(n);
         anterior.replaceWith(nueva);
         window.seleccionMatricial.redimensionar(anterior.querySelector("table"), nueva.querySelector("table"));
-        actualizarMetodos(n);
-        actualizarExpansion(n);
         root.querySelector("[data-determinant-shape]").textContent = `A es ${n}×${n}. De ${orden.min} a ${orden.max} filas y columnas.`;
         validarDimension(orden);
     }
@@ -92,6 +90,7 @@
     root.addEventListener("change", event => {
         ocultarConfirmacion();
         if (event.target.name === "metodo") actualizarExpansion();
+        if (event.target === orden || event.target.name?.startsWith("celda_")) invalidarEleccion();
     });
     root.querySelectorAll(".stepper [data-paso]").forEach(button => {
         button.hidden = false;
@@ -104,12 +103,21 @@
     root.addEventListener("input", event => {
         ocultarConfirmacion();
         if (event.target === orden || event.target.name?.startsWith("celda_")) {
-            root.querySelectorAll("[data-recomendacion]").forEach(nodo => { nodo.hidden = true; });
+            invalidarEleccion();
         }
     });
+    root.addEventListener("entrada-cambiada", invalidarEleccion);
     root.querySelectorAll("[data-aplicar]").forEach(button => { button.hidden = true; button.disabled = true; });
     actualizarExpansion();
     validarDimension(orden);
+
+    window.addEventListener("load", () => {
+        if (eleccion && !root.querySelector("[data-respuesta-errores]") &&
+            !document.querySelector("[data-confirmacion], [data-resultado]")) {
+            eleccion.focus({ preventScroll: true });
+            eleccion.scrollIntoView({ block: "start" });
+        }
+    });
 
     // Tab recorre todos los campos. Las flechas verticales cambian de fila;
     // las horizontales solo cambian de celda al llegar al extremo del texto.

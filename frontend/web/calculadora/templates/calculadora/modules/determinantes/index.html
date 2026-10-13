@@ -23,22 +23,26 @@
             <p class="field-help">Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>; usa <code>-</code> para negativos.</p>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
-        <section class="workspace-section">
-            {% if recomendacion %}
-            <div id="recomendacion-determinante" role="status" tabindex="-1" data-recomendacion>
-                <p><strong>Método recomendado: {{ recomendacion.titulo }}</strong></p>
+        <p class="field-help" role="status" data-estado-eleccion>{{ aviso_eleccion }}</p>
+        {% if eleccion and form.metodo.field.choices|length == 1 %}
+            <input type="hidden" name="eleccion" value="{{ eleccion }}">
+            {{ form.metodo.as_hidden }}
+        {% endif %}
+        {% if recomendacion and form.metodo.field.choices|length > 1 %}
+        <section class="workspace-section" id="eleccion-determinante" data-eleccion tabindex="-1" aria-labelledby="eleccion-title">
+            <input type="hidden" name="eleccion" value="{{ eleccion }}">
+            <h3 class="section-title" id="eleccion-title">¿Cómo quieres calcular el determinante?</h3>
+            <div id="recomendacion-determinante" role="status" data-recomendacion>
+                <p><strong>Recomendamos: {{ recomendacion.titulo }}</strong></p>
                 <p>{{ recomendacion.razon }}</p>
                 <p class="field-help">Puedes elegir cualquier otro método disponible.</p>
             </div>
-            {% endif %}
             <fieldset class="choice-fieldset">
                 <legend>{{ form.metodo.label }}</legend>
                 <div class="option-list" data-determinant-methods>
-                    {% comment %}Los métodos que no existen para el tamaño de A llegan desactivados y ocultos; determinantes.js los muestra al cambiar el tamaño.{% endcomment %}
-                    {% for radio in form.metodo %}<label class="option" for="{{ radio.id_for_label }}"{% if radio.data.attrs.disabled %} hidden{% endif %}>{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                    {% for radio in form.metodo %}<label class="option" for="{{ radio.id_for_label }}">{{ radio.tag }}<span>{{ radio.choice_label }}</span>{% if radio.data.value == recomendacion.metodo %}<span class="badge">Recomendado</span>{% endif %}</label>{% endfor %}
                 </div>
                 {{ form.metodo.errors }}
-                <p class="field-help option-help">La fórmula directa solo existe para 2×2 y Sarrus para 3×3. Cofactores admite hasta 6×6. LU no intercambia filas.</p>
             </fieldset>
             <div class="expansion-selector" data-expansion>
                 <label for="{{ form.expansion.id_for_label }}">{{ form.expansion.label }}</label>
@@ -46,11 +50,14 @@
                 <p class="field-help" id="expansion-help">Solo para Cofactores. Automático elige la fila o columna con más ceros.</p>
                 {{ form.expansion.errors }}
             </div>
+            {% disclosure titulo="¿Por qué recomendamos este método?" id="razon-determinante" nivel=4 %}
+                <p>{{ recomendacion.detalle }}</p>
+            {% enddisclosure %}
         </section>
+        {% endif %}
         {% if confirmacion %}{% include "calculadora/components/confirmacion_costo.html" with prefacio="La matriz es válida." operacion="Calcular det(A) y su procedimiento" %}{% endif %}
         <div class="workspace-actions">
-            <button class="btn btn-primary" type="submit" data-calculo>Calcular determinante</button>
-            <button class="btn btn-secondary" type="submit" name="analizar" value="1" formaction="{{ herramienta_actual.ruta }}#recomendacion-determinante">Recomendar método</button>
+            <button class="btn btn-primary" type="submit" data-calculo data-boton-determinante{% if not recomendacion %} formaction="{{ herramienta_actual.ruta }}#eleccion-determinante"{% endif %}>{% if recomendacion and form.metodo.field.choices|length > 1 %}Calcular con este método{% else %}Calcular determinante{% endif %}</button>
         </div>
     </form>
 </section>
@@ -103,7 +110,6 @@
 <script src="{% static 'calculadora/numeros.js' %}" defer></script>
 <template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
 <template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
-<script src="{% static 'calculadora/metodos_determinantes.js' %}" defer></script>
 <script src="{% static 'calculadora/determinantes.js' %}" defer></script>
 <script src="{% static 'calculadora/teclado.js' %}" defer></script>
 {% endblock %}
