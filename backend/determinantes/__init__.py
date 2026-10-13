@@ -7,6 +7,7 @@ Todos los métodos que se pueden aplicar a una misma A dan el mismo determinante
 from .cofactores import ORDEN_MAXIMO_COFACTORES, cofactores
 from .comun import directo_2x2, preparar
 from .lu import lu
+from .recomendacion import analizar_matriz_para_determinante
 from .reduccion import reduccion
 from .sarrus import sarrus
 

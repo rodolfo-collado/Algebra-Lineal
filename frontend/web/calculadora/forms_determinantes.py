@@ -30,7 +30,7 @@ def metodo_disponible(metodo, orden):
 
 
 def metodo_sugerido(orden):
-    """La regla directa del tamaño si existe; si no, Cofactores o, en matrices grandes, Reducción."""
+    """Valor inicial por tamaño, independiente de la recomendación para los valores de A."""
     for metodo, exigido in ORDEN_EXIGIDO.items():
         if exigido == orden:
             return metodo
@@ -75,6 +75,7 @@ class DeterminantesForm(FormularioCeldas):
     )
     # Firma que envía «Continuar» cuando un cálculo largo pidió confirmación; la comprueba el servicio.
     confirmacion = forms.CharField(required=False, strip=False)
+    analizar = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
