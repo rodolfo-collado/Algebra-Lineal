@@ -30,7 +30,10 @@
             if (!registro || registro.estado !== aviso) boton.hidden = true;
         });
         caja.append(aviso, boton);
-        form.querySelector(".workspace-actions").before(caja);
+        // Con una confirmación de costo pendiente, Ax=b no tiene .workspace-actions.
+        const ancla = form.querySelector(".workspace-actions") || form.querySelector("[data-confirmacion]");
+        if (ancla) ancla.before(caja);
+        else form.append(caja);
         return aviso;
     }
 
