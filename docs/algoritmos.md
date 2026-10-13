@@ -110,6 +110,12 @@ de sistemas para clasificar una U singular. LU en Ax=b requiere A cuadrada
 y se detiene si la factorización necesita intercambio. Al vivir por encima de `sistemas.py` y
 de `matrices.py`, `matrices.py` no necesita importar `sistemas.py`.
 
+Para Cramer, ese mismo módulo construye Aᵢ sustituyendo solo su columna i por b,
+y llama a `backend.determinantes.calcular_determinante` para D y todos los Dᵢ
+con el mismo método elegido. Conserva íntegra su evidencia y divide mediante
+`dividir_exacto`; no implementa otro algoritmo de determinantes. Si D=0 se
+detiene sin clasificar. La comprobación reutiliza `multiplicar_matriz_vector`.
+
 `expresiones_matriciales` no recalcula los productos numéricos. El parser arma
 un árbol; cada nodo llama a `sumar_matrices`, `restar_matrices`,
 `multiplicar_escalar_matriz`, `multiplicar_matrices`,

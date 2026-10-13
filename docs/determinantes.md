@@ -202,6 +202,17 @@ convierte el diccionario del backend en textos listos para mostrar.
 
 No recalcula nada: cada número que escribe ya venía del backend.
 
+La adaptación común está en `presentar_determinante(calculo, nombre="det(A)")`.
+Recibe evidencia existente, formatea los pasos y permite nombrar el
+determinante D o Dᵢ. `calcular_determinante_web` la usa y añade la transferencia
+a Matriz inversa, que solo pertenece a esta vista. **Regla de Cramer** en
+[Resolver Ax = b](funcionalidades.md#resolver-ax--b) también la usa: calcula D
+y cada Dᵢ con este motor y embebe `_procedimiento.html` en disclosures anidados,
+sin volver a ejecutar ni reconstruir los algoritmos. Cramer resuelve Ax=b;
+no es otro método para calcular det(A). Todos sus determinantes usan el mismo
+método elegido y requieren D≠0 para obtener x; con D=0 recomienda Gauss o
+Gauss-Jordan para clasificar.
+
 ## 7. Qué plantilla lo muestra
 
 El resultado sigue el patrón de PyGebra:

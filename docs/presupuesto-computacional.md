@@ -222,6 +222,17 @@ MUY_PESADA, pide Continuar con una firma HMAC SHA-256 ligada a A, b y método.
 Cambiar cualquiera de esos datos invalida la confirmación; Cancelar conserva
 las celdas y no calcula. El aviso funciona también sin JavaScript.
 
+Para **Regla de Cramer de Ax=b**, se construyen A y las n matrices Aᵢ sin
+resolver nada. `estimar_ecuacion_web` suma `estimar_determinante` para cada
+una: **n+1 determinantes** y el procedimiento conservado por el método elegido.
+Añade las matrices de los bloques principales, los n cocientes, el vector y
+el producto Ax de comprobación, aproximando el crecimiento numérico de los
+cocientes. La estimación no calcula D para decidir si se puede ahorrar trabajo;
+asume siempre todos los Dᵢ aunque finalmente D sea cero. Si el costo es PESADA
+o MUY_PESADA, la confirmación HMAC liga A, b, Cramer y el método de determinante.
+Cambiar ese segundo método también invalida la firma. Cancelar conserva las
+celdas y no calcula.
+
 Matriz inversa (P26.4) es la primera integración visible.
 `servicios_inversa.estimar_inversa_web(entrada)` estima Gauss-Jordan sobre
 `[A | I]` con `estimar_gauss_jordan(n, 2 * n, columnas_pivote=n, perfil=perfil_numerico(a))`

@@ -661,6 +661,32 @@ usa exclusivamente `factorizar_lu` para obtener `A = LU`, y después
 y matrices intermedias y la matriz final; su última columna contiene y o x.
 La interfaz enseña ambas resoluciones por matrices aumentadas.
 
+**Regla de Cramer** es un método de Resolver Ax = b, disponible solo para A
+cuadrada. Calcula `D = det(A)` y forma `Aᵢ` reemplazando únicamente la columna
+i de A por b. Calcula `Dᵢ = det(Aᵢ)` y obtiene `xᵢ = Dᵢ / D`. Se exige
+`det(A) ≠ 0` para poder dividir y garantizar una solución única. Si D es cero,
+se detiene y recomienda Gauss o Gauss-Jordan para clasificar el sistema;
+Cramer no deduce si tiene cero o infinitas soluciones.
+
+El segundo selector, **Método para los determinantes**, reutiliza las reglas
+y la sugerencia de [Determinantes](determinantes.md): fórmula directa en 2×2,
+Sarrus en 3×3, Cofactores hasta 6×6, LU o Reducción. **Todos los determinantes
+del cálculo usan el mismo método elegido**, mediante `calcular_determinante`;
+Cofactores elige automáticamente su expansión para cada matriz. LU conserva
+su límite sin intercambios: puede detenerse en A o en una Aᵢ. En ese caso se
+recomienda elegir otro método para los determinantes y no se cambia de motor
+automáticamente.
+
+El procedimiento identifica A y b, muestra D y cada Aᵢ completa, Dᵢ y su
+cociente. Los desplegables anidados **Ver cálculo de D** y **Ver cálculo de Dᵢ**
+incluyen el procedimiento real de Determinantes. El vector x aparece una sola
+vez en Resultado; después puede abrirse la comprobación Ax=b. El presupuesto
+previo asume siempre n+1 determinantes con todos sus desarrollos, incluso si
+al calcular D resulta cero, y solicita confirmación cuando el costo es alto.
+
+Por ejemplo, `A = [[3, -2], [-5, 4]]` y `b = [6, 8]` dan `D = 2`,
+`D₁ = 40`, `D₂ = 54` y `x = [20, 27]ᵀ`; la comprobación reproduce `[6, 8]ᵀ`.
+
 LU no intercambia filas ni convierte el método en `PA = LU`. Si un pivote
 exige intercambio, se detiene y recomienda Gauss o Gauss-Jordan, sin afirmar
 que el sistema carece de solución. Si U es singular, muestra la forma reducida
