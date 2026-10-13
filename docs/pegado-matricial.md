@@ -89,8 +89,8 @@ se vuelven no editables conservan su pertenencia: el paste se rechaza completo.
 Los cambios estructurales externos siguen el ciclo P28.1: recortan coordenadas
 retiradas al redimensionar y limpian matrices eliminadas o cuyo tipo cambió.
 
-El foco permanece donde estaba, incluida la celda de origen o el summary de
-«Seleccionar» al usar un comando matemático. Solo ese summary y los inputs
+El foco permanece donde estaba: la celda de origen o, tras un comando del
+[menú de edición](edicion-entradas.md), la celda del clic derecho. Solo los inputs
 matriciales admiten paste de selección; pegar en un input/textarea ajeno no
 redirige datos a una selección que quedó activa. Una selección de otra matriz
 tampoco cambia el destino.

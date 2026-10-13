@@ -1,17 +1,23 @@
 (() => {
     "use strict";
 
-    const plantilla = document.getElementById("matrix-selection-template");
     const aviso = document.querySelector("[data-estado-seleccion]");
-    if (!plantilla || !aviso) return;
+    if (!aviso) return;
     const forms = [...document.querySelectorAll("#expresiones-form, #inversa-form, #determinantes-form, #ecuacion-form, #sistema-form")];
     const estados = new Map();
     const { filasDeMatriz } = window.entradasSeguras;
     const clave = ({ fila, columna }) => `${fila}_${columna}`;
     const deltas = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+    // Orden del menú de edición (menu_edicion.js), que muestra solo los posibles.
+    const COMANDOS = ["toda", "fila", "columna", "principal", "secundaria", "superior", "inferior"];
     let actual = null;
     let enGesto = false;
-    let contador = 0;
+    // Una sola descripción accesible, compartida por todas las celdas seleccionadas.
+    const descripcion = document.createElement("span");
+    descripcion.id = "seleccion-celda-descripcion";
+    descripcion.className = "sr-only";
+    descripcion.textContent = "Celda incluida en la selección matricial.";
+    aviso.after(descripcion);
 
     function esMatriz(matriz) {
         if (!matriz.isConnected || matriz.closest("[hidden], [data-vector]")) return false;
@@ -40,10 +46,6 @@
             estado.celdas.has(`${i}_${j}`) ? [{ fila: i, columna: j, input }] : []));
     }
 
-    function escribir(nodo, texto) {
-        if (nodo.textContent !== texto) nodo.textContent = texto;
-    }
-
     function pintar(estado) {
         estado.matriz.toggleAttribute("data-seleccion-activa", actual === estado && estado.celdas.size > 0);
         estado.filas.forEach((fila, i) => fila.forEach((input, j) => {
@@ -51,68 +53,28 @@
             input.toggleAttribute("data-celda-seleccionada", seleccionada);
             const ids = new Set((input.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean));
             for (const id of ids) if (id.startsWith("seleccion-celda-")) ids.delete(id);
-            if (seleccionada) ids.add(estado.descripcion.id);
+            if (seleccionada) ids.add(descripcion.id);
             if (ids.size) input.setAttribute("aria-describedby", [...ids].join(" "));
             else input.removeAttribute("aria-describedby");
         }));
+    }
+
+    // Secundaria y triangulares piden A cuadrada; fila y columna, una celda actual (la columna, dentro de A).
+    function disponibles(estado) {
         const cuadrada = estado.filas.length === estado.columnasA;
-        const referencia = estado.celdaActual;
-        // Resumen visible: el chip muestra cuántas celdas hay y el panel, qué se seleccionó y «Limpiar».
-        const cantidad = estado.celdas.size;
-        const texto = `${cantidad} ${cantidad === 1 ? "celda" : "celdas"}`;
-        const etiqueta = estado.comando ?
-            estado.menu.querySelector(`[data-seleccionar="${estado.comando}"]`)?.textContent : "Selección manual";
-        // Solo se escribe si cambia: asignar textContent siempre crea un nodo nuevo, el
-        // MutationObserver del formulario volvería a sincronizar y pintar sin fin.
-        escribir(estado.cuenta, cantidad ? String(cantidad) : "");
-        estado.cuenta.hidden = !cantidad;
-        estado.menu.querySelector("[data-seleccion-resumen]").hidden = !cantidad;
-        escribir(estado.menu.querySelector("[data-seleccion-texto]"), cantidad ? `${etiqueta} · ${texto}` : "");
-        estado.menu.querySelector("summary").setAttribute("aria-label",
-            `Seleccionar celdas de ${nombre(estado)}${cantidad ? `, ${texto} ${cantidad === 1 ? "seleccionada" : "seleccionadas"}` : ""}`);
-        estado.menu.querySelectorAll("[data-seleccionar]").forEach(boton => {
-            const comando = boton.dataset.seleccionar;
-            boton.setAttribute("aria-label", `${boton.textContent} de ${nombre(estado)}`);
-            boton.disabled = (["secundaria", "superior", "inferior"].includes(comando) && !cuadrada) ||
-                (["fila", "columna"].includes(comando) && !referencia) ||
-                (comando === "columna" && referencia?.columna >= estado.columnasA);
+        const celda = estado.celdaActual;
+        return COMANDOS.filter(comando => {
+            if (["secundaria", "superior", "inferior"].includes(comando)) return cuadrada;
+            if (comando === "fila") return Boolean(celda);
+            if (comando === "columna") return Boolean(celda) && celda.columna < estado.columnasA;
+            return true;
         });
-        estado.menu.querySelector("[data-seleccion-aumentada]").hidden = !estado.aumentada;
     }
 
     function registrar(matriz) {
-        const menu = plantilla.content.firstElementChild.cloneNode(true);
-        const descripcion = document.createElement("span");
-        descripcion.id = `seleccion-celda-${++contador}`;
-        descripcion.className = "sr-only";
-        descripcion.textContent = "Celda incluida en la selección matricial.";
-        menu.append(descripcion);
-        const cuenta = document.createElement("span");
-        cuenta.className = "matrix-selection-count";
-        cuenta.setAttribute("aria-hidden", "true");
-        cuenta.hidden = true;
-        menu.querySelector("summary").append(cuenta);
-        const caja = matriz.id === "matrix-grid" ? matriz.closest("#matrix-grid-wrapper") : matriz.closest(".matrix");
-        caja.prepend(menu);
-        const estado = { matriz, menu, descripcion, cuenta, celdas: new Set(), referencia: null, extremo: null, celdaActual: null,
+        const estado = { matriz, celdas: new Set(), referencia: null, extremo: null, celdaActual: null,
             tipo: null, comando: null, filas: [] };
         estados.set(matriz, estado);
-        menu.addEventListener("toggle", () => {
-            if (menu.open) for (const otro of estados.values()) if (otro !== estado) otro.menu.open = false;
-        });
-        menu.addEventListener("click", event => {
-            if (event.target.closest("[data-limpiar-seleccion]")) {
-                limpiar(estado.matriz);
-                menu.open = false;
-                menu.querySelector("summary").focus();
-                return;
-            }
-            const boton = event.target.closest("[data-seleccionar]");
-            if (!boton || boton.disabled) return;
-            seleccionarComando(estado, boton.dataset.seleccionar, boton.textContent);
-            menu.open = false;
-            menu.querySelector("summary").focus();
-        });
         return estado;
     }
 
@@ -132,7 +94,6 @@
             limpiarEstado(estado);
             if (habia) anunciar(estado);
             pintar(estado);
-            estado.menu.remove();
             estados.delete(matriz);
             if (actual === estado) actual = null;
         }
@@ -217,6 +178,15 @@
         reemplazar(estado.matriz, seleccion, { tipo: "comando", comando, etiqueta });
     }
 
+    // `etiqueta` es el texto del comando en el menú: el anuncio dice qué se seleccionó.
+    function comando(matriz, nombreComando, etiqueta) {
+        sincronizar();
+        const estado = estados.get(matriz);
+        if (!estado || !disponibles(estado).includes(nombreComando)) return false;
+        seleccionarComando(estado, nombreComando, etiqueta);
+        return true;
+    }
+
     function obtener(matriz, actualizar = true) {
         if (actualizar) sincronizar();
         const estado = estados.get(matriz);
@@ -229,7 +199,7 @@
         return { matriz, nombre: nombre(estado), activa: actual === estado && seleccion.length > 0,
             filas: estado.filas.length, columnas: estado.filas[0].length, columnasA: estado.columnasA,
             referencia: estado.referencia && { ...estado.referencia }, extremo: estado.extremo && { ...estado.extremo },
-            celdaActual: estado.celdaActual && { ...estado.celdaActual },
+            celdaActual: estado.celdaActual && { ...estado.celdaActual }, comandos: disponibles(estado),
             tipo: estado.tipo, comando: estado.comando, celdas: seleccion, limites,
             rectangular: Boolean(limites && seleccion.length ===
                 (limites.filaFin - limites.filaInicio + 1) * (limites.columnaFin - limites.columnaInicio + 1)) };
@@ -253,12 +223,11 @@
             for (const propiedad of ["celdas", "referencia", "extremo", "celdaActual", "tipo", "comando"]) estado[propiedad] = previo[propiedad];
             if (actual === previo) actual = estado;
             estados.delete(anterior);
-            previo.menu.remove();
         }
         sincronizar();
     }
 
-    window.seleccionMatricial = { obtener, reemplazar, limpiar, redimensionar, sincronizar,
+    window.seleccionMatricial = { obtener, reemplazar, limpiar, redimensionar, sincronizar, comando,
         activa() { sincronizar(); return actual?.celdas.size ? obtener(actual.matriz) : null; } };
 
     function estadoDe(input) {
@@ -310,9 +279,6 @@
             if (actual?.celdas.size) {
                 limpiar();
                 event.preventDefault();
-            } else {
-                const menu = event.target.closest(".matrix-selection[open]");
-                if (menu) { menu.open = false; event.preventDefault(); menu.querySelector("summary").focus(); }
             }
             return;
         }
@@ -330,9 +296,6 @@
         enGesto = false;
     }, true);
 
-    document.addEventListener("pointerdown", event => {
-        for (const estado of estados.values()) if (!estado.menu.contains(event.target)) estado.menu.open = false;
-    });
     sincronizar();
     const observador = new MutationObserver(sincronizar);
     forms.forEach(form => observador.observe(form, { childList: true, subtree: true }));

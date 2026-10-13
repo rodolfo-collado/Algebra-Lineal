@@ -199,16 +199,23 @@
 
     // —— UI-34: nombres accesibles ——
     casos.push(["UI-34: cada control nombra su operando y renombrar A → M lo actualiza", "/matrices/operaciones/", async w => {
-        const nombres = tarjeta => [tarjeta.getAttribute("aria-label"), ...[...tarjeta.querySelectorAll("button:not([data-seleccionar])")].map(b => b.getAttribute("aria-label"))];
-        const comandos = tarjeta => [...tarjeta.querySelectorAll("[data-seleccionar]")].map(b => b.getAttribute("aria-label"));
+        const nombres = tarjeta => [tarjeta.getAttribute("aria-label"), ...[...tarjeta.querySelectorAll("button")].map(b => b.getAttribute("aria-label"))];
+        // Los comandos de selección viven en el menú de edición (clic derecho), titulado con el operando.
+        const tituloMenu = tarjeta => {
+            const celda = tarjeta.querySelector("input.matrix-input"); celda.focus();
+            celda.dispatchEvent(new w.MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2 }));
+            const menu = q(w, "[data-edicion-menu]"), titulo = w.document.getElementById(menu.getAttribute("aria-labelledby")).textContent;
+            w.document.activeElement.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+            return titulo;
+        };
         const a = todos(w, "[data-simbolo]")[0];
         assert(a.tagName === "FIELDSET", "Cada operando es un grupo nativo");
         const esperados = ["Operando A", "Quitar una fila de A", "Agregar una fila a A", "Quitar una columna de A", "Agregar una columna a A", "Eliminar operando A"];
         assert(JSON.stringify(nombres(a)) === JSON.stringify(esperados), `Nombres: ${nombres(a)}`);
-        assert(comandos(a).length === 7 && comandos(a).every(n => n.endsWith(" de A")), "Cada comando identifica su matriz");
+        assert(tituloMenu(a) === "Matriz A", "El menú de edición identifica su matriz");
         escribir(w, a.querySelector('[data-campo="nombre"]'), "M");
         assert(nombres(a).every(n => n.endsWith(" M")) && a.querySelector("td label").textContent.startsWith("Matriz M"), "Renombrar actualiza grupo, botones y celdas");
-        assert(comandos(a).every(n => n.endsWith(" de M")), "Renombrar también actualiza los siete comandos");
+        assert(tituloMenu(a) === "Matriz M", "Renombrar también actualiza el menú de edición");
         escribir(w, a.querySelector('[data-campo="tipo"]'), "vector", "change");
         assert(nombres(a).includes("Quitar una componente de M"), "Un vector habla de componentes");
         q(w, "[data-agregar]").click();

@@ -205,7 +205,7 @@
         const aviso = matriz.querySelector("[data-estado-copia]");
         assert(aviso.textContent === "Matriz copiada." && aviso.getAttribute("role") === "status" && aviso.getAttribute("aria-atomic") === "true", "Feedback accesible");
         assert(!q(w,"#procedimiento [data-copiar-resultado]"), "Procedimiento sin botones");
-        assert(!matriz.querySelector("input, .matrix-selection, [data-celda-seleccionada]"), "Resultado sin selección ni inputs");
+        assert(!matriz.querySelector("input, [data-celda-seleccionada]"), "Resultado sin selección ni inputs");
         return data;
     };
     const salidas = {
@@ -288,8 +288,8 @@
     }]);
     casos.push(["P28.5 botón prevalece sobre selección de entrada/texto y anuncia una vez", "p28-inversa",async w=>{
         const input=q(w,'[name="celda_A_0_0"]'); input.focus();
-        q(w,'[data-matriz="A"] .matrix-selection summary').click();
-        q(w,'[data-matriz="A"] [data-seleccionar="toda"]').click();
+        input.dispatchEvent(new w.MouseEvent("contextmenu",{bubbles:true,cancelable:true,button:2}));
+        q(w,'[data-edicion-menu] [data-seleccionar="toda"]').click();
         input.focus(); input.select();
         const seleccion=w.seleccionMatricial.activa().celdas.map(c=>[c.fila,c.columna]);
         const mensaje=q(w,"[data-estado-seleccion]").textContent;

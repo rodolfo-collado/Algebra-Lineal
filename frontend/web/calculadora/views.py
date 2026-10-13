@@ -36,7 +36,7 @@ from .opciones_sistemas import (
 from .opciones_vectores import AYUDAS, texto_boton
 from .servicios import resolver_entrada_web
 from .servicios_bases import convertir_entrada
-from .servicios_romanos import convertir_romanos
+from .servicios_romanos import convertir_romanos, numeracion_romana
 from .servicios_vectores import operar_vectores
 from .teclados import PERFILES_BASE, perfiles_para
 from .transferencia_matriz import recibir_matriz
@@ -374,7 +374,9 @@ def conversion_romanos(request):
             )
         except ValueError as error:
             form.add_error("numero", str(error))
-    return render(request, "calculadora/modules/romanos/index.html", {"form": form, "resultado": resultado})
+    return render(request, "calculadora/modules/romanos/index.html", {
+        "form": form, "resultado": resultado, "numeracion_romana": numeracion_romana(),
+    })
 
 
 @require_POST

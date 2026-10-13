@@ -105,6 +105,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{% include "calculadora/components/menu_edicion.html" %}
 <script src="{% static 'calculadora/numeros.js' %}" defer></script>
     {{ valores_vectores|json_script:"vector-initial-values" }}
     <script src="{% static 'calculadora/vectores.js' %}" defer></script>
