@@ -51,27 +51,8 @@
         return matriz;
     }
 
-    function disponible(radio, n) {
-        if (radio.dataset.orden) return Number(radio.dataset.orden) === n;
-        return !radio.dataset.ordenMaximo || n <= Number(radio.dataset.ordenMaximo);
-    }
-
-    // Mismo criterio que metodo_sugerido() en forms_determinantes.py.
-    function sugerido(n) {
-        const directo = radios.find(radio => radio.dataset.orden && Number(radio.dataset.orden) === n);
-        if (directo) return directo;
-        return radios.find(radio => radio.value === "cofactores" && disponible(radio, n)) ??
-            radios.find(radio => radio.value === "reduccion");
-    }
-
     function actualizarMetodos(n) {
-        radios.forEach(radio => {
-            const visible = disponible(radio, n);
-            radio.disabled = !visible;
-            radio.closest("label").hidden = !visible;
-        });
-        const elegido = radios.find(radio => radio.checked && !radio.disabled);
-        if (!elegido) sugerido(n).checked = true;
+        window.metodosDeterminantes.actualizar(radios, n);
     }
 
     function actualizarExpansion(n) {

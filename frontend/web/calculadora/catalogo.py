@@ -257,12 +257,13 @@ OPERACIONES_MATRICES = Herramienta(
 # (Gauss, Gauss-Jordan o ambos) sobre la matriz aumentada [A | b].
 ECUACIONES_MATRICIALES = Herramienta(
     id="ecuaciones-matriciales", nombre="Resolver Ax = b", categoria=MATRICES,
-    descripcion="Si ya tienes A y b, encuentra x en Ax = b mediante reducción por filas.",
+    descripcion="Si ya tienes A y b, encuentra x en Ax = b mediante reducción por filas, LU o Regla de Cramer.",
     estado="disponible", route_name="calculadora:ecuaciones-matriciales",
     palabras_clave=("ecuación matricial", "ecuaciones matriciales", "ax=b", "ax = b", "resolver ax=b",
                     "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
                     "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
                     "inconsistente", "resolver sistema", "sistema de ecuaciones", "sistemas de ecuaciones",
+                    "cramer", "regla de cramer",
                     "sistema lineal", "sistemas lineales", "ecuaciones lineales"),
     relacionadas=("reduccion-filas", "operaciones-matrices", "operaciones-vectores"),
     invitacion="Si ya tienes A y b, encuentra x en Ax = b.",

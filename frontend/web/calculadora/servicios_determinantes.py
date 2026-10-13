@@ -64,10 +64,10 @@ def _suma(valores):
     return " + ".join(_sumando(valor) for valor in valores)
 
 
-def _directo_2x2(calculo):
+def _directo_2x2(calculo, nombre="det(A)"):
     return {
         "simbolica": SIMBOLICA_2X2,
-        "desarrollo": "det(A) = " + desarrollo_ad_menos_bc(
+        "desarrollo": nombre + " = " + desarrollo_ad_menos_bc(
             calculo["matriz"], calculo["ad"], calculo["bc"], calculo["determinante"]),
     }
 
@@ -98,7 +98,7 @@ def _linea_sarrus(diagonal, numero, hacia_derecha):
     return {"x1": f"{x1:.1f}", "y1": "0.2", "x2": f"{x2:.1f}", "y2": "2.8", "trazo": TRAZOS[numero]}
 
 
-def _sarrus(calculo):
+def _sarrus(calculo, nombre="det(A)"):
     def diagonales(grupo, hacia_derecha):
         return [{
             "texto": "·".join(f"a{subindice(i + 1, k + 1)}" for i, k in d["posiciones"])
@@ -114,7 +114,7 @@ def _sarrus(calculo):
         "negativas": diagonales(negativas, False),
         "suma_positivas": f"{_suma(d['producto'] for d in positivas['diagonales'])} = {formatear_exacto(positivas['suma'])}",
         "suma_negativas": f"{_suma(d['producto'] for d in negativas['diagonales'])} = {formatear_exacto(negativas['suma'])}",
-        "resta": (f"det(A) = {formatear_exacto(positivas['suma'])} − {_sumando(negativas['suma'])} "
+        "resta": (f"{nombre} = {formatear_exacto(positivas['suma'])} − {_sumando(negativas['suma'])} "
                   f"= {formatear_exacto(calculo['determinante'])}"),
     }
 
@@ -178,7 +178,7 @@ def _cofactores(nodo, nivel=4, nombre="det(A)"):
     }
 
 
-def _reduccion(calculo):
+def _reduccion(calculo, nombre="det(A)"):
     intercambios = calculo["intercambios"]
     return {
         "pasos": adaptar_pasos(calculo["pasos"]),
@@ -191,12 +191,12 @@ def _reduccion(calculo):
         "diagonal": f"det(U) = {_producto(calculo['diagonal'])} = {formatear_exacto(calculo['producto_diagonal'])}",
         "singular": calculo["producto_diagonal"] == 0,
         # El ajuste queda planteado; el determinante final se muestra en Resultado.
-        "ajuste": (f"det(A) = (−1){str(intercambios).translate(EXPONENTES)}·det(U) "
+        "ajuste": (f"{nombre} = (−1){str(intercambios).translate(EXPONENTES)}·det(U) "
                    f"= {_operando(calculo['signo'])}·{_operando(calculo['producto_diagonal'])}"),
     }
 
 
-def _lu(calculo):
+def _lu(calculo, nombre="det(A)"):
     datos = {"pasos": adaptar_pasos(calculo["pasos"]), "l": formatear_matriz(calculo["l"]),
              "u": formatear_matriz(calculo["u"]), "etapas": []}
     for etapa in calculo["etapas"]:
@@ -235,18 +235,25 @@ PRESENTAR = {"directo_2x2": _directo_2x2, "sarrus": _sarrus, "cofactores": _cofa
              "lu": _lu, "reduccion": _reduccion}
 
 
-def calcular_determinante_web(entrada):
-    """Calcula la entrada ya validada (y confirmada, si hacía falta) y la deja lista para la plantilla."""
-    calculo = calcular_determinante(entrada["a"], entrada["metodo"], entrada["expansion"])
+def presentar_determinante(calculo, nombre="det(A)"):
+    """Presenta evidencia ya calculada, también embebida en Cramer, sin recalcular ni añadir HTML."""
     orden = len(calculo["matriz"])
     datos = {
         "metodo": calculo["metodo"], "titulo_metodo": dict(METODOS)[calculo["metodo"]],
         "forma": f"{orden}×{orden}", "matriz": formatear_matriz(calculo["matriz"]),
-        "aplicable": calculo["aplicable"], **PRESENTAR[calculo["metodo"]](calculo),
+        "nombre_determinante": nombre,
+        "aplicable": calculo["aplicable"], **PRESENTAR[calculo["metodo"]](calculo, nombre=nombre),
     }
     if calculo["aplicable"]:
         invertible = calculo["determinante"] != 0
-        datos.update(determinante=formatear_exacto(calculo["determinante"]), invertible=invertible,
-                     # Solo una A invertible ofrece «Calcular su matriz inversa».
-                     transferencia=campos_matriz(calculo["matriz"]) if invertible else None)
+        datos.update(determinante=formatear_exacto(calculo["determinante"]), invertible=invertible)
+    return datos
+
+
+def calcular_determinante_web(entrada):
+    """Calcula la entrada validada y confirmada; la transferencia solo pertenece a su vista."""
+    calculo = calcular_determinante(entrada["a"], entrada["metodo"], entrada["expansion"])
+    datos = presentar_determinante(calculo)
+    if calculo["aplicable"]:
+        datos["transferencia"] = campos_matriz(calculo["matriz"]) if datos["invertible"] else None
     return datos

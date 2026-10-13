@@ -13,17 +13,21 @@ import json
 
 from django.utils.crypto import constant_time_compare, salted_hmac
 
-from backend.ecuaciones_matriciales import MENSAJE_LU_CUADRADA, resolver_ecuacion_matricial
+from backend.determinantes.presupuesto import estimar_determinante
+from backend.ecuaciones_matriciales import MENSAJE_LU_CUADRADA, matrices_de_cramer, resolver_ecuacion_matricial
 from backend.matrices import vector_columna
 from backend.presupuesto_computacional import (
-    ESTIMADORES, Categoria, PerfilNumerico, categoria, combinar_estimaciones,
+    ESTIMADORES, Categoria, Estimacion, PerfilNumerico, categoria, combinar_estimaciones,
     estimar_gauss_jordan, estimar_lu, estimar_producto, intervalo_segundos, perfil_numerico,
 )
 from backend.sistemas import enumerar_variables
 
 from .opciones_ecuaciones import NOMBRE_INCOGNITA, forma_texto, metodos_a_resolver, titulo_resultado
+from .forms_determinantes import metodo_disponible, metodo_sugerido
+from .presentacion_numerica import formatear_exacto
 from .servicios import adaptar_pasos, clave_clasificacion, formatear_matriz, presentar_resolucion
-from .servicios_matrices import combinacion_columnas, subindice
+from .servicios_determinantes import presentar_determinante
+from .servicios_matrices import _operando, combinacion_columnas, subindice
 from .servicios_presupuesto import texto_intervalo
 
 ENUNCIADOS = {
@@ -112,6 +116,20 @@ def estimar_ecuacion_web(entrada):
     a, b = entrada["a"], entrada["b"]
     filas, columnas = len(a), len(a[0])
     perfil = perfil_numerico(a, [b])
+    if entrada["metodo"] == "cramer":
+        metodo = entrada.get("metodo_determinante", metodo_sugerido(filas))
+        matrices = [a, *matrices_de_cramer(a, b)]
+        if not metodo_disponible(metodo, filas):
+            raise ValueError("El método de determinante no está disponible para el tamaño de A.")
+        partes = [estimar_determinante(matriz, metodo) for matriz in matrices]
+        # Además de cada desarrollo: matrices A_i, cocientes, vector y comprobación.
+        factor = max(parte.factor_numerico for parte in partes)
+        resumen = Estimacion("cramer", (filas, columnas), filas, filas * factor,
+                             ((filas + 1) * filas * columnas + 8 * filas) * factor, factor)
+        bits_det = filas * (perfil.bits_numerador + columnas * perfil.bits_denominador + filas.bit_length())
+        return combinar_estimaciones(*partes, resumen,
+                                     estimar_producto(filas, columnas, 1, perfil=PerfilNumerico(2 * bits_det, 2 * bits_det)),
+                                     operacion="cramer")
     if entrada["metodo"] == "lu":
         if filas != columnas:
             raise ValueError(MENSAJE_LU_CUADRADA)
@@ -136,8 +154,8 @@ def estimar_ecuacion_web(entrada):
 
 
 def confirmacion_pendiente(entrada, firma=""):
-    """LU estima las tres etapas antes de ejecutarlas; la firma liga A, b y método."""
-    if entrada["metodo"] != "lu":
+    """Estima LU o Cramer antes de ejecutar; la firma liga todos los datos del cálculo."""
+    if entrada["metodo"] not in ("lu", "cramer"):
         return None
     estimacion = estimar_ecuacion_web(entrada)
     if categoria(estimacion) < Categoria.PESADA:
@@ -146,15 +164,23 @@ def confirmacion_pendiente(entrada, firma=""):
         "a": [[str(valor) for valor in fila] for fila in entrada["a"]],
         "b": [str(valor) for valor in entrada["b"]], "metodo": entrada["metodo"],
     }
+    if entrada["metodo"] == "cramer":
+        calculo["metodo_determinante"] = entrada.get("metodo_determinante", metodo_sugerido(len(entrada["a"])))
     esperada = salted_hmac(
-        "pygebra.ecuaciones-lu.confirmacion",
+        f"pygebra.ecuaciones-{entrada['metodo']}.confirmacion",
         json.dumps(calculo, sort_keys=True, separators=(",", ":")), algorithm="sha256",
     ).hexdigest()
     if constant_time_compare(firma or "", esperada):
         return None
     return {
         "firma": esperada, "tiempo": texto_intervalo(*intervalo_segundos(estimacion)),
-        "mensaje": "La factorización y las dos reducciones pueden tardar porque conservan un procedimiento largo.",
+        "mensaje": (
+            f"Cramer prevé {len(entrada['a']) + 1} determinantes y sus procedimientos completos; el cálculo puede tardar."
+            if entrada["metodo"] == "cramer" else
+            "La factorización y las dos reducciones pueden tardar porque conservan un procedimiento largo."
+        ),
+        "operacion": "Resolver Ax = b por Regla de Cramer" if entrada["metodo"] == "cramer" else
+                     "Resolver Ax = b por LU: A = LU, Ly = b y Ux = y",
     }
 
 
@@ -186,12 +212,34 @@ def _presentar_lu(calculo):
     }
 
 
+def _presentar_cramer(calculo):
+    evidencia = calculo["cramer"]
+    principal = presentar_determinante(evidencia["principal"], nombre="D")
+    reemplazos = []
+    for etapa in evidencia["reemplazos"]:
+        indice = subindice(etapa["columna"])
+        nombre = f"D{indice}"
+        determinante = presentar_determinante(etapa["calculo"], nombre=nombre)
+        reemplazos.append({
+            "columna": etapa["columna"], "nombre_matriz": f"A{indice}", "nombre": nombre,
+            "titulo": f"Ver cálculo de {nombre}", "determinante": determinante,
+            "cociente": (
+                f"x{indice} = {nombre}/D = {_operando(etapa['calculo']['determinante'])} / "
+                f"{_operando(evidencia['principal']['determinante'])} = {formatear_exacto(etapa['valor'])}"
+                if etapa["valor"] is not None else None
+            ),
+        })
+    return {"principal": principal, "reemplazos": reemplazos, "motivo": evidencia["motivo"],
+            "mensaje": " ".join(calculo["justificacion"])}
+
+
 def resolver_ecuacion_web(entrada):
     """Resuelve la entrada ya validada por el formulario y la deja lista para la plantilla."""
     a, b, metodo = entrada["a"], entrada["b"], entrada["metodo"]
     # «Comparar ambos» resuelve la misma ecuación con cada método; la clasificación y el
     # conjunto solución coinciden por construcción y el resultado se muestra una sola vez.
-    calculos = [resolver_ecuacion_matricial(a, b, clave) for clave in metodos_a_resolver(metodo)]
+    opciones = {"metodo_determinante": entrada.get("metodo_determinante", metodo_sugerido(len(a)))} if metodo == "cramer" else {}
+    calculos = [resolver_ecuacion_matricial(a, b, clave, **opciones) for clave in metodos_a_resolver(metodo)]
     principal = calculos[0]
     clave = clave_clasificacion(principal["clasificacion"]) if principal["clasificacion"] else "no_aplicable"
     filas, columnas = principal["filas"], principal["columnas"]
@@ -227,10 +275,17 @@ def resolver_ecuacion_web(entrada):
         },
         "ecuaciones": principal["ecuaciones"],
         "matriz_aumentada": formatear_matriz(principal["matriz_aumentada"]),
-        "metodos": [] if metodo == "lu" else [
+        "metodos": [] if metodo in ("lu", "cramer") else [
             presentar_resolucion(calculo, calculo["metodo"], calculo["matriz_aumentada"]) for calculo in calculos
         ],
     }
     if metodo == "lu":
         resultado["lu"] = _presentar_lu(principal)
+    if metodo == "cramer":
+        resultado["cramer"] = _presentar_cramer(principal)
+        if clave == "no_aplicable":
+            resultado["enunciado"] = (
+                "Regla de Cramer no aplicable: D = 0." if principal["cramer"]["motivo"] == "determinante_nulo" else
+                "No se pudo completar Cramer con el método de determinante elegido."
+            )
     return resultado

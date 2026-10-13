@@ -4,13 +4,13 @@ Segunda herramienta de la categoría Matrices, distinta de Operaciones con
 matrices: allí x se conoce y Ax se calcula; aquí A y b se conocen y x es la
 incógnita. El usuario solo elige las dimensiones de A (m×n): b tiene m
 componentes y x tiene n, así que la interfaz no pide medidas independientes.
-Añade LU a los métodos de Reducción por filas, con Gauss-Jordan predeterminado.
+Añade LU y Cramer a los métodos de Reducción por filas, con Gauss-Jordan predeterminado.
 """
 
 from .opciones_matrices import DIMENSION_MAXIMA, DIMENSION_MINIMA, DIMENSION_PREDETERMINADA
 from .opciones_sistemas import METODO_PREDETERMINADO, METODOS as METODOS_REDUCCION, metodos_a_resolver
 
-METODOS = (*METODOS_REDUCCION, ("lu", "Factorización LU"))
+METODOS = (*METODOS_REDUCCION, ("lu", "Factorización LU"), ("cramer", "Regla de Cramer"))
 
 
 def titulo_resultado(metodo):
@@ -30,7 +30,9 @@ AYUDA_METODOS = (
     "Gauss se detiene en la forma escalonada y resuelve por sustitución regresiva; Gauss-Jordan "
     "continúa hasta la forma escalonada reducida. Comparar ambos compara únicamente esos dos "
     "procedimientos. Factorización LU escribe A = LU y resuelve Ly = b y Ux = y mediante "
-    "matrices aumentadas; requiere A cuadrada y una factorización sin intercambios de filas."
+    "matrices aumentadas; requiere A cuadrada y una factorización sin intercambios de filas. "
+    "Regla de Cramer requiere A cuadrada y det(A) ≠ 0; permite elegir un mismo método "
+    "para calcular D y todos los Dᵢ con el motor de Determinantes."
 )
 
 

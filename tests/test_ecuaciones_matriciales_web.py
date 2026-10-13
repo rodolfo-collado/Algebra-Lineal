@@ -116,14 +116,14 @@ class PruebasEstructuraEcuacion(SimpleTestCase):
         self.assertEqual(doc.tablas["Vector incógnita x, no editable"], [["x₁"], ["x₂"]])
         self.assertNotIn("celda_x_0_0", doc.campos)
         self.assertRegex(html, r'name="metodo" value="gauss_jordan"[^>]*checked')
-        self.assertEqual(len(re.findall(r'<input type="radio" name="metodo"', html)), 4)
+        self.assertEqual(len(re.findall(r'<input type="radio" name="metodo"', html)), 5)
         self.assertContains(respuesta, "A (2×2) · x (2) = b (2).")
         self.assertContains(respuesta, 'name="ajustar"')
         self.assertNotContains(respuesta, 'id="resultado"')
         self.assertNotContains(respuesta, 'name="operacion"')
         self.assertNotContains(respuesta, 'name="columnas_b"')
         self.assertEqual(METODO_PREDETERMINADO, "gauss_jordan")
-        self.assertEqual([m for m, _ in METODOS], ["gauss", "gauss_jordan", "comparar", "lu"])
+        self.assertEqual([m for m, _ in METODOS], ["gauss", "gauss_jordan", "comparar", "lu", "cramer"])
 
     def test_b_deriva_de_las_filas_y_x_de_las_columnas(self):
         respuesta = self.client.post(RUTA, {"filas": "3", "columnas": "2", "metodo": "gauss", "ajustar": "1"})
@@ -397,7 +397,7 @@ class PruebasRechazoEcuacion(SimpleTestCase):
     def test_metodo_ausente_o_invalido(self):
         self.rechazar(datos_ecuacion(metodo=None), "Selecciona un método.")
         self.rechazar(datos_ecuacion(metodo=""), "Selecciona un método.")
-        for metodo in ("cramer", "inversa", "fila_columna", "<script>alert(1)</script>"):
+        for metodo in ("inventado", "inversa", "fila_columna", "<script>alert(1)</script>"):
             respuesta = self.rechazar(datos_ecuacion(metodo=metodo), "Selecciona un método válido.")
             self.assertNotContains(respuesta, "<script>alert(1)</script>")
 
