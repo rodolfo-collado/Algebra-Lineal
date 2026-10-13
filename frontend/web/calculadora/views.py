@@ -22,7 +22,9 @@ from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .servicios_ecuaciones import resolver_ecuacion_web, confirmacion_pendiente as confirmar_ecuacion
 from .servicios_expresiones import evaluar_expresion_web
 from .presupuesto_expresiones import confirmacion_pendiente as confirmar_expresion
-from .servicios_determinantes import calcular_determinante_web, confirmacion_pendiente as confirmar_determinante
+from .servicios_determinantes import (
+    calcular_determinante_web, confirmacion_pendiente as confirmar_determinante, recomendar_metodo_web,
+)
 from .servicios_inversa import calcular_inversa_web, confirmacion_pendiente
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
@@ -286,21 +288,24 @@ def determinantes(request):
     """
     ajustar = request.method == "POST" and "ajustar" in request.POST
     form = DeterminantesForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
-    resultado = confirmacion = None
+    resultado = confirmacion = recomendacion = None
     if request.method == "POST" and form.is_valid():
         if ajustar:
             form = DeterminantesForm(initial=form.iniciales())
         else:
             entrada = form.cleaned_data["entrada"]
             try:
-                confirmacion = confirmar_determinante(entrada, form.cleaned_data["confirmacion"])
-                if confirmacion is None:
-                    resultado = calcular_determinante_web(entrada)
+                recomendacion = recomendar_metodo_web(entrada["a"])
+                if not form.cleaned_data["analizar"]:
+                    confirmacion = confirmar_determinante(entrada, form.cleaned_data["confirmacion"])
+                    if confirmacion is None:
+                        resultado = calcular_determinante_web(entrada)
             except ValueError as error:
                 form.grupo_error = "determinant-matrix"
                 form.add_error(None, str(error))
     return render(request, "calculadora/modules/determinantes/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
+        "recomendacion": recomendacion,
         "perfiles_teclado": perfiles_para("numerico"),
     })
 

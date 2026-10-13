@@ -101,7 +101,12 @@
             orden.dispatchEvent(new Event("input", { bubbles: true }));
         });
     });
-    root.addEventListener("input", ocultarConfirmacion);
+    root.addEventListener("input", event => {
+        ocultarConfirmacion();
+        if (event.target === orden || event.target.name?.startsWith("celda_")) {
+            root.querySelectorAll("[data-recomendacion]").forEach(nodo => { nodo.hidden = true; });
+        }
+    });
     root.querySelectorAll("[data-aplicar]").forEach(button => { button.hidden = true; button.disabled = true; });
     actualizarExpansion();
     validarDimension(orden);

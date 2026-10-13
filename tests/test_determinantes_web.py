@@ -155,6 +155,53 @@ class PruebasEntrada(SimpleTestCase):
         self.assertEqual([llamada.args[1:] for llamada in calcular.call_args_list], [("lu", "auto"), ("cofactores", "columna_3")])
 
 
+class PruebasRecomendacion(SimpleTestCase):
+    def test_analizar_muestra_la_razon_sin_calcular_ni_presupuestar(self):
+        a = [[2, 0, 0], [1, 3, 4], [5, 6, 7]]
+        with patch(f"{SERVICIO}.calcular_determinante", side_effect=AssertionError("calculó")), \
+                patch(f"{SERVICIO}.estimar_determinante", side_effect=AssertionError("presupuestó")):
+            html = self.client.post(RUTA, datos_det(a, "lu", analizar="1")).content.decode()
+        self.assertIn("Método recomendado: Cofactores", texto(html))
+        self.assertIn("La fila 1 contiene ceros", texto(html))
+        self.assertIn("Puedes elegir cualquier otro método disponible.", texto(html))
+        self.assertRegex(html, r'value="lu"[^>]*checked')
+        self.assertIn('role="status" tabindex="-1" data-recomendacion', html)
+        self.assertNotIn('id="resultado"', html)
+        self.assertNotIn("data-confirmacion", html)
+
+    def test_se_puede_calcular_con_cualquier_metodo_distinto_al_recomendado(self):
+        a = [[1, 2, 3], [4, 5, 6], [7, 8, 10]]
+        for metodo, titulo in (("cofactores", "Cofactores"), ("lu", "Factorización LU"), ("reduccion", "Reducción por filas")):
+            with self.subTest(metodo=metodo):
+                html = self.client.post(RUTA, datos_det(a, metodo, "columna_2")).content.decode()
+                self.assertIn("Método recomendado: Regla de Sarrus", texto(html))
+                self.assertIn(f"Determinantes · {titulo}", texto(html))
+                self.assertRegex(html, rf'value="{metodo}"[^>]*checked')
+                self.assertIn("det(A) = -3", partes(html)[1])
+                if metodo == "cofactores":
+                    self.assertIn("Se desarrolla por la columna 2, la que se eligió.", partes(html)[0])
+
+    def test_recomendar_no_desactiva_lu_aunque_requiera_intercambios(self):
+        a = [[1, 1, 1, 1], [1, 1, 2, 3], [1, 2, 3, 4], [2, 3, 4, 7]]
+        html = self.client.post(RUTA, datos_det(a, "lu", analizar="1")).content.decode()
+        self.assertIn("Método recomendado: Reducción por filas", texto(html))
+        self.assertIn("LU necesitaría intercambiar filas", texto(html))
+        self.assertIn(("lu", False), metodos_visibles(html))
+        self.assertRegex(html, r'value="lu"[^>]*checked')
+        html = self.client.post(RUTA, datos_det(a, "lu")).content.decode()
+        self.assertIn("LU sin intercambios no puede continuar", partes(html)[1])
+
+    def test_entrada_invalida_no_llega_al_analizador(self):
+        with patch(f"{SERVICIO}.analizar_matriz_para_determinante", side_effect=AssertionError("analizó")):
+            html = self.client.post(RUTA, datos_det([[1, "x"], [2, 3]], "lu", analizar="1")).content.decode()
+        self.assertIn('id="id_celda_A_0_1_error"', html)
+        self.assertNotIn("data-recomendacion", html)
+
+    def test_no_se_infiere_una_matriz_en_get_o_al_aplicar(self):
+        for respuesta in (self.client.get(RUTA), self.client.post(RUTA, {"orden": "4", "ajustar": "1"})):
+            self.assertNotIn("data-recomendacion", respuesta.content.decode())
+
+
 class PruebasResultado(SimpleTestCase):
     def calcular(self, a, metodo, expansion=None):
         html = self.client.post(RUTA, datos_det(a, metodo, expansion)).content.decode()

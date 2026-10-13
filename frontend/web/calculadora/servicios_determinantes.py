@@ -8,7 +8,7 @@ import json
 
 from django.utils.crypto import constant_time_compare, salted_hmac
 
-from backend.determinantes import calcular_determinante
+from backend.determinantes import analizar_matriz_para_determinante, calcular_determinante
 from backend.determinantes.presupuesto import estimar_determinante
 from backend.matrices import contar
 from backend.presupuesto_computacional import Categoria, categoria, intervalo_segundos
@@ -27,6 +27,29 @@ MENSAJES_ESPERA = {
 }
 SIMBOLICA_2X2 = [["a", "b"], ["c", "d"]]
 EXPONENTES = str.maketrans("0123456789+", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺")
+RAZONES_RECOMENDACION = {
+    "unico_elemento": "La matriz tiene un único elemento: ese es su determinante.",
+    "formula_directa": "Para una matriz 2×2, la fórmula ad − bc requiere pocos cálculos.",
+    "triangular_superior": "La matriz ya es triangular superior: basta multiplicar su diagonal, sin eliminar filas.",
+    "sarrus": "En esta matriz 3×3, las seis diagonales evitan desarrollar varios menores.",
+    "lu_sin_intercambios": "La eliminación puede completarse sin intercambiar filas y evita desarrollar muchos menores.",
+    "lu_necesita_intercambio": "LU necesitaría intercambiar filas; reducción permite hacerlo y evita muchos menores.",
+    "lu_no_verificada": "No se pudo comprobar LU dentro de los límites numéricos; reducción evita desarrollar muchos menores.",
+}
+
+
+def recomendar_metodo_web(a):
+    """Presenta el análisis sin seleccionar un radio ni ejecutar el cálculo."""
+    analisis = analizar_matriz_para_determinante(a)
+    if analisis["razon"] == "expansion_favorable":
+        expansion = analisis["expansion"]
+        linea = f"{'La fila' if expansion['eje'] == 'fila' else 'La columna'} {expansion['indice']}"
+        razon = (f"{linea} contiene ceros, por lo que el desarrollo requiere menos cálculos."
+                 if expansion["ceros"] else "El desarrollo por cofactores requiere pocos menores para esta matriz.")
+    else:
+        razon = RAZONES_RECOMENDACION[analisis["razon"]]
+    return {"metodo": analisis["metodo_recomendado"],
+            "titulo": dict(METODOS)[analisis["metodo_recomendado"]], "razon": razon}
 
 
 def firmar_entrada(entrada):

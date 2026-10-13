@@ -51,6 +51,7 @@ Cada capa tiene una sola responsabilidad:
 | Validación | [`forms_determinantes.py`](../frontend/web/calculadora/forms_determinantes.py) | el POST (texto) | `entrada = {"a": [[Fraction…]], "metodo": …, "expansion": …}` o errores por campo |
 | Vista | [`views.py`](../frontend/web/calculadora/views.py) (`determinantes`) | la petición HTTP | la página renderizada |
 | Presupuesto | [`servicios_determinantes.py`](../frontend/web/calculadora/servicios_determinantes.py) (`confirmacion_pendiente`) y [`presupuesto.py`](../backend/determinantes/presupuesto.py) | `entrada` | `None` (calcular ya) o el aviso de confirmación |
+| Recomendación | [`recomendacion.py`](../backend/determinantes/recomendacion.py) (`analizar_matriz_para_determinante`) | A válida | método recomendado, razón estructurada y costes internos; sin det(A) |
 | Cálculo | [`backend/determinantes/`](../backend/determinantes/__init__.py) y [`factorizacion_lu.py`](../backend/factorizacion_lu.py) | A con `Fraction` | un diccionario con `determinante` y la evidencia del método |
 | Presentación | [`servicios_determinantes.py`](../frontend/web/calculadora/servicios_determinantes.py) (`calcular_determinante_web`) | ese diccionario | textos y matrices ya formateados, sin HTML |
 | Vista del procedimiento | [`_procedimiento.html`](../frontend/web/calculadora/templates/calculadora/modules/determinantes/_procedimiento.html), [`_cofactores.html`](../frontend/web/calculadora/templates/calculadora/modules/determinantes/_cofactores.html) | los textos preparados | el HTML: entrada → procedimiento plegable → resultado |
@@ -113,11 +114,18 @@ Si todo es válido, el formulario entrega `cleaned_data["entrada"]`:
 
 ## 3. Quién selecciona el método
 
-Hay dos selecciones distintas:
+Hay tres decisiones distintas:
 
 - **La interfaz** decide qué métodos ofrecer según el tamaño
   (`metodo_disponible` y `metodo_sugerido` en el formulario, el mismo criterio
-  en el JS).
+  en el JS). `metodo_sugerido` es solo el valor inicial por tamaño cuando
+  todavía no se ha analizado A.
+- **El recomendador** compara los procedimientos para los valores de A y
+  muestra una explicación al pulsar **Recomendar método**, y también al
+  calcular. No selecciona ni desactiva ningún radio. Este botón valida las
+  mismas celdas, pero no calcula det(A) ni pide confirmación de presupuesto;
+  funciona también sin JavaScript. Si se edita A o su tamaño, JavaScript
+  oculta la recomendación anterior hasta volver a analizar.
 - **El backend** ejecuta el método pedido. En
   [`backend/determinantes/__init__.py`](../backend/determinantes/__init__.py),
   `calcular_determinante(a, metodo, expansion)` valida A con `preparar`,
@@ -132,6 +140,72 @@ Un método desconocido lanza `ValueError("Selecciona un método válido…")`.
 Además, cada método vuelve a comprobar su propia condición (Sarrus exige 3×3,
 la fórmula directa 2×2 y Cofactores como máximo 6×6), así que el backend es
 seguro aunque alguien lo use sin la interfaz.
+
+### Heurística de recomendación
+
+[`analizar_matriz_para_determinante(A)`](../backend/determinantes/recomendacion.py)
+está exportada por `backend.determinantes`, pero el cálculo no la llama. Usa
+la validación común (`preparar`) y devuelve, por ejemplo:
+
+```python
+{"metodo_recomendado": "cofactores", "razon": "expansion_favorable",
+ "expansion": {"eje": "fila", "indice": 1, "ceros": 2},
+ "costos": {"cofactores": 12, "sarrus": 25}, "lu": None}
+```
+
+La razón es un código estable; `recomendar_metodo_web` lo convierte en una
+frase corta, como «La fila 1 contiene ceros, por lo que el desarrollo requiere
+menos cálculos». La plantilla solo presenta esos datos. Elegir otro método,
+incluida otra fila o columna de Cofactores, conserva el procedimiento elegido.
+
+Se aplican estas reglas, en orden:
+
+1. **1×1:** Cofactores devuelve el único elemento. **2×2:** fórmula directa.
+2. **Triangular superior, desde 3×3, con los primeros n−1 elementos de la
+   diagonal no nulos:** Reducción por filas, porque su motor no necesita
+   eliminar ni intercambiar; solo obtiene el producto diagonal. El último
+   elemento puede ser cero. Un cero diagonal anterior pasa por la comparación
+   general: saltar columnas puede generar eliminaciones incluso en una triangular.
+3. **3×3:** se compara Sarrus con el desarrollo automático de Cofactores.
+   En una matriz densa se prefiere Sarrus; una línea con ceros reduce el
+   trabajo de Cofactores. En empate se elige Cofactores.
+4. **Desde 4×4:** se comprueba LU mediante una eliminación exacta sobre una
+   copia, sin L, pasos ni determinante. Se respeta el avance separado de fila
+   y columna: una columna nula se salta; un pivote cero con alguna entrada
+   no nula debajo excluye LU, incluso si aparece después de varias etapas.
+5. Se compara Cofactores (hasta **6×6**) con LU cuando se ha comprobado que
+   puede continuar sin intercambios. Si LU está excluida, se compara con una
+   cota de Reducción. En empate se elige Cofactores. Por encima de 6×6 solo
+   se consideran LU y Reducción.
+
+Los **costes son unidades de utilidad didáctica**, no segundos ni cotas de
+memoria. Cofactores cuenta una suma por término (también si es cero), dos
+productos por término no nulo, las celdas de cada menor que se muestra y el
+coste de sus hijos. Cada hijo vuelve a elegir la línea con más ceros mediante
+`elegir_expansion`; los hijos 2×2 cuentan las tres operaciones de `ad − bc`.
+Por eso una sola fila favorable en una 6×6 puede seguir dejando un menor
+denso demasiado largo: no basta con contar ceros en la matriz inicial.
+
+Sarrus cuenta sus **25 operaciones**: 18 multiplicaciones, seis sumas y una
+resta, tal como las ejecuta el motor. LU cuenta los cocientes por etapa, el
+producto diagonal y **4n** operaciones por reemplazo (la fila completa de U
+y la repetición sobre L para verificar L→I). Reducción usa la cota
+`n + n(n−1)/2 · (1 + 2n)` para sus divisiones, reemplazos y producto diagonal.
+Los motores y sus procedimientos permanecen intactos.
+
+La prioridad es didáctica: **LU es el método de clase para matrices grandes
+cuando es aplicable**, aunque Reducción pueda requerir menos operaciones al
+omitir L y su verificación. Reducción queda como alternativa si LU necesita
+un intercambio, o como atajo en una triangular superior. Una triangular
+inferior se analiza mediante sus menores y pivotes, porque el motor de
+Reducción sí tendría que eliminar debajo de su diagonal.
+
+La comprobación respeta los límites de aritmética exacta. Si alcanza un
+límite, LU queda **sin verificar** (`aplicable=None`), no se confunde con un
+intercambio y no se recomienda. La recomendación tampoco garantiza que el
+cálculo seleccionado evite todo crecimiento numérico: cada motor conserva
+sus propias comprobaciones. El presupuesto sigue teniendo una tarea distinta:
+avisar si **el método elegido** será pesado, sin comparar métodos ni cambiarlo.
 
 ## 4. Qué archivo calcula
 
@@ -466,6 +540,7 @@ sequenceDiagram
 | Archivo | Qué cubre |
 | --- | --- |
 | [`test_determinantes.py`](../tests/test_determinantes.py) | cada método; 1×1, 2×2, singular, negativos, fracciones; Sarrus solo 3×3; cofactores por fila, columna y Automático; ceros; signos; LU cuadrada; reducción sin normalizaciones con 0, 1, 2 y 3 intercambios; diagonal y signo; propiedades y consistencia contra Leibniz; validación, seguridad y presupuesto de las etapas LU; reutilización de `directo_2x2` por la inversa |
+| [`test_recomendador_determinantes.py`](../tests/test_recomendador_determinantes.py) | reglas por tamaño y estructura; ceros por fila, columna y en menores; límite de Cofactores; LU comprobada, pivote inicial o posterior nulo y columnas saltadas; contraste con LU real en 100 matrices exactas; análisis sin motores ni presupuesto; entradas inválidas y límite numérico |
 | [`test_factorizacion_lu.py`](../tests/test_factorizacion_lu.py) | ejemplo 4×5 de las diapositivas; matrices altas y anchas; L m×m y U m×n; columnas saltadas; evidencia exacta por etapa; A = LU; mismos reemplazos A→U y L→I; intercambio no aplicable; validación y límites numéricos |
 | [`test_determinantes_web.py`](../tests/test_determinantes_web.py) | catálogo y navegación; métodos contextuales; Aplicar; POST manipulados; errores por celda; divisiones de L antes de A = LU y verificación compacta; LU detenida; reducción con signos y fracciones sin normalizar; procedimiento plegable y resultado único; menores anidados; confirmación con firma; transferencia a Matriz inversa |
 | [`test_gauss_jordan_bloques.py`](../tests/test_gauss_jordan_bloques.py) | el contrato de pasos incluye `correccion_determinante` |
@@ -474,7 +549,7 @@ sequenceDiagram
 | Pruebas transversales | teclado, feedback, seguridad numérica, presentación numérica, procedimiento plegable y navegación incluyen la nueva ruta |
 
 ```bash
-uv run --locked python -m unittest tests.test_factorizacion_lu tests.test_determinantes tests.test_determinantes_web -v
+uv run --locked python -m unittest tests.test_factorizacion_lu tests.test_determinantes tests.test_recomendador_determinantes tests.test_determinantes_web -v
 ```
 
 ## Guía rápida para exponer

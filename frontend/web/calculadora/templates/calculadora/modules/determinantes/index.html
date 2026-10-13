@@ -24,6 +24,13 @@
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
         <section class="workspace-section">
+            {% if recomendacion %}
+            <div id="recomendacion-determinante" role="status" tabindex="-1" data-recomendacion>
+                <p><strong>Método recomendado: {{ recomendacion.titulo }}</strong></p>
+                <p>{{ recomendacion.razon }}</p>
+                <p class="field-help">Puedes elegir cualquier otro método disponible.</p>
+            </div>
+            {% endif %}
             <fieldset class="choice-fieldset">
                 <legend>{{ form.metodo.label }}</legend>
                 <div class="option-list" data-determinant-methods>
@@ -41,7 +48,10 @@
             </div>
         </section>
         {% if confirmacion %}{% include "calculadora/components/confirmacion_costo.html" with prefacio="La matriz es válida." operacion="Calcular det(A) y su procedimiento" %}{% endif %}
-        <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Calcular determinante</button></div>
+        <div class="workspace-actions">
+            <button class="btn btn-primary" type="submit" data-calculo>Calcular determinante</button>
+            <button class="btn btn-secondary" type="submit" name="analizar" value="1" formaction="{{ herramienta_actual.ruta }}#recomendacion-determinante">Recomendar método</button>
+        </div>
     </form>
 </section>
 {% endblock %}
