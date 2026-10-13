@@ -7,21 +7,26 @@ son equivalentes y este modulo las conecta:
 
     Ax = b  <->  x1*a1 + x2*a2 + ... + xn*an = b  <->  sistema lineal  <->  [A | b]
 
-Aqui no hay un segundo solucionador: la matriz aumentada [A | b] se entrega a
+Para Gauss y Gauss-Jordan, la matriz aumentada [A | b] se entrega a
 `resolver_sistema_gauss` o `resolver_sistema_gauss_jordan` de
 `backend.sistemas`, y la clasificacion del sistema decide si Ax = b tiene
 solucion unica, infinitas o ninguna, es decir, si b es combinacion lineal de
 las columnas de A. A m×n admite m = n, m < n y m > n; x tiene n componentes
-y b tiene m. Este modulo es logica pura: recibe listas y devuelve listas o
+y b tiene m. LU se limita aquí a A cuadrada: factorizar_lu obtiene A=LU y
+aplicar_gauss_jordan reduce por separado [L|b] y [U|y], conservando sus pasos.
+Este modulo es logica pura: recibe listas y devuelve listas o
 diccionarios, o lanza ValueError con un mensaje legible.
 """
 
 from fractions import Fraction
 
+from backend.factorizacion_lu import factorizar_lu
+from backend.gauss_jordan import aplicar_gauss_jordan
 from backend.matrices import (
     contar,
     dimensiones,
     multiplicar_matriz_vector,
+    matriz_identidad,
     trasponer_matriz,
     validar_matriz,
     validar_vector,
@@ -30,14 +35,61 @@ from backend.sistemas import (
     INCONSISTENTE,
     SOLUCION_UNICA,
     ecuaciones_de_matriz,
+    interpretar_resultado,
     resolver_sistema_gauss,
     resolver_sistema_gauss_jordan,
 )
 
-# Los mismos identificadores que Resolver un sistema; Gauss-Jordan es el predeterminado.
+MENSAJE_LU_CUADRADA = (
+    "Factorización LU en Resolver Ax = b requiere una matriz A cuadrada. "
+    "Para matrices rectangulares usa Gauss o Gauss-Jordan."
+)
+
+
+def _resolver_lu(matriz_aumentada):
+    """A=LU y dos reducciones aumentadas; la factorización tiene un único motor."""
+    n = len(matriz_aumentada)
+    if len(matriz_aumentada[0]) != n + 1:
+        raise ValueError(MENSAJE_LU_CUADRADA)
+    a = [fila[:-1] for fila in matriz_aumentada]
+    b = [fila[-1] for fila in matriz_aumentada]
+    factorizacion = factorizar_lu(a)
+    evidencia = {"factorizacion": factorizacion, "etapas_lu": [], "y": None}
+    if not factorizacion["aplicable"]:
+        pivote = factorizacion["pivote_nulo"]
+        return {
+            **evidencia, "clasificacion": None, "soluciones": [], "solucion_general": [],
+            "variables_libres": [], "columnas_pivote": [],
+            "justificacion": [
+                f"El pivote de la fila {pivote['fila']}, columna {pivote['columna']} es cero "
+                "y requiere un intercambio de filas. La factorización LU sin permutaciones "
+                "no es aplicable. Usa Gauss o Gauss-Jordan."
+            ],
+        }
+
+    derecha = b
+    for nombre, matriz in (("y", factorizacion["l"]), ("x", factorizacion["u"])):
+        inicial = matriz_aumentada_de_ax_b(matriz, derecha)
+        final, pasos, pivotes = aplicar_gauss_jordan(inicial, columnas_pivote=n)
+        evidencia["etapas_lu"].append({
+            "nombre": nombre, "matriz_inicial": inicial, "matriz_final": final,
+            "pasos": pasos, "pivotes": pivotes,
+            "es_identidad": [fila[:-1] for fila in final] == matriz_identidad(n),
+        })
+        if nombre == "y":
+            derecha = [fila[-1] for fila in final]
+            evidencia["y"] = derecha
+    return {
+        **evidencia, "matriz_reducida": final,
+        **interpretar_resultado(final, pivotes, n),
+    }
+
+
+# Gauss-Jordan conserva el valor predeterminado; LU solo pertenece a Ax=b.
 METODOS = {
     "gauss": resolver_sistema_gauss,
     "gauss_jordan": resolver_sistema_gauss_jordan,
+    "lu": _resolver_lu,
 }
 METODO_PREDETERMINADO = "gauss_jordan"
 
@@ -107,13 +159,18 @@ def resolver_ecuacion_matricial(a, b, metodo=METODO_PREDETERMINADO):
     - `b_en_generado`: si b es combinación lineal de las columnas de A, es
       decir, si el sistema es consistente.
 
+    LU añade `factorizacion`, `y` y `etapas_lu`, cada una con matriz inicial,
+    final, operaciones y verificación del bloque identidad. Si requiere
+    intercambio, no ejecuta las reducciones: `clasificacion`, `x`,
+    `verificacion` y `b_en_generado` son None; `justificacion` explica el límite.
+
     No se recalcula nada por otro camino: la clasificación del sistema es la
     única fuente de todas esas conclusiones.
     """
     try:
         resolver = METODOS[metodo]
     except (KeyError, TypeError):
-        raise ValueError("Selecciona un método de resolución válido: Gauss o Gauss-Jordan.") from None
+        raise ValueError("Selecciona un método de resolución válido: Gauss, Gauss-Jordan o Factorización LU.") from None
 
     matriz_aumentada = matriz_aumentada_de_ax_b(a, b)
     filas, columnas = dimensiones(a)
@@ -135,6 +192,9 @@ def resolver_ecuacion_matricial(a, b, metodo=METODO_PREDETERMINADO):
         "b": [Fraction(componente) for componente in b],
         "x": x,
         "verificacion": verificacion,
-        "b_en_generado": resolucion["clasificacion"] != INCONSISTENTE,
+        "b_en_generado": (
+            resolucion["clasificacion"] != INCONSISTENTE
+            if resolucion["clasificacion"] is not None else None
+        ),
         **resolucion,
     }

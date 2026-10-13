@@ -605,8 +605,10 @@ entrada «A · x = b» (`.equation-entry`) se desplaza localmente cuando A es
 ancha; en pantallas estrechas las celdas se compactan para que 2×2 quepa
 entero. `ecuaciones.js` regenera A, b y x con las mismas plantillas inertes
 de matrices y actualiza `A (m×n) · x (n) = b (m)`; sin JavaScript, Aplicar
-redibuja la misma estructura. El método (`opciones_ecuaciones.py`) reutiliza
-`METODOS`, el predeterminado y `metodos_a_resolver` de `opciones_sistemas.py`.
+redibuja la misma estructura. El método (`opciones_ecuaciones.py`) amplía las
+opciones de `opciones_sistemas.py` con Factorización LU; conserva el
+predeterminado y `metodos_a_resolver`: Comparar ambos sigue siendo solo Gauss
+y Gauss-Jordan. Formulario y backend exigen A cuadrada únicamente para LU.
 
 `servicios_ecuaciones.py` no calcula: llama a
 `backend.ecuaciones_matriciales.resolver_ecuacion_matricial` por cada método
@@ -620,7 +622,14 @@ Reducción por filas, y `modules/ecuaciones/_metodos.html` incluye
 (`mostrar`) y las columnas pivote una vez. «Ver procedimiento» reúne
 `_equivalencias.html` (ecuación matricial, ecuación vectorial con las
 columnas de A, sistema equivalente y `[A | b]` con `matrix.html`) y la
-eliminación (un sub-bloque cerrado por método al comparar); después, el
+eliminación (un sub-bloque cerrado por método al comparar). Para LU,
+`_lu.html` presenta primero `A = LU` con L y U, luego `[L | b] → [I | y]`
+y `[U | y] → [I | x]`, reutilizando `_pasos.html` para cada operación y
+sus matrices Antes/Después. Sin factorización aplicable muestra dónde se
+detuvo y sugiere Gauss o Gauss-Jordan; con U singular muestra la reducción
+real sin etiquetarla como identidad. LU estima el procedimiento completo
+antes de calcular y usa `confirmacion_costo.html` si requiere confirmación.
+Después, el
 panel Resultado (`.classification` con `data-kind` y la solución, conjunto
 solución o contradicción) se muestra una vez, y tras él van plegados
 «Comprobar solución» (`A · x = b`) e «Interpretar Ax = b» (combinación lineal

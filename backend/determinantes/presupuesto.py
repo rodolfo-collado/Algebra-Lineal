@@ -1,6 +1,6 @@
 """Costo previsto de cada método, sin calcular el determinante ni generar menores."""
 
-from backend.presupuesto_computacional import Estimacion, estimar_gauss, perfil_numerico
+from backend.presupuesto_computacional import Estimacion, estimar_gauss, estimar_lu, perfil_numerico
 
 from .cofactores import MENSAJE_ORDEN_MAXIMO, ORDEN_MAXIMO_COFACTORES
 
@@ -28,11 +28,8 @@ def estimar_determinante(a, metodo):
     if metodo in ("directo_2x2", "sarrus"):
         return Estimacion(metodo, (n, n), 6, 24 * factor, 36 * factor, factor)
     if metodo == "lu":
-        eliminaciones = n * (n - 1) // 2
-        # Repetir los reemplazos sobre L, dividir la columna y multiplicar la diagonal.
-        calculo = base.calculo + (2 * n * eliminaciones + n * (n + 1) // 2 + n) * factor
-        # Una U por etapa, L/U/identidad finales y las divisiones con sus posiciones.
-        procedimiento = base.procedimiento + (n ** 3 + 3 * n * n + 6 * n * (n + 1) // 2) * factor
-        return Estimacion(metodo, (n, n), base.pasos + n, calculo, procedimiento, factor)
+        lu = estimar_lu(n, n, perfil=perfil_numerico(a))
+        return Estimacion(metodo, lu.dimensiones, lu.pasos, lu.calculo + n * factor,
+                          lu.procedimiento, factor)
     return Estimacion(metodo, (n, n), base.pasos, base.calculo + (n + base.pasos) * factor,
                       base.procedimiento + 3 * n * n, factor)

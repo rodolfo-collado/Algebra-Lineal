@@ -4,11 +4,17 @@ Segunda herramienta de la categoría Matrices, distinta de Operaciones con
 matrices: allí x se conoce y Ax se calcula; aquí A y b se conocen y x es la
 incógnita. El usuario solo elige las dimensiones de A (m×n): b tiene m
 componentes y x tiene n, así que la interfaz no pide medidas independientes.
-Los métodos son los de Reducción por filas, con Gauss-Jordan predeterminado.
+Añade LU a los métodos de Reducción por filas, con Gauss-Jordan predeterminado.
 """
 
 from .opciones_matrices import DIMENSION_MAXIMA, DIMENSION_MINIMA, DIMENSION_PREDETERMINADA
-from .opciones_sistemas import METODO_PREDETERMINADO, METODOS, metodos_a_resolver, titulo_resultado
+from .opciones_sistemas import METODO_PREDETERMINADO, METODOS as METODOS_REDUCCION, metodos_a_resolver
+
+METODOS = (*METODOS_REDUCCION, ("lu", "Factorización LU"))
+
+
+def titulo_resultado(metodo):
+    return "Gauss y Gauss-Jordan" if metodo == "comparar" else dict(METODOS)[metodo]
 
 __all__ = [
     "AYUDA_METODOS", "DIMENSION_MAXIMA", "DIMENSION_MINIMA", "DIMENSION_PREDETERMINADA", "ENTRADAS",
@@ -22,7 +28,9 @@ NOMBRE_INCOGNITA = "x"
 
 AYUDA_METODOS = (
     "Gauss se detiene en la forma escalonada y resuelve por sustitución regresiva; Gauss-Jordan "
-    "continúa hasta la forma escalonada reducida. Comparar ambos muestra los dos procedimientos."
+    "continúa hasta la forma escalonada reducida. Comparar ambos compara únicamente esos dos "
+    "procedimientos. Factorización LU escribe A = LU y resuelve Ly = b y Ux = y mediante "
+    "matrices aumentadas; requiere A cuadrada y una factorización sin intercambios de filas."
 )
 
 

@@ -646,14 +646,27 @@ herramienta enseña que estas formas son la misma ecuación:
 Ax = b  ↔  x₁a₁ + x₂a₂ + … + xₙaₙ = b  ↔  sistema lineal  ↔  [A | b]
 ```
 
-No hay un segundo solucionador: `backend/ecuaciones_matriciales.py` valida la
+Para Gauss y Gauss-Jordan, `backend/ecuaciones_matriciales.py` valida la
 ecuación, construye `[A | b]` con listas y `Fraction` y la entrega a
 `resolver_sistema_gauss` o `resolver_sistema_gauss_jordan` de
 `backend/sistemas.py`, cuyo resultado se amplía con la lectura de `Ax = b`.
 Vive en una capa aparte porque `sistemas.py` ya depende de utilidades de
 `matrices.py`. El método se elige como en Reducción por filas (Gauss,
 Gauss-Jordan, predeterminado, o Comparar ambos, que muestra el resultado una
-sola vez y los dos procedimientos plegados). El procedimiento va plegado
+sola vez y los dos procedimientos plegados). **Factorización LU** es otro
+método, independiente de Comparar ambos. Requiere A cuadrada en esta herramienta:
+usa exclusivamente `factorizar_lu` para obtener `A = LU`, y después
+`aplicar_gauss_jordan` para reducir `[L | b] → [I | y]` y
+`[U | y] → [I | x]`. Cada etapa muestra su matriz inicial, todas las operaciones
+y matrices intermedias y la matriz final; su última columna contiene y o x.
+La interfaz enseña ambas resoluciones por matrices aumentadas.
+
+LU no intercambia filas ni convierte el método en `PA = LU`. Si un pivote
+exige intercambio, se detiene y recomienda Gauss o Gauss-Jordan, sin afirmar
+que el sistema carece de solución. Si U es singular, muestra la forma reducida
+real y la clasificación (infinitas soluciones o inconsistente); no presenta
+`[I | x]` ni inventa una solución única. Gauss, Gauss-Jordan y Comparar ambos
+siguen admitiendo matrices rectangulares. El procedimiento va plegado
 primero y el resultado después, siempre visible:
 
 - solución única: `Ax = b tiene solución única.`, las líneas `x1 = 3`,
