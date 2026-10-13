@@ -12,7 +12,6 @@ from backend.determinantes import calcular_determinante
 from backend.determinantes.presupuesto import estimar_determinante
 from backend.matrices import contar
 from backend.presupuesto_computacional import Categoria, categoria, intervalo_segundos
-from backend.seguridad_numerica import dividir_exacto
 
 from .forms_determinantes import METODOS
 from .presentacion_numerica import formatear_exacto
@@ -179,37 +178,50 @@ def _cofactores(nodo, nivel=4, nombre="det(A)"):
     }
 
 
-def _correcciones(pasos):
-    """Solo los pasos que cambian det: intercambios y normalizaciones, con el factor que lo deshace."""
-    return [
-        f"Paso {numero} ({paso['operacion']}): det quedó multiplicado por "
-        f"{_operando(dividir_exacto(1, paso['correccion_determinante']))}; "
-        f"se corrige multiplicando por {_operando(paso['correccion_determinante'])}."
-        for numero, paso in enumerate(pasos, start=1) if "correccion_determinante" in paso
-    ]
-
-
 def _reduccion(calculo):
-    factores = [paso["correccion_determinante"] for paso in calculo["pasos"] if "correccion_determinante" in paso]
-    singular = calculo["producto_diagonal"] == 0
+    intercambios = calculo["intercambios"]
     return {
         "pasos": adaptar_pasos(calculo["pasos"]),
         "u": formatear_matriz(calculo["u"]),
-        "correcciones": _correcciones(calculo["pasos"]),
+        "cambios_signo": [
+            f"Paso {numero} ({paso['operacion']}): este intercambio cambia el signo del determinante."
+            for numero, paso in enumerate(calculo["pasos"], start=1) if "correccion_determinante" in paso
+        ],
+        "intercambios": intercambios,
         "diagonal": f"det(U) = {_producto(calculo['diagonal'])} = {formatear_exacto(calculo['producto_diagonal'])}",
-        "singular": singular,
-        "final": None if singular else (
-            f"det(A) = det(U)·{_producto(factores)} = {formatear_exacto(calculo['determinante'])}" if factores
-            else f"det(A) = det(U) = {formatear_exacto(calculo['determinante'])}"),
+        "singular": calculo["producto_diagonal"] == 0,
+        # El ajuste queda planteado; el determinante final se muestra en Resultado.
+        "ajuste": (f"det(A) = (−1){str(intercambios).translate(EXPONENTES)}·det(U) "
+                   f"= {_operando(calculo['signo'])}·{_operando(calculo['producto_diagonal'])}"),
     }
 
 
 def _lu(calculo):
     datos = {"pasos": adaptar_pasos(calculo["pasos"]), "l": formatear_matriz(calculo["l"]),
-             "u": formatear_matriz(calculo["u"])}
+             "u": formatear_matriz(calculo["u"]), "etapas": []}
+    for etapa in calculo["etapas"]:
+        datos["etapas"].append({
+            "titulo": (f"Columna {etapa['columna_l']} de L · pivote en fila {etapa['fila_pivote']}, "
+                       f"columna {etapa['columna_pivote']} de U"),
+            "pivote": f"Pivote: u{subindice(etapa['fila_pivote'], etapa['columna_pivote'])} = {formatear_exacto(etapa['pivote'])}",
+            "u_antes": formatear_matriz(etapa["u_antes"]),
+            "divisiones": [
+                f"l{subindice(*e['posicion_l'])} = {_operando(e['entrada'])} / {_operando(etapa['pivote'])} "
+                f"= {formatear_exacto(e['cociente'])}"
+                for e in etapa["entradas"]
+            ],
+            "operaciones": [op["operacion"] for op in etapa["operaciones"]],
+        })
     if calculo["aplicable"]:
-        datos["diagonal"] = (f"det(A) = det(L)·det(U) = 1·{_producto(calculo['diagonal'])} "
+        datos["diagonal"] = (f"det(U) = {_producto(calculo['diagonal'])} "
                              f"= {formatear_exacto(calculo['determinante'])}")
+        verificacion = calculo["verificacion"]
+        datos["verificacion"] = {
+            "l_reducida": formatear_matriz(verificacion["l_reducida"]),
+            "es_identidad": verificacion["es_identidad"],
+            "texto": (f"La misma secuencia de {contar(verificacion['reemplazos'], 'reemplazo')} aplicada a L, "
+                      "en el mismo orden, produce esta matriz:"),
+        }
     else:
         pivote = calculo["pivote_nulo"]
         datos["motivo"] = (

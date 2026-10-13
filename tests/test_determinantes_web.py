@@ -241,8 +241,42 @@ class PruebasResultado(SimpleTestCase):
         tablas = Contenido(html).tablas
         self.assertEqual(tablas["Matriz L"], [["1", "0", "0"], ["2", "1", "0"], ["-1", "-1", "1"]])
         self.assertEqual(tablas["Matriz U"], [["2", "1", "1"], ["0", "-8", "-2"], ["0", "0", "1"]])
-        self.assertIn("det(A) = det(L)·det(U) = 1·2·(-8)·1 = -16", procedimiento)
+        self.assertIn("det(A) = det(L)·det(U) = 1·det(U)", procedimiento)
+        self.assertIn("det(U) = 2·(-8)·1 = -16", procedimiento)
         self.assertIn("F2 = F2 - (2)F1", procedimiento)
+
+    def test_lu_construye_columnas_antes_de_presentar_a_igual_lu(self):
+        html, procedimiento, resultado = self.calcular([[2, 1, 1], [4, -6, 0], [-2, 7, 2]], "lu")
+        for linea in ("Columna 1 de L · pivote en fila 1, columna 1 de U", "U antes de las eliminaciones",
+                      "l₁₁ = 2 / 2 = 1", "l₂₁ = 4 / 2 = 2", "l₃₁ = (-2) / 2 = -1",
+                      "l₂₂ = (-8) / (-8) = 1", "l₃₂ = 8 / (-8) = -1",
+                      "La misma secuencia de 3 reemplazos aplicada a L, en el mismo orden", "Verificación exacta: L → I"):
+            self.assertIn(linea, procedimiento)
+        self.assertLess(procedimiento.index("l₃₁ ="), procedimiento.index("F2 = F2 - (2)F1"))
+        self.assertLess(procedimiento.index("l₃₂ ="), procedimiento.index("2 · A = LU"))
+        self.assertEqual(Contenido(html).tablas["L después de los mismos reemplazos"],
+                         [["1", "0", "0"], ["0", "1", "0"], ["0", "0", "1"]])
+        self.assertNotIn("det(A) = -16", procedimiento)
+        self.assertEqual(resultado.count("det(A) = -16"), 1)
+
+    def test_lu_muestra_divisiones_exactas_y_columnas_saltadas(self):
+        _, procedimiento, _ = self.calcular([["1/2", 1, 0], ["-3/4", "2/3", 2], [0, "1/3", 1]], "lu")
+        for linea in ("l₂₁ = (-3/4) / (1/2) = -3/2", "l₃₁ = 0 / (1/2) = 0",
+                      "l₃₂ = (1/3) / (13/6) = 2/13"):
+            self.assertIn(linea, procedimiento)
+        _, procedimiento, resultado = self.calcular([[0, 2, 3], [0, 4, 5], [0, 0, 0]], "lu")
+        self.assertIn("Columna 1 de L · pivote en fila 1, columna 2 de U", procedimiento)
+        self.assertIn("Columna 2 de L · pivote en fila 2, columna 3 de U", procedimiento)
+        self.assertIn("l₂₁ = 4 / 2 = 2", procedimiento)
+        self.assertIn("Verificación exacta: L → I", procedimiento)
+        self.assertTrue(resultado.startswith("Resultado det(A) = 0"))
+
+    def test_lu_nula_y_uno_por_uno_verifican_sin_reemplazos(self):
+        for a in ([[0, 0], [0, 0]], [["-2/3"]]):
+            with self.subTest(a=a):
+                _, procedimiento, _ = self.calcular(a, "lu")
+                self.assertIn("La misma secuencia de 0 reemplazos aplicada a L", procedimiento)
+                self.assertIn("Verificación exacta: L → I", procedimiento)
 
     def test_lu_que_necesitaria_intercambio_se_detiene_sin_inventar_un_determinante(self):
         html, procedimiento, resultado = self.calcular([[0, 1], [1, 0]], "lu")
@@ -251,14 +285,35 @@ class PruebasResultado(SimpleTestCase):
         self.assertNotIn("det(A) =", resultado)
         self.assertNotIn("data-transferencia", html)
 
-    def test_reduccion_explica_cada_correccion(self):
-        _, procedimiento, _ = self.calcular([[0, 2], [3, 4]], "reduccion")
-        self.assertIn("Paso 1 (F1 <-> F2): det quedó multiplicado por (-1); se corrige multiplicando por (-1).", unescape(procedimiento))
-        self.assertIn("Paso 2 (F1 = (1/3)F1): det quedó multiplicado por (1/3); se corrige multiplicando por 3.", procedimiento)
-        self.assertIn("det(U) = 1·1 = 1", procedimiento)
-        self.assertIn("det(A) = det(U)·(-1)·3·2 = -6", procedimiento)
+    def test_reduccion_explica_intercambio_diagonal_y_ajuste_sin_normalizaciones(self):
+        html, procedimiento, resultado = self.calcular([[0, 2], [3, 4]], "reduccion")
+        self.assertIn("Paso 1 (F1 <-> F2): este intercambio cambia el signo del determinante.", unescape(procedimiento))
+        self.assertIn("Los pivotes se conservan: no se normalizan filas.", procedimiento)
+        self.assertNotIn("F1 = (1/3)F1", procedimiento)
+        self.assertNotIn("divide cada fila", procedimiento)
+        self.assertNotIn("se corrige multiplicando", procedimiento)
+        self.assertIn("det(U) = 3·2 = 6", procedimiento)
+        self.assertIn("Cantidad de intercambios: s = 1", procedimiento)
+        self.assertIn("det(A) = (−1)¹·det(U) = (-1)·6", procedimiento)
+        self.assertEqual(Contenido(html).tablas["Matriz triangular U"], [["3", "4"], ["0", "2"]])
+        self.assertNotIn("det(A) = -6", procedimiento)
+        self.assertEqual(resultado.count("det(A) = -6"), 1)
         _, procedimiento, _ = self.calcular([[2, 4], [1, 3]], "reduccion")
         self.assertNotIn("<->", unescape(procedimiento))
+        self.assertIn("No hubo intercambios: s = 0 y det(A) = det(U)", procedimiento)
+        self.assertIn("F2 = F2 - (1/2)F1", procedimiento)
+        self.assertIn("det(U) = 2·1 = 2", procedimiento)
+
+    def test_reduccion_varios_intercambios_y_fracciones(self):
+        _, procedimiento, resultado = self.calcular([[0, 0, 2], [3, 0, 4], [0, -5, 6]], "reduccion")
+        self.assertEqual(procedimiento.count("este intercambio cambia el signo"), 2)
+        self.assertIn("det(U) = 3·(-5)·2 = -30", procedimiento)
+        self.assertIn("det(A) = (−1)²·det(U) = 1·(-30)", procedimiento)
+        self.assertTrue(resultado.startswith("Resultado det(A) = -30"))
+        _, procedimiento, resultado = self.calcular([["-1/2", "2/3"], ["3/4", "-2/5"]], "reduccion")
+        self.assertIn("F2 = F2 + (3/2)F1", procedimiento)
+        self.assertIn("det(U) = (-1/2)·(3/5) = -3/10", procedimiento)
+        self.assertTrue(resultado.startswith("Resultado det(A) = -3/10"))
 
     def test_fracciones_y_decimales_exactos(self):
         _, _, resultado = self.calcular([["1/2", "0.25"], ["3", "1/3"]], "directo_2x2")

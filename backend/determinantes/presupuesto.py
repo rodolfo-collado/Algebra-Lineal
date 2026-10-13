@@ -9,8 +9,9 @@ def estimar_determinante(a, metodo):
     """Cota del cálculo y del procedimiento conservado para A con el método pedido.
 
     Cofactores cuenta el árbol completo de menores (crece como n!) y rechaza
-    más de ORDEN_MAXIMO_COFACTORES; LU y reducción usan la cota de Gauss más
-    una corrección por paso. Usa el factor numérico de Gauss como referencia
+    más de ORDEN_MAXIMO_COFACTORES; LU y reducción usan la cota de Gauss.
+    LU añade las etapas de construcción de L y su verificación compacta.
+    Usa el factor numérico de Gauss como referencia
     del tamaño de los números.
     """
     n = len(a)
@@ -26,5 +27,12 @@ def estimar_determinante(a, metodo):
         return Estimacion("cofactores", (n, n), nodos, operaciones * factor, celdas * factor, factor)
     if metodo in ("directo_2x2", "sarrus"):
         return Estimacion(metodo, (n, n), 6, 24 * factor, 36 * factor, factor)
+    if metodo == "lu":
+        eliminaciones = n * (n - 1) // 2
+        # Repetir los reemplazos sobre L, dividir la columna y multiplicar la diagonal.
+        calculo = base.calculo + (2 * n * eliminaciones + n * (n + 1) // 2 + n) * factor
+        # Una U por etapa, L/U/identidad finales y las divisiones con sus posiciones.
+        procedimiento = base.procedimiento + (n ** 3 + 3 * n * n + 6 * n * (n + 1) // 2) * factor
+        return Estimacion(metodo, (n, n), base.pasos + n, calculo, procedimiento, factor)
     return Estimacion(metodo, (n, n), base.pasos, base.calculo + (n + base.pasos) * factor,
                       base.procedimiento + 3 * n * n, factor)
