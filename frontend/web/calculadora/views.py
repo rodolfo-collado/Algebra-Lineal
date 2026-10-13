@@ -4,6 +4,7 @@ from django.conf import settings
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils.crypto import constant_time_compare
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from actualizador.servicio import ACTUALIZADOR
@@ -24,6 +25,7 @@ from .servicios_expresiones import evaluar_expresion_web
 from .presupuesto_expresiones import confirmacion_pendiente as confirmar_expresion
 from .servicios_determinantes import (
     calcular_determinante_web, confirmacion_pendiente as confirmar_determinante, recomendar_metodo_web,
+    firmar_matriz,
 )
 from .servicios_inversa import calcular_inversa_web, confirmacion_pendiente
 from .opciones_sistemas import (
@@ -282,21 +284,31 @@ def matriz_inversa(request):
 
 @require_http_methods(["GET", "POST"])
 def determinantes(request):
-    """Determinantes: cinco métodos sobre A cuadrada; avisa antes de un cálculo largo.
-
-    Igual que Matriz inversa: Aplicar redibuja sin calcular y «Continuar» confirma con firma.
-    """
+    """A válida → elección de método → presupuesto → cálculo, también sin JS."""
     ajustar = request.method == "POST" and "ajustar" in request.POST
-    form = DeterminantesForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
+    elegir = request.method == "POST" and not ajustar and constant_time_compare(
+        request.POST.get("eleccion", ""), firmar_matriz(request.POST),
+    )
+    form = DeterminantesForm(request.POST if request.method == "POST" else None, ajustar=ajustar, elegir=elegir)
     resultado = confirmacion = recomendacion = None
-    if request.method == "POST" and form.is_valid():
-        if ajustar:
+    eleccion = aviso_eleccion = ""
+    if request.method == "POST":
+        valido = form.is_valid()
+        if ajustar and valido:
             form = DeterminantesForm(initial=form.iniciales())
-        else:
+        elif not ajustar and "entrada" in form.cleaned_data:
             entrada = form.cleaned_data["entrada"]
             try:
                 recomendacion = recomendar_metodo_web(entrada["a"])
-                if not form.cleaned_data["analizar"]:
+                eleccion = firmar_matriz(request.POST)
+                if not elegir:
+                    if request.POST.get("eleccion"):
+                        aviso_eleccion = "Cambiaste A. La analizamos de nuevo; confirma el método para esta matriz."
+                    form.data = form.data.copy()
+                    metodos = form.fields["metodo"].choices
+                    entrada["metodo"] = metodos[0][0] if len(metodos) == 1 else recomendacion["metodo"]
+                    form.data["metodo"] = entrada["metodo"]
+                if valido and (elegir or len(form.fields["metodo"].choices) == 1):
                     confirmacion = confirmar_determinante(entrada, form.cleaned_data["confirmacion"])
                     if confirmacion is None:
                         resultado = calcular_determinante_web(entrada)
@@ -305,7 +317,7 @@ def determinantes(request):
                 form.add_error(None, str(error))
     return render(request, "calculadora/modules/determinantes/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
-        "recomendacion": recomendacion,
+        "recomendacion": recomendacion, "eleccion": eleccion, "aviso_eleccion": aviso_eleccion,
         "perfiles_teclado": perfiles_para("numerico"),
     })
 

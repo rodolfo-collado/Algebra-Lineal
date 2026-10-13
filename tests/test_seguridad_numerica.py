@@ -59,7 +59,9 @@ def entradas_web(literal):
     yield ecuaciones, datos_ecuacion(a=[[literal]], b=[1])
     yield ecuaciones, datos_ecuacion(a=[[1]], b=[literal])
     yield "/matrices/inversa/", {"orden": "1", "metodo": "gauss_jordan", "celda_A_0_0": literal}
-    yield "/matrices/determinantes/", {"orden": "1", "metodo": "lu", "celda_A_0_0": literal}
+    from frontend.web.calculadora.servicios_determinantes import firmar_matriz
+    determinante = {"orden": "1", "metodo": "lu", "celda_A_0_0": literal}
+    yield "/matrices/determinantes/", determinante | {"eleccion": firmar_matriz(determinante)}
     for nombre, tipo, valor in (("A", "matriz", [[literal]]), ("u", "vector", [literal]), ("k", "escalar", literal)):
         yield expresiones, datos_expresion(nombre, [{"nombre": nombre, "tipo": tipo, "valor": valor}])
 

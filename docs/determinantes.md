@@ -29,10 +29,13 @@ mismo determinante; las pruebas lo comprueban contra una fórmula independiente.
 
 ```mermaid
 flowchart TD
-    U["Usuario escribe A, elige método"] --> T["Plantilla index.html<br/>+ determinantes.js"]
+    U["Usuario escribe A"] --> T["Plantilla index.html<br/>+ determinantes.js"]
     T -->|POST| V["views.determinantes"]
     V --> F["DeterminantesForm<br/>forms_determinantes.py"]
-    F -->|"entrada = {a, metodo, expansion}"| C["confirmacion_pendiente<br/>servicios_determinantes.py"]
+    F -->|"A válida"| A["recomendar_metodo_web<br/>análisis sin determinante"]
+    A --> E["Elección inline<br/>recomendado preseleccionado"]
+    E -->|"usuario confirma método; firma de A vigente"| C["confirmacion_pendiente<br/>servicios_determinantes.py"]
+    E -->|"editar A o dimensiones"| T
     C -->|"costo alto: pide confirmar"| T
     C -->|"costo aceptable"| W["calcular_determinante_web<br/>servicios_determinantes.py"]
     W --> B["calcular_determinante<br/>backend/determinantes/__init__.py"]
@@ -47,7 +50,7 @@ Cada capa tiene una sola responsabilidad:
 
 | Capa | Archivo | Recibe | Devuelve |
 | --- | --- | --- | --- |
-| Entrada | [`index.html`](../frontend/web/calculadora/templates/calculadora/modules/determinantes/index.html), [`determinantes.js`](../frontend/web/calculadora/static/calculadora/determinantes.js) | lo que escribe el usuario | un POST con `orden`, `celda_A_i_j`, `metodo`, `expansion` |
+| Entrada | [`index.html`](../frontend/web/calculadora/templates/calculadora/modules/determinantes/index.html), [`determinantes.js`](../frontend/web/calculadora/static/calculadora/determinantes.js) | lo que escribe el usuario | primero `orden` y `celda_A_i_j`; después `eleccion`, `metodo` y `expansion` |
 | Validación | [`forms_determinantes.py`](../frontend/web/calculadora/forms_determinantes.py) | el POST (texto) | `entrada = {"a": [[Fraction…]], "metodo": …, "expansion": …}` o errores por campo |
 | Vista | [`views.py`](../frontend/web/calculadora/views.py) (`determinantes`) | la petición HTTP | la página renderizada |
 | Presupuesto | [`servicios_determinantes.py`](../frontend/web/calculadora/servicios_determinantes.py) (`confirmacion_pendiente`) y [`presupuesto.py`](../backend/determinantes/presupuesto.py) | `entrada` | `None` (calcular ya) o el aviso de confirmación |
@@ -71,21 +74,34 @@ reutiliza los componentes de Matriz inversa:
   `celda_A_0_0`, `celda_A_0_1`, …;
 - el teclado matemático, la selección matricial y el pegado, iguales que en
   las demás herramientas de matrices;
-- los radios de **Método** y, solo para Cofactores, el selector **Desarrollar
-  por** (Automático, Fila 1…n, Columna 1…n).
+- un único botón principal, **Calcular determinante**. Los métodos aparecen
+  después de validar y analizar A, dentro del mismo formulario.
+
+La segunda etapa pregunta **¿Cómo quieres calcular el determinante?**. Muestra
+una explicación breve, el método recomendado preseleccionado y marcado con
+**Recomendado**, y todos los métodos disponibles para ese tamaño. **Calcular
+con este método** confirma la elección. La recomendación no desactiva alternativas
+ni cambia una elección manual. Con Cofactores aparece **Desarrollar por**
+(Automático, Fila 1…n, Columna 1…n). El disclosure **¿Por qué recomendamos este
+método?** permite profundizar sin mostrar los costes internos de la heurística.
 
 [`determinantes.js`](../frontend/web/calculadora/static/calculadora/determinantes.js)
 solo mejora la interacción; nunca calcula:
 
 - al cambiar el tamaño redibuja A con las plantillas inertes del servidor y
   conserva lo escrito;
-- muestra cada método solo si existe para ese tamaño (la fórmula directa en
-  2×2, Sarrus en 3×3, Cofactores hasta 6×6). Si el método elegido desaparece,
-  elige el mismo que sugeriría el servidor;
-- regenera las opciones de **Desarrollar por** y solo las envía con Cofactores.
+- al editar una celda o las dimensiones oculta y desactiva la etapa anterior,
+  anuncia el cambio y devuelve el botón a **Calcular determinante**;
+- muestra **Desarrollar por** inmediatamente al seleccionar Cofactores. Las
+  opciones llegan del servidor; JS no reproduce la heurística;
+- lleva el foco a la elección tras analizar A y conserva el foco al editarla;
+- conserva el menú contextual, la selección, el pegado y Deshacer. Restaurar
+  celdas no reactiva una elección invalidada.
 
-Sin JavaScript todo sigue funcionando: el botón **Aplicar** pide al servidor
-la nueva estructura.
+Sin JavaScript, **Aplicar** pide al servidor la nueva estructura. El primer
+POST devuelve la elección y el segundo calcula con el método elegido. CSS
+muestra el selector de expansión al marcar Cofactores. Si se editó A antes del
+segundo POST, el servidor vuelve a analizarla y exige confirmar de nuevo.
 
 ## 2. Quién valida
 
@@ -94,7 +110,8 @@ hereda de `FormularioCeldas`, la base que comparten Operaciones con matrices,
 Resolver Ax = b y Matriz inversa. Valida en este orden:
 
 1. **Campos repetidos** y tamaño (`campo_dimension`, de 1 a 10).
-2. **Método disponible** para ese tamaño (`metodo_disponible`). Un POST
+2. **Método disponible**, requerido únicamente en la etapa de elección,
+   para ese tamaño (`metodo_disponible`). Un POST
    manipulado, por ejemplo Sarrus con A 2×2, se rechaza con un mensaje en el
    campo Método.
 3. **Contrato estricto**: llegan exactamente las celdas de A, ni más ni menos,
@@ -117,15 +134,15 @@ Si todo es válido, el formulario entrega `cleaned_data["entrada"]`:
 Hay tres decisiones distintas:
 
 - **La interfaz** decide qué métodos ofrecer según el tamaño
-  (`metodo_disponible` y `metodo_sugerido` en el formulario, el mismo criterio
-  en el JS). `metodo_sugerido` es solo el valor inicial por tamaño cuando
-  todavía no se ha analizado A.
-- **El recomendador** compara los procedimientos para los valores de A y
-  muestra una explicación al pulsar **Recomendar método**, y también al
-  calcular. No selecciona ni desactiva ningún radio. Este botón valida las
-  mismas celdas, pero no calcula det(A) ni pide confirmación de presupuesto;
-  funciona también sin JavaScript. Si se edita A o su tamaño, JavaScript
-  oculta la recomendación anterior hasta volver a analizar.
+  (`metodo_disponible` en el formulario). No pide una elección antes de leer A.
+  `RadiosPorTamano`, `metodo_sugerido` y `metodos_determinantes.js` siguen
+  compartidos con Cramer; su comportamiento no cambia.
+- **El recomendador** analiza los valores de A al pulsar **Calcular
+  determinante**. El servicio web convierte su razón estructurada en una
+  explicación principal y un detalle opcional. La vista preselecciona el
+  recomendado solo al abrir una elección nueva. No calcula det(A) ni consulta
+  el presupuesto. Si hubiera un único método disponible, la vista lo usaría
+  directamente, sin inventar una etapa de elección por tamaño.
 - **El backend** ejecuta el método pedido. En
   [`backend/determinantes/__init__.py`](../backend/determinantes/__init__.py),
   `calcular_determinante(a, metodo, expansion)` valida A con `preparar`,
@@ -135,6 +152,14 @@ Hay tres decisiones distintas:
 METODOS = {"directo_2x2": directo_2x2, "cofactores": cofactores,
            "sarrus": sarrus, "lu": lu, "reduccion": reduccion}
 ```
+
+La vista vincula la etapa a A mediante `firmar_matriz`: un HMAC SHA-256 de las
+dimensiones y las celdas escritas. Esta firma no incluye método ni expansión,
+para permitir cambiar ambos. Si falta o no coincide, el POST solo analiza A
+y abre una elección nueva. Incluso cambiar `2` por `2.0` invalida la firma.
+No se guardan sesiones ni matrices. Un método previo sin firma vigente no
+autoriza calcular. La confirmación de presupuesto conserva su firma distinta,
+que sí incluye A exacta, método y expansión.
 
 Un método desconocido lanza `ValueError("Selecciona un método válido…")`.
 Además, cada método vuelve a comprobar su propia condición (Sarrus exige 3×3,
@@ -154,9 +179,22 @@ la validación común (`preparar`) y devuelve, por ejemplo:
 ```
 
 La razón es un código estable; `recomendar_metodo_web` lo convierte en una
-frase corta, como «La fila 1 contiene ceros, por lo que el desarrollo requiere
-menos cálculos». La plantilla solo presenta esos datos. Elegir otro método,
+frase educativa y un detalle opcional. La explicación principal solo requiere
+conocer el método recomendado; las comparaciones quedan en el detalle.
+La plantilla solo presenta esos datos. Elegir otro método,
 incluida otra fila o columna de Cofactores, conserva el procedimiento elegido.
+
+| Razón | Explicación principal |
+| --- | --- |
+| `unico_elemento` | La matriz tiene un único elemento: ese es su determinante. |
+| `formula_directa` | Para una matriz 2×2 existe una fórmula directa: multiplica las dos diagonales y resta sus productos. |
+| `sarrus` | Tu matriz es 3×3, el tamaño para el que se diseñó la Regla de Sarrus. Puedes calcular el determinante siguiendo sus seis diagonales. |
+| `expansion_favorable` | La fila/columna N contiene K ceros. Al desarrollar por esa fila/columna, los términos con cero se anulan y el procedimiento se hace más corto. |
+| `expansion_favorable`, sin ceros | Al desarrollar esta matriz por una fila o columna, el cálculo se divide en determinantes de matrices más pequeñas. |
+| `lu_sin_intercambios` | Esta matriz puede factorizarse sin intercambiar filas. Para este tamaño, LU organiza el cálculo en pasos más manejables. |
+| `lu_necesita_intercambio` | La reducción por filas permite reorganizar las filas y continuar el cálculo. En esta matriz, LU necesitaría un intercambio de filas. |
+| `triangular_superior` | La matriz ya es triangular superior. No necesitas eliminar entradas: el determinante se obtiene multiplicando los valores de la diagonal principal. |
+| `lu_no_verificada` | La reducción por filas permite eliminar las entradas debajo de la diagonal y continuar con el cálculo. |
 
 Se aplican estas reglas, en orden:
 
@@ -543,6 +581,7 @@ sequenceDiagram
 | [`test_recomendador_determinantes.py`](../tests/test_recomendador_determinantes.py) | reglas por tamaño y estructura; ceros por fila, columna y en menores; límite de Cofactores; LU comprobada, pivote inicial o posterior nulo y columnas saltadas; contraste con LU real en 100 matrices exactas; análisis sin motores ni presupuesto; entradas inválidas y límite numérico |
 | [`test_factorizacion_lu.py`](../tests/test_factorizacion_lu.py) | ejemplo 4×5 de las diapositivas; matrices altas y anchas; L m×m y U m×n; columnas saltadas; evidencia exacta por etapa; A = LU; mismos reemplazos A→U y L→I; intercambio no aplicable; validación y límites numéricos |
 | [`test_determinantes_web.py`](../tests/test_determinantes_web.py) | catálogo y navegación; métodos contextuales; Aplicar; POST manipulados; errores por celda; divisiones de L antes de A = LU y verificación compacta; LU detenida; reducción con signos y fracciones sin normalizar; procedimiento plegable y resultado único; menores anidados; confirmación con firma; transferencia a Matriz inversa |
+| [`determinantes_browser.js`](../tests/determinantes_browser.js) | entrada → elección → cálculo con POST reales; foco; disclosure; expansión; invalidación por edición, dimensiones y menú contextual; Deshacer; presupuesto posterior de Cofactores |
 | [`test_gauss_jordan_bloques.py`](../tests/test_gauss_jordan_bloques.py) | el contrato de pasos incluye `correccion_determinante` |
 | [`test_regresion_sistemas_bloques.py`](../tests/test_regresion_sistemas_bloques.py) | Reducción por filas y Ax = b no cambian (la base congelada ignora solo la anotación nueva) |
 | [`test_matriz_inversa_web.py`](../tests/test_matriz_inversa_web.py) | la línea de det(A) en el resultado de la inversa y la regresión de Gauss-Jordan y de la regla 2×2 |
@@ -550,7 +589,13 @@ sequenceDiagram
 
 ```bash
 uv run --locked python -m unittest tests.test_factorizacion_lu tests.test_determinantes tests.test_recomendador_determinantes tests.test_determinantes_web -v
+uv run --locked python -m tests.determinantes_browser
 ```
+
+El runner DOM está en `http://127.0.0.1:8891/__pruebas/`. Revisa además
+escritorio, tableta y móvil, consola, navegación por teclado y el flujo con
+JavaScript desactivado. `tests.menu_edicion_browser` conserva las regresiones
+del menú contextual en todas las herramientas.
 
 ## Guía rápida para exponer
 
@@ -561,7 +606,7 @@ uv run --locked python -m unittest tests.test_factorizacion_lu tests.test_determ
    menú, Inicio y el buscador sin tocar más archivos.
 2. **[`urls.py`](../frontend/web/calculadora/urls.py)** y
    **[`views.py`](../frontend/web/calculadora/views.py)** (`determinantes`): la
-   vista solo coordina: formulario → presupuesto → cálculo → plantilla.
+   vista coordina: formulario → análisis → elección → presupuesto → cálculo → plantilla.
 3. **[`forms_determinantes.py`](../frontend/web/calculadora/forms_determinantes.py)**:
    qué métodos existen para cada tamaño y cómo se valida A.
 4. **[`backend/determinantes/__init__.py`](../backend/determinantes/__init__.py)**:

@@ -120,6 +120,9 @@ class PruebasMenuEdicion(SimpleTestCase):
         }
         for ruta, datos in envios.items():
             with self.subTest(ruta=ruta):
+                if ruta == "/matrices/determinantes/":
+                    respuesta = self.client.post(ruta, datos)
+                    datos["eleccion"] = re.search(r'name="eleccion" value="([0-9a-f]+)"', respuesta.content.decode())[1]
                 respuesta = self.client.post(ruta, datos)
                 self.assertContains(respuesta, 'id="resultado"')
                 for error in ("data-error-field", "data-error-general", 'id="errores-grupo"'):

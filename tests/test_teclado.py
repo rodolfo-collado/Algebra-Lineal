@@ -77,7 +77,7 @@ CONTROLES = {
     },
     "/matrices/determinantes/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "csrfmiddlewaretoken",
-        "expansion", "metodo", "orden", "analizar",
+        "orden",  # Los métodos y la expansión aparecen después de analizar A.
     },
     "/bases/conversion/": {"base_origen", "bases_destino", "csrfmiddlewaretoken", "numero"},
 }
