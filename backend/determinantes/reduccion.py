@@ -1,21 +1,19 @@
-"""Determinante mediante la reducción de Gauss existente y sus correcciones exactas."""
+"""Determinante por triangularización sin normalizaciones y ajuste de signo."""
 
-from backend.gauss import aplicar_gauss
+from fractions import Fraction
 
-from .comun import determinante_desde_reduccion, preparar, producto
+from backend.seguridad_numerica import multiplicar_exacto
+
+from .comun import producto
+from .triangularizacion import triangularizar
 
 
 def reduccion(a):
-    """Triangulariza A con Gauss y corrige sus intercambios y normalizaciones.
-
-    Gauss normaliza cada pivote, así que la diagonal de U solo tiene unos (o un
-    cero si A es singular): multiplicarla no basta. Devuelve `u`, `pasos`
-    (cada uno con su `correccion_determinante` cuando la hay), `diagonal`,
-    `producto_diagonal` y `determinante`.
-    """
-    a = preparar(a)
-    u, pasos, _ = aplicar_gauss(a)
-    diagonal = [u[i][i] for i in range(len(a))]
-    return {"u": u, "pasos": pasos, "diagonal": diagonal,
-            "producto_diagonal": producto(diagonal),
-            "determinante": determinante_desde_reduccion(pasos, diagonal)}
+    """det(A) = (−1)^s det(U), con s intercambios y det(U) producto de la diagonal."""
+    datos = triangularizar(a)
+    diagonal = [datos["u"][i][i] for i in range(len(datos["u"]))]
+    # Conserva el caso singular sin formar productos grandes que acabarían multiplicados por cero.
+    producto_diagonal = Fraction(0) if any(v == 0 for v in diagonal) else producto(diagonal)
+    signo = (-1) ** datos["intercambios"]
+    return {**datos, "diagonal": diagonal, "producto_diagonal": producto_diagonal,
+            "signo": signo, "determinante": multiplicar_exacto(signo, producto_diagonal)}

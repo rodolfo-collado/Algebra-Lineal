@@ -188,13 +188,13 @@ class FactorizacionLU(unittest.TestCase):
         self.assertEqual(producto_lu(d), a)
 
     def test_es_reutilizable_sin_determinantes(self):
-        with self.assertRaisesRegex(ValueError, "cuadrada"):
-            factorizar_lu([[1, 2, 3], [4, 5, 6]])
+        a = [[1, 2, 3], [4, 5, 6]]
+        self.assertEqual(producto_lu(factorizar_lu(a)), a)
         self.assertEqual(factorizar_lu([[5]])["u"], [[5]])
 
 
 class Reduccion(unittest.TestCase):
-    def test_corrige_intercambios_y_normalizaciones(self):
+    def test_producto_diagonal_y_signo_sin_normalizaciones(self):
         for a in ([[0, 2], [3, 4]], [[2, 1], [4, 3]], [[2, 3], [0, -5]], [[0, 2, 1], [3, 4, 5], [1, 1, 1]]):
             with self.subTest(a=a):
                 d = calcular_determinante(a)
@@ -204,13 +204,50 @@ class Reduccion(unittest.TestCase):
                 self.assertEqual(d["determinante"], d["producto_diagonal"] * correccion)
                 self.assertEqual(d["determinante"], leibniz(a))
 
-    def test_no_basta_multiplicar_la_diagonal_de_gauss(self):
-        # Gauss normaliza los pivotes: su diagonal es de unos aunque det(A) = −6.
+    def test_conserva_pivotes_y_solo_corrige_el_intercambio(self):
         d = calcular_determinante([[0, 2], [3, 4]], "reduccion")
-        self.assertEqual(d["diagonal"], [1, 1])
+        self.assertEqual(d["u"], [[3, 4], [0, 2]])
+        self.assertEqual(d["diagonal"], [3, 2])
+        self.assertEqual(d["producto_diagonal"], 6)
+        self.assertEqual((d["intercambios"], d["signo"]), (1, -1))
         self.assertEqual(d["determinante"], -6)
-        # F1 <-> F2 (×−1), F1 = (1/3)F1 (×3) y F2 = (1/2)F2 (×2): (−1)·3·2 = −6.
-        self.assertEqual([p.get("correccion_determinante") for p in d["pasos"]], [-1, 3, 2])
+        self.assertEqual([p.get("correccion_determinante") for p in d["pasos"]], [-1])
+
+    def test_cero_uno_y_varios_intercambios_con_fracciones_y_negativos(self):
+        casos = (
+            ([[2, 1], [4, 3]], 0, [2, 1], 2),
+            ([[0, 2], [3, 4]], 1, [3, 2], -6),
+            ([[0, 0, 2], [3, 0, 4], [0, -5, 6]], 2, [3, -5, 2], -30),
+            ([[0, 0, 0, 2], [3, 0, 0, 1], [0, -5, 0, 4], [0, 0, 7, -2]],
+             3, [3, -5, 7, 2], 210),
+            ([[F(-1, 2), F(2, 3)], [F(3, 4), F(-2, 5)]], 0, [F(-1, 2), F(3, 5)], F(-3, 10)),
+        )
+        for a, intercambios, diagonal, esperado in casos:
+            with self.subTest(a=a):
+                original = [f[:] for f in a]
+                with patch("backend.operaciones_filas.normalizar_fila", side_effect=AssertionError("normalizó")), \
+                        patch("backend.gauss.aplicar_gauss", side_effect=AssertionError("usó Gauss")):
+                    d = calcular_determinante(a, "reduccion")
+                self.assertEqual(d["intercambios"], intercambios)
+                self.assertEqual(d["signo"], (-1) ** intercambios)
+                self.assertEqual(d["diagonal"], diagonal)
+                self.assertEqual(d["determinante"], esperado)
+                self.assertEqual(d["determinante"], d["signo"] * d["producto_diagonal"])
+                self.assertEqual(sum(p.get("correccion_determinante") == -1 for p in d["pasos"]), intercambios)
+                self.assertTrue(all(" <-> " in p["operacion"] or " = F" in p["operacion"] for p in d["pasos"]))
+                self.assertTrue(all(d["u"][i][j] == 0 for i in range(len(a)) for j in range(i)))
+                self.assertEqual(a, original)
+
+    def test_columnas_nulas_y_singular_con_intercambio(self):
+        d = calcular_determinante([[0, 0, 2], [0, 3, 4], [0, 6, 8]], "reduccion")
+        self.assertEqual(d["intercambios"], 1)
+        self.assertEqual((d["producto_diagonal"], d["determinante"]), (0, 0))
+        self.assertTrue(all(d["u"][i][j] == 0 for i in range(3) for j in range(i)))
+
+    def test_singular_conserva_cero_sin_formar_productos_excesivos(self):
+        grande = 1 << 7000
+        d = calcular_determinante([[grande, 0, 0], [0, grande, 0], [0, 0, 0]], "reduccion")
+        self.assertEqual((d["producto_diagonal"], d["determinante"]), (F(0), F(0)))
 
     def test_sin_intercambios_y_singular(self):
         d = calcular_determinante([[2, 4], [1, 3]], "reduccion")
@@ -301,6 +338,16 @@ class Entradas(unittest.TestCase):
 
 
 class Presupuesto(unittest.TestCase):
+    def test_lu_cubre_etapas_y_verificacion_sin_otro_historial(self):
+        for n in range(1, 7):
+            a = [[min(i, j) + 1 for j in range(n)] for i in range(n)]
+            d = factorizar_lu(a)
+            celdas = n * n * (2 * len(d["pasos"]) + len(d["etapas"]) + 3)
+            estimacion = estimar_determinante(a, "lu")
+            self.assertGreaterEqual(estimacion.procedimiento, celdas)
+            self.assertGreaterEqual(estimacion.pasos, len(d["pasos"]) + len(d["etapas"]))
+            self.assertNotIn("pasos", d["verificacion"])
+
     def test_cofactores_tiene_un_limite_estructural(self):
         a = [[1] * (ORDEN_MAXIMO_COFACTORES + 1) for _ in range(ORDEN_MAXIMO_COFACTORES + 1)]
         with self.assertRaisesRegex(ValueError, "factorial"):
