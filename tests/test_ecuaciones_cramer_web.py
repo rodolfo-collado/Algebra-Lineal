@@ -130,6 +130,26 @@ class PruebasCramerWeb(SimpleTestCase):
         self.assertNotContains(respuesta, 'id="resultado"')
         self.assertRegex(respuesta.content.decode(), r'name="metodo" value="cramer"[^>]*disabled')
 
+    def test_aplicar_sin_js_a_rectangular_vuelve_a_gauss_jordan_sin_calcular(self):
+        # Sin JS, Aplicar envía las celdas 2×2 con las dimensiones nuevas (2×3).
+        datos = datos_ecuacion(A_CLASE, B_CLASE, "cramer", metodo_determinante="directo_2x2", columnas="3", ajustar="1")
+        with patch(f"{SERVICIO}.resolver_ecuacion_matricial", side_effect=AssertionError("calculó")):
+            respuesta = self.client.post(RUTA, datos)
+        html = respuesta.content.decode()
+        for ausente in ('id="resultado"', 'role="alert"', "Selecciona un método", "Antes de calcular"):
+            self.assertNotIn(ausente, html)
+        self.assertRegex(html, r'name="metodo" value="gauss_jordan"[^>]*checked')
+        cramer = re.search(r'<input type="radio" name="metodo" value="cramer"[^>]*>', html)[0]
+        self.assertIn("disabled", cramer)
+        self.assertNotIn("checked", cramer)
+        campos = Contenido(html).campos
+        self.assertEqual([campos[f"celda_A_{i}_{j}"]["value"] for i in range(2) for j in range(2)], ["3", "-2", "-5", "4"])
+        self.assertEqual([campos[f"celda_b_{i}_0"]["value"] for i in range(2)], ["6", "8"])
+        self.assertEqual([campos[f"celda_A_{i}_2"].get("value", "") for i in range(2)], ["", ""])
+        # Con A cuadrada, Aplicar conserva Cramer: solo cae la opción que el tamaño nuevo no admite.
+        cuadrada = self.client.post(RUTA, datos_ecuacion(A_CLASE, B_CLASE, "cramer", metodo_determinante="directo_2x2", ajustar="1"))
+        self.assertRegex(cuadrada.content.decode(), r'name="metodo" value="cramer"[^>]*checked')
+
     def test_metodos_invalidos_y_no_disponibles_rechazados_antes_de_calcular(self):
         for a, b, metodo in ((A_CLASE, B_CLASE, "inventado"), (A_CLASE, B_CLASE, "sarrus"),
                              (A3, B3, "directo_2x2"), ([[int(i == j) for j in range(7)] for i in range(7)], [1] * 7, "cofactores")):

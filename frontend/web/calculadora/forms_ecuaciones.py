@@ -45,11 +45,15 @@ class EcuacionMatricialForm(FormularioCeldas):
         # La estructura vigente decide qué celdas existen: A es m×n, b es m×1 y x muestra n incógnitas.
         self.estructura = {nombre: self._valor_seguro(nombre) for nombre in ("filas", "columnas", "metodo")}
         orden = self.estructura["filas"]
-        self.fields["metodo"].widget.cuadrada = orden == self.estructura["columnas"]
+        cuadrada = orden == self.estructura["columnas"]
+        self.fields["metodo"].widget.cuadrada = cuadrada
         self.fields["metodo_determinante"].widget.orden = orden
         self.fields["metodo_determinante"].initial = metodo_sugerido(orden)
         if self.is_bound:
             self.data = self.data.copy()
+            if self.ajustar and not cuadrada and self.estructura["metodo"] == "cramer":
+                # Como ecuaciones.js: Aplicar a una A rectangular no deja Cramer marcado y desactivado.
+                self.data["metodo"] = self.estructura["metodo"] = METODO_PREDETERMINADO
             elegido = self.data.get("metodo_determinante")
             if not elegido or (self.ajustar and not metodo_disponible(elegido, orden)):
                 self.data["metodo_determinante"] = metodo_sugerido(orden)
