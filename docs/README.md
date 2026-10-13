@@ -37,6 +37,8 @@
   2×2, verificación, propiedades y aplicación `x = A⁻¹b`.
 - [Determinantes](determinantes.md): fórmula 2×2, Sarrus, cofactores, LU y
   reducción por filas; recorrido de A por cada capa y guía para exponer.
+- [Menú de edición de entradas](edicion-entradas.md): clic derecho sobre matrices,
+  vectores y números para rellenar al azar, limpiar y seleccionar.
 - [Selección matricial](seleccion-matricial.md): modelo de entrada, gestos,
   comandos sobre A, dimensiones y API interna compartida.
 - [Copiado matricial](copiado-matricial.md): selección de entrada y matrices finales,

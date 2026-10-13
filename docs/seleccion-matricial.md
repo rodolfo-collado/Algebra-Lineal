@@ -17,9 +17,10 @@ Sin selección ni máscara válida, P27 conserva su origen y capacidad habituale
 
 `seleccion_matricial.js` es el único propietario del modelo, los gestos y los
 comandos. Reutiliza `entradasSeguras.filasDeMatriz`, la lectura de filas que también
-usa el pegado, y el componente nativo `disclosure` para el control Seleccionar.
-Las cuatro plantillas de herramienta incluyen una sola plantilla inerte del
-menú y una región `role=status` por página; cada matriz recibe su propio control.
+usa el pegado. Los comandos se eligen en el [menú de edición](edicion-entradas.md)
+del clic derecho, que sustituyó al chip «Seleccionar» de cada matriz. Cada página
+incluye una región `role=status` y una descripción accesible que comparten todas
+las celdas seleccionadas.
 
 Un `Map` usa como identidad la tabla editable o `#matrix-grid`, nunca el nombre
 del operando ni su índice de formulario. Cada estado contiene un conjunto de
@@ -57,17 +58,17 @@ Ambas pueden existir sin seleccionar ninguna celda.
 - Escape se atiende en captura. La primera pulsación limpia la selección y
   cancela su acción por defecto. Teclado, buscador y navegación respetan
   `defaultPrevented`; siguientes pulsaciones pueden cerrar esos componentes.
-- El menú usa summary y botones reales: Enter/Espacio abren, Tab recorre las
-  opciones y Enter/Espacio ejecutan. El comando devuelve el foco al summary.
-  Escape dentro del menú cerrado no intercepta otros componentes; dentro del
-  menú abierto sin selección lo cierra y devuelve el foco a su summary.
+- Los comandos están en el menú de edición: clic derecho, Shift+F10 o la tecla
+  Menú sobre una celda. Fila y Columna actual usan esa celda. El comando devuelve
+  el foco a la celda; Escape dentro del menú solo lo cierra, sin limpiar la
+  selección. «Quitar selección» aparece cuando esa matriz tiene una.
 
 Toda, fila y columna seleccionan A. Fila/columna requieren una celda actual.
 Principal usa `min(filas, columnas)`. Secundaria y ambas triangulares requieren
-A cuadrada; las triangulares incluyen la diagonal. Las opciones imposibles se
-deshabilitan, siguiendo el patrón de botones de estructura de PyGebra.
+A cuadrada; las triangulares incluyen la diagonal. Las opciones imposibles no
+aparecen en el menú.
 
-En [A | b], **los siete comandos excluyen b**. Columna actual se deshabilita si
+En [A | b], **los siete comandos excluyen b**. Columna actual no aparece si
 la celda actual está en b; Fila actual conserva la fila y selecciona solo sus
 coeficientes de A. La selección manual (Ctrl, Shift+clic y Shift+flechas) puede
 incluir b porque trabaja sobre las celdas editables de la cuadrícula completa,
@@ -103,7 +104,7 @@ Cambiar de tipo o modo de entrada, quitar un operando o reemplazar una matriz
 fuera del renderizador de dimensiones limpia su estado. Un MutationObserver
 limitado a los formularios cubre cambios externos de nodos. Las consultas a la
 API también sincronizan, sin esperar a ese observador. La limpieza elimina el
-menú y sus descripciones; los nombres/reindexados no cambian la identidad.
+estado y sus descripciones; los nombres/reindexados no cambian la identidad.
 
 ## API interna para P28.2
 
@@ -115,12 +116,13 @@ menú y sus descripciones; los nombres/reindexados no cambian la identidad.
 | `obtener(matriz, actualizar = true)` | Snapshot de esa tabla/`#matrix-grid`, incluso sin celdas seleccionadas; `null` si no pertenece al alcance o fue retirada. P28.3 usa `false` para planificar antes de reconciliar cambios pendientes y poder rechazar destinos ausentes sin cambiar el conjunto durante paste. |
 | `limpiar(matriz)` | Limpia ese conjunto. Sin argumento limpia el activo. Conserva referencia y celda actual válidas para continuar editando. |
 | `reemplazar(matriz, celdas, opciones = {})` | Sustituye y activa un conjunto, sin enfocar ni editar inputs; devuelve `true`. Devuelve `false`, sin aplicar una parte, ante coordenadas inválidas/no editables o b dentro de un comando. Acepta conjunto vacío y elimina duplicados. |
-| `sincronizar()` | Reconcilia cuadrículas, dimensiones, referencias, menús y estados retirados. |
+| `sincronizar()` | Reconcilia cuadrículas, dimensiones, referencias y estados retirados. |
 | `redimensionar(anterior, nueva)` | Uso exclusivo de renderizadores: transfiere y recorta coordenadas cuando reemplazan una tabla por cambio de dimensiones. |
+| `comando(matriz, comando, etiqueta)` | Aplica uno de los comandos disponibles de esa matriz y anuncia `etiqueta` («Diagonal principal de A seleccionada: 3 celdas.»); devuelve si lo aplicó. Lo usa el menú de edición. |
 
 El snapshot contiene `matriz`, `nombre`, `activa`, `filas`, `columnas` (cuadrícula
 completa), `columnasA`, `celdaActual`, `referencia`, `extremo`, `tipo`, `comando`, `rectangular`,
-`celdas` y `limites`. `celdas` ya está ordenado por fila y columna y contiene
+`comandos` (los posibles ahora, en el orden del menú), `celdas` y `limites`. `celdas` ya está ordenado por fila y columna y contiene
 `{fila, columna, input}` con los inputs actuales. `limites` es `null` si el
 conjunto está vacío; de otro modo incluye `filaInicio`, `filaFin`,
 `columnaInicio`, `columnaFin`, todos inclusivos. Para conjuntos arbitrarios son

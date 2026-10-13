@@ -469,7 +469,7 @@ class PruebasTransversales(SimpleTestCase):
     """Contratos comunes a las herramientas con resultado y lo que no se toca."""
 
     def respuestas(self):
-        return (
+        casos = (
             ("/matrices/reduccion/", {"sistema": UNICA, "metodo": "comparar", "mostrar_definido": "1", "mostrar": TODOS}),
             ("/matrices/reduccion/", {"sistema": INFINITAS, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "sistema-resultante"]}),
             (RUTA_VECTORES, datos_vectores("escalar", escalar="2", v1=[1, 2])),
@@ -487,6 +487,9 @@ class PruebasTransversales(SimpleTestCase):
                                 ("sarrus", [[1, 2, 3], [4, 5, 6], [7, 8, 10]]), ("lu", [[0, 1], [1, 0]]),
                                 ("reduccion", [[0, 2], [3, 4]]))),
         )
+        from frontend.web.calculadora.servicios_determinantes import firmar_matriz
+        return tuple((ruta, datos | {"eleccion": firmar_matriz(datos)}) if ruta == "/matrices/determinantes/"
+                     else (ruta, datos) for ruta, datos in casos)
 
     def test_ancla_y_foco_del_resultado_se_conservan(self):
         for ruta, datos in self.respuestas():

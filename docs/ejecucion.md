@@ -102,7 +102,9 @@ La ventana abre maximizada y siempre en Inicio. Entre aperturas recuerda solo
 el tema, Exacto/Decimal y la precisión decimal, en
 `%LOCALAPPDATA%\PyGebra\preferencias.json`; nunca la sesión de trabajo. Para
 volver o avanzar usa los botones laterales del ratón o Alt+← / Alt+→. El clic
-derecho ofrece Cortar, Copiar, Pegar y Seleccionar todo. Los atajos propios de
+derecho ofrece Cortar, Copiar, Pegar y Seleccionar todo; sobre las celdas de
+matrices y vectores y el número romano abre el [menú de edición](edicion-entradas.md)
+(Rellenar aleatoriamente, Limpiar y, en matrices, Seleccionar). Los atajos propios de
 un navegador (F5, Ctrl+P, Ctrl+F, F12) no están activos; para diagnosticar, ejecuta
 con `ALGEBRA_DESKTOP_DEBUG=1`, que muestra también las herramientas de desarrollo.
 

@@ -30,7 +30,7 @@ def metodo_disponible(metodo, orden):
 
 
 def metodo_sugerido(orden):
-    """La regla directa del tamaño si existe; si no, Cofactores o, en matrices grandes, Reducción."""
+    """Valor inicial por tamaño, independiente de la recomendación para los valores de A."""
     for metodo, exigido in ORDEN_EXIGIDO.items():
         if exigido == orden:
             return metodo
@@ -75,20 +75,20 @@ class DeterminantesForm(FormularioCeldas):
     )
     # Firma que envía «Continuar» cuando un cálculo largo pidió confirmación; la comprueba el servicio.
     confirmacion = forms.CharField(required=False, strip=False)
+    eleccion = forms.CharField(required=False, strip=False, widget=forms.HiddenInput)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, elegir=False, **kwargs):
         super().__init__(*args, **kwargs)
         orden = self._valor_seguro("orden")
+        self.fields["metodo"].required = elegir
+        self.fields["metodo"].choices = [(m, titulo) for m, titulo in METODOS if metodo_disponible(m, orden)]
         self.fields["expansion"].choices = opciones_expansion(orden)
         self.fields["metodo"].widget.orden = orden
-        self.fields["metodo"].initial = metodo_sugerido(orden)
-        if self.is_bound and self.ajustar:
-            # Aplicar nunca falla por una opción que el nuevo tamaño ya no tiene.
+        if self.is_bound and not elegir:
+            # Una A nueva se analiza antes de aceptar una elección de método.
             self.data = self.data.copy()
-            if not metodo_disponible(self.data.get("metodo"), orden):
-                self.data["metodo"] = metodo_sugerido(orden)
-            if self.data.get("expansion") not in dict(opciones_expansion(orden)):
-                self.data["expansion"] = "auto"
+            self.data["metodo"] = ""
+            self.data["expansion"] = "auto"
         self.estructura = {"orden": orden, "metodo": self._valor_seguro("metodo")}
         self.generar_celdas("A", orden, orden)
 
@@ -100,27 +100,25 @@ class DeterminantesForm(FormularioCeldas):
     def clean(self):
         datos = super().clean()
         self.rechazar_campos_repetidos()
-        if self.errors or self.ajustar:
+        if self.ajustar or self.errors.get("orden") or self.non_field_errors():
             return datos
         orden = self.estructura["orden"]
-        if not metodo_disponible(datos["metodo"], orden):
-            self.add_error("metodo", "La fórmula directa solo se aplica a 2×2, Sarrus a 3×3 y Cofactores hasta 6×6. Elige otro método.")
-            return datos
         if not self.celdas_coinciden():
             self.grupo_error = "determinant-matrix"
             self.add_error(None, "Las celdas recibidas no coinciden con el tamaño de A. Pulsa Aplicar para ajustar la estructura.")
             return datos
         self.convertir_numeros(datos, self.nombres_celdas)
-        if not self.errors:
+        if not any(nombre in self.errors for nombre in self.nombres_celdas):
+            metodo = datos.get("metodo", "")
             datos["entrada"] = {
-                "a": self.leer_matriz(datos, "A", orden, orden), "metodo": datos["metodo"],
-                "expansion": (datos.get("expansion") or "auto") if datos["metodo"] == "cofactores" else "auto",
+                "a": self.leer_matriz(datos, "A", orden, orden), "metodo": metodo,
+                "expansion": (datos.get("expansion") or "auto") if metodo == "cofactores" else "auto",
             }
         return datos
 
     def iniciales(self):
         """Conserva las celdas que sobreviven a Aplicar; método y expansión ya están saneados."""
-        iniciales = {nombre: self.data.get(nombre, "") for nombre in self.fields if nombre != "confirmacion"}
+        iniciales = {nombre: self.data.get(nombre, "") for nombre in self.fields if nombre not in ("confirmacion", "eleccion")}
         iniciales.update(self.estructura)
         iniciales["expansion"] = self.data.get("expansion") or "auto"
         return iniciales

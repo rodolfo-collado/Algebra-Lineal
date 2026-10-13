@@ -18,7 +18,7 @@ from django.utils.html import strip_tags
 from backend.presupuesto_computacional import Categoria
 from backend.seguridad_numerica import MENSAJE_CALCULO_GRANDE
 from frontend.web.calculadora import catalogo
-from frontend.web.calculadora.servicios_determinantes import firmar_entrada
+from frontend.web.calculadora.servicios_determinantes import firmar_entrada, firmar_matriz, recomendar_metodo_web
 from tests.test_matrices_web import Contenido
 from tests.test_navegacion import Documento
 from tests.test_procedimiento_plegable import comprobar_estructura, partes
@@ -32,12 +32,14 @@ A3 = [[2, 1, 3], [0, 4, 2], [1, 0, 5]]
 
 def datos_det(a=None, metodo="reduccion", expansion=None, **extra):
     a = A3 if a is None else a
-    datos = {"orden": str(len(a)), "metodo": metodo}
+    datos = {"orden": str(len(a))}
     if expansion is not None:
         datos["expansion"] = expansion
     for i, fila in enumerate(a):
         for j, valor in enumerate(fila):
             datos[f"celda_A_{i}_{j}"] = str(valor)
+    if metodo is not None:
+        datos.update(metodo=metodo, eleccion=firmar_matriz(datos))
     return datos | extra
 
 
@@ -87,12 +89,29 @@ class PruebasCatalogo(SimpleTestCase):
 
 
 class PruebasEntrada(SimpleTestCase):
-    def test_get_2x2_con_formula_directa_y_sin_sarrus(self):
+    def test_inicio_solo_pide_a_y_calcular(self):
         html = self.client.get(RUTA).content.decode()
-        self.assertEqual(metodos_visibles(html), [("directo_2x2", False), ("sarrus", True), ("cofactores", False),
+        self.assertEqual(metodos_visibles(html), [])
+        self.assertNotIn('name="expansion"', html)
+        self.assertNotIn("Recomendar método", html)
+        self.assertIn("Calcular determinante", html)
+
+    def test_calcular_valida_y_abre_eleccion_sin_motor_ni_presupuesto(self):
+        datos = datos_det([[1, 2, 3], [4, 5, 6], [7, 8, 10]], None)
+        with patch(f"{SERVICIO}.calcular_determinante", side_effect=AssertionError("calculó")), \
+                patch(f"{SERVICIO}.estimar_determinante", side_effect=AssertionError("presupuestó")):
+            html = self.client.post(RUTA, datos).content.decode()
+        self.assertIn("¿Cómo quieres calcular el determinante?", html)
+        self.assertRegex(html, r'value="sarrus"[^>]*checked')
+        self.assertIn("Calcular con este método", html)
+        self.assertNotIn('id="resultado"', html)
+        self.assertNotIn("data-confirmacion", html)
+
+    def test_eleccion_2x2_con_formula_directa_y_sin_sarrus(self):
+        html = self.client.post(RUTA, datos_det([[1, 2], [3, 4]], None)).content.decode()
+        self.assertEqual(metodos_visibles(html), [("directo_2x2", False), ("cofactores", False),
                                                   ("lu", False), ("reduccion", False)])
         self.assertRegex(html, r'<input type="radio" name="metodo" value="directo_2x2"[^>]*checked')
-        self.assertRegex(html, r'<label class="option" for="id_metodo_1" hidden>')
         self.assertIn('data-perfil="numerico"', html)
         self.assertIn("math-keyboard", html)
         self.assertEqual(Contenido(html).campos.keys() >= {"celda_A_0_0", "celda_A_1_1", "orden"}, True)
@@ -101,12 +120,14 @@ class PruebasEntrada(SimpleTestCase):
                          ["auto", "fila_1", "fila_2", "columna_1", "columna_2"])
 
     def test_el_tamano_decide_los_metodos_disponibles(self):
-        casos = {1: ("cofactores", ["cofactores", "lu", "reduccion"]), 3: ("sarrus", ["sarrus", "cofactores", "lu", "reduccion"]),
-                 6: ("cofactores", ["cofactores", "lu", "reduccion"]), 7: ("reduccion", ["lu", "reduccion"])}
-        for orden, (sugerido, activos) in casos.items():
+        casos = {1: ["cofactores", "lu", "reduccion"], 3: ["sarrus", "cofactores", "lu", "reduccion"],
+                 6: ["cofactores", "lu", "reduccion"], 7: ["lu", "reduccion"]}
+        for orden, activos in casos.items():
             with self.subTest(orden=orden):
-                html = self.client.post(RUTA, {"orden": str(orden), "ajustar": "1"}).content.decode()
+                a = [[2 if i == j else 1 for j in range(orden)] for i in range(orden)]
+                html = self.client.post(RUTA, datos_det(a, None)).content.decode()
                 self.assertEqual([v for v, desactivado in metodos_visibles(html) if not desactivado], activos)
+                sugerido = recomendar_metodo_web(a)["metodo"]
                 self.assertRegex(html, rf'value="{sugerido}"[^>]*checked')
 
     def test_aplicar_conserva_celdas_y_sanea_metodo_y_expansion(self):
@@ -115,11 +136,11 @@ class PruebasEntrada(SimpleTestCase):
         campos = Contenido(html).campos
         self.assertEqual(campos["celda_A_1_1"]["value"], "4")
         self.assertNotIn("value", campos["celda_A_2_2"])
-        self.assertRegex(html, r'value="sarrus"[^>]*checked')
+        self.assertEqual(metodos_visibles(html), [])
         self.assertNotIn('id="resultado"', html)
         datos = datos_det(A3, "cofactores", "fila_3", orden="2", ajustar="1")
         html = self.client.post(RUTA, datos).content.decode()
-        self.assertRegex(html, r'<option value="auto" selected>')
+        self.assertNotIn('name="expansion"', html)
 
     def test_metodos_manipulados_se_rechazan(self):
         casos = ((A3, "directo_2x2"), ([[1, 2], [3, 4]], "sarrus"), ([[1] * 7 for _ in range(7)], "cofactores"),
@@ -153,6 +174,155 @@ class PruebasEntrada(SimpleTestCase):
             self.client.post(RUTA, datos_det(A3, "lu", "fila_2"))
             self.client.post(RUTA, datos_det(A3, "cofactores", "columna_3"))
         self.assertEqual([llamada.args[1:] for llamada in calcular.call_args_list], [("lu", "auto"), ("cofactores", "columna_3")])
+
+
+class PruebasRecomendacion(SimpleTestCase):
+    def test_textos_principales_ensenan_el_metodo_y_la_estructura(self):
+        densa4 = [[2 if i == j else 1 for j in range(4)] for i in range(4)]
+        casos = (
+            ([[1, 2], [3, 4]], "directo_2x2", "multiplica las dos diagonales y resta sus productos"),
+            ([[1, 2, 3], [4, 5, 6], [7, 8, 10]], "sarrus", "siguiendo sus seis diagonales"),
+            ([[2, 0, 0], [1, 3, 4], [5, 6, 7]], "cofactores", "La fila 1 contiene 2 ceros"),
+            ([[0, 1, 2], [0, 3, 4], [5, 6, 7]], "cofactores", "La columna 1 contiene 2 ceros"),
+            (densa4, "lu", "puede factorizarse sin intercambiar filas"),
+            ([[0, 1, 2, 3], [2, 3, 4, 5], [1, 4, 8, 2], [3, 5, 2, 7]],
+             "reduccion", "LU necesitaría un intercambio de filas"),
+            ([[2, 1, 3], [0, 4, 2], [0, 0, 0]], "reduccion", "multiplicando los valores de la diagonal principal"),
+            ([[7]], "cofactores", "un único elemento: ese es su determinante"),
+        )
+        for a, metodo, frase in casos:
+            with self.subTest(metodo=metodo, frase=frase):
+                recomendacion = recomendar_metodo_web(a)
+                self.assertEqual(recomendacion["metodo"], metodo)
+                self.assertIn(frase, recomendacion["razon"])
+                self.assertTrue(recomendacion["detalle"])
+                self.assertNotRegex(recomendacion["razon"], r"cost[eo]|heurística")
+                if metodo == "sarrus":
+                    self.assertNotRegex(recomendacion["razon"].lower(), r"menor|cofactor|\blu\b|pivote|reducción")
+                if metodo == "cofactores" and len(a) > 1:
+                    self.assertIn("los términos con cero se anulan", recomendacion["razon"])
+
+    def test_limite_de_analisis_de_lu_se_explica_sin_afirmar_intercambio(self):
+        analisis = {"metodo_recomendado": "reduccion", "razon": "lu_no_verificada"}
+        with patch(f"{SERVICIO}.analizar_matriz_para_determinante", return_value=analisis):
+            recomendacion = recomendar_metodo_web(A3)
+        self.assertIn("eliminar las entradas debajo de la diagonal", recomendacion["razon"])
+        self.assertIn("Esto no demuestra que necesite intercambiar filas", recomendacion["detalle"])
+
+    def test_detalle_plegable_y_etiqueta_sin_costes_internos(self):
+        html = self.client.post(RUTA, datos_det(A3, None)).content.decode()
+        self.assertIn("¿Por qué recomendamos este método?", texto(html))
+        self.assertRegex(html, r'<details class="disclosure" id="razon-determinante">')
+        self.assertEqual(html.count('<span class="badge">Recomendado</span>'), 1)
+        self.assertNotIn("costos", html)
+        self.assertNotIn("unidades de utilidad", html)
+
+    def test_dos_post_sin_javascript_respetan_eleccion_y_expansion(self):
+        a = [[1, 2, 3], [4, 5, 6], [7, 8, 10]]
+        datos = datos_det(a, None)
+        html = self.client.post(RUTA, datos).content.decode()
+        self.assertNotIn('id="resultado"', html)
+        firma = re.search(r'name="eleccion" value="([0-9a-f]+)"', html)[1]
+        html = self.client.post(RUTA, datos | {"eleccion": firma, "metodo": "cofactores", "expansion": "columna_2"}).content.decode()
+        self.assertIn("det(A) = -3", partes(html)[1])
+        self.assertRegex(html, r'value="cofactores"[^>]*checked')
+        self.assertIn("Se desarrolla por la columna 2, la que se eligió.", partes(html)[0])
+        self.assertIn('<label for="id_expansion">Desarrollar por</label>', html)
+        self.assertEqual(re.findall(r'<option value="([^"]+)"', html.split('name="expansion"')[1].split("</select>")[0]),
+                         ["auto", "fila_1", "fila_2", "fila_3", "columna_1", "columna_2", "columna_3"])
+
+    def test_a_editada_o_firma_alterada_exigen_analizar_y_confirmar_de_nuevo(self):
+        datos = datos_det(A3, "sarrus", confirmacion="firma-antigua")
+        nuevos = datos_det([[2, 1], [0, 3]], "directo_2x2")
+        casos = (
+            datos | {"celda_A_0_0": "9"}, datos | {"celda_A_0_0": "2.0"},
+            nuevos | {"eleccion": datos["eleccion"], "metodo": "sarrus"},
+            datos | {"eleccion": "firma-alterada"}, datos | {"eleccion": ""},
+        )
+        for envio in casos:
+            with self.subTest(envio=envio), \
+                    patch(f"{SERVICIO}.calcular_determinante", side_effect=AssertionError("calculó")), \
+                    patch(f"{SERVICIO}.estimar_determinante", side_effect=AssertionError("presupuestó")):
+                html = self.client.post(RUTA, envio).content.decode()
+                self.assertIn("¿Cómo quieres calcular el determinante?", html)
+                self.assertNotIn('id="resultado"', html)
+                self.assertNotIn("data-confirmacion", html)
+                if envio["eleccion"]:
+                    self.assertIn("Cambiaste A. La analizamos de nuevo", html)
+
+    def test_se_requiere_un_metodo_despues_del_analisis(self):
+        datos = datos_det(A3)
+        datos.pop("metodo")
+        with patch(f"{SERVICIO}.estimar_determinante", side_effect=AssertionError("presupuestó")):
+            html = self.client.post(RUTA, datos).content.decode()
+        self.assertIn("Selecciona un método.", html)
+        self.assertIn('id="eleccion-determinante"', html)
+        self.assertNotRegex(html, r'name="metodo"[^>]*checked')
+
+    def test_primera_etapa_no_acepta_un_metodo_previo_sin_eleccion(self):
+        datos = datos_det([[1, 2, 3], [4, 5, 6], [7, 8, 10]], "lu")
+        datos.pop("eleccion")
+        html = self.client.post(RUTA, datos).content.decode()
+        self.assertRegex(html, r'value="sarrus"[^>]*checked')
+        self.assertNotIn('id="resultado"', html)
+
+    def test_metodo_unico_se_determina_por_disponibilidad_y_calcula_directo(self):
+        with patch("frontend.web.calculadora.forms_determinantes.metodo_disponible",
+                   side_effect=lambda metodo, orden: metodo == "reduccion"):
+            html = self.client.post(RUTA, datos_det(A3, None)).content.decode()
+        self.assertIn("det(A) = 30", partes(html)[1])
+        self.assertNotIn('id="eleccion-determinante"', html)
+        self.assertIn('type="hidden" name="metodo" value="reduccion"', html)
+
+    def test_1x1_conserva_la_eleccion_porque_hay_varios_metodos(self):
+        html = self.client.post(RUTA, datos_det([[5]], None)).content.decode()
+        self.assertEqual(len(metodos_visibles(html)), 3)
+        self.assertNotIn('id="resultado"', html)
+
+    def test_analizar_muestra_la_razon_sin_calcular_ni_presupuestar(self):
+        a = [[2, 0, 0], [1, 3, 4], [5, 6, 7]]
+        with patch(f"{SERVICIO}.calcular_determinante", side_effect=AssertionError("calculó")), \
+                patch(f"{SERVICIO}.estimar_determinante", side_effect=AssertionError("presupuestó")):
+            html = self.client.post(RUTA, datos_det(a, None)).content.decode()
+        self.assertIn("Recomendamos: Cofactores", texto(html))
+        self.assertIn("La fila 1 contiene 2 ceros", texto(html))
+        self.assertIn("Puedes elegir cualquier otro método disponible.", texto(html))
+        self.assertRegex(html, r'value="cofactores"[^>]*checked')
+        self.assertIn('role="status" data-recomendacion', html)
+        self.assertNotIn('id="resultado"', html)
+        self.assertNotIn("data-confirmacion", html)
+
+    def test_se_puede_calcular_con_cualquier_metodo_distinto_al_recomendado(self):
+        a = [[1, 2, 3], [4, 5, 6], [7, 8, 10]]
+        for metodo, titulo in (("cofactores", "Cofactores"), ("lu", "Factorización LU"), ("reduccion", "Reducción por filas")):
+            with self.subTest(metodo=metodo):
+                html = self.client.post(RUTA, datos_det(a, metodo, "columna_2")).content.decode()
+                self.assertIn("Recomendamos: Regla de Sarrus", texto(html))
+                self.assertIn(f"Determinantes · {titulo}", texto(html))
+                self.assertRegex(html, rf'value="{metodo}"[^>]*checked')
+                self.assertIn("det(A) = -3", partes(html)[1])
+                if metodo == "cofactores":
+                    self.assertIn("Se desarrolla por la columna 2, la que se eligió.", partes(html)[0])
+
+    def test_recomendar_no_desactiva_lu_aunque_requiera_intercambios(self):
+        a = [[1, 1, 1, 1], [1, 1, 2, 3], [1, 2, 3, 4], [2, 3, 4, 7]]
+        html = self.client.post(RUTA, datos_det(a, None)).content.decode()
+        self.assertIn("Recomendamos: Reducción por filas", texto(html))
+        self.assertIn("LU necesitaría un intercambio de filas", texto(html))
+        self.assertIn(("lu", False), metodos_visibles(html))
+        self.assertRegex(html, r'value="reduccion"[^>]*checked')
+        html = self.client.post(RUTA, datos_det(a, "lu")).content.decode()
+        self.assertIn("LU sin intercambios no puede continuar", partes(html)[1])
+
+    def test_entrada_invalida_no_llega_al_analizador(self):
+        with patch(f"{SERVICIO}.analizar_matriz_para_determinante", side_effect=AssertionError("analizó")):
+            html = self.client.post(RUTA, datos_det([[1, "x"], [2, 3]], None)).content.decode()
+        self.assertIn('id="id_celda_A_0_1_error"', html)
+        self.assertNotIn("data-recomendacion", html)
+
+    def test_no_se_infiere_una_matriz_en_get_o_al_aplicar(self):
+        for respuesta in (self.client.get(RUTA), self.client.post(RUTA, {"orden": "4", "ajustar": "1"})):
+            self.assertNotIn("data-recomendacion", respuesta.content.decode())
 
 
 class PruebasResultado(SimpleTestCase):
@@ -382,6 +552,21 @@ class PruebasTransferencia(SimpleTestCase):
 
 
 class PruebasConfirmacion(SimpleTestCase):
+    def test_presupuesto_solo_despues_de_elegir_y_del_metodo_elegido(self):
+        from backend.determinantes.presupuesto import estimar_determinante
+        datos = datos_det([[1, 2, 3], [4, 5, 6], [7, 8, 10]], None)
+        normal, pesada = forzar()
+        with normal, pesada, patch(f"{SERVICIO}.estimar_determinante", wraps=estimar_determinante) as estimar, \
+                patch(f"{SERVICIO}.calcular_determinante", side_effect=AssertionError("calculó")):
+            html = self.client.post(RUTA, datos).content.decode()
+            estimar.assert_not_called()
+            firma = re.search(r'name="eleccion" value="([0-9a-f]+)"', html)[1]
+            html = self.client.post(RUTA, datos | {"eleccion": firma, "metodo": "cofactores"}).content.decode()
+        self.assertEqual(estimar.call_count, 1)
+        self.assertEqual(estimar.call_args.args[1], "cofactores")
+        self.assertIn("data-confirmacion", html)
+        self.assertRegex(html, r'value="cofactores"[^>]*checked')
+
     def test_pesada_pregunta_antes_de_calcular_y_continuar_calcula(self):
         datos = datos_det(A3, "cofactores", "auto")
         normal, pesada = forzar()

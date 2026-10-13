@@ -136,6 +136,9 @@ class PruebasIntegracionNumerica(SimpleTestCase):
         ]
         for ruta, datos in casos:
             with self.subTest(ruta=ruta, datos=datos):
+                if ruta == "/matrices/determinantes/":
+                    from frontend.web.calculadora.servicios_determinantes import firmar_matriz
+                    datos = datos | {"eleccion": firmar_matriz(datos)}
                 respuesta = self.client.post(ruta, datos)
                 self.assertEqual(respuesta.status_code, 200)
                 html = respuesta.content.decode()

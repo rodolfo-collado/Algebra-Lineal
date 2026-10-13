@@ -8,7 +8,7 @@ import json
 
 from django.utils.crypto import constant_time_compare, salted_hmac
 
-from backend.determinantes import calcular_determinante
+from backend.determinantes import analizar_matriz_para_determinante, calcular_determinante
 from backend.determinantes.presupuesto import estimar_determinante
 from backend.matrices import contar
 from backend.presupuesto_computacional import Categoria, categoria, intervalo_segundos
@@ -21,12 +21,57 @@ from .servicios_presupuesto import texto_intervalo
 from .transferencia_matriz import campos_matriz
 
 _SAL_CONFIRMACION = "pygebra.determinantes.confirmacion"
+_SAL_ELECCION = "pygebra.determinantes.eleccion"
 MENSAJES_ESPERA = {
     Categoria.PESADA: "Este cálculo puede tardar varios segundos porque su procedimiento es largo.",
     Categoria.MUY_PESADA: "Este cálculo puede tardar bastante porque su procedimiento es muy largo.",
 }
 SIMBOLICA_2X2 = [["a", "b"], ["c", "d"]]
 EXPONENTES = str.maketrans("0123456789+", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺")
+RAZONES_RECOMENDACION = {
+    "unico_elemento": "La matriz tiene un único elemento: ese es su determinante.",
+    "formula_directa": "Para una matriz 2×2 existe una fórmula directa: multiplica las dos diagonales y resta sus productos.",
+    "triangular_superior": "La matriz ya es triangular superior. No necesitas eliminar entradas: el determinante se obtiene multiplicando los valores de la diagonal principal.",
+    "sarrus": "Tu matriz es 3×3, el tamaño para el que se diseñó la Regla de Sarrus. Puedes calcular el determinante siguiendo sus seis diagonales.",
+    "lu_sin_intercambios": "Esta matriz puede factorizarse sin intercambiar filas. Para este tamaño, LU organiza el cálculo en pasos más manejables.",
+    "lu_necesita_intercambio": "La reducción por filas permite reorganizar las filas y continuar el cálculo. En esta matriz, LU necesitaría un intercambio de filas.",
+    "lu_no_verificada": "La reducción por filas permite eliminar las entradas debajo de la diagonal y continuar con el cálculo.",
+}
+DETALLES_RECOMENDACION = {
+    "unico_elemento": "En una matriz 1×1 no hay productos ni sumas que desarrollar: se toma su única entrada.",
+    "formula_directa": "La fórmula ad − bc obtiene el determinante con dos productos y una resta. Puedes elegir otro método para practicar su procedimiento.",
+    "triangular_superior": "Todas las entradas debajo de la diagonal principal son cero. Reducción conserva esta estructura y obtiene el producto de la diagonal sin reemplazos ni intercambios.",
+    "sarrus": "En esta matriz, las seis diagonales de Sarrus dan un recorrido breve. El desarrollo por Cofactores necesitaría calcular varios determinantes de matrices más pequeñas.",
+    "expansion_favorable": "Cada cero de la fila o columna elegida anula un término y ahorra calcular su menor. Automático busca la línea con más ceros; también puedes elegir otra para practicar.",
+    "lu_sin_intercambios": "Se comprobó que LU puede continuar sin intercambiar filas, como en el procedimiento de clase. Organiza A = LU y obtiene el determinante con la diagonal de U, sin un desarrollo largo de Cofactores.",
+    "lu_necesita_intercambio": "Hay un pivote cero con una entrada distinta de cero debajo. El procedimiento de LU de clase se detendría; Reducción permite el intercambio y registra su cambio de signo.",
+    "lu_no_verificada": "No se pudo comprobar LU dentro de los límites numéricos del análisis. Esto no demuestra que necesite intercambiar filas; se recomienda Reducción, que permite hacerlo si es necesario.",
+}
+
+
+def recomendar_metodo_web(a):
+    """Traduce las razones estructuradas a dos niveles de explicación, sin calcular."""
+    analisis = analizar_matriz_para_determinante(a)
+    if analisis["razon"] == "expansion_favorable":
+        expansion = analisis["expansion"]
+        linea = f"{'La fila' if expansion['eje'] == 'fila' else 'La columna'} {expansion['indice']}"
+        razon = (f"{linea} contiene {contar(expansion['ceros'], 'cero')}. Al desarrollar por esa "
+                 f"{expansion['eje']}, los términos con cero se anulan y el procedimiento se hace más corto."
+                 if expansion["ceros"] else "Al desarrollar esta matriz por una fila o columna, el cálculo se divide en determinantes de matrices más pequeñas.")
+    else:
+        razon = RAZONES_RECOMENDACION[analisis["razon"]]
+    return {"metodo": analisis["metodo_recomendado"],
+            "titulo": dict(METODOS)[analisis["metodo_recomendado"]], "razon": razon,
+            "detalle": DETALLES_RECOMENDACION[analisis["razon"]]}
+
+
+def firmar_matriz(datos):
+    """Vincula la elección a las celdas y dimensiones escritas, sin fijar el método."""
+    matriz = {nombre: datos.get(nombre) for nombre in datos
+              if nombre == "orden" or nombre.startswith("celda_A_")}
+    return salted_hmac(
+        _SAL_ELECCION, json.dumps(matriz, sort_keys=True, separators=(",", ":")), algorithm="sha256",
+    ).hexdigest()
 
 
 def firmar_entrada(entrada):

@@ -744,8 +744,15 @@ antes de ejecutarse. Los detalles, los ejemplos y la API están en
 ## Determinantes
 
 **Determinantes** (`/matrices/determinantes/`) calcula det(A) de una matriz
-cuadrada de 1×1 a 10×10, con aritmética exacta. Los métodos aparecen según el
-tamaño de A:
+cuadrada de 1×1 a 10×10, con aritmética exacta. Primero escribe A y pulsa
+**Calcular determinante**. La herramienta la analiza sin calcular todavía y
+abre **¿Cómo quieres calcular el determinante?**, con una recomendación educativa
+preseleccionada y todos los métodos disponibles para ese tamaño. Puedes elegir
+otro y confirmar con **Calcular con este método**. El presupuesto se consulta
+después de esta elección. Editar A o sus dimensiones exige analizarla de nuevo,
+también sin JavaScript. **¿Por qué recomendamos este método?** amplía la explicación.
+
+Métodos disponibles:
 
 - **Fórmula directa 2×2**: `ad − bc` (solo 2×2).
 - **Regla de Sarrus**: seis diagonales (solo 3×3).
@@ -753,8 +760,8 @@ tamaño de A:
   ceros); hasta 6×6.
 - **Factorización LU**: `A = LU` sin intercambios; si un pivote 0 exigiría
   intercambiar filas, se detiene y lo explica.
-- **Reducción por filas**: Gauss con la corrección de cada intercambio y cada
-  normalización.
+- **Reducción por filas**: elimina debajo de la diagonal sin normalizar;
+  corrige el signo de cada intercambio.
 
 Con det(A) ≠ 0 el resultado ofrece **Calcular su matriz inversa**, que abre
 Matriz inversa con A ya cargada. El recorrido completo está en

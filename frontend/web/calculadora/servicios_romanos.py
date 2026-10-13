@@ -1,6 +1,16 @@
 """Presentación de la conversión entre arábigo y romano para la interfaz web."""
 
 from backend.sistemas_numericos import decimal_a_romano, romano_a_decimal
+from backend.sistemas_numericos.romanos import MAXIMO, TABLA
+
+
+def numeracion_romana() -> dict:
+    """El máximo y la tabla canónica, de mayor a menor, para «Rellenar aleatoriamente».
+
+    El navegador escribe un entero al azar con la misma tabla que ``decimal_a_romano``;
+    así no hay una segunda copia de los símbolos ni del intervalo.
+    """
+    return {"maximo": MAXIMO, "tabla": [[entrada.simbolos, entrada.valor] for entrada in TABLA]}
 
 
 def como_se_forma(partes) -> str:

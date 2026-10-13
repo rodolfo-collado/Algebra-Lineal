@@ -38,6 +38,17 @@ de interfaz (icono del menú, temas del Inicio cerrados y selección de matrices
 más compacta). Las herramientas existentes conservan sus métodos y resultados.
 Una versión preparada en `develop` aún no es una release publicada.
 
+El incremento preparado de 0.11.0 a 0.12.0 es MINOR: incorpora la
+recomendación educativa de determinantes según A en el flujo A → Calcular
+determinante → recomendación/elección → presupuesto → cálculo. Las
+explicaciones enseñan por qué conviene Sarrus, Cofactores, LU o Reducción,
+sin impedir elegir otro método disponible. Añade el menú contextual de
+edición de entradas, mueve la selección matricial al clic derecho y permite
+rellenar aleatoriamente matrices, vectores, escalares y números arábigos o
+romanos, así como limpiar entradas conservando dimensiones y configuración.
+Integra estas acciones con Deshacer y corrige el pegado de Ax = b cuando hay
+una confirmación de costo pendiente. Son capacidades nuevas compatibles.
+
 ## Flujo de integración y entrega
 
 ```mermaid

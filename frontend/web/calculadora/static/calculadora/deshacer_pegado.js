@@ -3,6 +3,14 @@
 
     const GRID = ".matrix-entry-table, #matrix-grid, #vector-list";
     const { filasDeMatriz, aplicarPegado } = window.entradasSeguras;
+    const celdas = n => n === 1 ? "1 celda" : `${n} celdas`;
+    // Rellenar y Limpiar (menu_edicion.js) reutilizan este único nivel con sus propios textos.
+    const PEGADO = {
+        hecho: n => `${celdas(n)} ${n === 1 ? "pegada" : "pegadas"}.`,
+        sinCambios: "Pegado sin cambios.",
+        deshecho: n => `Pegado deshecho: ${celdas(n)} ${n === 1 ? "restaurada" : "restauradas"}.`,
+        invalido: "El pegado ya no puede deshacerse porque cambió su destino.",
+    };
     let registro = null;
     const botonDe = estado => estado.parentElement.querySelector("[data-deshacer-pegado]");
     const editable = input => input?.isConnected && input.matches('input.matrix-input[type="text"]') &&
@@ -30,7 +38,10 @@
             if (!registro || registro.estado !== aviso) boton.hidden = true;
         });
         caja.append(aviso, boton);
-        form.querySelector(".workspace-actions").before(caja);
+        // Con una confirmación de costo pendiente, Ax=b no tiene .workspace-actions.
+        const ancla = form.querySelector(".workspace-actions") || form.querySelector("[data-confirmacion]");
+        if (ancla) ancla.before(caja);
+        else form.append(caja);
         return aviso;
     }
 
@@ -49,7 +60,7 @@
 
     function invalidar() {
         const anterior = consumir();
-        if (anterior) anterior.estado.textContent = "El pegado ya no puede deshacerse porque cambió su destino.";
+        if (anterior) anterior.estado.textContent = anterior.textos.invalido;
     }
 
     function cambioEstructural(mutaciones) {
@@ -83,7 +94,7 @@
         return Boolean(registro);
     }
 
-    function pegar(destinos, matriz, contexto) {
+    function pegar(destinos, matriz, contexto, textos = PEGADO) {
         // Consumir antes de input evita anunciar invalidación y éxito para el mismo paste.
         consumir();
         const cambios = aplicarPegado(destinos);
@@ -96,7 +107,7 @@
             return { ...c, fila, columna: filas[fila]?.indexOf(c.input) };
         });
         if (!modificadas.length) {
-            aviso.textContent = "Pegado sin cambios.";
+            aviso.textContent = textos.sinCambios;
             return;
         }
         const fila = filas.findIndex(f => f.includes(contexto));
@@ -104,8 +115,8 @@
             window.seleccionMatricial?.obtener(matriz, false)?.celdaActual || modificadas[0];
         registro = { matriz, form, dimensiones: filas.map(f => f.length), cambios: modificadas,
             tipo: matriz.closest("[data-simbolo]")?.querySelector('[data-campo="tipo"]')?.value,
-            foco: { fila: foco.fila, columna: foco.columna }, estado: aviso };
-        aviso.textContent = modificadas.length === 1 ? "1 celda pegada." : `${modificadas.length} celdas pegadas.`;
+            foco: { fila: foco.fila, columna: foco.columna }, estado: aviso, textos };
+        aviso.textContent = textos.hecho(modificadas.length);
         if (!puedeDeshacer()) return;
         const boton = botonDe(aviso);
         boton.removeAttribute("aria-disabled");
@@ -117,7 +128,7 @@
     function recuperarFoco(anterior) {
         const filas = filasDeMatriz(anterior.matriz);
         const preferida = filas[anterior.foco.fila]?.[anterior.foco.columna];
-        const fallback = [...anterior.form.querySelectorAll('.dimension-field input, .matrix-selection summary, input.matrix-input[type="text"], .workspace-actions button')]
+        const fallback = [...anterior.form.querySelectorAll('.dimension-field input, input.matrix-input[type="text"], .workspace-actions button')]
             .find(input => input.isConnected && !input.matches(':disabled, [aria-disabled="true"]') &&
                 !input.closest("[hidden]") && !input.readOnly);
         const destino = editable(preferida) ? preferida : filas.flat().find(editable) || fallback;
@@ -141,8 +152,7 @@
         aplicarPegado(anterior.cambios.map(({ input, anterior: valor }) => [input, valor]));
         recuperarFoco(anterior);
         botonDe(anterior.estado).hidden = true;
-        anterior.estado.textContent = anterior.cambios.length === 1 ? "Pegado deshecho: 1 celda restaurada." :
-            `Pegado deshecho: ${anterior.cambios.length} celdas restauradas.`;
+        anterior.estado.textContent = anterior.textos.deshecho(anterior.cambios.length);
         return true;
     }
 

@@ -334,13 +334,25 @@ que exigiría intercambio, y la reducción con sus correcciones. También cubre
 propiedades (intercambio, escalado, triangular), entradas inválidas,
 seguridad numérica y el presupuesto de cofactores frente a su árbol real.
 
-`test_determinantes_web` cubre catálogo y navegación, métodos según el tamaño,
-Aplicar, POST manipulados, errores por celda, el procedimiento y el resultado
+`test_determinantes_web` cubre catálogo y navegación, entrada sin métodos,
+análisis sin cálculo ni presupuesto, elección preseleccionada, textos pedagógicos,
+libertad de método y expansión, firmas invalidadas al editar A, dos POST sin JS,
+disponibilidad real de un único método, Aplicar, POST manipulados, errores por celda, el procedimiento y el resultado
 de cada método, la confirmación con firma y la transferencia de A a Matriz
 inversa (cargada, validada y sin calcular). Las pruebas transversales de
 teclado, feedback, presentación numérica, seguridad y procedimiento plegable
 incluyen también `/matrices/determinantes/`. Detalle en
 [Determinantes](determinantes.md#pruebas).
+
+```bash
+uv run --locked python -m tests.determinantes_browser
+```
+
+Abre `http://127.0.0.1:8891/__pruebas/`: prueba el flujo con POST reales,
+foco en la elección, disclosure, selector de Cofactores, invalidación por
+celdas y dimensiones, menú contextual/Deshacer y presupuesto del método elegido.
+Complementa con `tests.menu_edicion_browser` en el puerto 8890, escritorio,
+tableta, móvil, consola y un navegador con JavaScript desactivado.
 
 ## Numeración romana
 
@@ -777,3 +789,28 @@ final y botones para comprobar los hashes previos; el contrato actual se prueba
 separadamente. Los eventos sintéticos viven exclusivamente en los runners.
 Tab/Enter/Space y el transporte efectivo entre páginas requieren QA con acciones
 de navegador y portapapeles real. Evidencia: [validación P28.5](validacion-p28-5.md).
+
+## Menú de edición de entradas
+
+```bash
+uv run --locked python -m unittest tests.test_menu_edicion tests.test_entrada_edicion -v
+uv run --locked python -m tests.menu_edicion_browser
+uv run --locked python -m tests.entrada_edicion_browser
+```
+
+`test_menu_edicion` fija los contratos que corren en CI: el menú se carga una vez
+en las siete herramientas con entradas compatibles y en ninguna otra página, sus
+opciones son botones `menuitem` sin `name`, los siete comandos coinciden con los del
+modelo de selección, cada entero de −9 a 9 pasa la conversión y la protección
+numérica comunes, los extremos se calculan en Inversa, Determinantes, Ax=b y
+Vectores, y los datos romanos de la página son los del backend: con ellos, cada
+entero del 1 al 3999 se escribe como lo lee `romano_a_decimal`.
+
+Abrir `http://127.0.0.1:8890/__pruebas/`: el runner del menú comprueba en DOM real
+dónde se abre y dónde queda el menú del navegador, las opciones de cada tipo de
+entrada, Rellenar y Limpiar con su aviso y Deshacer (también con una confirmación de
+costo pendiente en Ax=b), POST reales con los valores generados, los 3999 romanos que
+escribe el navegador validados por el backend, la selección desde el menú, el
+teclado (Shift+F10, flechas, Tab, Escape), el foco, el teclado matemático abierto y
+la posición en tres tamaños y dos temas. `entrada_edicion_browser` elige sus comandos
+de selección desde el mismo menú. Contrato: [menú de edición](edicion-entradas.md).
