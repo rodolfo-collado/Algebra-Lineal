@@ -54,12 +54,15 @@
 
     function invalidarEleccion() {
         ocultarConfirmacion();
+        const unicoElemento = Number(orden.value) === 1;
+        boton.setAttribute("formaction", `${boton.form.action.split("#")[0]}#${unicoElemento ? "resultado" : "eleccion-determinante"}`);
         if (!eleccion || eleccion.hidden) return;
         eleccion.hidden = true;
         eleccion.querySelectorAll("input, select").forEach(campo => { campo.disabled = true; });
         boton.textContent = "Calcular determinante";
-        boton.setAttribute("formaction", `${boton.form.action.split("#")[0]}#eleccion-determinante`);
-        root.querySelector("[data-estado-eleccion]").textContent = "Cambiaste A. Pulsa Calcular determinante para volver a analizarla.";
+        root.querySelector("[data-estado-eleccion]").textContent = unicoElemento
+            ? "Cambiaste A. Pulsa Calcular determinante para obtener su única entrada."
+            : "Cambiaste A. Pulsa Calcular determinante para volver a analizarla.";
     }
 
     function actualizarExpansion() {

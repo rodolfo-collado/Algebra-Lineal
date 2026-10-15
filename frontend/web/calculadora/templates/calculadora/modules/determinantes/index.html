@@ -33,9 +33,7 @@
             <input type="hidden" name="eleccion" value="{{ eleccion }}">
             <h3 class="section-title" id="eleccion-title">¿Cómo quieres calcular el determinante?</h3>
             <div id="recomendacion-determinante" role="status" data-recomendacion>
-                <p><strong>Recomendamos: {{ recomendacion.titulo }}</strong></p>
-                <p>{{ recomendacion.razon }}</p>
-                <p class="field-help">Puedes elegir cualquier otro método disponible.</p>
+                <p class="field-help"><strong>Recomendamos: {{ recomendacion.titulo }}.</strong> {{ recomendacion.razon }} Puedes elegir cualquier otro método disponible.</p>
             </div>
             <fieldset class="choice-fieldset">
                 <legend>{{ form.metodo.label }}</legend>
@@ -50,14 +48,11 @@
                 <p class="field-help" id="expansion-help">Solo para Cofactores. Automático elige la fila o columna con más ceros.</p>
                 {{ form.expansion.errors }}
             </div>
-            {% disclosure titulo="¿Por qué recomendamos este método?" id="razon-determinante" nivel=4 %}
-                <p>{{ recomendacion.detalle }}</p>
-            {% enddisclosure %}
         </section>
         {% endif %}
         {% if confirmacion %}{% include "calculadora/components/confirmacion_costo.html" with prefacio="La matriz es válida." operacion="Calcular det(A) y su procedimiento" %}{% endif %}
         <div class="workspace-actions">
-            <button class="btn btn-primary" type="submit" data-calculo data-boton-determinante{% if not recomendacion %} formaction="{{ herramienta_actual.ruta }}#eleccion-determinante"{% endif %}>{% if recomendacion and form.metodo.field.choices|length > 1 %}Calcular con este método{% else %}Calcular determinante{% endif %}</button>
+            <button class="btn btn-primary" type="submit" data-calculo data-boton-determinante{% if not recomendacion and form.estructura.orden != 1 %} formaction="{{ herramienta_actual.ruta }}#eleccion-determinante"{% endif %}>{% if recomendacion and form.metodo.field.choices|length > 1 %}Calcular con este método{% else %}Calcular determinante{% endif %}</button>
         </div>
     </form>
 </section>
@@ -96,7 +91,7 @@
             {% else %}
                 <p class="classification-value">LU sin intercambios no puede continuar con esta matriz.</p>
                 <p class="muted">{{ resultado.motivo }}</p>
-                <p class="muted">Reducción por filas sí intercambia filas{% if resultado.matriz|length <= 6 %}, y Cofactores no necesita pivotes{% endif %}: cualquiera de los dos calcula det(A).</p>
+                <p class="muted">Usa Reducción por filas, que permite intercambios{% if resultado.matriz|length <= 6 %}, o Cofactores, que no necesita pivotes{% endif %}, para calcular det(A).</p>
             {% endif %}
         </section>
     </section>

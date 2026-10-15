@@ -49,6 +49,18 @@ romanos, así como limpiar entradas conservando dimensiones y configuración.
 Integra estas acciones con Deshacer y corrige el pegado de Ax = b cuando hay
 una confirmación de costo pendiente. Son capacidades nuevas compatibles.
 
+El incremento preparado de 0.12.0 a **0.12.1 es PATCH**: corrige de forma
+compatible la experiencia de Determinantes introducida en 0.12.0. Simplifica
+la recomendación a una explicación compacta y única antes del cálculo,
+elimina la elección innecesaria en 1×1 y deja de mostrar recomendación y
+selector de métodos después del cálculo. Aclara que LU en PyGebra significa
+A = LU sin permutaciones: si hace falta intercambiar filas, el procedimiento
+se detiene y propone otro método; no implementa PA = LU. Mantiene intactos
+los algoritmos matemáticos, los procedimientos de clase, las firmas de
+elección y confirmación, el presupuesto y la seguridad numérica.
+Esta preparación no publica la versión: la entrega seguirá el flujo
+automático tras la revisión y los merges correspondientes.
+
 ## Flujo de integración y entrega
 
 ```mermaid

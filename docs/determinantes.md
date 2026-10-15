@@ -22,6 +22,10 @@ que explicar el código: cada sección dice **qué archivo** hace el trabajo,
 | Factorización LU | todos | $A = LU$ sin intercambios; $\det(A) = \det(U)$ |
 | Reducción por filas | todos | triangularizar sin normalizar; producto de la diagonal y signo de los intercambios |
 
+La tabla describe las capacidades del backend. En la interfaz, **1×1 no pide
+método**: un clic calcula su única entrada mediante el caso base de Cofactores.
+Las alternativas se presentan solo desde 2×2.
+
 Todos los métodos que se pueden aplicar a la misma A dan **exactamente** el
 mismo determinante; las pruebas lo comprueban contra una fórmula independiente.
 
@@ -32,7 +36,8 @@ flowchart TD
     U["Usuario escribe A"] --> T["Plantilla index.html<br/>+ determinantes.js"]
     T -->|POST| V["views.determinantes"]
     V --> F["DeterminantesForm<br/>forms_determinantes.py"]
-    F -->|"A válida"| A["recomendar_metodo_web<br/>análisis sin determinante"]
+    F -->|"A válida, n ≥ 2"| A["recomendar_metodo_web<br/>análisis sin determinante"]
+    F -->|"A válida, n = 1; caso base de Cofactores"| C
     A --> E["Elección inline<br/>recomendado preseleccionado"]
     E -->|"usuario confirma método; firma de A vigente"| C["confirmacion_pendiente<br/>servicios_determinantes.py"]
     E -->|"editar A o dimensiones"| T
@@ -42,7 +47,7 @@ flowchart TD
     B --> M["Método: comun / sarrus / cofactores / lu / reduccion"]
     M -->|"dict con Fraction y pasos"| W
     W -->|"dict con textos y matrices formateadas"| P["_procedimiento.html<br/>_cofactores.html"]
-    P --> R["Resultado: det(A) e invertibilidad"]
+    P --> R["Resultado: det(A) e invertibilidad<br/>sin recomendación ni elección"]
     R -->|"det ≠ 0: POST con A"| I["Matriz inversa"]
 ```
 
@@ -75,15 +80,26 @@ reutiliza los componentes de Matriz inversa:
 - el teclado matemático, la selección matricial y el pegado, iguales que en
   las demás herramientas de matrices;
 - un único botón principal, **Calcular determinante**. Los métodos aparecen
-  después de validar y analizar A, dentro del mismo formulario.
+  después de validar y analizar A de orden ≥ 2, dentro del mismo formulario.
 
-La segunda etapa pregunta **¿Cómo quieres calcular el determinante?**. Muestra
-una explicación breve, el método recomendado preseleccionado y marcado con
-**Recomendado**, y todos los métodos disponibles para ese tamaño. **Calcular
+Para n ≥ 2, la segunda etapa pregunta **¿Cómo quieres calcular el determinante?**. Muestra
+un único párrafo con el método recomendado, una razón breve y la libertad de
+elegir otro. El método queda preseleccionado y marcado con
+**Recomendado**; aparecen todos los métodos disponibles para ese tamaño. **Calcular
 con este método** confirma la elección. La recomendación no desactiva alternativas
 ni cambia una elección manual. Con Cofactores aparece **Desarrollar por**
-(Automático, Fila 1…n, Columna 1…n). El disclosure **¿Por qué recomendamos este
-método?** permite profundizar sin mostrar los costes internos de la heurística.
+(Automático, Fila 1…n, Columna 1…n). No hay disclosure de recomendación,
+alerta ni modal: la explicación compacta es suficiente y no se duplica.
+
+Al terminar el cálculo, **la etapa de recomendación/elección deja de renderizarse**.
+El encabezado del resultado identifica el método usado. Esto también ocurre si
+LU se detiene: el resultado explica el motivo y propone otro método. Para volver
+a calcular una A de orden ≥ 2, **Calcular determinante** abre una elección nueva.
+
+Para **A = [a]**, un solo clic en **Calcular determinante** devuelve el procedimiento
+plegable «En una matriz 1×1, el determinante es su única entrada» y **det(A) = a**.
+No se analiza ni recomienda un método, ni se muestran radios o «Desarrollar por».
+Se reutiliza Cofactores internamente; no hay un algoritmo matemático nuevo.
 
 [`determinantes.js`](../frontend/web/calculadora/static/calculadora/determinantes.js)
 solo mejora la interacción; nunca calcula:
@@ -99,7 +115,8 @@ solo mejora la interacción; nunca calcula:
   celdas no reactiva una elección invalidada.
 
 Sin JavaScript, **Aplicar** pide al servidor la nueva estructura. El primer
-POST devuelve la elección y el segundo calcula con el método elegido. CSS
+POST devuelve la elección para n ≥ 2 y el segundo calcula con el método elegido.
+Para 1×1, el primer POST ya calcula, también sin JavaScript. CSS
 muestra el selector de expansión al marcar Cofactores. Si se editó A antes del
 segundo POST, el servidor vuelve a analizarla y exige confirmar de nuevo.
 
@@ -110,7 +127,7 @@ hereda de `FormularioCeldas`, la base que comparten Operaciones con matrices,
 Resolver Ax = b y Matriz inversa. Valida en este orden:
 
 1. **Campos repetidos** y tamaño (`campo_dimension`, de 1 a 10).
-2. **Método disponible**, requerido únicamente en la etapa de elección,
+2. **Método disponible**, requerido únicamente en la etapa de elección para n ≥ 2,
    para ese tamaño (`metodo_disponible`). Un POST
    manipulado, por ejemplo Sarrus con A 2×2, se rechaza con un mensaje en el
    campo Método.
@@ -127,6 +144,10 @@ Si todo es válido, el formulario entrega `cleaned_data["entrada"]`:
  "metodo": "cofactores", "expansion": "fila_1"}
 ```
 
+Para 1×1, el formulario fija `metodo="cofactores"` y `expansion="auto"`, incluso
+si llega una elección anterior. Conserva la validación de celdas y números; no
+altera `metodo_disponible`, que también usa Cramer.
+
 `expansion` solo se conserva con Cofactores; con los demás métodos vale `"auto"`.
 
 ## 3. Quién selecciona el método
@@ -139,10 +160,10 @@ Hay tres decisiones distintas:
   compartidos con Cramer; su comportamiento no cambia.
 - **El recomendador** analiza los valores de A al pulsar **Calcular
   determinante**. El servicio web convierte su razón estructurada en una
-  explicación principal y un detalle opcional. La vista preselecciona el
+  única explicación breve (`razon`), sin un campo `detalle`. La vista preselecciona el
   recomendado solo al abrir una elección nueva. No calcula det(A) ni consulta
   el presupuesto. Si hubiera un único método disponible, la vista lo usaría
-  directamente, sin inventar una etapa de elección por tamaño.
+  directamente. Para 1×1 no llama al recomendador y usa el caso base existente.
 - **El backend** ejecuta el método pedido. En
   [`backend/determinantes/__init__.py`](../backend/determinantes/__init__.py),
   `calcular_determinante(a, metodo, expansion)` valida A con `preparar`,
@@ -153,7 +174,7 @@ METODOS = {"directo_2x2": directo_2x2, "cofactores": cofactores,
            "sarrus": sarrus, "lu": lu, "reduccion": reduccion}
 ```
 
-La vista vincula la etapa a A mediante `firmar_matriz`: un HMAC SHA-256 de las
+Para n ≥ 2, la vista vincula la etapa a A mediante `firmar_matriz`: un HMAC SHA-256 de las
 dimensiones y las celdas escritas. Esta firma no incluye método ni expansión,
 para permitir cambiar ambos. Si falta o no coincide, el POST solo analiza A
 y abre una elección nueva. Incluso cambiar `2` por `2.0` invalida la firma.
@@ -179,8 +200,9 @@ la validación común (`preparar`) y devuelve, por ejemplo:
 ```
 
 La razón es un código estable; `recomendar_metodo_web` lo convierte en una
-frase educativa y un detalle opcional. La explicación principal solo requiere
-conocer el método recomendado; las comparaciones quedan en el detalle.
+única frase educativa. El contrato de presentación contiene solo `metodo`,
+`titulo` y `razon`; la plantilla añade que se puede elegir otro método.
+No se mantienen dos explicaciones de la misma recomendación.
 La plantilla solo presenta esos datos. Elegir otro método,
 incluida otra fila o columna de Cofactores, conserva el procedimiento elegido.
 
@@ -192,13 +214,14 @@ incluida otra fila o columna de Cofactores, conserva el procedimiento elegido.
 | `expansion_favorable` | La fila/columna N contiene K ceros. Al desarrollar por esa fila/columna, los términos con cero se anulan y el procedimiento se hace más corto. |
 | `expansion_favorable`, sin ceros | Al desarrollar esta matriz por una fila o columna, el cálculo se divide en determinantes de matrices más pequeñas. |
 | `lu_sin_intercambios` | Esta matriz puede factorizarse sin intercambiar filas. Para este tamaño, LU organiza el cálculo en pasos más manejables. |
-| `lu_necesita_intercambio` | La reducción por filas permite reorganizar las filas y continuar el cálculo. En esta matriz, LU necesitaría un intercambio de filas. |
+| `lu_necesita_intercambio` | Esta matriz requiere un intercambio de filas para continuar. Reducción lo permite; LU en PyGebra trabaja sin permutaciones. |
 | `triangular_superior` | La matriz ya es triangular superior. No necesitas eliminar entradas: el determinante se obtiene multiplicando los valores de la diagonal principal. |
-| `lu_no_verificada` | La reducción por filas permite eliminar las entradas debajo de la diagonal y continuar con el cálculo. |
+| `lu_no_verificada` | No se pudo verificar LU dentro de los límites numéricos del análisis. Reducción permite continuar con intercambios si hacen falta. |
 
 Se aplican estas reglas, en orden:
 
-1. **1×1:** Cofactores devuelve el único elemento. **2×2:** fórmula directa.
+1. **1×1:** el backend conserva la recomendación de Cofactores, pero la interfaz
+   omite este análisis y calcula directamente el único elemento. **2×2:** fórmula directa.
 2. **Triangular superior, desde 3×3, con los primeros n−1 elementos de la
    diagonal no nulos:** Reducción por filas, porque su motor no necesita
    eliminar ni intercambiar; solo obtiene el producto diagonal. El último
@@ -458,7 +481,10 @@ el producto $LU = A$ y los reemplazos $A\to U$, $L\to I$.
 **Por qué no intercambia.** Si $u_{rc}$ es 0 y hay una entrada no nula
 debajo, el helper se detiene con `aplicable = False` y
 `pivote_nulo = {"fila": r, "columna": c}`. No transforma el problema en
-$PA = LU$. La interfaz explica el motivo y sugiere Reducción por filas o
+$PA = LU$. En PyGebra, **Factorización LU significa A = LU sin permutaciones**.
+La detención describe el límite del procedimiento implementado, no afirma que
+«LU no existe» matemáticamente. La extensión PA = LU queda fuera de alcance.
+La interfaz explica el motivo y sugiere Reducción por filas o
 Cofactores. Si toda la columna restante es nula, se salta esa columna.
 
 **Determinantes sigue siendo cuadrado:** `lu` valida esa condición antes de
@@ -580,8 +606,8 @@ sequenceDiagram
 | [`test_determinantes.py`](../tests/test_determinantes.py) | cada método; 1×1, 2×2, singular, negativos, fracciones; Sarrus solo 3×3; cofactores por fila, columna y Automático; ceros; signos; LU cuadrada; reducción sin normalizaciones con 0, 1, 2 y 3 intercambios; diagonal y signo; propiedades y consistencia contra Leibniz; validación, seguridad y presupuesto de las etapas LU; reutilización de `directo_2x2` por la inversa |
 | [`test_recomendador_determinantes.py`](../tests/test_recomendador_determinantes.py) | reglas por tamaño y estructura; ceros por fila, columna y en menores; límite de Cofactores; LU comprobada, pivote inicial o posterior nulo y columnas saltadas; contraste con LU real en 100 matrices exactas; análisis sin motores ni presupuesto; entradas inválidas y límite numérico |
 | [`test_factorizacion_lu.py`](../tests/test_factorizacion_lu.py) | ejemplo 4×5 de las diapositivas; matrices altas y anchas; L m×m y U m×n; columnas saltadas; evidencia exacta por etapa; A = LU; mismos reemplazos A→U y L→I; intercambio no aplicable; validación y límites numéricos |
-| [`test_determinantes_web.py`](../tests/test_determinantes_web.py) | catálogo y navegación; métodos contextuales; Aplicar; POST manipulados; errores por celda; divisiones de L antes de A = LU y verificación compacta; LU detenida; reducción con signos y fracciones sin normalizar; procedimiento plegable y resultado único; menores anidados; confirmación con firma; transferencia a Matriz inversa |
-| [`determinantes_browser.js`](../tests/determinantes_browser.js) | entrada → elección → cálculo con POST reales; foco; disclosure; expansión; invalidación por edición, dimensiones y menú contextual; Deshacer; presupuesto posterior de Cofactores |
+| [`test_determinantes_web.py`](../tests/test_determinantes_web.py) | catálogo y navegación; 1×1 en un POST sin elección; razón única; elección solo antes del resultado; métodos contextuales; Aplicar; POST manipulados; errores por celda; divisiones de L antes de A = LU y verificación compacta; LU detenida; reducción con signos y fracciones sin normalizar; procedimiento plegable y resultado único; menores anidados; confirmación con firma; transferencia a Matriz inversa |
+| [`determinantes_browser.js`](../tests/determinantes_browser.js) | 1×1 directo y cambio de tamaño; entrada → elección → cálculo con POST reales; foco; razón única sin disclosure; resultado sin elección; LU detenida y nueva elección; expansión; invalidación por edición, dimensiones y menú contextual; Deshacer; presupuesto posterior de Cofactores |
 | [`test_gauss_jordan_bloques.py`](../tests/test_gauss_jordan_bloques.py) | el contrato de pasos incluye `correccion_determinante` |
 | [`test_regresion_sistemas_bloques.py`](../tests/test_regresion_sistemas_bloques.py) | Reducción por filas y Ax = b no cambian (la base congelada ignora solo la anotación nueva) |
 | [`test_matriz_inversa_web.py`](../tests/test_matriz_inversa_web.py) | la línea de det(A) en el resultado de la inversa y la regresión de Gauss-Jordan y de la regla 2×2 |
@@ -606,7 +632,8 @@ del menú contextual en todas las herramientas.
    menú, Inicio y el buscador sin tocar más archivos.
 2. **[`urls.py`](../frontend/web/calculadora/urls.py)** y
    **[`views.py`](../frontend/web/calculadora/views.py)** (`determinantes`): la
-   vista coordina: formulario → análisis → elección → presupuesto → cálculo → plantilla.
+   vista coordina: formulario → análisis → elección → presupuesto → cálculo → plantilla;
+   para 1×1 omite análisis y elección.
 3. **[`forms_determinantes.py`](../frontend/web/calculadora/forms_determinantes.py)**:
    qué métodos existen para cada tamaño y cómo se valida A.
 4. **[`backend/determinantes/__init__.py`](../backend/determinantes/__init__.py)**:
