@@ -284,7 +284,7 @@ def matriz_inversa(request):
 
 @require_http_methods(["GET", "POST"])
 def determinantes(request):
-    """A válida → elección de método → presupuesto → cálculo, también sin JS."""
+    """A válida → elección → presupuesto → cálculo; 1×1 usa directamente su caso base."""
     ajustar = request.method == "POST" and "ajustar" in request.POST
     elegir = request.method == "POST" and not ajustar and constant_time_compare(
         request.POST.get("eleccion", ""), firmar_matriz(request.POST),
@@ -299,19 +299,23 @@ def determinantes(request):
         elif not ajustar and "entrada" in form.cleaned_data:
             entrada = form.cleaned_data["entrada"]
             try:
-                recomendacion = recomendar_metodo_web(entrada["a"])
-                eleccion = firmar_matriz(request.POST)
-                if not elegir:
+                unico_elemento = len(entrada["a"]) == 1
+                if not unico_elemento:
+                    recomendacion = recomendar_metodo_web(entrada["a"])
+                    eleccion = firmar_matriz(request.POST)
+                if not elegir and not unico_elemento:
                     if request.POST.get("eleccion"):
                         aviso_eleccion = "Cambiaste A. La analizamos de nuevo; confirma el método para esta matriz."
                     form.data = form.data.copy()
                     metodos = form.fields["metodo"].choices
                     entrada["metodo"] = metodos[0][0] if len(metodos) == 1 else recomendacion["metodo"]
                     form.data["metodo"] = entrada["metodo"]
-                if valido and (elegir or len(form.fields["metodo"].choices) == 1):
+                if valido and (unico_elemento or elegir or len(form.fields["metodo"].choices) == 1):
                     confirmacion = confirmar_determinante(entrada, form.cleaned_data["confirmacion"])
                     if confirmacion is None:
                         resultado = calcular_determinante_web(entrada)
+                        recomendacion = None
+                        eleccion = aviso_eleccion = ""
             except ValueError as error:
                 form.grupo_error = "determinant-matrix"
                 form.add_error(None, str(error))

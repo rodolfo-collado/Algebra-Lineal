@@ -3,6 +3,7 @@
 La disponibilidad de cada método depende solo del tamaño de A: la fórmula
 directa existe para 2×2, Sarrus para 3×3 y Cofactores hasta 6×6. Aplicar
 conserva las celdas supervivientes; Calcular exige exactamente esa estructura.
+En 1×1 se usa el caso base de Cofactores sin pedir método.
 """
 
 from django import forms
@@ -80,14 +81,14 @@ class DeterminantesForm(FormularioCeldas):
     def __init__(self, *args, elegir=False, **kwargs):
         super().__init__(*args, **kwargs)
         orden = self._valor_seguro("orden")
-        self.fields["metodo"].required = elegir
+        self.fields["metodo"].required = elegir and orden != 1
         self.fields["metodo"].choices = [(m, titulo) for m, titulo in METODOS if metodo_disponible(m, orden)]
         self.fields["expansion"].choices = opciones_expansion(orden)
         self.fields["metodo"].widget.orden = orden
-        if self.is_bound and not elegir:
-            # Una A nueva se analiza antes de aceptar una elección de método.
+        if self.is_bound and (not elegir or orden == 1):
+            # 1×1 reutiliza el caso base; una A mayor exige una elección vigente.
             self.data = self.data.copy()
-            self.data["metodo"] = ""
+            self.data["metodo"] = "cofactores" if orden == 1 else ""
             self.data["expansion"] = "auto"
         self.estructura = {"orden": orden, "metodo": self._valor_seguro("metodo")}
         self.generar_celdas("A", orden, orden)

@@ -335,7 +335,8 @@ propiedades (intercambio, escalado, triangular), entradas inválidas,
 seguridad numérica y el presupuesto de cofactores frente a su árbol real.
 
 `test_determinantes_web` cubre catálogo y navegación, entrada sin métodos,
-análisis sin cálculo ni presupuesto, elección preseleccionada, textos pedagógicos,
+1×1 directo, análisis sin cálculo ni presupuesto desde 2×2, elección preseleccionada,
+explicación única sin disclosure redundante y ausencia de elección tras el cálculo,
 libertad de método y expansión, firmas invalidadas al editar A, dos POST sin JS,
 disponibilidad real de un único método, Aplicar, POST manipulados, errores por celda, el procedimiento y el resultado
 de cada método, la confirmación con firma y la transferencia de A a Matriz
@@ -349,7 +350,8 @@ uv run --locked python -m tests.determinantes_browser
 ```
 
 Abre `http://127.0.0.1:8891/__pruebas/`: prueba el flujo con POST reales,
-foco en la elección, disclosure, selector de Cofactores, invalidación por
+1×1 con un clic, foco en la elección, explicación compacta sin disclosure redundante,
+resultado sin elección, selector de Cofactores, invalidación por
 celdas y dimensiones, menú contextual/Deshacer y presupuesto del método elegido.
 Complementa con `tests.menu_edicion_browser` en el puerto 8890, escritorio,
 tableta, móvil, consola y un navegador con JavaScript desactivado.

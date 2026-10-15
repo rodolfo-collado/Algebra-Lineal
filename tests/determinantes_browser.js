@@ -31,6 +31,23 @@
             ok(todos(w, "[data-calculo]").length === 1, "Un botón principal");
             ok(!w.document.body.textContent.includes("Recomendar método"), "Sin acción secundaria");
         }],
+        ["1×1 calcula con un clic y conserva el procedimiento", async (w, frame) => {
+            cargar(w, [["-2/3"]]);
+            ok(q(w, "[data-boton-determinante]").formAction.endsWith("#resultado"), "Destino del cálculo directo");
+            w = await post(frame);
+            ok(q(w, "[data-determinante]").textContent.trim() === "det(A) = -2/3", "Valor exacto con un clic");
+            ok(!q(w, '[data-eleccion], [data-recomendacion], [name="metodo"], [name="expansion"]'), "Sin elección artificial");
+            ok(q(w, "#procedimiento").textContent.includes("En una matriz 1×1, el determinante es su única entrada: -2/3."), "Explicación didáctica");
+            ok(!q(w, "#procedimiento").open, "Procedimiento plegable");
+            ok(w.document.activeElement === q(w, "#resultado"), "Foco en resultado");
+            w = await elegir(w, frame, [[1, 2], [3, 4]]);
+            ok(q(w, '[name="metodo"]:checked').value === "directo_2x2", "Al crecer vuelve a elegir");
+            valor(w, '[name="orden"]', 1);
+            ok(q(w, "[data-estado-eleccion]").textContent.includes("obtener su única entrada"), "Anuncia el cálculo directo");
+            valor(w, '[name="celda_A_0_0"]', 0);
+            w = await post(frame);
+            ok(q(w, "[data-determinante]").textContent.trim() === "det(A) = 0", "Al reducir a 1×1 vuelve a calcular directo");
+        }],
         ["Análisis, recomendación, foco y métodos disponibles", async (w, frame) => {
             w = await elegir(w, frame);
             ok(!q(w, "#resultado, [data-confirmacion]"), "Todavía no calcula ni presupuesta");
@@ -38,10 +55,10 @@
             ok(todos(w, '[name="metodo"]').map(c => c.value).join() === "sarrus,cofactores,lu,reduccion", "Todas las alternativas");
             ok(todos(w, '[name="metodo"]').every(c => !c.disabled), "Todas habilitadas");
             ok(w.document.activeElement === q(w, "[data-eleccion]"), "Foco en la nueva etapa");
-            ok(!q(w, "#razon-determinante").open, "Explicación opcional cerrada");
+            ok(!q(w, "#razon-determinante"), "Sin disclosure redundante");
+            ok(todos(w, "[data-recomendacion] p").length === 1, "Una explicación compacta");
+            ok(q(w, "[data-recomendacion]").textContent.includes("Puedes elegir cualquier otro método disponible"), "Elección libre");
             ok(q(w, "[data-expansion]").hidden, "Cofactores oculto con Sarrus");
-            q(w, "#razon-determinante summary").click();
-            ok(q(w, "#razon-determinante").open, "Disclosure nativo abre");
         }],
         ["Otro método y desarrollo por columna se respetan", async (w, frame) => {
             w = await elegir(w, frame);
@@ -53,8 +70,21 @@
             ok(q(w, '[name="eleccion"]').value === firma, "Cambiar método no invalida A");
             w = await post(frame);
             ok(q(w, "[data-determinante]").textContent.trim() === "det(A) = -3", "Determinante exacto");
-            ok(q(w, '[name="metodo"]:checked').value === "cofactores", "Conserva elección manual");
+            ok(!q(w, '[data-eleccion], [data-recomendacion], [name="metodo"], [name="expansion"]'), "Resultado sin etapa de elección");
+            ok(q(w, ".section-kicker").textContent.includes("Cofactores"), "Encabezado identifica el método usado");
             ok(q(w, "#procedimiento").textContent.includes("columna 2, la que se eligió"), "Conserva expansión");
+        }],
+        ["LU se detiene sin permutar y permite volver a elegir", async (w, frame) => {
+            w = await elegir(w, frame, [[0, 1], [1, 0]]);
+            q(w, '[name="metodo"][value="lu"]').click();
+            w = await post(frame);
+            ok(q(w, "#resultado").textContent.includes("no implementa PA = LU"), "Explica el límite del procedimiento");
+            ok(!q(w, "[data-determinante], [data-eleccion], [data-recomendacion]"), "Sin determinante inventado ni elección residual");
+            w = await post(frame);
+            ok(q(w, "[data-eleccion]") && !q(w, "#resultado"), "Reabre la elección");
+            q(w, '[name="metodo"][value="reduccion"]').click();
+            w = await post(frame);
+            ok(q(w, "[data-determinante]").textContent.trim() === "det(A) = -1", "Reducción resuelve con intercambio");
         }],
         ["Editar celda invalida y exige otro análisis", async (w, frame) => {
             w = await elegir(w, frame);

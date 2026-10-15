@@ -34,23 +34,13 @@ RAZONES_RECOMENDACION = {
     "triangular_superior": "La matriz ya es triangular superior. No necesitas eliminar entradas: el determinante se obtiene multiplicando los valores de la diagonal principal.",
     "sarrus": "Tu matriz es 3×3, el tamaño para el que se diseñó la Regla de Sarrus. Puedes calcular el determinante siguiendo sus seis diagonales.",
     "lu_sin_intercambios": "Esta matriz puede factorizarse sin intercambiar filas. Para este tamaño, LU organiza el cálculo en pasos más manejables.",
-    "lu_necesita_intercambio": "La reducción por filas permite reorganizar las filas y continuar el cálculo. En esta matriz, LU necesitaría un intercambio de filas.",
-    "lu_no_verificada": "La reducción por filas permite eliminar las entradas debajo de la diagonal y continuar con el cálculo.",
-}
-DETALLES_RECOMENDACION = {
-    "unico_elemento": "En una matriz 1×1 no hay productos ni sumas que desarrollar: se toma su única entrada.",
-    "formula_directa": "La fórmula ad − bc obtiene el determinante con dos productos y una resta. Puedes elegir otro método para practicar su procedimiento.",
-    "triangular_superior": "Todas las entradas debajo de la diagonal principal son cero. Reducción conserva esta estructura y obtiene el producto de la diagonal sin reemplazos ni intercambios.",
-    "sarrus": "En esta matriz, las seis diagonales de Sarrus dan un recorrido breve. El desarrollo por Cofactores necesitaría calcular varios determinantes de matrices más pequeñas.",
-    "expansion_favorable": "Cada cero de la fila o columna elegida anula un término y ahorra calcular su menor. Automático busca la línea con más ceros; también puedes elegir otra para practicar.",
-    "lu_sin_intercambios": "Se comprobó que LU puede continuar sin intercambiar filas, como en el procedimiento de clase. Organiza A = LU y obtiene el determinante con la diagonal de U, sin un desarrollo largo de Cofactores.",
-    "lu_necesita_intercambio": "Hay un pivote cero con una entrada distinta de cero debajo. El procedimiento de LU de clase se detendría; Reducción permite el intercambio y registra su cambio de signo.",
-    "lu_no_verificada": "No se pudo comprobar LU dentro de los límites numéricos del análisis. Esto no demuestra que necesite intercambiar filas; se recomienda Reducción, que permite hacerlo si es necesario.",
+    "lu_necesita_intercambio": "Esta matriz requiere un intercambio de filas para continuar. Reducción lo permite; LU en PyGebra trabaja sin permutaciones.",
+    "lu_no_verificada": "No se pudo verificar LU dentro de los límites numéricos del análisis. Reducción permite continuar con intercambios si hacen falta.",
 }
 
 
 def recomendar_metodo_web(a):
-    """Traduce las razones estructuradas a dos niveles de explicación, sin calcular."""
+    """Traduce la razón estructurada a una única explicación breve, sin calcular."""
     analisis = analizar_matriz_para_determinante(a)
     if analisis["razon"] == "expansion_favorable":
         expansion = analisis["expansion"]
@@ -61,8 +51,7 @@ def recomendar_metodo_web(a):
     else:
         razon = RAZONES_RECOMENDACION[analisis["razon"]]
     return {"metodo": analisis["metodo_recomendado"],
-            "titulo": dict(METODOS)[analisis["metodo_recomendado"]], "razon": razon,
-            "detalle": DETALLES_RECOMENDACION[analisis["razon"]]}
+            "titulo": dict(METODOS)[analisis["metodo_recomendado"]], "razon": razon}
 
 
 def firmar_matriz(datos):
@@ -271,7 +260,7 @@ def _lu(calculo, nombre="det(A)"):
         pivote = calculo["pivote_nulo"]
         datos["motivo"] = (
             f"El pivote u{subindice(pivote['fila'], pivote['columna'])} es 0 y debajo hay un número distinto de 0. "
-            "Para seguir habría que intercambiar filas, y la factorización LU sin intercambios no lo permite."
+            "Para seguir habría que intercambiar filas. PyGebra implementa A = LU sin permutaciones; no implementa PA = LU."
         )
     return datos
 
