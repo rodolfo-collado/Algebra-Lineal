@@ -120,7 +120,7 @@ class PruebasEntrada(SimpleTestCase):
                          ["auto", "fila_1", "fila_2", "columna_1", "columna_2"])
 
     def test_el_tamano_decide_los_metodos_disponibles(self):
-        casos = {1: ["cofactores", "lu", "reduccion"], 3: ["sarrus", "cofactores", "lu", "reduccion"],
+        casos = {3: ["sarrus", "cofactores", "lu", "reduccion"],
                  6: ["cofactores", "lu", "reduccion"], 7: ["lu", "reduccion"]}
         for orden, activos in casos.items():
             with self.subTest(orden=orden):
@@ -186,7 +186,7 @@ class PruebasRecomendacion(SimpleTestCase):
             ([[0, 1, 2], [0, 3, 4], [5, 6, 7]], "cofactores", "La columna 1 contiene 2 ceros"),
             (densa4, "lu", "puede factorizarse sin intercambiar filas"),
             ([[0, 1, 2, 3], [2, 3, 4, 5], [1, 4, 8, 2], [3, 5, 2, 7]],
-             "reduccion", "LU necesitaría un intercambio de filas"),
+             "reduccion", "LU en PyGebra trabaja sin permutaciones"),
             ([[2, 1, 3], [0, 4, 2], [0, 0, 0]], "reduccion", "multiplicando los valores de la diagonal principal"),
             ([[7]], "cofactores", "un único elemento: ese es su determinante"),
         )
@@ -195,7 +195,7 @@ class PruebasRecomendacion(SimpleTestCase):
                 recomendacion = recomendar_metodo_web(a)
                 self.assertEqual(recomendacion["metodo"], metodo)
                 self.assertIn(frase, recomendacion["razon"])
-                self.assertTrue(recomendacion["detalle"])
+                self.assertEqual(set(recomendacion), {"metodo", "titulo", "razon"})
                 self.assertNotRegex(recomendacion["razon"], r"cost[eo]|heurística")
                 if metodo == "sarrus":
                     self.assertNotRegex(recomendacion["razon"].lower(), r"menor|cofactor|\blu\b|pivote|reducción")
@@ -206,13 +206,19 @@ class PruebasRecomendacion(SimpleTestCase):
         analisis = {"metodo_recomendado": "reduccion", "razon": "lu_no_verificada"}
         with patch(f"{SERVICIO}.analizar_matriz_para_determinante", return_value=analisis):
             recomendacion = recomendar_metodo_web(A3)
-        self.assertIn("eliminar las entradas debajo de la diagonal", recomendacion["razon"])
-        self.assertIn("Esto no demuestra que necesite intercambiar filas", recomendacion["detalle"])
+        self.assertIn("No se pudo verificar LU", recomendacion["razon"])
+        self.assertIn("intercambios si hacen falta", recomendacion["razon"])
+        self.assertNotIn("requiere un intercambio", recomendacion["razon"])
 
-    def test_detalle_plegable_y_etiqueta_sin_costes_internos(self):
+    def test_explicacion_unica_compacta_y_etiqueta_sin_costes_internos(self):
         html = self.client.post(RUTA, datos_det(A3, None)).content.decode()
-        self.assertIn("¿Por qué recomendamos este método?", texto(html))
-        self.assertRegex(html, r'<details class="disclosure" id="razon-determinante">')
+        self.assertNotIn("¿Por qué recomendamos este método?", texto(html))
+        self.assertNotIn('id="razon-determinante"', html)
+        razon = recomendar_metodo_web(A3)["razon"]
+        self.assertEqual(texto(html).count(razon), 1)
+        bloque = html.split('data-recomendacion>')[1].split('</div>')[0]
+        self.assertEqual(bloque.count('<p '), 1)
+        self.assertNotIn('role="dialog"', html)
         self.assertEqual(html.count('<span class="badge">Recomendado</span>'), 1)
         self.assertNotIn("costos", html)
         self.assertNotIn("unidades de utilidad", html)
@@ -225,11 +231,10 @@ class PruebasRecomendacion(SimpleTestCase):
         firma = re.search(r'name="eleccion" value="([0-9a-f]+)"', html)[1]
         html = self.client.post(RUTA, datos | {"eleccion": firma, "metodo": "cofactores", "expansion": "columna_2"}).content.decode()
         self.assertIn("det(A) = -3", partes(html)[1])
-        self.assertRegex(html, r'value="cofactores"[^>]*checked')
+        self.assertIn("Determinantes · Cofactores", texto(html))
         self.assertIn("Se desarrolla por la columna 2, la que se eligió.", partes(html)[0])
-        self.assertIn('<label for="id_expansion">Desarrollar por</label>', html)
-        self.assertEqual(re.findall(r'<option value="([^"]+)"', html.split('name="expansion"')[1].split("</select>")[0]),
-                         ["auto", "fila_1", "fila_2", "fila_3", "columna_1", "columna_2", "columna_3"])
+        self.assertEqual(metodos_visibles(html), [])
+        self.assertNotIn('name="expansion"', html)
 
     def test_a_editada_o_firma_alterada_exigen_analizar_y_confirmar_de_nuevo(self):
         datos = datos_det(A3, "sarrus", confirmacion="firma-antigua")
@@ -272,12 +277,27 @@ class PruebasRecomendacion(SimpleTestCase):
             html = self.client.post(RUTA, datos_det(A3, None)).content.decode()
         self.assertIn("det(A) = 30", partes(html)[1])
         self.assertNotIn('id="eleccion-determinante"', html)
-        self.assertIn('type="hidden" name="metodo" value="reduccion"', html)
+        self.assertNotIn('name="metodo"', html)
 
-    def test_1x1_conserva_la_eleccion_porque_hay_varios_metodos(self):
-        html = self.client.post(RUTA, datos_det([[5]], None)).content.decode()
-        self.assertEqual(len(metodos_visibles(html)), 3)
-        self.assertNotIn('id="resultado"', html)
+    def test_1x1_calcula_en_un_post_sin_analisis_eleccion_ni_recomendacion(self):
+        for valor, esperado in (("5", "5"), ("0", "0"), ("-2/3", "-2/3"), ("0.25", "1/4")):
+            with self.subTest(valor=valor), \
+                    patch(f"{SERVICIO}.analizar_matriz_para_determinante", side_effect=AssertionError("analizó")):
+                html = self.client.post(RUTA, datos_det([[valor]], None)).content.decode()
+            self.assertIn(f"det(A) = {esperado}", partes(html)[1])
+            self.assertIn(f"En una matriz 1×1, el determinante es su única entrada: {esperado}.", partes(html)[0])
+            for marca in ('data-eleccion', 'data-recomendacion', 'name="metodo"', 'name="expansion"',
+                          'name="eleccion"', 'data-confirmacion', 'formaction='):
+                self.assertNotIn(marca, html)
+
+    def test_1x1_ignora_eleccion_anterior_y_reutiliza_cofactores(self):
+        from backend.determinantes import calcular_determinante
+        datos = datos_det([["-2/3"]], "lu", "fila_1", eleccion="eleccion-anterior")
+        with patch(f"{SERVICIO}.calcular_determinante", wraps=calcular_determinante) as calcular:
+            html = self.client.post(RUTA, datos).content.decode()
+        calcular.assert_called_once_with([[Fraction(-2, 3)]], "cofactores", "auto")
+        self.assertIn("det(A) = -2/3", partes(html)[1])
+        self.assertNotIn("data-eleccion", html)
 
     def test_analizar_muestra_la_razon_sin_calcular_ni_presupuestar(self):
         a = [[2, 0, 0], [1, 3, 4], [5, 6, 7]]
@@ -297,9 +317,10 @@ class PruebasRecomendacion(SimpleTestCase):
         for metodo, titulo in (("cofactores", "Cofactores"), ("lu", "Factorización LU"), ("reduccion", "Reducción por filas")):
             with self.subTest(metodo=metodo):
                 html = self.client.post(RUTA, datos_det(a, metodo, "columna_2")).content.decode()
-                self.assertIn("Recomendamos: Regla de Sarrus", texto(html))
+                self.assertNotIn("data-recomendacion", html)
+                self.assertNotIn("data-eleccion", html)
+                self.assertEqual(metodos_visibles(html), [])
                 self.assertIn(f"Determinantes · {titulo}", texto(html))
-                self.assertRegex(html, rf'value="{metodo}"[^>]*checked')
                 self.assertIn("det(A) = -3", partes(html)[1])
                 if metodo == "cofactores":
                     self.assertIn("Se desarrolla por la columna 2, la que se eligió.", partes(html)[0])
@@ -308,7 +329,7 @@ class PruebasRecomendacion(SimpleTestCase):
         a = [[1, 1, 1, 1], [1, 1, 2, 3], [1, 2, 3, 4], [2, 3, 4, 7]]
         html = self.client.post(RUTA, datos_det(a, None)).content.decode()
         self.assertIn("Recomendamos: Reducción por filas", texto(html))
-        self.assertIn("LU necesitaría un intercambio de filas", texto(html))
+        self.assertIn("LU en PyGebra trabaja sin permutaciones", texto(html))
         self.assertIn(("lu", False), metodos_visibles(html))
         self.assertRegex(html, r'value="reduccion"[^>]*checked')
         html = self.client.post(RUTA, datos_det(a, "lu")).content.decode()
@@ -329,6 +350,8 @@ class PruebasResultado(SimpleTestCase):
     def calcular(self, a, metodo, expansion=None):
         html = self.client.post(RUTA, datos_det(a, metodo, expansion)).content.decode()
         comprobar_estructura(self, html)
+        for marca in ('data-eleccion', 'data-recomendacion', 'name="metodo"', 'name="expansion"', 'name="eleccion"'):
+            self.assertNotIn(marca, html)
         return html, *partes(html)
 
     def test_todos_los_metodos_dan_el_mismo_resultado(self):
@@ -441,8 +464,8 @@ class PruebasResultado(SimpleTestCase):
         self.assertIn("Verificación exacta: L → I", procedimiento)
         self.assertTrue(resultado.startswith("Resultado det(A) = 0"))
 
-    def test_lu_nula_y_uno_por_uno_verifican_sin_reemplazos(self):
-        for a in ([[0, 0], [0, 0]], [["-2/3"]]):
+    def test_lu_nula_y_diagonal_verifican_sin_reemplazos(self):
+        for a in ([[0, 0], [0, 0]], [["-2/3", 0], [0, 1]]):
             with self.subTest(a=a):
                 _, procedimiento, _ = self.calcular(a, "lu")
                 self.assertIn("La misma secuencia de 0 reemplazos aplicada a L", procedimiento)
@@ -452,6 +475,10 @@ class PruebasResultado(SimpleTestCase):
         html, procedimiento, resultado = self.calcular([[0, 1], [1, 0]], "lu")
         self.assertIn("El pivote u₁₁ es 0 y debajo hay un número distinto de 0.", procedimiento)
         self.assertTrue(resultado.startswith("Resultado LU sin intercambios no puede continuar con esta matriz."))
+        self.assertIn("PyGebra implementa A = LU sin permutaciones; no implementa PA = LU.", resultado)
+        self.assertIn("Usa Reducción por filas", resultado)
+        self.assertIn("o Cofactores", resultado)
+        self.assertNotIn("LU no existe", texto(html))
         self.assertNotIn("det(A) =", resultado)
         self.assertNotIn("data-transferencia", html)
 
@@ -581,6 +608,8 @@ class PruebasConfirmacion(SimpleTestCase):
         with normal, pesada:
             html = self.client.post(RUTA, datos | {"confirmacion": firma}).content.decode()
         self.assertIn('id="resultado"', html)
+        self.assertNotIn("data-eleccion", html)
+        self.assertNotIn("data-recomendacion", html)
         normal, pesada = forzar()
         with normal, pesada, patch(f"{SERVICIO}.calcular_determinante", side_effect=AssertionError("otra entrada")):
             html = self.client.post(RUTA, datos_det(A3, "cofactores", "fila_1", confirmacion=firma)).content.decode()
