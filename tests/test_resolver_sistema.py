@@ -50,7 +50,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         rutas = (
             "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
             "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
-            "/romanos/conversion/",
+            "/romanos/conversion/", "/conjuntos/relaciones/",
         )
         for ruta in ("/", *rutas):
             with self.subTest(ruta=ruta):
@@ -76,7 +76,8 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
             ["/vectores/operaciones/", "/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/",
-             "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/", "/romanos/conversion/"],
+             "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/", "/romanos/conversion/",
+             "/conjuntos/relaciones/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")
         for consulta in ("gauss", "clasificación", "columnas pivote"):

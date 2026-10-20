@@ -3,11 +3,13 @@
 from django.urls import path
 
 from . import views
+from .views_conjuntos import relaciones_conjuntos
 
 
 app_name = "calculadora"
 
 urlpatterns = [
+    path("conjuntos/relaciones/", relaciones_conjuntos, name="relaciones-conjuntos"),
     path("", views.inicio, name="inicio"),
     path("matrices/reduccion/", views.sistemas, name="reduccion-filas"),
     # Compatibilidad: GET redirige; POST raíz reutiliza la vista y slugs preservan el cuerpo.

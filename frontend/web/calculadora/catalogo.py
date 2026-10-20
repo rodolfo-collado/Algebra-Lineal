@@ -133,7 +133,8 @@ SISTEMAS_NUMERICOS = Area(
     "Representación de números en distintas bases y en numeración romana.",
 )
 CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.")
-AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, CALCULO)
+CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos y relaciones entre ellos.")
+AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, CONJUNTOS, CALCULO)
 
 VECTORES = Categoria(
     "vectores", "Vectores", ALGEBRA_LINEAL,
@@ -153,7 +154,9 @@ NUMERACION_ROMANA = Categoria(
     "Conversión entre números arábigos y romanos.",
 )
 LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.")
-CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, LIMITES)
+CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos finitos", CONJUNTOS,
+                            "Elementos, pertenencia e inclusión de conjuntos.")
+CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, CONJUNTOS_FINITOS, LIMITES)
 
 
 # Reducción por filas de [A | b]: método a elegir (o comparar los dos) y
@@ -304,6 +307,14 @@ DETERMINANTES = Herramienta(
     invitacion="Calcula det(A) y comprueba si una matriz cuadrada es invertible.",
 )
 
+RELACIONES_CONJUNTOS = Herramienta(
+    id="relaciones-conjuntos", nombre="Relaciones entre conjuntos", categoria=CONJUNTOS_FINITOS,
+    descripcion="Define conjuntos finitos y comprueba pertenencia, inclusión e igualdad con su explicación.",
+    estado="disponible", route_name="calculadora:relaciones-conjuntos",
+    palabras_clave=("pertenencia", "no pertenencia", "inclusión", "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados"),
+    invitacion="Define conjuntos y distingue pertenencia, inclusión e igualdad.",
+)
+
 HERRAMIENTAS = (
     OPERACIONES_VECTORES,
     OPERACIONES_MATRICES,
@@ -313,6 +324,7 @@ HERRAMIENTAS = (
     DETERMINANTES,
     CONVERSION_BASES,
     CONVERSION_ROMANOS,
+    RELACIONES_CONJUNTOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",
                 palabras_clave=("límite", "función", "tiende a")),

@@ -228,8 +228,9 @@ class PruebasRegistro(unittest.TestCase):
         with self.assertRaises(ValueError):
             Perfil("repetido", (GrupoTeclas("A", (menos, Tecla("−", "–", "Raya"))),))
 
-    def test_el_registro_tiene_ocho_perfiles_completos_sin_duplicados(self):
-        self.assertEqual(set(PERFILES), {"sistema", "numerico", "expresion", "lineal", "base-2", "base-8", "base-10", "base-16"})
+    def test_el_registro_tiene_diez_perfiles_completos_sin_duplicados(self):
+        self.assertEqual(set(PERFILES), {"sistema", "numerico", "expresion", "lineal", "base-2", "base-8", "base-10", "base-16",
+                                       "literal-conjuntos", "relacion-conjuntos"})
         for id_, perfil in PERFILES.items():
             with self.subTest(perfil=id_):
                 self.assertIsInstance(perfil, Perfil)

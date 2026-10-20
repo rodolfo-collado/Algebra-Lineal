@@ -1,0 +1,87 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static componentes %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-labelledby="workspace-title">
+    <h2 id="workspace-title" class="sr-only">Entrada</h2>
+    <form id="conjuntos-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        {% csrf_token %}
+        {{ form.cantidad }}
+        {% include "calculadora/components/errores_generales.html" %}
+        <section class="workspace-section" aria-labelledby="sets-title">
+            <h3 id="sets-title" class="section-title">Conjuntos definidos</h3>
+            <p id="conjuntos-ayuda" class="field-help">Usa llaves y comas: <code>{1, 2, {3, 4}, "rojo"}</code>. Los textos llevan comillas dobles; los decimales, punto. <code>∅</code> y <code>{}</code> representan el vacío. Los duplicados cuentan una sola vez.</p>
+            <button class="btn btn-secondary" type="submit" name="accion" value="guardar">Guardar cambios</button>
+            <div id="conjuntos-lista" class="symbol-list">
+            {% for bloque in form.bloques %}
+                <fieldset class="symbol-card" data-conjunto>
+                    <legend class="sr-only">Conjunto {{ bloque.nombre.value }}</legend>
+                    {{ bloque.anterior }}
+                    <div class="symbol-head">
+                        <div class="field-group">
+                            <label for="{{ bloque.nombre.id_for_label }}">Nombre</label>
+                            {{ bloque.nombre }}{{ bloque.nombre.errors }}
+                        </div>
+                        <button class="btn btn-secondary" type="submit" name="eliminar" value="{{ bloque.indice }}" aria-label="Eliminar conjunto {{ bloque.nombre.value }}">Eliminar</button>
+                    </div>
+                    <div class="field-group" data-perfil="literal-conjuntos">
+                        <label for="{{ bloque.contenido.id_for_label }}">Contenido</label>
+                        {{ bloque.contenido }}{{ bloque.contenido.errors }}
+                    </div>
+                </fieldset>
+            {% empty %}
+                <p class="field-help">Añade un conjunto o compara literales directamente.</p>
+            {% endfor %}
+            </div>
+            <p id="nombres-ayuda" class="field-help">Los nombres distinguen mayúsculas y minúsculas. Empieza con una letra A–Z y continúa con letras, cifras o guion bajo, sin palabras reservadas.</p>
+            <div class="field-group" data-perfil="literal-conjuntos">
+                <label for="{{ form.definicion.id_for_label }}">{{ form.definicion.label }}</label>
+                {{ form.definicion }}{{ form.definicion.errors }}
+            </div>
+            <button class="btn btn-secondary" type="submit" name="accion" value="agregar">Añadir conjunto</button>
+        </section>
+
+        <section class="workspace-section" aria-labelledby="relation-title">
+            <h3 id="relation-title" class="section-title">Relación</h3>
+            {% disclosure titulo="Construir con ayuda" id="relacion-guiada" %}
+                <p class="field-help">Selecciona un nombre definido o escribe un número, texto entre comillas o literal. La pertenencia compara un elemento con un conjunto; la inclusión compara dos conjuntos.</p>
+                <datalist id="nombres-conjuntos">{% for bloque in form.bloques %}<option value="{{ bloque.nombre.value }}"></option>{% endfor %}</datalist>
+                <div class="structure-controls" data-perfil="relacion-conjuntos" data-operandos="#conjuntos-lista">
+                    <div class="field-group"><label for="{{ form.izquierdo.id_for_label }}">{{ form.izquierdo.label }}</label>{{ form.izquierdo }}{{ form.izquierdo.errors }}</div>
+                    <div class="field-group"><label for="{{ form.operador.id_for_label }}">{{ form.operador.label }}</label>{{ form.operador }}{{ form.operador.errors }}</div>
+                    <div class="field-group"><label for="{{ form.derecho.id_for_label }}">{{ form.derecho.label }}</label>{{ form.derecho }}{{ form.derecho.errors }}</div>
+                </div>
+                <button class="btn btn-secondary" type="submit" name="accion" value="construir" data-construir>Usar expresión</button>
+            {% enddisclosure %}
+            <div class="field-group" data-perfil="relacion-conjuntos" data-operandos="#conjuntos-lista">
+                <label for="{{ form.expresion.id_for_label }}">{{ form.expresion.label }}</label>
+                {{ form.expresion }}{{ form.expresion.errors }}
+                <p class="field-help">Una relación con <code>∈ ∉ ⊆ ⊂ = ≠</code>. Los paréntesis solo agrupan operandos: <code>(A) ⊆ B</code>. <code>⊂</code> exige inclusión y conjuntos distintos.</p>
+            </div>
+            {% include "calculadora/components/math_keyboard.html" %}
+        </section>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit" name="accion" value="calcular" data-calculo>Comprobar relación</button></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+<section id="resultado" data-resultado="vigente" class="results conjuntos-resultado" aria-labelledby="results-title" tabindex="-1">
+    <header class="results-heading"><h2 id="results-title">Relación comprobada</h2></header>
+    {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+        {% for paso in resultado.pasos %}<p class="procedure-lead">{{ paso }}</p>{% endfor %}
+    {% enddisclosure %}
+    <section class="panel panel-final" aria-labelledby="results-final-title">
+        <h3 id="results-final-title" class="panel-title">Resultado</h3>
+        <p class="expansion-line conjuntos-expresion">{{ resultado.expresion }}</p>
+        <p class="classification-value" data-respuesta-relacion>{{ resultado.respuesta }}</p>
+    </section>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'calculadora/conjuntos.js' %}" defer></script>
+<script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}
