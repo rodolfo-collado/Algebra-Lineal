@@ -2,6 +2,10 @@
 
 [Índice](README.md) · Herramienta web y desktop: **Conjuntos → Conjuntos finitos → Relaciones entre conjuntos**.
 
+P1 está completado e integrado mediante el [PR #104](https://github.com/rodolfo-collado/Algebra-Lineal/pull/104).
+Consulta el [TODO de Conjuntos](TODO-conjuntos.md) para las fases P2–P7, las mejoras
+detectadas en las pruebas desktop y las posibles extensiones futuras.
+
 ## Definir y editar
 
 En **Nueva definición**, escribe `A = {1, 2, {3, 4}, "rojo"}` y pulsa
@@ -112,7 +116,8 @@ segundo modelo o evaluador. P1 conserva la entrada textual como única modalidad
 de definición.
 
 No se implementan operaciones, cardinalidad, potencia, producto cartesiano,
-intervalos, Venn ni comprensión. La comprobación desktop manual queda para la revisión.
+intervalos, Venn ni comprensión. Los ajustes detectados en las pruebas desktop
+se registran en el [TODO de Conjuntos](TODO-conjuntos.md).
 
 ## Verificación reproducible
 
