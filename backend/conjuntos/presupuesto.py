@@ -12,7 +12,10 @@ class Presupuesto:
     entradas: int = 0
 
     def texto(self, texto):
-        self.caracteres += len(texto)
+        self.longitud(len(texto))
+
+    def longitud(self, cantidad):
+        self.caracteres += cantidad
         if self.caracteres > LONGITUD_SISTEMA_MAXIMA:
             raise ValueError(f"La entrada completa admite hasta {LONGITUD_SISTEMA_MAXIMA} caracteres.")
 

@@ -1665,6 +1665,16 @@ textarea:focus {
     gap: 0.85rem;
 }
 
+/* Los textos de un elemento pueden ser largos y no contienen espacios necesariamente. */
+.conjuntos-resultado {
+    overflow-wrap: anywhere;
+}
+
+#conjuntos-form .structure-controls > .field-group {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
 .symbol-card:has(.matrix-entry-table td:nth-child(6)) {
     grid-column: 1 / -1;
 }

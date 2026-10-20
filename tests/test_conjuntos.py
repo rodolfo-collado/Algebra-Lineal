@@ -6,7 +6,7 @@ import unittest
 from backend.conjuntos.literales import analizar_literal, analizar_definicion
 from backend.conjuntos.parser import analizar_relacion, renombrar_referencias
 from backend.conjuntos.evaluador import evaluar_relacion
-from backend.conjuntos.modelo import Conjunto
+from backend.conjuntos.modelo import Conjunto, presentar
 from backend.conjuntos.presupuesto import Presupuesto
 from backend.operandos import CELDAS_MAXIMAS, OPERANDOS_MAXIMOS
 
@@ -41,10 +41,25 @@ class ConjuntosTests(unittest.TestCase):
             with self.subTest(nombre=nombre), self.assertRaises(ValueError):
                 analizar_definicion(f"{nombre} = {{}}")
 
+    def test_presentacion_se_puede_volver_a_leer(self):
+        for texto in ('{-.5, - 1 / 2, "a,b", "una \\"cita\\"", {∅}}', '{"∈", "A", "\\\\", "\\u00f1"}',
+                      '{0, {}, {{}}, {{1, 2}, {2, 1}}}'):
+            with self.subTest(texto=texto):
+                valor = analizar_literal(texto)
+                self.assertEqual(analizar_literal(presentar(valor)), valor)
+
+    def test_unicode_incompleto_y_agrupacion_excesiva(self):
+        with self.assertRaises(ValueError):
+            analizar_literal('{"\\ud800"}')
+        with self.assertRaises(ValueError):
+            analizar_relacion("(" * OPERANDOS_MAXIMOS + "A" + ")" * OPERANDOS_MAXIMOS + " = A")
+
     def test_renombrar_solo_referencias(self):
         self.assertEqual(renombrar_referencias('A ∈ B', {"A": "S"}), 'S ∈ B')
         self.assertEqual(renombrar_referencias('"A" ∈ {"A"}', {"A": "S"}), '"A" ∈ {"A"}')
         self.assertEqual(renombrar_referencias('A = AA', {"A": "B", "AA": "A"}), 'B = A')
+        with self.assertRaises(ValueError):
+            renombrar_referencias("A = A", {"A": "S" * 6000})
 
     def test_errores_y_entradas_maliciosas(self):
         for texto in ("{", "{1,}", "{1 2}", "{A}", "{x for x in A}", "{1|2}",

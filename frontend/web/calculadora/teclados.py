@@ -104,6 +104,18 @@ PERFIL_SISTEMA = Perfil("sistema", (VARIABLES, OPERACIONES, ECUACIONES))
 PERFIL_NUMERICO = Perfil("numerico", (VALORES,), ayuda="Inserta en la celda donde está el cursor.")
 PERFIL_EXPRESION = Perfil("expresion", (EXPRESIONES, OPERADORES_EXPRESION))
 PERFIL_LINEAL = Perfil("lineal", (VARIABLES, LINEALES))
+LITERALES_CONJUNTOS = GrupoTeclas("Elementos", (
+    Tecla("{ }", "{}", "Conjunto", 1), Tecla("∅", "∅", "Conjunto vacío"),
+    Tecla(",", ", ", "Separar elementos"), Tecla('" "', '""', "Elemento textual", 1),
+    MENOS, FRACCION,
+))
+RELACIONES_CONJUNTOS = GrupoTeclas("Relaciones", (
+    Tecla("∈", "∈", "Pertenece"), Tecla("∉", "∉", "No pertenece"),
+    Tecla("⊆", "⊆", "Inclusión"), Tecla("⊂", "⊂", "Inclusión propia"),
+    IGUAL, Tecla("≠", "≠", "Distinto"), Tecla("( )", "()", "Agrupar operando", 1),
+))
+PERFIL_LITERAL_CONJUNTOS = Perfil("literal-conjuntos", (LITERALES_CONJUNTOS, GrupoTeclas("Definición", (IGUAL,))))
+PERFIL_RELACION_CONJUNTOS = Perfil("relacion-conjuntos", (LITERALES_CONJUNTOS, RELACIONES_CONJUNTOS))
 PERFILES_BASE = {
     base: Perfil(
         f"base-{base}",
@@ -114,7 +126,8 @@ PERFILES_BASE = {
 }
 
 PERFILES = {perfil.id: perfil for perfil in (
-    PERFIL_SISTEMA, PERFIL_NUMERICO, PERFIL_EXPRESION, PERFIL_LINEAL, *PERFILES_BASE.values(),
+    PERFIL_SISTEMA, PERFIL_NUMERICO, PERFIL_EXPRESION, PERFIL_LINEAL,
+    PERFIL_LITERAL_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, *PERFILES_BASE.values(),
 )}
 
 

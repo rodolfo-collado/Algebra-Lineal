@@ -47,7 +47,14 @@ def analizar_relacion(texto, *, presupuesto=None):
 def renombrar_referencias(texto, cambios):
     """Renombrado simultáneo por tokens; no toca texto entre comillas ni partes de nombres."""
     lector = Lector(texto)
-    for token in reversed(lector.tokens):
-        if token.tipo == "nombre" and token.texto in cambios:
-            texto = texto[:token.inicio] + cambios[token.texto] + texto[token.fin:]
-    return texto
+    reemplazos = [(token, cambios[token.texto]) for token in lector.tokens
+                  if token.tipo == "nombre" and token.texto in cambios]
+    # Comprobar el tamaño final antes de expandir nombres repetidos.
+    lector.presupuesto.longitud(sum(len(nombre) - len(token.texto) for token, nombre in reemplazos))
+    partes = []
+    posicion = 0
+    for token, nombre in reemplazos:
+        partes.extend((texto[posicion:token.inicio], nombre))
+        posicion = token.fin
+    partes.append(texto[posicion:])
+    return "".join(partes)
