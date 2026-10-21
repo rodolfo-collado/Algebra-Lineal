@@ -1,0 +1,434 @@
+[
+  {
+    "concept": "patio",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "menu",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "menu",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "menu",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 320,
+      "height": 650
+    },
+    "clientWidth": 305,
+    "innerWidth": 320,
+    "scrollWidth": 305,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "menu",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "menu",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "menu",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "clientWidth": 375,
+    "innerWidth": 390,
+    "scrollWidth": 375,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "menu",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "menu",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "menu",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 760,
+      "height": 560
+    },
+    "clientWidth": 745,
+    "innerWidth": 760,
+    "scrollWidth": 745,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1100,
+    "innerWidth": 1100,
+    "scrollWidth": 1100,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "menu",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1085,
+    "innerWidth": 1100,
+    "scrollWidth": 1085,
+    "result": "PASS"
+  },
+  {
+    "concept": "patio",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1085,
+    "innerWidth": 1100,
+    "scrollWidth": 1085,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1085,
+    "innerWidth": 1100,
+    "scrollWidth": 1085,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "menu",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1100,
+    "innerWidth": 1100,
+    "scrollWidth": 1100,
+    "result": "PASS"
+  },
+  {
+    "concept": "trama",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1085,
+    "innerWidth": 1100,
+    "scrollWidth": 1085,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "bienvenida",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1100,
+    "innerWidth": 1100,
+    "scrollWidth": 1100,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "menu",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1085,
+    "innerWidth": 1100,
+    "scrollWidth": 1085,
+    "result": "PASS"
+  },
+  {
+    "concept": "prisma",
+    "screen": "herramienta",
+    "viewport": {
+      "width": 1100,
+      "height": 760
+    },
+    "clientWidth": 1085,
+    "innerWidth": 1100,
+    "scrollWidth": 1085,
+    "result": "PASS"
+  }
+]
