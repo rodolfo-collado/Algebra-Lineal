@@ -1,0 +1,170 @@
+[
+  {
+    "concepto": "patio",
+    "par": "ink/bg",
+    "contraste": 10.93,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "patio",
+    "par": "muted/bg",
+    "contraste": 5.56,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "patio",
+    "par": "muted/surface",
+    "contraste": 6.04,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "patio",
+    "par": "muted/wash",
+    "contraste": 5.11,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "patio",
+    "par": "muted/bar",
+    "contraste": 5.14,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "patio",
+    "par": "on-accent/accent",
+    "contraste": 6.83,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "patio",
+    "par": "input-border/surface",
+    "contraste": 3.6,
+    "minimo": 3,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "patio",
+    "par": "focus/bg",
+    "contraste": 6.29,
+    "minimo": 3,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "trama",
+    "par": "ink/bg",
+    "contraste": 12.99,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "trama",
+    "par": "muted/bg",
+    "contraste": 6.22,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "trama",
+    "par": "muted/surface",
+    "contraste": 6.75,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "trama",
+    "par": "muted/wash",
+    "contraste": 5.62,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "trama",
+    "par": "muted/bar",
+    "contraste": 5.69,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "trama",
+    "par": "on-accent/accent",
+    "contraste": 7.98,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "trama",
+    "par": "input-border/surface",
+    "contraste": 3.96,
+    "minimo": 3,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "trama",
+    "par": "focus/bg",
+    "contraste": 7.36,
+    "minimo": 3,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "prisma",
+    "par": "ink/bg",
+    "contraste": 12.62,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "prisma",
+    "par": "muted/bg",
+    "contraste": 8.3,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "prisma",
+    "par": "muted/surface",
+    "contraste": 7.07,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "prisma",
+    "par": "muted/wash",
+    "contraste": 5.79,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "prisma",
+    "par": "muted/bar",
+    "contraste": 9.07,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "prisma",
+    "par": "on-accent/accent",
+    "contraste": 8.15,
+    "minimo": 4.5,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "prisma",
+    "par": "input-border/surface",
+    "contraste": 4.46,
+    "minimo": 3,
+    "resultado": "PASS"
+  },
+  {
+    "concepto": "prisma",
+    "par": "focus/bg",
+    "contraste": 10.18,
+    "minimo": 3,
+    "resultado": "PASS"
+  }
+]

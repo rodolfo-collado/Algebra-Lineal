@@ -1,0 +1,157 @@
+*{box-sizing:border-box}
+html{scroll-padding-top:1rem}
+body{margin:0;font-family:var(--ui);background:var(--bg);color:var(--ink);line-height:1.55}
+button,input,select{font:inherit;color:inherit}
+button,a,input,select,summary{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button,a{transition:background-color .14s,color .14s,transform .14s}
+a{color:inherit}
+button,select,summary{cursor:pointer}
+button{min-height:44px;padding:.55rem 1rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+button:hover,a.primary:hover{background:var(--hover)}
+button:disabled{opacity:.5;cursor:default}
+button[aria-pressed=true]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+a:hover{text-decoration-thickness:2px}
+h1,h2,h3,p{margin-top:0}
+h1{font-family:var(--display);font-weight:var(--weight,700);letter-spacing:-.045em;line-height:1.07;text-wrap:balance}
+h2{font-size:1.15rem;line-height:1.3}
+p{max-width:65ch}
+small,.help{font-size:.83rem}
+small{display:block;color:var(--muted)}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--focus);outline-offset:5px}
+h1:focus,h2:focus,main:focus{outline:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip{position:fixed;top:-80px;left:1rem;z-index:10;padding:1rem;background:var(--ink);color:var(--bg)}
+.skip:focus{top:1rem}
+.study-bar{display:flex;gap:1rem;justify-content:space-between;padding:.45rem clamp(1rem,4vw,4rem);font-size:.75rem;background:var(--bar);color:var(--muted);border-bottom:1px solid var(--line)}
+.study-bar a{font-weight:650}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:1.5rem;padding:1.15rem clamp(1rem,4vw,4rem)}
+.brand{display:flex;align-items:center;gap:.7rem;font-weight:750;font-size:1.4rem;text-decoration:none;letter-spacing:-.04em}
+.mark{width:39px;height:39px;color:var(--logo)}
+.topbar nav{display:flex;align-items:center;gap:1.8rem;font-size:.9rem}
+.topbar nav a{padding:.5rem 0;text-decoration:none}
+.topbar nav a[aria-current=page]{text-decoration:underline;text-underline-offset:6px}
+.topbar button{font-size:.8rem}
+.screen{max-width:1440px;margin:auto;padding:2.2rem clamp(1rem,5vw,5rem) 2rem;animation:arrive .22s ease-out}
+.welcome{min-height:calc(100svh - 120px);display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:2rem}
+.welcome h1{font-size:clamp(3.5rem,6.5vw,6.7rem);margin-bottom:1.5rem}
+.lead{font-size:1.12rem;color:var(--muted);line-height:1.65}
+.welcome .lead{max-width:35ch}
+.primary{display:inline-flex;justify-content:center;align-items:center;min-height:48px;padding:.85rem 1.5rem;border-radius:var(--radius);background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);font-weight:650;text-decoration:none}
+.welcome .primary{margin-top:1.2rem}
+.welcome-note{margin:1.4rem 0 0;font-size:.82rem;color:var(--muted)}
+.welcome-footer{display:flex;justify-content:space-between;gap:1rem;grid-column:1/-1;align-self:end;color:var(--muted);font-size:.8rem;padding-top:1rem}
+.matrix{display:grid;grid-template-columns:repeat(2,minmax(2ch,1fr));column-gap:1.5rem;row-gap:.3rem;padding:.5rem 1rem;border-inline:2px solid currentColor;font-family:var(--math);font-variant-numeric:tabular-nums;line-height:1.6;text-align:center;max-width:100%;width:max-content}
+.matrix>span{padding:.15rem .25rem}
+.menu-heading h1{font-size:clamp(2.5rem,4.5vw,4.7rem);max-width:18ch;margin-bottom:1rem}
+.menu-heading .lead{margin-bottom:1.5rem}
+#search-form{max-width:510px;margin-bottom:2rem}
+label{display:block;font-size:.85rem;font-weight:650;margin-bottom:.4rem}
+.search-line{display:flex;gap:.5rem}
+input,select{min-height:44px;border:1px solid var(--input-border);border-radius:var(--radius);background:var(--surface);padding:.6rem .8rem;min-width:0;max-width:100%}
+.search-line input{flex:1}
+.areas{margin-top:1.5rem}
+.area-card{text-decoration:none;position:relative;min-width:0}
+.area-card h2{font-size:1.45rem;margin-bottom:.4rem}
+.area-card p{color:var(--muted);margin-bottom:.65rem}
+.area-card:hover{background:var(--hover)}
+.area-art{font-family:var(--math);line-height:1.2;display:block}
+.area-open{position:absolute;right:1.4rem;bottom:1.2rem;font-size:1.3rem}
+.upcoming{display:flex;gap:1rem;align-items:center;color:var(--muted);font-size:.9rem;padding:1rem 0}
+.upcoming>span{font-family:var(--math);font-size:2rem}
+.area-detail{padding:1.5rem 0}
+.area-detail h2{font-size:1.4rem}
+.tool-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+.tool-list li>a,.tool-list li>span{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1rem;border:1px solid var(--line);min-height:70px;border-radius:var(--radius)}
+.tool-list li>a{background:var(--surface);font-weight:650}
+.tool-list a span{font-size:.75rem;font-weight:400}
+.tool-list li>span{color:var(--muted)}
+.tool-list small{font-size:.7rem}
+.menu-foot,.prototype-note{font-size:.78rem;color:var(--muted);margin-top:1.5rem;max-width:90ch}
+.breadcrumbs{display:flex;flex-wrap:wrap;gap:.7rem;font-size:.8rem;color:var(--muted);margin-bottom:1.6rem}
+.tool-heading{display:flex;align-items:start;justify-content:space-between;gap:1rem;margin-bottom:2rem}
+.tool-heading h1{font-size:clamp(2rem,3.4vw,3.3rem);margin-bottom:.6rem}
+.tool-heading .lead{font-size:1rem;margin:0}
+.demo-label{font-size:.75rem;border:1px solid var(--line);padding:.4rem .6rem;border-radius:var(--radius);flex-shrink:0}
+.workbench{display:grid;gap:1.5rem}
+.workbench>section{min-width:0}
+.operands{display:flex;gap:1.4rem;margin:1.5rem 0;flex-wrap:wrap}
+.operand{border:0;margin:0;padding:0;min-width:0}
+.operand legend{font-family:var(--math);font-size:1.3rem;margin-bottom:.6rem}
+.operand legend small{display:inline;font-family:var(--ui);margin-left:1rem;font-size:.75rem}
+.input-matrix{display:grid;grid-template-columns:repeat(2,54px);gap:.3rem;border-inline:2px solid var(--ink);padding:.3rem .55rem}
+.input-matrix input{width:54px;min-height:43px;text-align:center;padding:.4rem .15rem;font-family:var(--math);font-size:.95rem;border:1px solid var(--input-border);border-radius:4px;font-variant-numeric:tabular-nums}
+.expression{margin-bottom:1.2rem}
+.expression input{width:100%;font-family:var(--math);font-size:1.5rem}
+.input-panel select{width:100%}
+.help{color:var(--muted);margin-top:.7rem}
+.help-details{margin-top:1.5rem;color:var(--muted);font-size:.8rem}
+.help-details summary{min-height:44px;padding:.5rem 0}
+.help-details p{margin-top:.7rem}
+#reason-empty{padding:2rem 0;color:var(--muted)}
+.empty-symbol{font-family:var(--math);font-size:3rem;color:var(--ink);display:block;margin-bottom:1rem}
+.step-track{list-style:none;display:flex;gap:.6rem;padding:0;margin:1.7rem 0 1.2rem}
+.step-track button{border-radius:50%;width:44px;padding:.5rem}
+.step-track [aria-current=step]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.step-view{padding:1.3rem;border-radius:var(--radius);background:var(--wash);min-height:210px}
+#step-location{font-size:.8rem;color:var(--muted);margin-bottom:.5rem}
+.equation{font-family:var(--math);font-size:clamp(1.1rem,2vw,1.9rem);color:var(--ink);line-height:1.5;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin-bottom:.6rem}
+#step-explanation{font-size:.9rem;margin:0;color:var(--muted)}
+.step-actions{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:1rem 0;font-size:.85rem}
+.step-actions button{font-size:.85rem}
+.step-actions span{white-space:nowrap}
+#all-steps{margin-top:1rem;font-size:.85rem}
+#all-steps summary{min-height:44px;padding:.55rem 0}
+#all-equations{font-family:var(--math);padding-left:1.2rem;line-height:2}
+#result-matrix{font-size:1.8rem;padding:1.4rem 0}
+.selected-cell{background:var(--accent);color:var(--on-accent);border-radius:4px;outline:1px solid var(--ink)}
+.format-options{display:flex;gap:.4rem}
+.format-options button{font-size:.8rem;padding:.5rem .7rem}
+.result-caption{font-size:.8rem;color:var(--muted)}
+.result-panel h2{margin-bottom:1.4rem}
+.art-caption{font-size:.8rem;color:var(--muted)}
+.primary:hover,a.primary:hover,button[aria-pressed=true]:hover,.step-track [aria-current=step]:hover{background:var(--ink);color:var(--bg)}
+.matrix,.input-matrix{position:relative}
+.matrix::before,.matrix::after,.input-matrix::before,.input-matrix::after{content:'';position:absolute;top:0;bottom:0;width:.4rem;border-block:2px solid currentColor;pointer-events:none}
+.matrix::before,.input-matrix::before{left:0}
+.matrix::after,.input-matrix::after{right:0}
+.skip{position:absolute;top:0;transform:translateY(-150%)}
+.skip:focus{transform:none}
+@keyframes arrive{from{transform:translateY(6px)}
+to{transform:translateY(0)}
+}
+@media(max-width:950px){.tool-heading{flex-direction:column}
+.tool-list{grid-template-columns:1fr}
+.welcome h1{font-size:clamp(3rem,7vw,4.7rem)}
+.topbar nav{gap:1rem}
+}
+@media(max-width:650px){.study-bar{font-size:.65rem}
+.study-bar>span:last-child{display:none}
+.topbar{flex-wrap:wrap;gap:.5rem}
+.brand{font-size:1.15rem}
+.brand .mark{width:30px;height:30px}
+.topbar nav{gap:.9rem;flex-wrap:wrap;font-size:.8rem}
+.topbar button{font-size:.7rem;padding:.4rem .65rem}
+.screen{padding-top:1.3rem}
+.welcome{grid-template-columns:1fr;gap:1.5rem;min-height:auto}
+.welcome h1{font-size:3.3rem}
+.welcome .lead{font-size:1rem}
+.welcome-footer{font-size:.7rem}
+.area-card h2{font-size:1.3rem}
+.tool-heading h1{font-size:2.15rem}
+.lead{font-size:1rem}
+.operands{gap:1rem}
+.tool-list li>a,.tool-list li>span{flex-direction:column;align-items:start;gap:.3rem}
+.demo-label{font-size:.7rem}
+.menu-heading h1{font-size:2.75rem}
+.matrix{column-gap:1rem}
+.step-view{min-height:auto}
+.step-actions button{padding:.5rem .7rem}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+@media(forced-colors:active){button,.primary,.area-card,.input-matrix input{border:1px solid ButtonText}
+.selected-cell,.step-track [aria-current=step],button[aria-pressed=true]{outline:3px solid Highlight}
+.mark{color:CanvasText}
+.prisma-art{color:CanvasText}
+}
