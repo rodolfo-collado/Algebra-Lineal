@@ -125,6 +125,17 @@
     font-size: 0.8rem;
 }
 
+.opciones-accion {
+    width: 100%;
+}
+
+.opciones-ayuda {
+    margin: 0;
+    padding-inline: 0.75rem;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+}
+
 .volumen {
     display: grid;
     grid-template-columns: auto 1fr;

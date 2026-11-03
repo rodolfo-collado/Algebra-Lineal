@@ -11,10 +11,16 @@
         <label class="opcion"><input type="radio" name="estilo" value="minimalista"> <span><b>Minimalista</b><small>Solo lo esencial, sin ilustraciones</small></span></label>
     </fieldset>
     <fieldset class="opciones-grupo">
-        <legend>Sonido</legend>
-        <label class="opcion"><input type="radio" name="sonido" value="off"> <span><b>Silencio</b><small>Todo funciona igual sin audio</small></span></label>
-        <label class="opcion"><input type="radio" name="sonido" value="on"> <span><b>Efectos</b><small>Notas breves al navegar y explorar</small></span></label>
+        <legend>Efectos de sonido</legend>
+        <label class="opcion"><input type="radio" name="sonido" value="off"> <span><b>Sin efectos</b><small>Todo funciona igual sin audio</small></span></label>
+        <label class="opcion"><input type="radio" name="sonido" value="on"> <span><b>Con efectos</b><small>Notas breves al navegar y explorar</small></span></label>
         <label class="volumen"><span>Volumen</span><input type="range" id="volumen" name="volumen" min="10" max="100" step="10" value="50"></label>
+    </fieldset>
+    <fieldset class="opciones-grupo" id="musica-grupo" hidden>
+        <legend>Música ambiental</legend>
+        <button type="button" class="btn btn-secondary opciones-accion" id="musica-toggle">Reproducir música</button>
+        <label class="volumen"><span>Volumen</span><input type="range" id="musica-volumen" name="musica-volumen" min="10" max="100" step="10" value="40"></label>
+        <p class="opciones-ayuda">Instrumental, suave y original de PyGebra. Se genera en tu equipo y cada visita empieza en silencio.</p>
     </fieldset>
     <p class="opciones-nota">El tema claro u oscuro se cambia con el botón Tema.</p>
 </div>

@@ -14,6 +14,7 @@ window.Sonido = (() => {
     let activo = preferencias.leer("pygebra-sonido") === "on";
     let volumen = Number(preferencias.leer("pygebra-volumen") || 50) / 100;
 
+    // También lo usa la música: un solo contexto de audio por página.
     function preparar() {
         if (!ctx) {
             const AC = window.AudioContext || window.webkitAudioContext;
@@ -138,6 +139,7 @@ window.Sonido = (() => {
 
     return {
         tocar,
+        contexto: () => (preparar() ? ctx : null),
         configurar(opciones) {
             if ("activo" in opciones) activo = opciones.activo;
             if ("volumen" in opciones) volumen = opciones.volumen;

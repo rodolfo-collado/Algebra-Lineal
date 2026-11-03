@@ -206,6 +206,25 @@ class PruebasEstiloYSonido(SimpleTestCase):
         html = self.client.get("/").content.decode("utf-8")
         self.assertRegex(html, r'id="opciones-toggle" popovertarget="opciones" hidden')
 
+    def test_la_musica_es_voluntaria_local_e_independiente_de_los_efectos(self):
+        musica = (STATIC / "musica.js").read_text(encoding="utf-8")
+        for ausente in ("fetch(", "new Audio(", ".mp3", ".wav", ".ogg", "http", "localStorage"):
+            self.assertNotIn(ausente, musica)
+        # Cada visita empieza en silencio: encendida solo durante la sesión, nunca como preferencia.
+        self.assertIn('sessionStorage.getItem(SESION) === "on"', musica)
+        self.assertIn("let deseada = false", musica)
+        self.assertNotIn("pygebra-musica", set(preferencias.VALORES))
+        self.assertEqual(preferencias.VALORES["pygebra-musica-volumen"], preferencias.VALORES["pygebra-volumen"])
+        # Calla con la ventana oculta y no gasta en silencio.
+        for contrato in ('"visibilitychange"', "document.hidden", "c.suspend()"):
+            self.assertIn(contrato, musica)
+        html = self.client.get("/").content.decode("utf-8")
+        self.assertRegex(html, r'<fieldset class="opciones-grupo" id="musica-grupo" hidden>')
+        self.assertIn('id="musica-toggle">Reproducir música</button>', html)
+        self.assertIn('id="musica-volumen"', html)
+        self.assertLess(html.index("calculadora/sonido.js"), html.index("calculadora/musica.js"))
+        self.assertLess(html.index("calculadora/musica.js"), html.index("calculadora/opciones.js"))
+
     def test_la_escena_es_decorativa_y_sus_ids_no_chocan(self):
         for ruta in ("/", "/areas/algebra-lineal/", catalogo.BISECCION.ruta):
             with self.subTest(ruta=ruta):

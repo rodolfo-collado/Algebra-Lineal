@@ -27,6 +27,8 @@ VALORES = {
     "pygebra-estilo": ("estudio", "minimalista"),
     "pygebra-sonido": ("off", "on"),
     "pygebra-volumen": tuple(str(nivel) for nivel in range(10, 101, 10)),
+    # Solo el volumen: la música no se recuerda encendida, cada visita empieza en silencio.
+    "pygebra-musica-volumen": tuple(str(nivel) for nivel in range(10, 101, 10)),
 }
 
 

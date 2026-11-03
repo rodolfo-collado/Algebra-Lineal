@@ -39,7 +39,7 @@
     const casos = [
         ["Escritorio: Alt+←/→ recorren GET y POST sin barra de navegador ni reenvío", "/", {}, async (w, frame) => {
             igual(w.document.documentElement.hasAttribute("data-desktop"), true);
-            igual(todos(w, ".app-header button").map(b => b.id), ["historial-atras", "historial-adelante", "navigation-toggle", "theme-toggle", "opciones-toggle"]);
+            igual(todos(w, ".app-header button").map(b => b.id), ["historial-atras", "historial-adelante", "navigation-toggle", "theme-toggle", "opciones-toggle", "musica-toggle"]);
             w = await navegar(frame, () => { w.location.href = "/matrices/reduccion/"; });
             w = await calcular(frame);
             igual(Boolean(q(w, "#resultado")), true);
@@ -78,7 +78,7 @@
             const menu = new w.MouseEvent("contextmenu", { bubbles: true, cancelable: true });
             q(w, '[name="sistema"]').dispatchEvent(menu);
             igual(menu.defaultPrevented, false);
-            igual(todos(w, ".app-header button").map(b => b.id), ["historial-atras", "historial-adelante", "navigation-toggle", "theme-toggle", "opciones-toggle"]);
+            igual(todos(w, ".app-header button").map(b => b.id), ["historial-atras", "historial-adelante", "navigation-toggle", "theme-toggle", "opciones-toggle", "musica-toggle"]);
         }],
         ["pageshow restaurado: cajón cerrado, main usable y foco fuera del cajón", "/matrices/inversa/", {}, async w => {
             q(w, "#navigation-toggle").click(); await turno(w);

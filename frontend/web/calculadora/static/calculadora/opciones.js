@@ -9,6 +9,8 @@
     if (!boton || !panel) return;
     const preferencias = window.preferencias;
     const volumen = panel.querySelector("#volumen");
+    const musica = panel.querySelector("#musica-toggle");
+    const volumenMusica = panel.querySelector("#musica-volumen");
 
     function sincronizar() {
         const actuales = {
@@ -20,10 +22,24 @@
         });
         volumen.value = preferencias.leer("pygebra-volumen") || 50;
         volumen.disabled = actuales.sonido !== "on";
+        musica.textContent = window.Musica.pedida() ? "Pausar música" : "Reproducir música";
+        volumenMusica.value = preferencias.leer("pygebra-musica-volumen") || 40;
     }
+
+    panel.querySelector("#musica-grupo").hidden = !window.Musica.disponible;
+    musica.addEventListener("click", () => {
+        window.Musica.alternar();
+        sincronizar();
+    });
+    // El volumen de la música se oye al arrastrar y se guarda al soltar.
+    volumenMusica.addEventListener("input", () => window.Musica.volumen(Number(volumenMusica.value)));
 
     panel.addEventListener("change", (event) => {
         const { name, value } = event.target;
+        if (name === "musica-volumen") {
+            preferencias.guardar("pygebra-musica-volumen", value);
+            return;
+        }
         if (name === "volumen") {
             preferencias.guardar("pygebra-volumen", value);
             window.Sonido.configurar({ volumen: value / 100 });
@@ -53,6 +69,7 @@
             activo: preferencias.leer("pygebra-sonido") === "on",
             volumen: Number(preferencias.leer("pygebra-volumen") || 50) / 100,
         });
+        sincronizar();
     });
 
     sincronizar();

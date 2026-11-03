@@ -23,6 +23,9 @@ Tab, flechas, panel y nada guardado). Revisión manual: recorrer Inicio → áre
 herramienta → Atrás → Adelante en Estudio y Minimalista, de día y de noche, a
 1440 × 900, 900 × 600 y 390 × 844; activar Efectos en Opciones y escuchar
 seleccionar, entrar, volver, calcular y un error; repetir con movimiento reducido.
+La música se comprueba en `tests.buscador_browser` (apagada al empezar, se pausa,
+volumen aparte y un ensayo con `OfflineAudioContext` que confirma que suena, no
+satura y un mismo periodo siempre suena igual); juzgarla, solo de oído: Reproducir música y navegar un rato.
 
 Bisección: `uv run --locked python -m unittest tests.test_biseccion
 tests.test_biseccion_web tests.test_biseccion_assets` cubre los tres intervalos del

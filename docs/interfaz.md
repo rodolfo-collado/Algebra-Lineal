@@ -309,6 +309,16 @@ interfaz: Minimalista usa exactamente la misma estructura sin ilustraciones.
   página de PyGebra suena entrar, volver o el desenlace del cálculo; nunca al
   recargar. Si el navegador aún no permite sonar, el efecto se descarta en vez de
   sonar tarde.
+- **Música ambiental** (`musica.js`): pieza original e instrumental sintetizada con
+  el contexto de audio de los efectos: acordes lentos de Re mayor, un filtro que
+  respira, eco corto y frases sueltas de la misma «madera tibia»; el reparto de
+  frases deja bloques casi sin melodía. Apagada al empezar cada visita: encenderla
+  dura la sesión (`sessionStorage`), nunca se recuerda entre aperturas, para que la
+  app no suene por sorpresa, por ejemplo en clase. Reproducir o pausar y su volumen
+  (`pygebra-musica-volumen`) viven en Opciones, aparte de los efectos, y no dependen
+  del estilo. Sin archivos ni red; la posición se deriva del reloj, así que al cambiar
+  de página sigue por donde iba tras bajar y volver en 1,5 s (cada página es un
+  documento nuevo). Con la ventana oculta calla y suspende el contexto.
 - Las ilustraciones son originales: sin personajes, logotipos ni diseños
   reconocibles de terceros.
 
@@ -912,7 +922,7 @@ comportamiento de su navegador.
   y formato numérico (secciones anteriores).
 - **Preferencias.** Entre aperturas solo se conservan `pygebra-tema`,
   `pygebra-formato-numerico`, `pygebra-precision-decimal`, `pygebra-estilo`,
-  `pygebra-sonido` y `pygebra-volumen`. WebView2 corre en
+  `pygebra-sonido`, `pygebra-volumen` y `pygebra-musica-volumen`. WebView2 corre en
   modo privado y Django las guarda en `%LOCALAPPDATA%\PyGebra\preferencias.json`
   (`POST /preferencias/` con CSRF, lista blanca de claves y valores, escritura
   atómica) y las pinta como `data-pygebra-…` en `<html>`. Durante la ejecución
