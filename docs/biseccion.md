@@ -12,7 +12,17 @@ Escribe `f(x)`, el extremo inferior `a` y el superior `b`, y pulsa **Resolver po
 bisección**. Función y extremos empiezan vacíos; los ajustes conservan sus valores
 predeterminados. Al enfocar la función aparece el teclado contextual de PyGebra:
 x, x², x³, exponente general, paréntesis, operaciones, seno, coseno, raíz y logaritmo.
-Las teclas muestran símbolos pero insertan sintaxis del parser; también puedes
+Las teclas x² y x³ conservan esos superíndices en el campo, igual que Aᵀ conserva
+la traspuesta en matrices. La tecla aⁿ pide un entero (por ejemplo, 12 o -3) e
+inserta ¹² o ⁻³ en la posición del cursor; puedes aplicarlo después de x o de un
+paréntesis cerrado. Cancelar no modifica la entrada. Los dígitos elevados son
+caracteres normales del campo: se pueden seleccionar, borrar y deshacer.
+Se admiten x², x³, (x+1)² y potencias enteras de varias cifras. La normalización
+del parser produce las mismas operaciones que ^ o **, sin ejecutar código.
+No se añade un editor enriquecido ni un modo que convierta automáticamente lo
+escrito: para exponentes fraccionarios o expresiones usa ^ o ** con paréntesis.
+Escribe sin(x)² para elevar el resultado del seno; sin²(x) no se admite.
+También puedes
 escribir con el teclado físico. La gráfica se actualiza al
 editar estos campos; desplazarla o cambiar el zoom solicita nuevas muestras al
 servidor local, sin resolver de nuevo. Sin los tres campos no se dibuja ninguna

@@ -121,7 +121,8 @@ sin Internet. La curva muestreada ayuda a explorar; no demuestra todas las raíc
 ## 6. Mi demostración y preguntas posibles
 
 1. Empezar con los campos vacíos. Escribir la función y el intervalo del ejemplo;
-   al enfocar f(x), mostrar el teclado contextual (x² inserta x^2). Resolver y señalar las 13 iteraciones.
+   al enfocar f(x), mostrar el teclado contextual (x² inserta x² y aⁿ pide un entero).
+   Resolver y señalar las 13 iteraciones.
 2. Abrir el procedimiento y recorrer los tres primeros pasos; mover el deslizador.
 3. Arrastrar un extremo y explicar el aviso de resultado anterior.
 4. Resolver `[5,5.5]` y después `[5.2,5.3]`: requieren 13 y 10 pasos.
