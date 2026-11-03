@@ -1,6 +1,7 @@
 """Expresiones reales acotadas: interpretación AST, sin ejecutar código del usuario."""
 
 import ast
+from decimal import Decimal
 import math
 import operator
 
@@ -32,11 +33,12 @@ class FuncionReal:
             raise ValueError("Escribe una función de x de hasta 512 caracteres.")
         self.texto = texto.strip()
         try:
-            self.arbol = ast.parse(self.texto.replace("^", "**"), mode="eval").body
+            self.expresion = self.texto.replace("^", "**")
+            self.arbol = ast.parse(self.expresion, mode="eval").body
             if len(list(ast.walk(self.arbol))) > 160:
                 raise ValueError("La función tiene demasiadas operaciones.")
             self._validar(self.arbol, 0)
-        except (SyntaxError, RecursionError, OverflowError) as error:
+        except (SyntaxError, RecursionError, ArithmeticError) as error:
             raise ValueError("Función no válida. Usa x, números, *, /, ^ y funciones admitidas.") from error
         self.clave = ast.dump(self.arbol)
 
@@ -45,6 +47,8 @@ class FuncionReal:
             raise ValueError("La función tiene demasiados niveles de paréntesis u operaciones.")
         if isinstance(nodo, ast.Constant) and type(nodo.value) in (int, float):
             finito(nodo.value)
+            if type(nodo.value) is float and nodo.value == 0 and Decimal(ast.get_source_segment(self.expresion, nodo)) != 0:
+                raise ValueError("Subdesbordamiento: una constante se redondeó a cero.")
         elif isinstance(nodo, ast.Name) and nodo.id in {"x", *CONSTANTES}:
             return
         elif isinstance(nodo, ast.UnaryOp) and isinstance(nodo.op, (ast.UAdd, ast.USub)):
@@ -110,8 +114,11 @@ class FuncionReal:
                 return -1., 1.
             if nombre == "abs":
                 return (0. if a <= 0 <= b else min(abs(a), abs(b)), max(abs(a), abs(b)))
-            if nombre == "tan" and math.floor((a + math.pi/2)/math.pi) != math.floor((b + math.pi/2)/math.pi):
-                raise ValueError("tan(x) cruza una asíntota.")
+            if nombre == "tan":
+                primera = math.ceil(math.nextafter((a - math.pi/2)/math.pi, -math.inf))
+                ultima = math.floor(math.nextafter((b - math.pi/2)/math.pi, math.inf))
+                if primera <= ultima:
+                    raise ValueError("tan(x) cruza una asíntota.")
             if nombre in ("log", "ln", "log10") and a <= 0:
                 raise ValueError("El argumento del logaritmo debe ser positivo.")
             if nombre == "sqrt" and a < 0:

@@ -48,7 +48,8 @@ class BiseccionTests(unittest.TestCase):
 
     def test_dominio_y_discontinuidad_no_son_raices(self):
         for texto, a, b in [("1/x", -1, 1), ("1/(x-0.3)", 0, 1),
-                            ("tan(x)", 1, 2), ("log(x)", -1, 2), ("sqrt(x)", -1, 1)]:
+                            ("tan(x)", 1, 2), ("tan(x)", math.pi/2, 2),
+                            ("tan(x)", -2, -math.pi/2), ("log(x)", -1, 2), ("sqrt(x)", -1, 1)]:
             with self.subTest(texto=texto), self.assertRaises(ValueError):
                 biseccion(FuncionReal(texto), a, b)
 
@@ -77,6 +78,12 @@ class BiseccionTests(unittest.TestCase):
         r = biseccion(FuncionReal("x-.0001234567"), 0, .0002)
         self.assertEqual(len(r["iteraciones"]), 2)
 
+    def test_error_relativo_no_definido_cuando_una_aproximacion_es_cero(self):
+        r = biseccion(FuncionReal("x+.2"), -1, 3)
+        self.assertEqual(r["iteraciones"][1]["c"], 0)
+        self.assertIsNone(r["iteraciones"][1]["error_relativo"])
+        self.assertTrue(r["convergio"])
+
 
 class FuncionesRealesTests(unittest.TestCase):
     def test_sintaxis_matematica_y_funciones_permitidas(self):
@@ -88,7 +95,7 @@ class FuncionesRealesTests(unittest.TestCase):
 
     def test_rechaza_codigo_y_sintaxis_ajena(self):
         for texto in ["__import__('os')", "x.__class__", "[x][0]", "lambda: 1", "x if x else 0",
-                      "sum([1])", "sin(x,1)", "sin(x=1)", "True", "y+1", "x%2", "2x", "", "1e999"]:
+                      "sum([1])", "sin(x,1)", "sin(x=1)", "True", "y+1", "x%2", "2x", "", "1e999", "x+1e-400", "0e"+"9"*100]:
             with self.subTest(texto=texto), self.assertRaises(ValueError):
                 FuncionReal(texto)
 
