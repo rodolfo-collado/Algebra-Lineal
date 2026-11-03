@@ -116,6 +116,22 @@
                 tecla('/').click(); igual([b.value, b.selectionStart, d.activeElement === b], ['1/4', 2, true]);
             }
         }],
+        ["WebView2: la barra enfoca el contenedor exterior y conserva la edición", async ({d, b, teclado, tecla}) => {
+            const contenido = d.createElement('main'); contenido.tabIndex = -1; d.body.append(contenido);
+            d.getElementById('celdas').dataset.perfil = 'funcion-real';
+            b.value = 'x+3'; b.focus(); b.setSelectionRange(1, 1);
+            teclado.querySelector('[data-exponente-entero]').click();
+            const grupos = teclado.querySelector('.math-keyboard-groups');
+            grupos.dispatchEvent(new d.defaultView.PointerEvent('pointerdown', {bubbles: true}));
+            grupos.dispatchEvent(new d.defaultView.MouseEvent('mousedown', {bubbles: true}));
+            contenido.focus(); await turno();
+            igual([teclado.hidden, teclado.inert], [false, false]);
+            grupos.dispatchEvent(new d.defaultView.PointerEvent('pointerup', {bubbles: true}));
+            igual([d.activeElement === b, b.selectionStart], [true, 1]);
+            tecla('2').click(); igual(b.value, 'x²+3');
+            d.execCommand('undo'); igual(b.value, 'x+3');
+            contenido.focus(); await turno(); igual(teclado.hidden, true);
+        }],
         ["Rueda vertical recorre grupos y deja la página libre en el borde", ({d, b, teclado}) => {
             d.getElementById('celdas').dataset.perfil = 'base-16'; b.focus();
             const grupos = teclado.querySelector('.math-keyboard-groups');

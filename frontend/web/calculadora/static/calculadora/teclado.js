@@ -171,7 +171,8 @@
 
         // Delegación: los campos nuevos heredan el perfil de su contenedor.
         document.addEventListener("focusin", (event) => {
-            if (teclado.contains(event.target) || enMenuEdicion(event.target)) return;
+            // WebView2 puede enfocar un contenedor exterior al arrastrar la barra del dock.
+            if (interaccionTeclado || teclado.contains(event.target) || enMenuEdicion(event.target)) return;
             if (event.target !== objetivo) activarSuperindice(false);
             objetivo = esValido(event.target) ? event.target : null;
             sincronizar();
@@ -203,8 +204,7 @@
         function terminarInteraccion() {
             if (!interaccionTeclado) return;
             interaccionTeclado = false;
-            if (esValido(objetivo) && (document.activeElement === document.body
-                || teclado.contains(document.activeElement))) objetivo.focus({ preventScroll: true });
+            if (esValido(objetivo) && document.activeElement !== objetivo) objetivo.focus({ preventScroll: true });
             sincronizar();
         }
         document.addEventListener("pointerup", terminarInteraccion);
