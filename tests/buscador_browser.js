@@ -19,11 +19,13 @@
     const ids = w => todos(w, "#catalogo-inicio [data-herramienta]:not([hidden])")
         .filter(n => n.getClientRects().length).map(n => n.dataset.herramienta);
     const menu = w => q(w, "#navigation-toggle").click();
+    // El universo es el catálogo publicado por Django, no un número fijo de herramientas.
+    const universo = w => JSON.parse(q(w, "#datos-buscador").textContent).herramientas.length;
     const escape = w => q(w, "#buscador-lateral").dispatchEvent(new w.KeyboardEvent(
         "keydown", { key: "Escape", bubbles: true, cancelable: true }));
     const casos = [
         ["GET tiene todo el universo, solo Gauss visible y un recuento estático", "/?q=gauss", w => {
-            igual(todos(w, "#catalogo-inicio [data-herramienta]").length, 9);
+            igual(todos(w, "#catalogo-inicio [data-herramienta]").length, universo(w));
             igual(ids(w), ["reduccion-filas"]);
             igual(q(w, "[data-busqueda-servidor]").hidden, false);
             todos(w, ".search-status").forEach(n => igual(n.textContent, ""));
@@ -36,7 +38,7 @@
                 valor(w, texto); igual(ids(w), esperado);
                 igual(w.document, documento); igual(w.location.search, "?q=gauss");
                 igual(q(w, "[data-busqueda-servidor]").hidden, true);
-                igual(todos(w, "#catalogo-inicio [data-herramienta]").length, 9);
+                igual(todos(w, "#catalogo-inicio [data-herramienta]").length, universo(w));
             }
             igual(q(w, '#catalogo-inicio [data-herramienta="limites-funciones"] .badge').textContent, "Próximamente");
         }],
@@ -48,7 +50,7 @@
             valor(w, " gauss"); igual(q(w, "[data-busqueda-servidor]").hidden, true);
         }],
         ["Limpiar GET y volver a buscar no limita el universo", "/?q=gauss", w => {
-            valor(w, ""); igual(ids(w).length, 9);
+            valor(w, ""); igual(ids(w).length, universo(w));
             valor(w, "invertir matriz"); igual(ids(w), ["matriz-inversa"]);
         }],
         ["GET vacío sin heading huérfano tiene sugerencias funcionales", "/?q=zzz", async (w, frame) => {
@@ -85,13 +87,16 @@
             const input = q(w, "#buscador-inicio"); input.focus();
             valor(w, "inversa"); igual(w.document.activeElement, input);
         }],
-        ["Inicio conserva mismas filas y grupos al buscar y limpiar", "/", w => {
+        ["Inicio conserva mismas filas y canales al buscar y limpiar", "/", w => {
             const filas = todos(w, "#catalogo-inicio [data-herramienta]");
-            q(w, "#algebra-lineal").open = true; q(w, "#matrices").open = true;
             valor(w, "límites"); igual(ids(w), ["limites-funciones"]);
-            valor(w, ""); igual(q(w, "#matrices").open, true);
-            igual(q(w, "#algebra-lineal").open, true); igual(q(w, "#calculo").hidden, true);
-            todos(w, "#catalogo-inicio [data-herramienta]").forEach((n, i) => igual(n, filas[i]));
+            igual(todos(w, "#catalogo-inicio .canal").every(c => c.hidden), true);
+            valor(w, ""); igual(ids(w), []);
+            igual(todos(w, "#catalogo-inicio .canal").some(c => c.hidden), false);
+            igual(q(w, "#calculo").classList.contains("es-pronto"), true);
+            todos(w, "#catalogo-inicio [data-herramienta]").forEach((n, i) => {
+                igual(n, filas[i]); igual(n.closest(".canal-herramientas").hidden, true);
+            });
         }],
         ["Menú: Cálculo próximo, límites abre área y categoría", "/", w => {
             menu(w); valor(w, "límites", true);
@@ -124,20 +129,19 @@
             igual(todos(w, "#arbol-herramientas details").map(n => n.open), abiertos);
             igual(w.sessionStorage.getItem("algebra-lineal-menu-secciones"), memoria);
         }],
-        ["Explorar por temas: cerrar un área reinicia sus temas y no toca las demás", "/", async w => {
-            const area = q(w, "#algebra-lineal"); const otra = q(w, "#sistemas-numericos");
-            const matrices = q(w, "#matrices"); const vectores = q(w, "#vectores"); const bases = q(w, "#bases-numericas");
+        ["Explorador del área: una parada de Tab, flechas y panel sin guardar nada", "/areas/algebra-lineal/", w => {
+            const items = todos(w, "a.indice-item");
             const claves = Object.keys(w.localStorage).sort();
-            // Vectores tiene una sola herramienta y aun así llega cerrado.
-            igual(todos(w, "#catalogo-inicio details.topic").some(t => t.open), false);
-            for (let vuelta = 0; vuelta < 3; vuelta++) {
-                area.open = true; otra.open = true; await turno(w);
-                matrices.open = true; vectores.open = true; bases.open = true; await turno(w);
-                area.open = false; await turno(w);
-                area.open = true; await turno(w);
-                igual([matrices.open, vectores.open], [false, false]);
-                igual([otra.open, bases.open], [true, true]);
-            }
+            const tecla = key => w.document.activeElement.dispatchEvent(new w.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+            const visible = () => todos(w, ".destacado-cuerpo").filter(c => !c.hidden).map(c => c.dataset.id);
+            igual(items.filter(a => a.tabIndex === 0).length, 1);
+            items[0].focus(); tecla("End"); igual(w.document.activeElement, items.at(-1));
+            igual(visible(), ["determinantes"]);
+            tecla("ArrowUp"); igual(visible(), ["matriz-inversa"]);
+            tecla("ArrowRight"); igual(w.document.activeElement.matches(".destacado-abrir"), true);
+            igual(w.document.activeElement.getAttribute("href"), "/matrices/inversa/");
+            tecla("ArrowLeft"); igual(w.document.activeElement, items[4]);
+            igual(items.map(a => a.tabIndex), [-1, -1, -1, -1, 0, -1]);
             igual(Object.keys(w.localStorage).sort(), claves);
         }],
         ["Grupos y herramientas ocultos no se pueden enfocar", "/", w => {
