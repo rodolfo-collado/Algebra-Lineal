@@ -1,19 +1,39 @@
 {% extends "calculadora/base.html" %}
-{% comment %}Estructura común de una herramienta: título, descripción, entrada, resultado, explicación, relacionadas y conexiones para explorar después de resolver. Área y tema ya están en las migas: no se repiten encima del título. Cada bloque es opcional; una herramienta rellena solo los que necesita.{% endcomment %}
+{% comment %}Estructura común de una herramienta: título, descripción, entrada, resultado, explicación, relacionadas y conexiones para explorar después de resolver. Área y tema ya están en las migas: no se repiten encima del título. Cada bloque es opcional; una herramienta rellena solo los que necesita. Alrededor, la mesa de trabajo: herramientas hermanas del área para moverse sin volver al inicio y una nota «Para curiosos» al margen, nunca encima del cálculo.{% endcomment %}
 
 {% block title %}{{ herramienta_actual.nombre }} · PyGebra{% endblock %}
 
 {% block content %}
-    <article class="tool">
-        <header class="tool-header">
-            <h1 class="tool-title">{% block tool_title %}{{ herramienta_actual.nombre }}{% endblock %}</h1>
-            <p class="tool-lead">{% block tool_lead %}{{ herramienta_actual.descripcion }}{% endblock %}</p>
-            {% block tool_context %}{% endblock %}
-        </header>
-        {% block tool_input %}{% endblock %}
-        {% block tool_result %}{% endblock %}
-        {% block tool_explanation %}{% endblock %}
-        {% block tool_related %}{% include "calculadora/components/related_tools.html" %}{% endblock %}
-        {% block tool_explore %}{% include "calculadora/components/explore.html" %}{% endblock %}
-    </article>
+    <div class="mesa{% if herramientas_hermanas %} con-rail{% endif %}{% if herramienta_actual.curiosidad %} con-nota{% endif %}">
+        {% if herramientas_hermanas %}
+            <nav class="rail" aria-label="Herramientas de {{ herramienta_actual.area.nombre }}">
+                {% for categoria, herramientas in herramientas_hermanas %}
+                    <p class="rail-titulo" id="rail-{{ categoria.id }}"><span class="tema-chip" aria-hidden="true">{{ categoria.chip }}</span>{{ categoria.nombre }}</p>
+                    <ul aria-labelledby="rail-{{ categoria.id }}">
+                        {% for herramienta in herramientas %}
+                            <li><a class="rail-enlace" href="{{ herramienta.ruta }}"{% if herramienta == herramienta_actual %} aria-current="page"{% endif %}>{{ herramienta.nombre }}</a></li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+            </nav>
+        {% endif %}
+        <article class="tool">
+            <header class="tool-header">
+                <h1 class="tool-title">{% block tool_title %}{{ herramienta_actual.nombre }}{% endblock %}</h1>
+                <p class="tool-lead">{% block tool_lead %}{{ herramienta_actual.descripcion }}{% endblock %}</p>
+                {% block tool_context %}{% endblock %}
+            </header>
+            {% block tool_input %}{% endblock %}
+            {% block tool_result %}{% endblock %}
+            {% block tool_explanation %}{% endblock %}
+            {% block tool_related %}{% include "calculadora/components/related_tools.html" %}{% endblock %}
+            {% block tool_explore %}{% include "calculadora/components/explore.html" %}{% endblock %}
+        </article>
+        {% if herramienta_actual.curiosidad %}
+            <aside class="nota" aria-labelledby="nota-titulo">
+                <p class="nota-titulo" id="nota-titulo">Para curiosos</p>
+                <p>{{ herramienta_actual.curiosidad }}</p>
+            </aside>
+        {% endif %}
+    </div>
 {% endblock %}

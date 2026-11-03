@@ -212,37 +212,32 @@ class PruebasMenuBajoDemanda(SimpleTestCase):
 
 
 class PruebasInicioPorTemas(SimpleTestCase):
-    def test_el_inicio_presenta_areas_y_temas_plegados(self):
+    def test_el_inicio_presenta_areas_y_cada_area_sus_temas(self):
+        # Estudio: el inicio muestra un canal por área con sus temas; el explorador del área
+        # presenta cada tema con sus herramientas, todos a la vista.
         respuesta = self.client.get("/")
         html = respuesta.content.decode("utf-8")
-        desplegables = Desplegables(html)
-        for categoria in (c for c in catalogo.CATEGORIAS if c.area.disponible):
-            with self.subTest(categoria=categoria.id):
-                tema = desplegables.por_id(categoria.id)
-                self.assertIn("topic", tema["clases"])
-                # Todos los temas nacen plegados, también los de una sola herramienta.
-                self.assertFalse(tema["open"])
-                self.assertIn(categoria.nombre, tema["summary"])
-                self.assertIn(categoria.descripcion, tema["summary"])
-                if not categoria.disponible:
-                    self.assertIn("Próximamente", tema["summary"])
-        abiertos = [c.id for c in catalogo.CATEGORIAS if c.area.disponible and desplegables.por_id(c.id)["open"]]
-        self.assertEqual(abiertos, [])
-        # Todas las áreas disponibles empiezan cerradas, independientemente de su orden.
-        for area in catalogo.AREAS:
-            if area.disponible:
-                grupo = desplegables.por_id(area.id)
-                self.assertFalse(grupo["open"])
-                self.assertIn(area.nombre, grupo["summary"])
-            else:
-                # P27.5 conserva el universo completo para live, ocultando las áreas próximas.
-                self.assertIn("hidden", Documento(respuesta).grupos[area.id])
+        for area, categorias in catalogo.arbol():
+            with self.subTest(area=area.id):
+                canal = html[html.index(f'id="{area.id}" data-grupo'):]
+                canal = canal[:canal.index('class="tool-list canal-herramientas"')]
+                self.assertIn(area.nombre, canal)
+                self.assertIn(area.descripcion, canal)
+                for categoria, _ in categorias:
+                    if categoria.disponible:
+                        self.assertIn(f"<span>{categoria.nombre}</span>", canal)
+                if not area.disponible:
+                    self.assertIn("Próximamente", canal)
+        # En el inicio las herramientas solo esperan al buscador; ninguna lista se despliega.
+        self.assertEqual(html.count('<ul class="tool-list canal-herramientas" hidden>'), len(catalogo.AREAS))
+        self.assertEqual(html.count('<a class="tool-link"'), len(disponibles()))
         # Cada herramienta se descubre dentro de su tema, una sola vez.
         for herramienta in disponibles():
-            inicio_tema = html.index(f'id="{herramienta.categoria.id}"')
-            fin_tema = html.index("</details>", inicio_tema)
-            self.assertIn(f'href="{herramienta.ruta}"', html[inicio_tema:fin_tema])
-        self.assertEqual(html.count('<a class="tool-link"'), len(disponibles()))
+            explorador = self.client.get(herramienta.area.ruta).content.decode("utf-8")
+            tema = explorador[explorador.index(f'aria-labelledby="{herramienta.categoria.id}"'):]
+            tema = tema[:tema.index("</ul>")]
+            self.assertIn(f'href="{herramienta.ruta}"', tema)
+            self.assertEqual(tema.count(f'href="{herramienta.ruta}"'), 1)
 
     def test_el_inicio_es_breve_sin_accesos_duplicados(self):
         respuesta = self.client.get("/")
@@ -255,21 +250,23 @@ class PruebasInicioPorTemas(SimpleTestCase):
         # Un solo buscador principal; el del cajón solo aparece al abrir el menú.
         self.assertEqual(html.count("search-large"), 1)
         self.assertLess(html.index('id="buscador-inicio"'), html.index('id="algebra-lineal"'))
-        # Ningún área ni tema se lista fuera de su lugar: los ids de breadcrumbs siguen existiendo.
+        # Ningún área ni tema se lista fuera de su lugar: los ids de las migas existen en su página.
         ids = Documento(respuesta).ids
-        for elemento in (*catalogo.AREAS, *catalogo.CATEGORIAS):
-            if elemento.disponible:
-                self.assertIn(elemento.id, ids)
+        for area in catalogo.AREAS:
+            self.assertIn(area.id, ids)
+        for categoria in catalogo.CATEGORIAS:
+            if categoria.disponible:
+                self.assertIn(categoria.id, Documento(self.client.get(categoria.area.ruta)).ids)
 
     def test_la_busqueda_del_inicio_sigue_filtrando_los_temas(self):
         html = self.client.get("/").content.decode("utf-8")
-        # buscador.js abre los details con coincidencias y oculta los grupos vacíos: los temas y
-        # «Ver más temas» deben declararse como grupos con sus índices dentro.
-        for id_ in (*(a.id for a in catalogo.AREAS if a.disponible), *(c.id for c in catalogo.CATEGORIAS if c.disponible)):
-            self.assertRegex(html, rf'<details class="[^"]*" id="{id_}" data-grupo[^>]*>')
+        # buscador.js oculta los grupos mientras filtra y lleva sus herramientas a los
+        # resultados: cada canal es un grupo con los índices de sus herramientas dentro.
+        for area in catalogo.AREAS:
+            self.assertRegex(html, rf'<li class="canal[^"]*" id="{area.id}" data-grupo[^>]*>')
         for herramienta in catalogo.HERRAMIENTAS:
             self.assertIn(f'data-indice="{herramienta.indice}"', html)
-        self.assertContains(self.client.get("/", {"q": "binario"}), "Ver todos los temas")
+        self.assertContains(self.client.get("/", {"q": "binario"}), "Ver todas las áreas")
 
 
 class PruebasFormularioProgresivo(SimpleTestCase):

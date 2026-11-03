@@ -1,6 +1,9 @@
-/* Entrada del sistema visual. Orden: tokens → base → shell → components → modules. */
+/* Entrada del sistema visual. Orden: tokens → base → shell → components → modules →
+   navegacion (áreas, explorador y mesa) → estudio (la habitación, solo en ese estilo). */
 @import url("styles/tokens.css");
 @import url("styles/base.css");
 @import url("styles/shell.css");
 @import url("styles/components.css");
 @import url("styles/modules.css");
+@import url("styles/navegacion.css");
+@import url("styles/estudio.css");

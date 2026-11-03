@@ -17,6 +17,7 @@ from django.utils.html import strip_tags
 
 from backend.sistemas import resolver_sistema_gauss_jordan
 from frontend.web.calculadora import catalogo
+from tests.ayudas import elemento_html
 from frontend.web.calculadora.forms import VectoresForm
 from frontend.web.calculadora.opciones_vectores import (
     DIMENSION_MAXIMA,
@@ -97,11 +98,11 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         self.assertIn(RUTA, [a.get("href") for a in documento.enlaces_en("Herramientas")])
         self.assertIn(RUTA, [a.get("href") for _, a in documento.enlaces if a.get("class") == "tool-link"])
         # La categoría ya no se anuncia como próxima.
-        html = inicio.content.decode("utf-8")
-        seccion = html[html.index('id="vectores"'):html.index("</details>", html.index('id="vectores"'))]
+        html = self.client.get("/areas/algebra-lineal/").content.decode("utf-8")
+        seccion = elemento_html(html, html.index('aria-labelledby="vectores"') + 1, "ul")
+        self.assertIn(f'href="{RUTA}"', seccion)
         self.assertNotIn("Próximamente", seccion)
-        self.assertNotIn("topic-upcoming", seccion)
-        self.assertRegex(html, r'<details class="topic" id="vectores"')
+        self.assertRegex(html, r'<p class="indice-tema" id="vectores">')
 
         # Desde P13B, Operaciones con matrices también responde a «vector» (Ax) y a
         # «combinación lineal» (Ax como combinación de columnas), y desde P14 Resolver
@@ -132,7 +133,7 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         documento = Documento(respuesta)
         self.assertEqual(
             [a["href"] for a in documento.enlaces_en("Ruta de navegación")],
-            ["/", "/#algebra-lineal", "/#vectores"],
+            ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#vectores"],
         )
         self.assertContains(respuesta, '<span aria-current="page">Operaciones con vectores</span>', html=True)
         activos = [a["href"] for a in documento.enlaces_en("Herramientas") if a.get("aria-current") == "page"]
@@ -146,7 +147,7 @@ class PruebasRegistroYNavegacion(SimpleTestCase):
         self.assertNotContains(respuesta, "related-list")
         self.assertEqual(
             [(m.nombre, m.url) for m in catalogo.migas(catalogo.OPERACIONES_VECTORES)][:3],
-            [("Inicio", "/"), ("Álgebra lineal", "/#algebra-lineal"), ("Vectores", "/#vectores")],
+            [("Inicio", "/"), ("Álgebra lineal", "/areas/algebra-lineal/"), ("Vectores", "/areas/algebra-lineal/#vectores")],
         )
 
     def test_las_rutas_antiguas_de_sistemas_no_alcanzan_a_vectores(self):

@@ -79,10 +79,11 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
         self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en("Herramientas")])
         self.assertIn(RUTA, [a["href"] for _, a in documento.enlaces if a.get("class") == "tool-link"])
         self.assertContains(inicio, "Resolver Ax = b")
-        self.assertContains(inicio, "la ecuación matricial Ax = b")
+        # El explorador de su área la presenta con su descripción.
+        self.assertContains(self.client.get("/areas/algebra-lineal/"), catalogo.ECUACIONES_MATRICIALES.descripcion)
         respuesta = self.client.get(RUTA)
         doc = Documento(respuesta)
-        self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/#algebra-lineal", "/#matrices"])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertContains(respuesta, '<span aria-current="page">Resolver Ax = b</span>', html=True)
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
         self.assertTrue(doc.categorias["matrices"])

@@ -13,7 +13,8 @@
     <link rel="stylesheet" href="{% static 'calculadora/styles.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body data-vista="{% block vista %}herramienta{% endblock %}"{% block body_attrs %}{% endblock %}>
+    {% include "calculadora/components/escena.html" %}
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
     {% include "calculadora/components/header.html" %}
     <div class="app-layout">
@@ -26,6 +27,9 @@
     </div>
     {{ datos_buscador|json_script:"datos-buscador" }}
     <script src="{% static 'calculadora/tema.js' %}" defer></script>
+    <script src="{% static 'calculadora/sonido.js' %}" defer></script>
+    <script src="{% static 'calculadora/opciones.js' %}" defer></script>
+    <script src="{% static 'calculadora/historial.js' %}" defer></script>
     <script src="{% static 'calculadora/navigation.js' %}" defer></script>
     <script src="{% static 'calculadora/buscador.js' %}" defer></script>
     <script src="{% static 'calculadora/entradas.js' %}" defer></script>

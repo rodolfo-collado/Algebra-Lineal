@@ -1,6 +1,6 @@
 """Preferencias de presentación que la app de escritorio recuerda entre aperturas.
 
-Solo tres claves con valores cerrados. WebView2 corre en modo privado, así que
+Solo unas pocas claves con valores cerrados. WebView2 corre en modo privado, así que
 nada más (entradas, resultados, historial ni navegación) sobrevive al cierre.
 """
 
@@ -24,6 +24,9 @@ VALORES = {
     "pygebra-tema": ("light", "dark"),
     "pygebra-formato-numerico": ("exacto", "decimal"),
     "pygebra-precision-decimal": ("2", "4", "6", "8"),
+    "pygebra-estilo": ("estudio", "minimalista"),
+    "pygebra-sonido": ("off", "on"),
+    "pygebra-volumen": tuple(str(nivel) for nivel in range(10, 101, 10)),
 }
 
 
@@ -75,7 +78,7 @@ def leer():
 
 
 def guardar(clave, valor, escritura=None):
-    """Guarda una de las tres preferencias; cualquier otra clave o valor se rechaza."""
+    """Guarda una preferencia conocida; cualquier otra clave o valor se rechaza."""
     archivo = _archivo()
     if archivo is None or valor not in VALORES.get(clave, ()):
         return False

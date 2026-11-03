@@ -267,7 +267,7 @@
                 "shapes[0].label.font.color": color("--color-text"), "shapes[1].label.font.color": color("--color-text") });
             Plotly.restyle(grafica, { "line.color": color("--color-brand") }, [0]);
             Plotly.restyle(grafica, { "marker.color": color("--color-text") }, [1]);
-        }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-estilo"] });
         if (pasos.length) mostrarPaso(Number(slider.value));
         else if (resultado) Plotly.restyle(grafica, { x: [[resultado.c]], y: [[resultado.fc]], text: [["c"]] }, [1]);
     }
