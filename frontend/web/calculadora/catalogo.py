@@ -134,7 +134,8 @@ SISTEMAS_NUMERICOS = Area(
 )
 CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.")
 CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos y relaciones entre ellos.")
-AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, CONJUNTOS, CALCULO)
+METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones reales.")
+AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, METODOS_NUMERICOS, CONJUNTOS, CALCULO)
 
 VECTORES = Categoria(
     "vectores", "Vectores", ALGEBRA_LINEAL,
@@ -156,7 +157,8 @@ NUMERACION_ROMANA = Categoria(
 LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.")
 CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos finitos", CONJUNTOS,
                             "Elementos, pertenencia e inclusión de conjuntos.")
-CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, CONJUNTOS_FINITOS, LIMITES)
+RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS, "Búsqueda de raíces en un intervalo.")
+CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, CONJUNTOS_FINITOS, LIMITES)
 
 
 # Reducción por filas de [A | b]: método a elegir (o comparar los dos) y
@@ -310,9 +312,17 @@ DETERMINANTES = Herramienta(
 RELACIONES_CONJUNTOS = Herramienta(
     id="relaciones-conjuntos", nombre="Relaciones entre conjuntos", categoria=CONJUNTOS_FINITOS,
     descripcion="Define conjuntos finitos y comprueba pertenencia, inclusión e igualdad con su explicación.",
-    estado="disponible", route_name="calculadora:relaciones-conjuntos",
+    estado="proximamente",
     palabras_clave=("pertenencia", "no pertenencia", "inclusión", "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados"),
     invitacion="Define conjuntos y distingue pertenencia, inclusión e igualdad.",
+)
+
+BISECCION = Herramienta(
+    id="biseccion", nombre="Método de bisección", categoria=RAICES,
+    descripcion="Aproxima una raíz real y explora cómo se reduce el intervalo en una gráfica interactiva.",
+    estado="disponible", route_name="calculadora:biseccion",
+    palabras_clave=("bisección", "raíz", "raíces", "función", "intervalo", "punto medio", "gráfica", "bolzano"),
+    invitacion="Busca una raíz de f(x) mediante bisección.",
 )
 
 HERRAMIENTAS = (
@@ -324,6 +334,7 @@ HERRAMIENTAS = (
     DETERMINANTES,
     CONVERSION_BASES,
     CONVERSION_ROMANOS,
+    BISECCION,
     RELACIONES_CONJUNTOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",

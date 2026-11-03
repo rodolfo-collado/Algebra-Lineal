@@ -1,0 +1,96 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static componentes %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'calculadora/styles/biseccion.css' %}">{% endblock %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-label="Entrada de bisección">
+    <form id="biseccion-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        {% csrf_token %}
+        {% include "calculadora/components/errores_generales.html" %}
+        <div class="field-group">
+            {{ form.funcion.label_tag }}{{ form.funcion }}{{ form.funcion.errors }}
+            <p id="funcion-ayuda" class="field-help">Usa x, * para multiplicar y ^ para potencias. Ejemplo: x^2 - 2.</p>
+        </div>
+        <div class="biseccion-campos">
+            <div class="field-group">{{ form.a.label_tag }}{{ form.a }}{{ form.a.errors }}</div>
+            <div class="field-group">{{ form.b.label_tag }}{{ form.b }}{{ form.b.errors }}</div>
+        </div>
+        {% disclosure titulo="Ajustes y funciones admitidas" id="ajustes-biseccion" %}
+            <div class="biseccion-campos">
+                <div class="field-group">{{ form.precision.label_tag }}{{ form.precision }}{{ form.precision.errors }}
+                    <p id="precision-ayuda" class="field-help">Por defecto 0.0001. Admite valores positivos menores. Se aplica a la longitud del intervalo, no al porcentaje de error.</p>
+                </div>
+                <div class="field-group">{{ form.max_iteraciones.label_tag }}{{ form.max_iteraciones }}{{ form.max_iteraciones.errors }}</div>
+            </div>
+            <p class="field-help">Funciones: sin, cos, tan, exp, log o ln (natural), log10, sqrt y abs. Constantes: pi y e. Exponentes constantes; ángulos en radianes.</p>
+        {% enddisclosure %}
+        <div class="workspace-actions"><button type="submit" class="btn btn-primary" data-calculo>Resolver por bisección</button></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+<section id="resultado" class="results" data-resultado="vigente" tabindex="-1" aria-labelledby="results-title">
+    <header class="results-heading">
+        <h2 id="results-title">{% if resultado.convergio %}Raíz aproximada{% else %}Aproximación sin convergencia{% endif %}</h2>
+        <p class="biseccion-raiz">c ≈ <span>{{ resultado.c|stringformat:".14g" }}</span></p>
+        <p class="biseccion-estado{% if not resultado.convergio %} biseccion-aviso{% endif %}">{{ resultado.mensaje }}</p>
+        <p class="muted">{{ resultado.iteraciones|length }} iteraciones · f(c) = {{ resultado.fc|stringformat:".12g" }}</p>
+    </header>
+{% endif %}
+    <section class="panel biseccion-visual" aria-labelledby="grafica-titulo">
+        <h{% if resultado %}3{% else %}2{% endif %} id="grafica-titulo" class="panel-title">Gráfica de la función</h{% if resultado %}3{% else %}2{% endif %}>
+        <p class="field-help" id="grafica-ayuda">Acerca o desplaza la gráfica para explorar. Arrastra las líneas a y b para elegir otro intervalo, o escribe sus valores arriba.</p>
+        <div id="biseccion-grafica" aria-label="Gráfica interactiva de f(x)" aria-describedby="grafica-ayuda" tabindex="0"></div>
+        <p id="grafica-estado" class="field-help" role="status" aria-live="polite"></p>
+        <noscript><p>Activa JavaScript para explorar la gráfica. El cálculo y el procedimiento funcionan sin JavaScript.</p></noscript>
+        {% if resultado.iteraciones %}
+        <div class="biseccion-recorrido">
+            <label for="iteracion-biseccion">Recorrer iteraciones</label>
+            <input type="range" id="iteracion-biseccion" min="1" max="{{ resultado.iteraciones|length }}" step="1" value="{{ resultado.iteraciones|length }}" aria-describedby="iteracion-lectura">
+            <output id="iteracion-lectura" for="iteracion-biseccion" aria-live="polite"></output>
+        </div>
+        {% endif %}
+    </section>
+{% if resultado %}
+    {% disclosure titulo="Procedimiento detallado" id="procedimiento-biseccion" clase="disclosure-procedure" %}
+        <p class="field-help">c = a + (b − a)/2. Se conserva el subintervalo con cambio de signo hasta que su longitud sea menor que la precisión. Pasa el cursor o enfoca una fila para verla en la gráfica.</p>
+        <div class="table-wrap">
+            <table class="procedure-table biseccion-tabla">
+                <caption>Iteraciones calculadas, sin redondeo intermedio</caption>
+                <thead><tr><th scope="col">i</th><th scope="col">a</th><th scope="col">b</th><th scope="col">c</th><th scope="col">f(a)</th><th scope="col">f(b)</th><th scope="col">f(c)</th><th scope="col">Longitud restante</th><th scope="col">Error relativo (%)</th></tr></thead>
+                <tbody>
+                {% for fila in resultado.iteraciones %}
+                    <tr data-iteracion="{{ fila.i }}" tabindex="0" aria-label="Iteración {{ fila.i }}">
+                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|stringformat:".12g" }}</td><td>{{ fila.b|stringformat:".12g" }}</td><td>{{ fila.c|stringformat:".12g" }}</td>
+                        <td>{{ fila.fa|stringformat:".10g" }}</td><td>{{ fila.fb|stringformat:".10g" }}</td><td>{{ fila.fc|stringformat:".10g" }}</td><td>{{ fila.longitud|stringformat:".10g" }}</td>
+                        <td>{% if fila.error_relativo is not None %}{{ fila.error_relativo|stringformat:".8g" }} %{% else %}No definido{% endif %}</td>
+                    </tr>
+                {% empty %}<tr><td colspan="9">Raíz en un extremo: no se necesitan iteraciones.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="field-help">Error relativo = |(c actual − c anterior)/c actual| × 100. No se define en la primera iteración ni cuando c = 0. No es el criterio de parada.</p>
+    {% enddisclosure %}
+    {% disclosure titulo="Verificación" id="verificacion-biseccion" %}
+        <p>Intervalo final: [{{ resultado.a|stringformat:".14g" }}, {{ resultado.b|stringformat:".14g" }}]. Longitud: {{ resultado.longitud|stringformat:".12g" }}. Precisión solicitada: {{ resultado.precision|stringformat:".12g" }}.</p>
+        <p>Evaluación final independiente: f(c) = {{ resultado.fc|stringformat:".14g" }}. El residuo mide la cercanía de f(c) a cero; tiene unidades distintas de la longitud y no se usa como tolerancia de x.</p>
+        <p>Se verificó el dominio y la continuidad de la expresión en el intervalo inicial mediante cotas conservadoras. La bisección conserva el cambio de signo o termina al evaluar f(c) = 0.</p>
+        <p class="field-help">La distancia de c a una raíz del intervalo final no supera su longitud, bajo las comprobaciones realizadas y la precisión de máquina. Una función continua puede tener varias raíces dentro del mismo intervalo.</p>
+    {% enddisclosure %}
+    {% disclosure titulo="Comparar intervalos" id="comparacion-biseccion" %}
+        <p class="field-help">Cambia a y b conservando la función y vuelve a resolver. Se guardan hasta 10 resultados en esta pestaña; la comparación usa los intervalos finales y no demuestra unicidad.</p>
+        <div id="biseccion-comparaciones" class="table-wrap"><p>Activa JavaScript para comparar cálculos de esta pestaña.</p></div>
+    {% enddisclosure %}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ datos_biseccion|json_script:"datos-biseccion" }}
+<script src="{% static 'calculadora/vendor/plotly-basic-4.1.2.min.js' %}" defer></script>
+<script src="{% static 'calculadora/vendor/plotly-locale-es-4.1.2.js' %}" defer></script>
+<script src="{% static 'calculadora/biseccion.js' %}" defer></script>
+{% endblock %}

@@ -58,7 +58,11 @@ NAMESPACE_PERMITIDOS = (
 def archivos_de_interfaz():
     for raiz in RUTAS_INTERFAZ:
         for archivo in sorted(raiz.rglob("*")):
-            if "__pycache__" in archivo.parts:
+            # Las bibliotecas intactas tienen enlaces de licencia; otras pruebas
+            # verifican sus hashes y las peticiones reales sin conexión externa.
+            if "__pycache__" in archivo.parts or (archivo.parent.name == "vendor" and archivo.name in {
+                "plotly-basic-4.1.2.min.js", "plotly-locale-es-4.1.2.js",
+            }):
                 continue
             if archivo.is_file() and archivo.suffix.lower() in EXTENSIONES:
                 yield archivo

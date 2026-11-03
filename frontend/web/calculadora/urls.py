@@ -1,15 +1,23 @@
 """Rutas de la calculadora web."""
 
-from django.urls import path
+from django.http import Http404
+from django.urls import path, re_path
 
 from . import views
-from .views_conjuntos import relaciones_conjuntos
+from .views_biseccion import resolver_biseccion, explorar_biseccion
 
 
 app_name = "calculadora"
 
+
+def conjuntos_proximamente(request):
+    raise Http404("Conjuntos: próximamente.")
+
 urlpatterns = [
-    path("conjuntos/relaciones/", relaciones_conjuntos, name="relaciones-conjuntos"),
+    path("conjuntos/relaciones/", conjuntos_proximamente, name="relaciones-conjuntos"),
+    re_path(r"^conjuntos(?:/.*)?$", conjuntos_proximamente),
+    path("metodos-numericos/biseccion/", resolver_biseccion, name="biseccion"),
+    path("metodos-numericos/biseccion/grafica/", explorar_biseccion, name="biseccion-grafica"),
     path("", views.inicio, name="inicio"),
     path("matrices/reduccion/", views.sistemas, name="reduccion-filas"),
     # Compatibilidad: GET redirige; POST raíz reutiliza la vista y slugs preservan el cuerpo.

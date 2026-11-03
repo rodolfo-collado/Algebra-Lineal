@@ -39,6 +39,9 @@ hiddenimports = [
     # Django lo carga por nombre desde settings; el análisis estático no lo ve.
     "frontend.web.calculadora.context_processors",
     "frontend.web.calculadora.forms",
+    "frontend.web.calculadora.forms_biseccion",
+    "frontend.web.calculadora.views_biseccion",
+    "frontend.web.calculadora.servicios_biseccion",
     "frontend.web.calculadora.servicios",
     "frontend.web.calculadora.servicios_bases",
     "frontend.web.calculadora.servicios_romanos",
@@ -70,6 +73,8 @@ hiddenimports = [
     "frontend.web.calculadora.templatetags.componentes",
     "frontend.web.calculadora.templatetags.numeros",
     "backend.vectores",
+    "backend.biseccion",
+    "backend.funciones_reales",
     "backend.matrices",
     "backend.ecuaciones_matriciales",
     "backend.matriz_inversa",

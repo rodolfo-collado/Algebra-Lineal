@@ -1,0 +1,18 @@
+.biseccion-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.biseccion-raiz { font-family: var(--font-math); font-size: clamp(1.2rem, 3vw, 1.8rem); overflow-wrap: anywhere; margin-block: var(--space-2); }
+.biseccion-estado { color: var(--color-success); font-weight: 600; }
+.biseccion-aviso { color: var(--color-warning); }
+.biseccion-visual { min-width: 0; }
+#biseccion-grafica { width: 100%; height: 380px; }
+/* El intervalo calculado es evidencia; solo se arrastran los extremos de entrada. */
+#biseccion-grafica .shape-group[data-index="2"] * { pointer-events: none !important; }
+.biseccion-recorrido { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+.biseccion-recorrido input { width: 100%; min-height: 44px; accent-color: var(--color-brand); }
+.biseccion-recorrido output { font-family: var(--font-math); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.biseccion-tabla tr[data-activa] { background: var(--color-brand-soft); outline: 2px solid var(--color-brand); outline-offset: -2px; }
+.biseccion-tabla tr:focus-visible { outline: 3px solid var(--color-focus); outline-offset: -3px; }
+.biseccion-tabla th, .biseccion-tabla td { white-space: nowrap; }
+@media (max-width: 480px) {
+    .biseccion-campos { grid-template-columns: 1fr; }
+    #biseccion-grafica { height: 310px; }
+}
