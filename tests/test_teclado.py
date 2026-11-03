@@ -517,7 +517,8 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         self.assertIn("retroceso", script)
         self.assertIn('new Event("input", { bubbles: true })', script)
         self.assertIn('document.execCommand("insertText", false, texto)', script)
-        self.assertNotIn(".focus()", script)
+        # Recuperar el campo tras desplazar el dock no debe desplazar la página.
+        self.assertIn("campo.focus({ preventScroll: true })", script)
         self.assertIn('"mousedown"', script)
         self.assertIn("event.preventDefault()", script)
         self.assertIn('event.key === "Escape"', script)

@@ -8,8 +8,9 @@ Esta entrega implementa únicamente bisección.
 
 ## Uso
 
-Escribe `f(x)`, el extremo inferior `a` y el superior `b`, y pulsa **Resolver por
-bisección**. Función y extremos empiezan vacíos; los ajustes conservan sus valores
+Escribe `f(x)` para explorar su gráfica en una ventana inicial `[-10, 10]`, sin
+completar `a` ni `b`. Para calcular, elige el extremo inferior `a` y el superior
+`b` y pulsa **Resolver por bisección**. Función y extremos empiezan vacíos; los ajustes conservan sus valores
 predeterminados. Al enfocar la función aparece el teclado contextual de PyGebra:
 x, x², x³, exponente general, paréntesis, operaciones, seno, coseno, raíz, ln, log₁₀ y las constantes π y e.
 Las teclas x² y x³ conservan esos superíndices en el campo, igual que Aᵀ conserva
@@ -28,12 +29,15 @@ La tecla sen inserta sen(); sin() es un alias del mismo seno en radianes.
 Los alias producen el mismo árbol, resultado, gráfica y clave de comparación.
 Escribe sen(x)² para elevar el resultado del seno; sen²(x) no se admite.
 También puedes
-escribir con el teclado físico. La gráfica se actualiza al
-editar estos campos; desplazarla o cambiar el zoom solicita nuevas muestras al
-servidor local, sin resolver de nuevo. Sin los tres campos no se dibuja ninguna
-curva ni se solicitan muestras: una indicación invita a completar la entrada.
-Las líneas discontinuas `a` y `b` se pueden
-arrastrar; los campos numéricos ofrecen la alternativa con teclado.
+escribir con el teclado físico. La gráfica se actualiza al editar la función;
+desplazarla o cambiar el zoom solicita nuevas muestras al servidor local, sin
+resolver de nuevo. **Seleccionar a/b** permite pulsar sobre la curva para llevar
+la coordenada x muestreada al formulario; luego puedes ajustar el valor arrastrando
+su línea discontinua o escribiendo con teclado. Editar extremos no mueve los ejes
+ni exige que el intervalo ya sea válido. Resolver sí comprueba todas las condiciones.
+**Vista inicial** vuelve a `[-10, 10]`; después de resolver se encuadra el intervalo
+calculado, recuperable con **Ver intervalo calculado**. La franja y los marcadores
+de las iteraciones conservan la evidencia del cálculo anterior cuando editas la entrada.
 
 **Ajustes y funciones admitidas** permite reducir la precisión predeterminada
 `0.0001`, y cambiar el límite de 200 iteraciones (entre 1 y 1000). La precisión
@@ -55,19 +59,23 @@ Ambas notaciones generan la misma clave de comparación y los mismos resultados.
 
 Para preparar una demostración oral, consulta la [guía de exposición](guia-exposicion-biseccion.md).
 
-El resultado y su estado aparecen antes de la gráfica. El deslizador discreto
+El resultado y su estado aparecen antes de la gráfica. En escritorio, un panel
+junto a ella explica la decisión seleccionada; en móvil pasa debajo sin superponer
+controles, con los valores completos en **Valores y signos de la iteración**.
+**Anterior/Siguiente** y el deslizador discreto
 recorre las iteraciones con arrastre, flechas del teclado o pantalla táctil.
 El cursor, el foco o un toque sobre una fila del procedimiento seleccionan esa
 misma iteración. La franja resalta el intervalo **antes** del recorte y los tres
 marcadores muestran `(a,f(a))`, `(c,f(c))` y `(b,f(b))`. Estas interacciones usan
 el JSON calculado, sin peticiones ni una nueva ejecución del algoritmo. La lectura
 identifica a (izquierdo), c (punto medio) y b (derecho), muestra los signos reales
-y explica qué mitad se conserva. Distingue el intervalo antes de dividirlo del
+y explica qué mitad se descarta, que c sustituye al extremo con su mismo signo,
+cuál permanece y el nuevo intervalo. Distingue el intervalo antes de dividirlo del
 resultante; un cero calculado tiene su propia explicación. El resumen usa cifras
 legibles, aumentando las cifras si hace falta distinguir los extremos; el
 procedimiento y la verificación permiten elegir los decimales visibles.
 
-**Verificación** responde tres preguntas con los datos de cada cálculo: por qué
+**Verificación** separa condición, valores y conclusión para tres preguntas: por qué
 hay una raíz (continuidad y signos iniciales, o raíz en extremo), si se alcanzó la
 precisión (resta b − a final y comparación con la tolerancia), y por qué f(c) puede
 no ser cero. Distingue raíz calculada, parada por longitud, máximo de iteraciones
@@ -192,3 +200,8 @@ intervalo válido si no logran verificar esa condición.
 
 π inserta π (alias de pi), e inserta e. ln es logaritmo natural, de base e;
 log₁₀ inserta log10(), de base 10. log() sigue siendo alias del natural.
+
+El teclado compartido conserva el campo de inserción, la selección y el modo
+superíndice mientras se desplazan sus grupos. La barra y los gestos táctiles usan
+el scroll nativo; la rueda vertical desplaza horizontalmente cuando hay espacio
+y vuelve a dejar desplazar la página al llegar al borde. Se conserva Deshacer.

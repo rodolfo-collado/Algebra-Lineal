@@ -7,6 +7,12 @@ from .forms_feedback import FormularioConErrores
 
 
 class BiseccionForm(FormularioConErrores):
+    def __init__(self, *args, explorar=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.explorar = explorar
+        if explorar:
+            self.fields["a"].required = self.fields["b"].required = False
+
     funcion = forms.CharField(label="Función f(x)", max_length=512,
                               widget=forms.TextInput(attrs={"class": "field-input", "spellcheck": "false",
                                                             "aria-describedby": "funcion-ayuda"}))
@@ -32,6 +38,10 @@ class BiseccionForm(FormularioConErrores):
 
     def clean(self):
         datos = super().clean()
+        if self.explorar:
+            for nombre, valor in (("a", -10.), ("b", 10.)):
+                if datos.get(nombre) is None:
+                    datos[nombre] = valor
         permitidos = {"csrfmiddlewaretoken", *self.fields}
         if set(self.data) - permitidos:
             self.add_error(None, "El envío incluye campos que no forman parte del formulario.")

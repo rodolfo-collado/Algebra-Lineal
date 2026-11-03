@@ -51,19 +51,37 @@
 {% endif %}
     <section class="panel biseccion-visual" aria-labelledby="grafica-titulo">
         <h{% if resultado %}3{% else %}2{% endif %} id="grafica-titulo" class="panel-title">Gráfica de la función</h{% if resultado %}3{% else %}2{% endif %}>
-        <p class="field-help" id="grafica-ayuda" hidden>Acerca o desplaza la gráfica para explorar. Arrastra las líneas a y b para elegir otro intervalo, o escribe sus valores arriba.</p>
+        <p class="field-help" id="grafica-ayuda" hidden>La exploración comienza en [−10, 10], independiente del intervalo de cálculo. Acerca o desplaza la gráfica; selecciona un extremo y pulsa sobre la curva. Después puedes arrastrar su línea o escribir su valor arriba.</p>
+        <div class="biseccion-exploracion">
+        <div class="biseccion-lienzo">
+        <div id="grafica-seleccion" class="biseccion-controles" role="group" aria-label="Elegir extremos y explorar" hidden>
+            <button type="button" class="btn btn-secondary" data-elegir-extremo="a" aria-pressed="false">Seleccionar a</button>
+            <button type="button" class="btn btn-secondary" data-elegir-extremo="b" aria-pressed="false">Seleccionar b</button>
+            <button type="button" class="btn btn-secondary" id="grafica-restablecer">Vista inicial</button>
+            {% if resultado %}<button type="button" class="btn btn-secondary" id="grafica-intervalo">Ver intervalo calculado</button>{% endif %}
+        </div>
         <div id="biseccion-grafica" aria-label="Gráfica interactiva de f(x)" aria-describedby="grafica-ayuda" tabindex="0" hidden></div>
-        <p id="grafica-estado" class="field-help" role="status" aria-live="polite">Introduce una función y un intervalo para visualizar su gráfica.</p>
+        <p id="grafica-estado" class="field-help" role="status" aria-live="polite">Introduce una función para visualizar su gráfica y elegir un intervalo.</p>
         <noscript><p>Activa JavaScript para explorar la gráfica. El cálculo y el procedimiento funcionan sin JavaScript.</p></noscript>
+        </div>
         {% if resultado.iteraciones %}
-        <div class="biseccion-recorrido">
+        <div class="biseccion-recorrido" hidden>
+            <h4>Decisión de cada iteración</h4>
+            <div class="biseccion-controles" role="group" aria-label="Cambiar iteración">
+                <button type="button" class="btn btn-secondary" id="iteracion-anterior">Anterior</button>
+                <button type="button" class="btn btn-secondary" id="iteracion-siguiente">Siguiente</button>
+            </div>
             <label for="iteracion-biseccion">Recorrer iteraciones</label>
             <input type="range" id="iteracion-biseccion" min="1" max="{{ resultado.iteraciones|length }}" step="1" value="{{ resultado.iteraciones|length }}" aria-describedby="iteracion-lectura">
             <div id="iteracion-lectura" role="status" aria-live="polite" aria-atomic="true">
-                <p id="paso-valores"></p><p id="paso-signos" class="field-help"></p><p id="paso-decision" class="field-help"></p>
+                <p id="paso-titulo"></p><p id="paso-decision"></p><p id="paso-intervalo"></p>
             </div>
+            {% disclosure titulo="Valores y signos de la iteración" id="paso-detalles" nivel=4 %}
+                <p id="paso-valores" class="field-help"></p><p id="paso-signos" class="field-help"></p>
+            {% enddisclosure %}
         </div>
         {% endif %}
+        </div>
     </section>
 {% if resultado %}
     {% disclosure titulo="Procedimiento detallado" id="procedimiento-biseccion" clase="disclosure-procedure" %}
@@ -86,29 +104,46 @@
         <p class="field-help">Error relativo = |(c actual − c anterior)/c actual| × 100. No se define en la primera iteración ni cuando c = 0. No es el criterio de parada.</p>
     {% enddisclosure %}
     {% disclosure titulo="Verificación" id="verificacion-biseccion" %}
-        <div data-biseccion-grupo>
-        <p><strong>¿Cómo sabemos que hay una raíz?</strong><br>
-            Comprobamos que la expresión es continua en el intervalo inicial [{{ verificacion.a|numero_biseccion }}, {{ verificacion.b|numero_biseccion }}]: no hay saltos ni huecos según las comprobaciones de la herramienta.
-            f(a) = {{ verificacion.fa|numero_biseccion }} ({{ verificacion.signo_a }}) y f(b) = {{ verificacion.fb|numero_biseccion }} ({{ verificacion.signo_b }}).
-            {% if verificacion.fa == 0 or verificacion.fb == 0 %}Un extremo ya da cero en la evaluación numérica: es una raíz calculada allí, sin una prueba simbólica de que sea exacta.{% else %}Los signos son opuestos: una función continua debe pasar por cero entre ellos.{% endif %}
-        </p>
-        <p><strong>¿Se alcanzó la precisión solicitada?</strong><br>
-            Intervalo final: [{{ resultado.a|numero_biseccion }}, {{ resultado.b|numero_biseccion }}].
-            b − a: {{ resultado.b|numero_biseccion }} − ({{ resultado.a|numero_biseccion }}) ≈ {{ resultado.longitud|numero_biseccion }}
-            {% if resultado.longitud < resultado.precision %}&lt;{% else %}≥{% endif %} {{ resultado.precision|numero_biseccion }} (precisión solicitada).
-            {% if resultado.estado == "exacta" %}{% if resultado.iteraciones %}El punto medio da cero{% else %}El extremo da cero{% endif %} en aritmética de máquina; no necesitamos seguir dividiendo.
-            {% elif resultado.estado == "longitud" %}Se alcanzó la precisión: el intervalo es suficientemente pequeño.
-            {% elif resultado.estado == "limite" %}Se agotó el máximo de iteraciones; no se alcanzó la precisión.
-            {% else %}La máquina ya no puede representar otro punto entre los extremos; no se alcanzó la precisión.{% endif %}
-        </p>
-        <p><strong>¿Por qué f(c) no tiene que ser exactamente cero?</strong><br>
-            Evaluación final: f(c) = {{ resultado.fc|numero_biseccion }}.
-            {% if resultado.estado == "exacta" %}Aquí sí obtuvimos cero con los números de máquina. El redondeo puede influir: esto no demuestra que el error matemático sea exactamente cero.
-            {% else %}La precisión mide el ancho del intervalo en x; f(c) mide la altura de la función y puede ser distinto de cero.{% endif %}
-            {% if resultado.estado == "longitud" %}Bajo las condiciones de continuidad y signos comprobadas y la precisión de máquina, la distancia de c a una raíz del intervalo final no supera {{ resultado.longitud|numero_biseccion }}.
-            {% elif not resultado.convergio %}El intervalo todavía no cumple la precisión; no afirmamos haber conseguido la aproximación solicitada.{% endif %}
-            El error relativo compara dos aproximaciones sucesivas; no decide cuándo termina este método.
-        </p>
+        <div class="biseccion-verificaciones" data-biseccion-grupo>
+        <section aria-labelledby="verificacion-existencia">
+            <h4 id="verificacion-existencia">¿Cómo sabemos que hay una raíz?</h4>
+            <p><strong>Condición:</strong> continuidad y raíz en un extremo o cambio de signo.</p>
+            <dl>
+                <dt>Intervalo inicial</dt><dd>[{{ verificacion.a|numero_biseccion }}; {{ verificacion.b|numero_biseccion }}]</dd>
+                <dt>f(a)</dt><dd>{{ verificacion.fa|numero_biseccion }} ({{ verificacion.signo_a }})</dd>
+                <dt>f(b)</dt><dd>{{ verificacion.fb|numero_biseccion }} ({{ verificacion.signo_b }})</dd>
+            </dl>
+            <p class="biseccion-conclusion"><strong>Conclusión:</strong> {% if verificacion.fa == 0 or verificacion.fb == 0 %}Un extremo ya da cero en la evaluación numérica: es una raíz calculada allí, sin una prueba simbólica de que sea exacta.{% else %}Los signos son opuestos: una función continua debe pasar por cero entre ellos.{% endif %}</p>
+            <p class="field-help">Comprobamos que la expresión es continua en el intervalo inicial: no hay saltos ni huecos según las comprobaciones de la herramienta. El muestreo gráfico no demuestra esta condición.</p>
+        </section>
+        <section aria-labelledby="verificacion-precision">
+            <h4 id="verificacion-precision">¿Se alcanzó la precisión solicitada?</h4>
+            <p><strong>Condición:</strong> longitud restante estrictamente menor que la precisión, o cero calculado.</p>
+            <dl>
+                <dt>Intervalo final</dt><dd>[{{ resultado.a|numero_biseccion }}; {{ resultado.b|numero_biseccion }}]</dd>
+                <dt>Longitud b − a:</dt><dd>{{ resultado.longitud|numero_biseccion }}</dd>
+                <dt>Precisión solicitada</dt><dd>{{ resultado.precision|numero_biseccion }}</dd>
+            </dl>
+            <p class="biseccion-comprobacion">{{ resultado.longitud|numero_biseccion }} {% if resultado.longitud < resultado.precision %}&lt;{% else %}≥{% endif %} {{ resultado.precision|numero_biseccion }}</p>
+            <p class="biseccion-conclusion"><strong>Conclusión:</strong>
+                {% if resultado.estado == "exacta" %}{% if resultado.iteraciones %}El punto medio da cero{% else %}El extremo da cero{% endif %} en aritmética de máquina; no necesitamos seguir dividiendo.
+                {% elif resultado.estado == "longitud" %}Se alcanzó la precisión: el intervalo es suficientemente pequeño.
+                {% elif resultado.estado == "limite" %}Se agotó el máximo de iteraciones; no se alcanzó la precisión.
+                {% else %}La máquina ya no puede representar otro punto entre los extremos; no se alcanzó la precisión.{% endif %}
+            </p>
+        </section>
+        <section aria-labelledby="verificacion-residuo">
+            <h4 id="verificacion-residuo">¿Por qué f(c) no tiene que ser exactamente cero?</h4>
+            <p><strong>Condición:</strong> el residuo y la longitud miden cosas diferentes.</p>
+            <dl><dt>Evaluación final f(c)</dt><dd>{{ resultado.fc|numero_biseccion }}</dd></dl>
+            <p class="biseccion-conclusion"><strong>Conclusión:</strong>
+                {% if resultado.estado == "exacta" %}Aquí sí obtuvimos cero con los números de máquina. El redondeo puede influir: esto no demuestra que el error matemático sea exactamente cero.
+                {% else %}La precisión mide el ancho del intervalo en x; f(c) mide la altura de la función y puede ser distinto de cero.{% endif %}
+            </p>
+            {% if resultado.estado == "longitud" %}<p>Bajo las condiciones de continuidad y signos comprobadas y la precisión de máquina, la distancia de c a una raíz del intervalo final no supera {{ resultado.longitud|numero_biseccion }}.</p>
+            {% elif not resultado.convergio %}<p>El intervalo todavía no cumple la precisión; no afirmamos haber conseguido la aproximación solicitada.</p>{% endif %}
+            <p class="field-help">El error relativo compara dos aproximaciones sucesivas; no decide cuándo termina este método.</p>
+        </section>
         </div>
         <p class="field-help">Usamos números de máquina y comprobaciones conservadoras. Puede haber más de una raíz en el intervalo.</p>
     {% enddisclosure %}

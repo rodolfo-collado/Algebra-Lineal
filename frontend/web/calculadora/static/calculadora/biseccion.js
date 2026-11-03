@@ -9,13 +9,22 @@
     const estado = document.getElementById("grafica-estado");
     const slider = document.getElementById("iteracion-biseccion");
     const lectura = document.getElementById("iteracion-lectura");
+    const anterior = document.getElementById("iteracion-anterior");
+    const siguiente = document.getElementById("iteracion-siguiente");
+    const detallesPaso = document.getElementById("paso-detalles");
+    if (detallesPaso) detallesPaso.open = window.matchMedia("(min-width: 768px)").matches;
+    const seleccion = document.getElementById("grafica-seleccion");
+    const elegir = [...document.querySelectorAll("[data-elegir-extremo]")];
     const filas = [...document.querySelectorAll("[data-iteracion]")];
     const numero = (x, digitos = 12) => Number(x).toLocaleString("es", { maximumSignificantDigits: digitos });
     const campo = nombre => form.elements.namedItem(nombre);
     const color = nombre => getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
-    let mutando = false, temporizador, peticion, inicializacion, generacion = 0;
+    let mutando = false, temporizador, peticion, inicializacion, generacion = 0, extremoElegido = null;
+    const vistaInicial = [-10, 10];
+    const anchoInicial = datos.inicial_b - datos.inicial_a;
+    const vistaCalculo = resultado ? [datos.inicial_a - anchoInicial / 4, datos.inicial_b + anchoInicial / 4] : null;
     const ayudaGrafica = document.getElementById("grafica-ayuda");
-    const indicacion = "Introduce una función y un intervalo para visualizar su gráfica.";
+    const indicacion = "Introduce una función para visualizar su gráfica y elegir un intervalo.";
     ayudaGrafica.hidden = true;
 
     function presentarNumeros() {
@@ -56,10 +65,22 @@
         aplicar();
     }
 
-    function intervalo() {
-        if (!campo("a").value.trim() || !campo("b").value.trim()) return null;
-        const a = Number(campo("a").value), b = Number(campo("b").value);
-        return Number.isFinite(a) && Number.isFinite(b) && a < b ? [a, b] : null;
+    function extremo(nombre) {
+        return campo(nombre).value.trim() && Number.isFinite(Number(campo(nombre).value)) ? Number(campo(nombre).value) : null;
+    }
+
+    function sincronizarExtremos() {
+        if (!grafica.data) return;
+        const cambios = {};
+        ["a", "b"].forEach((nombre, i) => {
+            const x = extremo(nombre);
+            cambios[`shapes[${i}].visible`] = x !== null;
+            cambios[`shapes[${i}].x0`] = cambios[`shapes[${i}].x1`] = x ?? 0;
+            cambios[`shapes[${i}].y0`] = 0;
+            cambios[`shapes[${i}].y1`] = 1;
+        });
+        mutando = true;
+        return Plotly.relayout(grafica, cambios).finally(() => { mutando = false; });
     }
 
     function linea(x, nombre) {
@@ -76,7 +97,10 @@
     function mostrarPaso(i) {
         const p = pasos[i - 1];
         if (!p) return;
+        slider.closest(".biseccion-recorrido").hidden = false;
         slider.value = String(i);
+        anterior.disabled = i === 1;
+        siguiente.disabled = i === pasos.length;
         slider.setAttribute("aria-valuetext", `Iteración ${i} de ${pasos.length}, c = ${numero(p.c)}`);
         const valores = new Set([p.a, p.c, p.b, p.nuevo_a, p.nuevo_b]);
         let digitos = 8;
@@ -84,12 +108,17 @@
         while (digitos < 17 && new Set([...valores].map(x => numero(x, digitos))).size < valores.size) digitos++;
         const n = x => numero(x, digitos);
         const signo = x => x > 0 ? "positivo" : x < 0 ? "negativo" : "cero";
-        lectura.querySelector("#paso-valores").textContent = `Iteración ${i}/${pasos.length}. Antes de dividir: a (izquierdo) = ${n(p.a)} · c (punto medio) = ${n(p.c)} · b (derecho) = ${n(p.b)}.`;
-        lectura.querySelector("#paso-signos").textContent = `f(a) = ${n(p.fa)} (${signo(p.fa)}) · f(c) = ${n(p.fc)} (${signo(p.fc)}) · f(b) = ${n(p.fb)} (${signo(p.fb)}).`;
-        const mitad = (p.fa < 0) !== (p.fc < 0) ? "izquierda [a,c]: f(a) y f(c) tienen signos opuestos" : "derecha [c,b]: f(c) y f(b) tienen signos opuestos";
+        lectura.querySelector("#paso-titulo").textContent = `Iteración ${i} de ${pasos.length}`;
+        detallesPaso.querySelector("#paso-valores").textContent = `Antes de dividir: a (izquierdo) = ${n(p.a)} · c (punto medio) = ${n(p.c)} · b (derecho) = ${n(p.b)}.`;
+        detallesPaso.querySelector("#paso-signos").textContent = `f(a) = ${n(p.fa)} (${signo(p.fa)}) · f(c) = ${n(p.fc)} (${signo(p.fc)}) · f(b) = ${n(p.fb)} (${signo(p.fb)}).`;
+        const cambiaA = (p.fa < 0) === (p.fc < 0);
+        const decision = cambiaA
+            ? `f(a) y f(c) tienen el mismo signo (${signo(p.fa)}). Descartamos la mitad izquierda [a,c]: c pasa a ser el nuevo a = ${n(p.c)}; b permanece en ${n(p.b)}. Conservamos la mitad derecha [c,b].`
+            : `f(c) y f(b) tienen el mismo signo (${signo(p.fb)}). Descartamos la mitad derecha [c,b]: c pasa a ser el nuevo b = ${n(p.c)}; a permanece en ${n(p.a)}. Conservamos la mitad izquierda [a,c].`;
         lectura.querySelector("#paso-decision").textContent = p.fc === 0
-            ? `f(c) = 0 en aritmética de máquina: encontramos una raíz calculada. Después: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}]; no hace falta otra mitad.`
-            : `Conservamos la mitad ${mitad}. Después: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}], longitud ${n(p.longitud)}.`;
+            ? `f(c) = 0 en aritmética de máquina: encontramos una raíz calculada. Ambos extremos pasan a c; no descartamos otra mitad ni seguimos dividiendo.`
+            : decision;
+        lectura.querySelector("#paso-intervalo").textContent = `Nuevo intervalo: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}], longitud ${n(p.longitud)}.`;
         filas.forEach(f => f.toggleAttribute("data-activa", Number(f.dataset.iteracion) === i));
         if (!grafica.data) return;
         mutando = true;
@@ -99,6 +128,7 @@
     }
 
     async function muestrear(rango, moverEjes = false) {
+        clearTimeout(temporizador);
         const n = ++generacion;
         peticion?.abort();
         peticion = new AbortController();
@@ -119,16 +149,15 @@
             if (n !== generacion) return;
             await Plotly.restyle(grafica, { x: [puntos.x], y: [puntos.y] }, [0]);
             if (n !== generacion) return;
-            const limites = intervalo();
-            if (moverEjes && limites) {
+            if (moverEjes) {
                 mutando = true;
-                await Plotly.relayout(grafica, { "xaxis.range": rango, "yaxis.autorange": true,
-                    "shapes[0].x0": limites[0], "shapes[0].x1": limites[0],
-                    "shapes[1].x0": limites[1], "shapes[1].x1": limites[1],
-                    "shapes[0].y0": 0, "shapes[0].y1": 1, "shapes[1].y0": 0, "shapes[1].y1": 1 });
+                await Plotly.relayout(grafica, { "xaxis.range": rango, "yaxis.autorange": true });
                 mutando = false;
                 if (n !== generacion) return;
             }
+            await sincronizarExtremos();
+            if (n !== generacion) return;
+            seleccion.hidden = false;
             estado.textContent = puntos.y.some(y => y === null)
                 ? "La curva tiene huecos donde no se pudo verificar el dominio. La gráfica es un muestreo, no una prueba de raíces."
                 : "Gráfica muestreada. Resolver comprueba dominio y cambio de signo del intervalo.";
@@ -136,6 +165,7 @@
             if (error.name !== "AbortError" && n === generacion) {
                 grafica.hidden = true;
                 ayudaGrafica.hidden = true;
+                seleccion.hidden = true;
                 estado.textContent = error.message || "No se pudo actualizar la gráfica.";
             }
         }
@@ -146,22 +176,16 @@
         // Invalidar también durante la espera evita pintar una respuesta de la entrada anterior.
         generacion++;
         peticion?.abort();
-        if (["funcion", "a", "b"].some(n => !campo(n).value.trim())) {
+        if (!campo("funcion").value.trim()) {
             grafica.hidden = true;
             ayudaGrafica.hidden = true;
+            seleccion.hidden = true;
             estado.textContent = indicacion;
             return;
         }
-        const limites = intervalo();
-        if (!limites) {
-            grafica.hidden = true;
-            ayudaGrafica.hidden = true;
-            estado.textContent = "Para visualizar, elige un extremo a menor que b, ambos finitos.";
-            return;
-        }
         estado.textContent = "Preparando vista previa…";
-        const ancho = limites[1] - limites[0];
-        temporizador = setTimeout(() => muestrear([limites[0] - ancho / 4, limites[1] + ancho / 4], true), 300);
+        const rango = grafica.layout?.xaxis?.range || (vistaCalculo?.every(Number.isFinite) ? vistaCalculo : vistaInicial);
+        temporizador = setTimeout(() => muestrear(rango, !grafica.data), 300);
     }
 
     function comparar() {
@@ -221,14 +245,15 @@
         if (!window.Plotly) {
             throw new Error("No se pudo cargar la gráfica local. El resultado y la tabla siguen disponibles.");
         }
-        const limites = intervalo();
         const layout = {
             margin: { t: 28, r: 18, b: 48, l: 60 }, showlegend: false,
             paper_bgcolor: color("--color-surface"), plot_bgcolor: color("--color-surface"),
             font: { family: "Segoe UI, sans-serif", color: color("--color-text") },
-            xaxis: { title: { text: "x" }, gridcolor: color("--color-border"), zerolinecolor: color("--color-muted") },
+            xaxis: { title: { text: "x" }, range: vistaInicial, gridcolor: color("--color-border"), zerolinecolor: color("--color-muted") },
             yaxis: { title: { text: "f(x)" }, gridcolor: color("--color-border"), zerolinecolor: color("--color-muted") },
-            shapes: [linea(limites[0], "a"), linea(limites[1], "b"), franja(limites[0], limites[1])],
+            shapes: [{ ...linea(extremo("a") ?? 0, "a"), visible: extremo("a") !== null },
+                { ...linea(extremo("b") ?? 0, "b"), visible: extremo("b") !== null },
+                { ...franja(0, 0), visible: pasos.length > 0 }],
             dragmode: "pan",
         };
         await Plotly.newPlot(grafica, [
@@ -258,6 +283,17 @@
                 temporizador = setTimeout(() => muestrear(rango), 200);
             }
         });
+        grafica.on("plotly_click", evento => {
+            if (!extremoElegido) return;
+            const punto = evento.points?.find(p => p.curveNumber === 0);
+            if (!punto || !Number.isFinite(punto.x)) return;
+            const input = campo(extremoElegido);
+            input.value = String(punto.x);
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            extremoElegido = null;
+            elegir.forEach(b => b.setAttribute("aria-pressed", "false"));
+            estado.textContent = "Extremo seleccionado. Puedes arrastrar su línea o ajustar el valor en el formulario. Resolver validará el intervalo.";
+        });
         new MutationObserver(() => {
             Plotly.relayout(grafica, { paper_bgcolor: color("--color-surface"), plot_bgcolor: color("--color-surface"),
                 "font.color": color("--color-text"), "xaxis.gridcolor": color("--color-border"),
@@ -267,12 +303,24 @@
                 "shapes[0].label.font.color": color("--color-text"), "shapes[1].label.font.color": color("--color-text") });
             Plotly.restyle(grafica, { "line.color": color("--color-brand") }, [0]);
             Plotly.restyle(grafica, { "marker.color": color("--color-text") }, [1]);
-        }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-estilo"] });
         if (pasos.length) mostrarPaso(Number(slider.value));
         else if (resultado) Plotly.restyle(grafica, { x: [[resultado.c]], y: [[resultado.fc]], text: [["c"]] }, [1]);
     }
-    ["funcion", "a", "b"].forEach(n => campo(n).addEventListener("input", previsualizar));
+    campo("funcion").addEventListener("input", previsualizar);
+    ["a", "b"].forEach(n => campo(n).addEventListener("input", sincronizarExtremos));
+    elegir.forEach(boton => boton.addEventListener("click", () => {
+        extremoElegido = extremoElegido === boton.dataset.elegirExtremo ? null : boton.dataset.elegirExtremo;
+        elegir.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.elegirExtremo === extremoElegido)));
+        estado.textContent = extremoElegido ? `Pulsa sobre la curva para elegir ${extremoElegido}. También puedes escribirlo en el formulario.` : "Selección cancelada.";
+    }));
+    document.getElementById("grafica-restablecer").addEventListener("click", () => muestrear(vistaInicial, true));
+    document.getElementById("grafica-intervalo")?.addEventListener("click", () => {
+        muestrear(vistaCalculo.every(Number.isFinite) ? vistaCalculo : [datos.inicial_a, datos.inicial_b], true);
+    });
     slider?.addEventListener("input", () => mostrarPaso(Number(slider.value)));
+    anterior?.addEventListener("click", () => mostrarPaso(Number(slider.value) - 1));
+    siguiente?.addEventListener("click", () => mostrarPaso(Number(slider.value) + 1));
     filas.forEach(fila => {
         ["pointerenter", "focus", "click"].forEach(tipo => fila.addEventListener(tipo, () => mostrarPaso(Number(fila.dataset.iteracion))));
     });
