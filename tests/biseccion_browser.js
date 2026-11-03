@@ -3,10 +3,10 @@
     "use strict";
     const q = (w, s) => w.document.querySelector(s);
     const ok = (valor, mensaje) => { if (!valor) throw new Error(mensaje); };
-    const esperar = async condicion => {
+    const esperar = async (condicion, mensaje = "Espera agotada") => {
         const limite = Date.now() + 15000;
         while (!condicion()) {
-            if (Date.now() > limite) throw new Error("Espera agotada");
+            if (Date.now() > limite) throw new Error(mensaje);
             await new Promise(r => setTimeout(r, 40));
         }
     };
@@ -33,20 +33,20 @@
             const original = w.fetch; w.fetch = (...args) => { peticiones++; return original(...args); };
             for (const n of ["funcion", "a", "b"]) ok(q(w, `[name="${n}"]`).value === "", "Campo vacío");
             ok(!grafica(w).data && grafica(w).hidden, "Sin gráfica inventada");
-            valor(w, "funcion", "x^2-2"); await esperar(() => listaGrafica(w));
+            valor(w, "funcion", "x^2-2"); await esperar(() => listaGrafica(w), "Sin muestras iniciales");
             ok(peticiones === 1 && !grafica(w).hidden, "Solo función pide muestras");
             ok(grafica(w).data[0].x[0] === -10 && grafica(w).data[0].x[800] === 10, "Ventana inicial de exploración");
             ok(q(w, '[name="a"]').value === "" && q(w, '[name="b"]').value === "", "No inventa intervalo de cálculo");
             ok(!grafica(w).layout.shapes[0].visible && !grafica(w).layout.shapes[1].visible, "No muestra extremos inventados");
             q(w, '[data-elegir-extremo="a"]').click();
             grafica(w).emit("plotly_click", { points: [{ curveNumber: 0, x: 1 }] });
-            await esperar(() => grafica(w).layout.shapes[0].visible);
+            await esperar(() => grafica(w).layout.shapes[0].visible, "No aparece a seleccionado");
             q(w, '[data-elegir-extremo="b"]').click();
             grafica(w).emit("plotly_click", { points: [{ curveNumber: 0, x: 2 }] });
-            await esperar(() => grafica(w).layout.shapes[1].visible);
+            await esperar(() => grafica(w).layout.shapes[1].visible, "No aparece b seleccionado");
             ok(q(w, '[name="a"]').value === "1" && q(w, '[name="b"]').value === "2", "Selección reflejada en el formulario");
             valor(w, "a", "3");
-            await esperar(() => grafica(w).layout.shapes[0].x0 === 3);
+            await esperar(() => grafica(w).layout.shapes[0].x0 === 3, "No se refleja la edición manual de a");
             ok(!grafica(w).hidden && grafica(w).layout.xaxis.range[0] === -10, "Extremos invertidos no ocultan ni desplazan la exploración");
             ok(!q(w, "#resultado"), "Vista previa sin resolver");
             valor(w, "funcion", "");
@@ -99,6 +99,20 @@
             await liberar();
             await new Promise(r => w.requestAnimationFrame(r));
             ok(grafica(w).hidden && q(w, "#grafica-estado").textContent.includes("Introduce"), "Ignora respuesta obsoleta");
+        }],
+        ["El estado listo espera a los extremos e ignora una entrada borrada durante la sincronización", async w => {
+            const original = w.Plotly.relayout;
+            let liberar;
+            w.Plotly.relayout = (...args) => args[1]["shapes[0].visible"] === undefined ? original(...args) : new Promise(resolve => {
+                liberar = () => { w.Plotly.relayout = original; return original(...args).then(resolve); };
+            });
+            valor(w, "funcion", "x²-2");
+            await esperar(() => !!liberar);
+            ok(q(w, "#grafica-estado").textContent.includes("Actualizando"), "No anuncia lista antes de sincronizar los extremos");
+            valor(w, "funcion", ""); await liberar();
+            await new Promise(r => w.requestAnimationFrame(r));
+            ok(grafica(w).hidden && q(w, "#grafica-seleccion").hidden
+                && q(w, "#grafica-estado").textContent.includes("Introduce"), "No muestra controles de una entrada borrada");
         }],
         ["Modo superíndice físico respeta edición y foco", async w => {
             const f = q(w, '[name="funcion"]'); f.focus();

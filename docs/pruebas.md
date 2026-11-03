@@ -18,7 +18,7 @@ dominio/continuidad, no finitos, límites y bloqueo público de Conjuntos.
 Para interacción real ejecuta `uv run --locked python -m tests.biseccion_browser`
 y abre `http://127.0.0.1:8896/__pruebas/`: comprueba cursor, foco, deslizador,
 ausencia de peticiones al recorrer pasos, zoom, extremos editables y comparación.
-Los quince flujos incluyen campos inicialmente vacíos sin muestras inventadas,
+Los dieciséis flujos incluyen campos inicialmente vacíos sin muestras inventadas,
 vista previa con solo la función, selección de a/b desde la curva, teclado contextual y cursor, signos y mitad
 conservada en el recorrido, comparación de uno, varios y fallidos cálculos,
 cifras distinguibles con precisión pequeña y respuestas de vista previa obsoletas.
@@ -36,7 +36,7 @@ anchos de 320, 768, 1024 y 1440 px, bloqueando las peticiones fuera de loopback.
 El runner de Conjuntos conserva el editor bajo una URLConf exclusiva de pruebas;
 las pruebas públicas exigen 404 y ausencia de enlaces. Véase [Bisección](biseccion.md).
 
-Validación de mejoras UX (2026-11-03): 1889 pruebas Python; Bisección 15/15 y
+Validación de mejoras UX (2026-11-03): 1889 pruebas Python; Bisección 16/16 y
 teclado 36/36 en Edge y WebView2 156.0.4314.58. En una ventana nativa de WebView2
 se reprodujo el salto de foco del scrollbar hacia `main#contenido` y se verificó
 la corrección con arrastre, inserción del último dígito y Ctrl+Z; también selección,
@@ -45,7 +45,7 @@ WebView2 emularon el foco para permitir enfocar sus iframes. Se comprobó el cá
 de 13 pasos y la verificación sin JavaScript, y la navegación Home/flechas/Espacio.
 Sin tráfico externo; se revisaron 320/390/768/1024/1440 px y claro/oscuro.
 La combinación temporal con PR #110 (`058d343`) no tuvo conflictos y pasó 84
-pruebas focalizadas y Bisección 15/15, con revisión de Estudio/Minimalista.
+pruebas focalizadas y Bisección 16/16, con revisión de Estudio/Minimalista.
 No se probó lector de pantalla ni táctil físico (gestos emulados), ni se generó instalador.
 
 Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`

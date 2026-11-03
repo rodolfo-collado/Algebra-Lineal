@@ -80,7 +80,7 @@
             cambios[`shapes[${i}].y1`] = 1;
         });
         mutando = true;
-        Plotly.relayout(grafica, cambios).finally(() => { mutando = false; });
+        return Plotly.relayout(grafica, cambios).finally(() => { mutando = false; });
     }
 
     function linea(x, nombre) {
@@ -155,7 +155,8 @@
                 mutando = false;
                 if (n !== generacion) return;
             }
-            sincronizarExtremos();
+            await sincronizarExtremos();
+            if (n !== generacion) return;
             seleccion.hidden = false;
             estado.textContent = puntos.y.some(y => y === null)
                 ? "La curva tiene huecos donde no se pudo verificar el dominio. La gráfica es un muestreo, no una prueba de raíces."
