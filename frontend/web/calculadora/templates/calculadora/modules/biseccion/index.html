@@ -10,7 +10,7 @@
         {% include "calculadora/components/errores_generales.html" %}
         <div class="field-group" data-perfil="funcion-real">
             {{ form.funcion.label_tag }}{{ form.funcion }}{{ form.funcion.errors }}
-            <p id="funcion-ayuda" class="field-help">Usa x y ^ para potencias. Puedes escribir 5x, 2(x+1) o multiplicar con *.</p>
+            <p id="funcion-ayuda" class="field-help">Puedes escribir x², x³, 5x y 2(x+1). La tecla aⁿ pide un exponente entero y lo inserta elevado; también puedes usar ^ o **.</p>
         </div>
         <div class="biseccion-campos">
             <div class="field-group">{{ form.a.label_tag }}{{ form.a }}{{ form.a.errors }}</div>

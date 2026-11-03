@@ -86,6 +86,25 @@ class BiseccionTests(unittest.TestCase):
 
 
 class FuncionesRealesTests(unittest.TestCase):
+    def test_superindices_enteros_equivalentes_y_profesor(self):
+        for visual, escrita in [("x²", "x^2"), ("x³", "x**3"), ("(x+1)²", "(x+1)^2"),
+                                  ("x¹²", "x^12"), ("x⁻³", "x^(-3)"), ("x⁺²", "x^(+2)"), ("x⁰²", "x^2"),
+                                  ("2x²+sin(x)²+pi³+1e-3x", "2*x^2+sin(x)^2+pi^3+1e-3*x")]:
+            with self.subTest(visual=visual):
+                f, g = FuncionReal(visual), FuncionReal(escrita)
+                self.assertEqual(f.clave, g.clave)
+                for x in [.5, 1, 2]:
+                    self.assertEqual(f(x), g(x))
+                self.assertEqual(f.rango(1, 2), g.rango(1, 2))
+        r = biseccion(FuncionReal("x⁴ - 5x³ + 0.5x² - 11x + 10"), .55, 1.1)
+        self.assertEqual(r, biseccion(FuncionReal(POLINOMIO), .55, 1.1))
+        self.assertEqual(len(r["iteraciones"]), 13)
+
+    def test_superindices_invalidos_no_ocultan_codigo_ni_exceden_limites(self):
+        for texto in ["²x", "x⁻", "x²⁻³", "xⁿ", "sin²(x)", "x².__class__", "x²;print(1)", "x"+"²"*512]:
+            with self.subTest(texto=texto), self.assertRaises(ValueError):
+                FuncionReal(texto)
+
     def test_multiplicacion_implicita_equivale_a_explicita(self):
         for implicita, explicita in [
             ("5x^3", "5*x^3"), ("0.5x^2", "0.5*x^2"), ("11x", "11*x"),

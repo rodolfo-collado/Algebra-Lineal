@@ -262,12 +262,12 @@ class PruebasRegistro(unittest.TestCase):
     def test_teclas_de_funcion_real_producen_expresiones_del_parser(self):
         from backend.funciones_reales import FuncionReal
         teclas = {t.etiqueta: t for t in PERFILES["funcion-real"].teclas}
-        for etiqueta, texto in {"x": "x", "x²": "x^2", "x³": "x^3", "×": "*", "√": "sqrt()"}.items():
+        for etiqueta, texto in {"x": "x", "x²": "x²", "x³": "x³", "×": "*", "√": "sqrt()"}.items():
             self.assertEqual(teclas[etiqueta].insercion, texto)
         for etiqueta in ("sen", "cos", "√", "ln"):
             texto = teclas[etiqueta].insercion.replace("()", "(1)")
             self.assertIsInstance(FuncionReal(texto)(0), float)
-        self.assertEqual(FuncionReal("x" + teclas["aⁿ"].insercion.replace("()", "(4)"))(2), 16)
+        self.assertTrue(teclas["aⁿ"].exponente_entero)
 
     def test_lo_que_inserta_el_perfil_de_sistema_lo_entiende_el_parser(self):
         tecla = {t.nombre: t.insercion for t in PERFIL_SISTEMA.teclas}
@@ -332,8 +332,8 @@ class PruebasRegistro(unittest.TestCase):
         self.assertEqual(
             numerico["grupos"],
             [{"nombre": "Valores", "teclas": [
-                {"etiqueta": "−", "insercion": "-", "nombre": "Menos", "retroceso": 0},
-                {"etiqueta": "a⁄b", "insercion": "/", "nombre": "Barra de fracción", "retroceso": 0},
+                {"etiqueta": "−", "insercion": "-", "nombre": "Menos", "retroceso": 0, "exponente_entero": False},
+                {"etiqueta": "a⁄b", "insercion": "/", "nombre": "Barra de fracción", "retroceso": 0, "exponente_entero": False},
             ]}],
         )
         self.assertEqual(perfiles_para(), {})

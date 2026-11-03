@@ -17,7 +17,7 @@
         campo.value = texto; campo.dispatchEvent(new w.Event("input", { bubbles: true }));
     };
     const ejemplo = w => {
-        valor(w, "funcion", "x^4 - 5x^3 + 0.5x^2 - 11x + 10");
+        valor(w, "funcion", "x⁴ - 5x³ + 0.5x² - 11x + 10");
         valor(w, "a", "0.55"); valor(w, "b", "1.1");
     };
     const post = frame => new Promise((resolve, reject) => {
@@ -44,11 +44,29 @@
         ["Teclado contextual de funciones reales conserva foco y cursor", async w => {
             const f = q(w, '[name="funcion"]'); f.focus();
             await esperar(() => q(w, ".math-keyboard").hasAttribute("data-abierto"));
-            q(w, '[data-insercion="x^2"]').click();
-            ok(f.value === "x^2" && w.document.activeElement === f, "Cuadrado y foco");
+            q(w, '[data-insercion="x²"]').click();
+            ok(f.value === "x²" && w.document.activeElement === f, "Cuadrado y foco");
             valor(w, "funcion", "x"); f.setSelectionRange(1, 1);
-            q(w, '[data-insercion="^()"]')?.click();
-            ok(f.value === "x^()" && f.selectionStart === 3, "Exponente general con cursor dentro");
+            const promptOriginal = w.prompt;
+            w.prompt = () => "12";
+            q(w, "[data-exponente-entero]").click();
+            ok(f.value === "x¹²" && f.selectionStart === 3, "Exponente entero visible");
+            w.document.execCommand("undo");
+            ok(f.value === "x", "Deshacer restaura la base");
+            valor(w, "funcion", "(x+1)²"); f.setSelectionRange(5, 6);
+            w.prompt = () => "-3";
+            q(w, "[data-exponente-entero]").click();
+            ok(f.value === "(x+1)⁻³", "Reemplaza el exponente seleccionado");
+            w.prompt = () => null;
+            q(w, "[data-exponente-entero]").click();
+            ok(f.value === "(x+1)⁻³", "Cancelar no edita");
+            const alertOriginal = w.alert;
+            let aviso = false;
+            w.alert = () => { aviso = true; }; w.prompt = () => "2.5";
+            q(w, "[data-exponente-entero]").click();
+            ok(aviso && f.value === "(x+1)⁻³", "Exponente inválido no edita");
+            w.alert = alertOriginal;
+            w.prompt = promptOriginal;
             valor(w, "funcion", ""); f.setSelectionRange(0, 0);
             q(w, '[data-insercion="sqrt()"]')?.click();
             ok(f.value === "sqrt()" && f.selectionStart === 5, "Raíz y cursor");
@@ -132,7 +150,7 @@
             valor(w, "funcion", "x^4 - 5*x^3 + 0.5*x^2 - 11*x + 10");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 10, "Segundo intervalo: 10");
-            ok(q(w, '[name="funcion"]').value.replaceAll("*", "") === funcion, "Función equivalente conservada");
+            ok(q(w, '[name="funcion"]').value.replaceAll("*", "").replaceAll("^4", "⁴").replaceAll("^3", "³").replaceAll("^2", "²") === funcion, "Función equivalente conservada");
             ok(q(w, "#biseccion-comparaciones").textContent.includes("Compatible con la misma raíz"), "Misma raíz compatible");
             valor(w, "a", ".55"); valor(w, "b", "1.1");
             w = await post(frame); await esperar(() => listaGrafica(w));

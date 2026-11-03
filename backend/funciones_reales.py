@@ -5,6 +5,7 @@ from decimal import Decimal
 from io import StringIO
 import math
 import operator
+import re
 import tokenize
 
 
@@ -14,6 +15,18 @@ FUNCIONES = {"sin": math.sin, "cos": math.cos, "tan": math.tan, "exp": math.exp,
 CONSTANTES = {"pi": math.pi, "e": math.e}
 OPERACIONES = {ast.Add: operator.add, ast.Sub: operator.sub,
                ast.Mult: operator.mul, ast.Div: operator.truediv, ast.Pow: math.pow}
+SUPERINDICES = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻", "0123456789+-")
+
+
+def normalizar_potencias(texto):
+    def entero(coincidencia):
+        exponente = coincidencia[0].translate(SUPERINDICES)
+        if not re.fullmatch(r"[+-]?[0-9]+", exponente):
+            raise ValueError("El superíndice debe ser un exponente entero, con signo opcional al inicio.")
+        signo = exponente[0] if exponente[0] in "+-" else ""
+        exponente = signo + (exponente.lstrip("+-").lstrip("0") or "0")
+        return f"**({exponente})"
+    return re.sub(r"[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+", entero, texto.replace("^", "**"))
 
 
 def finito(valor):
@@ -57,7 +70,7 @@ class FuncionReal:
             raise ValueError("Escribe una función de x de hasta 512 caracteres.")
         self.texto = texto.strip()
         try:
-            self.expresion = explicitar_productos(self.texto.replace("^", "**"))
+            self.expresion = explicitar_productos(normalizar_potencias(self.texto))
             self.arbol = ast.parse(self.expresion, mode="eval").body
             if len(list(ast.walk(self.arbol))) > 160:
                 raise ValueError("La función tiene demasiadas operaciones.")

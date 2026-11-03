@@ -67,7 +67,7 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertContains(r, "f(b) = 1 (positivo)")
 
     def test_notaciones_comparten_resultado_muestras_y_clave_de_comparacion(self):
-        implicita = POLINOMIO.replace("*", "")
+        implicita = "x⁴ - 5x³ + 0.5x² - 11x + 10"
         r = self.client.post(RUTA, datos(funcion=implicita))
         s = self.client.post(RUTA, datos())
         self.assertEqual(resultado_html(r), resultado_html(s))

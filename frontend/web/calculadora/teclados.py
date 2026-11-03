@@ -23,6 +23,7 @@ class Tecla:
     nombre: str
     # Cuántos caracteres retrocede el cursor tras insertar: «( )» deja el cursor dentro.
     retroceso: int = 0
+    exponente_entero: bool = False
 
     def __post_init__(self):
         if not self.etiqueta.strip() or not self.insercion or not self.nombre.strip():
@@ -106,8 +107,8 @@ PERFIL_EXPRESION = Perfil("expresion", (EXPRESIONES, OPERADORES_EXPRESION))
 PERFIL_LINEAL = Perfil("lineal", (VARIABLES, LINEALES))
 PERFIL_FUNCION_REAL = Perfil("funcion-real", (
     GrupoTeclas("Variable y potencias", (
-        Tecla("x", "x", "Variable x"), Tecla("x²", "x^2", "x al cuadrado"),
-        Tecla("x³", "x^3", "x al cubo"), Tecla("aⁿ", "^()", "Exponente entre paréntesis", 1),
+        Tecla("x", "x", "Variable x"), Tecla("x²", "x²", "x al cuadrado"),
+        Tecla("x³", "x³", "x al cubo"), Tecla("aⁿ", "¹", "Elegir exponente entero", exponente_entero=True),
     )),
     GrupoTeclas("Operaciones", (Tecla("( )", "()", "Paréntesis", 1), MAS, MENOS,
                                 Tecla("×", "*", "Multiplicar"), FRACCION)),

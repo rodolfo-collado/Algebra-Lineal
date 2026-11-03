@@ -22,6 +22,7 @@
             boton.textContent = tecla.etiqueta;
             boton.setAttribute("data-insercion", tecla.insercion);
             boton.setAttribute("data-retroceso", tecla.retroceso || 0);
+            boton.toggleAttribute("data-exponente-entero", Boolean(tecla.exponente_entero));
             boton.setAttribute("aria-label", `${tecla.etiqueta} — ${tecla.nombre}`);
             boton.title = `${tecla.etiqueta} — ${tecla.nombre}`;
             return boton;
@@ -168,7 +169,17 @@
             if (teclado.hidden || !objetivo || !teclado.contains(tecla)) return;
             const campo = objetivo;
 
-            const texto = tecla.dataset.insercion;
+            let texto = tecla.dataset.insercion;
+            if (tecla.hasAttribute("data-exponente-entero")) {
+                const entrada = window.prompt("Exponente entero (por ejemplo, 12 o -3):", "2");
+                if (entrada === null) return;
+                const entero = entrada.trim();
+                if (!/^[+-]?[0-9]+$/.test(entero) || entero.length > 512) {
+                    window.alert("Escribe un exponente entero, como 12 o -3. Para otras expresiones puedes escribir ^ o ** en el campo.");
+                    return;
+                }
+                texto = [...entero].map(c => "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻"["0123456789+-".indexOf(c)]).join("");
+            }
             const retroceso = Number(tecla.dataset.retroceso) || 0;
             const inicio = campo.selectionStart ?? campo.value.length;
             const fin = campo.selectionEnd ?? inicio;
