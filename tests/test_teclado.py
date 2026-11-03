@@ -262,7 +262,7 @@ class PruebasRegistro(unittest.TestCase):
     def test_teclas_de_funcion_real_producen_expresiones_del_parser(self):
         from backend.funciones_reales import FuncionReal
         teclas = {t.etiqueta: t for t in PERFILES["funcion-real"].teclas}
-        for etiqueta, texto in {"x": "x", "x²": "x²", "x³": "x³", "×": "*", "√": "sqrt()"}.items():
+        for etiqueta, texto in {"x": "x", "x²": "x²", "x³": "x³", "×": "*", "√": "√()"}.items():
             self.assertEqual(teclas[etiqueta].insercion, texto)
         for etiqueta in ("sen", "cos", "√", "ln"):
             texto = teclas[etiqueta].insercion.replace("()", "(1)")
@@ -520,7 +520,9 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         self.assertIn('event.key === "Escape"', script)
         self.assertNotIn(".find(esValido)", script)
         # Sin anuncios en vivo ni abrir el desplegable por su cuenta.
-        self.assertNotIn("aria-live", script)
+        self.assertIn('boton.setAttribute("aria-pressed", "false")', script)
+        self.assertNotIn("window.prompt", script)
+        self.assertNotIn("window.alert", script)
         self.assertNotIn("open = true", script)
         # Delegación: los campos dinámicos no registran listeners uno a uno.
         self.assertIn('"focusin"', script)

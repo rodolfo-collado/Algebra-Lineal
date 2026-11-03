@@ -47,29 +47,22 @@
             q(w, '[data-insercion="x²"]').click();
             ok(f.value === "x²" && w.document.activeElement === f, "Cuadrado y foco");
             valor(w, "funcion", "x"); f.setSelectionRange(1, 1);
-            const promptOriginal = w.prompt;
-            w.prompt = () => "12";
-            q(w, "[data-exponente-entero]").click();
-            ok(f.value === "x¹²" && f.selectionStart === 3, "Exponente entero visible");
-            w.document.execCommand("undo");
-            ok(f.value === "x", "Deshacer restaura la base");
-            valor(w, "funcion", "(x+1)²"); f.setSelectionRange(5, 6);
-            w.prompt = () => "-3";
-            q(w, "[data-exponente-entero]").click();
-            ok(f.value === "(x+1)⁻³", "Reemplaza el exponente seleccionado");
-            w.prompt = () => null;
-            q(w, "[data-exponente-entero]").click();
-            ok(f.value === "(x+1)⁻³", "Cancelar no edita");
-            const alertOriginal = w.alert;
-            let aviso = false;
-            w.alert = () => { aviso = true; }; w.prompt = () => "2.5";
-            q(w, "[data-exponente-entero]").click();
-            ok(aviso && f.value === "(x+1)⁻³", "Exponente inválido no edita");
-            w.alert = alertOriginal;
-            w.prompt = promptOriginal;
+            const modo = q(w, "[data-exponente-entero]");
+            modo.click();
+            ok(modo.getAttribute("aria-pressed") === "true", "Modo seleccionado");
+            q(w, '[data-insercion="1"]').click(); q(w, '[data-insercion="2"]').click();
+            ok(f.value === "x¹²", "Dígitos táctiles elevados");
+            modo.click(); q(w, '[data-insercion="+"]').click(); q(w, '[data-insercion="3"]').click();
+            ok(f.value === "x¹²+3", "Salida del modo");
+            valor(w, "funcion", "(x+1)²"); f.setSelectionRange(5, 6); modo.click();
+            q(w, '[data-insercion="-"]').click(); q(w, '[data-insercion="3"]').click();
+            ok(f.value === "(x+1)⁻³", "Reemplaza exponente por negativo");
             valor(w, "funcion", ""); f.setSelectionRange(0, 0);
-            q(w, '[data-insercion="sqrt()"]')?.click();
-            ok(f.value === "sqrt()" && f.selectionStart === 5, "Raíz y cursor");
+            q(w, '[data-insercion="√()"]')?.click();
+            ok(f.value === "√()" && f.selectionStart === 2, "Raíz y cursor");
+            valor(w, "funcion", ""); f.setSelectionRange(0, 0);
+            q(w, '[data-insercion="sen()"]')?.click();
+            ok(f.value === "sen()" && f.selectionStart === 4, "Seno en español");
             q(w, '[name="a"]').focus();
             ok(!q(w, ".math-keyboard").hasAttribute("data-abierto"), "No aparece en extremos numéricos");
         }],
@@ -86,6 +79,26 @@
             await liberar();
             await new Promise(r => w.requestAnimationFrame(r));
             ok(grafica(w).hidden && q(w, "#grafica-estado").textContent.includes("Introduce"), "Ignora respuesta obsoleta");
+        }],
+        ["Modo superíndice físico respeta edición y foco", async w => {
+            const f = q(w, '[name="funcion"]'); f.focus();
+            await esperar(() => !!q(w, "[data-exponente-entero]"));
+            const escribir = texto => {
+                const evento = new w.InputEvent("beforeinput", { inputType: "insertText", data: texto, bubbles: true, cancelable: true });
+                if (f.dispatchEvent(evento)) w.document.execCommand("insertText", false, texto);
+            };
+            valor(w, "funcion", "x"); f.setSelectionRange(1, 1);
+            q(w, "[data-exponente-entero]").click(); escribir("12");
+            ok(f.value === "x¹²", "Escritura elevada");
+            w.document.execCommand("undo");
+            ok(f.value === "x", "Deshacer escritura elevada");
+            valor(w, "funcion", "(x+1)²"); f.setSelectionRange(5, 6); escribir("-12");
+            ok(f.value === "(x+1)⁻¹²", "Sustituye la selección");
+            escribir("+3");
+            ok(f.value === "(x+1)⁻¹²+3" && q(w, "[data-exponente-entero]").getAttribute("aria-pressed") === "false", "Operación sale del modo");
+            q(w, "[data-exponente-entero]").click(); q(w, '[name="a"]').focus(); f.focus();
+            await esperar(() => !!q(w, "[data-exponente-entero]"));
+            ok(q(w, "[data-exponente-entero]").getAttribute("aria-pressed") === "false", "Otro foco desactiva el modo");
         }],
         ["Precisión pequeña mantiene distinguibles a, c y b", async (w, frame) => {
             valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");

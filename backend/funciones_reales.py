@@ -49,6 +49,8 @@ def explicitar_productos(texto):
     valores = {"x", *CONSTANTES}
     for actual in tokenize.generate_tokens(StringIO(texto).readline):
         tipo, token = actual.type, actual.string
+        if tipo == tokenize.NAME and token == "sen":
+            token = "sin"
         if tipo == tokenize.COMMENT:
             raise ValueError("No se admiten comentarios en la función.")
         if anterior is not None:
@@ -70,7 +72,7 @@ class FuncionReal:
             raise ValueError("Escribe una función de x de hasta 512 caracteres.")
         self.texto = texto.strip()
         try:
-            self.expresion = explicitar_productos(normalizar_potencias(self.texto))
+            self.expresion = explicitar_productos(normalizar_potencias(self.texto).replace("√", " sqrt").strip())
             self.arbol = ast.parse(self.expresion, mode="eval").body
             if len(list(ast.walk(self.arbol))) > 160:
                 raise ValueError("La función tiene demasiadas operaciones.")

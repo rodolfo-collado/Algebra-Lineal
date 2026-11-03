@@ -108,14 +108,15 @@ PERFIL_LINEAL = Perfil("lineal", (VARIABLES, LINEALES))
 PERFIL_FUNCION_REAL = Perfil("funcion-real", (
     GrupoTeclas("Variable y potencias", (
         Tecla("x", "x", "Variable x"), Tecla("x²", "x²", "x al cuadrado"),
-        Tecla("x³", "x³", "x al cubo"), Tecla("aⁿ", "¹", "Elegir exponente entero", exponente_entero=True),
+        Tecla("x³", "x³", "x al cubo"), Tecla("aⁿ", "¹", "Activar o desactivar superíndices", exponente_entero=True),
     )),
     GrupoTeclas("Operaciones", (Tecla("( )", "()", "Paréntesis", 1), MAS, MENOS,
                                 Tecla("×", "*", "Multiplicar"), FRACCION)),
     GrupoTeclas("Funciones", (
-        Tecla("sen", "sin()", "Seno en radianes", 1), Tecla("cos", "cos()", "Coseno en radianes", 1),
-        Tecla("√", "sqrt()", "Raíz cuadrada", 1), Tecla("ln", "ln()", "Logaritmo natural", 1),
+        Tecla("sen", "sen()", "Seno en radianes", 1), Tecla("cos", "cos()", "Coseno en radianes", 1),
+        Tecla("√", "√()", "Raíz cuadrada", 1), Tecla("ln", "ln()", "Logaritmo natural", 1),
     )),
+    grupo_digitos(10),
 ))
 LITERALES_CONJUNTOS = GrupoTeclas("Elementos", (
     Tecla("{ }", "{}", "Conjunto", 1), Tecla("∅", "∅", "Conjunto vacío"),

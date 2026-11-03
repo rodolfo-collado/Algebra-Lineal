@@ -86,6 +86,20 @@ class BiseccionTests(unittest.TestCase):
 
 
 class FuncionesRealesTests(unittest.TestCase):
+    def test_seno_y_raiz_visuales_son_aliases_canonicos(self):
+        for visual, escrita in [("sen(x)", "sin(x)"), ("√(x)", "sqrt(x)"),
+                                ("2√(x)+sen(x)²+√(√(x))", "2*sqrt(x)+sin(x)^2+sqrt(sqrt(x))"),
+                                ("x√(x)+2sen(x)+1e-3", "x*sqrt(x)+2*sin(x)+1e-3")]:
+            with self.subTest(visual=visual):
+                f, g = FuncionReal(visual), FuncionReal(escrita)
+                self.assertEqual(f.clave, g.clave)
+                for x in [1, 2, 3]:
+                    self.assertEqual(f(x), g(x))
+                self.assertEqual(f.rango(1, 2), g.rango(1, 2))
+        for texto in ["√x", "√", "senx", "sen.__class__", "√(-1)"]:
+            with self.subTest(texto=texto), self.assertRaises(ValueError):
+                FuncionReal(texto)(0)
+
     def test_superindices_enteros_equivalentes_y_profesor(self):
         for visual, escrita in [("x²", "x^2"), ("x³", "x**3"), ("(x+1)²", "(x+1)^2"),
                                   ("x¹²", "x^12"), ("x⁻³", "x^(-3)"), ("x⁺²", "x^(+2)"), ("x⁰²", "x^2"),

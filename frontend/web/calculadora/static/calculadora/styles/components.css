@@ -964,6 +964,15 @@ html.js body:has(.math-keyboard) { padding-bottom: 8rem; }
     background: var(--color-brand-soft);
 }
 
+.math-key[aria-pressed="true"]:not(:disabled) {
+    background: var(--color-brand);
+    color: var(--color-brand-text);
+    border-color: var(--color-brand);
+    box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.math-keyboard:has(.math-key[aria-pressed="true"]) .math-keyboard-help { display: block; }
+
 .math-keyboard-help {
     margin: 0.5rem 0 0;
     color: var(--color-muted);

@@ -28,6 +28,14 @@ def resultado_html(respuesta):
 
 
 class BiseccionWebTests(SimpleTestCase):
+    def test_aliases_visuales_comparten_resolucion_y_muestras(self):
+        for visual, alias, a, b in [("sen(x)", "sin(x)", "3", "4"), ("√(x)-2", "sqrt(x)-2", "1", "9")]:
+            with self.subTest(visual=visual):
+                r = self.client.post(RUTA, datos(funcion=visual, a=a, b=b))
+                s = self.client.post(RUTA, datos(funcion=alias, a=a, b=b))
+                self.assertEqual(resultado_html(r), resultado_html(s))
+                self.assertEqual(self.client.post(RUTA+"grafica/", datos(funcion=visual, a=a, b=b)).json(),
+                                 self.client.post(RUTA+"grafica/", datos(funcion=alias, a=a, b=b)).json())
     def test_inicio_vacio_con_ajustes_y_teclado_contextual(self):
         from tests.test_teclado import Pagina
         r = self.client.get(RUTA)
