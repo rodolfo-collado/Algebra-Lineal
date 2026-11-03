@@ -6,7 +6,7 @@ from backend.funciones_reales import FuncionReal
 from .forms_feedback import FormularioConErrores
 
 
-EJEMPLO = "x^4 - 5*x^3 + 0.5*x^2 - 11*x + 10"
+EJEMPLO = "x^4 - 5x^3 + 0.5x^2 - 11x + 10"
 
 
 class BiseccionForm(FormularioConErrores):

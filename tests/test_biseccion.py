@@ -86,6 +86,33 @@ class BiseccionTests(unittest.TestCase):
 
 
 class FuncionesRealesTests(unittest.TestCase):
+    def test_multiplicacion_implicita_equivale_a_explicita(self):
+        for implicita, explicita in [
+            ("5x^3", "5*x^3"), ("0.5x^2", "0.5*x^2"), ("11x", "11*x"),
+            ("2(x+1)", "2*(x+1)"), ("x(x+1)", "x*(x+1)"),
+            ("(x+1)(x-1)", "(x+1)*(x-1)"), ("2sin(x)", "2*sin(x)"),
+            ("pi x", "pi*x"), ("1/2x", "1/2*x"), ("e(x+1)", "e*(x+1)"),
+            ("sin(x)cos(x)", "sin(x)*cos(x)"), ("1e-3x+2E+2(x+1)", "1e-3*x+2E+2*(x+1)"),
+        ]:
+            with self.subTest(texto=implicita):
+                f, g = FuncionReal(implicita), FuncionReal(explicita)
+                self.assertEqual(f.clave, g.clave)
+                for x in [-2, 0, .75, 2]:
+                    self.assertEqual(f(x), g(x))
+                self.assertEqual(f.rango(-1, 1), g.rango(-1, 1))
+
+    def test_profesor_implicito_conserva_las_trece_iteraciones(self):
+        explicita = biseccion(FuncionReal(POLINOMIO), .55, 1.1)
+        implicita = biseccion(FuncionReal(POLINOMIO.replace("*", "")), .55, 1.1)
+        self.assertEqual(implicita, explicita)
+        self.assertEqual(len(implicita["iteraciones"]), 13)
+
+    def test_no_adivina_nombres_ni_notacion_cientifica_incompleta(self):
+        for texto in ["xx", "sinx", "xpi", "2e", "2e+", "1.2.3x", "2 3x", "sin x", "foo(x)",
+                      "2__import__('os')", "x[0]", "x#comentario", "x " * 100, "2x " * 180]:
+            with self.subTest(texto=texto), self.assertRaises(ValueError):
+                FuncionReal(texto)
+
     def test_sintaxis_matematica_y_funciones_permitidas(self):
         for texto, x, esperado in [("-x^2", 2, -4), ("sin(pi/2)+cos(0)", 0, 2),
                                     ("exp(-x)-x", 0, 1), ("sqrt(x)+ln(e)", 4, 3),
@@ -95,7 +122,7 @@ class FuncionesRealesTests(unittest.TestCase):
 
     def test_rechaza_codigo_y_sintaxis_ajena(self):
         for texto in ["__import__('os')", "x.__class__", "[x][0]", "lambda: 1", "x if x else 0",
-                      "sum([1])", "sin(x,1)", "sin(x=1)", "True", "y+1", "x%2", "2x", "", "1e999", "x+1e-400", "0e"+"9"*100]:
+                      "sum([1])", "sin(x,1)", "sin(x=1)", "True", "y+1", "x%2", "", "1e999", "x+1e-400", "0e"+"9"*100]:
             with self.subTest(texto=texto), self.assertRaises(ValueError):
                 FuncionReal(texto)
 

@@ -28,6 +28,17 @@ def resultado_html(respuesta):
 
 
 class BiseccionWebTests(SimpleTestCase):
+    def test_notaciones_comparten_resultado_muestras_y_clave_de_comparacion(self):
+        implicita = POLINOMIO.replace("*", "")
+        r = self.client.post(RUTA, datos(funcion=implicita))
+        s = self.client.post(RUTA, datos())
+        self.assertEqual(resultado_html(r), resultado_html(s))
+        self.assertContains(r, implicita)
+        a = self.client.post(RUTA + "grafica/", datos(funcion=implicita))
+        b = self.client.post(RUTA + "grafica/", datos())
+        self.assertEqual(a.status_code, 200)
+        self.assertEqual(a.json(), b.json())
+
     def test_catalogo_navegacion_y_assets_locales(self):
         self.assertEqual(reverse("calculadora:biseccion"), RUTA)
         self.assertTrue(catalogo.herramienta_por_id("biseccion").disponible)

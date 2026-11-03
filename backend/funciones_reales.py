@@ -2,8 +2,10 @@
 
 import ast
 from decimal import Decimal
+from io import StringIO
 import math
 import operator
+import tokenize
 
 
 FUNCIONES = {"sin": math.sin, "cos": math.cos, "tan": math.tan, "exp": math.exp,
@@ -27,18 +29,40 @@ def acotar(inferior, superior):
             finito(math.nextafter(superior, math.inf)))
 
 
+def explicitar_productos(texto):
+    """Insertar * entre factores reconocidos sin separar nombres ni números."""
+    salida = []
+    anterior = None
+    valores = {"x", *CONSTANTES}
+    for actual in tokenize.generate_tokens(StringIO(texto).readline):
+        tipo, token = actual.type, actual.string
+        if tipo == tokenize.COMMENT:
+            raise ValueError("No se admiten comentarios en la función.")
+        if anterior is not None:
+            previo = anterior.string
+            if anterior.type == tokenize.NUMBER and token in {"e", "E"} and anterior.end == actual.start:
+                raise ValueError("Completa el exponente científico o escribe *e para multiplicar por e.")
+            fin = anterior.type == tokenize.NUMBER or previo in valores or previo == ")"
+            inicio = token in valores or token in FUNCIONES or token == "(" or tipo == tokenize.NUMBER
+            if fin and inicio and not (anterior.type == tipo == tokenize.NUMBER):
+                salida.append((tokenize.OP, "*"))
+        salida.append((tipo, token))
+        anterior = actual
+    return tokenize.untokenize(salida)
+
+
 class FuncionReal:
     def __init__(self, texto):
         if not isinstance(texto, str) or not texto.strip() or len(texto) > 512:
             raise ValueError("Escribe una función de x de hasta 512 caracteres.")
         self.texto = texto.strip()
         try:
-            self.expresion = self.texto.replace("^", "**")
+            self.expresion = explicitar_productos(self.texto.replace("^", "**"))
             self.arbol = ast.parse(self.expresion, mode="eval").body
             if len(list(ast.walk(self.arbol))) > 160:
                 raise ValueError("La función tiene demasiadas operaciones.")
             self._validar(self.arbol, 0)
-        except (SyntaxError, RecursionError, ArithmeticError) as error:
+        except (SyntaxError, RecursionError, ArithmeticError, tokenize.TokenError) as error:
             raise ValueError("Función no válida. Usa x, números, *, /, ^ y funciones admitidas.") from error
         self.clave = ast.dump(self.arbol)
 

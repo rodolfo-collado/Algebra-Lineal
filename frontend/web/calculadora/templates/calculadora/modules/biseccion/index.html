@@ -10,7 +10,7 @@
         {% include "calculadora/components/errores_generales.html" %}
         <div class="field-group">
             {{ form.funcion.label_tag }}{{ form.funcion }}{{ form.funcion.errors }}
-            <p id="funcion-ayuda" class="field-help">Usa x, * para multiplicar y ^ para potencias. Ejemplo: x^2 - 2.</p>
+            <p id="funcion-ayuda" class="field-help">Usa x y ^ para potencias. Puedes escribir 5x, 2(x+1) o multiplicar con *.</p>
         </div>
         <div class="biseccion-campos">
             <div class="field-group">{{ form.a.label_tag }}{{ form.a }}{{ form.a.errors }}</div>
@@ -24,6 +24,7 @@
                 <div class="field-group">{{ form.max_iteraciones.label_tag }}{{ form.max_iteraciones }}{{ form.max_iteraciones.errors }}</div>
             </div>
             <p class="field-help">Funciones: sin, cos, tan, exp, log o ln (natural), log10, sqrt y abs. Constantes: pi y e. Exponentes constantes; ángulos en radianes.</p>
+            <p class="field-help">Conserva los nombres completos: sin(x) es una función; xx y sinx no se admiten. 1e-3 es notación científica; para multiplicar por e escribe 2*e. Productos y divisiones tienen igual prioridad: 1/2x equivale a (1/2)*x; usa 1/(2x) si todo es denominador.</p>
         {% enddisclosure %}
         <div class="workspace-actions"><button type="submit" class="btn btn-primary" data-calculo>Resolver por bisección</button></div>
     </form>

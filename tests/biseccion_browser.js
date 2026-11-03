@@ -65,10 +65,12 @@
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 13, "Primer intervalo: 13");
             const funcion = q(w, '[name="funcion"]').value;
+            ok(!funcion.includes("*"), "Ejemplo precargado con notación de clase");
             valor(w, "a", "5.2"); valor(w, "b", "5.3");
+            valor(w, "funcion", "x^4 - 5*x^3 + 0.5*x^2 - 11*x + 10");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 10, "Segundo intervalo: 10");
-            ok(q(w, '[name="funcion"]').value === funcion, "Función conservada");
+            ok(q(w, '[name="funcion"]').value.replaceAll("*", "") === funcion, "Función equivalente conservada");
             ok(q(w, "#biseccion-comparaciones").textContent.includes("Compatible con la misma raíz"), "Misma raíz compatible");
         }],
         ["Errores accesibles y raíz en extremo sin deslizador", async (w, frame) => {

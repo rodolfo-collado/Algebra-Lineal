@@ -21,7 +21,18 @@ debe ser positiva y nunca mayor que `0.0001`, también en envíos HTTP manipulad
 Se admiten `+`, `-`, `*`, `/`, `^` o `**`, paréntesis, la variable `x`, constantes
 `pi` y `e`, y funciones de un argumento: `sin`, `cos`, `tan`, `exp`, `log`/`ln`
 (logaritmo natural), `log10`, `sqrt` y `abs`. Los ángulos se expresan en radianes.
-La multiplicación es explícita (`5*x`); los exponentes no pueden depender de `x`.
+La multiplicación puede ser explícita o implícita: `5*x^3` y `5x^3`, `2*(x+1)`
+y `2(x+1)`, `x*(x+1)` y `x(x+1)`, o `(x+1)*(x-1)` y `(x+1)(x-1)`.
+También se admiten `2sin(x)`, `sin(x)cos(x)` y `pi x`. Se insertan productos
+entre factores reconocidos antes de validar el AST; no se separan nombres:
+`xx`, `xpi` y `sinx` son inválidos. `sin(x)` y `log(x)` siguen siendo llamadas.
+Los números científicos completos (`1e-3`, `2E+2`) se conservan; `2e` se rechaza
+por ambiguo: escribe `2*e` para la constante. Productos y divisiones tienen igual
+prioridad y se agrupan de izquierda a derecha: `1/2x` es `(1/2)*x`; para dividir
+por todo el producto escribe `1/(2x)`. Los exponentes no pueden depender de `x`.
+Ambas notaciones generan la misma clave de comparación y los mismos resultados.
+
+Para preparar una demostración oral, consulta la [guía de exposición](guia-exposicion-biseccion.md).
 
 El resultado y su estado aparecen antes de la gráfica. El deslizador discreto
 recorre las iteraciones con arrastre, flechas del teclado o pantalla táctil.
