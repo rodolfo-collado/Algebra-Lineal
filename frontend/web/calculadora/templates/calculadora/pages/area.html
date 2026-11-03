@@ -42,8 +42,10 @@
                         <div class="destacado-cuerpo" data-id="{{ herramienta.id }}" data-tema="{{ categoria.id }}"{% if herramienta != inicial %} hidden{% endif %}>
                             <div class="muestra" aria-hidden="true">{% include "calculadora/components/muestra.html" with herramienta_id=herramienta.id %}</div>
                             <p class="destacado-tema"><span class="tema-chip" aria-hidden="true">{{ categoria.chip }}</span>{{ categoria.nombre }}</p>
+                            <p class="destacado-contexto">{{ categoria.descripcion }}</p>
                             <h2 class="destacado-titulo">{{ herramienta.nombre }}</h2>
-                            <p class="destacado-lema">{{ herramienta.descripcion }}</p>
+                            {# Con una sola herramienta, su descripción repetiría la del tema; los puntos la concretan. #}
+                            {% if herramientas|length > 1 %}<p class="destacado-lema">{{ herramienta.descripcion }}</p>{% endif %}
                             {% if herramienta.puntos %}
                                 <ul class="destacado-puntos">
                                     {% for punto in herramienta.puntos %}<li>{{ punto }}</li>{% endfor %}

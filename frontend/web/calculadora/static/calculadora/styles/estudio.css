@@ -215,13 +215,6 @@
     font-weight: 650;
 }
 
-.home-invitacion {
-    max-width: 40ch;
-    margin: 0.25rem 0 0;
-    color: var(--color-muted);
-    font-size: 1.05rem;
-}
-
 [data-estilo="estudio"] .home-hero .search {
     margin-top: 1.25rem;
 }
@@ -406,31 +399,32 @@
     box-shadow: 0 30px 60px -36px var(--color-shadow-strong);
 }
 
-/* Nota adhesiva: la curiosidad vive al margen, nunca encima del cálculo. */
+/* Nota adhesiva: un papelito con cinta y la esquina doblada; plegada no estorba. */
 [data-estilo="estudio"] .nota {
     position: relative;
-    padding: 1.35rem 1.1rem 1.1rem;
     border: 0;
     border-radius: 2px;
-    background: var(--color-nota);
+    background: linear-gradient(315deg, color-mix(in srgb, var(--color-nota) 74%, #000) 0.55rem, var(--color-nota) 0.55rem);
     color: var(--color-nota-texto);
     transform: rotate(1.2deg);
-    box-shadow: 0 16px 22px -14px rgb(0 0 0 / 0.5);
+    box-shadow: 0 10px 14px -10px rgb(0 0 0 / 0.5);
 }
 
 [data-estilo="estudio"] .nota::before {
     content: "";
     position: absolute;
-    top: -10px;
+    top: -7px;
     left: 50%;
-    width: 76px;
-    height: 22px;
-    margin-left: -38px;
+    width: 46px;
+    height: 14px;
+    margin-left: -23px;
     background: rgb(255 255 255 / 0.45);
     transform: rotate(-3deg);
+    pointer-events: none;
 }
 
 [data-estilo="estudio"] .nota-titulo {
+    padding: 0.5rem 0.85rem 0.4rem;
     color: inherit;
     font: 700 0.95rem var(--font-mano);
 }

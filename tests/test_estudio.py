@@ -80,6 +80,21 @@ class PruebasExploradorDeArea(SimpleTestCase):
         # Abrir es siempre un enlace real a la herramienta.
         self.assertIn('href="/matrices/determinantes/">Abrir Determinantes', html)
 
+    def test_el_panel_da_contexto_del_tema_sin_repetir_la_herramienta(self):
+        for area in areas_disponibles():
+            html = self.client.get(area.ruta).content.decode("utf-8")
+            cuerpos = dict(re.findall(r'<div class="destacado-cuerpo" data-id="([^"]+)".*?>(.*?)<a class="btn', html, re.S))
+            for herramienta in disponibles():
+                if herramienta.area != area:
+                    continue
+                with self.subTest(herramienta=herramienta.id):
+                    cuerpo = cuerpos[herramienta.id]
+                    self.assertIn(f'<p class="destacado-contexto">{escape(herramienta.categoria.descripcion)}</p>', cuerpo)
+                    varias = len(catalogo.herramientas_de(herramienta.categoria)) > 1
+                    self.assertEqual("destacado-lema" in cuerpo, varias)
+                    # Fuera del panel la descripción sigue accesible desde el índice.
+                    self.assertIn(f'id="lema-{herramienta.id}" hidden>{escape(herramienta.descripcion)}', html)
+
     def test_areas_proximas_o_inexistentes_no_tienen_pagina(self):
         for ruta in ("/areas/conjuntos/", "/areas/calculo/", "/areas/inexistente/"):
             with self.subTest(ruta=ruta):
@@ -105,6 +120,12 @@ class PruebasCanalesDelInicio(SimpleTestCase):
             with self.subTest(area=id_):
                 self.assertEqual(bool(pronto), not area.disponible)
                 self.assertEqual(f'href="{area.ruta}"' in html, area.disponible)
+
+    def test_la_bienvenida_presenta_el_proposito_en_ambos_estilos(self):
+        html = self.client.get("/").content.decode("utf-8")
+        self.assertIn('<p class="home-lead">Aprende resolviendo</p>', html)
+        self.assertIn('<p class="home-proposito">Resuelve ejercicios de matemáticas', html)
+        self.assertNotIn("Pasa y ponte", html)
 
     def test_el_buscador_del_inicio_conserva_todo_el_catalogo(self):
         # Cada herramienta, también las próximas, figura en el cajón y en su canal.

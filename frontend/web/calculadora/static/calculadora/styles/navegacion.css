@@ -359,8 +359,10 @@
     margin-top: 0.3rem;
 }
 
+/* Columna acotada: el panel que se despliega dentro en móvil no ensancha la lista. */
 .indice ul {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2px;
     margin: 0;
     padding: 0;
@@ -503,6 +505,14 @@ a.indice-item:not(.elegida):hover {
     font-weight: 700;
 }
 
+/* Contexto del tema elegido: compartido por sus herramientas. */
+.destacado-contexto {
+    max-width: 58ch;
+    margin: 0 0 0.35rem;
+    color: var(--color-muted);
+    font-size: 0.92rem;
+}
+
 .destacado-titulo {
     margin: 0;
     font-family: var(--font-display);
@@ -543,12 +553,20 @@ a.indice-item:not(.elegida):hover {
     transform: rotate(45deg) translateY(-1px);
 }
 
-/* —— Herramienta: mesa de trabajo con hermanas y nota al margen —— */
+/* —— Inicio: el propósito de PyGebra, también en Minimalista —— */
+
+.home-proposito {
+    max-width: 44ch;
+    margin: 0.25rem 0 0;
+    color: var(--color-muted);
+    font-size: 1.05rem;
+}
+
+/* —— Herramienta: mesa de trabajo con hermanas y nota plegada —— */
 
 .mesa {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "rail" "tool" "nota";
     gap: 1.25rem;
 }
 
@@ -613,10 +631,13 @@ a.indice-item:not(.elegida):hover {
 }
 
 .nota {
+    grid-column: 2;
+    grid-row: 1 / span 2;
     align-self: start;
-    padding: 1rem 1.1rem;
+    justify-self: end;
+    max-width: 17rem;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     background: var(--color-surface);
     font-size: 0.9rem;
 }
@@ -626,12 +647,19 @@ a.indice-item:not(.elegida):hover {
 }
 
 .nota-titulo {
-    margin: 0 0 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: inherit;
     color: var(--color-muted);
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    list-style: none;
 }
 
 .nota-titulo::-webkit-details-marker {
@@ -688,8 +716,6 @@ a.indice-item:not(.elegida):hover {
     /* Al margen izquierdo las hermanas, que acompañan al bajar. */
     .mesa.con-rail {
         grid-template-columns: 13.5rem minmax(0, 1fr);
-        grid-template-rows: auto 1fr;
-        grid-template-areas: "rail tool" "nota tool";
         align-items: start;
     }
 

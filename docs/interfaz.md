@@ -227,7 +227,10 @@ Django y el historial del navegador.
   `/areas/<área>/#<tema>`); a la derecha un **panel destacado** con el rincón del
   área, un ejemplo (`components/muestra.html`), la descripción, dos `puntos` del
   catálogo y «Abrir». Sin JavaScript el índice son enlaces reales y el panel
-  muestra la primera herramienta. `explorador.js` cambia el panel con el cursor
+  muestra la primera herramienta. El panel da contexto con la descripción de la
+  categoría; la de la herramienta solo aparece si su tema tiene varias, porque con
+  una sola la repetiría (los `puntos` la concretan y el índice la conserva como
+  `aria-describedby`). `explorador.js` cambia el panel con el cursor
   (tras 90 ms de intención, para cruzar hacia el panel), con el teclado (una sola
   parada de Tab; ↑ ↓ Inicio Fin recorren, → va a Abrir, ← vuelve) o con un primer
   toque (el segundo abre). Abrir siempre es un paso explícito. Cada área recuerda

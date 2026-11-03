@@ -12,7 +12,7 @@
                 <h1 class="home-title">PyGebra</h1>
             </div>
             <p class="home-lead">Aprende resolviendo</p>
-            <p class="home-invitacion solo-estudio">Pasa y ponte cómodo. Cada rincón de esta casa guarda un área de matemáticas: elige uno y resuélvelo paso a paso.</p>
+            <p class="home-proposito">Resuelve ejercicios de matemáticas y comprende cada procedimiento paso a paso. Poco a poco sumaremos nuevos módulos para que tengas más formas de aprender y practicar.</p>
             {% include "calculadora/components/search.html" with search_id="buscador-inicio" search_target="catalogo-inicio" search_large=True search_label="¿Qué quieres resolver?" search_placeholder="Buscar Gauss, vectores, bisección…" %}
             {# historial.js lo enlaza con la última herramienta abierta durante esta visita. #}
             <a class="btn btn-secondary home-retomar" id="retomar" href="{% url 'calculadora:inicio' %}" hidden></a>
