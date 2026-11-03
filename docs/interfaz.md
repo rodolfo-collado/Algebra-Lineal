@@ -236,10 +236,12 @@ Django y el historial del navegador.
   responde 404.
 - **Mesa de trabajo** (`layouts/herramienta.html`, común a todas las
   herramientas): a la izquierda las herramientas hermanas del área
-  (`catalogo.hermanas`, solo si hay más de una) y debajo la nota «Para curiosos»
-  (`Herramienta.curiosidad`), siempre después del cálculo en el DOM. Desde
-  1500 px la nota pasa al margen derecho; por debajo de 1100 px las hermanas son
-  una fila desplazable que centra la actual y la nota va al final.
+  (`catalogo.hermanas`, solo si hay más de una); por debajo de 1100 px son una
+  fila desplazable que centra la actual. La nota «Para curiosos»
+  (`Herramienta.curiosidad`) es un `<details>` nativo plegado junto al título, en el
+  mismo sitio en todas las herramientas: sin JavaScript también abre, y al abrirse
+  crece dentro de la cabecera y empuja el cálculo, nunca lo tapa. Hasta 640 px queda
+  bajo la descripción.
 - **Migas**: Inicio › área › tema › herramienta; en pantallas estrechas se reducen
   a «‹ nivel anterior».
 - **Atrás y Adelante** (`historial.js`) llaman a `history.back()` y
@@ -288,7 +290,7 @@ interfaz: Minimalista usa exactamente la misma estructura sin ilustraciones.
   reencuadra hacia el objeto de cada tema (ábaco, pergamino; la pizarra pasa de
   vector a matriz).
 - **Mesa de trabajo**: la herramienta es una hoja cuadriculada; la nota «Para
-  curiosos» es un papel adhesivo al margen.
+  curiosos» es un papelito adhesivo, con cinta y la esquina doblada, sobre la hoja.
 - **Transiciones.** View Transitions entre documentos (`@view-transition`): la
   cabecera no se mueve, la cámara viaja de un rincón a otro y el rincón del canal
   abierto se convierte en el del área. La dirección (`html[data-dir]`) se decide en

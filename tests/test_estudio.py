@@ -17,6 +17,7 @@ import django
 django.setup()
 
 from django.test import SimpleTestCase
+from django.utils.html import escape
 
 from frontend.web.calculadora import catalogo, preferencias
 from tests.test_navegacion import Documento, disponibles
@@ -132,11 +133,17 @@ class PruebasMesaDeTrabajo(SimpleTestCase):
                 else:
                     self.assertEqual(rail, [])
 
-    def test_la_nota_para_curiosos_va_despues_del_calculo(self):
-        html = self.client.get(catalogo.DETERMINANTES.ruta).content.decode("utf-8")
-        self.assertIn("Para curiosos", html)
-        self.assertIn(catalogo.DETERMINANTES.curiosidad, html)
-        self.assertLess(html.index('<article class="tool">'), html.index('<aside class="nota"'))
+    def test_la_nota_para_curiosos_esta_plegada_junto_al_titulo_en_cada_herramienta(self):
+        for herramienta in disponibles():
+            with self.subTest(herramienta=herramienta.id):
+                html = self.client.get(herramienta.ruta).content.decode("utf-8")
+                cabecera = re.search(r'<header class="tool-header">.*?</header>', html, re.S).group(0)
+                # Un details nativo: funciona sin JavaScript y nace cerrado.
+                self.assertIn('<details class="nota">', cabecera)
+                self.assertIn("Para curiosos", cabecera)
+                self.assertIn(escape(herramienta.curiosidad), cabecera)
+                self.assertLess(cabecera.index("tool-title"), cabecera.index("nota"))
+                self.assertEqual(html.count('class="nota"'), 1)
 
 
 class PruebasHistorialReal(SimpleTestCase):

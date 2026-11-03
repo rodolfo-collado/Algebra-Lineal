@@ -432,9 +432,11 @@
 
 [data-estilo="estudio"] .nota-titulo {
     color: inherit;
-    font: 700 1.05rem var(--font-mano);
-    letter-spacing: 0;
-    text-transform: none;
+    font: 700 0.95rem var(--font-mano);
+}
+
+[data-estilo="estudio"] .nota p {
+    padding: 0.1rem 0.85rem 0.95rem;
 }
 
 /* —— Transiciones entre páginas (View Transitions entre documentos) ——
@@ -465,6 +467,9 @@
     [data-estilo="estudio"] .home-hero-texto > :nth-child(3) { animation-delay: 0.18s; }
     [data-estilo="estudio"] .home-hero-texto > :nth-child(n + 4) { animation-delay: 0.26s; }
     [data-estilo="estudio"][data-dir="atras"] :is(.area-header, .explorador, .home-hero-texto > *) { animation-name: estudio-bajar; }
+
+    /* El papelito se despliega con calma. */
+    .nota[open] > p { animation: estudio-aparecer 0.2s ease both; }
 
     /* Al cambiar de opción en el índice, el panel entra desde el lado hacia el que se movió. */
     .destacado-cuerpo.cambia > * { animation: estudio-cambiar 0.38s var(--curva, ease) both; }

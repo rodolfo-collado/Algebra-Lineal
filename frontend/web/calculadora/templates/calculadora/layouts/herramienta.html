@@ -1,10 +1,10 @@
 {% extends "calculadora/base.html" %}
-{% comment %}Estructura común de una herramienta: título, descripción, entrada, resultado, explicación, relacionadas y conexiones para explorar después de resolver. Área y tema ya están en las migas: no se repiten encima del título. Cada bloque es opcional; una herramienta rellena solo los que necesita. Alrededor, la mesa de trabajo: herramientas hermanas del área para moverse sin volver al inicio y una nota «Para curiosos» al margen, nunca encima del cálculo.{% endcomment %}
+{% comment %}Estructura común de una herramienta: título, descripción, entrada, resultado, explicación, relacionadas y conexiones para explorar después de resolver. Área y tema ya están en las migas: no se repiten encima del título. Cada bloque es opcional; una herramienta rellena solo los que necesita. Alrededor, la mesa de trabajo: herramientas hermanas del área para moverse sin volver al inicio. Junto al título, un papelito plegado «Para curiosos»: siempre en el mismo sitio y sin quitar espacio al cálculo.{% endcomment %}
 
 {% block title %}{{ herramienta_actual.nombre }} · PyGebra{% endblock %}
 
 {% block content %}
-    <div class="mesa{% if herramientas_hermanas %} con-rail{% endif %}{% if herramienta_actual.curiosidad %} con-nota{% endif %}">
+    <div class="mesa{% if herramientas_hermanas %} con-rail{% endif %}">
         {% if herramientas_hermanas %}
             <nav class="rail" aria-label="Herramientas de {{ herramienta_actual.area.nombre }}">
                 {% for categoria, herramientas in herramientas_hermanas %}
@@ -22,6 +22,12 @@
                 <h1 class="tool-title">{% block tool_title %}{{ herramienta_actual.nombre }}{% endblock %}</h1>
                 <p class="tool-lead">{% block tool_lead %}{{ herramienta_actual.descripcion }}{% endblock %}</p>
                 {% block tool_context %}{% endblock %}
+                {% if herramienta_actual.curiosidad %}
+                    <details class="nota">
+                        <summary class="nota-titulo">Para curiosos</summary>
+                        <p>{{ herramienta_actual.curiosidad }}</p>
+                    </details>
+                {% endif %}
             </header>
             {% block tool_input %}{% endblock %}
             {% block tool_result %}{% endblock %}
@@ -29,11 +35,5 @@
             {% block tool_related %}{% include "calculadora/components/related_tools.html" %}{% endblock %}
             {% block tool_explore %}{% include "calculadora/components/explore.html" %}{% endblock %}
         </article>
-        {% if herramienta_actual.curiosidad %}
-            <aside class="nota" aria-labelledby="nota-titulo">
-                <p class="nota-titulo" id="nota-titulo">Para curiosos</p>
-                <p>{{ herramienta_actual.curiosidad }}</p>
-            </aside>
-        {% endif %}
     </div>
 {% endblock %}

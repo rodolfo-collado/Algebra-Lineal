@@ -136,6 +136,7 @@ window.Sonido = (() => {
 
     // El interruptor del tema suena como el de la lámpara.
     document.getElementById("theme-toggle")?.addEventListener("click", () => tocar("interruptor"));
+    document.querySelector(".nota")?.addEventListener("toggle", () => tocar("tic"));
 
     return {
         tocar,

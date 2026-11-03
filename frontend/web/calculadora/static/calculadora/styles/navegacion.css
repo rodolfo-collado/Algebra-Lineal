@@ -552,9 +552,7 @@ a.indice-item:not(.elegida):hover {
     gap: 1.25rem;
 }
 
-.mesa > .rail { grid-area: rail; }
-.mesa > .tool { grid-area: tool; min-width: 0; }
-.mesa > .nota { grid-area: nota; }
+.mesa > .tool { min-width: 0; }
 
 .rail {
     display: flex;
@@ -602,13 +600,29 @@ a.indice-item:not(.elegida):hover {
     color: var(--color-brand);
 }
 
+/* «Para curiosos»: plegada junto al título en todas las herramientas. Al abrirse crece
+   dentro de la cabecera y empuja el cálculo; nunca lo tapa. */
+.tool-header:has(> .nota) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr;
+    column-gap: 1.25rem;
+}
+
+.tool-header > :not(.nota) {
+    grid-column: 1;
+}
+
 .nota {
     align-self: start;
     padding: 1rem 1.1rem;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface);
-    font-size: 0.92rem;
+    font-size: 0.9rem;
+}
+
+.nota[open] {
+    width: 17rem;
 }
 
 .nota-titulo {
@@ -620,8 +634,50 @@ a.indice-item:not(.elegida):hover {
     text-transform: uppercase;
 }
 
-.nota p:last-child {
-    margin-bottom: 0;
+.nota-titulo::-webkit-details-marker {
+    display: none;
+}
+
+.nota-titulo::after {
+    content: "";
+    width: 0.4rem;
+    height: 0.4rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-0.1rem) rotate(45deg);
+}
+
+.nota[open] > .nota-titulo::after {
+    transform: translateY(0.1rem) rotate(225deg);
+}
+
+.nota p {
+    margin: 0;
+    padding: 0.1rem 0.7rem 0.7rem;
+}
+
+@media (pointer: coarse) {
+    .nota-titulo {
+        min-height: 2.75rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .tool-header:has(> .nota) {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+    }
+
+    .nota {
+        grid-column: 1;
+        grid-row: auto;
+        justify-self: start;
+        max-width: 100%;
+    }
+
+    .nota[open] {
+        width: 100%;
+    }
 }
 
 @media (min-width: 1100px) {
@@ -629,7 +685,7 @@ a.indice-item:not(.elegida):hover {
         width: min(100% - 2rem, 1480px);
     }
 
-    /* Al margen izquierdo: las hermanas y, debajo, la nota, que acompaña al bajar. */
+    /* Al margen izquierdo las hermanas, que acompañan al bajar. */
     .mesa.con-rail {
         grid-template-columns: 13.5rem minmax(0, 1fr);
         grid-template-rows: auto 1fr;
@@ -637,12 +693,7 @@ a.indice-item:not(.elegida):hover {
         align-items: start;
     }
 
-    .mesa.con-nota:not(.con-rail) {
-        grid-template-columns: minmax(0, 1fr) 14rem;
-        grid-template-areas: "tool nota";
-    }
-
-    .mesa.con-nota > .nota {
+    .mesa.con-rail > .rail {
         position: sticky;
         top: calc(var(--header-height) + 1rem);
     }
@@ -679,20 +730,6 @@ a.indice-item:not(.elegida):hover {
 
     .rail-enlace[aria-current="page"] {
         box-shadow: inset 3px 0 0 var(--color-brand);
-    }
-}
-
-/* En pantallas muy anchas cada cosa tiene su margen y ambas acompañan al bajar. */
-@media (min-width: 1500px) {
-    .mesa.con-rail.con-nota {
-        grid-template-columns: 13.5rem minmax(0, 1fr) 14rem;
-        grid-template-rows: auto;
-        grid-template-areas: "rail tool nota";
-    }
-
-    .mesa.con-rail > .rail {
-        position: sticky;
-        top: calc(var(--header-height) + 1rem);
     }
 }
 
