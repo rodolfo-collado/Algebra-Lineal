@@ -133,7 +133,9 @@ SISTEMAS_NUMERICOS = Area(
     "Representación de números en distintas bases y en numeración romana.",
 )
 CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.")
-AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, CALCULO)
+CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos y relaciones entre ellos.")
+METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones reales.")
+AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, METODOS_NUMERICOS, CONJUNTOS, CALCULO)
 
 VECTORES = Categoria(
     "vectores", "Vectores", ALGEBRA_LINEAL,
@@ -153,7 +155,10 @@ NUMERACION_ROMANA = Categoria(
     "Conversión entre números arábigos y romanos.",
 )
 LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.")
-CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, LIMITES)
+CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos finitos", CONJUNTOS,
+                            "Elementos, pertenencia e inclusión de conjuntos.")
+RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS, "Búsqueda de raíces en un intervalo.")
+CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, CONJUNTOS_FINITOS, LIMITES)
 
 
 # Reducción por filas de [A | b]: método a elegir (o comparar los dos) y
@@ -304,6 +309,22 @@ DETERMINANTES = Herramienta(
     invitacion="Calcula det(A) y comprueba si una matriz cuadrada es invertible.",
 )
 
+RELACIONES_CONJUNTOS = Herramienta(
+    id="relaciones-conjuntos", nombre="Relaciones entre conjuntos", categoria=CONJUNTOS_FINITOS,
+    descripcion="Define conjuntos finitos y comprueba pertenencia, inclusión e igualdad con su explicación.",
+    estado="proximamente",
+    palabras_clave=("pertenencia", "no pertenencia", "inclusión", "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados"),
+    invitacion="Define conjuntos y distingue pertenencia, inclusión e igualdad.",
+)
+
+BISECCION = Herramienta(
+    id="biseccion", nombre="Método de bisección", categoria=RAICES,
+    descripcion="Aproxima una raíz real y explora cómo se reduce el intervalo en una gráfica interactiva.",
+    estado="disponible", route_name="calculadora:biseccion",
+    palabras_clave=("bisección", "raíz", "raíces", "función", "intervalo", "punto medio", "gráfica", "bolzano"),
+    invitacion="Busca una raíz de f(x) mediante bisección.",
+)
+
 HERRAMIENTAS = (
     OPERACIONES_VECTORES,
     OPERACIONES_MATRICES,
@@ -313,6 +334,8 @@ HERRAMIENTAS = (
     DETERMINANTES,
     CONVERSION_BASES,
     CONVERSION_ROMANOS,
+    BISECCION,
+    RELACIONES_CONJUNTOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",
                 palabras_clave=("límite", "función", "tiende a")),

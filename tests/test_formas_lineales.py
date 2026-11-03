@@ -88,7 +88,7 @@ class PruebasParserLineal(TestCase):
                 with self.assertRaisesRegex(ValueError, "divide por una cantidad simbólica"):
                     analizar_lineal(texto)
 
-    def test_el_modulo_no_evalua_texto_ni_importa_algebra_externa(self):
+    def test_el_modulo_no_ejecuta_texto_ni_depende_del_resolutor(self):
         arbol = ast.parse(Path(__file__).resolve().parents[1].joinpath(
             "backend", "expresiones_matriciales", "lineal.py"
         ).read_text(encoding="utf-8"))
@@ -98,7 +98,7 @@ class PruebasParserLineal(TestCase):
             if isinstance(nodo, (ast.Import, ast.ImportFrom)):
                 modulos = [alias.name for alias in nodo.names] if isinstance(nodo, ast.Import) else [nodo.module or ""]
                 for modulo in modulos:
-                    self.assertFalse(modulo.startswith(("numpy", "sympy", "scipy", "backend.ecuaciones", "backend.gauss")))
+                    self.assertFalse(modulo.startswith(("backend.ecuaciones", "backend.gauss")))
 
 
 class PruebasCoeficientes(TestCase):

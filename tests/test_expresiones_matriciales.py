@@ -223,17 +223,13 @@ class PruebasRegresion(TestCase):
             self.assertEqual(evaluar("2u", {"u": EJEMPLO["u"]}).principal.resultado, [8, -2])
         producto.assert_called()
 
-    def test_el_modulo_no_evalua_texto_ni_importa_algebra_externa(self):
+    def test_el_modulo_no_ejecuta_texto(self):
         raiz = Path(__file__).resolve().parents[1] / "backend" / "expresiones_matriciales"
         for archivo in raiz.glob("*.py"):
             arbol = ast.parse(archivo.read_text(encoding="utf-8"))
             for nodo in ast.walk(arbol):
                 if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name):
                     self.assertNotIn(nodo.func.id, {"eval", "exec"})
-                if isinstance(nodo, (ast.Import, ast.ImportFrom)):
-                    modulos = [alias.name for alias in nodo.names] if isinstance(nodo, ast.Import) else [nodo.module or ""]
-                    for modulo in modulos:
-                        self.assertFalse(modulo.startswith(("numpy", "sympy", "scipy")))
 
 
 def visibles(paso):

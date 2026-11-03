@@ -56,6 +56,14 @@ Los cálculos largos piden confirmación según el
   a uno o varios destinos, con divisiones sucesivas y expansión posicional.
 - Conversión entre números arábigos y romanos, del 1 al 3999, en ambos sentidos.
 
+### Métodos numéricos
+
+- [Bisección](docs/biseccion.md) manual con gráfica interactiva offline, recorrido
+  de iteraciones y comparación de intervalos. Precisión predeterminada `0.0001`.
+
+Conjuntos y Cálculo figuran como **Próximamente**. El código y los avances de
+Conjuntos se conservan, con sus accesos públicos temporalmente bloqueados.
+
 ## Formas de usar el proyecto
 
 | Interfaz | Uso |
