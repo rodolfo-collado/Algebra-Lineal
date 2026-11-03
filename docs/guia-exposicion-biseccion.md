@@ -113,6 +113,9 @@ El cursor sobre una fila, su foco y el deslizador llaman al mismo recorrido.
 La lectura identifica a, c y b, sus signos y qué mitad conservamos, separando
 el intervalo antes y después del recorte. La verificación plegable explica
 existencia, resta de extremos y precisión con los valores de nuestro cálculo.
+El selector de decimales solo cambia la lectura: nunca vuelve a calcular. La
+opción completa permite consultar los valores de máquina. ln usa base e; log₁₀
+usa base 10, y el teclado también tiene π y e.
 Arrastrar las líneas a y b actualiza los campos mediante `plotly_relayout`;
 para obtener otra solución debemos volver a pulsar Resolver. Editar marca el
 resultado anterior como desactualizado. Plotly está guardado localmente y funciona

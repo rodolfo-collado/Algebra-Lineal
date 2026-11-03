@@ -11,7 +11,7 @@ Esta entrega implementa únicamente bisección.
 Escribe `f(x)`, el extremo inferior `a` y el superior `b`, y pulsa **Resolver por
 bisección**. Función y extremos empiezan vacíos; los ajustes conservan sus valores
 predeterminados. Al enfocar la función aparece el teclado contextual de PyGebra:
-x, x², x³, exponente general, paréntesis, operaciones, seno, coseno, raíz y logaritmo.
+x, x², x³, exponente general, paréntesis, operaciones, seno, coseno, raíz, ln, log₁₀ y las constantes π y e.
 Las teclas x² y x³ conservan esos superíndices en el campo, igual que Aᵀ conserva
 la traspuesta en matrices. La tecla aⁿ activa o desactiva el modo superíndice,
 con estado visual seleccionado y `aria-pressed`. La ayuda existente anuncia el
@@ -65,7 +65,7 @@ identifica a (izquierdo), c (punto medio) y b (derecho), muestra los signos real
 y explica qué mitad se conserva. Distingue el intervalo antes de dividirlo del
 resultante; un cero calculado tiene su propia explicación. El resumen usa cifras
 legibles, aumentando las cifras si hace falta distinguir los extremos; el
-procedimiento mantiene 17 cifras significativas de los valores.
+procedimiento y la verificación permiten elegir los decimales visibles.
 
 **Verificación** responde tres preguntas con los datos de cada cálculo: por qué
 hay una raíz (continuidad y signos iniciales, o raíz en extremo), si se alcanzó la
@@ -169,3 +169,26 @@ Las plantillas cargan archivos locales y no consultan CDNs durante el uso.
 `tests/test_biseccion_assets.py` fija sus SHA-256 y comprueba el `.spec`.
 PyInstaller incluye el árbol estático completo y las importaciones del módulo.
 No se cambia la versión ni se prepara una release.
+
+## Lectura decimal y errores de dominio
+
+El selector **Decimales visibles** cambia solo la lectura de los resultados
+almacenados, sin peticiones ni nuevas iteraciones. Parte de seis decimales y
+permite disminuir o aumentar (4, 6, 8, 12, 16), o ver **Precisión completa**.
+Se prefiere escritura decimal normal; los valores extremos conservan notación
+científica. El formato aumenta automáticamente las cifras si los extremos u
+otros valores distintos quedarían iguales, o un número no nulo parecería cero.
+`≈` señala valores redondeados y el título conserva el valor almacenado; en móvil
+puedes elegir precisión completa. Completa significa valor de máquina, no
+exactitud matemática. Sin JavaScript se conserva la lectura completa.
+
+Los errores indican qué condición impide trabajar en números reales: √ exige
+contenido no negativo, los logaritmos contenido positivo y un denominador no
+puede anularse. Para √(x) con a negativo se puede justificar a ≥ 0; para ln(x)
+con a no positivo, a > 0. En expresiones compuestas solo se recuerda la condición
+sobre el argumento: no se inventa un intervalo corregido ni se promete que el
+nuevo intervalo contenga una raíz. Las cotas conservadoras pueden rechazar un
+intervalo válido si no logran verificar esa condición.
+
+π inserta π (alias de pi), e inserta e. ln es logaritmo natural, de base e;
+log₁₀ inserta log10(), de base 10. log() sigue siendo alias del natural.
