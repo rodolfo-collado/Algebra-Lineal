@@ -11,6 +11,19 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+Estudio: `uv run --locked python -m unittest tests.test_estudio` cubre las páginas
+de área y su explorador sin JavaScript, los canales del inicio y el universo del
+buscador, la mesa de trabajo (hermanas y «Para curiosos»), Atrás/Adelante sin pila
+propia, la dirección decidida en el `<head>`, el estilo independiente del tema, las
+preferencias de escritorio, el sonido local y opcional, y que el ambiente solo se
+mueva con movimiento permitido. `tests.test_microinteracciones` aplica sus reglas a
+las hojas funcionales; `estudio.css` es el ambiente opcional y tiene las suyas.
+En navegador real, `tests.buscador_browser` incluye el explorador (una parada de
+Tab, flechas, panel y nada guardado). Revisión manual: recorrer Inicio → área →
+herramienta → Atrás → Adelante en Estudio y Minimalista, de día y de noche, a
+1440 × 900, 900 × 600 y 390 × 844; activar Efectos en Opciones y escuchar
+seleccionar, entrar, volver, calcular y un error; repetir con movimiento reducido.
+
 Bisección: `uv run --locked python -m unittest tests.test_biseccion
 tests.test_biseccion_web tests.test_biseccion_assets` cubre los tres intervalos del
 profesor, las trece iteraciones, precisión estricta, seguridad del AST,
