@@ -6,7 +6,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settin
 import django
 django.setup()
 
-from django.test import Client, SimpleTestCase
+from django.test import Client, SimpleTestCase, override_settings
 from django.urls import reverse
 
 from frontend.web.calculadora import catalogo
@@ -20,6 +20,7 @@ def datos(**extra):
             "expresion": "A ∈ B", "accion": "calcular", **extra}
 
 
+@override_settings(ROOT_URLCONF="tests.urls_conjuntos")
 class ConjuntosWebTests(SimpleTestCase):
     def test_catalogo_y_pantalla(self):
         self.assertEqual(reverse("calculadora:relaciones-conjuntos"), RUTA)

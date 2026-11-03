@@ -39,6 +39,7 @@ STATIC = RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 
 # Cada herramienta declara solo los perfiles que usa; el registro no cambia por pantalla.
 HERRAMIENTAS = {
+    "/metodos-numericos/biseccion/": {"funcion-real"},
     "/matrices/reduccion/": {"sistema", "numerico"},
     "/vectores/operaciones/": {"numerico"},
     "/matrices/operaciones/": {"numerico", "expresion", "lineal"},
@@ -50,6 +51,7 @@ HERRAMIENTAS = {
 
 # Contrato HTTP de cada formulario: el teclado no agrega controles de envío.
 CONTROLES = {
+    "/metodos-numericos/biseccion/": {"csrfmiddlewaretoken", "funcion", "a", "b", "precision", "max_iteraciones"},
     "/matrices/reduccion/": {
         "csrfmiddlewaretoken", "ecuaciones", "metodo", "mostrar", "mostrar_definido", "sistema",
         "tipo_entrada", "variables",
@@ -228,9 +230,9 @@ class PruebasRegistro(unittest.TestCase):
         with self.assertRaises(ValueError):
             Perfil("repetido", (GrupoTeclas("A", (menos, Tecla("−", "–", "Raya"))),))
 
-    def test_el_registro_tiene_diez_perfiles_completos_sin_duplicados(self):
+    def test_el_registro_tiene_perfiles_completos_sin_duplicados(self):
         self.assertEqual(set(PERFILES), {"sistema", "numerico", "expresion", "lineal", "base-2", "base-8", "base-10", "base-16",
-                                       "literal-conjuntos", "relacion-conjuntos"})
+                                       "literal-conjuntos", "relacion-conjuntos", "funcion-real"})
         for id_, perfil in PERFILES.items():
             with self.subTest(perfil=id_):
                 self.assertIsInstance(perfil, Perfil)
@@ -256,6 +258,19 @@ class PruebasRegistro(unittest.TestCase):
         self.assertEqual(por_etiqueta["Nueva ecuación"], "\n")
         self.assertEqual([t.insercion for t in PERFIL_SISTEMA.teclas[:6]], [f"x{i}" for i in range(1, 7)])
         self.assertEqual([grupo.nombre for grupo in PERFIL_SISTEMA.grupos], ["Variables", "Operaciones", "Ecuaciones"])
+
+    def test_teclas_de_funcion_real_producen_expresiones_del_parser(self):
+        from backend.funciones_reales import FuncionReal
+        teclas = {t.etiqueta: t for t in PERFILES["funcion-real"].teclas}
+        for etiqueta, texto in {"x": "x", "x²": "x²", "x³": "x³", "×": "*", "√": "√()"}.items():
+            self.assertEqual(teclas[etiqueta].insercion, texto)
+        for etiqueta in ("sen", "cos", "√", "ln", "log₁₀"):
+            texto = teclas[etiqueta].insercion.replace("()", "(1)")
+            self.assertIsInstance(FuncionReal(texto)(0), float)
+        self.assertTrue(teclas["aⁿ"].exponente_entero)
+        self.assertEqual(teclas["π"].insercion, "π")
+        self.assertEqual(teclas["e"].insercion, "e")
+        self.assertEqual(teclas["log₁₀"].insercion, "log10()")
 
     def test_lo_que_inserta_el_perfil_de_sistema_lo_entiende_el_parser(self):
         tecla = {t.nombre: t.insercion for t in PERFIL_SISTEMA.teclas}
@@ -320,8 +335,8 @@ class PruebasRegistro(unittest.TestCase):
         self.assertEqual(
             numerico["grupos"],
             [{"nombre": "Valores", "teclas": [
-                {"etiqueta": "−", "insercion": "-", "nombre": "Menos", "retroceso": 0},
-                {"etiqueta": "a⁄b", "insercion": "/", "nombre": "Barra de fracción", "retroceso": 0},
+                {"etiqueta": "−", "insercion": "-", "nombre": "Menos", "retroceso": 0, "exponente_entero": False},
+                {"etiqueta": "a⁄b", "insercion": "/", "nombre": "Barra de fracción", "retroceso": 0, "exponente_entero": False},
             ]}],
         )
         self.assertEqual(perfiles_para(), {})
@@ -508,7 +523,9 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
         self.assertIn('event.key === "Escape"', script)
         self.assertNotIn(".find(esValido)", script)
         # Sin anuncios en vivo ni abrir el desplegable por su cuenta.
-        self.assertNotIn("aria-live", script)
+        self.assertIn('boton.setAttribute("aria-pressed", "false")', script)
+        self.assertNotIn("window.prompt", script)
+        self.assertNotIn("window.alert", script)
         self.assertNotIn("open = true", script)
         # Delegación: los campos dinámicos no registran listeners uno a uno.
         self.assertIn('"focusin"', script)

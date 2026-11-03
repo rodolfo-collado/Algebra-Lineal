@@ -14,6 +14,8 @@
         let objetivo = null;
         let perfilActual = null;
         let cambioVisual = 0;
+        let superindice = false;
+        let insertando = false;
         // El menú de edición (clic derecho) prolonga la edición del campo: no cierra el dock.
         const enMenuEdicion = (nodo) => Boolean(nodo?.closest?.("[data-edicion-menu]"));
 
@@ -22,9 +24,32 @@
             boton.textContent = tecla.etiqueta;
             boton.setAttribute("data-insercion", tecla.insercion);
             boton.setAttribute("data-retroceso", tecla.retroceso || 0);
+            boton.toggleAttribute("data-exponente-entero", Boolean(tecla.exponente_entero));
+            if (tecla.exponente_entero) boton.setAttribute("aria-pressed", "false");
             boton.setAttribute("aria-label", `${tecla.etiqueta} — ${tecla.nombre}`);
             boton.title = `${tecla.etiqueta} — ${tecla.nombre}`;
             return boton;
+        }
+
+        function activarSuperindice(activo) {
+            const tecla = grupos.querySelector("[data-exponente-entero]");
+            superindice = Boolean(activo && tecla && objetivo);
+            if (!tecla) return;
+            tecla.setAttribute("aria-pressed", String(superindice));
+            ayuda.textContent = superindice
+                ? "Superíndice activo: escribe dígitos y un signo inicial. Pulsa aⁿ para volver a escritura normal."
+                : perfiles[perfilActual].ayuda;
+        }
+
+        function textoDeEntrada(texto, campo) {
+            if (!superindice) return texto;
+            const prefijo = campo.value.slice(0, campo.selectionStart);
+            if (!/^[+-]?[0-9]*$/.test(texto) ||
+                (/^[+-]/.test(texto) && !/[0-9xeiπ)]$/.test(prefijo))) {
+                activarSuperindice(false);
+                return texto;
+            }
+            return [...texto].map(c => "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻"["0123456789+-".indexOf(c)]).join("");
         }
 
         function sincronizarOperandos() {
@@ -67,6 +92,7 @@
 
         function mostrarPerfil(id) {
             if (id === perfilActual) return;
+            activarSuperindice(false);
             perfilActual = id;
             grupos.replaceChildren();
             ayuda.textContent = id ? perfiles[id].ayuda : "";
@@ -81,6 +107,13 @@
                 });
                 grupos.appendChild(bloque);
             });
+            if (grupos.querySelector("[data-exponente-entero]")) {
+                ayuda.setAttribute("role", "status");
+                ayuda.setAttribute("aria-live", "polite");
+            } else {
+                ayuda.removeAttribute("role");
+                ayuda.removeAttribute("aria-live");
+            }
         }
 
         function mostrarDock(abierto) {
@@ -116,6 +149,7 @@
                 mostrarPerfil(perfilDe(objetivo));
                 sincronizarOperandos();
             }
+            if (!objetivo) activarSuperindice(false);
             mostrarDock(Boolean(objetivo));
         }
 
@@ -135,6 +169,7 @@
         // Delegación: los campos nuevos heredan el perfil de su contenedor.
         document.addEventListener("focusin", (event) => {
             if (teclado.contains(event.target) || enMenuEdicion(event.target)) return;
+            if (event.target !== objetivo) activarSuperindice(false);
             objetivo = esValido(event.target) ? event.target : null;
             sincronizar();
             requestAnimationFrame(revelarCampo);
@@ -160,16 +195,7 @@
             if (event.target.closest("button[data-insercion]")) event.preventDefault();
         });
 
-        teclado.addEventListener("click", (event) => {
-            const tecla = event.target.closest("button[data-insercion]");
-            if (!tecla || !teclado.contains(tecla)) return;
-            sincronizar();
-            // Si cambió el contexto, no insertar una tecla del perfil anterior.
-            if (teclado.hidden || !objetivo || !teclado.contains(tecla)) return;
-            const campo = objetivo;
-
-            const texto = tecla.dataset.insercion;
-            const retroceso = Number(tecla.dataset.retroceso) || 0;
+        function insertar(campo, texto, retroceso = 0) {
             const inicio = campo.selectionStart ?? campo.value.length;
             const fin = campo.selectionEnd ?? inicio;
 
@@ -181,6 +207,7 @@
             const registrar = () => { emitido = true; };
             campo.addEventListener("input", registrar);
             let insertado = false;
+            insertando = true;
             try {
                 insertado = document.execCommand("insertText", false, texto);
             } catch (_) { /* El fallback conserva cursor y selección. */ }
@@ -189,6 +216,33 @@
             const posicion = campo.selectionStart - retroceso;
             campo.setSelectionRange(posicion, posicion);
             if (!emitido) campo.dispatchEvent(new Event("input", { bubbles: true }));
+            insertando = false;
+        }
+
+        contenedor.addEventListener("beforeinput", event => {
+            if (!superindice || insertando || event.target !== objetivo || event.isComposing) return;
+            if (event.inputType.startsWith("delete") || event.inputType.startsWith("history")) return;
+            if (event.inputType !== "insertText" || !event.data || !event.cancelable) {
+                activarSuperindice(false);
+                return;
+            }
+            const texto = textoDeEntrada(event.data, objetivo);
+            if (texto === event.data) return;
+            event.preventDefault();
+            insertar(objetivo, texto);
+        });
+        contenedor.addEventListener("compositionstart", () => activarSuperindice(false));
+
+        teclado.addEventListener("click", event => {
+            const tecla = event.target.closest("button[data-insercion]");
+            if (!tecla || !teclado.contains(tecla)) return;
+            sincronizar();
+            if (teclado.hidden || !objetivo || !teclado.contains(tecla)) return;
+            if (tecla.hasAttribute("data-exponente-entero")) {
+                activarSuperindice(!superindice);
+                return;
+            }
+            insertar(objetivo, textoDeEntrada(tecla.dataset.insercion, objetivo), Number(tecla.dataset.retroceso) || 0);
         });
 
         // Cambios de perfil, visibilidad o estructura invalidan objetivos antiguos.

@@ -3,6 +3,11 @@
 [Índice](README.md) · Herramienta web y desktop: **Conjuntos → Conjuntos finitos → Relaciones entre conjuntos**.
 
 P1 está completado e integrado mediante el [PR #104](https://github.com/rodolfo-collado/Algebra-Lineal/pull/104).
+El acceso público está temporalmente bloqueado: Conjuntos figura como
+**Próximamente**, igual que Cálculo, y las URL `/conjuntos/…` responden 404.
+La implementación, los avances y la documentación que sigue se conservan.
+Las pruebas matemáticas siguen activas; las del editor usan una URLConf exclusiva
+de pruebas, que no habilita el módulo en la aplicación ni en el ejecutable.
 Consulta el [TODO de Conjuntos](TODO-conjuntos.md) para las fases P2–P7, las mejoras
 detectadas en las pruebas desktop y las posibles extensiones futuras.
 

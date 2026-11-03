@@ -1,0 +1,2 @@
+# Mantener los bytes oficiales y sus SHA-256 en Windows y Linux.
+frontend/web/calculadora/static/calculadora/vendor/* -text

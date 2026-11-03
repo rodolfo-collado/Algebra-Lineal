@@ -6,9 +6,9 @@
 
 Los algoritmos se construyen con Python estándar: listas, ciclos, condicionales
 y operaciones aritméticas. `fractions.Fraction` representa racionales exactos;
-no resuelve el álgebra por nosotros. NumPy, SciPy, SymPy y otras bibliotecas que
-sustituyan estos algoritmos no forman parte del cálculo. Las dependencias de
-Django, Waitress, pywebview y colorama son de interfaz o infraestructura.
+no resuelve el álgebra por nosotros. NumPy, SciPy y SymPy están permitidos; ya no
+existe una prohibición académica por paquete. La bisección conserva su algoritmo
+manual. Django, Waitress, pywebview y colorama son de interfaz o infraestructura.
 
 El parser convierte enteros, decimales y fracciones desde texto, sin `eval` ni
 `exec`. Calcular primero y formatear al final evita introducir redondeos o hacer

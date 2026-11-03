@@ -25,5 +25,8 @@ def pruebas(environ, start_response):
 
 
 if __name__ == "__main__":
+    # Solo pruebas: la ruta de producción sigue respondiendo 404.
+    from django.conf import settings
+    settings.ROOT_URLCONF = "tests.urls_conjuntos"
     print("Conjuntos: http://127.0.0.1:8894/__pruebas/", flush=True)
     make_server("127.0.0.1", 8894, pruebas, server_class=ServidorConHilos).serve_forever()

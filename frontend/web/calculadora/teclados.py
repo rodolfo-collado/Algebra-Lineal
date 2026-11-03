@@ -23,6 +23,7 @@ class Tecla:
     nombre: str
     # Cuántos caracteres retrocede el cursor tras insertar: «( )» deja el cursor dentro.
     retroceso: int = 0
+    exponente_entero: bool = False
 
     def __post_init__(self):
         if not self.etiqueta.strip() or not self.insercion or not self.nombre.strip():
@@ -104,6 +105,21 @@ PERFIL_SISTEMA = Perfil("sistema", (VARIABLES, OPERACIONES, ECUACIONES))
 PERFIL_NUMERICO = Perfil("numerico", (VALORES,), ayuda="Inserta en la celda donde está el cursor.")
 PERFIL_EXPRESION = Perfil("expresion", (EXPRESIONES, OPERADORES_EXPRESION))
 PERFIL_LINEAL = Perfil("lineal", (VARIABLES, LINEALES))
+PERFIL_FUNCION_REAL = Perfil("funcion-real", (
+    GrupoTeclas("Variable y potencias", (
+        Tecla("x", "x", "Variable x"), Tecla("x²", "x²", "x al cuadrado"),
+        Tecla("x³", "x³", "x al cubo"), Tecla("aⁿ", "¹", "Activar o desactivar superíndices", exponente_entero=True),
+    )),
+    GrupoTeclas("Operaciones", (Tecla("( )", "()", "Paréntesis", 1), MAS, MENOS,
+                                Tecla("×", "*", "Multiplicar"), FRACCION)),
+    GrupoTeclas("Funciones", (
+        Tecla("sen", "sen()", "Seno en radianes", 1), Tecla("cos", "cos()", "Coseno en radianes", 1),
+        Tecla("√", "√()", "Raíz cuadrada", 1), Tecla("ln", "ln()", "Logaritmo natural, base e", 1),
+        Tecla("log₁₀", "log10()", "Logaritmo decimal, base diez", 1),
+    )),
+    GrupoTeclas("Constantes", (Tecla("π", "π", "Pi"), Tecla("e", "e", "Número de Euler, base del logaritmo natural"))),
+    grupo_digitos(10),
+))
 LITERALES_CONJUNTOS = GrupoTeclas("Elementos", (
     Tecla("{ }", "{}", "Conjunto", 1), Tecla("∅", "∅", "Conjunto vacío"),
     Tecla(",", ", ", "Separar elementos"), Tecla('" "', '""', "Elemento textual", 1),
@@ -126,7 +142,7 @@ PERFILES_BASE = {
 }
 
 PERFILES = {perfil.id: perfil for perfil in (
-    PERFIL_SISTEMA, PERFIL_NUMERICO, PERFIL_EXPRESION, PERFIL_LINEAL,
+    PERFIL_SISTEMA, PERFIL_NUMERICO, PERFIL_EXPRESION, PERFIL_LINEAL, PERFIL_FUNCION_REAL,
     PERFIL_LITERAL_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, *PERFILES_BASE.values(),
 )}
 

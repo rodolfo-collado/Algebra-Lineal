@@ -11,6 +11,28 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+Bisección: `uv run --locked python -m unittest tests.test_biseccion
+tests.test_biseccion_web tests.test_biseccion_assets` cubre los tres intervalos del
+profesor, las trece iteraciones, precisión estricta, seguridad del AST,
+dominio/continuidad, no finitos, límites y bloqueo público de Conjuntos.
+Para interacción real ejecuta `uv run --locked python -m tests.biseccion_browser`
+y abre `http://127.0.0.1:8896/__pruebas/`: comprueba cursor, foco, deslizador,
+ausencia de peticiones al recorrer pasos, zoom, extremos editables y comparación.
+Los trece flujos incluyen campos inicialmente vacíos sin muestras inventadas,
+vista previa al completar la entrada, teclado contextual y cursor, signos y mitad
+conservada en el recorrido, comparación de uno, varios y fallidos cálculos,
+cifras distinguibles con precisión pequeña y respuestas de vista previa obsoletas.
+El modo superíndice se prueba con dígitos físicos/táctiles, signo inicial, selección,
+Deshacer y cambio de foco; sen()/sin() y √()/sqrt() comparten cálculos y muestras.
+También se prueban π, e, log₁₀, errores de dominio explicados y controles de
+decimales que preservan valores pequeños, extremos cercanos y el JSON original.
+Las pruebas web cubren la verificación de raíz calculada, longitud, límite de
+iteraciones y estancamiento; el perfil del teclado se prueba con los demás perfiles.
+Verifica además flechas y arrastre físico del control, pantalla táctil, temas y
+anchos de 320, 768, 1024 y 1440 px, bloqueando las peticiones fuera de loopback.
+El runner de Conjuntos conserva el editor bajo una URLConf exclusiva de pruebas;
+las pruebas públicas exigen 404 y ausencia de enlaces. Véase [Bisección](biseccion.md).
+
 Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`
 cubre aridad, colecciones exactas, dimensiones consecutivas, cadenas de tres y
 cuatro matrices como expresiones (`A + B + C`, `ABCD`), ambas lecturas del

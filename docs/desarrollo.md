@@ -105,8 +105,9 @@ El launcher inicia Waitress en loopback y abre pywebview. Consulta
 Las decisiones de componentes, accesibilidad y estilo están en
 [Interfaz](interfaz.md). Las dependencias y convenciones de commits se mantienen
 en [CONTRIBUTING](../CONTRIBUTING.md); las verificaciones previas al PR, en
-[Pruebas](pruebas.md). No agregues algoritmos externos que sustituyan la
-implementación educativa descrita en [Algoritmos](algoritmos.md).
+[Pruebas](pruebas.md). Las bibliotecas matemáticas están permitidas; la
+[bisección](biseccion.md) mantiene su algoritmo manual. Consulta las decisiones
+de cálculo existentes en [Algoritmos](algoritmos.md).
 
 ## Integración y entrega
 
