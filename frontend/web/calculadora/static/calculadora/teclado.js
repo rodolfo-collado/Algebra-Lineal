@@ -16,6 +16,7 @@
         let cambioVisual = 0;
         let superindice = false;
         let insertando = false;
+        let interaccionTeclado = false;
         // El menú de edición (clic derecho) prolonga la edición del campo: no cierra el dock.
         const enMenuEdicion = (nodo) => Boolean(nodo?.closest?.("[data-edicion-menu]"));
 
@@ -144,7 +145,9 @@
         }
 
         function sincronizar() {
-            if (!esValido(objetivo) || (document.activeElement !== objetivo && !enMenuEdicion(document.activeElement))) objetivo = null;
+            if (!esValido(objetivo) || (document.activeElement !== objetivo
+                && !teclado.contains(document.activeElement) && !interaccionTeclado
+                && !enMenuEdicion(document.activeElement))) objetivo = null;
             if (objetivo) {
                 mostrarPerfil(perfilDe(objetivo));
                 sincronizarOperandos();
@@ -168,7 +171,8 @@
 
         // Delegación: los campos nuevos heredan el perfil de su contenedor.
         document.addEventListener("focusin", (event) => {
-            if (teclado.contains(event.target) || enMenuEdicion(event.target)) return;
+            // WebView2 puede enfocar un contenedor exterior al arrastrar la barra del dock.
+            if (interaccionTeclado || teclado.contains(event.target) || enMenuEdicion(event.target)) return;
             if (event.target !== objetivo) activarSuperindice(false);
             objetivo = esValido(event.target) ? event.target : null;
             sincronizar();
@@ -185,6 +189,7 @@
         });
         // También cubre controles que no toman foco al pulsarlos (por ejemplo, un label).
         document.addEventListener("pointerdown", (event) => {
+            interaccionTeclado = teclado.contains(event.target);
             const campo = event.target.closest("label")?.control || event.target;
             if (!teclado.contains(event.target) && !enMenuEdicion(event.target) && !esValido(campo)) {
                 objetivo = null;
@@ -192,12 +197,35 @@
             }
         });
         teclado.addEventListener("mousedown", (event) => {
+            // La barra nativa puede emitir solo eventos de mouse y enfocar el contenedor.
+            interaccionTeclado = true;
             if (event.target.closest("button[data-insercion]")) event.preventDefault();
         });
+        function terminarInteraccion() {
+            if (!interaccionTeclado) return;
+            interaccionTeclado = false;
+            if (esValido(objetivo) && document.activeElement !== objetivo) objetivo.focus({ preventScroll: true });
+            sincronizar();
+        }
+        document.addEventListener("pointerup", terminarInteraccion);
+        document.addEventListener("pointercancel", terminarInteraccion);
+        document.addEventListener("mouseup", terminarInteraccion);
+        teclado.addEventListener("wheel", (event) => {
+            if (event.ctrlKey || event.deltaX || !event.deltaY) return;
+            const desplazable = [event.target.closest(".math-keys"), grupos].find(bloque => bloque
+                && bloque.scrollWidth > bloque.clientWidth
+                && (event.deltaY < 0 ? bloque.scrollLeft > 0
+                    : bloque.scrollLeft < bloque.scrollWidth - bloque.clientWidth));
+            if (!desplazable) return;
+            const unidad = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? desplazable.clientWidth : 1;
+            desplazable.scrollLeft += event.deltaY * unidad;
+            event.preventDefault();
+        }, { passive: false });
 
         function insertar(campo, texto, retroceso = 0) {
             const inicio = campo.selectionStart ?? campo.value.length;
             const fin = campo.selectionEnd ?? inicio;
+            if (document.activeElement !== campo) campo.focus({ preventScroll: true });
 
             // Delimitar la edición del dock frente a la escritura física, sin cambiar foco.
             campo.setSelectionRange(inicio, fin);

@@ -32,9 +32,10 @@ def resolver_biseccion(request):
 
 @require_POST
 def explorar_biseccion(request):
-    form = BiseccionForm(request.POST)
+    form = BiseccionForm(request.POST, explorar=True)
     if not form.is_valid():
-        return JsonResponse({"error": "Revisa la función y el intervalo."}, status=400)
+        errores = [str(mensaje) for mensajes in form.errors.values() for mensaje in mensajes]
+        return JsonResponse({"error": " ".join(errores)}, status=400)
     try:
         puntos = muestrear(form.funcion_real, form.cleaned_data["a"], form.cleaned_data["b"])
     except ValueError as error:

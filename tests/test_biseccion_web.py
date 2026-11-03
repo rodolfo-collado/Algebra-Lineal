@@ -49,7 +49,7 @@ class BiseccionWebTests(SimpleTestCase):
             self.assertIsNone(form[campo].value())
         self.assertEqual(form["precision"].value(), .0001)
         self.assertEqual(form["max_iteraciones"].value(), 200)
-        self.assertContains(r, "Introduce una función y un intervalo")
+        self.assertContains(r, "Introduce una función para")
         self.assertNotContains(r, "data-respuesta-errores")
 
     def test_verificacion_adaptada_al_resultado(self):
@@ -136,6 +136,26 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertLessEqual(len(puntos["x"]), 801)
         for cambio in [{"funcion": "x.__class__"}, {"a": "inf"}, {"a": "1", "b": "0"}]:
             self.assertEqual(self.client.post(RUTA + "grafica/", datos(**cambio)).status_code, 400)
+
+    def test_explorar_solo_funcion_usa_ventana_independiente(self):
+        with patch("frontend.web.calculadora.views_biseccion.biseccion", side_effect=AssertionError("No calcular")):
+            r = self.client.post(RUTA + "grafica/", {"funcion": "x^2+1"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual((r.json()["x"][0], r.json()["x"][-1]), (-10, 10))
+        self.assertEqual(len(r.json()["x"]), 801)
+        # Ver una curva, incluso sin cambio de signo, no autoriza resolver.
+        for valores in [{"funcion": "x^2+1"}, {"funcion": "x^2+1", "a": "-1", "b": "1"}]:
+            r = self.client.post(RUTA, valores)
+            self.assertNotContains(r, 'id="resultado"')
+            self.assertContains(r, "data-respuesta-errores")
+
+    def test_exploracion_conserva_limites_y_validacion_de_entrada(self):
+        for valores in [{"funcion": "x", "intruso": "1"}, {"funcion": ["x", "x+1"]},
+                        {"funcion": "x", "a": "NaN", "b": "1"},
+                        {"funcion": "x", "a": "-1e308", "b": "1.7e308"},
+                        {"funcion": "x" * 513}]:
+            with self.subTest(valores=valores):
+                self.assertEqual(self.client.post(RUTA + "grafica/", valores).status_code, 400)
 
     def test_csrf_metodos_y_xss(self):
         self.assertEqual(Client(enforce_csrf_checks=True).post(RUTA, datos()).status_code, 403)
