@@ -21,7 +21,7 @@ las hojas funcionales; `estudio.css` es el ambiente opcional y tiene las suyas.
 En navegador real, `tests.buscador_browser` incluye el explorador (una parada de
 Tab, flechas, panel y nada guardado). Revisión manual: recorrer Inicio → área →
 herramienta → Atrás → Adelante en Estudio y Minimalista, de día y de noche, a
-1440 × 900, 900 × 600 y 390 × 844; activar Efectos en Opciones y escuchar
+1440 × 900, 900 × 600 y 390 × 844; activar Con efectos en Opciones y escuchar
 seleccionar, entrar, volver, calcular y un error; repetir con movimiento reducido.
 La música se comprueba en `tests.buscador_browser` (apagada al empezar, se pausa,
 volumen aparte y un ensayo con `OfflineAudioContext` que confirma que suena, no
@@ -63,6 +63,15 @@ Sin tráfico externo; se revisaron 320/390/768/1024/1440 px y claro/oscuro.
 La combinación temporal con PR #110 (`058d343`) no tuvo conflictos y pasó 84
 pruebas focalizadas y Bisección 16/16, con revisión de Estudio/Minimalista.
 No se probó lector de pantalla ni táctil físico (gestos emulados), ni se generó instalador.
+
+Validación de Estudio con Bisección y música (2026-11-03): 1912 pruebas Python y los
+18 runners DOM en Chrome headless, con el único fallo conocido de Alt+←/→ en
+escritorio. En el ejecutable empaquetado (WebView2 156): Bisección de 13 pasos,
+colores de la gráfica al cambiar de estilo, extremo elegido desde la curva, teclado y
+la música con un gesto real (señal medida, continúa al navegar, se pausa, reabrir
+empieza en silencio y recuerda solo el volumen). Sin desbordes en 126 combinaciones de
+siete páginas, nueve tamaños y ambos estilos. Se generó el instalador; no se instaló.
+Nadie ha juzgado la música de oído todavía, ni se probó con lector de pantalla.
 
 Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`
 cubre aridad, colecciones exactas, dimensiones consecutivas, cadenas de tres y
