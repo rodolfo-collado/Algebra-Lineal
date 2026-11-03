@@ -114,8 +114,10 @@ PERFIL_FUNCION_REAL = Perfil("funcion-real", (
                                 Tecla("×", "*", "Multiplicar"), FRACCION)),
     GrupoTeclas("Funciones", (
         Tecla("sen", "sen()", "Seno en radianes", 1), Tecla("cos", "cos()", "Coseno en radianes", 1),
-        Tecla("√", "√()", "Raíz cuadrada", 1), Tecla("ln", "ln()", "Logaritmo natural", 1),
+        Tecla("√", "√()", "Raíz cuadrada", 1), Tecla("ln", "ln()", "Logaritmo natural, base e", 1),
+        Tecla("log₁₀", "log10()", "Logaritmo decimal, base diez", 1),
     )),
+    GrupoTeclas("Constantes", (Tecla("π", "π", "Pi"), Tecla("e", "e", "Número de Euler, base del logaritmo natural"))),
     grupo_digitos(10),
 ))
 LITERALES_CONJUNTOS = GrupoTeclas("Elementos", (

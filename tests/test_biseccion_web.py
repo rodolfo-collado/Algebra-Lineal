@@ -63,7 +63,7 @@ class BiseccionWebTests(SimpleTestCase):
                 self.assertContains(r, mensaje)
                 self.assertContains(r, "¿Cómo sabemos que hay una raíz?")
                 self.assertContains(r, "¿Se alcanzó la precisión solicitada?")
-                self.assertContains(r, "b − a =")
+                self.assertContains(r, "b − a:")
                 self.assertContains(r, "más de una raíz")
 
     def test_cero_de_maquina_no_se_presenta_como_error_matematico_cero(self):
@@ -72,7 +72,7 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertContains(r, "no demuestra que el error matemático sea exactamente cero")
         self.assertNotContains(r, "no supera 0")
         r = self.client.post(RUTA, datos(funcion="x", a="0", b="1"))
-        self.assertContains(r, "f(b) = 1 (positivo)")
+        self.assertContains(r, 'title="Valor almacenado: 1.0"')
 
     def test_notaciones_comparten_resultado_muestras_y_clave_de_comparacion(self):
         implicita = "x⁴ - 5x³ + 0.5x² - 11x + 10"

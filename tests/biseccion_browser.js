@@ -63,6 +63,15 @@
             valor(w, "funcion", ""); f.setSelectionRange(0, 0);
             q(w, '[data-insercion="sen()"]')?.click();
             ok(f.value === "sen()" && f.selectionStart === 4, "Seno en español");
+            valor(w, "funcion", ""); f.setSelectionRange(0, 0);
+            q(w, '[data-insercion="π"]').click();
+            ok(f.value === "π", "Pi visible");
+            valor(w, "funcion", ""); f.setSelectionRange(0, 0);
+            q(w, '[data-insercion="e"]').click();
+            ok(f.value === "e", "Constante e");
+            valor(w, "funcion", ""); f.setSelectionRange(0, 0);
+            q(w, '[data-insercion="log10()"]').click();
+            ok(f.value === "log10()" && f.selectionStart === 6, "Logaritmo decimal y cursor");
             q(w, '[name="a"]').focus();
             ok(!q(w, ".math-keyboard").hasAttribute("data-abierto"), "No aparece en extremos numéricos");
         }],
@@ -106,6 +115,30 @@
             w = await post(frame); await esperar(() => listaGrafica(w));
             const numeros = [...q(w, "#paso-valores").textContent.matchAll(/= ([\d,.-]+)/g)].map(m => m[1]);
             ok(numeros.length === 3 && new Set(numeros).size === 3, "No redondea los tres puntos al mismo número");
+            const celdas = [...w.document.querySelectorAll(".biseccion-tabla tbody tr:last-child td [data-biseccion-numero]")].slice(0, 3);
+            ok(new Set(celdas.map(n => n.textContent)).size === 3, "Tabla también distingue extremos");
+        }],
+        ["Decimales de lectura no recalculan ni crean ceros falsos", async (w, frame) => {
+            valor(w, "funcion", "1e-20*(x²-2)"); valor(w, "a", "1"); valor(w, "b", "2");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const original = q(w, "#datos-biseccion").textContent;
+            let peticiones = 0; const fetch = w.fetch; w.fetch = (...args) => { peticiones++; return fetch(...args); };
+            for (const precision of ["4", "16", "completa", "6"]) {
+                const selector = q(w, "#biseccion-decimales"); selector.value = precision;
+                selector.dispatchEvent(new w.Event("change", { bubbles: true }));
+                for (const nodo of w.document.querySelectorAll("[data-biseccion-numero]")) {
+                    const n = Number(nodo.textContent.replace("≈ ", ""));
+                    ok(Number(nodo.dataset.biseccionNumero) === 0 || n !== 0, "No convierte valores en cero");
+                    if (precision === "completa") ok(n === Number(nodo.dataset.biseccionNumero), "Valor de máquina accesible");
+                }
+            }
+            ok(q(w, "#datos-biseccion").textContent === original && peticiones === 0, "Solo presentación");
+        }],
+        ["Dominio explica raíz real y una corrección justificada", async (w, frame) => {
+            valor(w, "funcion", "√(x)"); valor(w, "a", "-1"); valor(w, "b", "5");
+            w = await post(frame);
+            ok(!q(w, "#resultado"), "Mantiene el rechazo");
+            ok(w.document.body.textContent.includes("valores negativos de x") && w.document.body.textContent.includes("a ≥ 0"), "Condición y corrección de raíz directa");
         }],
         ["Ejemplo del profesor: 13 filas y raíz verificada", async (w, frame) => {
             ejemplo(w);
@@ -165,6 +198,12 @@
             ok(lista(w).length === 10, "Segundo intervalo: 10");
             ok(q(w, '[name="funcion"]').value.replaceAll("*", "").replaceAll("^4", "⁴").replaceAll("^3", "³").replaceAll("^2", "²") === funcion, "Función equivalente conservada");
             ok(q(w, "#biseccion-comparaciones").textContent.includes("Compatible con la misma raíz"), "Misma raíz compatible");
+            const precision = q(w, "#biseccion-decimales"); precision.value = "4";
+            precision.dispatchEvent(new w.Event("change", { bubbles: true }));
+            const aproximaciones = [...w.document.querySelectorAll("#biseccion-comparaciones tbody tr td:nth-child(2) span")];
+            ok(aproximaciones.length === 2 && aproximaciones[0].textContent !== aproximaciones[1].textContent, "Comparación distingue aproximaciones cercanas");
+            precision.value = "completa"; precision.dispatchEvent(new w.Event("change", { bubbles: true }));
+            ok(aproximaciones.every(n => Number(n.textContent) === Number(n.dataset.biseccionNumero)), "Comparación ofrece precisión completa");
             valor(w, "a", ".55"); valor(w, "b", "1.1");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(q(w, "#biseccion-comparaciones").textContent.includes("Intervalos finales distintos"), "Raíces distintas");

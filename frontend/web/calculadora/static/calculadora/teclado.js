@@ -45,7 +45,7 @@
             if (!superindice) return texto;
             const prefijo = campo.value.slice(0, campo.selectionStart);
             if (!/^[+-]?[0-9]*$/.test(texto) ||
-                (/^[+-]/.test(texto) && !/[0-9xei)]$/.test(prefijo))) {
+                (/^[+-]/.test(texto) && !/[0-9xeiπ)]$/.test(prefijo))) {
                 activarSuperindice(false);
                 return texto;
             }

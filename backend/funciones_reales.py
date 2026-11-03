@@ -72,7 +72,7 @@ class FuncionReal:
             raise ValueError("Escribe una función de x de hasta 512 caracteres.")
         self.texto = texto.strip()
         try:
-            self.expresion = explicitar_productos(normalizar_potencias(self.texto).replace("√", " sqrt").strip())
+            self.expresion = explicitar_productos(normalizar_potencias(self.texto).replace("√", " sqrt").replace("π", " pi ").strip())
             self.arbol = ast.parse(self.expresion, mode="eval").body
             if len(list(ast.walk(self.arbol))) > 160:
                 raise ValueError("La función tiene demasiadas operaciones.")
@@ -135,8 +135,7 @@ class FuncionReal:
         try:
             return self._rango(self.arbol, (a, b))
         except (ArithmeticError, ValueError) as error:
-            raise ValueError("No se pudo verificar dominio y continuidad en todo [a,b]. "
-                             "Prueba un intervalo menor o una expresión equivalente. " + str(error)) from error
+            raise ValueError("No podemos aplicar bisección con este intervalo. " + str(error)) from error
 
     def _rango(self, nodo, intervalo):
         if isinstance(nodo, ast.Constant):
@@ -157,11 +156,17 @@ class FuncionReal:
                 primera = math.ceil(math.nextafter((a - math.pi/2)/math.pi, -math.inf))
                 ultima = math.floor(math.nextafter((b - math.pi/2)/math.pi, math.inf))
                 if primera <= ultima:
-                    raise ValueError("tan(x) cruza una asíntota.")
+                    raise ValueError("La tangente no está definida cuando su coseno vale cero. El argumento puede alcanzar uno de esos puntos dentro del intervalo. Elige extremos donde la tangente permanezca definida y continua.")
             if nombre in ("log", "ln", "log10") and a <= 0:
-                raise ValueError("El argumento del logaritmo debe ser positivo.")
+                directo = isinstance(nodo.args[0], ast.Name) and nodo.args[0].id == "x"
+                raise ValueError("El logaritmo solo admite cantidades mayores que cero. " +
+                                 ("Tu intervalo incluye x iguales o menores que cero. Elige a > 0 y b > a."
+                                  if directo else "No pudimos asegurar que la cantidad dentro del logaritmo sea positiva en todo el intervalo. Elige extremos donde se cumpla esa condición."))
             if nombre == "sqrt" and a < 0:
-                raise ValueError("El argumento de sqrt debe ser no negativo.")
+                directo = isinstance(nodo.args[0], ast.Name) and nodo.args[0].id == "x"
+                raise ValueError("La raíz cuadrada real √ solo admite cantidades mayores o iguales que cero. " +
+                                 ("Tu intervalo incluye valores negativos de x. Para √(x), elige a ≥ 0 y b > a."
+                                  if directo else "No pudimos descartar cantidades negativas dentro de la raíz en este intervalo. Elige extremos donde su contenido sea no negativo en todo el intervalo."))
             valores = [FUNCIONES[nombre](a), FUNCIONES[nombre](b)]
             if nombre == "exp" and min(valores) == 0:
                 raise ValueError("Subdesbordamiento de exp.")
@@ -170,7 +175,7 @@ class FuncionReal:
         if isinstance(nodo.op, ast.Pow):
             n = self._numero(nodo.right, 0.)
             if (a < 0 and not n.is_integer()) or (a <= 0 <= b and n < 0):
-                raise ValueError("Potencia fuera del dominio real o con división por cero.")
+                raise ValueError("Esta potencia no está definida como número real en todo el intervalo: una base negativa con exponente no entero no está admitida, y una potencia negativa no admite base cero. Elige extremos donde la base cumpla esas condiciones.")
             valores = [math.pow(a, n), math.pow(b, n)]
             if a <= 0 <= b and n > 0:
                 valores.append(0.)
@@ -181,7 +186,7 @@ class FuncionReal:
             if isinstance(nodo.op, ast.Sub):
                 return acotar(a - d, b - c)
             if isinstance(nodo.op, ast.Div) and c <= 0 <= d:
-                raise ValueError("El denominador puede ser cero.")
+                raise ValueError("No se puede dividir entre cero. No pudimos descartar un denominador cero dentro de este intervalo. Elige extremos donde el denominador no se anule; cambiar de signo a través de un hueco no garantiza una raíz.")
             op = OPERACIONES[type(nodo.op)]
             valores = [op(u, v) for u in (a, b) for v in (c, d)]
         return acotar(min(valores), max(valores))

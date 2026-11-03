@@ -72,6 +72,7 @@ hiddenimports = [
     "frontend.web.calculadora.templatetags",
     "frontend.web.calculadora.templatetags.componentes",
     "frontend.web.calculadora.templatetags.numeros",
+    "frontend.web.calculadora.templatetags.biseccion",
     "backend.vectores",
     "backend.biseccion",
     "backend.funciones_reales",

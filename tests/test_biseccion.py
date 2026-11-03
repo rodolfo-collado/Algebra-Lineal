@@ -86,6 +86,21 @@ class BiseccionTests(unittest.TestCase):
 
 
 class FuncionesRealesTests(unittest.TestCase):
+    def test_pi_visual_y_logaritmos_conservan_aliases_y_significado(self):
+        self.assertEqual(FuncionReal("2π+e").clave, FuncionReal("2*pi+e").clave)
+        self.assertEqual(FuncionReal("ln(e)")(0), 1)
+        self.assertEqual(FuncionReal("log10(100)")(0), 2)
+
+    def test_mensajes_de_dominio_explicitamente_justificados(self):
+        for texto, a, b, mensajes in [("√(x)", -1, 5, ["mayores o iguales que cero", "valores negativos de x", "a ≥ 0"]),
+                                     ("ln(x)", 0, 5, ["mayores que cero", "a > 0"]),
+                                     ("√(x-2)", 0, 5, ["dentro de la raíz", "su contenido sea no negativo"]),
+                                     ("1/x", -1, 5, ["dividir entre cero", "denominador"] )]:
+            with self.subTest(texto=texto), self.assertRaises(ValueError) as error:
+                FuncionReal(texto).rango(a, b)
+            for mensaje in mensajes:
+                self.assertIn(mensaje, str(error.exception))
+
     def test_seno_y_raiz_visuales_son_aliases_canonicos(self):
         for visual, escrita in [("sen(x)", "sin(x)"), ("√(x)", "sqrt(x)"),
                                 ("2√(x)+sen(x)²+√(√(x))", "2*sqrt(x)+sin(x)^2+sqrt(sqrt(x))"),

@@ -18,6 +18,44 @@
     const indicacion = "Introduce una función y un intervalo para visualizar su gráfica.";
     ayudaGrafica.hidden = true;
 
+    function presentarNumeros() {
+        const controles = document.getElementById("biseccion-formato");
+        if (!controles) return;
+        const selector = document.getElementById("biseccion-decimales");
+        const grupos = [...document.querySelectorAll("[data-biseccion-grupo]")].map(grupo =>
+            [...grupo.querySelectorAll("[data-biseccion-numero]")].map(nodo => ({ nodo, valor: Number(nodo.dataset.biseccionNumero) })));
+        function completo(x) {
+            return x === 0 || (Math.abs(x) >= 1e-16 && Math.abs(x) < 1e12)
+                ? x.toLocaleString("en-US", { useGrouping: false, maximumSignificantDigits: 17 }) : String(x);
+        }
+        function decimal(x, p) {
+            if (Math.abs(x) >= 1e12 || (x !== 0 && Math.abs(x) < 1e-16)) return completo(x);
+            const texto = x.toFixed(p);
+            return texto.includes(".") ? texto.replace(/0+$/, "").replace(/\.$/, "") : texto;
+        }
+        function aplicar() {
+            for (const grupo of grupos) {
+                const valores = new Set(grupo.map(d => d.valor));
+                let p = Number(selector.value);
+                const esCompleto = selector.value === "completa";
+                let textos = [];
+                for (; !esCompleto && p <= 16; p++) {
+                    textos = grupo.map(d => decimal(d.valor, p));
+                    if (new Set(textos).size === valores.size && !textos.some((t, i) => Number(t) === 0 && grupo[i].valor !== 0)) break;
+                }
+                grupo.forEach((d, i) => {
+                    const texto = esCompleto || p > 16 ? completo(d.valor) : textos[i];
+                    const aproximado = Number(texto) !== d.valor;
+                    d.nodo.textContent = (aproximado && !d.nodo.closest(".biseccion-raiz") ? "≈ " : "") + texto;
+                    d.nodo.setAttribute("aria-label", aproximado ? `${texto}, redondeado; valor almacenado ${d.valor}` : texto);
+                });
+            }
+        }
+        controles.hidden = false;
+        selector.addEventListener("change", aplicar);
+        aplicar();
+    }
+
     function intervalo() {
         if (!campo("a").value.trim() || !campo("b").value.trim()) return null;
         const a = Number(campo("a").value), b = Number(campo("b").value);
@@ -149,7 +187,15 @@
             return;
         }
         const tabla = document.createElement("table");
+        tabla.setAttribute("data-biseccion-grupo", "");
         tabla.className = "procedure-table";
+        function valor(x) {
+            const nodo = document.createElement("span");
+            nodo.dataset.biseccionNumero = String(x);
+            nodo.title = `Valor almacenado: ${x}`;
+            nodo.textContent = String(x);
+            return nodo;
+        }
         const caption = tabla.createCaption();
         caption.textContent = "Resultados de esta función en la pestaña actual";
         const cabecera = tabla.createTHead().insertRow();
@@ -163,8 +209,10 @@
                 : misma ? "Compatible con la misma raíz" : "Intervalos finales distintos";
             if (r === actual) texto = r.convergio ? "Actual" : "Actual · Sin convergencia verificada";
             const fila = cuerpo.insertRow();
-            [`[${numero(r.inicial_a)}, ${numero(r.inicial_b)}]`, numero(r.c), String(r.iteraciones), texto]
-                .forEach(t => { fila.insertCell().textContent = t; });
+            fila.insertCell().append("[", valor(r.inicial_a), "; ", valor(r.inicial_b), "]");
+            fila.insertCell().append(valor(r.c));
+            fila.insertCell().textContent = String(r.iteraciones);
+            fila.insertCell().textContent = texto;
         });
         contenedor.replaceChildren(tabla);
     }
@@ -229,6 +277,7 @@
         ["pointerenter", "focus", "click"].forEach(tipo => fila.addEventListener(tipo, () => mostrarPaso(Number(fila.dataset.iteracion))));
     });
     comparar();
+    presentarNumeros();
     if (pasos.length) mostrarPaso(pasos.length);
     previsualizar();
 })();

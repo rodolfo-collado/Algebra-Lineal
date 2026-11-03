@@ -1,5 +1,5 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% load static componentes %}
+{% load static componentes biseccion %}
 
 {% block extra_head %}<link rel="stylesheet" href="{% static 'calculadora/styles/biseccion.css' %}">{% endblock %}
 
@@ -23,7 +23,7 @@
                 </div>
                 <div class="field-group">{{ form.max_iteraciones.label_tag }}{{ form.max_iteraciones }}{{ form.max_iteraciones.errors }}</div>
             </div>
-            <p class="field-help">Funciones: sen, cos, tan, exp, log o ln (natural), log10, √() y abs. También se admiten sin() y sqrt(). Constantes: pi y e. Exponentes constantes; ángulos en radianes.</p>
+            <p class="field-help">Funciones: sen, cos, tan, exp, log o ln (natural), log10, √() y abs. También se admiten sin() y sqrt(). Constantes: π (también pi) y e. ln es el logaritmo natural, de base e; log₁₀ (log10) es el de base diez. Exponentes constantes; ángulos en radianes.</p>
             <p class="field-help">Conserva los nombres completos: sen(x) es una función; xx y senx no se admiten. 1e-3 es notación científica; para multiplicar por e escribe 2*e. Productos y divisiones tienen igual prioridad: 1/2x equivale a (1/2)*x; usa 1/(2x) si todo es denominador.</p>
         {% enddisclosure %}
         <div class="workspace-actions"><button type="submit" class="btn btn-primary" data-calculo>Resolver por bisección</button></div>
@@ -35,11 +35,18 @@
 {% block tool_result %}
 {% if resultado %}
 <section id="resultado" class="results" data-resultado="vigente" tabindex="-1" aria-labelledby="results-title">
-    <header class="results-heading">
+    <div class="numeric-format biseccion-formato" id="biseccion-formato" hidden role="group" aria-label="Presentación de los números">
+        <label for="biseccion-decimales">Decimales visibles</label>
+        <select id="biseccion-decimales" aria-describedby="biseccion-formato-ayuda">
+            <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="12">12</option><option value="16">16</option><option value="completa">Precisión completa</option>
+        </select>
+        <p id="biseccion-formato-ayuda" class="field-help">Solo cambia la lectura. ≈ indica redondeo. Mostramos más cifras si hacen falta para distinguir valores o evitar un cero falso; los cálculos conservan todos sus datos. Precisión completa muestra el valor de máquina, no exactitud matemática.</p>
+    </div>
+    <header class="results-heading" data-biseccion-grupo>
         <h2 id="results-title">{% if resultado.convergio %}Raíz aproximada{% else %}Aproximación sin convergencia{% endif %}</h2>
-        <p class="biseccion-raiz">c ≈ <span>{{ resultado.c|stringformat:".14g" }}</span></p>
+        <p class="biseccion-raiz">c ≈ <span>{{ resultado.c|numero_biseccion }}</span></p>
         <p class="biseccion-estado{% if not resultado.convergio %} biseccion-aviso{% endif %}">{{ resultado.mensaje }}</p>
-        <p class="muted">{{ resultado.iteraciones|length }} iteraciones · f(c) = {{ resultado.fc|stringformat:".12g" }}</p>
+        <p class="muted">{{ resultado.iteraciones|length }} iteraciones · f(c) = {{ resultado.fc|numero_biseccion }}</p>
     </header>
 {% endif %}
     <section class="panel biseccion-visual" aria-labelledby="grafica-titulo">
@@ -67,10 +74,10 @@
                 <thead><tr><th scope="col">i</th><th scope="col">a</th><th scope="col">b</th><th scope="col">c</th><th scope="col">f(a)</th><th scope="col">f(b)</th><th scope="col">f(c)</th><th scope="col">Longitud restante</th><th scope="col">Error relativo (%)</th></tr></thead>
                 <tbody>
                 {% for fila in resultado.iteraciones %}
-                    <tr data-iteracion="{{ fila.i }}" tabindex="0" aria-label="Iteración {{ fila.i }}">
-                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|stringformat:".17g" }}</td><td>{{ fila.b|stringformat:".17g" }}</td><td>{{ fila.c|stringformat:".17g" }}</td>
-                        <td>{{ fila.fa|stringformat:".17g" }}</td><td>{{ fila.fb|stringformat:".17g" }}</td><td>{{ fila.fc|stringformat:".17g" }}</td><td>{{ fila.longitud|stringformat:".17g" }}</td>
-                        <td>{% if fila.error_relativo is not None %}{{ fila.error_relativo|stringformat:".17g" }} %{% else %}No definido{% endif %}</td>
+                    <tr data-iteracion="{{ fila.i }}" tabindex="0" data-biseccion-grupo aria-label="Iteración {{ fila.i }}">
+                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_biseccion }}</td><td>{{ fila.b|numero_biseccion }}</td><td>{{ fila.c|numero_biseccion }}</td>
+                        <td>{{ fila.fa|numero_biseccion }}</td><td>{{ fila.fb|numero_biseccion }}</td><td>{{ fila.fc|numero_biseccion }}</td><td>{{ fila.longitud|numero_biseccion }}</td>
+                        <td>{% if fila.error_relativo is not None %}{{ fila.error_relativo|numero_biseccion }} %{% else %}No definido{% endif %}</td>
                     </tr>
                 {% empty %}<tr><td colspan="9">Raíz en un extremo: no se necesitan iteraciones.</td></tr>{% endfor %}
                 </tbody>
@@ -79,28 +86,30 @@
         <p class="field-help">Error relativo = |(c actual − c anterior)/c actual| × 100. No se define en la primera iteración ni cuando c = 0. No es el criterio de parada.</p>
     {% enddisclosure %}
     {% disclosure titulo="Verificación" id="verificacion-biseccion" %}
+        <div data-biseccion-grupo>
         <p><strong>¿Cómo sabemos que hay una raíz?</strong><br>
-            Comprobamos que la expresión es continua en el intervalo inicial [{{ verificacion.a|stringformat:".14g" }}, {{ verificacion.b|stringformat:".14g" }}]: no hay saltos ni huecos según las comprobaciones de la herramienta.
-            f(a) = {{ verificacion.fa|stringformat:".12g" }} ({{ verificacion.signo_a }}) y f(b) = {{ verificacion.fb|stringformat:".12g" }} ({{ verificacion.signo_b }}).
+            Comprobamos que la expresión es continua en el intervalo inicial [{{ verificacion.a|numero_biseccion }}, {{ verificacion.b|numero_biseccion }}]: no hay saltos ni huecos según las comprobaciones de la herramienta.
+            f(a) = {{ verificacion.fa|numero_biseccion }} ({{ verificacion.signo_a }}) y f(b) = {{ verificacion.fb|numero_biseccion }} ({{ verificacion.signo_b }}).
             {% if verificacion.fa == 0 or verificacion.fb == 0 %}Un extremo ya da cero en la evaluación numérica: es una raíz calculada allí, sin una prueba simbólica de que sea exacta.{% else %}Los signos son opuestos: una función continua debe pasar por cero entre ellos.{% endif %}
         </p>
         <p><strong>¿Se alcanzó la precisión solicitada?</strong><br>
-            Intervalo final: [{{ resultado.a|stringformat:".14g" }}, {{ resultado.b|stringformat:".14g" }}].
-            b − a = {{ resultado.b|stringformat:".14g" }} − ({{ resultado.a|stringformat:".14g" }}) = {{ resultado.longitud|stringformat:".12g" }}
-            {% if resultado.longitud < resultado.precision %}&lt;{% else %}≥{% endif %} {{ resultado.precision|stringformat:".12g" }} (precisión solicitada).
+            Intervalo final: [{{ resultado.a|numero_biseccion }}, {{ resultado.b|numero_biseccion }}].
+            b − a: {{ resultado.b|numero_biseccion }} − ({{ resultado.a|numero_biseccion }}) ≈ {{ resultado.longitud|numero_biseccion }}
+            {% if resultado.longitud < resultado.precision %}&lt;{% else %}≥{% endif %} {{ resultado.precision|numero_biseccion }} (precisión solicitada).
             {% if resultado.estado == "exacta" %}{% if resultado.iteraciones %}El punto medio da cero{% else %}El extremo da cero{% endif %} en aritmética de máquina; no necesitamos seguir dividiendo.
             {% elif resultado.estado == "longitud" %}Se alcanzó la precisión: el intervalo es suficientemente pequeño.
             {% elif resultado.estado == "limite" %}Se agotó el máximo de iteraciones; no se alcanzó la precisión.
             {% else %}La máquina ya no puede representar otro punto entre los extremos; no se alcanzó la precisión.{% endif %}
         </p>
         <p><strong>¿Por qué f(c) no tiene que ser exactamente cero?</strong><br>
-            Evaluación final: f(c) = {{ resultado.fc|stringformat:".14g" }}.
+            Evaluación final: f(c) = {{ resultado.fc|numero_biseccion }}.
             {% if resultado.estado == "exacta" %}Aquí sí obtuvimos cero con los números de máquina. El redondeo puede influir: esto no demuestra que el error matemático sea exactamente cero.
             {% else %}La precisión mide el ancho del intervalo en x; f(c) mide la altura de la función y puede ser distinto de cero.{% endif %}
-            {% if resultado.estado == "longitud" %}Bajo las condiciones de continuidad y signos comprobadas y la precisión de máquina, la distancia de c a una raíz del intervalo final no supera {{ resultado.longitud|stringformat:".12g" }}.
+            {% if resultado.estado == "longitud" %}Bajo las condiciones de continuidad y signos comprobadas y la precisión de máquina, la distancia de c a una raíz del intervalo final no supera {{ resultado.longitud|numero_biseccion }}.
             {% elif not resultado.convergio %}El intervalo todavía no cumple la precisión; no afirmamos haber conseguido la aproximación solicitada.{% endif %}
             El error relativo compara dos aproximaciones sucesivas; no decide cuándo termina este método.
         </p>
+        </div>
         <p class="field-help">Usamos números de máquina y comprobaciones conservadoras. Puede haber más de una raíz en el intervalo.</p>
     {% enddisclosure %}
     {% disclosure titulo="Comparar intervalos" id="comparacion-biseccion" %}
