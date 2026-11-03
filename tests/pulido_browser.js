@@ -341,7 +341,7 @@
         assert(resultado >= cabecera(w) && resultado <= cabecera(w) + 40, `#resultado bajo la cabecera, sin doble reserva: ${resultado}`);
         q(w, '[name="direccion"]:checked').focus({ preventScroll: true });
         w.scrollTo(0, 40); await turno(w);
-        const miga = q(w, ".breadcrumbs a");
+        const miga = q(w, ".breadcrumbs li:nth-last-child(2) a");
         assert(miga.getBoundingClientRect().bottom <= cabecera(w), "La miga empieza detrás de la cabecera");
         miga.focus(); await turno(w);
         assert(miga.getBoundingClientRect().top >= cabecera(w), `La miga enfocada queda visible: ${miga.getBoundingClientRect().top}`);

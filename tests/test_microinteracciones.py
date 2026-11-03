@@ -13,6 +13,12 @@ STATIC = Path(__file__).resolve().parents[1] / "frontend/web/calculadora/static/
 STYLES = STATIC / "styles"
 
 
+def funcionales():
+    """Hojas de la interfaz funcional. estudio.css es el ambiente opcional de Estudio
+    (cámara, luces, gestos): sus propias reglas están en tests/test_estudio.py."""
+    return [p for p in STYLES.glob("*.css") if p.name != "estudio.css"]
+
+
 def leer(nombre):
     return re.sub(r"/\*.*?\*/", "", (STYLES / nombre).read_text(encoding="utf-8"), flags=re.S)
 
@@ -30,7 +36,7 @@ class PruebasMicrointeracciones(unittest.TestCase):
 
     def test_transiciones_declaran_solo_propiedades_visuales(self):
         permitidas = {"background", "background-color", "border-color", "color", "box-shadow", "opacity", "transform", "none"}
-        for archivo in STYLES.glob("*.css"):
+        for archivo in funcionales():
             for valor in re.findall(r"\btransition\s*:\s*([^;{}]+);", leer(archivo.name)):
                 for parte in valor.split(","):
                     with self.subTest(archivo=archivo.name, transicion=parte):
@@ -39,7 +45,7 @@ class PruebasMicrointeracciones(unittest.TestCase):
                             self.assertRegex(parte, r"var\(--motion(?:-fast)?\)")
 
     def test_sin_animaciones_infinitas_ni_retardos(self):
-        css = "\n".join(leer(p.name) for p in STYLES.glob("*.css"))
+        css = "\n".join(leer(p.name) for p in funcionales())
         self.assertNotRegex(css, r"\binfinite\b|(?:animation|transition)-delay\s*:")
         for valor in re.findall(r"\banimation\s*:\s*([^;{}]+);", css):
             if not valor.startswith("none"):

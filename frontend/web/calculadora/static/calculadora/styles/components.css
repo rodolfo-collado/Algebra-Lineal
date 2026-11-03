@@ -110,7 +110,7 @@
 }
 
 /* Un mismo feedback para acciones, teclas y controles de estructura/navegación. */
-:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .sidebar-close, .search-submit) {
+:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .options-toggle, .historial-boton, .sidebar-close, .search-submit) {
     transition:
         background-color var(--motion-fast),
         border-color var(--motion-fast),
@@ -119,20 +119,20 @@
         transform var(--motion-fast);
 }
 
-:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .sidebar-close, .search-submit):disabled {
+:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .options-toggle, .historial-boton, .sidebar-close, .search-submit):disabled {
     opacity: 0.55;
     cursor: not-allowed;
     box-shadow: none;
 }
 
 /* El relieve confirma la pulsación también en táctil y con movimiento reducido. */
-:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .sidebar-close, .search-submit):not(:disabled):active {
+:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .options-toggle, .historial-boton, .sidebar-close, .search-submit):not(:disabled):active {
     border-color: var(--color-brand);
     box-shadow: inset 0 0 0 1px currentColor;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    :is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .sidebar-close, .search-submit):not(:disabled):active {
+    :is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .options-toggle, .historial-boton, .sidebar-close, .search-submit):not(:disabled):active {
         transform: translateY(1px);
     }
 
@@ -406,60 +406,6 @@ ul.field-error { padding-left: 1.15rem; }
     font-size: 1.1rem;
 }
 
-/* Área → tema → herramienta: filas plegables con bordes discretos, sin cuadrícula de tarjetas. */
-.home-area {
-    border-top: 1px solid var(--color-border);
-}
-
-.home-area:last-child {
-    border-bottom: 1px solid var(--color-border);
-}
-
-.home-area-summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.2rem 0.5rem;
-    list-style: none;
-    cursor: pointer;
-    user-select: none;
-    transition: background var(--motion-fast);
-}
-
-.home-area-summary::-webkit-details-marker {
-    display: none;
-}
-
-.home-area-summary:hover {
-    background: var(--color-surface);
-}
-
-.home-area-title {
-    display: block;
-    font-size: 1rem;
-    font-weight: 650;
-}
-
-.home-area-description {
-    display: block;
-    margin-top: 0.15rem;
-    color: var(--color-muted);
-    font-size: 0.9rem;
-}
-
-.area-chevron {
-    width: 1rem;
-    height: 1rem;
-    flex: none;
-    color: var(--color-muted);
-    transition: transform var(--motion-fast);
-}
-
-.home-area[open] > .home-area-summary .area-chevron {
-    transform: rotate(90deg);
-}
-
 .home-section {
     margin-bottom: 1.5rem;
 }
@@ -479,105 +425,8 @@ ul.field-error { padding-left: 1.15rem; }
     letter-spacing: -0.02em;
 }
 
-.home-area[hidden],
-.topic[hidden],
 .tool-item[hidden] {
     display: none;
-}
-
-/* Temas: una fila por categoría, colgada del área; al abrirla aparecen sus herramientas. */
-.topic-list {
-    margin: 0 0 1rem 0.6rem;
-    padding: 0 0 0 0.7rem;
-    border-left: 1px solid var(--color-border);
-    list-style: none;
-}
-
-.topic {
-    background: var(--color-surface-raised);
-}
-
-.topic-summary:hover {
-    background: var(--color-surface);
-}
-
-.topic-summary {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-        "icon name chevron"
-        "icon description chevron";
-    align-items: center;
-    column-gap: 0.7rem;
-    row-gap: 0.15rem;
-    padding: 0.85rem 0.95rem;
-    border-radius: var(--radius-lg);
-    list-style: none;
-    cursor: pointer;
-    user-select: none;
-}
-
-.topic-summary::-webkit-details-marker {
-    display: none;
-}
-
-.topic-summary .category-icon {
-    grid-area: icon;
-    align-self: start;
-}
-
-.topic-name {
-    grid-area: name;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-    margin: 0;
-    font-size: 1rem;
-    letter-spacing: -0.01em;
-}
-
-.topic-description {
-    grid-area: description;
-    color: var(--color-muted);
-    font-size: 0.85rem;
-    line-height: 1.4;
-}
-
-.topic-chevron {
-    grid-area: chevron;
-    width: 1rem;
-    height: 1rem;
-    color: var(--color-muted);
-    transition: transform var(--motion-fast);
-}
-
-.topic[open] > .topic-summary .topic-chevron {
-    transform: rotate(90deg);
-}
-
-.topic > .tool-list {
-    padding: 0 0.95rem 0.95rem;
-}
-
-.category-icon {
-    display: grid;
-    place-items: center;
-    width: 2rem;
-    height: 2rem;
-    flex: none;
-    border-radius: var(--radius-sm);
-    background: var(--color-brand-soft);
-    color: var(--color-brand-strong);
-}
-
-[data-theme="dark"] .category-icon {
-    color: var(--color-brand);
-}
-
-.category-icon svg {
-    width: 1.15rem;
-    height: 1.15rem;
 }
 
 .tool-list {
@@ -1314,10 +1163,6 @@ html.js body:has(.math-keyboard) { padding-bottom: 8rem; }
 
     .home-hero .search {
         margin-top: 1.75rem;
-    }
-
-    .home-area-description {
-        font-size: 0.85rem;
     }
 
     .numeric-format {

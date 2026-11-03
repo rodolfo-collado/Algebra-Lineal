@@ -252,12 +252,16 @@ class PruebasSenalDeEscritorio(EnEscritorio):
                     self.assertEqual(re.search(r"<html[^>]*>", html).group(0), '<html lang="es" data-theme="light">')
                     self.assertNotIn('<meta name="csrf-token"', html)
 
-    def test_sin_controles_de_navegador_visibles(self):
+    def test_atras_y_adelante_propios_sin_barra_de_navegador(self):
+        # Estudio añade Atrás y Adelante ligados al historial real (también en WebView2),
+        # pero sigue sin haber barra de direcciones ni botones de navegador.
         header = (TEMPLATES / "calculadora" / "components" / "header.html").read_text(encoding="utf-8")
         botones = re.findall(r'<button[^>]*id="([^"]+)"', header)
-        self.assertEqual(botones, ["navigation-toggle", "theme-toggle"])
+        self.assertEqual(botones, ["historial-atras", "historial-adelante", "navigation-toggle", "theme-toggle"])
         html = self.html("/matrices/reduccion/")
-        for ausente in ("history.back", "Atrás", "Adelante", 'type="url"'):
+        self.assertIn('aria-label="Atrás"', html)
+        self.assertIn('aria-label="Adelante"', html)
+        for ausente in ('type="url"', "Recargar"):
             with self.subTest(ausente=ausente):
                 self.assertNotIn(ausente, html)
 
@@ -305,14 +309,16 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
         self.assertNotIn("localStorage.setItem", script)
         self.assertNotIn("localStorage.getItem", script)
 
-    def test_solo_tres_preferencias_llegan_a_localstorage(self):
+    def test_solo_las_preferencias_conocidas_llegan_a_localstorage(self):
         claves = set()
         for archivo in [*STATIC.glob("*.js"), TEMPLATES / "calculadora" / "components" / "tema_inicial.html"]:
             claves |= set(re.findall(r'localStorage\.setItem\("([^"]+)"', archivo.read_text(encoding="utf-8")))
         self.assertEqual(claves, {"pygebra-tema"})
         inicial = (TEMPLATES / "calculadora" / "components" / "tema_inicial.html").read_text(encoding="utf-8")
         self.assertIn("localStorage.setItem(clave, valor)", inicial)
-        self.assertEqual(set(preferencias.VALORES), {"pygebra-tema", "pygebra-formato-numerico", "pygebra-precision-decimal"})
+        self.assertEqual(set(preferencias.VALORES), {"pygebra-tema", "pygebra-formato-numerico", "pygebra-precision-decimal",
+                                                     "pygebra-estilo", "pygebra-sonido", "pygebra-volumen",
+                                                     "pygebra-musica-volumen"})
 
     def test_volver_no_restaura_formularios_que_no_corresponden_al_resultado(self):
         cliente = Client()

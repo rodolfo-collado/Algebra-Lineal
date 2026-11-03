@@ -55,7 +55,38 @@
             : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         root.setAttribute("data-theme", theme);
         root.style.colorScheme = theme;
+        // El estilo es independiente del tema: Estudio salvo que se haya elegido Minimalista.
+        // Sin JavaScript no hay data-estilo y la interfaz queda en su forma más sobria.
+        root.setAttribute("data-estilo", preferencias.leer("pygebra-estilo") === "minimalista" ? "minimalista" : "estudio");
         // Con JavaScript la navegación es un cajón cerrado; la clase evita que asome antes de tiempo.
         root.classList.add("js");
+        // Dirección del salto antes del primer pintado: las transiciones y el sonido se
+        // acercan al avanzar y se alejan al volver (al historial o a un nivel superior).
+        var ruta = location.pathname;
+        var nivel = ruta === "/" ? 0 : ruta.indexOf("/areas/") === 0 ? 1 : 2;
+        try {
+            var activacion = window.navigation && window.navigation.activation;
+            var previo = sessionStorage.getItem("pygebra-nivel");
+            var atras = activacion && activacion.navigationType === "traverse" && activacion.from
+                ? activacion.from.index > activacion.entry.index
+                : previo !== null && Number(previo) > nivel;
+            root.setAttribute("data-dir", atras ? "atras" : "adelante");
+            // Solo se celebra la llegada desde otra página de PyGebra, nunca al recargar.
+            if (activacion && activacion.from && activacion.navigationType !== "reload") root.setAttribute("data-llegada", "");
+            window.addEventListener("pagehide", function () {
+                try { sessionStorage.setItem("pygebra-nivel", String(nivel)); } catch (_) {}
+            });
+        } catch (_) { /* Sin almacenamiento la transición avanza siempre. */ }
+        // Una transición entre páginas que el navegador omite (por ejemplo al saltar a
+        // #resultado) no es un error: la página nueva aparece sin animación.
+        ["pageswap", "pagereveal"].forEach(function (tipo) {
+            window.addEventListener(tipo, function (event) {
+                var transicion = event.viewTransition;
+                if (transicion) {
+                    transicion.ready.catch(function () {});
+                    transicion.finished.catch(function () {});
+                }
+            });
+        });
     })();
 </script>

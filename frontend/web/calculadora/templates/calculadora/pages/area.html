@@ -1,0 +1,65 @@
+{% extends "calculadora/base.html" %}
+{% load static %}
+{% comment %}Explorador de un área: índice de sus herramientas a la izquierda y un panel destacado. Sin JavaScript el índice son enlaces reales y el panel muestra la primera herramienta; explorador.js cambia el panel al recorrer el índice (cursor, teclado o un primer toque). Abrir siempre es un paso explícito.{% endcomment %}
+
+{% block title %}{{ area.nombre }} · PyGebra{% endblock %}
+{% block vista %}area{% endblock %}
+{% block body_attrs %} data-area="{{ area.id }}"{% endblock %}
+
+{% block content %}
+    <header class="area-header">
+        <h1 class="area-title">{{ area.nombre }}</h1>
+        <p class="area-lead">{{ area.descripcion }}</p>
+    </header>
+    <div class="explorador" data-explorador="{{ area.id }}">
+        <nav class="indice" aria-label="Herramientas de {{ area.nombre }}">
+            {% for categoria, herramientas in categorias %}
+                <p class="indice-tema" id="{{ categoria.id }}"><span class="tema-chip" aria-hidden="true">{{ categoria.chip }}</span>{{ categoria.nombre }}</p>
+                <ul aria-labelledby="{{ categoria.id }}">
+                    {% for herramienta in herramientas %}
+                        <li>
+                            {% if herramienta.disponible %}
+                                <a class="indice-item{% if herramienta == inicial %} elegida{% endif %}" href="{{ herramienta.ruta }}"
+                                   data-id="{{ herramienta.id }}" aria-describedby="lema-{{ herramienta.id }}">
+                                    <span>{{ herramienta.nombre }}</span><span class="indice-ir" aria-hidden="true">›</span>
+                                </a>
+                                <span id="lema-{{ herramienta.id }}" hidden>{{ herramienta.descripcion }}</span>
+                            {% else %}
+                                <span class="indice-item indice-pronto">{{ herramienta.nombre }} <span class="badge">Próximamente</span></span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+        </nav>
+        <article class="destacado">
+            <div class="destacado-escena" data-diorama="{{ area.id }}" data-tema="{{ inicial.categoria.id }}">
+                {% include "calculadora/components/diorama.html" with area_id=area.id %}
+            </div>
+            {% for categoria, herramientas in categorias %}
+                {% for herramienta in herramientas %}
+                    {% if herramienta.disponible %}
+                        <div class="destacado-cuerpo" data-id="{{ herramienta.id }}" data-tema="{{ categoria.id }}"{% if herramienta != inicial %} hidden{% endif %}>
+                            <div class="muestra" aria-hidden="true">{% include "calculadora/components/muestra.html" with herramienta_id=herramienta.id %}</div>
+                            <p class="destacado-tema"><span class="tema-chip" aria-hidden="true">{{ categoria.chip }}</span>{{ categoria.nombre }}</p>
+                            <p class="destacado-contexto">{{ categoria.descripcion }}</p>
+                            <h2 class="destacado-titulo">{{ herramienta.nombre }}</h2>
+                            {# Con una sola herramienta, su descripción repetiría la del tema; los puntos la concretan. #}
+                            {% if herramientas|length > 1 %}<p class="destacado-lema">{{ herramienta.descripcion }}</p>{% endif %}
+                            {% if herramienta.puntos %}
+                                <ul class="destacado-puntos">
+                                    {% for punto in herramienta.puntos %}<li>{{ punto }}</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                            <a class="btn btn-primary destacado-abrir" href="{{ herramienta.ruta }}">Abrir {{ herramienta.nombre }} <span aria-hidden="true">→</span></a>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </article>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'calculadora/explorador.js' %}" defer></script>
+{% endblock %}

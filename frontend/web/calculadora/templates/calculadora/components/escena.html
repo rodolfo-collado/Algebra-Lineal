@@ -1,0 +1,241 @@
+{% comment %}La habitación de Estudio: fondo decorativo de todas las páginas (Minimalista y sin JavaScript no se muestra). De día entra el sol; de noche se encienden la lámpara, la pantalla y las luces de cordel. La cámara se acerca a un rincón distinto según la página. Ilustración original.{% endcomment %}
+<div class="escena" aria-hidden="true">
+  <div class="escena-camara">
+    <svg class="cuarto" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" focusable="false" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <pattern id="escena-tapiz" width="44" height="44" patternUnits="userSpaceOnUse">
+          <path d="M22 16v12M16 22h12" stroke="#DCCDB3" stroke-width="2" stroke-linecap="round"/>
+        </pattern>
+        <linearGradient id="escena-cielo-dia" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#8FCBEB"/><stop offset="1" stop-color="#DDF0F8"/>
+        </linearGradient>
+        <linearGradient id="escena-cielo-noche" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0B1030"/><stop offset="1" stop-color="#2B2F63"/>
+        </linearGradient>
+        <linearGradient id="escena-haz-lampara" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFD58A" stop-opacity=".75"/>
+          <stop offset="1" stop-color="#FFD58A" stop-opacity="0"/>
+        </linearGradient>
+        <radialGradient id="escena-brillo" r=".5">
+          <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="escena-hueco" r=".5">
+          <stop offset="0" stop-color="#000" stop-opacity=".78"/><stop offset=".5" stop-color="#000" stop-opacity=".6"/>
+          <stop offset="1" stop-color="#000" stop-opacity="0"/>
+        </radialGradient>
+        <!-- Donde hay luz, la noche se aclara -->
+        <mask id="escena-luces" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900">
+          <rect width="1600" height="900" fill="#fff"/>
+          <ellipse cx="1420" cy="505" rx="260" ry="190" fill="url(#escena-hueco)"/>
+          <ellipse cx="1340" cy="420" rx="170" ry="140" fill="url(#escena-hueco)"/>
+          <ellipse cx="385" cy="275" rx="190" ry="210" fill="url(#escena-hueco)" opacity=".45"/>
+          <ellipse cx="870" cy="95" rx="560" ry="80" fill="url(#escena-hueco)" opacity=".5"/>
+        </mask>
+      </defs>
+
+      <!-- Pared y suelo -->
+      <rect width="1600" height="650" fill="#EFE6D6"/>
+      <rect width="1600" height="650" fill="url(#escena-tapiz)"/>
+      <rect y="636" width="1600" height="18" fill="#D9C9AE"/>
+      <rect y="654" width="1600" height="246" fill="#C99A6B"/>
+      <g stroke="#B5865A" stroke-width="3">
+        <path d="M0 700H1600M0 760H1600M0 830H1600"/>
+        <path d="M220 654v46M760 700v60M1180 654v46M420 760v70M1320 760v70M980 830v70M140 830v70"/>
+      </g>
+
+      <!-- Ventana -->
+      <g class="ventana">
+        <path d="M206 112c18 70 10 220 -4 330h58V112z" fill="#E8B947"/>
+        <path d="M564 112c-18 70 -10 220 4 330h-58V112z" fill="#E8B947"/>
+        <rect x="250" y="120" width="270" height="310" rx="6" fill="#F7F3EA"/>
+        <rect class="cielo cielo-dia" x="266" y="136" width="238" height="278" fill="url(#escena-cielo-dia)"/>
+        <rect class="cielo cielo-noche" x="266" y="136" width="238" height="278" fill="url(#escena-cielo-noche)"/>
+        <g class="solo-dia">
+          <circle cx="330" cy="196" r="26" fill="#FFE07A"/>
+          <g fill="#fff"><ellipse cx="440" cy="190" rx="34" ry="12"/><ellipse cx="458" cy="180" rx="20" ry="13"/><ellipse cx="350" cy="262" rx="28" ry="9"/></g>
+        </g>
+        <!-- Ciudad lejana -->
+        <path d="M266 414V360h22v-18h18v30h16v-46h24v40h14v-22h20v54h18v-34h22v-26h20v38h16v-20h20v58z" fill="#7E8FB0" opacity=".55"/>
+        <g class="solo-noche ventanitas" fill="#FFD58A">
+          <rect x="294" y="350" width="5" height="6"/><rect x="330" y="336" width="5" height="6"/><rect x="330" y="356" width="5" height="6"/>
+          <rect x="402" y="372" width="5" height="6"/><rect x="448" y="352" width="5" height="6"/><rect x="452" y="372" width="5" height="6"/>
+        </g>
+        <rect x="379" y="120" width="12" height="310" fill="#F7F3EA"/>
+        <rect x="250" y="269" width="270" height="12" fill="#F7F3EA"/>
+        <rect x="234" y="430" width="302" height="16" rx="3" fill="#E7DDCB"/>
+        <!-- Maceta en el alféizar -->
+        <path d="M462 430l6-28h36l6 28z" fill="#C8664A"/>
+        <g fill="#4E9B5B"><ellipse cx="476" cy="392" rx="9" ry="18" transform="rotate(-22 476 392)"/><ellipse cx="496" cy="388" rx="9" ry="20" transform="rotate(18 496 388)"/><ellipse cx="486" cy="384" rx="7" ry="22"/></g>
+      </g>
+
+      <!-- Luces de cordel -->
+      <path d="M560 70Q870 150 1180 70T1590 80" fill="none" stroke="#5B4636" stroke-width="3"/>
+
+      <!-- Póster de un planeta inventado -->
+      <g transform="rotate(-3 1220 210)">
+        <rect x="1150" y="120" width="140" height="190" rx="4" fill="#253055"/>
+        <circle cx="1220" cy="200" r="38" fill="#E2574C"/>
+        <path d="M1182 200a38 38 0 0 1 76 0z" fill="#F07B6F"/>
+        <ellipse cx="1220" cy="206" rx="64" ry="13" fill="none" stroke="#F2C14E" stroke-width="5"/>
+        <g fill="#fff"><circle cx="1172" cy="146" r="2"/><circle cx="1266" cy="152" r="2.5"/><circle cx="1262" cy="250" r="1.6"/><circle cx="1176" cy="262" r="1.8"/></g>
+        <rect x="1170" y="276" width="100" height="10" rx="2" fill="#F2C14E"/>
+      </g>
+
+      <!-- Corcho con notas -->
+      <rect x="1320" y="140" width="210" height="150" rx="6" fill="#8E5A38"/>
+      <rect x="1330" y="150" width="190" height="130" fill="#C9A16E"/>
+      <g>
+        <rect x="1342" y="162" width="56" height="52" fill="#FFE58A" transform="rotate(-4 1370 188)"/>
+        <rect x="1446" y="160" width="60" height="44" fill="#BFE0F5" transform="rotate(5 1476 182)"/>
+        <rect x="1404" y="214" width="78" height="54" fill="#FFFDF7" transform="rotate(-2 1443 241)"/>
+        <text x="1443" y="248" text-anchor="middle" font-family="Cambria Math, Cambria, serif" font-size="20" fill="#2B2B2B" transform="rotate(-2 1443 241)">Ax = b</text>
+        <text x="1370" y="196" text-anchor="middle" font-family="Cambria Math, Cambria, serif" font-size="20" fill="#2B2B2B" transform="rotate(-4 1370 188)">π</text>
+        <circle cx="1370" cy="166" r="4" fill="#E2574C"/><circle cx="1476" cy="164" r="4" fill="#2F6E68"/><circle cx="1443" cy="218" r="4" fill="#8C6BD1"/>
+      </g>
+
+      <!-- Planta de suelo -->
+      <g>
+        <path d="M596 650l8-52h52l8 52z" fill="#C8664A"/>
+        <g fill="#3C7F49"><path d="M630 600c-40-30-50-90-30-130 18 40 30 80 30 130z"/><path d="M630 600c34-40 40-110 22-150-20 40-30 90-22 150z"/></g>
+        <g fill="#4E9B5B"><path d="M630 600c-60-10-90-50-96-90 34 20 70 50 96 90z"/><path d="M630 600c50-20 80-60 84-96-34 18-66 50-84 96z"/></g>
+      </g>
+
+      <!-- Estantería -->
+      <g class="estante">
+        <rect x="680" y="170" width="380" height="480" rx="4" fill="#A86B43"/>
+        <rect x="696" y="186" width="168" height="144" fill="#7E4F31"/><rect x="876" y="186" width="168" height="144" fill="#7E4F31"/>
+        <rect x="696" y="342" width="168" height="144" fill="#7E4F31"/><rect x="876" y="342" width="168" height="144" fill="#7E4F31"/>
+        <rect x="696" y="498" width="168" height="140" fill="#7E4F31"/><rect x="876" y="498" width="168" height="140" fill="#7E4F31"/>
+        <!-- libros -->
+        <rect x="708" y="236" width="20" height="94" fill="#2F6E68"/><rect x="730" y="250" width="16" height="80" fill="#E2574C"/>
+        <rect x="748" y="228" width="22" height="102" fill="#F2C14E"/><rect x="772" y="244" width="14" height="86" fill="#6FA8DC"/>
+        <rect x="796" y="250" width="20" height="82" fill="#8C6BD1" transform="rotate(14 806 330)"/>
+        <!-- tangram -->
+        <g transform="translate(906 206)">
+          <rect width="108" height="108" fill="#F7F3EA"/>
+          <path d="M4 4h100L54 54z" fill="#E2574C"/><path d="M4 4v100L54 54z" fill="#F2C14E"/>
+          <path d="M104 4v50L79 79 79 29z" fill="#6FA8DC"/><path d="M54 54l25-25v50z" fill="#4E9B5B"/>
+          <path d="M4 104h50l25-25-25-25z" fill="#8C6BD1"/><path d="M54 104h50V54L79 79z" fill="#2F6E68"/>
+        </g>
+        <!-- ábaco -->
+        <g transform="translate(712 372)">
+          <rect width="134" height="100" rx="4" fill="#C78C5E"/><rect x="8" y="8" width="118" height="84" fill="#F7F3EA"/>
+          <path d="M8 30h118M8 52h118M8 74h118" stroke="#8E5A38" stroke-width="3"/>
+          <g fill="#E2574C"><circle cx="24" cy="30" r="7"/><circle cx="40" cy="30" r="7"/><circle cx="104" cy="30" r="7"/></g>
+          <g fill="#2F6E68"><circle cx="24" cy="52" r="7"/><circle cx="88" cy="52" r="7"/><circle cx="104" cy="52" r="7"/></g>
+          <g fill="#F2C14E"><circle cx="24" cy="74" r="7"/><circle cx="40" cy="74" r="7"/><circle cx="56" cy="74" r="7"/><circle cx="110" cy="74" r="7"/></g>
+        </g>
+        <!-- robot -->
+        <g transform="translate(920 360)">
+          <rect x="38" y="0" width="4" height="16" fill="#5E6B78"/><circle cx="40" cy="0" r="5" fill="#E2574C"/>
+          <rect x="10" y="14" width="60" height="44" rx="10" fill="#9AA5B1"/>
+          <rect x="18" y="24" width="44" height="22" rx="6" fill="#253055"/>
+          <circle class="ojo" cx="31" cy="35" r="4.5" fill="#7DCFC6"/><circle class="ojo" cx="49" cy="35" r="4.5" fill="#7DCFC6"/>
+          <rect x="16" y="62" width="48" height="50" rx="8" fill="#B8C1CA"/>
+          <rect x="28" y="74" width="24" height="10" rx="3" fill="#F2C14E"/>
+          <rect x="18" y="112" width="14" height="14" fill="#5E6B78"/><rect x="48" y="112" width="14" height="14" fill="#5E6B78"/>
+        </g>
+        <!-- cajas de juegos de mesa -->
+        <rect x="706" y="586" width="148" height="26" rx="2" fill="#2F6E68"/><rect x="706" y="594" width="148" height="8" fill="#F2C14E"/>
+        <rect x="714" y="560" width="134" height="26" rx="2" fill="#E2574C"/><rect x="714" y="568" width="134" height="6" fill="#F7F3EA"/>
+        <rect x="706" y="612" width="148" height="26" rx="2" fill="#6FA8DC"/>
+        <g fill="#F2C14E"><circle cx="770" cy="538" r="8"/><path d="M762 560c0-12 4-16 8-16s8 4 8 16z"/></g>
+        <g fill="#8C6BD1"><circle cx="800" cy="538" r="8"/><path d="M792 560c0-12 4-16 8-16s8 4 8 16z"/></g>
+        <!-- cómics apilados -->
+        <rect x="890" y="618" width="140" height="20" fill="#F2C14E"/><rect x="896" y="600" width="132" height="18" fill="#E2574C"/>
+        <rect x="888" y="584" width="138" height="16" fill="#4A8FD8"/><rect x="900" y="570" width="124" height="14" fill="#F7F3EA"/>
+        <!-- d20 -->
+        <g transform="translate(990 540)">
+          <path d="M0-22L19-11V11L0 22-19 11V-11z" fill="#8C6BD1"/>
+          <path d="M0-22L11 6H-11z M-19-11L-11 6M19-11L11 6M0 22L-11 6M0 22L11 6M-19 11L-11 6M19 11L11 6" fill="none" stroke="#6B4FB0" stroke-width="2" stroke-linejoin="round"/>
+        </g>
+      </g>
+      <!-- sobre la estantería: cohete y cactus -->
+      <g>
+        <path d="M760 170v-10h40v10z" fill="#5E6B78"/>
+        <path d="M780 72c18 18 22 46 18 88h-36c-4-42 0-70 18-88z" fill="#F7F3EA"/>
+        <circle cx="780" cy="112" r="9" fill="#6FA8DC" stroke="#5E6B78" stroke-width="3"/>
+        <path d="M762 130l-14 30h16zM798 130l14 30h-16z" fill="#E2574C"/>
+        <path d="M972 170l4-26h40l4 26z" fill="#C8664A"/>
+        <rect x="986" y="104" width="20" height="44" rx="10" fill="#4E9B5B"/>
+        <rect x="970" y="120" width="14" height="22" rx="7" fill="#4E9B5B"/>
+      </g>
+
+      <!-- Escritorio -->
+      <g class="escritorio">
+        <rect x="1110" y="520" width="460" height="22" rx="4" fill="#C78C5E"/>
+        <rect x="1130" y="542" width="130" height="108" fill="#B47A4E"/>
+        <rect x="1142" y="560" width="106" height="36" rx="3" fill="#A86B43"/><rect x="1182" y="574" width="26" height="6" rx="3" fill="#7E4F31"/>
+        <rect x="1142" y="604" width="106" height="36" rx="3" fill="#A86B43"/><rect x="1182" y="618" width="26" height="6" rx="3" fill="#7E4F31"/>
+        <rect x="1536" y="542" width="18" height="108" fill="#B47A4E"/>
+        <!-- computadora -->
+        <rect x="1320" y="496" width="40" height="24" fill="#CFC6B4"/>
+        <rect x="1240" y="330" width="200" height="170" rx="14" fill="#E8E1D3"/>
+        <rect x="1258" y="348" width="164" height="124" rx="8" fill="#12312F"/>
+        <g class="pantalla" stroke="#7DCFC6" fill="none" stroke-width="2">
+          <path d="M1276 450H1404M1290 462V362" opacity=".35"/>
+          <path d="M1300 378v40M1300 378h6M1300 418h6M1368 378v40M1368 378h-6M1368 418h-6"/>
+        </g>
+        <g fill="#7DCFC6" font-family="Cambria Math, Cambria, serif" font-size="15">
+          <text x="1316" y="394">2</text><text x="1342" y="394">1</text>
+          <text x="1316" y="412">0</text><text x="1342" y="412">3</text>
+        </g>
+        <rect class="cursor" x="1384" y="402" width="9" height="14" fill="#7DCFC6"/>
+        <rect x="1426" y="340" width="24" height="24" fill="#FFE58A" transform="rotate(8 1438 352)"/>
+        <rect x="1230" y="506" width="210" height="14" rx="4" fill="#DCD3C2"/>
+        <!-- taza sobre cómics -->
+        <rect x="1140" y="508" width="92" height="12" fill="#4A8FD8"/><rect x="1146" y="498" width="84" height="10" fill="#E2574C"/>
+        <path d="M1166 498v-36h36v36z" fill="#F2C14E"/>
+        <path d="M1202 468c14 0 14 22 0 22" fill="none" stroke="#F2C14E" stroke-width="5"/>
+        <text x="1184" y="488" text-anchor="middle" font-family="Cambria Math, Cambria, serif" font-size="20" fill="#2B2B2B">Σ</text>
+        <g class="vapor" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity=".7">
+          <path d="M1176 452c-6-10 6-14 0-26"/><path d="M1192 452c-6-10 6-14 0-26"/>
+        </g>
+        <!-- lámpara -->
+        <ellipse cx="1500" cy="518" rx="30" ry="6" fill="#B8463C"/>
+        <path d="M1500 516L1520 430L1470 384" fill="none" stroke="#E2574C" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M1448 360l44 10-14 40-50-16z" fill="#E2574C"/>
+        <!-- d20 en el escritorio -->
+        <g transform="translate(1466 506) scale(.62)">
+          <path d="M0-22L19-11V11L0 22-19 11V-11z" fill="#4E9B5B"/>
+          <path d="M0-22L11 6H-11z M-19-11L-11 6M19-11L11 6M0 22L-11 6M0 22L11 6" fill="none" stroke="#3C7F49" stroke-width="2"/>
+        </g>
+      </g>
+
+      <!-- Alfombra y silla -->
+      <ellipse cx="900" cy="800" rx="390" ry="58" fill="#2F6E68"/>
+      <ellipse cx="900" cy="800" rx="330" ry="42" fill="none" stroke="#F2C14E" stroke-width="5" stroke-dasharray="18 12"/>
+      <g fill="#3A4A5C">
+        <rect x="1300" y="560" width="130" height="110" rx="18"/>
+        <rect x="1290" y="668" width="150" height="22" rx="8"/>
+        <rect x="1358" y="690" width="14" height="60"/>
+        <path d="M1300 760h130" stroke="#3A4A5C" stroke-width="10" stroke-linecap="round"/>
+      </g>
+
+      <!-- Sol de la tarde sobre el suelo -->
+      <path class="solo-dia" d="M300 660L560 660 700 860 380 860z" fill="#FFF1C9" opacity=".45"/>
+
+      <!-- La noche: una sola capa que oscurece todo menos donde hay luz -->
+      <rect class="noche" width="1600" height="900" fill="#1E2450" mask="url(#escena-luces)"/>
+
+      <!-- Brillos nocturnos -->
+      <g class="solo-noche brillos">
+        <polygon points="1452,402 1488,412 1580,650 1310,650" fill="url(#escena-haz-lampara)" opacity=".55"/>
+        <ellipse cx="1340" cy="410" rx="150" ry="110" fill="#7DCFC6" opacity=".12"/>
+        <ellipse cx="1430" cy="520" rx="220" ry="150" fill="#FFB65C" opacity=".16" style="mix-blend-mode: screen"/>
+        <path d="M290 660L520 660 640 860 360 860z" fill="#B9C6FF" opacity=".08"/>
+        <g class="estrellas" fill="#fff">
+          <circle cx="292" cy="160" r="1.8"/><circle cx="350" cy="200" r="1.2"/><circle cx="420" cy="160" r="1.6"/>
+          <circle cx="480" cy="230" r="1.3"/><circle cx="312" cy="300" r="1.1"/><circle cx="440" cy="300" r="1.5"/>
+        </g>
+        <circle cx="452" cy="186" r="20" fill="#F4F1DE"/><circle cx="462" cy="180" r="18" fill="#141A42"/>
+      </g>
+      <g class="bombillas">
+        <g><circle cx="620" cy="84" r="7"/><circle cx="700" cy="100" r="7"/><circle cx="780" cy="110" r="7"/><circle cx="860" cy="112" r="7"/>
+        <circle cx="940" cy="108" r="7"/><circle cx="1020" cy="98" r="7"/><circle cx="1100" cy="84" r="7"/><circle cx="1180" cy="72" r="7"/>
+        <circle cx="1260" cy="64" r="7"/><circle cx="1340" cy="64" r="7"/><circle cx="1420" cy="70" r="7"/><circle cx="1500" cy="78" r="7"/></g>
+      </g>
+    </svg>
+  </div>
+  <div class="escena-velo"></div>
+</div>

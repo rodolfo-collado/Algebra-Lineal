@@ -52,6 +52,24 @@
             valor(w, "funcion", "");
             ok(grafica(w).hidden && q(w, "#grafica-estado").textContent.includes("Introduce"), "Volver al estado vacío");
         }],
+        ["La gráfica adopta los colores de cada estilo y tema sin perder la curva", async (w, frame) => {
+            ejemplo(w);
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const raiz = w.document.documentElement;
+            const token = nombre => w.getComputedStyle(raiz).getPropertyValue(nombre).trim();
+            const fondos = new Set();
+            for (const estilo of ["minimalista", "estudio"]) for (const tema of ["dark", "light"]) {
+                raiz.setAttribute("data-estilo", estilo); raiz.setAttribute("data-theme", tema);
+                await esperar(() => grafica(w).layout.paper_bgcolor === token("--color-surface")
+                    && grafica(w).data[0].line.color === token("--color-brand")
+                    && grafica(w).layout.font.color === token("--color-text"), `Colores de ${estilo}/${tema}`);
+                fondos.add(grafica(w).layout.paper_bgcolor);
+                ok(!/color-mix|var\(/.test(token("--color-surface") + token("--color-brand")), "Plotly recibe colores que entiende");
+            }
+            ok(fondos.size >= 2, "El fondo cambia de verdad");
+            ok(grafica(w).data[0].x.length === 801 && grafica(w).layout.shapes.length === 3, "Conserva curva, extremos y franja");
+            ok(lista(w).length === 13, "No recalcula");
+        }],
         ["Teclado contextual de funciones reales conserva foco y cursor", async w => {
             const f = q(w, '[name="funcion"]'); f.focus();
             await esperar(() => q(w, ".math-keyboard").hasAttribute("data-abierto"));

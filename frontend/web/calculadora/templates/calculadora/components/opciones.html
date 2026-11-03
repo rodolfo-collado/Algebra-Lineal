@@ -1,0 +1,26 @@
+{% comment %}Opciones de presentación: el estilo (Estudio o Minimalista) es independiente del tema claro u oscuro, que sigue en su propio botón. Popover nativo: se cierra con Esc o al pulsar fuera. Sin JavaScript no hace nada, así que nace oculto como el botón de tema.{% endcomment %}
+<button type="button" class="options-toggle" id="opciones-toggle" popovertarget="opciones" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    <span class="options-toggle-text">Opciones</span>
+</button>
+<div class="opciones" id="opciones" popover aria-labelledby="opciones-titulo">
+    <h2 class="opciones-titulo" id="opciones-titulo">Opciones</h2>
+    <fieldset class="opciones-grupo">
+        <legend>Estilo</legend>
+        <label class="opcion"><input type="radio" name="estilo" value="estudio"> <span><b>Estudio</b><small>Una habitación con sus detalles</small></span></label>
+        <label class="opcion"><input type="radio" name="estilo" value="minimalista"> <span><b>Minimalista</b><small>Solo lo esencial, sin ilustraciones</small></span></label>
+    </fieldset>
+    <fieldset class="opciones-grupo">
+        <legend>Efectos de sonido</legend>
+        <label class="opcion"><input type="radio" name="sonido" value="off"> <span><b>Sin efectos</b><small>Todo funciona igual sin audio</small></span></label>
+        <label class="opcion"><input type="radio" name="sonido" value="on"> <span><b>Con efectos</b><small>Notas breves al navegar y explorar</small></span></label>
+        <label class="volumen"><span>Volumen</span><input type="range" id="volumen" name="volumen" min="10" max="100" step="10" value="50"></label>
+    </fieldset>
+    <fieldset class="opciones-grupo" id="musica-grupo" hidden>
+        <legend>Música ambiental</legend>
+        <button type="button" class="btn btn-secondary opciones-accion" id="musica-toggle">Reproducir música</button>
+        <label class="volumen"><span>Volumen</span><input type="range" id="musica-volumen" name="musica-volumen" min="10" max="100" step="10" value="40"></label>
+        <p class="opciones-ayuda">Instrumental, suave y original de PyGebra. Se genera en tu equipo y cada visita empieza en silencio.</p>
+    </fieldset>
+    <p class="opciones-nota">El tema claro u oscuro se cambia con el botón Tema.</p>
+</div>

@@ -1,0 +1,830 @@
+/* Navegación: historial y opciones del header, canales del inicio, explorador de un área
+   y mesa de trabajo de las herramientas. La estructura es la misma en Estudio y en
+   Minimalista; estudio.css le añade la habitación y sus detalles. */
+
+/* —— Historial: Atrás y Adelante —— */
+
+.historial {
+    display: flex;
+    flex: none;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
+}
+
+.historial[hidden] {
+    display: none;
+}
+
+.historial-boton {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    cursor: pointer;
+}
+
+.historial-boton svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.historial-boton:not(:disabled):hover {
+    background: var(--color-brand-soft);
+}
+
+.historial-boton:disabled {
+    color: var(--color-muted);
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* —— Opciones: estilo y sonido —— */
+
+.options-toggle[hidden] {
+    display: none;
+}
+
+.options-toggle svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    flex: none;
+}
+
+.opciones {
+    position: fixed;
+    inset: calc(var(--header-height) + 0.4rem) 1rem auto auto;
+    width: min(20rem, calc(100vw - 2rem));
+    max-height: calc(100svh - var(--header-height) - 1rem);
+    margin: 0;
+    padding: 0.4rem 1rem 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-lg);
+}
+
+.opciones-titulo {
+    margin: 0.6rem 0 0;
+    font-family: var(--font-display);
+    font-size: 1rem;
+}
+
+.opciones-grupo {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0.8rem 0 0;
+    padding: 0;
+    border: 0;
+}
+
+.opciones-grupo legend {
+    padding: 0 0 0.35rem;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.opcion {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+.opcion:has(input:checked) {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+}
+
+.opcion input {
+    margin: 0.25rem 0 0;
+    accent-color: var(--color-brand);
+}
+
+.opcion span {
+    display: grid;
+}
+
+.opcion small {
+    color: var(--color-muted);
+    font-size: 0.8rem;
+}
+
+.opciones-accion {
+    width: 100%;
+}
+
+.opciones-ayuda {
+    margin: 0;
+    padding-inline: 0.75rem;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+}
+
+.volumen {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem 0.75rem 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.volumen input {
+    accent-color: var(--color-brand);
+}
+
+.volumen:has(input:disabled) {
+    opacity: 0.45;
+}
+
+.opciones-nota {
+    margin: 0.9rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+}
+
+/* —— Inicio: bienvenida —— */
+
+.home-marca {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.home-lockup {
+    margin: 0;
+    color: var(--color-mark);
+}
+
+.home-lockup .app-mark {
+    width: clamp(2.4rem, 5vw, 3.2rem);
+    height: auto;
+}
+
+.home-retomar {
+    justify-self: start;
+    margin-top: 1rem;
+}
+
+.home-retomar[hidden] {
+    display: none;
+}
+
+.home-catalog:has(.canales) {
+    max-width: none;
+}
+
+/* —— Inicio: un canal por área —— */
+
+.canales {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+    gap: 1.1rem;
+    margin: 1.1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.canal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    transition: border-color var(--motion), box-shadow var(--motion), transform var(--motion);
+}
+
+.canal[hidden],
+.canal-herramientas[hidden] {
+    display: none;
+}
+
+.canal:not(.es-pronto):hover {
+    border-color: var(--color-brand);
+    box-shadow: var(--shadow-md);
+}
+
+/* Todo el canal es el enlace; el foco se dibuja sobre la tarjeta. */
+.canal-enlace::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+}
+
+.canal-enlace:focus-visible {
+    outline: none;
+}
+
+.canal:has(.canal-enlace:focus-visible) {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
+}
+
+.canal-escena,
+.destacado-escena {
+    display: none;
+}
+
+.canal-chip {
+    align-self: flex-start;
+    margin: 1rem 1rem 0;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+    color: var(--color-brand);
+    font: 600 0.92rem/1 var(--font-chip, var(--font-math));
+    white-space: nowrap;
+}
+
+.canal-nombre {
+    margin: 0.65rem 1rem 0;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+}
+
+.canal-descripcion {
+    margin: 0.2rem 1rem 0;
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    line-height: 1.45;
+}
+
+.canal-temas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: auto 1rem 1rem;
+    padding-top: 0.75rem;
+}
+
+.canal-temas span {
+    padding: 0.12rem 0.55rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+    font-size: 0.75rem;
+    font-weight: 650;
+}
+
+[data-theme="dark"] .canal-temas span {
+    color: var(--color-brand);
+}
+
+.canal.es-pronto {
+    padding-bottom: 1rem;
+    background: var(--color-surface);
+}
+
+.canal.es-pronto .canal-nombre,
+.canal.es-pronto .canal-chip {
+    color: var(--color-muted);
+}
+
+/* —— Área: índice y panel destacado —— */
+
+.area-header {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.area-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+}
+
+.area-lead {
+    max-width: 44rem;
+    margin: 0;
+    color: var(--color-muted);
+}
+
+.explorador {
+    display: grid;
+    grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(1rem, 3vw, 2rem);
+    margin-top: 1.5rem;
+}
+
+.indice {
+    position: sticky;
+    top: calc(var(--header-height) + 1rem);
+    display: grid;
+    gap: 2px;
+    padding: 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+}
+
+.indice-tema {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.85rem 0.5rem 0.35rem;
+    color: var(--color-muted);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.indice-tema:first-child {
+    margin-top: 0.3rem;
+}
+
+/* Columna acotada: el panel que se despliega dentro en móvil no ensancha la lista. */
+.indice ul {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.indice-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: background var(--motion), color var(--motion), box-shadow var(--motion);
+}
+
+a.indice-item:not(.elegida):hover {
+    background: var(--color-surface-muted);
+}
+
+.indice-item.elegida {
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+    box-shadow: inset 3px 0 0 var(--color-brand);
+}
+
+[data-theme="dark"] .indice-item.elegida {
+    color: var(--color-brand);
+}
+
+.indice-ir {
+    color: var(--color-brand);
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity var(--motion), transform var(--motion);
+}
+
+.indice-item.elegida .indice-ir {
+    opacity: 1;
+    transform: none;
+}
+
+.indice-pronto {
+    color: var(--color-muted);
+    font-weight: 500;
+}
+
+.tema-chip {
+    padding: 0.3rem 0.45rem;
+    border-radius: 6px;
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+    font: 600 0.78rem/1 var(--font-chip, var(--font-math));
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .tema-chip {
+    color: var(--color-brand);
+}
+
+.destacado {
+    position: sticky;
+    top: calc(var(--header-height) + 1rem);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: calc(var(--radius-lg) + 6px);
+    background: var(--color-surface-raised);
+}
+
+.destacado-cuerpo {
+    display: grid;
+    /* Una sola columna que no crece con el ejemplo: este se desplaza dentro de su papel. */
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    gap: 0.6rem;
+    padding: 1.5rem clamp(1.1rem, 3vw, 1.9rem) 1.6rem;
+}
+
+.destacado-cuerpo[hidden] {
+    display: none;
+}
+
+.muestra {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 0.55rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font: 1.05rem/1.3 var(--font-chip, var(--font-math));
+    white-space: nowrap;
+}
+
+/* Matrices pequeñas escritas a mano: corchetes de CSS, sin tabla. */
+.muestra .mat {
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: repeat(var(--cols), minmax(1.3em, auto));
+    gap: 0 0.35rem;
+    padding: 0.1rem 0.55rem;
+    text-align: center;
+}
+
+.muestra .mat::before,
+.muestra .mat::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0.4rem;
+    border: 1.5px solid currentColor;
+}
+
+.muestra .mat::before {
+    left: 0;
+    border-right: 0;
+}
+
+.muestra .mat::after {
+    right: 0;
+    border-left: 0;
+}
+
+.destacado-tema {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.35rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* Contexto del tema elegido: compartido por sus herramientas. */
+.destacado-contexto {
+    max-width: 58ch;
+    margin: 0 0 0.35rem;
+    color: var(--color-muted);
+    font-size: 0.92rem;
+}
+
+.destacado-titulo {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.45rem, 2.6vw, 2.1rem);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+
+.destacado-lema {
+    max-width: 52ch;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 1.02rem;
+}
+
+.destacado-puntos {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0.1rem 0 0.35rem;
+    padding: 0;
+    font-size: 0.92rem;
+    list-style: none;
+}
+
+.destacado-puntos li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+}
+
+.destacado-puntos li::before {
+    content: "";
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--color-brand);
+    transform: rotate(45deg) translateY(-1px);
+}
+
+/* —— Inicio: el propósito de PyGebra, también en Minimalista —— */
+
+.home-proposito {
+    max-width: 44ch;
+    margin: 0.25rem 0 0;
+    color: var(--color-muted);
+    font-size: 1.05rem;
+}
+
+/* —— Herramienta: mesa de trabajo con hermanas y nota plegada —— */
+
+.mesa {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+}
+
+.mesa > .tool { min-width: 0; }
+
+.rail {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding: 0.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    scrollbar-width: thin;
+}
+
+.rail-titulo {
+    display: none;
+}
+
+.rail ul {
+    display: flex;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rail-enlace {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    white-space: nowrap;
+}
+
+.rail-enlace:hover {
+    background: var(--color-surface-muted);
+}
+
+.rail-enlace[aria-current="page"] {
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+    box-shadow: inset 0 -2px 0 var(--color-brand);
+    font-weight: 700;
+}
+
+[data-theme="dark"] .rail-enlace[aria-current="page"] {
+    color: var(--color-brand);
+}
+
+/* «Para curiosos»: plegada junto al título en todas las herramientas. Al abrirse crece
+   dentro de la cabecera y empuja el cálculo; nunca lo tapa. */
+.tool-header:has(> .nota) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr;
+    column-gap: 1.25rem;
+}
+
+.tool-header > :not(.nota) {
+    grid-column: 1;
+}
+
+.nota {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+    justify-self: end;
+    max-width: 17rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    font-size: 0.9rem;
+}
+
+.nota[open] {
+    width: 17rem;
+}
+
+.nota-titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: inherit;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    list-style: none;
+}
+
+.nota-titulo::-webkit-details-marker {
+    display: none;
+}
+
+.nota-titulo::after {
+    content: "";
+    width: 0.4rem;
+    height: 0.4rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-0.1rem) rotate(45deg);
+}
+
+.nota[open] > .nota-titulo::after {
+    transform: translateY(0.1rem) rotate(225deg);
+}
+
+.nota p {
+    margin: 0;
+    padding: 0.1rem 0.7rem 0.7rem;
+}
+
+@media (pointer: coarse) {
+    .nota-titulo {
+        min-height: 2.75rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .tool-header:has(> .nota) {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+    }
+
+    .nota {
+        grid-column: 1;
+        grid-row: auto;
+        justify-self: start;
+        max-width: 100%;
+    }
+
+    .nota[open] {
+        width: 100%;
+    }
+}
+
+@media (min-width: 1100px) {
+    .app-content:has(.mesa.con-rail) {
+        width: min(100% - 2rem, 1480px);
+    }
+
+    /* Al margen izquierdo las hermanas, que acompañan al bajar. */
+    .mesa.con-rail {
+        grid-template-columns: 13.5rem minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .mesa.con-rail > .rail {
+        position: sticky;
+        top: calc(var(--header-height) + 1rem);
+    }
+
+    .rail {
+        display: block;
+        padding: 0.6rem;
+    }
+
+    .rail-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin: 0.6rem 0.4rem 0.35rem;
+        color: var(--color-muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .rail-titulo:first-child {
+        margin-top: 0.2rem;
+    }
+
+    .rail ul {
+        display: grid;
+        gap: 2px;
+    }
+
+    .rail-enlace {
+        white-space: normal;
+    }
+
+    .rail-enlace[aria-current="page"] {
+        box-shadow: inset 3px 0 0 var(--color-brand);
+    }
+}
+
+/* —— Pantallas estrechas —— */
+
+@media (max-width: 760px) {
+    .explorador {
+        grid-template-columns: minmax(0, 1fr);
+        margin-top: 1rem;
+    }
+
+    .indice {
+        position: static;
+    }
+
+    /* El panel se despliega dentro de la opción elegida; su nombre ya está en el índice. */
+    .indice .destacado {
+        position: static;
+        margin: 0.35rem 0 0.75rem;
+        border-radius: var(--radius-lg);
+    }
+
+    .indice .destacado-titulo {
+        display: none;
+    }
+
+    .destacado-cuerpo {
+        padding: 1rem 1rem 1.15rem;
+    }
+
+    /* Las migas se reducen a «‹ nivel anterior». */
+    .breadcrumbs li {
+        display: none;
+    }
+
+    .breadcrumbs li:nth-last-child(2),
+    .breadcrumbs li:only-child {
+        display: block;
+    }
+
+    .breadcrumbs li:nth-last-child(2)::before {
+        content: "‹";
+    }
+
+    .breadcrumbs li:nth-last-child(2) a {
+        color: var(--color-text);
+        font-weight: 600;
+    }
+}
+
+@media (max-width: 480px) {
+    .options-toggle-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .options-toggle {
+        padding-inline: 0.55rem;
+    }
+
+    .historial-boton {
+        width: 2.25rem;
+    }
+
+    .canales {
+        gap: 0.75rem;
+    }
+}

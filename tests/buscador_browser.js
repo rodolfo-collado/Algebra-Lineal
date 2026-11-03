@@ -19,11 +19,13 @@
     const ids = w => todos(w, "#catalogo-inicio [data-herramienta]:not([hidden])")
         .filter(n => n.getClientRects().length).map(n => n.dataset.herramienta);
     const menu = w => q(w, "#navigation-toggle").click();
+    // El universo es el catálogo publicado por Django, no un número fijo de herramientas.
+    const universo = w => JSON.parse(q(w, "#datos-buscador").textContent).herramientas.length;
     const escape = w => q(w, "#buscador-lateral").dispatchEvent(new w.KeyboardEvent(
         "keydown", { key: "Escape", bubbles: true, cancelable: true }));
     const casos = [
         ["GET tiene todo el universo, solo Gauss visible y un recuento estático", "/?q=gauss", w => {
-            igual(todos(w, "#catalogo-inicio [data-herramienta]").length, 9);
+            igual(todos(w, "#catalogo-inicio [data-herramienta]").length, universo(w));
             igual(ids(w), ["reduccion-filas"]);
             igual(q(w, "[data-busqueda-servidor]").hidden, false);
             todos(w, ".search-status").forEach(n => igual(n.textContent, ""));
@@ -36,7 +38,7 @@
                 valor(w, texto); igual(ids(w), esperado);
                 igual(w.document, documento); igual(w.location.search, "?q=gauss");
                 igual(q(w, "[data-busqueda-servidor]").hidden, true);
-                igual(todos(w, "#catalogo-inicio [data-herramienta]").length, 9);
+                igual(todos(w, "#catalogo-inicio [data-herramienta]").length, universo(w));
             }
             igual(q(w, '#catalogo-inicio [data-herramienta="limites-funciones"] .badge').textContent, "Próximamente");
         }],
@@ -48,7 +50,7 @@
             valor(w, " gauss"); igual(q(w, "[data-busqueda-servidor]").hidden, true);
         }],
         ["Limpiar GET y volver a buscar no limita el universo", "/?q=gauss", w => {
-            valor(w, ""); igual(ids(w).length, 9);
+            valor(w, ""); igual(ids(w).length, universo(w));
             valor(w, "invertir matriz"); igual(ids(w), ["matriz-inversa"]);
         }],
         ["GET vacío sin heading huérfano tiene sugerencias funcionales", "/?q=zzz", async (w, frame) => {
@@ -85,13 +87,16 @@
             const input = q(w, "#buscador-inicio"); input.focus();
             valor(w, "inversa"); igual(w.document.activeElement, input);
         }],
-        ["Inicio conserva mismas filas y grupos al buscar y limpiar", "/", w => {
+        ["Inicio conserva mismas filas y canales al buscar y limpiar", "/", w => {
             const filas = todos(w, "#catalogo-inicio [data-herramienta]");
-            q(w, "#algebra-lineal").open = true; q(w, "#matrices").open = true;
             valor(w, "límites"); igual(ids(w), ["limites-funciones"]);
-            valor(w, ""); igual(q(w, "#matrices").open, true);
-            igual(q(w, "#algebra-lineal").open, true); igual(q(w, "#calculo").hidden, true);
-            todos(w, "#catalogo-inicio [data-herramienta]").forEach((n, i) => igual(n, filas[i]));
+            igual(todos(w, "#catalogo-inicio .canal").every(c => c.hidden), true);
+            valor(w, ""); igual(ids(w), []);
+            igual(todos(w, "#catalogo-inicio .canal").some(c => c.hidden), false);
+            igual(q(w, "#calculo").classList.contains("es-pronto"), true);
+            todos(w, "#catalogo-inicio [data-herramienta]").forEach((n, i) => {
+                igual(n, filas[i]); igual(n.closest(".canal-herramientas").hidden, true);
+            });
         }],
         ["Menú: Cálculo próximo, límites abre área y categoría", "/", w => {
             menu(w); valor(w, "límites", true);
@@ -124,21 +129,75 @@
             igual(todos(w, "#arbol-herramientas details").map(n => n.open), abiertos);
             igual(w.sessionStorage.getItem("algebra-lineal-menu-secciones"), memoria);
         }],
-        ["Explorar por temas: cerrar un área reinicia sus temas y no toca las demás", "/", async w => {
-            const area = q(w, "#algebra-lineal"); const otra = q(w, "#sistemas-numericos");
-            const matrices = q(w, "#matrices"); const vectores = q(w, "#vectores"); const bases = q(w, "#bases-numericas");
+        ["Explorador del área: una parada de Tab, flechas y panel sin guardar nada", "/areas/algebra-lineal/", w => {
+            const items = todos(w, "a.indice-item");
             const claves = Object.keys(w.localStorage).sort();
-            // Vectores tiene una sola herramienta y aun así llega cerrado.
-            igual(todos(w, "#catalogo-inicio details.topic").some(t => t.open), false);
-            for (let vuelta = 0; vuelta < 3; vuelta++) {
-                area.open = true; otra.open = true; await turno(w);
-                matrices.open = true; vectores.open = true; bases.open = true; await turno(w);
-                area.open = false; await turno(w);
-                area.open = true; await turno(w);
-                igual([matrices.open, vectores.open], [false, false]);
-                igual([otra.open, bases.open], [true, true]);
-            }
+            const tecla = key => w.document.activeElement.dispatchEvent(new w.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+            const visible = () => todos(w, ".destacado-cuerpo").filter(c => !c.hidden).map(c => c.dataset.id);
+            igual(items.filter(a => a.tabIndex === 0).length, 1);
+            items[0].focus(); tecla("End"); igual(w.document.activeElement, items.at(-1));
+            igual(visible(), ["determinantes"]);
+            tecla("ArrowUp"); igual(visible(), ["matriz-inversa"]);
+            tecla("ArrowRight"); igual(w.document.activeElement.matches(".destacado-abrir"), true);
+            igual(w.document.activeElement.getAttribute("href"), "/matrices/inversa/");
+            tecla("ArrowLeft"); igual(w.document.activeElement, items[4]);
+            igual(items.map(a => a.tabIndex), [-1, -1, -1, -1, 0, -1]);
             igual(Object.keys(w.localStorage).sort(), claves);
+        }],
+        ["Panel destacado: contexto del tema y lema solo si hay varias herramientas", "/areas/sistemas-numericos/", w => {
+            const panel = () => w.document.querySelector(".destacado-cuerpo:not([hidden])");
+            igual(panel().querySelector(".destacado-contexto").textContent, "Conversión entre binario, octal, decimal y hexadecimal.");
+            igual(panel().querySelector(".destacado-lema"), null);
+            w.document.querySelector('a.indice-item[data-id="conversion-romanos"]').focus();
+            igual(panel().querySelector(".destacado-contexto").textContent, "Conversión entre números arábigos y romanos.");
+        }],
+        ["«Para curiosos» nace plegada, abre sin tapar el cálculo en ambos estilos", "/matrices/determinantes/", w => {
+            const nota = w.document.querySelector(".tool-header > details.nota");
+            const entrada = w.document.querySelector(".tool-header").nextElementSibling;
+            igual(nota.open, false);
+            for (const estilo of ["estudio", "minimalista"]) {
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                nota.open = false;
+                if (nota.getBoundingClientRect().height > 60) throw new Error(`Plegada ocupa demasiado en ${estilo}`);
+                nota.querySelector("summary").click();
+                igual(nota.open, true);
+                if (nota.getBoundingClientRect().bottom > entrada.getBoundingClientRect().top + 4) throw new Error(`Tapa el cálculo en ${estilo}`);
+            }
+        }],
+        ["Música: apagada, voluntaria, se pausa y su volumen no toca el de los efectos", "/", async w => {
+            w.sessionStorage.removeItem("pygebra-musica");
+            const f = await new Promise(r => { const n = document.createElement("iframe"); n.onload = () => r(n); n.src = "/"; document.body.append(n); });
+            const v = f.contentWindow, d = v.document;
+            try {
+                const boton = d.getElementById("musica-toggle");
+                igual(d.getElementById("musica-grupo").hidden, false);
+                igual(boton.textContent, "Reproducir música");
+                igual(v.Musica.pedida(), false);
+                const efectos = v.localStorage.getItem("pygebra-volumen");
+                const volumen = d.getElementById("musica-volumen");
+                volumen.value = 70; volumen.dispatchEvent(new v.Event("input", { bubbles: true })); volumen.dispatchEvent(new v.Event("change", { bubbles: true }));
+                igual(v.localStorage.getItem("pygebra-musica-volumen"), "70");
+                igual(v.localStorage.getItem("pygebra-volumen"), efectos);
+                boton.click();
+                igual(boton.textContent, "Pausar música"); igual(v.sessionStorage.getItem("pygebra-musica"), "on");
+                igual(v.localStorage.getItem("pygebra-musica"), null);
+                boton.click();
+                igual(boton.textContent, "Reproducir música"); igual(v.sessionStorage.getItem("pygebra-musica"), null);
+                v.localStorage.removeItem("pygebra-musica-volumen");
+                // Ensayo sin altavoces: suena, no satura y cada periodo es siempre igual.
+                const ensayar = async () => {
+                    const c = new v.OfflineAudioContext(2, 8000 * 12, 8000);
+                    const sala = v.Musica.armar(c, c.destination);
+                    sala.bus.gain.value = 0.5;
+                    v.Musica.componer(sala, 1234567, 0);
+                    return (await c.startRendering()).getChannelData(0);
+                };
+                const [a, b] = [await ensayar(), await ensayar()];
+                let pico = 0, diferencia = 0;
+                a.forEach((x, i) => { pico = Math.max(pico, Math.abs(x)); diferencia = Math.max(diferencia, Math.abs(x - b[i])); });
+                if (!(pico > 0.01 && pico < 0.5)) throw new Error(`Nivel inesperado: ${pico}`);
+                if (diferencia > 1e-3) throw new Error(`El mismo periodo suena distinto: ${diferencia}`);
+            } finally { f.remove(); }
         }],
         ["Grupos y herramientas ocultos no se pueden enfocar", "/", w => {
             menu(w); valor(w, "inversa", true); const input = q(w, "#buscador-lateral"); input.focus();
