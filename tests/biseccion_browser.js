@@ -28,15 +28,26 @@
     const listaGrafica = w => grafica(w)?.data?.[0]?.x?.length === 801 &&
         !q(w, "#grafica-estado").textContent.includes("Actualizando");
     const casos = [
-        ["Inicio vacío y vista previa solo con datos completos", async w => {
+        ["Función sin extremos: exploración independiente y selección desde la curva", async w => {
             let peticiones = 0;
             const original = w.fetch; w.fetch = (...args) => { peticiones++; return original(...args); };
             for (const n of ["funcion", "a", "b"]) ok(q(w, `[name="${n}"]`).value === "", "Campo vacío");
             ok(!grafica(w).data && grafica(w).hidden, "Sin gráfica inventada");
-            valor(w, "funcion", "x^2-2"); valor(w, "a", "1");
-            await new Promise(r => setTimeout(r, 450));
-            ok(peticiones === 0 && grafica(w).hidden, "Sin pedir muestras con campos incompletos");
-            valor(w, "b", "2"); await esperar(() => listaGrafica(w));
+            valor(w, "funcion", "x^2-2"); await esperar(() => listaGrafica(w));
+            ok(peticiones === 1 && !grafica(w).hidden, "Solo función pide muestras");
+            ok(grafica(w).data[0].x[0] === -10 && grafica(w).data[0].x[800] === 10, "Ventana inicial de exploración");
+            ok(q(w, '[name="a"]').value === "" && q(w, '[name="b"]').value === "", "No inventa intervalo de cálculo");
+            ok(!grafica(w).layout.shapes[0].visible && !grafica(w).layout.shapes[1].visible, "No muestra extremos inventados");
+            q(w, '[data-elegir-extremo="a"]').click();
+            grafica(w).emit("plotly_click", { points: [{ curveNumber: 0, x: 1 }] });
+            await esperar(() => grafica(w).layout.shapes[0].visible);
+            q(w, '[data-elegir-extremo="b"]').click();
+            grafica(w).emit("plotly_click", { points: [{ curveNumber: 0, x: 2 }] });
+            await esperar(() => grafica(w).layout.shapes[1].visible);
+            ok(q(w, '[name="a"]').value === "1" && q(w, '[name="b"]').value === "2", "Selección reflejada en el formulario");
+            valor(w, "a", "3");
+            await esperar(() => grafica(w).layout.shapes[0].x0 === 3);
+            ok(!grafica(w).hidden && grafica(w).layout.xaxis.range[0] === -10, "Extremos invertidos no ocultan ni desplazan la exploración");
             ok(!q(w, "#resultado"), "Vista previa sin resolver");
             valor(w, "funcion", "");
             ok(grafica(w).hidden && q(w, "#grafica-estado").textContent.includes("Introduce"), "Volver al estado vacío");
@@ -133,6 +144,18 @@
                 }
             }
             ok(q(w, "#datos-biseccion").textContent === original && peticiones === 0, "Solo presentación");
+            ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "No duplica aproximaciones");
+        }],
+        ["Redondear no convierte una desigualdad estricta en igualdad", async (w, frame) => {
+            valor(w, "funcion", "x-0.0001234567"); valor(w, "a", "0"); valor(w, "b", "0.00019999998");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const selector = q(w, "#biseccion-decimales");
+            for (const precision of ["4", "6", "8", "12", "16", "completa"]) {
+                selector.value = precision; selector.dispatchEvent(new w.Event("change", { bubbles: true }));
+                const valores = [...w.document.querySelectorAll(".biseccion-comprobacion [data-biseccion-numero]")];
+                ok(valores.length === 2 && valores[0].textContent !== valores[1].textContent, "La longitud y la tolerancia siguen siendo distintas");
+                ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "Sin doble aproximación");
+            }
         }],
         ["Dominio explica raíz real y una corrección justificada", async (w, frame) => {
             valor(w, "funcion", "√(x)"); valor(w, "a", "-1"); valor(w, "b", "5");
@@ -171,6 +194,18 @@
             ok(grafica(w).layout.shapes[2].x0 === lista(w)[6].a, "Intervalo seleccionado");
             ok(peticiones === 0, "Sin nuevas peticiones al recorrer pasos");
             ok(grafica(w).layout.shapes.length === 3, "No se acumulan formas");
+            q(w, "#iteracion-anterior").click();
+            ok(slider.value === "6", "Retrocede una iteración");
+            q(w, "#iteracion-siguiente").click();
+            ok(slider.value === "7", "Avanza una iteración");
+            slider.value = "1"; slider.dispatchEvent(new w.Event("input", { bubbles: true }));
+            ok(q(w, "#iteracion-anterior").disabled, "No retrocede antes del primer paso");
+            ok(q(w, "#paso-decision").textContent.includes("c pasa a ser el nuevo b") && q(w, "#paso-decision").textContent.includes("a permanece"), "Explica sustitución de b y extremo conservado");
+            q(w, "#iteracion-siguiente").click();
+            ok(q(w, "#paso-decision").textContent.includes("c pasa a ser el nuevo a") && q(w, "#paso-decision").textContent.includes("b permanece"), "Explica sustitución de a y extremo conservado");
+            ok(q(w, "#paso-intervalo").textContent.includes("Nuevo intervalo"), "Nuevo intervalo separado");
+            slider.value = String(lista(w).length); slider.dispatchEvent(new w.Event("input", { bubbles: true }));
+            ok(q(w, "#iteracion-siguiente").disabled, "No avanza después del último paso");
         }],
         ["Explorar y ajustar extremos conserva el resultado anterior", async (w, frame) => {
             ejemplo(w);
@@ -181,6 +216,15 @@
             ok(Number(q(w, '[name="a"]').value) === .6, "Extremo conectado al formulario");
             ok(q(w, "#resultado").dataset.resultado === "desactualizado", "Aviso de resultado anterior");
             ok(lista(w).length === 13, "No vuelve a ejecutar la bisección");
+        }],
+        ["Vista inicial cancela el zoom pendiente y conserva ejes y muestras coherentes", async w => {
+            valor(w, "funcion", "x²-2"); await esperar(() => listaGrafica(w));
+            await w.Plotly.relayout(grafica(w), { "xaxis.range": [40, 60] });
+            q(w, "#grafica-restablecer").click();
+            await esperar(() => listaGrafica(w) && grafica(w).data[0].x[0] === -10);
+            await new Promise(r => setTimeout(r, 400));
+            ok(grafica(w).layout.xaxis.range[0] === -10 && grafica(w).data[0].x[0] === -10
+                && grafica(w).data[0].x[800] === 10, "Descarta la vista anterior pendiente");
         }],
         ["Dos intervalos de la segunda raíz: comparación de 13 y 10 pasos", async (w, frame) => {
             w.sessionStorage.removeItem("pygebra-biseccion-v1");
