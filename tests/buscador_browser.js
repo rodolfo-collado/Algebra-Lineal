@@ -144,6 +144,61 @@
             igual(items.map(a => a.tabIndex), [-1, -1, -1, -1, 0, -1]);
             igual(Object.keys(w.localStorage).sort(), claves);
         }],
+        ["Panel destacado: contexto del tema y lema solo si hay varias herramientas", "/areas/sistemas-numericos/", w => {
+            const panel = () => w.document.querySelector(".destacado-cuerpo:not([hidden])");
+            igual(panel().querySelector(".destacado-contexto").textContent, "Conversión entre binario, octal, decimal y hexadecimal.");
+            igual(panel().querySelector(".destacado-lema"), null);
+            w.document.querySelector('a.indice-item[data-id="conversion-romanos"]').focus();
+            igual(panel().querySelector(".destacado-contexto").textContent, "Conversión entre números arábigos y romanos.");
+        }],
+        ["«Para curiosos» nace plegada, abre sin tapar el cálculo en ambos estilos", "/matrices/determinantes/", w => {
+            const nota = w.document.querySelector(".tool-header > details.nota");
+            const entrada = w.document.querySelector(".tool-header").nextElementSibling;
+            igual(nota.open, false);
+            for (const estilo of ["estudio", "minimalista"]) {
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                nota.open = false;
+                if (nota.getBoundingClientRect().height > 60) throw new Error(`Plegada ocupa demasiado en ${estilo}`);
+                nota.querySelector("summary").click();
+                igual(nota.open, true);
+                if (nota.getBoundingClientRect().bottom > entrada.getBoundingClientRect().top + 4) throw new Error(`Tapa el cálculo en ${estilo}`);
+            }
+        }],
+        ["Música: apagada, voluntaria, se pausa y su volumen no toca el de los efectos", "/", async w => {
+            w.sessionStorage.removeItem("pygebra-musica");
+            const f = await new Promise(r => { const n = document.createElement("iframe"); n.onload = () => r(n); n.src = "/"; document.body.append(n); });
+            const v = f.contentWindow, d = v.document;
+            try {
+                const boton = d.getElementById("musica-toggle");
+                igual(d.getElementById("musica-grupo").hidden, false);
+                igual(boton.textContent, "Reproducir música");
+                igual(v.Musica.pedida(), false);
+                const efectos = v.localStorage.getItem("pygebra-volumen");
+                const volumen = d.getElementById("musica-volumen");
+                volumen.value = 70; volumen.dispatchEvent(new v.Event("input", { bubbles: true })); volumen.dispatchEvent(new v.Event("change", { bubbles: true }));
+                igual(v.localStorage.getItem("pygebra-musica-volumen"), "70");
+                igual(v.localStorage.getItem("pygebra-volumen"), efectos);
+                boton.click();
+                igual(boton.textContent, "Pausar música"); igual(v.sessionStorage.getItem("pygebra-musica"), "on");
+                igual(v.localStorage.getItem("pygebra-musica"), null);
+                boton.click();
+                igual(boton.textContent, "Reproducir música"); igual(v.sessionStorage.getItem("pygebra-musica"), null);
+                v.localStorage.removeItem("pygebra-musica-volumen");
+                // Ensayo sin altavoces: suena, no satura y cada periodo es siempre igual.
+                const ensayar = async () => {
+                    const c = new v.OfflineAudioContext(2, 8000 * 12, 8000);
+                    const sala = v.Musica.armar(c, c.destination);
+                    sala.bus.gain.value = 0.5;
+                    v.Musica.componer(sala, 1234567, 0);
+                    return (await c.startRendering()).getChannelData(0);
+                };
+                const [a, b] = [await ensayar(), await ensayar()];
+                let pico = 0, diferencia = 0;
+                a.forEach((x, i) => { pico = Math.max(pico, Math.abs(x)); diferencia = Math.max(diferencia, Math.abs(x - b[i])); });
+                if (!(pico > 0.01 && pico < 0.5)) throw new Error(`Nivel inesperado: ${pico}`);
+                if (diferencia > 1e-3) throw new Error(`El mismo periodo suena distinto: ${diferencia}`);
+            } finally { f.remove(); }
+        }],
         ["Grupos y herramientas ocultos no se pueden enfocar", "/", w => {
             menu(w); valor(w, "inversa", true); const input = q(w, "#buscador-lateral"); input.focus();
             const oculto = q(w, '#arbol-herramientas [data-herramienta="conversion-bases"] a');

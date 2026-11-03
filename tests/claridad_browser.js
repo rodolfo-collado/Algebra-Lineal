@@ -27,17 +27,13 @@
     const casos = [];
     const caso = (nombre, ruta, test, sinJS = false) => casos.push({ nombre, ruta, test, sinJS });
 
-    caso("UI-21/UI-07: Inicio abre los temas de una herramienta y nombra «Álgebra lineal»", "/", w => {
-        const abiertos = todos(w, "details.topic").filter(d => d.open).map(d => d.id);
-        igual(abiertos, ["vectores", "bases-numericas", "numeracion-romana"]);
-        igual(q(w, "#matrices").open, false, "Matrices sigue plegado");
-        igual(todos(w, "details.home-area").some(d => d.open), false, "Las áreas siguen plegadas");
-        igual(q(w, "#area-algebra-lineal").textContent, "Álgebra lineal");
-        cierto(q(w, '#vectores a.tool-link[href="/vectores/operaciones/"]'), "La herramienta única está dentro del tema abierto");
+    caso("UI-07: Inicio nombra cada área en su canal con sus herramientas dentro", "/", w => {
+        igual(todos(w, "details.topic").length, 0, "Sin temas plegables");
+        igual(q(w, "#algebra-lineal .canal-enlace").textContent, "Álgebra lineal");
+        cierto(q(w, '#algebra-lineal a.tool-link[href="/vectores/operaciones/"]'), "La herramienta viaja con su canal para el buscador");
     });
-    caso("UI-21: el filtro en vivo restaura lo que el usuario abrió o cerró", "/", w => {
-        q(w, "#vectores").open = false; q(w, "#matrices").open = true;
-        const estado = () => todos(w, "#catalogo-inicio details").map(d => `${d.id}:${d.open}`);
+    caso("UI-21: el filtro en vivo restaura los canales al limpiar", "/", w => {
+        const estado = () => todos(w, "#catalogo-inicio .canal").map(c => `${c.id}:${c.hidden}`);
         const antes = estado();
         valor(w, "#buscador-inicio", "gauss");
         igual(todos(w, "#catalogo-inicio [data-grupo]").every(g => g.hidden), true);
@@ -46,7 +42,7 @@
     });
     for (const ruta of herramientas) caso(`UI-72: ${ruta} sin kicker, con migas, h1 y descripción`, ruta, w => {
         igual(q(w, ".tool-kicker"), null);
-        igual([...q(w, ".tool-header").children].map(n => n.className), ["tool-title", "tool-lead"]);
+        igual([...q(w, ".tool-header").children].map(n => n.className), ["tool-title", "tool-lead", "nota"]);
         const migas = todos(w, ".breadcrumbs li").map(n => n.textContent.trim());
         igual(migas.length, 4); igual(migas[3], q(w, "h1").textContent.trim());
         cierto(["Álgebra lineal", "Sistemas numéricos"].includes(migas[1]), `Área: ${migas[1]}`);
