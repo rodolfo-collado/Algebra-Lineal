@@ -8,7 +8,8 @@
 #biseccion-grafica .shape-group[data-index="2"] * { pointer-events: none !important; }
 .biseccion-recorrido { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
 .biseccion-recorrido input { width: 100%; min-height: 44px; accent-color: var(--color-brand); }
-.biseccion-recorrido output { font-family: var(--font-math); font-size: var(--text-sm); overflow-wrap: anywhere; }
+#iteracion-lectura { overflow-wrap: anywhere; }
+#iteracion-lectura p { margin-block: var(--space-1); }
 .biseccion-tabla tr[data-activa] { background: var(--color-brand-soft); outline: 2px solid var(--color-brand); outline-offset: -2px; }
 .biseccion-tabla tr:focus-visible { outline: 3px solid var(--color-focus); outline-offset: -3px; }
 .biseccion-tabla th, .biseccion-tabla td { white-space: nowrap; }

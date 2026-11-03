@@ -10,10 +10,13 @@
     const slider = document.getElementById("iteracion-biseccion");
     const lectura = document.getElementById("iteracion-lectura");
     const filas = [...document.querySelectorAll("[data-iteracion]")];
-    const numero = x => Number(x).toLocaleString("es", { maximumSignificantDigits: 12 });
+    const numero = (x, digitos = 12) => Number(x).toLocaleString("es", { maximumSignificantDigits: digitos });
     const campo = nombre => form.elements.namedItem(nombre);
     const color = nombre => getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
-    let mutando = false, temporizador, peticion, generacion = 0;
+    let mutando = false, temporizador, peticion, inicializacion, generacion = 0;
+    const ayudaGrafica = document.getElementById("grafica-ayuda");
+    const indicacion = "Introduce una función y un intervalo para visualizar su gráfica.";
+    ayudaGrafica.hidden = true;
 
     function intervalo() {
         if (!campo("a").value.trim() || !campo("b").value.trim()) return null;
@@ -37,8 +40,20 @@
         if (!p) return;
         slider.value = String(i);
         slider.setAttribute("aria-valuetext", `Iteración ${i} de ${pasos.length}, c = ${numero(p.c)}`);
-        lectura.textContent = `Iteración ${i}/${pasos.length}: [${numero(p.a)}, ${numero(p.b)}] · c = ${numero(p.c)} · f(c) = ${numero(p.fc)}`;
+        const valores = new Set([p.a, p.c, p.b, p.nuevo_a, p.nuevo_b]);
+        let digitos = 8;
+        // Mostrar los puntos distintos como distintos, incluso con tolerancias muy pequeñas.
+        while (digitos < 17 && new Set([...valores].map(x => numero(x, digitos))).size < valores.size) digitos++;
+        const n = x => numero(x, digitos);
+        const signo = x => x > 0 ? "positivo" : x < 0 ? "negativo" : "cero";
+        lectura.querySelector("#paso-valores").textContent = `Iteración ${i}/${pasos.length}. Antes de dividir: a (izquierdo) = ${n(p.a)} · c (punto medio) = ${n(p.c)} · b (derecho) = ${n(p.b)}.`;
+        lectura.querySelector("#paso-signos").textContent = `f(a) = ${n(p.fa)} (${signo(p.fa)}) · f(c) = ${n(p.fc)} (${signo(p.fc)}) · f(b) = ${n(p.fb)} (${signo(p.fb)}).`;
+        const mitad = (p.fa < 0) !== (p.fc < 0) ? "izquierda [a,c]: f(a) y f(c) tienen signos opuestos" : "derecha [c,b]: f(c) y f(b) tienen signos opuestos";
+        lectura.querySelector("#paso-decision").textContent = p.fc === 0
+            ? `f(c) = 0 en aritmética de máquina: encontramos una raíz calculada. Después: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}]; no hace falta otra mitad.`
+            : `Conservamos la mitad ${mitad}. Después: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}], longitud ${n(p.longitud)}.`;
         filas.forEach(f => f.toggleAttribute("data-activa", Number(f.dataset.iteracion) === i));
+        if (!grafica.data) return;
         mutando = true;
         Plotly.update(grafica, { x: [[p.a, p.c, p.b]], y: [[p.fa, p.fc, p.fb]],
             text: [["a", "c (punto medio)", "b"]] }, { "shapes[2].x0": p.a, "shapes[2].x1": p.b }, [1])
@@ -60,7 +75,12 @@
             const puntos = await response.json();
             if (n !== generacion) return;
             if (!response.ok) throw new Error(puntos.error);
+            grafica.hidden = false;
+            ayudaGrafica.hidden = false;
+            await (inicializacion ??= iniciar());
+            if (n !== generacion) return;
             await Plotly.restyle(grafica, { x: [puntos.x], y: [puntos.y] }, [0]);
+            if (n !== generacion) return;
             const limites = intervalo();
             if (moverEjes && limites) {
                 mutando = true;
@@ -69,13 +89,16 @@
                     "shapes[1].x0": limites[1], "shapes[1].x1": limites[1],
                     "shapes[0].y0": 0, "shapes[0].y1": 1, "shapes[1].y0": 0, "shapes[1].y1": 1 });
                 mutando = false;
+                if (n !== generacion) return;
             }
             estado.textContent = puntos.y.some(y => y === null)
                 ? "La curva tiene huecos donde no se pudo verificar el dominio. La gráfica es un muestreo, no una prueba de raíces."
                 : "Gráfica muestreada. Resolver comprueba dominio y cambio de signo del intervalo.";
         } catch (error) {
             if (error.name !== "AbortError" && n === generacion) {
-                estado.textContent = `Gráfica anterior: ${error.message || "no se pudo actualizar"}`;
+                grafica.hidden = true;
+                ayudaGrafica.hidden = true;
+                estado.textContent = error.message || "No se pudo actualizar la gráfica.";
             }
         }
     }
@@ -85,11 +108,20 @@
         // Invalidar también durante la espera evita pintar una respuesta de la entrada anterior.
         generacion++;
         peticion?.abort();
-        const limites = intervalo();
-        if (!limites) {
-            estado.textContent = "Gráfica anterior: escribe un intervalo con a menor que b.";
+        if (["funcion", "a", "b"].some(n => !campo(n).value.trim())) {
+            grafica.hidden = true;
+            ayudaGrafica.hidden = true;
+            estado.textContent = indicacion;
             return;
         }
+        const limites = intervalo();
+        if (!limites) {
+            grafica.hidden = true;
+            ayudaGrafica.hidden = true;
+            estado.textContent = "Para visualizar, elige un extremo a menor que b, ambos finitos.";
+            return;
+        }
+        estado.textContent = "Preparando vista previa…";
         const ancho = limites[1] - limites[0];
         temporizador = setTimeout(() => muestrear([limites[0] - ancho / 4, limites[1] + ancho / 4], true), 300);
     }
@@ -109,6 +141,13 @@
             iteraciones: pasos.length, convergio: resultado.convergio };
         const registros = [...anteriores, actual];
         try { sessionStorage.setItem(clave, JSON.stringify(registros)); } catch { /* Sin persistencia entre envíos. */ }
+        const deEstaFuncion = registros.filter(r => r.clave === datos.clave);
+        if (deEstaFuncion.length < 2) {
+            const mensaje = document.createElement("p");
+            mensaje.textContent = "Ya tienes un cálculo de esta función. Puedes cambiar los extremos a y b y volver a calcular. Si el nuevo intervalo es válido, aquí podrás comparar las aproximaciones y cuántas iteraciones necesitó cada una.";
+            contenedor.replaceChildren(mensaje);
+            return;
+        }
         const tabla = document.createElement("table");
         tabla.className = "procedure-table";
         const caption = tabla.createCaption();
@@ -118,10 +157,11 @@
             const th = document.createElement("th"); th.scope = "col"; th.textContent = t; cabecera.append(th);
         });
         const cuerpo = tabla.createTBody();
-        registros.filter(r => r.clave === datos.clave).forEach(r => {
+        deEstaFuncion.forEach(r => {
             const misma = Math.max(r.a, actual.a) <= Math.min(r.b, actual.b);
-            const texto = r === actual ? "Actual" : !r.convergio || !actual.convergio ? "Sin convergencia verificada"
+            let texto = !r.convergio || !actual.convergio ? "Sin convergencia verificada"
                 : misma ? "Compatible con la misma raíz" : "Intervalos finales distintos";
+            if (r === actual) texto = r.convergio ? "Actual" : "Actual · Sin convergencia verificada";
             const fila = cuerpo.insertRow();
             [`[${numero(r.inicial_a)}, ${numero(r.inicial_b)}]`, numero(r.c), String(r.iteraciones), texto]
                 .forEach(t => { fila.insertCell().textContent = t; });
@@ -130,12 +170,10 @@
     }
 
     async function iniciar() {
-        comparar();
         if (!window.Plotly) {
-            estado.textContent = "No se pudo cargar la gráfica local. El resultado y la tabla siguen disponibles.";
-            return;
+            throw new Error("No se pudo cargar la gráfica local. El resultado y la tabla siguen disponibles.");
         }
-        const limites = intervalo() || [.55, 1.1];
+        const limites = intervalo();
         const layout = {
             margin: { t: 28, r: 18, b: 48, l: 60 }, showlegend: false,
             paper_bgcolor: color("--color-surface"), plot_bgcolor: color("--color-surface"),
@@ -155,7 +193,7 @@
             edits: { shapePosition: true },
             modeBarButtons: [["zoom2d", "pan2d", "zoomIn2d", "zoomOut2d", "resetScale2d"]] });
         grafica.on("plotly_relayout", cambio => {
-            if (mutando) return;
+            if (mutando || grafica.hidden) return;
             let cambioExtremos = false;
             ["a", "b"].forEach((nombre, i) => {
                 const x = cambio[`shapes[${i}].x0`] ?? cambio[`shapes[${i}].x1`] ?? cambio.shapes?.[i]?.x0;
@@ -172,11 +210,6 @@
                 temporizador = setTimeout(() => muestrear(rango), 200);
             }
         });
-        ["funcion", "a", "b"].forEach(n => campo(n).addEventListener("input", previsualizar));
-        slider?.addEventListener("input", () => mostrarPaso(Number(slider.value)));
-        filas.forEach(fila => {
-            ["pointerenter", "focus", "click"].forEach(tipo => fila.addEventListener(tipo, () => mostrarPaso(Number(fila.dataset.iteracion))));
-        });
         new MutationObserver(() => {
             Plotly.relayout(grafica, { paper_bgcolor: color("--color-surface"), plot_bgcolor: color("--color-surface"),
                 "font.color": color("--color-text"), "xaxis.gridcolor": color("--color-border"),
@@ -187,9 +220,15 @@
             Plotly.restyle(grafica, { "line.color": color("--color-brand") }, [0]);
             Plotly.restyle(grafica, { "marker.color": color("--color-text") }, [1]);
         }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-        previsualizar();
-        if (pasos.length) mostrarPaso(pasos.length);
+        if (pasos.length) mostrarPaso(Number(slider.value));
         else if (resultado) Plotly.restyle(grafica, { x: [[resultado.c]], y: [[resultado.fc]], text: [["c"]] }, [1]);
     }
-    iniciar().catch(() => { estado.textContent = "No se pudo iniciar la gráfica. Consulta el resultado y el procedimiento."; });
+    ["funcion", "a", "b"].forEach(n => campo(n).addEventListener("input", previsualizar));
+    slider?.addEventListener("input", () => mostrarPaso(Number(slider.value)));
+    filas.forEach(fila => {
+        ["pointerenter", "focus", "click"].forEach(tipo => fila.addEventListener(tipo, () => mostrarPaso(Number(fila.dataset.iteracion))));
+    });
+    comparar();
+    if (pasos.length) mostrarPaso(pasos.length);
+    previsualizar();
 })();

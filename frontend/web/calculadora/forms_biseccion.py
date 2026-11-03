@@ -6,16 +6,13 @@ from backend.funciones_reales import FuncionReal
 from .forms_feedback import FormularioConErrores
 
 
-EJEMPLO = "x^4 - 5x^3 + 0.5x^2 - 11x + 10"
-
-
 class BiseccionForm(FormularioConErrores):
-    funcion = forms.CharField(label="Función f(x)", max_length=512, initial=EJEMPLO,
+    funcion = forms.CharField(label="Función f(x)", max_length=512,
                               widget=forms.TextInput(attrs={"class": "field-input", "spellcheck": "false",
                                                             "aria-describedby": "funcion-ayuda"}))
-    a = forms.FloatField(label="Extremo a", initial=.55,
+    a = forms.FloatField(label="Extremo a",
                          widget=forms.NumberInput(attrs={"class": "field-input", "step": "any"}))
-    b = forms.FloatField(label="Extremo b", initial=1.1,
+    b = forms.FloatField(label="Extremo b",
                          widget=forms.NumberInput(attrs={"class": "field-input", "step": "any"}))
     precision = forms.FloatField(label="Precisión del intervalo", initial=PRECISION, required=False,
                                  max_value=PRECISION,

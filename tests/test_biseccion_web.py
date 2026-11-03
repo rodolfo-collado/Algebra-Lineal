@@ -28,6 +28,44 @@ def resultado_html(respuesta):
 
 
 class BiseccionWebTests(SimpleTestCase):
+    def test_inicio_vacio_con_ajustes_y_teclado_contextual(self):
+        from tests.test_teclado import Pagina
+        r = self.client.get(RUTA)
+        pagina = Pagina(r.content.decode())
+        self.assertEqual(set(pagina.json["math-keyboard-profiles"]), {"funcion-real"})
+        self.assertEqual(len(pagina.teclados), 1)
+        self.assertContains(r, "calculadora/teclado.js")
+        from frontend.web.calculadora.forms_biseccion import BiseccionForm
+        form = BiseccionForm()
+        for campo in ("funcion", "a", "b"):
+            self.assertIsNone(form[campo].value())
+        self.assertEqual(form["precision"].value(), .0001)
+        self.assertEqual(form["max_iteraciones"].value(), 200)
+        self.assertContains(r, "Introduce una función y un intervalo")
+        self.assertNotContains(r, "data-respuesta-errores")
+
+    def test_verificacion_adaptada_al_resultado(self):
+        for cambios, mensaje in [({}, "Se alcanzó la precisión"),
+                                 ({"funcion": "x", "a": "0", "b": "1"}, "Un extremo ya da cero"),
+                                 ({"funcion": "x", "a": "-1", "b": "1"}, "El punto medio da cero"),
+                                 ({"max_iteraciones": "1"}, "Se agotó el máximo"),
+                                 ({"funcion": "x^2-2", "a": "1", "b": "2", "precision": "1e-30"}, "La máquina ya no puede")]:
+            with self.subTest(cambios=cambios):
+                r = self.client.post(RUTA, datos(**cambios))
+                self.assertContains(r, mensaje)
+                self.assertContains(r, "¿Cómo sabemos que hay una raíz?")
+                self.assertContains(r, "¿Se alcanzó la precisión solicitada?")
+                self.assertContains(r, "b − a =")
+                self.assertContains(r, "más de una raíz")
+
+    def test_cero_de_maquina_no_se_presenta_como_error_matematico_cero(self):
+        r = self.client.post(RUTA, datos(funcion="x+10000000000000000-10000000000000000", a="1", b="2"))
+        self.assertEqual(resultado_html(r)["estado"], "exacta")
+        self.assertContains(r, "no demuestra que el error matemático sea exactamente cero")
+        self.assertNotContains(r, "no supera 0")
+        r = self.client.post(RUTA, datos(funcion="x", a="0", b="1"))
+        self.assertContains(r, "f(b) = 1 (positivo)")
+
     def test_notaciones_comparten_resultado_muestras_y_clave_de_comparacion(self):
         implicita = POLINOMIO.replace("*", "")
         r = self.client.post(RUTA, datos(funcion=implicita))
