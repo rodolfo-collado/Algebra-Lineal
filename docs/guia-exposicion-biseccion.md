@@ -110,6 +110,9 @@ iteración ya guardada. Esta llamada real actualiza los puntos y la franja:
 ```
 
 El cursor sobre una fila, su foco y el deslizador llaman al mismo recorrido.
+La lectura identifica a, c y b, sus signos y qué mitad conservamos, separando
+el intervalo antes y después del recorte. La verificación plegable explica
+existencia, resta de extremos y precisión con los valores de nuestro cálculo.
 Arrastrar las líneas a y b actualiza los campos mediante `plotly_relayout`;
 para obtener otra solución debemos volver a pulsar Resolver. Editar marca el
 resultado anterior como desactualizado. Plotly está guardado localmente y funciona
@@ -117,11 +120,14 @@ sin Internet. La curva muestreada ayuda a explorar; no demuestra todas las raíc
 
 ## 6. Mi demostración y preguntas posibles
 
-1. Mostrar la función sin asteriscos y resolver el ejemplo: señalar las 13 iteraciones.
+1. Empezar con los campos vacíos. Escribir la función y el intervalo del ejemplo;
+   al enfocar f(x), mostrar el teclado contextual (x² inserta x^2). Resolver y señalar las 13 iteraciones.
 2. Abrir el procedimiento y recorrer los tres primeros pasos; mover el deslizador.
 3. Arrastrar un extremo y explicar el aviso de resultado anterior.
 4. Resolver `[5,5.5]` y después `[5.2,5.3]`: requieren 13 y 10 pasos.
    Abrir la comparación y señalar «Compatible con la misma raíz».
+   Con un solo cálculo aparece una indicación; la tabla empieza desde el segundo
+   cálculo de la misma función.
 
 **¿Por qué no asegura una sola raíz?** Continuidad y signos opuestos aseguran
 existencia; un intervalo puede contener varias. La comparación tampoco prueba unicidad.

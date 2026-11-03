@@ -9,9 +9,15 @@ Esta entrega implementa únicamente bisección.
 ## Uso
 
 Escribe `f(x)`, el extremo inferior `a` y el superior `b`, y pulsa **Resolver por
-bisección**. El ejemplo del profesor viene precargado. La gráfica se actualiza al
+bisección**. Función y extremos empiezan vacíos; los ajustes conservan sus valores
+predeterminados. Al enfocar la función aparece el teclado contextual de PyGebra:
+x, x², x³, exponente general, paréntesis, operaciones, seno, coseno, raíz y logaritmo.
+Las teclas muestran símbolos pero insertan sintaxis del parser; también puedes
+escribir con el teclado físico. La gráfica se actualiza al
 editar estos campos; desplazarla o cambiar el zoom solicita nuevas muestras al
-servidor local, sin resolver de nuevo. Las líneas discontinuas `a` y `b` se pueden
+servidor local, sin resolver de nuevo. Sin los tres campos no se dibuja ninguna
+curva ni se solicitan muestras: una indicación invita a completar la entrada.
+Las líneas discontinuas `a` y `b` se pueden
 arrastrar; los campos numéricos ofrecen la alternativa con teclado.
 
 **Ajustes y funciones admitidas** permite reducir la precisión predeterminada
@@ -39,12 +45,26 @@ recorre las iteraciones con arrastre, flechas del teclado o pantalla táctil.
 El cursor, el foco o un toque sobre una fila del procedimiento seleccionan esa
 misma iteración. La franja resalta el intervalo **antes** del recorte y los tres
 marcadores muestran `(a,f(a))`, `(c,f(c))` y `(b,f(b))`. Estas interacciones usan
-el JSON calculado, sin peticiones ni una nueva ejecución del algoritmo.
+el JSON calculado, sin peticiones ni una nueva ejecución del algoritmo. La lectura
+identifica a (izquierdo), c (punto medio) y b (derecho), muestra los signos reales
+y explica qué mitad se conserva. Distingue el intervalo antes de dividirlo del
+resultante; un cero calculado tiene su propia explicación. El resumen usa cifras
+legibles, aumentando las cifras si hace falta distinguir los extremos; el
+procedimiento mantiene 17 cifras significativas de los valores.
+
+**Verificación** responde tres preguntas con los datos de cada cálculo: por qué
+hay una raíz (continuidad y signos iniciales, o raíz en extremo), si se alcanzó la
+precisión (resta b − a final y comparación con la tolerancia), y por qué f(c) puede
+no ser cero. Distingue raíz calculada, parada por longitud, máximo de iteraciones
+y estancamiento, sin afirmar unicidad ni usar el error relativo como parada.
+Un cero en aritmética de máquina no prueba un error matemático exactamente cero.
 
 Para probar otro intervalo, cambia `a` y `b` y vuelve a resolver: la función se
 conserva. **Comparar intervalos** recuerda hasta diez cálculos en `sessionStorage`
 de la pestaña, separados por la expresión normalizada, con sus aproximaciones e
-iteraciones. Si los intervalos finales convergentes se solapan, dice **Compatible
+iteraciones. Con un solo cálculo se muestra una orientación para probar otro
+intervalo; desde dos de la misma función aparece la tabla. Si los intervalos
+finales convergentes se solapan, dice **Compatible
 con la misma raíz**. Es evidencia numérica, no una demostración de unicidad;
 dos raíces muy cercanas pueden quedar en intervalos solapados. No persiste al
 cerrar la sesión de escritorio. Una edición marca el resultado como anterior.
