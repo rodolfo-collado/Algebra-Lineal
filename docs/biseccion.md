@@ -1,0 +1,125 @@
+# Bisección y gráfica interactiva
+
+[Índice](README.md) · [Arquitectura](arquitectura.md) · [Pruebas](pruebas.md)
+
+Disponible en **Métodos numéricos → Raíces de ecuaciones → Método de bisección**,
+en `/metodos-numericos/biseccion/`, tanto en Django como en Windows sin Internet.
+Esta entrega implementa únicamente bisección.
+
+## Uso
+
+Escribe `f(x)`, el extremo inferior `a` y el superior `b`, y pulsa **Resolver por
+bisección**. El ejemplo del profesor viene precargado. La gráfica se actualiza al
+editar estos campos; desplazarla o cambiar el zoom solicita nuevas muestras al
+servidor local, sin resolver de nuevo. Las líneas discontinuas `a` y `b` se pueden
+arrastrar; los campos numéricos ofrecen la alternativa con teclado.
+
+**Ajustes y funciones admitidas** permite reducir la precisión predeterminada
+`0.0001`, y cambiar el límite de 200 iteraciones (entre 1 y 1000). La precisión
+debe ser positiva y nunca mayor que `0.0001`, también en envíos HTTP manipulados.
+
+Se admiten `+`, `-`, `*`, `/`, `^` o `**`, paréntesis, la variable `x`, constantes
+`pi` y `e`, y funciones de un argumento: `sin`, `cos`, `tan`, `exp`, `log`/`ln`
+(logaritmo natural), `log10`, `sqrt` y `abs`. Los ángulos se expresan en radianes.
+La multiplicación es explícita (`5*x`); los exponentes no pueden depender de `x`.
+
+El resultado y su estado aparecen antes de la gráfica. El deslizador discreto
+recorre las iteraciones con arrastre, flechas del teclado o pantalla táctil.
+El cursor, el foco o un toque sobre una fila del procedimiento seleccionan esa
+misma iteración. La franja resalta el intervalo **antes** del recorte y los tres
+marcadores muestran `(a,f(a))`, `(c,f(c))` y `(b,f(b))`. Estas interacciones usan
+el JSON calculado, sin peticiones ni una nueva ejecución del algoritmo.
+
+Para probar otro intervalo, cambia `a` y `b` y vuelve a resolver: la función se
+conserva. **Comparar intervalos** recuerda hasta diez cálculos en `sessionStorage`
+de la pestaña, separados por la expresión normalizada, con sus aproximaciones e
+iteraciones. Si los intervalos finales convergentes se solapan, dice **Compatible
+con la misma raíz**. Es evidencia numérica, no una demostración de unicidad;
+dos raíces muy cercanas pueden quedar en intervalos solapados. No persiste al
+cerrar la sesión de escritorio. Una edición marca el resultado como anterior.
+
+## Algoritmo y comprobaciones
+
+La referencia principal es `MÉTODOS NUMERICOS (1).pptx`, diapositivas 3 y 6,
+facilitada para esta tarea. La guía `guia-busqueda-raices.pdf` es complementaria.
+Se mantiene el orden de las diapositivas:
+
+1. Validar extremos finitos, `a < b`, precisión y límite de iteraciones.
+2. Comprobar dominio/continuidad mediante una envolvente conservadora de la
+   expresión, evaluar los extremos y atender una raíz en cualquiera de ellos.
+3. Exigir signos opuestos sin multiplicar valores que podrían desbordarse.
+4. Calcular manualmente `c = a + (b-a)/2`, equivalente al punto medio y más
+   resistente al desbordamiento de `a+b`; evaluar `f(c)`.
+5. Si `f(c)=0`, terminar. En otro caso, conservar `[a,c]` o `[c,b]` según su signo.
+6. Parar cuando la longitud **después del recorte** sea estrictamente menor que
+   la precisión. Si se agota el límite o el punto medio ya no es representable
+   entre los extremos, informar **sin convergencia**.
+7. Volver a evaluar `f(c)` independientemente antes de devolver el resultado.
+
+La longitud restante y el error relativo porcentual son medidas diferentes.
+El segundo es `abs((c_n-c_anterior)/c_n)*100`; no está definido en la primera
+iteración, si `c_n=0`, o si su valor excede el rango numérico. Nunca decide la
+parada. El residuo `f(c)` también se presenta por separado: no tiene las unidades
+de `x` y no debe compararse automáticamente con la tolerancia del intervalo.
+El último `c` es un extremo del intervalo final; su cota de distancia a una raíz
+es la longitud restante, no su mitad, bajo las comprobaciones de continuidad y
+la precisión de máquina.
+
+## Ejemplos verificados
+
+Para `x^4 - 5*x^3 + 0.5*x^2 - 11*x + 10`, con precisión `0.0001`:
+
+| Intervalo | Iteraciones | Último c | f(c), aproximadamente | Longitud restante |
+|---|---:|---:|---:|---:|
+| [0.55, 1.1] | 13 | 0.763970947265625 | -0.000669776157658 | 0.000067138671875 |
+| [5, 5.5] | 13 | 5.23602294921875 | -0.00707856997315 | 0.00006103515625 |
+| [5.2, 5.3] | 10 | 5.23603515625 | -0.00515962563064 | 0.00009765625 |
+
+Los dos últimos intervalos finales se solapan y aproximan la raíz cercana a
+`5.23607`; sus residuos no necesitan ser menores que `0.0001` para cumplir la
+cota de longitud en `x`.
+
+La secuencia de puntos medios del ejemplo de trece iteraciones es:
+`0.825, 0.6875, 0.75625, 0.790625, 0.7734375, 0.76484375, 0.760546875,
+0.7626953125, 0.76376953125, 0.764306640625, 0.7640380859375,
+0.76390380859375, 0.763970947265625`.
+
+La diapositiva 6 muestra errores como fracciones aunque la fórmula de la 3
+incluye el factor 100. Aquí la segunda iteración muestra **20 %**, no `0.2 %`.
+Su última fila repite valores anteriores de la función; se recalculan todos.
+La página 1 del PDF usa otro criterio (error relativo menor al 1 %) y da
+evaluaciones incompatibles con el polinomio: por ejemplo, `f(0.55)` es
+`3.36088125`, no `3.1098`. No se copian sus aproximaciones.
+
+## Seguridad y límites
+
+`backend/funciones_reales.py` interpreta un AST con una lista cerrada de nodos y
+funciones; no usa `eval`, `exec`, importaciones dinámicas ni generación de código.
+Limita longitud, nodos y profundidad, y detecta desbordamientos, subdesbordamientos
+a cero y resultados no finitos. La bisección está en `backend/biseccion.py` y no
+utiliza un solver externo. No se añadieron dependencias Python.
+
+La envolvente de intervalos comprueba que las operaciones admitidas conservan
+dominio real y continuidad. Es conservadora: puede rechazar expresiones válidas
+si sus cotas incluyen un denominador cero o un argumento fuera del dominio;
+conviene reducir el intervalo o reescribir la expresión. No es álgebra simbólica
+ni aritmética exacta. El cero calculado se identifica como cero en aritmética
+de máquina. No se interpreta un cambio de signo aislado como prueba suficiente
+de una raíz en expresiones como `1/x` o `tan(x)` alrededor de sus asíntotas.
+
+La curva utiliza hasta 801 muestras y corta los segmentos cuyo dominio no puede
+comprobarse. Puede omitir oscilaciones rápidas y raíces tangenciales; no garantiza
+encontrar todas las raíces. No se incluye sugerencia automática de intervalos.
+Sin JavaScript funcionan el formulario, el resultado, la verificación y la tabla.
+
+## Plotly y empaquetado
+
+Se versionan el bundle **basic** de Plotly.js **4.1.2**, su traducción española y
+la licencia MIT sin modificar, en `static/calculadora/vendor/`. Procedencia:
+[distribuciones oficiales](https://github.com/plotly/plotly.js/blob/v4.1.2/dist/README.md),
+[licencia](https://github.com/plotly/plotly.js/blob/v4.1.2/LICENSE) y
+[API de actualización](https://plotly.com/javascript/plotlyjs-function-reference/).
+Las plantillas cargan archivos locales y no consultan CDNs durante el uso.
+`tests/test_biseccion_assets.py` fija sus SHA-256 y comprueba el `.spec`.
+PyInstaller incluye el árbol estático completo y las importaciones del módulo.
+No se cambia la versión ni se prepara una release.

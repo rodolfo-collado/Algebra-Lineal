@@ -5,6 +5,11 @@
 Las herramientas visuales se usan desde Django o desde la aplicación Windows.
 La terminal conserva su menú de matrices y sistemas; no incluye todos los módulos visuales.
 
+**Método de bisección** permite buscar una raíz de una función real y recorrer
+sus iteraciones en una gráfica interactiva offline. Véase [Bisección](biseccion.md).
+**Conjuntos** está temporalmente marcado **Próximamente** y bloqueado por URL;
+su código y sus avances se conservan.
+
 ## Terminal
 
 Permite generar matrices aleatorias, crearlas manualmente, modificar o consultar

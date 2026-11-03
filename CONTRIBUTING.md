@@ -99,41 +99,19 @@ para la política de versiones y reintentos.
 misma rama `feature/*` y espera una ejecución verde. No desactives un check para
 poder mergear.
 
-## Restricciones matemáticas
+## Bibliotecas matemáticas y algoritmos educativos
 
-Este es un proyecto educativo: **los algoritmos de álgebra lineal deben
-implementarse manualmente**.
+La antigua prohibición de NumPy, SciPy y SymPy ya no aplica. Pueden utilizarse
+bibliotecas matemáticas cuando ayuden a la tarea; declara sus dependencias con uv.
+La bisección sí se implementa manualmente: ninguna biblioteca sustituye su ciclo
+de punto medio, evaluación y selección del subintervalo. Los algoritmos existentes
+conservan sus implementaciones y sus verificaciones matemáticas.
 
-Está prohibido utilizar:
-
-- NumPy;
-- SciPy;
-- SymPy para resolver operaciones de álgebra lineal;
-- funciones de librerías externas que calculen directamente Gauss, Gauss-Jordan,
-  rango, determinantes, sistemas de ecuaciones u operaciones equivalentes;
-- cualquier librería que sustituya el desarrollo manual del algoritmo.
-
-La implementación debe construirse con herramientas estándar de Python: listas,
-listas anidadas, `if` / `else`, `for`, `while`, funciones, operaciones aritméticas
-y estructuras propias del lenguaje.
-
-`fractions.Fraction` sí está permitido: pertenece a la biblioteca estándar y
-únicamente representa números racionales con exactitud, no resuelve ningún
-algoritmo por sí mismo.
-
-`colorama` también está permitido, pero únicamente para dar color a la terminal:
-no participa en ningún cálculo ni sustituye ningún algoritmo.
-
-No agregues NumPy, SciPy, SymPy ni equivalentes a las dependencias del proyecto.
-
-`tests/test_restricciones_proyecto.py` comprueba esta regla automáticamente, tanto
-en local como en el CI: analiza con `ast` los imports de `backend/`, `frontend/`,
-`tests/` y `main.py`, y lee las dependencias declaradas en `pyproject.toml` con
-`tomllib`. Si aparece una librería prohibida, la prueba falla indicando cuál es.
-
-La prohibición se limita a librerías que sustituyan el trabajo matemático manual.
-Las dependencias de interfaz o infraestructura, como `colorama`, siguen siendo
-perfectamente válidas.
+`fractions.Fraction` representa racionales exactos. Los métodos numéricos trabajan
+con aproximaciones de máquina y deben distinguir tolerancia, error y residuo.
+La interpretación de entradas no debe ejecutar código arbitrario (`eval`/`exec`).
+`tests/test_restricciones_proyecto.py` conserva comprobaciones de seguridad y
+separación entre backend y presentación, sin prohibir paquetes por su nombre.
 
 ## Matrices y sistemas de ecuaciones
 
@@ -209,8 +187,7 @@ frontend. Reglas:
 - recibe texto y devuelve una matriz, o lanza `ValueError` con un mensaje
   entendible;
 - el frontend atrapa ese `ValueError` y lo muestra con las utilidades de consola;
-- la interpretación se hace con `re`, nunca con `eval`, `exec` ni librerías
-  algebraicas externas;
+- la interpretación mantiene su parser seguro, sin `eval` ni `exec`;
 - el parser solo lee la sintaxis de cada lado del `=`; agrupar términos y pasar
   la igualdad a la forma estándar lo hacen `expresion_desde_terminos` y
   `normalizar_igualdad` de `backend/expresiones.py`, que otro parser de
