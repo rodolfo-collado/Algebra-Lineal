@@ -76,9 +76,9 @@
             <div id="iteracion-lectura" role="status" aria-live="polite" aria-atomic="true">
                 <p id="paso-titulo"></p><p id="paso-decision"></p><p id="paso-intervalo"></p>
             </div>
-            <details id="paso-detalles"><summary>Valores y signos de la iteración</summary>
+            {% disclosure titulo="Valores y signos de la iteración" id="paso-detalles" nivel=4 %}
                 <p id="paso-valores" class="field-help"></p><p id="paso-signos" class="field-help"></p>
-            </details>
+            {% enddisclosure %}
         </div>
         {% endif %}
         </div>
