@@ -18,10 +18,12 @@ dominio/continuidad, no finitos, límites y bloqueo público de Conjuntos.
 Para interacción real ejecuta `uv run --locked python -m tests.biseccion_browser`
 y abre `http://127.0.0.1:8896/__pruebas/`: comprueba cursor, foco, deslizador,
 ausencia de peticiones al recorrer pasos, zoom, extremos editables y comparación.
-Los diez flujos incluyen campos inicialmente vacíos sin muestras inventadas,
+Los once flujos incluyen campos inicialmente vacíos sin muestras inventadas,
 vista previa al completar la entrada, teclado contextual y cursor, signos y mitad
 conservada en el recorrido, comparación de uno, varios y fallidos cálculos,
 cifras distinguibles con precisión pequeña y respuestas de vista previa obsoletas.
+El modo superíndice se prueba con dígitos físicos/táctiles, signo inicial, selección,
+Deshacer y cambio de foco; sen()/sin() y √()/sqrt() comparten cálculos y muestras.
 Las pruebas web cubren la verificación de raíz calculada, longitud, límite de
 iteraciones y estancamiento; el perfil del teclado se prueba con los demás perfiles.
 Verifica además flechas y arrastre físico del control, pantalla táctil, temas y

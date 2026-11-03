@@ -85,7 +85,7 @@ La ruta web llega a `resolver_biseccion()` en
 valida los campos y construye `FuncionReal`. Esta clase, en
 [funciones_reales.py](../backend/funciones_reales.py), convierte la expresión en
 un árbol de operaciones permitido. `explicitar_productos()` transforma `5x` en
-un producto antes de analizarlo; `sin(x)` conserva su significado. No usamos
+un producto antes de analizarlo; `sen(x)` se interpreta igual que `sin(x)`. No usamos
 `eval` ni ejecutamos código escrito por el usuario.
 
 La vista llama a `biseccion()`, que devuelve resultado, estado e iteraciones.
@@ -121,7 +121,7 @@ sin Internet. La curva muestreada ayuda a explorar; no demuestra todas las raíc
 ## 6. Mi demostración y preguntas posibles
 
 1. Empezar con los campos vacíos. Escribir la función y el intervalo del ejemplo;
-   al enfocar f(x), mostrar el teclado contextual (x² inserta x² y aⁿ pide un entero).
+   al enfocar f(x), mostrar el teclado contextual (x² inserta x² y aⁿ activa el modo superíndice para escribir el exponente).
    Resolver y señalar las 13 iteraciones.
 2. Abrir el procedimiento y recorrer los tres primeros pasos; mover el deslizador.
 3. Arrastrar un extremo y explicar el aviso de resultado anterior.
@@ -135,7 +135,7 @@ existencia; un intervalo puede contener varias. La comparación tampoco prueba u
 
 **¿Qué pasa con `1/2x`?** Se lee `(1/2)*x`, con las mismas prioridades que la
 multiplicación explícita. Para otro denominador escribo `1/(2x)`. No adivinamos
-nombres como `sinx`; escribimos `sin(x)`. `1e-3` es un número científico y `2*e`
+nombres como `senx`; escribimos `sen(x)`. `1e-3` es un número científico y `2*e`
 es multiplicación por la constante.
 
 **¿Una biblioteca encuentra la raíz?** No: el ciclo es manual. Plotly dibuja;

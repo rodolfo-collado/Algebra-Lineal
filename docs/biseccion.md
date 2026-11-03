@@ -13,15 +13,20 @@ bisección**. Función y extremos empiezan vacíos; los ajustes conservan sus va
 predeterminados. Al enfocar la función aparece el teclado contextual de PyGebra:
 x, x², x³, exponente general, paréntesis, operaciones, seno, coseno, raíz y logaritmo.
 Las teclas x² y x³ conservan esos superíndices en el campo, igual que Aᵀ conserva
-la traspuesta en matrices. La tecla aⁿ pide un entero (por ejemplo, 12 o -3) e
-inserta ¹² o ⁻³ en la posición del cursor; puedes aplicarlo después de x o de un
-paréntesis cerrado. Cancelar no modifica la entrada. Los dígitos elevados son
-caracteres normales del campo: se pueden seleccionar, borrar y deshacer.
-Se admiten x², x³, (x+1)² y potencias enteras de varias cifras. La normalización
-del parser produce las mismas operaciones que ^ o **, sin ejecutar código.
-No se añade un editor enriquecido ni un modo que convierta automáticamente lo
-escrito: para exponentes fraccionarios o expresiones usa ^ o ** con paréntesis.
-Escribe sin(x)² para elevar el resultado del seno; sin²(x) no se admite.
+la traspuesta en matrices. La tecla aⁿ activa o desactiva el modo superíndice,
+con estado visual seleccionado y `aria-pressed`. La ayuda existente anuncia el
+modo activo. Escribe x, activa aⁿ, escribe 12 (con teclado físico o las teclas de
+dígitos), desactívalo y continúa con +3: queda x¹²+3. No se abre ningún diálogo.
+Un signo al inicio del exponente permite x⁻³; tras sus dígitos, un signo se trata
+como operación normal y desactiva el modo. Otras operaciones también lo desactivan.
+Mover el cursor o seleccionar texto permite editar un exponente; borrar y Deshacer
+usan la edición nativa. Al salir del campo o pulsar Escape se desactiva el modo.
+Pegar texto o usar composición conserva la entrada original y sale del modo.
+Para exponentes fraccionarios o expresiones utiliza ^ o ** con paréntesis.
+La tecla √ inserta √() con el cursor dentro; sqrt() sigue siendo compatible.
+La tecla sen inserta sen(); sin() es un alias del mismo seno en radianes.
+Los alias producen el mismo árbol, resultado, gráfica y clave de comparación.
+Escribe sen(x)² para elevar el resultado del seno; sen²(x) no se admite.
 También puedes
 escribir con el teclado físico. La gráfica se actualiza al
 editar estos campos; desplazarla o cambiar el zoom solicita nuevas muestras al
@@ -35,13 +40,13 @@ arrastrar; los campos numéricos ofrecen la alternativa con teclado.
 debe ser positiva y nunca mayor que `0.0001`, también en envíos HTTP manipulados.
 
 Se admiten `+`, `-`, `*`, `/`, `^` o `**`, paréntesis, la variable `x`, constantes
-`pi` y `e`, y funciones de un argumento: `sin`, `cos`, `tan`, `exp`, `log`/`ln`
-(logaritmo natural), `log10`, `sqrt` y `abs`. Los ángulos se expresan en radianes.
+`pi` y `e`, y funciones de un argumento: `sen` (alias `sin`), `cos`, `tan`, `exp`, `log`/`ln`
+(logaritmo natural), `log10`, `√()` (alias `sqrt()`) y `abs`. Los ángulos se expresan en radianes.
 La multiplicación puede ser explícita o implícita: `5*x^3` y `5x^3`, `2*(x+1)`
 y `2(x+1)`, `x*(x+1)` y `x(x+1)`, o `(x+1)*(x-1)` y `(x+1)(x-1)`.
-También se admiten `2sin(x)`, `sin(x)cos(x)` y `pi x`. Se insertan productos
+También se admiten `2sen(x)`, `sen(x)cos(x)` y `pi x`. Se insertan productos
 entre factores reconocidos antes de validar el AST; no se separan nombres:
-`xx`, `xpi` y `sinx` son inválidos. `sin(x)` y `log(x)` siguen siendo llamadas.
+`xx`, `xpi` y `senx` son inválidos. `sen(x)` y `log(x)` siguen siendo llamadas.
 Los números científicos completos (`1e-3`, `2E+2`) se conservan; `2e` se rechaza
 por ambiguo: escribe `2*e` para la constante. Productos y divisiones tienen igual
 prioridad y se agrupan de izquierda a derecha: `1/2x` es `(1/2)*x`; para dividir
