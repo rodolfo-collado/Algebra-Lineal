@@ -61,6 +61,33 @@ elección y confirmación, el presupuesto y la seguridad numérica.
 Esta preparación no publica la versión: la entrega seguirá el flujo
 automático tras la revisión y los merges correspondientes.
 
+El incremento preparado de 0.12.1 a **0.13.0 es MINOR**: incorpora Métodos
+numéricos con Bisección, una capacidad nueva compatible. Publica el estado
+integrado en `develop` tras el PR #107, sin cambiar los algoritmos verificados.
+Conjuntos queda temporalmente como «Próximamente»: su implementación y pruebas
+se conservan, pero el acceso público permanece deshabilitado.
+
+### Notas preparadas de PyGebra v0.13.0
+
+- **Bisección:** aproxima raíces reales con procedimiento paso a paso,
+  comprobaciones de dominio y explicaciones de precisión y parada.
+- **Gráfica interactiva offline:** explora la función, cambia el zoom y ajusta
+  los extremos sin Internet; los recursos se distribuyen con la aplicación.
+- **Exploración de iteraciones:** recorre filas y deslizador sin recalcular;
+  identifica los signos y la mitad conservada, y compara distintos intervalos.
+- **Escritura matemática:** teclado contextual, multiplicación explícita o
+  implícita, potencias con `^`, `**` o superíndices, `sen()`/`sin()`, `√()`/`sqrt()`,
+  π y e. Los decimales visibles y la precisión completa cambian la lectura,
+  conservando los valores y las iteraciones calculados.
+- **Conjuntos:** permanece temporalmente «Próximamente», con su implementación
+  conservada para una entrega posterior.
+
+Estas notas describen un candidato, no una release publicada. Tras integrar la
+preparación en `develop`, se abrirá un PR separado `develop → main` y se usará
+**Create a merge commit**, conservando ambas historias. El workflow Release
+creará el tag y la release únicamente después del merge a `main` y de superar
+sus verificaciones.
+
 ## Flujo de integración y entrega
 
 ```mermaid
