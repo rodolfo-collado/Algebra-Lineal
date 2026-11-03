@@ -1,0 +1,53 @@
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:#202a29;font:16px/1.65 'Segoe UI',sans-serif}
+a{color:inherit;touch-action:manipulation}
+a:hover{text-decoration-thickness:2px}
+a:focus-visible{outline:3px solid #1a6560;outline-offset:5px}
+.skip{position:absolute;top:-80px;padding:1rem;background:#fff}
+.skip:focus{top:0}
+header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 4vw;border-bottom:1px solid #d7e0de;font-size:.8rem}
+.brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;font-size:1.3rem;font-weight:700}
+main{max-width:1440px;margin:auto;padding:3rem 4vw}
+.intro{display:grid;grid-template-columns:1.4fr 1fr;gap:3rem;align-items:center;margin-bottom:3rem}
+h1{font-size:clamp(2.8rem,4.6vw,5rem);line-height:1.1;letter-spacing:-.05em;margin:0;text-wrap:balance}
+.intro p{max-width:47ch;color:#586461}
+.concepts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2rem}
+.preview{display:flex;height:245px;text-decoration:none;position:relative;overflow:hidden}
+.preview:hover{outline:2px solid #1a6560;outline-offset:4px}
+.patio-preview{background:#edf5f0;padding:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;border-radius:24px}
+.p-piece{display:grid;place-items:center;border-radius:22px;font:2rem Cambria,serif;background:#daf0dd;color:#193d39;border:1px solid #b6d0c0;box-shadow:0 5px 0 #ceded4}
+.p-piece:nth-child(2){background:#e6dcf7}
+.p-piece:nth-child(3){background:#ffe8c8}
+.p-piece:last-child{background:#fff}
+.trama-preview{background:repeating-linear-gradient(#f9f7fd 0px,#f9f7fd 35px,#e2dbea 35px,#e2dbea 36px);border-left:5px solid #62408c;display:block;padding:1.5rem 2rem;color:#493160}
+.trama-preview>span{display:block;font:3rem Cambria,serif}
+.trama-preview i{display:block;font:2.4rem/1.05 'Palatino Linotype',Palatino,serif;margin-top:1rem}
+.prisma-preview{background:#142f3c;color:#99dfd1;border-radius:8px;align-items:center;justify-content:center}
+.prisma-preview svg{width:90%;height:100%}
+.prisma-preview>span{position:absolute;top:45%;left:38%;font:1.7rem Cambria,serif;background:#142f3c;padding:.2rem .5rem}
+h2{font-size:1.9rem;letter-spacing:-.03em;margin:1rem 0 .4rem}
+.concepts p{font-size:.95rem;color:#586461;min-height:100px;margin:.5rem 0}
+.tags{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.7rem;margin:1rem 0 1.4rem}
+.tags span{padding:.15rem .45rem;border:1px solid #cad6d2;border-radius:4px}
+.concepts nav{display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;font-weight:650}
+.guide{border-block:1px solid #d7e0de;margin-top:3.5rem;padding:1.5rem 0;display:grid;grid-template-columns:1fr 2fr;gap:1rem 3rem}
+.guide h2{font-size:1.5rem;margin:0}
+.guide ol{margin:0;padding-left:1.2rem}
+.guide p{grid-column:2;font-size:.85rem;color:#586461;max-width:76ch}
+.recommendation{max-width:75ch;padding-top:1rem}
+.recommendation h2{font-size:1.5rem}
+.recommendation p{font-size:.95rem}
+.recommendation>a{font-weight:650;font-size:.9rem}
+footer{font-size:.8rem;color:#586461;border-top:1px solid #d7e0de;padding:1rem 4vw}
+@media(max-width:850px){.intro{grid-template-columns:1fr;gap:1rem}
+.concepts{grid-template-columns:1fr;gap:2.5rem}
+.concepts p{min-height:0;max-width:65ch}
+.preview{max-width:500px}
+.guide{grid-template-columns:1fr}
+.guide p{grid-column:1}
+header>span{display:none}
+.guide ol{font-size:.9rem}
+}
+@media(forced-colors:active){.preview,.p-piece,.tags span{border:1px solid CanvasText}
+.prisma-preview{color:CanvasText}
+}
