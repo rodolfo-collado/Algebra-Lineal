@@ -14,6 +14,33 @@
         q(frame.contentWindow, selector).click();
     });
     const casos = [
+        ["P3 y P4: potencia, pares y recta interactiva exacta", async (w, frame) => {
+            valor(w,'expresion','|potencia(A)|'); w = await post(frame);
+            ok(q(w,'[data-respuesta-relacion]')?.textContent === '4','Potencia: '+[...w.document.querySelectorAll('.field-error')].map(e=>e.textContent).join(';'));
+            valor(w,'expresion','intervalo(0, 2, cerrado, cerrado) ∖ intervalo(1, 1, cerrado, cerrado)');
+            valor(w,'punto','1'); w = await post(frame);
+            ok(q(w,'[data-consulta-punto]')?.textContent.includes('no pertenece'),'Consulta exacta: '+[...w.document.querySelectorAll('.field-error')].map(e=>e.textContent).join(';'));
+            const grafica = q(w,'[data-recta] svg');
+            ok(grafica && w.document.querySelectorAll('[data-tramo]').length === 2,'Dos tramos');
+            const acercar = [...w.document.querySelectorAll('[data-recta] button')].find(b=>b.textContent === 'Acercar');
+            acercar.click(); ok(grafica.getAttribute('viewBox') !== '0 0 100 32','Zoom');
+        }],
+        ["P5: regiones de Venn y selección desde el motor", async (w, frame) => {
+            valor(w,'expresion','A ∖ B'); valor(w,'venn_nombres','A, B'); w = await post(frame);
+            ok(w.document.querySelectorAll('[data-region]').length === 4,'Cuatro regiones');
+            const datos = JSON.parse(q(w,'#conjuntos-resultado-datos').textContent);
+            ok(datos.venn.regiones[1].seleccionada,'Solo A resaltada');
+            q(w,'[data-venn] button').click();
+            ok(q(w,'[data-venn] [aria-live]').textContent.length > 0,'Detalle accesible');
+        }],
+        ["P6: cardinalidades editables y validación de coherencia", async (w, frame) => {
+            await new Promise(resolve=>{frame.onload=resolve;frame.src='/conjuntos/cardinalidad/';}); w=frame.contentWindow;
+            valor(w,'region_1','5'); valor(w,'region_2','3'); valor(w,'region_3','2');
+            w=await post(frame); ok(q(w,'[data-cardinalidad]').textContent === '10','Suma exclusiva');
+            valor(w,'region_1','7'); ok(q(w,'#resultado').dataset.resultado === 'desactualizado','Cambio invalida el resultado P6');
+            w=await post(frame); ok(q(w,'[data-cardinalidad]').textContent === '12','Recalcula');
+            valor(w,'universo','1'); w=await post(frame); ok(!q(w,'[data-cardinalidad]'),'Rechaza universo menor');
+        }],
         ["P2 calcula operaciones, cardinalidad y relaciones con datos estructurados", async (w, frame) => {
             for (const [expresion, esperado, tipo] of [
                 ["A ∪ B", "{1, 2, {1, 2}}", "conjunto"],

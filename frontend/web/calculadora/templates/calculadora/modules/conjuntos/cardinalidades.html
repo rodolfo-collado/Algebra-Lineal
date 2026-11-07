@@ -1,0 +1,41 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static componentes %}
+{% block tool_input %}
+<section class="panel workspace">
+    <h2>Cardinalidades e inclusión-exclusión</h2>
+    <p><a href="{% url 'calculadora:relaciones-conjuntos' %}">Operaciones, intervalos y Venn con elementos</a></p>
+    <form method="post" action="#resultado" data-entrada-calculo novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        {% csrf_token %}{{ form.non_field_errors }}
+        <div class="field-group">{{ form.numero.label_tag }}{{ form.numero }}{{ form.numero.errors }}</div>
+        <button type="submit" name="accion" value="ajustar" class="btn btn-secondary" data-ajuste-cardinalidades>Aplicar número y tipo de datos</button>
+        <div class="field-group">{{ form.modo.label_tag }}{{ form.modo }}{{ form.modo.errors }}</div>
+        <p>En modo regiones, introduce cantidades exclusivas: A ∩ Bᶜ significa «solo A». En modo intersecciones, introduce las cardinalidades inclusivas indicadas al lado de cada campo: A, B, A ∩ B, etc. Debes indicar también los ceros.</p>
+        {% for campo in form.regiones %}<div class="field-group">{{ campo.label_tag }}{{ campo }}{{ campo.errors }}</div>{% endfor %}
+        <div class="field-group">{{ form.universo.label_tag }}{{ form.universo }}{{ form.universo.errors }}</div>
+        <div class="field-group" data-perfil="relacion-conjuntos">{{ form.expresion.label_tag }}{{ form.expresion }}{{ form.expresion.errors }}</div>
+        {% include "calculadora/components/math_keyboard.html" %}
+        <p>Usa A ∪ B, A ∩ B, A ∖ B o ∁(A, U), también combinados con paréntesis. El complemento requiere la cardinalidad del universo.</p>
+        <button type="submit" name="accion" value="calcular" class="btn btn-primary" data-calculo>Calcular cardinalidad</button>
+    </form>
+</section>
+{% endblock %}
+{% block tool_result %}
+{% if resultado %}
+<section id="resultado" class="results" data-resultado="vigente" tabindex="-1">
+    <header class="results-heading"><h2>Resultado: <span data-cardinalidad>{{ resultado.resultado }}</span></h2></header>
+    <p>Cardinalidad de la unión: {{ resultado.union }}</p>
+    <div data-venn></div>
+    <table><caption>Regiones exclusivas y suma solicitada (A, B, C en ese orden)</caption><thead><tr><th>Pertenencia</th><th>Cardinalidad</th><th>Seleccionada</th></tr></thead><tbody>
+    {% for r in resultado.filas %}<tr><th>{{ r.pertenece }}</th><td>{{ r.cantidad|default_if_none:"Desconocida" }}</td><td>{{ r.seleccionada|yesno:"Sí,No" }}</td></tr>{% endfor %}
+    </tbody></table>
+    <details id="procedimiento"><summary>Ver procedimiento</summary>
+    {% for p in resultado.pasos %}
+        {% if p.regla == 'region_exclusiva' %}<p>Región {{ p.mascara }}: {{ p.inicial }}{% for m in p.restar %} − región {{ m }}{% endfor %} = {{ p.resultado }}. Restamos las regiones superiores ya calculadas para evitar contarlas de nuevo.</p>
+        {% elif p.regla == 'inclusion_exclusion' %}<p>Inclusión-exclusión: {% for t in p.terminos %}{% if t.signo == 1 %}+{% else %}−{% endif %} {{ t.valor }}{% endfor %} = {{ p.resultado }}. Sumamos conjuntos, restamos intersecciones dobles y sumamos la triple.</p>
+        {% else %}<p>Sumamos una sola vez las regiones seleccionadas {{ p.regiones }}: {{ p.resultado }}.</p>{% endif %}
+    {% endfor %}</details>
+</section>
+{{ resultado.datos|json_script:"conjuntos-resultado-datos" }}
+{% endif %}
+{% endblock %}
+{% block extra_js %}<script src="{% static 'calculadora/conjuntos_visual.js' %}" defer></script><script src="{% static 'calculadora/teclado.js' %}" defer></script>{% endblock %}

@@ -57,7 +57,7 @@ def _operando(lector, profundidad=0):
         universo = _expresion(lector, profundidad + 1)
         lector.exigir(")")
         return Operacion(operador, (valor, universo))
-    if lector.actual().tipo == "nombre":
+    if lector.actual().tipo == "nombre" and lector.actual().texto != 'intervalo':
         lector.presupuesto.elemento(profundidad)
         return Referencia(validar_nombre(lector.tomar().texto))
     return lector.literal(profundidad)
@@ -112,8 +112,22 @@ def analizar_relacion(texto, *, presupuesto=None):
 def renombrar_referencias(texto, cambios):
     """Renombrado simultáneo por tokens; no toca texto entre comillas ni partes de nombres."""
     lector = Lector(texto)
-    reemplazos = [(token, cambios[token.texto]) for token in lector.tokens
-                  if token.tipo == "nombre" and token.texto in cambios]
+    reemplazos = []
+    literal_intervalo = False
+    profundidad = 0
+    for token in lector.tokens:
+        if token.texto == 'intervalo':
+            literal_intervalo = True
+        if literal_intervalo:
+            if token.texto == '(':
+                profundidad += 1
+            elif token.texto == ')':
+                profundidad -= 1
+                if profundidad == 0:
+                    literal_intervalo = False
+            continue
+        if token.tipo == 'nombre' and token.texto in cambios:
+            reemplazos.append((token,cambios[token.texto]))
     # Comprobar el tamaño final antes de expandir nombres repetidos.
     lector.presupuesto.longitud(sum(len(nombre) - len(token.texto) for token, nombre in reemplazos))
     partes = []

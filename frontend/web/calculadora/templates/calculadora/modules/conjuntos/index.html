@@ -4,6 +4,7 @@
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title">
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
+    <p><a href="{% url 'calculadora:cardinalidades-conjuntos' %}">Cardinalidades e inclusión-exclusión</a></p>
     <form id="conjuntos-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         {{ form.cantidad }}
@@ -58,7 +59,12 @@
                 {{ form.expresion }}{{ form.expresion.errors }}
                 <p class="field-help">Operaciones: <code>A ∪ B</code>, <code>A ∩ B</code>, <code>A ∖ B</code>, complemento <code>∁(A, U)</code> con A incluido en el universo explícito U y cardinalidad <code>|A|</code>. Primero se resuelve <code>∩</code>; después <code>∪ ∖</code>, de izquierda a derecha. Usa paréntesis para agrupar.</p>
                 <p class="field-help">Puedes comparar resultados con <code>∈ ∉ ⊆ ⊂ = ≠</code>: <code>|A ∩ B| = 2</code>. La pertenencia compara elementos completos; <code>⊂</code> exige inclusión y conjuntos distintos.</p>
+                <p class="field-help">Potencia: <code>potencia(A)</code>. Producto: <code>A × B</code> (prioridad mayor que ∩). Par ordenado: <code>par(1, 2)</code>. Intervalo: <code>intervalo(-inf, 2, abierto, cerrado)</code>; usa abierto/cerrado para ambos extremos. Los infinitos siempre son abiertos.</p>
             </div>
+            {% disclosure titulo="Recta real y diagramas de Venn" id="opciones-conjuntos" %}
+                <p>Para una recta, escribe un punto exacto si quieres comprobar su pertenencia. Para Venn, indica dos o tres conjuntos finitos definidos y calcula una expresión de unión, intersección, diferencia o complemento entre ellos.</p>
+                {% for campo in campos_visualizacion %}<div class="field-group">{{ campo.label_tag }}{{ campo }}{{ campo.errors }}</div>{% endfor %}
+            {% enddisclosure %}
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
         <div class="workspace-actions"><button class="btn btn-primary" type="submit" name="accion" value="calcular" data-calculo>Calcular expresión</button></div>
@@ -78,6 +84,21 @@
         <p class="expansion-line conjuntos-expresion">{{ resultado.expresion }}</p>
         <p class="classification-value" data-respuesta-relacion>{{ resultado.respuesta }}</p>
     </section>
+    {% if resultado.datos.recta %}
+    <section class="panel" aria-label="Recta real">
+        <h3>Recta real</h3>
+        <div data-recta></div>
+        <p>Extremos abiertos: círculos huecos; cerrados: círculos llenos. Las flechas indican continuación infinita. El dibujo es orientativo; las etiquetas y la consulta usan valores exactos.</p>
+        {% if resultado.datos.recta.punto != None %}<p data-consulta-punto>{{ resultado.datos.recta.punto }}: {% if resultado.datos.recta.pertenece %}pertenece{% else %}no pertenece{% endif %} al resultado.</p>{% endif %}
+    </section>
+    {% endif %}
+    {% if resultado.regiones %}
+    <section class="panel" aria-label="Diagrama de Venn"><h3>Diagrama de Venn</h3><div data-venn></div>
+        <table><caption>Regiones disjuntas; pertenencia según el orden de nombres indicado</caption><thead><tr><th>Región</th><th>Elementos</th><th>Seleccionada</th></tr></thead><tbody>
+        {% for region in resultado.regiones %}<tr><th>{{ region.pertenece }}</th><td>{% for e in region.etiquetas %}{{ e }}{% if not forloop.last %}, {% endif %}{% empty %}Vacía{% endfor %}</td><td>{{ region.seleccionada|yesno:"Sí,No" }}</td></tr>{% endfor %}
+        </tbody></table>
+    </section>
+    {% endif %}
 </section>
 {{ resultado.datos|json_script:"conjuntos-resultado-datos" }}
 {% endif %}
@@ -86,4 +107,5 @@
 {% block extra_js %}
 <script src="{% static 'calculadora/conjuntos.js' %}" defer></script>
 <script src="{% static 'calculadora/teclado.js' %}" defer></script>
+<script src="{% static 'calculadora/conjuntos_visual.js' %}" defer></script>
 {% endblock %}

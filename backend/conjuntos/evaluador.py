@@ -6,6 +6,7 @@ from fractions import Fraction
 from backend.presupuesto_computacional import Estimacion
 from .modelo import Conjunto, presentar, peso
 from .generacion import generar
+from .intervalos import Recta, operar_rectas, contiene
 from .parser import Operacion, Referencia, Relacion
 from .presupuesto import Presupuesto
 
@@ -60,6 +61,13 @@ def evaluar_expresion(expresion, entorno, *, presupuesto=None):
                 procedimiento.append(evidencia)
                 pasos.append(texto)
                 return valor
+            if any(isinstance(v, Recta) for v in operandos):
+                peso = sum(_peso(v) for v in operandos)
+                presupuesto.reservar(calculo=peso * peso, procedimiento=4 * peso + 1)
+                evidencia = _operar_intervalos(operando.operador, operandos)
+                procedimiento.append(evidencia)
+                pasos.append(evidencia.explicacion)
+                return evidencia.resultado
             if any(not isinstance(valor, Conjunto) for valor in operandos):
                 raise ValueError("Las operaciones ∪, ∩, ∖, ∁ y |…| requieren conjuntos finitos.")
             peso = sum(_peso(valor) for valor in operandos)
@@ -128,7 +136,46 @@ def _operar(operador, operandos):
                 incluido=True if operador == "∁" else None)
 
 
+def _como_recta(valor):
+    if isinstance(valor, Recta):
+        return valor
+    if isinstance(valor, Conjunto) and not valor.elementos:
+        return Recta()
+    raise ValueError('No se mezclan conjuntos finitos no vacíos e intervalos en esta operación.')
+
+
+def _operar_intervalos(operador, operandos):
+    a = _como_recta(operandos[0])
+    if operador == '|':
+        if any(i.inferior != i.superior for i in a.intervalos):
+            raise ValueError('Un intervalo no degenerado tiene infinitos elementos; no tiene cardinalidad finita.')
+        return Paso(operador, operandos, Fraction(len(a.intervalos)), 'cardinalidad', 'Cada tramo puntual cerrado aporta un elemento; el vacío aporta cero.')
+    b = _como_recta(operandos[1])
+    if operador == '∁':
+        if operar_rectas('∖', a, b).intervalos:
+            raise ValueError('El complemento exige inclusión en el universo explícito.')
+        valor = operar_rectas('∖', b, a)
+    else:
+        valor = operar_rectas(operador, a, b)
+    regla = {'∪': 'union_intervalos', '∩': 'interseccion_intervalos', '∖': 'diferencia_intervalos', '∁': 'complemento_intervalos'}[operador]
+    texto = 'Ordenamos y unimos tramos contiguos solo si el punto de contacto está incluido.' if operador == '∪' else 'Comparamos extremos exactos y conservamos la apertura o cierre de cada frontera; una resta puede separar el resultado en varios tramos.'
+    return Paso(operador, operandos, valor, regla, f'{texto} Resultado: {presentar(valor)}.', incluido=True if operador == '∁' else None)
+
+
 def _comparar(a, operador, b):
+    if isinstance(a, Recta) or isinstance(b, Recta):
+        if operador in ('∈', '∉') and isinstance(b, Recta):
+            pertenece = contiene(b, a)
+            valor = pertenece if operador == '∈' else not pertenece
+            texto = 'Comprobamos las dos desigualdades y si los extremos admiten igualdad.'
+            return valor, [texto], Paso(operador, (a, b), valor, 'pertenencia_intervalo', texto, pertenece=pertenece)
+        if operador in ('⊆', '⊂', '=', '≠'):
+            ra, rb = _como_recta(a), _como_recta(b)
+            iguales = ra == rb
+            incluido = not operar_rectas('∖', ra, rb).intervalos
+            valor = {'⊆': incluido, '⊂': incluido and not iguales, '=': iguales, '≠': not iguales}[operador]
+            texto = 'La inclusión exige que no quede ningún tramo al restar el conjunto derecho; la igualdad compara los tramos canónicos y sus cierres.'
+            return valor, [texto], Paso(operador, (a, b), valor, 'relacion_intervalos', texto, incluido=incluido, iguales=iguales)
     pasos = [f"Comparamos {presentar(a)} {operador} {presentar(b)}."]
     pertenece = incluido = iguales = falta = None
     if operador in ("∈", "∉"):

@@ -21,6 +21,9 @@ def campo_texto(etiqueta, *, multilinea=False, **attrs):
 
 
 class ConjuntosForm(FormularioConErrores):
+    punto = campo_texto('Consultar un punto en la recta', placeholder='1/2')
+    venn_nombres = campo_texto('Conjuntos para Venn (dos o tres nombres)', placeholder='A, B o A, B, C')
+    venn_universo = campo_texto('Universo de Venn (nombre opcional)', placeholder='U')
     cantidad = forms.IntegerField(min_value=0, max_value=OPERANDOS_MAXIMOS, widget=forms.HiddenInput)
     expresion = campo_texto("Expresión", multilinea=True, rows=2, placeholder="A ∈ B")
     definicion = campo_texto("Nueva definición", placeholder="S = {1, 2, {3, 4}, 5}")
@@ -114,3 +117,42 @@ def inicial_editor(filas=INICIALES, expresion="A ∈ B", **extra):
     for i, (nombre, contenido) in enumerate(filas):
         inicial.update({f"nombre_{i}": nombre, f"contenido_{i}": contenido, f"anterior_{i}": nombre})
     return inicial
+
+
+class CardinalidadesForm(FormularioConErrores):
+    numero = forms.ChoiceField(label='Número de conjuntos', choices=(('2','Dos: A y B'),('3','Tres: A, B y C')))
+    modo = forms.ChoiceField(label='Tipo de datos', choices=(('regiones','Regiones exclusivas'),('intersecciones','Conjuntos e intersecciones inclusivas')))
+    universo = forms.IntegerField(label='Cardinalidad del universo (opcional)', required=False, min_value=0, max_value=10**100-1)
+    expresion = campo_texto('Expresión a contar', placeholder='A ∪ B')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        numero = self.data.get('numero','2') if self.is_bound else self.initial.get('numero','2')
+        self.nombres = tuple('ABC'[:3 if numero == '3' else 2])
+        self.regiones = []
+        modo = self.data.get('modo','regiones') if self.is_bound else self.initial.get('modo','regiones')
+        for m in range(1,1 << len(self.nombres)):
+            etiqueta = ' ∩ '.join(n if m & (1 << i) else f'{n}ᶜ' for i,n in enumerate(self.nombres) if modo != 'intersecciones' or m & (1 << i))
+            self.fields[f'region_{m}'] = forms.IntegerField(label=etiqueta, min_value=0, max_value=10**100-1, required=False)
+            self.regiones.append(self[f'region_{m}'])
+        for campo in self.fields.values():
+            campo.widget.attrs['class'] = 'field-input'
+
+    def clean(self):
+        datos = super().clean()
+        permitidos = set(self.fields) | {'csrfmiddlewaretoken','accion'}
+        if self.data.get('accion') == 'ajustar':
+            permitidos.update(f'region_{m}' for m in range(1,8))
+        if set(self.data) - permitidos:
+            self.add_error(None, 'El envío contiene campos ajenos al formulario.')
+        if hasattr(self.data,'getlist') and any(len(self.data.getlist(n)) != 1 for n in self.data):
+            self.add_error(None,'Envía un único valor por campo; hay campos repetidos.')
+        accion = self.data.get('accion','calcular')
+        if accion not in ('calcular','ajustar'):
+            self.add_error(None,'Acción desconocida.')
+        if accion == 'calcular':
+            for m in range(1,1 << len(self.nombres)):
+                nombre = f'region_{m}'
+                if datos.get(nombre) is None and nombre not in self.errors:
+                    self.add_error(nombre,'Indica esta cardinalidad, incluso si es cero.')
+        return datos

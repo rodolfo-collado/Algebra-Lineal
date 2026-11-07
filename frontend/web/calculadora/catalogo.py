@@ -338,9 +338,9 @@ DETERMINANTES = Herramienta(
 
 RELACIONES_CONJUNTOS = Herramienta(
     id="relaciones-conjuntos", nombre="Relaciones entre conjuntos", categoria=CONJUNTOS_FINITOS,
-    descripcion="Define conjuntos finitos y comprueba pertenencia, inclusión e igualdad con su explicación.",
+    descripcion="Opera con conjuntos finitos e intervalos; explora relaciones, potencia, productos, Venn y cardinalidades.",
     estado="proximamente",
-    palabras_clave=("pertenencia", "no pertenencia", "inclusión", "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados"),
+    palabras_clave=("pertenencia", "no pertenencia", "inclusión", "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados", 'potencia','producto cartesiano','intervalos','Venn','cardinalidad','inclusión-exclusión'),
     invitacion="Define conjuntos y distingue pertenencia, inclusión e igualdad.",
     puntos=('Pertenencia, inclusión e igualdad', 'Una explicación para cada relación'),
 )

@@ -1,6 +1,7 @@
 """Generación manual; reserva el árbol expandido completo antes de enumerarlo."""
 
 from .modelo import Conjunto, Par, peso
+from .presupuesto import VOLUMEN_MAXIMO
 
 
 def generar(operador, operandos, presupuesto):
@@ -16,7 +17,7 @@ def generar(operador, operandos, presupuesto):
         # Cortar antes de construir potencias o colecciones de tamaño excesivo.
         for _ in a.elementos:
             cantidad *= 2
-            if cantidad > 45000:
+            if cantidad > VOLUMEN_MAXIMO:
                 raise ValueError('El conjunto potencia supera el presupuesto de generación.')
         volumen = 1 + cantidad + (cantidad // 2) * (peso(a) - 1)
         presupuesto.reservar(calculo=volumen, procedimiento=2 * volumen + peso(a))

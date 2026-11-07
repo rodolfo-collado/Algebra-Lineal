@@ -8,6 +8,7 @@ import re
 
 from backend.parser_sistemas import convertir_a_numero
 from .modelo import Conjunto, Par
+from .intervalos import Intervalo, Recta
 from .presupuesto import Presupuesto
 
 NOMBRE = r"[A-Za-z][A-Za-z0-9_]*"
@@ -18,6 +19,7 @@ RESERVADOS = frozenset(keyword.kwlist) | {
 _TOKEN = re.compile(
     rf'(?P<texto>"(?:[^"\\\x00-\x1f]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{{4}})*")'
     rf'|(?P<numero>[+-]?\s*(?:[0-9]+\.[0-9]+|\.[0-9]+|[0-9]+(?:\s*/\s*[0-9]+)?))'
+    rf'|(?P<infinito>[-+]inf\b|[-+]?∞)'
     rf'|(?P<nombre>{NOMBRE})|(?P<signo>[{{}},∅()∈∉⊆⊂=≠∪∩∖∁|×])'
 )
 
@@ -73,6 +75,33 @@ class Lector:
     def literal(self, profundidad=0):
         self.presupuesto.elemento(profundidad)
         token = self.tomar()
+        if token.texto == 'intervalo':
+            self.exigir('(')
+            extremos = []
+            for posicion in range(2):
+                actual = self.actual()
+                if actual.tipo == 'infinito' or actual.texto == 'inf':
+                    esperado = ('-inf', '-∞') if posicion == 0 else ('inf', '+inf', '∞', '+∞')
+                    if self.tomar().texto not in esperado:
+                        raise ValueError('Usa -inf a la izquierda e inf a la derecha.')
+                    self.presupuesto.elemento(profundidad + 1)
+                    extremos.append(None)
+                else:
+                    extremo = self.literal(profundidad + 1)
+                    if not isinstance(extremo, Fraction):
+                        raise ValueError('Los extremos de un intervalo deben ser números.')
+                    extremos.append(extremo)
+                self.exigir(',')
+            cierres = []
+            for posicion in range(2):
+                cierre = self.tomar().texto
+                if cierre not in ('abierto', 'cerrado'):
+                    raise ValueError('Indica abierto o cerrado para cada extremo.')
+                cierres.append(cierre == 'cerrado')
+                if posicion == 0:
+                    self.exigir(',')
+            self.exigir(')')
+            return Recta((Intervalo(*extremos, *cierres),))
         if token.texto == "par":
             self.exigir("(")
             primero = self.literal(profundidad + 1)
@@ -106,7 +135,7 @@ def analizar_literal(texto, *, presupuesto=None):
     lector = Lector(texto, presupuesto)
     valor = lector.literal()
     lector.fin()
-    if not isinstance(valor, Conjunto):
+    if not isinstance(valor, (Conjunto, Recta)):
         raise ValueError("La definición debe contener un conjunto: usa {…} o ∅.")
     return valor
 
@@ -117,6 +146,6 @@ def analizar_definicion(texto, *, presupuesto=None):
     lector.exigir("=")
     valor = lector.literal()
     lector.fin()
-    if not isinstance(valor, Conjunto):
+    if not isinstance(valor, (Conjunto, Recta)):
         raise ValueError("A la derecha de = debe haber un conjunto entre llaves o ∅.")
     return nombre, valor

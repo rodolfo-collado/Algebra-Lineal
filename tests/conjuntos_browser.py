@@ -11,7 +11,7 @@ def pruebas(environ, start_response):
     if ruta == "/__pruebas/":
         contenido = ('<!doctype html><html lang="es"><meta charset="utf-8">'
                      '<link rel="icon" href="/static/calculadora/favicon.svg">'
-                     '<title>PyGebra: Conjuntos P1 y P2</title><h1>Conjuntos P1 y P2</h1>'
+                     '<title>PyGebra: Conjuntos P1–P6</title><h1>Conjuntos P1–P6</h1>'
                      '<ol id="resultados"></ol><p id="total">Ejecutando…</p>'
                      '<script src="/__pruebas/pruebas.js"></script></html>').encode()
         tipo = "text/html"

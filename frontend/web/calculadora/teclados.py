@@ -121,6 +121,8 @@ PERFIL_FUNCION_REAL = Perfil("funcion-real", (
     grupo_digitos(10),
 ))
 LITERALES_CONJUNTOS = GrupoTeclas("Elementos", (
+    Tecla('par','par(, )','Par ordenado',3),
+    Tecla('intervalo','intervalo(0, 1, abierto, cerrado)','Intervalo con extremos y cierres explícitos'),
     Tecla("{ }", "{}", "Conjunto", 1), Tecla("∅", "∅", "Conjunto vacío"),
     Tecla(",", ", ", "Separar elementos"), Tecla('" "', '""', "Elemento textual", 1),
     MENOS, FRACCION,
@@ -132,6 +134,7 @@ RELACIONES_CONJUNTOS = GrupoTeclas("Relaciones", (
 ))
 PERFIL_LITERAL_CONJUNTOS = Perfil("literal-conjuntos", (LITERALES_CONJUNTOS, GrupoTeclas("Definición", (IGUAL,))))
 OPERACIONES_CONJUNTOS = GrupoTeclas("Operaciones finitas", (
+    Tecla('𝒫','potencia()','Conjunto potencia',1), Tecla('×','×','Producto cartesiano'),
     Tecla("∪", "∪", "Unión"), Tecla("∩", "∩", "Intersección"),
     Tecla("∖", "∖", "Diferencia"), Tecla("∁", "∁(, )", "Complemento: conjunto y universo", 3),
     Tecla("| |", "||", "Cardinalidad", 1),
