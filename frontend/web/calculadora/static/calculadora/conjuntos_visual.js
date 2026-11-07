@@ -48,7 +48,7 @@
         const tres = nombres.length === 3;
         const centros = tres ? [[42,35],[66,35],[54,56]] : [[42,43],[67,43]];
         const radio = tres ? 23 : 25;
-        const grafica = svg('svg',{viewBox:'0 0 110 90',width:'100%',role:'img','aria-label':`Diagrama de Venn de ${nombres.join(', ')}`,style:'max-height:460px'});
+        const grafica = svg('svg',{viewBox:'0 0 110 90',width:'100%',role:'img','aria-label':`Diagrama de Venn de ${nombres.join(', ')}`,style:'max-height:460px;color:#182b2f'});
         const defs = svg('defs'); grafica.append(defs);
         const detalle = document.createElement('p'); detalle.setAttribute('aria-live','polite');
         const anchors = tres ? [[7,85],[25,32],[83,32],[54,22],[54,76],[38,55],[70,55],[54,44]] : [[7,82],[28,43],[80,43],[54,43]];
