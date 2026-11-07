@@ -88,6 +88,49 @@ preparación en `develop`, se abrirá un PR separado `develop → main` y se usa
 creará el tag y la release únicamente después del merge a `main` y de superar
 sus verificaciones.
 
+El incremento preparado de 0.13.0 a **0.14.0 es MINOR**: incorpora Estudio,
+la nueva navegación y la banda sonora opcional del PR #110, junto con las
+mejoras de exploración de Bisección y del teclado compartido del PR #111.
+Son capacidades compatibles: se mantienen los algoritmos y contratos de cálculo.
+La preparación solo actualiza versión, lockfile y estas notas; no cambia
+dependencias ni incorpora trabajo de otras ramas.
+
+### Notas preparadas de PyGebra v0.14.0
+
+- **Estudio:** nuevo estilo predeterminado con una habitación ilustrada,
+  rincones por área y mesa de trabajo, adaptados al tema claro u oscuro.
+  Opciones permite elegir Minimalista; ambos estilos comparten herramientas.
+  Las animaciones respetan la preferencia de movimiento reducido y los efectos
+  de sonido son opcionales, locales y apagados por defecto.
+- **Nueva navegación:** Inicio organizado por áreas, explorador de herramientas,
+  herramientas relacionadas y notas «Para curiosos». Atrás y Adelante usan el
+  historial del navegador; las transiciones acompañan el recorrido entre Inicio,
+  área y herramienta, con navegación normal cuando no están disponibles.
+- **Cuatro temas musicales:** *Rincón tranquilo*, *Café de medianoche*,
+  *Órbita lenta* y *Tarde de lluvia*, originales y sintetizados sin Internet.
+  El reproductor ofrece elección de pieza, anterior/siguiente, pausa,
+  reproducción continua y volumen independiente de los efectos. La música
+  continúa al navegar, recuerda la elección y el volumen y comienza apagada
+  al reabrir la aplicación.
+- **Bisección:** selección de extremos desde la curva, exploración y zoom de la
+  gráfica incluso sin extremos escritos, y recuperación de la vista inicial o
+  del intervalo calculado. Anterior/Siguiente, deslizador y tabla comparten el
+  recorrido de iteraciones sin recalcular. La verificación distingue condiciones,
+  valores y conclusiones; la lectura conserva cifras distinguibles, usa el punto
+  decimal y evita signos de aproximación duplicados.
+- **Teclado compartido:** conserva campo, selección, superíndices y Deshacer al
+  desplazar sus grupos; mejora el foco al usar la barra de desplazamiento, la
+  rueda y los gestos táctiles, también en Bisección.
+- **Conjuntos:** permanece como **«Próximamente»**, con el acceso público
+  deshabilitado. La implementación posterior de Conjuntos P2 se desarrolla por
+  separado y **no pertenece a v0.14.0**.
+
+Estas notas describen una versión preparada, no una release publicada.
+Este PR se dirige únicamente a `develop`. La promoción `develop → main`
+requiere después otro PR, CI verde y autorización manual mediante
+**Create a merge commit**. Solo entonces el workflow Release podrá crear el
+tag y publicar el instalador y `SHA256SUMS.txt`.
+
 ## Flujo de integración y entrega
 
 ```mermaid
