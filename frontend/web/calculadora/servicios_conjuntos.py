@@ -1,12 +1,14 @@
 """Adapta la evidencia del motor al resultado único de la herramienta web."""
 
 from backend.conjuntos.evaluador import evaluar_expresion
-from backend.conjuntos.modelo import Conjunto, presentar
+from backend.conjuntos.modelo import Conjunto, Par, presentar
 from backend.conjuntos.parser import analizar_expresion
 from backend.conjuntos.presupuesto import Presupuesto
 
 
 def _valor_web(valor):
+    if isinstance(valor, Par):
+        return {"tipo": "par", "primero": _valor_web(valor.primero), "segundo": _valor_web(valor.segundo)}
     if type(valor) is bool:
         return {"tipo": "booleano", "valor": valor}
     if isinstance(valor, Conjunto):

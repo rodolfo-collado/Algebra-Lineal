@@ -28,6 +28,16 @@ class Operacion:
 
 
 def _operando(lector, profundidad=0):
+    if lector.actual().texto in ("potencia", "par"):
+        lector.presupuesto.elemento(profundidad)
+        operador = lector.tomar().texto
+        lector.exigir("(")
+        operandos = [_expresion(lector, profundidad + 1)]
+        if operador == "par":
+            lector.exigir(",")
+            operandos.append(_expresion(lector, profundidad + 1))
+        lector.exigir(")")
+        return Operacion(operador, tuple(operandos))
     if lector.actual().texto == "(":
         lector.presupuesto.elemento(profundidad)
         lector.tomar()
@@ -54,7 +64,7 @@ def _operando(lector, profundidad=0):
 
 
 def _expresion(lector, profundidad=0, minimo=0):
-    precedencia = {"∪": 1, "∖": 1, "∩": 2}
+    precedencia = {"∪": 1, "∖": 1, "∩": 2, "×": 3}
     izquierda = _operando(lector, profundidad)
     while lector.actual().texto in precedencia and precedencia[lector.actual().texto] >= minimo:
         lector.presupuesto.elemento(profundidad)

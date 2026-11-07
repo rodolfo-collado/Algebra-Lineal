@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from fractions import Fraction
 
 from backend.presupuesto_computacional import Estimacion
-from .modelo import Conjunto, presentar
+from .modelo import Conjunto, presentar, peso
+from .generacion import generar
 from .parser import Operacion, Referencia, Relacion
 from .presupuesto import Presupuesto
 
@@ -30,8 +31,7 @@ class Resultado:
     procedimiento: tuple[Paso, ...] = ()
 
 
-def _peso(valor):
-    return 1 + sum(_peso(e) for e in valor.elementos) if isinstance(valor, Conjunto) else 1
+_peso = peso
 
 
 def evaluar_expresion(expresion, entorno, *, presupuesto=None):
@@ -54,6 +54,12 @@ def evaluar_expresion(expresion, entorno, *, presupuesto=None):
             return valor
         if isinstance(operando, Operacion):
             operandos = tuple(resolver(hijo) for hijo in operando.operandos)
+            if operando.operador in ('par', 'potencia', '×'):
+                valor, regla, texto = generar(operando.operador, operandos, presupuesto)
+                evidencia = Paso(operando.operador, operandos, valor, regla, texto)
+                procedimiento.append(evidencia)
+                pasos.append(texto)
+                return valor
             if any(not isinstance(valor, Conjunto) for valor in operandos):
                 raise ValueError("Las operaciones ∪, ∩, ∖, ∁ y |…| requieren conjuntos finitos.")
             peso = sum(_peso(valor) for valor in operandos)

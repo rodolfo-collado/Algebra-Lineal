@@ -7,7 +7,7 @@ import keyword
 import re
 
 from backend.parser_sistemas import convertir_a_numero
-from .modelo import Conjunto
+from .modelo import Conjunto, Par
 from .presupuesto import Presupuesto
 
 NOMBRE = r"[A-Za-z][A-Za-z0-9_]*"
@@ -18,7 +18,7 @@ RESERVADOS = frozenset(keyword.kwlist) | {
 _TOKEN = re.compile(
     rf'(?P<texto>"(?:[^"\\\x00-\x1f]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{{4}})*")'
     rf'|(?P<numero>[+-]?\s*(?:[0-9]+\.[0-9]+|\.[0-9]+|[0-9]+(?:\s*/\s*[0-9]+)?))'
-    rf'|(?P<nombre>{NOMBRE})|(?P<signo>[{{}},∅()∈∉⊆⊂=≠∪∩∖∁|])'
+    rf'|(?P<nombre>{NOMBRE})|(?P<signo>[{{}},∅()∈∉⊆⊂=≠∪∩∖∁|×])'
 )
 
 
@@ -73,6 +73,13 @@ class Lector:
     def literal(self, profundidad=0):
         self.presupuesto.elemento(profundidad)
         token = self.tomar()
+        if token.texto == "par":
+            self.exigir("(")
+            primero = self.literal(profundidad + 1)
+            self.exigir(",")
+            segundo = self.literal(profundidad + 1)
+            self.exigir(")")
+            return Par(primero, segundo)
         if token.texto == "∅":
             return Conjunto()
         if token.texto == "{":

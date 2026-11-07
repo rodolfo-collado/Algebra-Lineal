@@ -64,7 +64,7 @@ class OperacionesConjuntosTests(unittest.TestCase):
                       '∁(A, 1)', '∁(1,U)', '∁(A,B)', '∁({∅},∅)',
                       '∁(A)', '∁(A,U,B)', '∁A', 'A = B = U', '(A = B)',
                       'A + B', 'A - B', 'A ∪', '{A ∪ B}', 'A[0]',
-                      '__import__("os")', 'par(1,2)', '|A', 'A|', 'A B'):
+                      '__import__("os")', '|A', 'A|', 'A B'):
             with self.subTest(texto=texto), self.assertRaises(ValueError):
                 self.calcular(texto)
 
