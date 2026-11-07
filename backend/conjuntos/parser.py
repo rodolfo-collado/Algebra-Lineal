@@ -1,8 +1,9 @@
-"""Una relación entre dos operandos; las definiciones pertenecen a literales.py."""
+"""Expresiones de valores y una relación opcional; sin ejecución de código."""
 
 from dataclasses import dataclass
 
 from .literales import Lector, validar_nombre
+from backend.operandos import OPERANDOS_MAXIMOS
 
 OPERADORES = (("∈", "Pertenece"), ("∉", "No pertenece"), ("⊆", "Está incluido"),
               ("⊂", "Está incluido propiamente"), ("=", "Es igual"), ("≠", "Es distinto"))
@@ -20,28 +21,82 @@ class Relacion:
     derecha: object
 
 
+@dataclass(frozen=True)
+class Operacion:
+    operador: str
+    operandos: tuple[object, ...]
+
+
 def _operando(lector, profundidad=0):
     if lector.actual().texto == "(":
         lector.presupuesto.elemento(profundidad)
         lector.tomar()
-        valor = _operando(lector, profundidad + 1)
+        valor = _expresion(lector, profundidad + 1)
         lector.exigir(")")
         return valor
+    if lector.actual().texto in ("∁", "|"):
+        lector.presupuesto.elemento(profundidad)
+        operador = lector.tomar().texto
+        if operador == "|":
+            valor = _expresion(lector, profundidad + 1)
+            lector.exigir("|")
+            return Operacion(operador, (valor,))
+        lector.exigir("(")
+        valor = _expresion(lector, profundidad + 1)
+        lector.exigir(",")
+        universo = _expresion(lector, profundidad + 1)
+        lector.exigir(")")
+        return Operacion(operador, (valor, universo))
     if lector.actual().tipo == "nombre":
         lector.presupuesto.elemento(profundidad)
         return Referencia(validar_nombre(lector.tomar().texto))
     return lector.literal(profundidad)
 
 
-def analizar_relacion(texto, *, presupuesto=None):
+def _expresion(lector, profundidad=0, minimo=0):
+    precedencia = {"∪": 1, "∖": 1, "∩": 2}
+    izquierda = _operando(lector, profundidad)
+    while lector.actual().texto in precedencia and precedencia[lector.actual().texto] >= minimo:
+        lector.presupuesto.elemento(profundidad)
+        operador = lector.tomar().texto
+        derecha = _expresion(lector, profundidad + 1, precedencia[operador] + 1)
+        izquierda = Operacion(operador, (izquierda, derecha))
+    return izquierda
+
+
+def analizar_expresion(texto, *, presupuesto=None):
     lector = Lector(texto, presupuesto)
-    izquierda = _operando(lector)
+    izquierda = _expresion(lector)
+    if lector.actual().tipo == "fin":
+        arbol = izquierda
+    else:
+        arbol = _relacion(lector, izquierda)
+    lector.fin()
+    # También limita la altura que producen las cadenas asociadas a la izquierda.
+    pendientes = [(arbol, 0)]
+    while pendientes:
+        nodo, profundidad = pendientes.pop()
+        if profundidad >= OPERANDOS_MAXIMOS:
+            raise ValueError(f"La expresión admite hasta {OPERANDOS_MAXIMOS} niveles de operaciones.")
+        hijos = nodo.operandos if isinstance(nodo, Operacion) else (
+            (nodo.izquierda, nodo.derecha) if isinstance(nodo, Relacion) else ())
+        pendientes.extend((hijo, profundidad + 1) for hijo in hijos)
+    return arbol
+
+
+def _relacion(lector, izquierda):
     operador = lector.tomar().texto
     if operador not in dict(OPERADORES):
         raise ValueError("Escribe una relación con ∈, ∉, ⊆, ⊂, = o ≠ entre dos operandos.")
-    derecha = _operando(lector)
-    lector.fin()
+    derecha = _expresion(lector)
     return Relacion(izquierda, operador, derecha)
+
+
+def analizar_relacion(texto, *, presupuesto=None):
+    arbol = analizar_expresion(texto, presupuesto=presupuesto)
+    if not isinstance(arbol, Relacion):
+        raise ValueError("Escribe una relación con ∈, ∉, ⊆, ⊂, = o ≠ entre dos operandos.")
+    return arbol
 
 
 def renombrar_referencias(texto, cambios):

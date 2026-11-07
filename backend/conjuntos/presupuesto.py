@@ -10,6 +10,16 @@ from backend.presupuesto_sistemas import LONGITUD_SISTEMA_MAXIMA
 class Presupuesto:
     caracteres: int = 0
     entradas: int = 0
+    calculo: int = 0
+    procedimiento: int = 0
+
+    def reservar(self, *, calculo=0, procedimiento=0):
+        if self.calculo + calculo > CELDAS_MAXIMAS * OPERANDOS_MAXIMOS:
+            raise ValueError("La expresión supera el presupuesto acumulado de cálculo de conjuntos.")
+        if self.procedimiento + procedimiento > CELDAS_MAXIMAS * OPERANDOS_MAXIMOS:
+            raise ValueError("La expresión supera el presupuesto acumulado del procedimiento de conjuntos.")
+        self.calculo += calculo
+        self.procedimiento += procedimiento
 
     def texto(self, texto):
         self.longitud(len(texto))

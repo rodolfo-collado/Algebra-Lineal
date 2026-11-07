@@ -18,7 +18,7 @@ RESERVADOS = frozenset(keyword.kwlist) | {
 _TOKEN = re.compile(
     rf'(?P<texto>"(?:[^"\\\x00-\x1f]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{{4}})*")'
     rf'|(?P<numero>[+-]?\s*(?:[0-9]+\.[0-9]+|\.[0-9]+|[0-9]+(?:\s*/\s*[0-9]+)?))'
-    rf'|(?P<nombre>{NOMBRE})|(?P<signo>[{{}},∅()∈∉⊆⊂=≠])'
+    rf'|(?P<nombre>{NOMBRE})|(?P<signo>[{{}},∅()∈∉⊆⊂=≠∪∩∖∁|])'
 )
 
 
