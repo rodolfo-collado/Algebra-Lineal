@@ -314,16 +314,27 @@ interfaz: Minimalista usa exactamente la misma estructura sin ilustraciones.
   página de PyGebra suena entrar, volver o el desenlace del cálculo; nunca al
   recargar. Si el navegador aún no permite sonar, el efecto se descarta en vez de
   sonar tarde.
-- **Música ambiental** (`musica.js`): pieza original e instrumental sintetizada con
-  el contexto de audio de los efectos: acordes lentos de Re mayor, un filtro que
-  respira, eco corto y frases sueltas de la misma «madera tibia»; el reparto de
-  frases deja bloques casi sin melodía. Apagada al empezar cada visita: encenderla
-  dura la sesión (`sessionStorage`), nunca se recuerda entre aperturas, para que la
-  app no suene por sorpresa, por ejemplo en clase. Reproducir o pausar y su volumen
-  (`pygebra-musica-volumen`) viven en Opciones, aparte de los efectos, y no dependen
-  del estilo. Sin archivos ni red; la posición se deriva del reloj, así que al cambiar
-  de página sigue por donde iba tras bajar y volver en 1,5 s (cada página es un
-  documento nuevo). Con la ventana oculta calla y suspende el contexto.
+- **Música ambiental** (`musica_piezas.js`, `musica.js`): cuatro piezas originales e
+  instrumentales, sintetizadas con el contexto de audio de los efectos y sin notas al
+  azar. Comparten tonalidad (Re mayor y Si menor), timbres solo con armónicos, la misma
+  habitación y el motivo la – fa♯ – mi, salvo Rincón, que es la primera composición intacta.
+  - *Rincón tranquilo*: 50 pulsos por minuto, acordes lentos y teclas sueltas.
+  - *Café de medianoche*: lo-fi a 70 pulsos, bajo cálido, bombo, caja suave y shaker.
+  - *Órbita lenta*: 40 pulsos, sintetizadores ligados, arpegio que gira por el estéreo y
+    eco; sin percusión.
+  - *Tarde de lluvia*: jazz a 80 pulsos en Si menor; guitarra y contrabajo pulsados
+    (Karplus-Strong), vibráfono, escobillas y lluvia.
+
+  Opciones tiene un reproductor: la lista (una pieza o *Reproducción continua*), anterior,
+  reproducir o pausar, siguiente y su volumen, aparte de los efectos. Una pieza elegida se
+  repite. En continua se alternan las cuatro: cada una termina su vuelta, se apaga en
+  4 s y la siguiente entra tras unos 2 s de silencio, así que nunca suenan a la vez.
+  Apagada al empezar cada visita: encenderla y la posición duran la sesión
+  (`sessionStorage`), para que la app no suene por sorpresa, por ejemplo en clase; se
+  recuerdan lo elegido (`pygebra-musica-pieza`) y el volumen (`pygebra-musica-volumen`).
+  Sin archivos ni red. Al cambiar de página sigue por donde iba tras bajar y volver en
+  1,5 s (cada página es un documento nuevo). Con la ventana oculta calla y suspende el
+  contexto; al volver continúa donde estaba.
 - Las ilustraciones son originales: sin personajes, logotipos ni diseños
   reconocibles de terceros.
 
@@ -927,7 +938,8 @@ comportamiento de su navegador.
   y formato numérico (secciones anteriores).
 - **Preferencias.** Entre aperturas solo se conservan `pygebra-tema`,
   `pygebra-formato-numerico`, `pygebra-precision-decimal`, `pygebra-estilo`,
-  `pygebra-sonido`, `pygebra-volumen` y `pygebra-musica-volumen`. WebView2 corre en
+  `pygebra-sonido`, `pygebra-volumen`, `pygebra-musica-volumen` y
+  `pygebra-musica-pieza`. WebView2 corre en
   modo privado y Django las guarda en `%LOCALAPPDATA%\PyGebra\preferencias.json`
   (`POST /preferencias/` con CSRF, lista blanca de claves y valores, escritura
   atómica) y las pinta como `data-pygebra-…` en `<html>`. Durante la ejecución

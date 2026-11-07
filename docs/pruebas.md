@@ -23,9 +23,12 @@ Tab, flechas, panel y nada guardado). Revisión manual: recorrer Inicio → áre
 herramienta → Atrás → Adelante en Estudio y Minimalista, de día y de noche, a
 1440 × 900, 900 × 600 y 390 × 844; activar Con efectos en Opciones y escuchar
 seleccionar, entrar, volver, calcular y un error; repetir con movimiento reducido.
-La música se comprueba en `tests.buscador_browser` (apagada al empezar, se pausa,
-volumen aparte y un ensayo con `OfflineAudioContext` que confirma que suena, no
-satura y un mismo periodo siempre suena igual); juzgarla, solo de oído: Reproducir música y navegar un rato.
+La música se comprueba en `tests.buscador_browser` (apagada al empezar, reproductor,
+elección y volumen recordados y aparte de los efectos, una preferencia inválida no rompe
+nada, ensayo de las cuatro piezas con `OfflineAudioContext`: suenan, no saturan y un mismo
+compás siempre suena igual; en las partituras, sin semitonos ni novenas menores
+simultáneos, también al dar la vuelta); juzgarla, solo de oído: elegir cada pieza y
+dejar correr la reproducción continua.
 
 Bisección: `uv run --locked python -m unittest tests.test_biseccion
 tests.test_biseccion_web tests.test_biseccion_assets` cubre los tres intervalos del
@@ -72,6 +75,16 @@ la música con un gesto real (señal medida, continúa al navegar, se pausa, rea
 empieza en silencio y recuerda solo el volumen). Sin desbordes en 126 combinaciones de
 siete páginas, nueve tamaños y ambos estilos. Se generó el instalador; no se instaló.
 Nadie ha juzgado la música de oído todavía, ni se probó con lector de pantalla.
+
+Banda sonora de cuatro piezas (2026-11-07, tras oír la segunda): Rincón y Café se
+compararon muestra a muestra con sus originales (diferencia de redondeo, ~2·10⁻⁷).
+Las tres partituras escritas no tienen semitonos ni novenas menores simultáneos, las
+cuerdas de Tarde de lluvia quedan a menos de 1 cent y las cuatro piezas a menos de 2 dBA
+entre sí. En Chrome headless y en el ejecutable (WebView2 156): lista, anterior,
+siguiente, pausa, transición continua con unos 2 s de silencio y sin solaparse,
+continúa en otra página y al reabrir empieza en silencio con la elección y el volumen
+recordados. Se incorporaron con el visto bueno de Erving tras los ensayos; no se probó con lector
+de pantalla.
 
 Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`
 cubre aridad, colecciones exactas, dimensiones consecutivas, cadenas de tres y
