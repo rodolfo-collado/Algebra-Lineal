@@ -9,8 +9,20 @@
     if (!boton || !panel) return;
     const preferencias = window.preferencias;
     const volumen = panel.querySelector("#volumen");
+    const Musica = window.Musica;
     const musica = panel.querySelector("#musica-toggle");
+    const pieza = panel.querySelector("#musica-pieza");
+    const ahora = panel.querySelector("#musica-ahora");
     const volumenMusica = panel.querySelector("#musica-volumen");
+
+    function sincronizarMusica() {
+        const continua = Musica.eleccion() === Musica.CONTINUA;
+        const actual = Musica.actual();
+        musica.textContent = Musica.pedida() ? "Pausar" : "Reproducir";
+        pieza.value = Musica.eleccion();
+        // En continua la lista no dice qué toca: lo dice esta línea.
+        ahora.textContent = `${continua ? `Ahora: ${actual.nombre}. ` : ""}${actual.descripcion}.`;
+    }
 
     function sincronizar() {
         const actuales = {
@@ -22,20 +34,29 @@
         });
         volumen.value = preferencias.leer("pygebra-volumen") || 50;
         volumen.disabled = actuales.sonido !== "on";
-        musica.textContent = window.Musica.pedida() ? "Pausar música" : "Reproducir música";
+        sincronizarMusica();
         volumenMusica.value = preferencias.leer("pygebra-musica-volumen") || 40;
     }
 
-    panel.querySelector("#musica-grupo").hidden = !window.Musica.disponible;
+    panel.querySelector("#musica-grupo").hidden = !Musica.disponible;
+    pieza.add(new Option("Reproducción continua", Musica.CONTINUA));
+    for (const { id, nombre } of Musica.PIEZAS) pieza.add(new Option(nombre, id));
     musica.addEventListener("click", () => {
-        window.Musica.alternar();
-        sincronizar();
+        Musica.alternar();
+        sincronizarMusica();
     });
+    panel.querySelector("#musica-anterior").addEventListener("click", () => Musica.saltar(-1));
+    panel.querySelector("#musica-siguiente").addEventListener("click", () => Musica.saltar(1));
+    document.addEventListener("musica:cambio", sincronizarMusica);
     // El volumen de la música se oye al arrastrar y se guarda al soltar.
-    volumenMusica.addEventListener("input", () => window.Musica.volumen(Number(volumenMusica.value)));
+    volumenMusica.addEventListener("input", () => Musica.volumen(Number(volumenMusica.value)));
 
     panel.addEventListener("change", (event) => {
         const { name, value } = event.target;
+        if (name === "musica-pieza") {
+            Musica.elegir(value);
+            return;
+        }
         if (name === "musica-volumen") {
             preferencias.guardar("pygebra-musica-volumen", value);
             return;

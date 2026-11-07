@@ -125,8 +125,19 @@
     font-size: 0.8rem;
 }
 
-.opciones-accion {
-    width: 100%;
+.musica-controles {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.4rem;
+}
+
+.musica-salto {
+    padding-inline: 0.7rem;
+}
+
+.musica-salto svg {
+    width: 1rem;
+    height: 1rem;
 }
 
 .opciones-ayuda {

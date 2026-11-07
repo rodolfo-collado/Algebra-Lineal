@@ -1,195 +1,88 @@
-/* Música ambiental de PyGebra: una pieza original, instrumental y discreta para estudiar.
-   Acordes lentos de Re mayor con su respiración y, de vez en cuando, unas notas de la misma
-   «madera tibia» que los efectos. Todo se sintetiza al momento: sin archivos ni red.
-   Solo suena si se pide, cada visita empieza en silencio y calla con la ventana oculta.
-   La posición en la pieza se deriva del reloj: al cambiar de página continúa por donde iba.
+/* El reproductor de la música ambiental: cuál de las piezas de musica_piezas.js suena y cuándo.
+   Solo suena si se pide y cada visita empieza en silencio; se recuerdan la elección y el
+   volumen. Calla con la ventana oculta.
+   La página anota por dónde iba (solo durante la sesión) para seguir al cambiar de página.
    ponytail: cada página es un documento nuevo, así que al navegar la música baja y vuelve en
    1,5 s; para que no se interrumpa haría falta una aplicación de una sola página. */
 
 window.Musica = (() => {
     "use strict";
 
-    const PERIODO = 9.6; // un acorde: dos compases de 4/4 a 50 pulsos por minuto
-    const PULSO = PERIODO / 8;
-    const ATAQUE = 3, CAIDA = 4;
-    const GANANCIA = 0.7; // con el 40 % por defecto, de fondo: muy por debajo de los efectos en energía
+    const PIEZAS = window.MusicaPiezas;
+    const CONTINUA = "continua";
+    const POR_DEFECTO = "cafe";
+    const FUNDIDO = 4; // en reproducción continua, una pieza se apaga en estos segundos...
+    const ENTRE_PIEZAS = 1.5; // ...y la siguiente espera a este silencio: nunca suenan juntas
     const SESION = "pygebra-musica";
+    const MARCA = "pygebra-musica-marca";
     const VOLUMEN = "pygebra-musica-volumen";
+    const ELECCION = "pygebra-musica-pieza";
 
-    // Bajo y tres voces (MIDI), enlazadas para que cada acorde se mueva lo mínimo.
-    const ACORDES = [
-        [50, 57, 64, 66], [47, 57, 62, 66], [43, 59, 62, 66], [45, 57, 59, 64],
-        [42, 57, 62, 64], [43, 59, 62, 69], [40, 59, 62, 67], [45, 55, 62, 64],
-        [47, 54, 62, 66], [43, 55, 62, 66], [50, 57, 62, 66], [45, 57, 61, 64],
-        [50, 57, 64, 66], [47, 57, 62, 66], [43, 59, 62, 66], [45, 57, 59, 64],
-    ];
-    const ESCALA = [62, 64, 66, 69, 71, 74, 76]; // pentatónica de Re, como los efectos
-    const DENSIDAD = [0.4, 0.65, 0.5, 0.15]; // cuántas frases hay en cada bloque de cuatro acordes
-    const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
+    const porId = (id) => PIEZAS.find((pieza) => pieza.id === id);
+    const vecina = (id, paso) => PIEZAS[(PIEZAS.findIndex((pieza) => pieza.id === id) + paso + PIEZAS.length) % PIEZAS.length].id;
 
-    // Azar con semilla (mulberry32): cada periodo suena siempre igual y nunca se repite la pieza.
-    function azar(semilla) {
-        let s = semilla >>> 0;
-        return () => {
-            s = (s + 0x6d2b79f5) >>> 0;
-            let t = Math.imul(s ^ (s >>> 15), 1 | s);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+    function eleccionGuardada() {
+        const guardada = window.preferencias.leer(ELECCION);
+        return guardada === CONTINUA || porId(guardada) ? guardada : POR_DEFECTO;
     }
 
-    // La sala: filtro cálido que respira despacio y un eco corto. Devuelve dónde conectar.
-    function armar(c, destino) {
-        const vivos = new Set();
-        const bus = c.createGain();
-        bus.connect(destino);
-        const calido = c.createBiquadFilter();
-        calido.type = "lowpass";
-        calido.frequency.value = 950;
-        calido.connect(bus);
-        const respiracion = c.createOscillator();
-        const profundidad = c.createGain();
-        respiracion.frequency.value = 0.04;
-        profundidad.gain.value = 220;
-        respiracion.connect(profundidad).connect(calido.frequency);
-        respiracion.start();
-        const eco = c.createDelay(1);
-        const realimentacion = c.createGain();
-        const sombra = c.createBiquadFilter();
-        eco.delayTime.value = PULSO * 0.6;
-        realimentacion.gain.value = 0.3;
-        sombra.type = "lowpass";
-        sombra.frequency.value = 1500;
-        eco.connect(sombra).connect(realimentacion).connect(eco);
-        sombra.connect(bus);
-        return {
-            c, vivos, bus, calido, eco,
-            parar() {
-                respiracion.stop();
-                vivos.forEach((o) => o.stop());
-                bus.disconnect();
-            },
-        };
+    let eleccion = eleccionGuardada();
+    let deseada = false, activa = null, reloj = null, esperando = false, reinicio = null;
+    let marca = { pieza: eleccion === CONTINUA ? PIEZAS[0].id : eleccion, segundos: 0 };
+    try {
+        deseada = sessionStorage.getItem(SESION) === "on";
+        const anotada = JSON.parse(sessionStorage.getItem(MARCA));
+        if (anotada && porId(anotada.pieza) && anotada.segundos >= 0 && (eleccion === CONTINUA || eleccion === anotada.pieza)) marca = anotada;
+    } catch (_) { /* Solo esta página. */ }
+
+    const avisar = () => document.dispatchEvent(new Event("musica:cambio"));
+
+    function anotar() {
+        try {
+            sessionStorage.setItem(MARCA, JSON.stringify(marca));
+        } catch (_) { /* Vale para esta página. */ }
     }
 
-    function oscilador(sala, f, tipo, t, fin, destino) {
-        const o = sala.c.createOscillator();
-        o.type = tipo;
-        o.frequency.value = f;
-        o.connect(destino);
-        o.start(t);
-        o.stop(fin);
-        sala.vivos.add(o);
-        o.onended = () => sala.vivos.delete(o);
-        return o;
-    }
+    const nivel = (pieza) => (Number(window.preferencias.leer(VOLUMEN)) || 40) / 100 * pieza.ganancia;
 
-    function acorde(sala, notas, t, r) {
-        const { c, calido, eco } = sala;
-        // Al entrar a mitad de un acorde (t en el pasado) este nace ahora y suelta a su hora.
-        const desde = Math.max(t, c.currentTime);
-        const suelta = Math.max(t + PERIODO, desde + ATAQUE);
-        const fin = suelta + CAIDA;
-        notas.forEach((midi, voz) => {
-            const nivel = voz === 0 ? 0.11 : 0.055;
-            const g = c.createGain();
-            g.gain.setValueAtTime(0, desde);
-            g.gain.linearRampToValueAtTime(nivel, desde + ATAQUE);
-            g.gain.setValueAtTime(nivel, suelta);
-            g.gain.linearRampToValueAtTime(0, fin);
-            const panorama = c.createStereoPanner();
-            panorama.pan.value = voz === 0 ? 0 : (voz - 2) * 0.35;
-            g.connect(panorama).connect(calido);
-            if (voz === 0) {
-                oscilador(sala, hz(midi), "sine", desde, fin + 0.05, g);
-                return;
-            }
-            // Dos osciladores apenas desafinados: el batido lento evita que suene a órgano.
-            const envio = c.createGain();
-            envio.gain.value = 0.12;
-            g.connect(envio).connect(eco);
-            for (const signo of [-1, 1]) {
-                oscilador(sala, hz(midi), "triangle", desde, fin + 0.05, g).detune.value = signo * (2.5 + r() * 2);
-            }
-        });
-    }
-
-    function nota(sala, midi, t, vel, pan) {
-        const { c, bus, eco } = sala;
-        const f = hz(midi);
-        const dur = 3.2;
-        const env = c.createGain();
-        env.gain.setValueAtTime(0.0001, t);
-        env.gain.linearRampToValueAtTime(vel, t + 0.015);
-        env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        const panorama = c.createStereoPanner();
-        panorama.pan.value = pan;
-        env.connect(panorama).connect(bus);
-        const envio = c.createGain();
-        envio.gain.value = 0.35;
-        env.connect(envio).connect(eco);
-        oscilador(sala, f, "sine", t, t + dur + 0.05, env);
-        const madera = c.createGain();
-        madera.gain.setValueAtTime(0.1, t);
-        madera.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-        madera.connect(env);
-        oscilador(sala, f * 3.9, "sine", t, t + 0.55, madera);
-        const octava = c.createGain();
-        octava.gain.setValueAtTime(0.18, t);
-        octava.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
-        octava.connect(env);
-        oscilador(sala, f * 2, "sine", t, t + 1.45, octava);
-    }
-
-    // Una frase de pocas notas por la escala que descansa en una nota del acorde.
-    function frase(sala, notas, t, r) {
-        const clases = new Set(notas.map((m) => m % 12));
-        let i = 1 + Math.floor(r() * 4);
-        let pulso = 1 + Math.floor(r() * 3);
-        const cuantas = 2 + Math.floor(r() * 3);
-        for (let n = 0; n < cuantas && pulso < 8; n++) {
-            const siguiente = pulso + [1, 1, 2, 2, 3][Math.floor(r() * 5)];
-            const ultima = n === cuantas - 1 || siguiente >= 8;
-            if (ultima && !clases.has(ESCALA[i] % 12)) {
-                const candidatas = ESCALA.map((_, k) => k).filter((k) => clases.has(ESCALA[k] % 12));
-                if (candidatas.length) i = candidatas.reduce((a, b) => (Math.abs(b - i) < Math.abs(a - i) ? b : a));
-            }
-            const momento = t + pulso * PULSO;
-            const vel = 0.1 + r() * 0.06;
-            const pan = (r() - 0.5) * 0.5;
-            if (momento >= sala.c.currentTime) nota(sala, ESCALA[i], momento, vel, pan);
-            pulso = siguiente;
-            i = Math.min(ESCALA.length - 1, Math.max(0, i + [-2, -1, -1, 1, 1, 2][Math.floor(r() * 6)]));
-        }
-    }
-
-    // Lo que suena en el periodo k, empezando en el instante t del contexto.
-    function componer(sala, k, t) {
-        const notas = ACORDES[k % ACORDES.length];
-        const r = azar(Math.imul(k, 2654435761));
-        acorde(sala, notas, t, r);
-        if (r() < DENSIDAD[Math.floor((k % ACORDES.length) / 4)]) frase(sala, notas, t, r);
-    }
-
-    /* —— Encender y apagar —— */
-
-    let deseada = false, sala = null, reloj = null, esperando = false;
-    try { deseada = sessionStorage.getItem(SESION) === "on"; } catch (_) { /* Solo esta página. */ }
-
-    const nivel = () => (Number(window.preferencias.leer(VOLUMEN)) || 40) / 100 * GANANCIA;
-
-    function programar(activa, k, t) {
+    function programar() {
+        const { pieza, escena, c } = activa;
+        const ahora = c.currentTime;
         // Lo que ya pasó (un temporizador retrasado) se salta en vez de sonar todo junto.
-        while (t < activa.c.currentTime + 1.5) {
-            if (t + PERIODO > activa.c.currentTime) componer(activa, k, t);
-            k++;
-            t += PERIODO;
+        while (activa.t < ahora + 1.5 && activa.k < activa.ultimo) {
+            if (activa.t + (pieza.atras + 1) * pieza.COMPAS > ahora) pieza.componer(escena, activa.k, activa.t);
+            activa.k++;
+            activa.t += pieza.COMPAS;
         }
-        return [k, t];
+        if (ahora >= activa.fin + ENTRE_PIEZAS) pasarSola();
+    }
+
+    // En continua, la pieza termina al acabar una vuelta completa y se apaga antes de llegar.
+    function fijarFinal() {
+        const { pieza, fundido, c, origen } = activa;
+        const ahora = c.currentTime;
+        fundido.gain.cancelScheduledValues(ahora);
+        fundido.gain.setValueAtTime(fundido.gain.value, ahora);
+        if (eleccion !== CONTINUA) {
+            fundido.gain.linearRampToValueAtTime(1, ahora + 1.5);
+            activa.ultimo = Infinity;
+            activa.fin = Infinity;
+            return;
+        }
+        const vuelta = pieza.LARGO * pieza.vueltas * pieza.COMPAS;
+        const fin = origen + Math.max(1, Math.ceil((ahora + 1 - origen) / vuelta)) * vuelta;
+        activa.ultimo = Math.round((fin - origen) / pieza.COMPAS);
+        // Si queda poco (al volver a mitad de un final), el fundido se acorta pero no desaparece.
+        const hasta = Math.max(ahora + 1.5, fin - FUNDIDO);
+        const apagada = Math.max(fin, hasta + 2);
+        activa.fin = apagada;
+        fundido.gain.linearRampToValueAtTime(1, ahora + 1.5);
+        fundido.gain.setValueAtTime(1, hasta);
+        fundido.gain.linearRampToValueAtTime(0, apagada);
     }
 
     function encender() {
-        if (sala || !deseada || document.hidden) return;
+        if (activa || !deseada || document.hidden) return;
         const c = window.Sonido.contexto();
         if (!c) return;
         if (c.state !== "running") {
@@ -208,29 +101,66 @@ window.Musica = (() => {
             }
             return;
         }
-        sala = armar(c, c.destination);
-        sala.bus.gain.setValueAtTime(0, c.currentTime);
-        sala.bus.gain.linearRampToValueAtTime(nivel(), c.currentTime + 1.5);
-        const ahora = Date.now() / 1000;
-        let k = Math.floor(ahora / PERIODO);
-        let t = c.currentTime - (ahora % PERIODO);
-        const activa = sala;
-        [k, t] = programar(activa, k, t);
-        reloj = setInterval(() => { [k, t] = programar(activa, k, t); }, 2000);
+        const pieza = porId(marca.pieza);
+        const volumen = c.createGain();
+        volumen.gain.value = nivel(pieza);
+        volumen.connect(c.destination);
+        const fundido = c.createGain();
+        fundido.gain.value = 0;
+        fundido.connect(volumen);
+        const origen = c.currentTime - marca.segundos;
+        const k = Math.max(0, Math.floor(marca.segundos / pieza.COMPAS) - pieza.atras);
+        activa = { c, pieza, volumen, fundido, origen, k, t: origen + k * pieza.COMPAS, ultimo: Infinity, fin: Infinity, escena: pieza.armar(c, fundido) };
+        fijarFinal();
+        programar();
+        reloj = setInterval(programar, 1000);
     }
 
+    // Baja el volumen sin parar la música de golpe; el contexto se duerme si ya no hace falta.
     function apagar() {
-        if (!sala) return;
-        const anterior = sala;
-        sala = null;
+        clearTimeout(reinicio);
+        if (!activa) return;
+        const { c, fundido, volumen, escena, origen, fin } = activa;
+        // En el silencio entre dos piezas ya toca la siguiente.
+        marca = c.currentTime >= fin ? { pieza: vecina(marca.pieza, 1), segundos: 0 } : { pieza: marca.pieza, segundos: Math.max(0, c.currentTime - origen) };
+        anotar();
+        activa = null;
         clearInterval(reloj);
-        const { c, bus } = anterior;
-        bus.gain.cancelScheduledValues(c.currentTime);
-        bus.gain.setTargetAtTime(0, c.currentTime, 0.18);
+        fundido.gain.cancelScheduledValues(c.currentTime);
+        fundido.gain.setTargetAtTime(0, c.currentTime, 0.18);
         setTimeout(() => {
-            anterior.parar();
-            if (!sala) c.suspend(); // en silencio el contexto no gasta nada
+            escena.parar();
+            volumen.disconnect();
+            if (!activa && (!deseada || document.hidden)) c.suspend(); // en silencio no gasta nada
         }, 700);
+    }
+
+    // Otra pieza desde el principio, sin pisar la que suena: primero baja y luego entra.
+    function ponerPieza(id) {
+        const sonaba = Boolean(activa);
+        apagar();
+        marca = { pieza: id, segundos: 0 };
+        anotar();
+        if (sonaba || reinicio !== null) {
+            clearTimeout(reinicio);
+            reinicio = setTimeout(() => { reinicio = null; encender(); }, 750);
+        } else {
+            encender();
+        }
+        avisar();
+    }
+
+    // Se acabó la pieza y ya está en silencio: entra la siguiente, sin solaparse.
+    function pasarSola() {
+        const { escena, volumen } = activa;
+        activa = null;
+        clearInterval(reloj);
+        escena.parar();
+        volumen.disconnect();
+        marca = { pieza: vecina(marca.pieza, 1), segundos: 0 };
+        anotar();
+        encender();
+        avisar();
     }
 
     function alternar() {
@@ -244,6 +174,29 @@ window.Musica = (() => {
         return deseada;
     }
 
+    function elegir(id) {
+        if (id !== CONTINUA && !porId(id)) return;
+        eleccion = id;
+        window.preferencias.guardar(ELECCION, id);
+        if (id === CONTINUA || id === marca.pieza) {
+            // La pieza que suena sigue sonando; solo cambia lo que pasará al terminar.
+            if (activa) fijarFinal();
+            avisar();
+        } else {
+            ponerPieza(id);
+        }
+    }
+
+    // Anterior o siguiente. En continua sigue en continua; si no, cambia lo elegido.
+    function saltar(paso) {
+        const id = vecina(marca.pieza, paso);
+        if (eleccion !== CONTINUA) {
+            eleccion = id;
+            window.preferencias.guardar(ELECCION, id);
+        }
+        ponerPieza(id);
+    }
+
     document.addEventListener("visibilitychange", () => (document.hidden ? apagar() : encender()));
     addEventListener("pagehide", apagar);
     addEventListener("pageshow", (event) => { if (event.persisted) encender(); });
@@ -251,14 +204,16 @@ window.Musica = (() => {
 
     return {
         disponible: Boolean(window.AudioContext || window.webkitAudioContext),
+        PIEZAS,
+        CONTINUA,
         pedida: () => deseada,
+        eleccion: () => eleccion,
+        actual: () => porId(marca.pieza),
         alternar,
+        elegir,
+        saltar,
         volumen(valor) {
-            if (sala) sala.bus.gain.setTargetAtTime(valor / 100 * GANANCIA, sala.c.currentTime, 0.1);
+            if (activa) activa.volumen.gain.setTargetAtTime(valor / 100 * activa.pieza.ganancia, activa.c.currentTime, 0.1);
         },
-        // Para ensayar la pieza sin altavoces (OfflineAudioContext) en las pruebas.
-        armar,
-        componer,
-        PERIODO,
     };
 })();

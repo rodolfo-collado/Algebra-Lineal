@@ -18,9 +18,15 @@
     </fieldset>
     <fieldset class="opciones-grupo" id="musica-grupo" hidden>
         <legend>Música ambiental</legend>
-        <button type="button" class="btn btn-secondary opciones-accion" id="musica-toggle">Reproducir música</button>
+        <select class="field-select" id="musica-pieza" name="musica-pieza" aria-label="Pieza" autocomplete="off"></select>
+        <div class="musica-controles">
+            <button type="button" class="btn btn-secondary musica-salto" id="musica-anterior" aria-label="Pieza anterior" title="Pieza anterior"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6 5h2.4v14H6zM20 5.5v13L9.5 12z"/></svg></button>
+            <button type="button" class="btn btn-secondary" id="musica-toggle">Reproducir</button>
+            <button type="button" class="btn btn-secondary musica-salto" id="musica-siguiente" aria-label="Pieza siguiente" title="Pieza siguiente"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M15.6 5H18v14h-2.4zM4 5.5v13L14.5 12z"/></svg></button>
+        </div>
+        <p class="opciones-ayuda" id="musica-ahora"></p>
         <label class="volumen"><span>Volumen</span><input type="range" id="musica-volumen" name="musica-volumen" min="10" max="100" step="10" value="40"></label>
-        <p class="opciones-ayuda">Instrumental, suave y original de PyGebra. Se genera en tu equipo y cada visita empieza en silencio.</p>
+        <p class="opciones-ayuda">Original de PyGebra. Se genera en tu equipo y cada visita empieza en silencio.</p>
     </fieldset>
     <p class="opciones-nota">El tema claro u oscuro se cambia con el botón Tema.</p>
 </div>

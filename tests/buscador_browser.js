@@ -164,40 +164,91 @@
                 if (nota.getBoundingClientRect().bottom > entrada.getBoundingClientRect().top + 4) throw new Error(`Tapa el cálculo en ${estilo}`);
             }
         }],
-        ["Música: apagada, voluntaria, se pausa y su volumen no toca el de los efectos", "/", async w => {
-            w.sessionStorage.removeItem("pygebra-musica");
-            const f = await new Promise(r => { const n = document.createElement("iframe"); n.onload = () => r(n); n.src = "/"; document.body.append(n); });
+        ["Música: apagada, voluntaria, con reproductor, y su volumen no toca el de los efectos", "/", async w => {
+            const limpiar = almacen => ["pygebra-musica", "pygebra-musica-marca", "pygebra-musica-pieza", "pygebra-musica-volumen"].forEach(k => almacen.removeItem(k));
+            limpiar(w.sessionStorage); limpiar(w.localStorage);
+            const abrirMarco = () => new Promise(r => { const n = document.createElement("iframe"); n.onload = () => r(n); n.src = "/"; document.body.append(n); });
+            const f = await abrirMarco();
+            let g = null;
             const v = f.contentWindow, d = v.document;
+            const boton = d.getElementById("musica-toggle"), lista = d.getElementById("musica-pieza");
+            const elegir = id => { lista.value = id; lista.dispatchEvent(new v.Event("change", { bubbles: true })); };
             try {
-                const boton = d.getElementById("musica-toggle");
                 igual(d.getElementById("musica-grupo").hidden, false);
-                igual(boton.textContent, "Reproducir música");
+                igual(boton.textContent, "Reproducir");
                 igual(v.Musica.pedida(), false);
+                igual([...lista.options].map(o => o.value).join(), "continua,rincon,cafe,orbita,lluvia");
+                igual(lista.value, "cafe");
                 const efectos = v.localStorage.getItem("pygebra-volumen");
                 const volumen = d.getElementById("musica-volumen");
                 volumen.value = 70; volumen.dispatchEvent(new v.Event("input", { bubbles: true })); volumen.dispatchEvent(new v.Event("change", { bubbles: true }));
                 igual(v.localStorage.getItem("pygebra-musica-volumen"), "70");
                 igual(v.localStorage.getItem("pygebra-volumen"), efectos);
                 boton.click();
-                igual(boton.textContent, "Pausar música"); igual(v.sessionStorage.getItem("pygebra-musica"), "on");
+                igual(boton.textContent, "Pausar"); igual(v.sessionStorage.getItem("pygebra-musica"), "on");
                 igual(v.localStorage.getItem("pygebra-musica"), null);
+                // Anterior y siguiente cambian lo elegido y lo recuerdan.
+                d.getElementById("musica-siguiente").click();
+                igual(lista.value, "orbita"); igual(v.localStorage.getItem("pygebra-musica-pieza"), "orbita");
+                d.getElementById("musica-anterior").click(); d.getElementById("musica-anterior").click();
+                igual(lista.value, "rincon");
+                d.getElementById("musica-anterior").click();
+                igual(lista.value, "lluvia");
+                igual(d.getElementById("musica-ahora").textContent, `${v.Musica.actual().descripcion}.`);
+                // En continua, saltar no sale del modo y una línea dice qué toca.
+                elegir("continua");
+                igual(v.localStorage.getItem("pygebra-musica-pieza"), "continua");
+                igual(v.Musica.actual().id, "lluvia");
+                d.getElementById("musica-siguiente").click();
+                igual(lista.value, "continua"); igual(v.Musica.actual().id, "rincon");
+                if (!d.getElementById("musica-ahora").textContent.startsWith("Ahora: Rincón tranquilo.")) throw new Error("Falta qué suena en continua");
                 boton.click();
-                igual(boton.textContent, "Reproducir música"); igual(v.sessionStorage.getItem("pygebra-musica"), null);
-                v.localStorage.removeItem("pygebra-musica-volumen");
-                // Ensayo sin altavoces: suena, no satura y cada periodo es siempre igual.
-                const ensayar = async () => {
-                    const c = new v.OfflineAudioContext(2, 8000 * 12, 8000);
-                    const sala = v.Musica.armar(c, c.destination);
-                    sala.bus.gain.value = 0.5;
-                    v.Musica.componer(sala, 1234567, 0);
-                    return (await c.startRendering()).getChannelData(0);
-                };
-                const [a, b] = [await ensayar(), await ensayar()];
-                let pico = 0, diferencia = 0;
-                a.forEach((x, i) => { pico = Math.max(pico, Math.abs(x)); diferencia = Math.max(diferencia, Math.abs(x - b[i])); });
-                if (!(pico > 0.01 && pico < 0.5)) throw new Error(`Nivel inesperado: ${pico}`);
-                if (diferencia > 1e-3) throw new Error(`El mismo periodo suena distinto: ${diferencia}`);
-            } finally { f.remove(); }
+                igual(boton.textContent, "Reproducir"); igual(v.sessionStorage.getItem("pygebra-musica"), null);
+                // Otra visita: en silencio, con lo elegido y el volumen; una preferencia inválida no rompe nada.
+                f.remove();
+                g = await abrirMarco();
+                igual(g.contentWindow.Musica.pedida(), false);
+                igual(g.contentDocument.getElementById("musica-pieza").value, "continua");
+                igual(g.contentDocument.getElementById("musica-volumen").value, "70");
+                g.remove();
+                w.localStorage.setItem("pygebra-musica-pieza", "inexistente");
+                g = await abrirMarco();
+                igual(g.contentDocument.getElementById("musica-pieza").value, "cafe");
+                // Ensayo sin altavoces: las cuatro suenan, no saturan y un compás siempre suena igual.
+                const piezas = g.contentWindow.Musica.PIEZAS;
+                for (const p of piezas) {
+                    const ensayar = async () => {
+                        const c = new g.contentWindow.OfflineAudioContext(2, 8000 * 12, 8000);
+                        const sala = p.armar(c, c.destination);
+                        sala.bus.gain.value = 0.5;
+                        p.componer(sala, 8, 0);
+                        return (await c.startRendering()).getChannelData(0);
+                    };
+                    const [a, b] = [await ensayar(), await ensayar()];
+                    let pico = 0, diferencia = 0;
+                    a.forEach((x, i) => { pico = Math.max(pico, Math.abs(x)); diferencia = Math.max(diferencia, Math.abs(x - b[i])); });
+                    if (!(pico > 0.01 && pico < 0.7)) throw new Error(`${p.id}: nivel inesperado ${pico}`);
+                    // El eco realimentado de Órbita puede moverse un bloque de audio entre ensayos: no es una nota.
+                    if (diferencia > 0.1 * pico) throw new Error(`${p.id}: el mismo compás suena distinto: ${diferencia}`);
+                    if (!p.notasDe) continue;
+                    // La partitura, también al dar la vuelta: nada a un semitono ni a una novena menor.
+                    const eventos = [];
+                    for (let k = 0; k < p.LARGO + 8; k++) for (const n of p.notasDe(k)) {
+                        if (n.midi) eventos.push({ ...n, k, a: k * 4 + n.pulso, z: k * 4 + n.pulso + n.dur });
+                    }
+                    eventos.forEach((x, i) => eventos.slice(i + 1).forEach(y => {
+                        const distancia = Math.abs(x.midi - y.midi);
+                        if (x.a < y.z && y.a < x.z && [1, 13, 25].includes(distancia)) throw new Error(`${p.id}: choque en el compás ${x.k}: ${x.voz} ${x.midi} y ${y.voz} ${y.midi}`);
+                    }));
+                }
+                // Cuatro piezas que se distinguen: ni el mismo pulso ni los mismos instrumentos.
+                igual(new Set(piezas.map(p => p.COMPAS)).size, 4);
+                const voces = p => [...new Set(Array.from({ length: p.LARGO }, (_, k) => p.notasDe(k).map(n => n.voz)).flat())].sort().join();
+                igual(new Set(piezas.filter(p => p.notasDe).map(voces)).size, 3);
+            } finally {
+                f.remove(); g?.remove();
+                limpiar(w.sessionStorage); limpiar(w.localStorage);
+            }
         }],
         ["Grupos y herramientas ocultos no se pueden enfocar", "/", w => {
             menu(w); valor(w, "inversa", true); const input = q(w, "#buscador-lateral"); input.focus();

@@ -236,21 +236,29 @@ class PruebasEstiloYSonido(SimpleTestCase):
 
     def test_la_musica_es_voluntaria_local_e_independiente_de_los_efectos(self):
         musica = (STATIC / "musica.js").read_text(encoding="utf-8")
-        for ausente in ("fetch(", "new Audio(", ".mp3", ".wav", ".ogg", "http", "localStorage"):
+        piezas = (STATIC / "musica_piezas.js").read_text(encoding="utf-8")
+        # Partituras escritas: Math.random no decide ninguna nota.
+        for ausente in ("fetch(", "new Audio(", ".mp3", ".wav", ".ogg", "http", "localStorage", "Math.random"):
             self.assertNotIn(ausente, musica)
+            self.assertNotIn(ausente, piezas)
         # Cada visita empieza en silencio: encendida solo durante la sesión, nunca como preferencia.
         self.assertIn('sessionStorage.getItem(SESION) === "on"', musica)
         self.assertIn("let deseada = false", musica)
         self.assertNotIn("pygebra-musica", set(preferencias.VALORES))
         self.assertEqual(preferencias.VALORES["pygebra-musica-volumen"], preferencias.VALORES["pygebra-volumen"])
+        # Lo elegido se recuerda: las piezas de la lista blanca son las que existen.
+        self.assertEqual(preferencias.VALORES["pygebra-musica-pieza"],
+                         ("continua", *re.findall(r'^ +id: "(\w+)",$', piezas, re.M)))
         # Calla con la ventana oculta y no gasta en silencio.
         for contrato in ('"visibilitychange"', "document.hidden", "c.suspend()"):
             self.assertIn(contrato, musica)
         html = self.client.get("/").content.decode("utf-8")
         self.assertRegex(html, r'<fieldset class="opciones-grupo" id="musica-grupo" hidden>')
-        self.assertIn('id="musica-toggle">Reproducir música</button>', html)
-        self.assertIn('id="musica-volumen"', html)
-        self.assertLess(html.index("calculadora/sonido.js"), html.index("calculadora/musica.js"))
+        self.assertIn('id="musica-toggle">Reproducir</button>', html)
+        for control in ('id="musica-pieza"', 'id="musica-anterior"', 'id="musica-siguiente"', 'id="musica-volumen"'):
+            self.assertIn(control, html)
+        self.assertLess(html.index("calculadora/sonido.js"), html.index("calculadora/musica_piezas.js"))
+        self.assertLess(html.index("calculadora/musica_piezas.js"), html.index("calculadora/musica.js"))
         self.assertLess(html.index("calculadora/musica.js"), html.index("calculadora/opciones.js"))
 
     def test_la_escena_es_decorativa_y_sus_ids_no_chocan(self):
