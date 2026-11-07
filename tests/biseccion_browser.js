@@ -209,6 +209,43 @@
             }
             w.document.documentElement.setAttribute("data-estilo", "estudio");
         }],
+        ["Punto decimal en explicaciones y ejes, y «=» o «≈» en la gráfica según el redondeo", async (w, frame) => {
+            for (const estilo of ["estudio", "minimalista"]) {
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
+                w = await post(frame); await esperar(() => listaGrafica(w));
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                q(w, "#paso-detalles").open = true;
+                const slider = q(w, "#iteracion-biseccion");
+                for (const i of ["1", "7", slider.max]) {
+                    slider.value = i; slider.dispatchEvent(new w.Event("input", { bubbles: true }));
+                    const texto = ["#paso-valores", "#paso-signos", "#paso-decision", "#paso-intervalo"].map(s => q(w, s).textContent).join(" ") + slider.getAttribute("aria-valuetext");
+                    ok(!/\d,\d/.test(texto), `${estilo}, iteración ${i}: sin coma decimal: ${texto}`);
+                    ok(/\d\.\d/.test(texto), `${estilo}, iteración ${i}: con punto decimal`);
+                }
+                ok(grafica(w).layout.separators.startsWith("."), "Ejes con punto decimal");
+                const comprobar = (traza, digitos) => {
+                    const d = grafica(w).data[traza];
+                    ok(!/= %\{[xy]/.test(d.hovertemplate), "Sin «=» fijo en la etiqueta");
+                    ok(d.customdata?.length === d.x.length, "Una etiqueta por punto");
+                    d.x.forEach((x, i) => [[x, d.customdata[i][0]], [d.y[i], d.customdata[i][1]]].forEach(([v, e]) => {
+                        if (v === null) return;
+                        const corto = Number(v.toPrecision(digitos));
+                        ok(e === `${corto === v ? "=" : "≈"} ${corto}`, `${estilo}: etiqueta de ${v}: ${e}`);
+                    }));
+                    return d.customdata.flat();
+                };
+                const curva = comprobar(0, 10), puntos = comprobar(1, 12);
+                ok(curva.some(e => e.startsWith("≈")) && curva.some(e => e.startsWith("=")), "La curva tiene valores exactos y redondeados");
+                ok(puntos.some(e => e.startsWith("≈")), "Los puntos de la iteración redondeados usan ≈");
+            }
+            // Singular y plural: una raíz exacta tras una iteración.
+            valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "2");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            ok(/^1 iteración ·/.test(q(w, "#resultado .results-heading .muted").textContent.trim()), "Una iteración, en singular");
+            ok(grafica(w).data[1].customdata[1][0] === "= 1.5", "c exacto en la gráfica: = 1.5");
+            w.document.documentElement.setAttribute("data-estilo", "estudio");
+        }],
         ["Redondear no convierte una desigualdad estricta en igualdad", async (w, frame) => {
             valor(w, "funcion", "x-0.0001234567"); valor(w, "a", "0"); valor(w, "b", "0.00019999998");
             w = await post(frame); await esperar(() => listaGrafica(w));

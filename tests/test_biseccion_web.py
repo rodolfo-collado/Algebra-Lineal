@@ -86,6 +86,15 @@ class BiseccionWebTests(SimpleTestCase):
         js = (Path(__file__).resolve().parents[1] / "frontend/web/calculadora/static/calculadora/biseccion.js").read_text(encoding="utf-8")
         self.assertIn('relacion.textContent = aproximado ? "≈" : "="', js)
 
+    def test_iteraciones_en_singular_y_plural(self):
+        for cambios, texto in [({"funcion": "x-1.5", "a": "1", "b": "2"}, "1 iteración ·"),
+                               ({}, "13 iteraciones ·"),
+                               ({"funcion": "x", "a": "0", "b": "1"}, "0 iteraciones ·")]:
+            with self.subTest(cambios=cambios):
+                r = self.client.post(RUTA, datos(**cambios))
+                self.assertContains(r, texto)
+                self.assertNotContains(r, "1 iteraciones")
+
     def test_notaciones_comparten_resultado_muestras_y_clave_de_comparacion(self):
         implicita = "x⁴ - 5x³ + 0.5x² - 11x + 10"
         r = self.client.post(RUTA, datos(funcion=implicita))

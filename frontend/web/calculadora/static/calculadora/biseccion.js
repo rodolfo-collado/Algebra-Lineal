@@ -16,7 +16,11 @@
     const seleccion = document.getElementById("grafica-seleccion");
     const elegir = [...document.querySelectorAll("[data-elegir-extremo]")];
     const filas = [...document.querySelectorAll("[data-iteracion]")];
-    const numero = (x, digitos = 12) => Number(x).toLocaleString("es", { maximumSignificantDigits: digitos });
+    // Punto decimal y sin separador de miles, como las tablas y el resultado de Bisección.
+    const numero = (x, digitos = 12) => Number(x).toLocaleString("en-US", { maximumSignificantDigits: digitos, useGrouping: false });
+    // En la gráfica: «=» si las cifras mostradas son el valor de la muestra; si no, «≈».
+    const etiqueta = (x, digitos) => x === null ? "" : `${Number(x.toPrecision(digitos)) === x ? "=" : "≈"} ${Number(x.toPrecision(digitos))}`;
+    const etiquetas = (xs, ys, digitos) => xs.map((x, i) => [etiqueta(x, digitos), etiqueta(ys[i], digitos)]);
     const campo = nombre => form.elements.namedItem(nombre);
     const color = nombre => getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
     let mutando = false, temporizador, peticion, inicializacion, generacion = 0, extremoElegido = null;
@@ -129,6 +133,7 @@
         if (!grafica.data) return;
         mutando = true;
         Plotly.update(grafica, { x: [[p.a, p.c, p.b]], y: [[p.fa, p.fc, p.fb]],
+            customdata: [etiquetas([p.a, p.c, p.b], [p.fa, p.fc, p.fb], 12)],
             text: [["a", "c (punto medio)", "b"]] }, { "shapes[2].x0": p.a, "shapes[2].x1": p.b }, [1])
             .finally(() => { mutando = false; });
     }
@@ -153,7 +158,7 @@
             ayudaGrafica.hidden = false;
             await (inicializacion ??= iniciar());
             if (n !== generacion) return;
-            await Plotly.restyle(grafica, { x: [puntos.x], y: [puntos.y] }, [0]);
+            await Plotly.restyle(grafica, { x: [puntos.x], y: [puntos.y], customdata: [etiquetas(puntos.x, puntos.y, 10)] }, [0]);
             if (n !== generacion) return;
             if (moverEjes) {
                 mutando = true;
@@ -261,13 +266,14 @@
                 { ...linea(extremo("b") ?? 0, "b"), visible: extremo("b") !== null },
                 { ...franja(0, 0), visible: pasos.length > 0 }],
             dragmode: "pan",
+            separators: ".\u202f", // punto decimal también en los ejes; los textos siguen en español
         };
         await Plotly.newPlot(grafica, [
             { x: [], y: [], type: "scatter", mode: "lines", connectgaps: false, name: "f(x)",
-                line: { color: color("--color-brand"), width: 2 }, hovertemplate: "x = %{x:.10g}<br>f(x) = %{y:.10g}<extra></extra>" },
+                line: { color: color("--color-brand"), width: 2 }, hovertemplate: "x %{customdata[0]}<br>f(x) %{customdata[1]}<extra></extra>" },
             { x: [], y: [], type: "scatter", mode: "markers", name: "Iteración",
                 marker: { size: [9, 13, 9], symbol: ["circle", "diamond", "circle"], color: color("--color-text") },
-                hovertemplate: "%{text}<br>x = %{x:.12g}<br>f(x) = %{y:.12g}<extra></extra>" },
+                hovertemplate: "%{text}<br>x %{customdata[0]}<br>f(x) %{customdata[1]}<extra></extra>" },
         ], layout, { responsive: true, locale: "es", displaylogo: false, scrollZoom: false,
             edits: { shapePosition: true },
             modeBarButtons: [["zoom2d", "pan2d", "zoomIn2d", "zoomOut2d", "resetScale2d"]] });
@@ -311,7 +317,8 @@
             Plotly.restyle(grafica, { "marker.color": color("--color-text") }, [1]);
         }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-estilo"] });
         if (pasos.length) mostrarPaso(Number(slider.value));
-        else if (resultado) Plotly.restyle(grafica, { x: [[resultado.c]], y: [[resultado.fc]], text: [["c"]] }, [1]);
+        else if (resultado) Plotly.restyle(grafica, { x: [[resultado.c]], y: [[resultado.fc]], text: [["c"]],
+            customdata: [etiquetas([resultado.c], [resultado.fc], 12)] }, [1]);
     }
     campo("funcion").addEventListener("input", previsualizar);
     ["a", "b"].forEach(n => campo(n).addEventListener("input", sincronizarExtremos));
