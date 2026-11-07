@@ -46,7 +46,7 @@
         <h2 id="results-title">{% if resultado.convergio %}Raíz aproximada{% else %}Aproximación sin convergencia{% endif %}</h2>
         <p class="biseccion-raiz">c ≈ <span>{{ resultado.c|numero_biseccion }}</span></p>
         <p class="biseccion-estado{% if not resultado.convergio %} biseccion-aviso{% endif %}">{{ resultado.mensaje }}</p>
-        <p class="muted">{{ resultado.iteraciones|length }} iteraciones · f(c) = {{ resultado.fc|numero_biseccion }}</p>
+        <p class="muted">{{ resultado.iteraciones|length }} iteraciones · f(c) <span data-biseccion-relacion>=</span> {{ resultado.fc|numero_biseccion }}</p>
     </header>
 {% endif %}
     <section class="panel biseccion-visual" aria-labelledby="grafica-titulo">

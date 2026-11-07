@@ -55,7 +55,10 @@
                 grupo.forEach((d, i) => {
                     const texto = esCompleto || p > 16 ? completo(d.valor) : textos[i];
                     const aproximado = Number(texto) !== d.valor;
-                    d.nodo.textContent = (aproximado && !d.nodo.closest(".biseccion-raiz") ? "≈ " : "") + texto;
+                    // Tras un «=» escrito, el redondeo cambia ese signo por «≈» en vez de sumar otro.
+                    const relacion = d.nodo.previousElementSibling?.matches("[data-biseccion-relacion]") ? d.nodo.previousElementSibling : null;
+                    if (relacion) relacion.textContent = aproximado ? "≈" : "=";
+                    d.nodo.textContent = (aproximado && !relacion && !d.nodo.closest(".biseccion-raiz") ? "≈ " : "") + texto;
                     d.nodo.setAttribute("aria-label", aproximado ? `${texto}, redondeado; valor almacenado ${d.valor}` : texto);
                 });
             }
@@ -101,20 +104,23 @@
         slider.value = String(i);
         anterior.disabled = i === 1;
         siguiente.disabled = i === pasos.length;
-        slider.setAttribute("aria-valuetext", `Iteración ${i} de ${pasos.length}, c = ${numero(p.c)}`);
+        // «=» solo si las cifras mostradas son el valor almacenado; si no, «≈».
+        const igual = (x, digitos) => `${Number(x.toPrecision(digitos)) === x ? "=" : "≈"} ${numero(x, digitos)}`;
+        slider.setAttribute("aria-valuetext", `Iteración ${i} de ${pasos.length}, c ${igual(p.c, 12)}`);
         const valores = new Set([p.a, p.c, p.b, p.nuevo_a, p.nuevo_b]);
         let digitos = 8;
         // Mostrar los puntos distintos como distintos, incluso con tolerancias muy pequeñas.
         while (digitos < 17 && new Set([...valores].map(x => numero(x, digitos))).size < valores.size) digitos++;
         const n = x => numero(x, digitos);
+        const r = x => igual(x, digitos);
         const signo = x => x > 0 ? "positivo" : x < 0 ? "negativo" : "cero";
         lectura.querySelector("#paso-titulo").textContent = `Iteración ${i} de ${pasos.length}`;
-        detallesPaso.querySelector("#paso-valores").textContent = `Antes de dividir: a (izquierdo) = ${n(p.a)} · c (punto medio) = ${n(p.c)} · b (derecho) = ${n(p.b)}.`;
-        detallesPaso.querySelector("#paso-signos").textContent = `f(a) = ${n(p.fa)} (${signo(p.fa)}) · f(c) = ${n(p.fc)} (${signo(p.fc)}) · f(b) = ${n(p.fb)} (${signo(p.fb)}).`;
+        detallesPaso.querySelector("#paso-valores").textContent = `Antes de dividir: a (izquierdo) ${r(p.a)} · c (punto medio) ${r(p.c)} · b (derecho) ${r(p.b)}.`;
+        detallesPaso.querySelector("#paso-signos").textContent = `f(a) ${r(p.fa)} (${signo(p.fa)}) · f(c) ${r(p.fc)} (${signo(p.fc)}) · f(b) ${r(p.fb)} (${signo(p.fb)}).`;
         const cambiaA = (p.fa < 0) === (p.fc < 0);
         const decision = cambiaA
-            ? `f(a) y f(c) tienen el mismo signo (${signo(p.fa)}). Descartamos la mitad izquierda [a,c]: c pasa a ser el nuevo a = ${n(p.c)}; b permanece en ${n(p.b)}. Conservamos la mitad derecha [c,b].`
-            : `f(c) y f(b) tienen el mismo signo (${signo(p.fb)}). Descartamos la mitad derecha [c,b]: c pasa a ser el nuevo b = ${n(p.c)}; a permanece en ${n(p.a)}. Conservamos la mitad izquierda [a,c].`;
+            ? `f(a) y f(c) tienen el mismo signo (${signo(p.fa)}). Descartamos la mitad izquierda [a,c]: c pasa a ser el nuevo a ${r(p.c)}; b permanece en ${n(p.b)}. Conservamos la mitad derecha [c,b].`
+            : `f(c) y f(b) tienen el mismo signo (${signo(p.fb)}). Descartamos la mitad derecha [c,b]: c pasa a ser el nuevo b ${r(p.c)}; a permanece en ${n(p.a)}. Conservamos la mitad izquierda [a,c].`;
         lectura.querySelector("#paso-decision").textContent = p.fc === 0
             ? `f(c) = 0 en aritmética de máquina: encontramos una raíz calculada. Ambos extremos pasan a c; no descartamos otra mitad ni seguimos dividiendo.`
             : decision;
