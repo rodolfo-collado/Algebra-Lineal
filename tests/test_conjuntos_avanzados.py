@@ -72,6 +72,7 @@ class IntervalosTests(unittest.TestCase):
         for texto in ('intervalo(2,1,cerrado,cerrado)', 'intervalo(-inf,1,cerrado,cerrado)',
                       'intervalo(0,-inf,abierto,abierto)', 'intervalo("0",1,abierto,abierto)',
                       'intervalo(0,1,mal,abierto)', '|intervalo(0,1,abierto,abierto)|',
+                      '|intervalo(-inf,inf,abierto,abierto)|', '|intervalo(-inf,0,abierto,cerrado)|',
                       f'{a} ∪ {{1}}', f'∁({a},{b})', 'potencia(intervalo(0,1,abierto,abierto))'):
             with self.subTest(texto=texto), self.assertRaises(ValueError):
                 calcular(texto)
@@ -137,3 +138,11 @@ class RegionesTests(unittest.TestCase):
                 resolver_cardinalidades(('A','B'), datos, **extra)
         with self.assertRaisesRegex(ValueError,'presupuesto'):
             resolver_cardinalidades(('A','B'), {1:0,2:0,3:0}, presupuesto=Presupuesto(calculo=45000))
+
+    def test_inversion_de_todas_las_distribuciones_binarias_de_tres_conjuntos(self):
+        for distribucion in range(128):
+            regiones = {m:int(bool(distribucion & (1 << (m-1)))) for m in range(1,8)}
+            intersecciones = {m:sum(v for k,v in regiones.items() if k & m == m) for m in range(1,8)}
+            r = resolver_cardinalidades(('A','B','C'), intersecciones, modo='intersecciones', expresion='A ∪ B ∪ C')
+            self.assertEqual({m:r['regiones'][m] for m in range(1,8)},regiones)
+            self.assertEqual(r['resultado'],sum(regiones.values()))

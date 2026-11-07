@@ -26,14 +26,14 @@
     <p>Cardinalidad de la unión: {{ resultado.union }}</p>
     <div data-venn></div>
     <table><caption>Regiones exclusivas y suma solicitada (A, B, C en ese orden)</caption><thead><tr><th>Pertenencia</th><th>Cardinalidad</th><th>Seleccionada</th></tr></thead><tbody>
-    {% for r in resultado.filas %}<tr><th>{{ r.pertenece }}</th><td>{{ r.cantidad|default_if_none:"Desconocida" }}</td><td>{{ r.seleccionada|yesno:"Sí,No" }}</td></tr>{% endfor %}
+    {% for r in resultado.filas %}<tr><th>{{ r.etiqueta }}</th><td>{{ r.cantidad|default_if_none:"Desconocida" }}</td><td>{{ r.seleccionada|yesno:"Sí,No" }}</td></tr>{% endfor %}
     </tbody></table>
-    <details id="procedimiento"><summary>Ver procedimiento</summary>
+    {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
     {% for p in resultado.pasos %}
-        {% if p.regla == 'region_exclusiva' %}<p>Región {{ p.mascara }}: {{ p.inicial }}{% for m in p.restar %} − región {{ m }}{% endfor %} = {{ p.resultado }}. Restamos las regiones superiores ya calculadas para evitar contarlas de nuevo.</p>
-        {% elif p.regla == 'inclusion_exclusion' %}<p>Inclusión-exclusión: {% for t in p.terminos %}{% if t.signo == 1 %}+{% else %}−{% endif %} {{ t.valor }}{% endfor %} = {{ p.resultado }}. Sumamos conjuntos, restamos intersecciones dobles y sumamos la triple.</p>
-        {% else %}<p>Sumamos una sola vez las regiones seleccionadas {{ p.regiones }}: {{ p.resultado }}.</p>{% endif %}
-    {% endfor %}</details>
+        {% if p.regla == 'region_exclusiva' %}<p>{{ p.etiqueta }}: {{ p.inicial }}{% for s in p.sustraendos %} − {{ s.cantidad }} ({{ s.etiqueta }}){% endfor %} = {{ p.resultado }}. Restamos las regiones superiores ya calculadas para evitar contarlas de nuevo.</p>
+        {% elif p.regla == 'inclusion_exclusion' %}<p>Inclusión-exclusión: {% for t in p.terminos %}{% if t.signo == 1 %}+{% else %}−{% endif %} {{ t.valor }} ({{ t.etiqueta }}){% endfor %} = {{ p.resultado }}. Sumamos conjuntos, restamos intersecciones dobles y sumamos la triple.</p>
+        {% else %}<p>Sumamos una sola vez las regiones seleccionadas {{ p.etiquetas|join:", "|default:"ninguna" }}: {{ p.resultado }}.</p>{% endif %}
+    {% endfor %}{% enddisclosure %}
 </section>
 {{ resultado.datos|json_script:"conjuntos-resultado-datos" }}
 {% endif %}

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 
 from backend.presupuesto_computacional import Estimacion
-from .modelo import Conjunto, presentar, peso
+from .modelo import Conjunto, Par, presentar, peso
 from .generacion import generar
 from .intervalos import Recta, operar_rectas, contiene
 from .parser import Operacion, Referencia, Relacion
@@ -26,7 +26,7 @@ class Paso:
 
 @dataclass(frozen=True)
 class Resultado:
-    valor: bool | Fraction | str | Conjunto
+    valor: bool | Fraction | str | Conjunto | Par | Recta
     pasos: tuple[str, ...]
     estimacion: Estimacion
     procedimiento: tuple[Paso, ...] = ()
@@ -147,7 +147,7 @@ def _como_recta(valor):
 def _operar_intervalos(operador, operandos):
     a = _como_recta(operandos[0])
     if operador == '|':
-        if any(i.inferior != i.superior for i in a.intervalos):
+        if any(i.inferior is None or i.superior is None or i.inferior != i.superior for i in a.intervalos):
             raise ValueError('Un intervalo no degenerado tiene infinitos elementos; no tiene cardinalidad finita.')
         return Paso(operador, operandos, Fraction(len(a.intervalos)), 'cardinalidad', 'Cada tramo puntual cerrado aporta un elemento; el vacío aporta cero.')
     b = _como_recta(operandos[1])

@@ -55,7 +55,9 @@ def relacion_web(texto, entorno, *, presupuesto=None, punto='', venn_nombres=(),
     if venn_nombres:
         regiones = construir_venn(venn_nombres,entorno,expresion,universo=venn_universo,presupuesto=presupuesto)
         regiones = [{**r, 'elementos':[_valor_web(e) for e in r['elementos']],
-                     'etiquetas':[presentar(e) for e in r['elementos']], 'cantidad':str(len(r['elementos']))} for r in regiones]
+                     'etiqueta':' ∩ '.join(n if incluido else f'{n}ᶜ' for n,incluido in zip(venn_nombres,r['pertenece'])),
+                     'etiquetas':[presentar(e) for e in r['elementos']],
+                     'cantidad':str(len(r['elementos'])) if r['exterior_conocido'] else None} for r in regiones]
         datos['venn'] = {'nombres':venn_nombres, 'regiones':regiones}
     return {"expresion": texto, "respuesta": respuesta, "datos": datos, 'regiones':regiones,
             "pasos": resultado.pasos, "estimacion": resultado.estimacion}

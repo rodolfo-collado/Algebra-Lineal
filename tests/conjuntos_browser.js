@@ -148,7 +148,10 @@
         try {
             await new Promise((resolve, reject) => {
                 const timer = setTimeout(() => reject(new Error("Timeout GET")), 15000);
-                frame.onload = () => { clearTimeout(timer); resolve(); };
+                frame.onload = () => {
+                    if (frame.contentWindow.location.pathname !== '/conjuntos/relaciones/') return;
+                    clearTimeout(timer); resolve();
+                };
                 frame.src = "/conjuntos/relaciones/";
             });
             await prueba(frame.contentWindow, frame);

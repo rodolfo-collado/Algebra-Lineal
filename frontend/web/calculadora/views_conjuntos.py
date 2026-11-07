@@ -48,12 +48,14 @@ def cardinalidades_conjuntos(request):
             resultado = resolver_cardinalidades(form.nombres,datos,modo=form.cleaned_data['modo'],
                 universo=form.cleaned_data['universo'],expresion=form.cleaned_data['expresion'])
             regiones = [{'mascara':m, 'cantidad':None if v is None else str(v), 'seleccionada':m in resultado['seleccionadas'],
+                         'etiqueta':' ∩ '.join(n if m & (1 << i) else f'{n}ᶜ' for i,n in enumerate(form.nombres)),
                          'pertenece':tuple(bool(m & (1 << i)) for i in range(len(form.nombres))), 'etiquetas':[],
                          'exterior_conocido':v is not None} for m,v in sorted(resultado['regiones'].items())]
             resultado['datos'] = {'venn':{'nombres':form.nombres,'regiones':regiones},
                 'resultado':str(resultado['resultado']), 'union':str(resultado['union']),
                 'pasos':[{**p, 'resultado':str(p['resultado']),
                           **({'inicial':str(p['inicial'])} if 'inicial' in p else {}),
+                          **({'sustraendos':[{**s,'cantidad':str(s['cantidad'])} for s in p['sustraendos']]} if 'sustraendos' in p else {}),
                           **({'terminos':[{**t,'valor':str(t['valor'])} for t in p['terminos']]} if 'terminos' in p else {})} for p in resultado['pasos']]}
             resultado['filas'] = regiones
         except ValueError as error:

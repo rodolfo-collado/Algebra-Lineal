@@ -95,7 +95,7 @@
     {% if resultado.regiones %}
     <section class="panel" aria-label="Diagrama de Venn"><h3>Diagrama de Venn</h3><div data-venn></div>
         <table><caption>Regiones disjuntas; pertenencia según el orden de nombres indicado</caption><thead><tr><th>Región</th><th>Elementos</th><th>Seleccionada</th></tr></thead><tbody>
-        {% for region in resultado.regiones %}<tr><th>{{ region.pertenece }}</th><td>{% for e in region.etiquetas %}{{ e }}{% if not forloop.last %}, {% endif %}{% empty %}Vacía{% endfor %}</td><td>{{ region.seleccionada|yesno:"Sí,No" }}</td></tr>{% endfor %}
+        {% for region in resultado.regiones %}<tr><th>{{ region.etiqueta }}</th><td>{% for e in region.etiquetas %}{{ e }}{% if not forloop.last %}, {% endif %}{% empty %}{% if region.exterior_conocido %}Vacía{% else %}Exterior no especificado{% endif %}{% endfor %}</td><td>{{ region.seleccionada|yesno:"Sí,No" }}</td></tr>{% endfor %}
         </tbody></table>
     </section>
     {% endif %}

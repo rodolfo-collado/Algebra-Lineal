@@ -3,20 +3,20 @@
 [Índice](README.md) · Herramienta web y desktop: **Conjuntos → Conjuntos finitos → Relaciones entre conjuntos**.
 
 P1 está completado e integrado mediante el [PR #104](https://github.com/rodolfo-collado/Algebra-Lineal/pull/104).
-P2 extiende su parser y evaluador con operaciones finitas y cardinalidad.
+P2–P6 extienden el mismo parser y evaluador con operaciones finitas, generación, intervalos, Venn y cardinalidades. Todo el trabajo continúa en la rama `feature/conjuntos-p2-operaciones` y el PR #113.
 El acceso público está temporalmente bloqueado: Conjuntos figura como
 **Próximamente**, igual que Cálculo, y las URL `/conjuntos/…` responden 404.
 La implementación, los avances y la documentación que sigue se conservan.
 Las pruebas matemáticas siguen activas; las del editor usan una URLConf exclusiva
 de pruebas, que no habilita el módulo en la aplicación ni en el ejecutable.
-Consulta el [TODO de Conjuntos](TODO-conjuntos.md) para las fases P2–P7, las mejoras
+Consulta el [TODO de Conjuntos](TODO-conjuntos.md) para el estado de P1–P7, las mejoras
 detectadas en las pruebas desktop y las posibles extensiones futuras.
 
 ## Definir y editar
 
 En **Nueva definición**, escribe `A = {1, 2, {3, 4}, "rojo"}` y pulsa
 **Añadir conjunto**. Cada definición tiene nombre y contenido editables por
-separado. **Guardar cambios** aplica la edición sin calcular; **Comprobar relación**
+separado. **Guardar cambios** aplica la edición sin calcular; **Calcular expresión**
 también usa las definiciones editadas. Eliminar quita solo la definición elegida:
 si una expresión aún la referencia, el próximo cálculo explica que falta.
 Los conjuntos pertenecen al formulario actual, como los operandos de matrices;
@@ -49,7 +49,7 @@ Así no existen referencias cíclicas ni dependencias ocultas entre definiciones
 ## Operaciones, relaciones y agrupación
 
 La expresión puede producir un conjunto, un número, un texto o un booleano.
-Un operando es un nombre definido, un número, un texto, un literal o una operación.
+Un operando es un nombre definido, un número, un texto, un conjunto, un par, una región real o una operación.
 Los paréntesis agrupan valores: `((A)) ⊆ ({1, 2})` y `(A ∪ B) ∩ C`.
 Se admite como máximo una relación, en el nivel exterior; no se admiten relaciones
 encadenadas ni agrupadas como valores, ni operadores ASCII alternativos.
@@ -64,19 +64,20 @@ con `{1}` y nunca modifica su definición.
 | Complemento | `∁(A, U)` | Exige A ⊆ U y devuelve los elementos de U que no pertenecen a A. |
 | Cardinalidad | `|A|` | Cuenta los elementos distintos completos; devuelve un `Fraction` entero. |
 
-Las cinco operaciones exigen conjuntos finitos. El universo del complemento es
+En P2 las operaciones exigen conjuntos finitos; P4 extiende unión, intersección,
+diferencia y complemento a regiones reales. El universo del complemento es
 un segundo argumento obligatorio y puede ser una expresión: `∁(A, A ∪ B)`.
 No se infiere un universo de otros conjuntos definidos y se rechaza A si contiene
 algún elemento ajeno a U. No hay complemento unario ni función con nombre reservado.
 La diferencia utiliza **U+2216 `∖`**, no barra inversa ni el signo de resta.
 
-Precedencia, de mayor a menor: agrupaciones, `∁(…, …)` y `|…|`; después `∩`;
-después `∪` y `∖`, con igual prioridad y asociación a la izquierda; al final la
+Precedencia, de mayor a menor: agrupaciones, funciones y `|…|`; producto `×`;
+intersección `∩`; después `∪` y `∖`, con igual prioridad y asociación a la izquierda; al final la
 relación opcional. Así `A ∪ B ∩ C` significa `A ∪ (B ∩ C)` y `A ∖ B ∪ C`
 significa `(A ∖ B) ∪ C`. Usa `A ∖ (B ∪ C)` si quieres excluir ambos.
 La cardinalidad produce un número, por lo que `|A| ∪ B` se rechaza por tipos.
 Los conjuntos anidados siguen siendo elementos completos: `|{1, {1}, {{1}}}| = 3`.
-Las definiciones siguen admitiendo solamente literales; `S = A ∪ B` no define S.
+Las definiciones admiten conjuntos finitos o un intervalo literal; `S = A ∪ B` no define S.
 
 | Relación | Regla |
 | --- | --- |
@@ -173,48 +174,141 @@ Los números usan cadenas para evitar pérdida de precisión en JavaScript.
 no promete orden numérico. Claude puede presentar cada paso desde sus operandos,
 resultado, regla y hechos, sin interpretar `respuesta`/`explicacion`, reconstruir
 conjuntos desde texto ni calcular de nuevo operaciones o relaciones.
-El editor y el teclado existentes permiten probar P2 con la URLConf de pruebas;
+El editor y el teclado existentes permiten probar P2–P6 con la URLConf de pruebas;
 el refinamiento visual, Estudio y Minimalista quedan fuera de este incremento.
 
-## Extensiones posteriores, sin implementarlas
+## Potencia, producto cartesiano y pares (P3)
 
-El AST separa referencias, valores, operaciones y relaciones. Nuevos tipos
-inmutables (pares e intervalos) extenderán el dominio de elementos y su
-presentación, manteniendo las reglas de conjuntos finitos.
+`potencia(A)` genera todos los subconjuntos, incluido el vacío. `A × B` genera
+pares `par(a, b)`, distintos de los conjuntos de dos elementos. Las posiciones
+importan: `par(1,2) ≠ par(2,1)`. Pueden contener valores anidados y aparecer dentro
+de literales: `{par(1,{2})}`. Los literales siguen sin admitir referencias.
+`par(A,B)` en una expresión sí resuelve ambas referencias con el mismo evaluador.
+El producto tiene mayor prioridad que ∩ y se asocia a la izquierda:
+`A × B × C` contiene pares `par(par(a,b),c)`, no ternas implícitas.
 
-**Pares e intervalos:** reservar sintaxis explícita `par(1, 2)` e
-`intervalo(1, 2, abierto, abierto)`. `(1,2)` está rechazado en P1 y no debería
-adquirir dos significados según el contexto. Cualquier notación abreviada futura
-deberá tener un marcador inequívoco; los paréntesis actuales siguen agrupando.
+La generación es manual. Antes de enumerar se reserva el peso recursivo del
+resultado expandido (2^n subconjuntos o n×m pares), los operandos y su presentación.
+Las solicitudes que exceden el presupuesto acumulado se rechazan antes de crear
+los resultados. No se truncan resultados ni se sustituyen por aproximaciones.
 
-**Editor estructurado opcional:** se pospone. La cuadrícula de vectores presupone
-posiciones numéricas y dimensión común; no representa un árbol heterogéneo.
-Propuesta: una lista por conjunto con «Añadir elemento» y tipo número/texto/conjunto;
-elegir conjunto despliega otra lista sin nombre. Cada fila genera el mismo literal
-seguro y pasa por `analizar_literal`, con presupuesto acumulado. Reutilizaría
-tarjetas, etiquetas, botones y teclado; no el controlador de dimensiones ni un
-segundo modelo o evaluador. P1 conserva la entrada textual como única modalidad
-de definición.
+## Intervalos y recta real (P4)
 
-No se implementan potencia, producto cartesiano,
-intervalos, Venn ni comprensión. Los ajustes detectados en las pruebas desktop
-se registran en el [TODO de Conjuntos](TODO-conjuntos.md).
+La sintaxis literal es `intervalo(inferior, superior, abierto, cerrado)`; ambos
+cierres admiten `abierto` o `cerrado`. Ejemplos:
+
+- `intervalo(0,1,abierto,abierto)` representa (0,1).
+- `intervalo(0,1,cerrado,cerrado)` representa [0,1].
+- `intervalo(-inf,2,abierto,cerrado)` representa (−∞,2].
+- `intervalo(0,inf,cerrado,abierto)` representa [0,+∞).
+
+También se aceptan −∞ escrito como `-∞` y +∞ como `∞` o `+∞`.
+Los infinitos no son elementos ni extremos cerrados. Un inferior mayor que el
+superior es inválido; extremos iguales solo producen un punto si ambos son
+cerrados, y en los demás casos producen el vacío.
+
+`Recta` es una tupla inmutable y canónica de `Intervalo`: admite resultados
+disjuntos. Unión, intersección, diferencia y complemento explícito conservan las
+fronteras exactas y los huecos. Dos tramos contiguos solo se fusionan si incluyen
+el punto de contacto. También admite pertenencia numérica, inclusión e igualdad.
+El vacío finito ∅ es compatible con la región real vacía. Las operaciones mixtas
+entre conjuntos finitos **no vacíos** y regiones reales se rechazan explícitamente.
+La cardinalidad de un intervalo no degenerado es infinita: `|…|` informa que no
+existe cardinalidad finita; las uniones de puntos cerrados sí se pueden contar.
+
+La salida JSON usa `tipo: "recta"`, con `intervalos` y extremos numéricos tipados
+(o null para el infinito correspondiente), y los dos indicadores de cierre.
+`datos.recta` aporta `tramos` con posiciones acotadas, etiquetas exactas, cierres,
+`punto`, `pertenece` y `x_punto`. Solo las posiciones de dibujo son aproximadas;
+las operaciones y la consulta del punto son racionales exactas. La interfaz ofrece
+zoom, desplazamiento, restablecer, selección de tramo y consulta exacta por POST.
+Sin JavaScript se conservan el resultado textual y la consulta de pertenencia.
+
+## Diagramas de Venn (P5)
+
+En «Recta real y diagramas de Venn», indica `A, B` o `A, B, C`, opcionalmente
+el nombre de un universo definido, y calcula por ejemplo `(A ∪ B) ∖ C`.
+El universo explícito debe contener todos los conjuntos. Sin universo se conoce
+la unión, pero la región exterior se marca como desconocida.
+
+Cada elemento completo, incluidos conjuntos anidados y pares, se distribuye en
+una única región. El backend selecciona también regiones vacías usando el mismo
+AST y evaluador sobre marcadores de región: el frontend no repite operaciones.
+El selector admite nombres elegidos, ∅, ∪, ∩, ∖ y ∁; rechaza generación,
+cardinalidades, relaciones y literales no vacíos porque no representan regiones
+completas del diagrama elegido.
+
+`datos.venn` contiene `nombres` y 4 u 8 `regiones`. Cada región incluye `mascara`,
+`pertenece` (booleanos en orden de nombres), `elementos` tipados, `etiquetas` listas
+para mostrar, `cantidad` exacta como cadena (null si el exterior es desconocido),
+`seleccionada` y `exterior_conocido`. El bit 0 representa A, el 1 B y el 2 C;
+la máscara 0 es el exterior. El SVG usa recortes de círculos para resaltar las
+regiones correctas; botones accesibles muestran sus detalles. La tabla funciona
+sin JavaScript y evita depender exclusivamente del color.
+
+## Cardinalidades e inclusión-exclusión (P6)
+
+El enlace «Cardinalidades e inclusión-exclusión» abre el formulario de dos o tres
+conjuntos. Permite editar regiones exclusivas o cardinalidades inclusivas de
+A, B, C y sus intersecciones. Al cambiar número o modo se ajustan los campos;
+sin JavaScript pulsa «Aplicar número y tipo de datos». Indica todos los ceros.
+El universo es opcional, pero obligatorio para expresiones con complemento.
+
+La inversión de intersecciones resta primero las regiones superiores ya
+calculadas, de la triple hacia las simples. Cualquier región negativa denuncia
+datos incoherentes. La unión se verifica con inclusión-exclusión: simples menos
+dobles más triple. El universo no puede ser menor que la unión. Solo se aceptan
+enteros no negativos de hasta 100 cifras, sin pérdidas de precisión.
+
+`resolver_cardinalidades` devuelve regiones exclusivas, intersecciones inclusivas,
+unión, regiones seleccionadas, resultado y pasos estructurados. Las reglas son
+`region_exclusiva` (valor inicial, sustraendos identificados y resultado),
+`inclusion_exclusion` (términos con máscara, signo y valor) y `suma_regiones`.
+El JSON de esta pantalla comparte `venn` y entrega `resultado`, `union` y `pasos`;
+las cantidades son cadenas exactas, las máscaras y signos son enteros pequeños.
+El exterior desconocido queda como null. Nunca se infiere un universo numérico.
+
+## Entrega a Claude y acceso privado
+
+Para probar todas las pantallas sin habilitar el módulo público:
+
+```powershell
+uv run --locked python -m tests.conjuntos_browser
+```
+
+Abre `http://127.0.0.1:8894/conjuntos/relaciones/` para el editor y
+`http://127.0.0.1:8894/conjuntos/cardinalidad/` para inclusión-exclusión.
+El servidor escucha solo en loopback y usa `tests.urls_conjuntos`. Las rutas de
+la aplicación normal siguen bloqueadas (404); el catálogo conserva Próximamente.
+No hay que cambiar versiones, ramas ni activar rutas públicas para revisar.
+
+La serialización añade `tipo: "par"` con `primero` y `segundo` tipados recursivos.
+Las reglas nuevas del procedimiento son `par_ordenado`, `potencia`,
+`producto_cartesiano`, `union_intervalos`, `interseccion_intervalos`,
+`diferencia_intervalos`, `complemento_intervalos`, `pertenencia_intervalo`
+y `relacion_intervalos`. Los gráficos reciben datos del motor; las cadenas solo
+se muestran, no se analizan para reconstruir matemáticas.
+
+Claude recibe herramientas funcionales en esta misma rama y PR. Queda su revisión
+visual y de interacción final antes de habilitar las URL públicas. No se implementa
+comprensión ni demostración simbólica de identidades. El editor estructurado
+recursivo es opcional y no sustituye al lector textual seguro.
 
 ## Verificación reproducible
 
-`python -m unittest tests.test_conjuntos tests.test_conjuntos_operaciones tests.test_conjuntos_web` cubre los diez
+`python -m unittest tests.test_conjuntos tests.test_conjuntos_operaciones tests.test_conjuntos_avanzados tests.test_conjuntos_web tests.test_conjuntos_avanzados_web` cubre los diez
 casos de aceptación, tipos, anidación, vacío, duplicados, CRUD, renombrado,
 referencias, sintaxis, presupuesto acumulado, POST manipulado y escape de texto.
 P2 añade tablas de pertenencia exhaustivas sobre los subconjuntos de un universo
 de tres elementos, vacío, anidación, exactitud, precedencia, tipos, universos
 inválidos, presupuesto de operaciones repetidas y el contrato JSON seguro.
-`python -m tests.conjuntos_browser` sirve ocho escenarios DOM en
+`python -m tests.conjuntos_browser` sirve once escenarios DOM en
 `http://127.0.0.1:8894/__pruebas/`: aceptación, guiado, teclado, CRUD, errores
 accesibles y resultado desactualizado. No añade dependencias.
 
-Para P3 quedan por decidir el modelo de pares ordenados (distinto de un conjunto
-de dos elementos), la sintaxis definitiva `par(…)`/operaciones de potencia y
-producto, y la estimación previa del crecimiento exponencial o cartesiano.
-El presupuesto de P2 limita recorridos finitos: P3 deberá reservar el tamaño de
-generación y de presentación **antes** de enumerar resultados. No habilitar rutas
-públicas hasta completar P7 y sus verificaciones de integración.
+P3–P6 añaden comprobaciones de crecimiento previo, pares, generación exacta,
+extremos y contactos de intervalos, las ocho regiones de tres conjuntos,
+inversión de las 128 distribuciones binarias de regiones y validaciones web.
+El runner también prueba zoom, consulta exacta, selección de Venn, edición de
+cardinalidades, datos incoherentes y resultados desactualizados. La revisión
+física de táctil y lector de pantalla continúa pendiente.

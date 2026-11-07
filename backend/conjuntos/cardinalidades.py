@@ -19,6 +19,8 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
     presupuesto.reservar(calculo=cantidad * cantidad, procedimiento=cantidad * cantidad)
     regiones = {}
     pasos = []
+    def etiqueta(m):
+        return ' ∩ '.join(n if m & (1 << i) else f'{n}ᶜ' for i,n in enumerate(nombres))
     for m in sorted(datos, key=lambda m: (-m.bit_count(),m)):
         descontar = tuple(k for k in regiones if k & m == m) if modo == 'intersecciones' else ()
         valor = datos[m]
@@ -27,7 +29,9 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
         if valor < 0:
             raise ValueError(f'Datos incoherentes: la región exclusiva {m} tendría cardinalidad negativa.')
         regiones[m] = valor
-        pasos.append({'regla': 'region_exclusiva', 'mascara': m, 'inicial': datos[m], 'restar': descontar, 'resultado': valor})
+        pasos.append({'regla': 'region_exclusiva', 'mascara': m, 'etiqueta':etiqueta(m),
+                      'inicial': datos[m], 'restar': descontar,
+                      'sustraendos':tuple({'etiqueta':etiqueta(k),'cantidad':regiones[k]} for k in descontar), 'resultado': valor})
     total = 0
     for valor in regiones.values():
         total += valor
@@ -45,7 +49,7 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
         intersecciones[m] = valor
         signo = 1 if m.bit_count() % 2 else -1
         union += signo * valor
-        terminos.append({'mascara': m, 'signo': signo, 'valor': valor})
+        terminos.append({'mascara': m, 'etiqueta':' ∩ '.join(n for i,n in enumerate(nombres) if m & (1 << i)), 'signo': signo, 'valor': valor})
     pasos.append({'regla': 'inclusion_exclusion', 'terminos': tuple(terminos), 'resultado': union})
     arbol = analizar_expresion(expresion, presupuesto=presupuesto)
     seleccionadas = seleccionar_regiones(arbol, nombres, 'U' if universo is not None else None, presupuesto)
@@ -54,6 +58,7 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
         if regiones[m] is None:
             raise ValueError('Se necesita la cardinalidad del universo para contar la región exterior.')
         resultado += regiones[m]
-    pasos.append({'regla': 'suma_regiones', 'regiones': seleccionadas, 'resultado': resultado})
+    pasos.append({'regla': 'suma_regiones', 'regiones': seleccionadas,
+                  'etiquetas':tuple(etiqueta(m) for m in seleccionadas), 'resultado': resultado})
     return {'regiones': regiones, 'intersecciones': intersecciones, 'union': union,
             'seleccionadas': seleccionadas, 'resultado': resultado, 'pasos': tuple(pasos)}
