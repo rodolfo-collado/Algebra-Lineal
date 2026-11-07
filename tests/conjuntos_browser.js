@@ -14,6 +14,36 @@
         q(frame.contentWindow, selector).click();
     });
     const casos = [
+        ["P2 calcula operaciones, cardinalidad y relaciones con datos estructurados", async (w, frame) => {
+            for (const [expresion, esperado, tipo] of [
+                ["A ∪ B", "{1, 2, {1, 2}}", "conjunto"],
+                ["∁(A, A ∪ B)", "{{1, 2}}", "conjunto"],
+                ["|A ∩ B|", "1", "numero"],
+                ["{1,2} ∈ A ∪ B", "Verdadero", "booleano"],
+                ["A ∪ B ∖ {2} = {1,{1,2}}", "Verdadero", "booleano"],
+            ]) {
+                valor(w, "expresion", expresion);
+                w = await post(frame);
+                ok(q(w, "[data-respuesta-relacion]")?.textContent === esperado, expresion);
+                const datos = JSON.parse(q(w, "#conjuntos-resultado-datos").textContent);
+                ok(datos.valor.tipo === tipo, "Tipo de resultado explícito");
+                ok(datos.procedimiento.length > 0, "Procedimiento estructurado");
+                ok(w.document.activeElement === q(w, "#resultado"), "Foco en resultado P2");
+            }
+        }],
+        ["P2 inserta símbolos y rechaza complementos fuera del universo", async (w, frame) => {
+            const campo = q(w, '[name="expresion"]');
+            valor(w, "expresion", ""); campo.focus();
+            await new Promise(resolve => w.requestAnimationFrame(resolve));
+            q(w, '[data-insercion="∁(, )"]').click();
+            ok(campo.value === "∁(, )" && campo.selectionStart === 2, "Cursor dentro del complemento");
+            for (const simbolo of ["∪", "∩", "∖", "||"]) ok(q(w, `[data-insercion="${simbolo}"]`), simbolo);
+            valor(w, "expresion", "∁(A,B)");
+            w = await post(frame);
+            ok(!q(w, "#resultado"), "Sin complemento inválido");
+            ok(q(w, '[name="expresion"]').getAttribute("aria-invalid") === "true", "Error P2 accesible");
+            ok(w.document.body.textContent.includes("universo explícito"), "Explica el universo");
+        }],
         ["Diez casos de aceptación mediante POST real", async (w, frame) => {
             for (const [expresion, esperado] of [
                 ["2 ∈ A", "Verdadero"], ["3 ∈ A", "Falso"], ["A ∈ B", "Verdadero"],

@@ -1,6 +1,9 @@
 """Editor, catálogo y relaciones comparten el contrato del backend."""
 
+import json
 import os
+import re
+from unittest.mock import patch
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
 import django
@@ -10,6 +13,7 @@ from django.test import Client, SimpleTestCase, override_settings
 from django.urls import reverse
 
 from frontend.web.calculadora import catalogo
+from backend.conjuntos.evaluador import evaluar_expresion
 
 RUTA = "/conjuntos/relaciones/"
 
@@ -97,3 +101,53 @@ class ConjuntosWebTests(SimpleTestCase):
         self.assertEqual(Client(enforce_csrf_checks=True).post(RUTA, datos()).status_code, 403)
         respuesta = self.client.post(RUTA, datos(definicion="S = {3}"))
         self.assertContains(respuesta, 'value="S = {3}"')
+
+    def test_operaciones_y_cardinalidad_sin_javascript(self):
+        for expresion, esperado in (('A ∪ B', '{1, 2, {1, 2}}'),
+                                    ('A ∩ B', '{2}'), ('A ∖ B', '{1}'),
+                                    ('∁(A, A ∪ B)', '{{1, 2}}'), ('|A|', '2'),
+                                    ('|A ∩ B| = 1', 'Verdadero'), ('|∅|', '0'),
+                                    ('A ∩ ∅', '∅')):
+            with self.subTest(expresion=expresion):
+                respuesta = self.client.post(RUTA, datos(expresion=expresion))
+                self.assertContains(respuesta, f'data-respuesta-relacion>{esperado}</p>', html=False)
+                self.assertContains(respuesta, 'id="procedimiento"')
+                self.assertNotContains(respuesta, 'id="procedimiento" open')
+
+    def test_contrato_json_exacto_y_evaluacion_unica(self):
+        with patch('frontend.web.calculadora.servicios_conjuntos.evaluar_expresion', wraps=evaluar_expresion) as evaluar:
+            respuesta = self.client.post(RUTA, datos(expresion='|A ∪ B|'))
+        self.assertEqual(evaluar.call_count, 1)
+        contenido = re.search(r'<script id="conjuntos-resultado-datos"[^>]*>(.*?)</script>', respuesta.content.decode(), re.S)[1]
+        contrato = json.loads(contenido)
+        self.assertEqual(contrato['valor'], {'tipo': 'numero', 'numerador': '3', 'denominador': '1'})
+        self.assertEqual([p['regla'] for p in contrato['procedimiento']], ['union', 'cardinalidad'])
+        union = contrato['procedimiento'][0]
+        self.assertEqual(union['operandos'][0]['tipo'], 'conjunto')
+        self.assertEqual(union['resultado']['tipo'], 'conjunto')
+        self.assertEqual(len(union['resultado']['elementos']), 3)
+
+    def test_errores_p2_conservan_editor_y_no_presentan_resultado(self):
+        for expresion, mensaje in (('∁(A,B)', 'universo'), ('A ∪ 1', 'conjuntos finitos'),
+                                    ('|1|', 'conjuntos finitos'), ('A ∪', 'Se esperaba')):
+            with self.subTest(expresion=expresion):
+                respuesta = self.client.post(RUTA, datos(expresion=expresion))
+                self.assertContains(respuesta, mensaje)
+                self.assertNotContains(respuesta, 'id="resultado"')
+                self.assertContains(respuesta, 'name="nombre_0" value="A"')
+        conjunto = '{' + ','.join(map(str, range(250))) + '}'
+        respuesta = self.client.post(RUTA, datos(contenido_0=conjunto, expresion=' ∪ '.join(['A'] * 49)))
+        self.assertContains(respuesta, 'presupuesto')
+        self.assertNotContains(respuesta, 'id="resultado"')
+
+    def test_json_escapa_texto_y_conserva_tipo(self):
+        respuesta = self.client.post(RUTA, datos(expresion='{"</script><script>alert(1)</script>", 1/2} ∪ ∅'))
+        self.assertNotContains(respuesta, '</script><script>alert(1)</script>')
+        self.assertContains(respuesta, '\\u003C/script\\u003E')
+
+    @override_settings(ROOT_URLCONF='frontend.web.algebra_web.urls')
+    def test_p2_no_habilita_urls_publicas(self):
+        for ruta in ('/conjuntos/', RUTA, '/conjuntos/operaciones/'):
+            with self.subTest(ruta=ruta):
+                self.assertEqual(self.client.get(ruta).status_code, 404)
+                self.assertEqual(self.client.post(ruta, datos(expresion='A ∪ B')).status_code, 404)

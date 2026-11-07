@@ -42,7 +42,7 @@
         </section>
 
         <section class="workspace-section" aria-labelledby="relation-title">
-            <h3 id="relation-title" class="section-title">Relación</h3>
+            <h3 id="relation-title" class="section-title">Expresión</h3>
             {% disclosure titulo="Construir con ayuda" id="relacion-guiada" %}
                 <p class="field-help">Selecciona un nombre definido o escribe un número, texto entre comillas o literal. La pertenencia compara un elemento con un conjunto; la inclusión compara dos conjuntos.</p>
                 <datalist id="nombres-conjuntos">{% for bloque in form.bloques %}<option value="{{ bloque.nombre.value }}"></option>{% endfor %}</datalist>
@@ -56,11 +56,12 @@
             <div class="field-group" data-perfil="relacion-conjuntos" data-operandos="#conjuntos-lista">
                 <label for="{{ form.expresion.id_for_label }}">{{ form.expresion.label }}</label>
                 {{ form.expresion }}{{ form.expresion.errors }}
-                <p class="field-help">Una relación con <code>∈ ∉ ⊆ ⊂ = ≠</code>. Los paréntesis solo agrupan operandos: <code>(A) ⊆ B</code>. <code>⊂</code> exige inclusión y conjuntos distintos.</p>
+                <p class="field-help">Operaciones: <code>A ∪ B</code>, <code>A ∩ B</code>, <code>A ∖ B</code>, complemento <code>∁(A, U)</code> con A incluido en el universo explícito U y cardinalidad <code>|A|</code>. Primero se resuelve <code>∩</code>; después <code>∪ ∖</code>, de izquierda a derecha. Usa paréntesis para agrupar.</p>
+                <p class="field-help">Puedes comparar resultados con <code>∈ ∉ ⊆ ⊂ = ≠</code>: <code>|A ∩ B| = 2</code>. La pertenencia compara elementos completos; <code>⊂</code> exige inclusión y conjuntos distintos.</p>
             </div>
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
-        <div class="workspace-actions"><button class="btn btn-primary" type="submit" name="accion" value="calcular" data-calculo>Comprobar relación</button></div>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit" name="accion" value="calcular" data-calculo>Calcular expresión</button></div>
     </form>
 </section>
 {% endblock %}
@@ -68,7 +69,7 @@
 {% block tool_result %}
 {% if resultado %}
 <section id="resultado" data-resultado="vigente" class="results conjuntos-resultado" aria-labelledby="results-title" tabindex="-1">
-    <header class="results-heading"><h2 id="results-title">Relación comprobada</h2></header>
+    <header class="results-heading"><h2 id="results-title">Expresión calculada</h2></header>
     {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
         {% for paso in resultado.pasos %}<p class="procedure-lead">{{ paso }}</p>{% endfor %}
     {% enddisclosure %}
@@ -78,6 +79,7 @@
         <p class="classification-value" data-respuesta-relacion>{{ resultado.respuesta }}</p>
     </section>
 </section>
+{{ resultado.datos|json_script:"conjuntos-resultado-datos" }}
 {% endif %}
 {% endblock %}
 

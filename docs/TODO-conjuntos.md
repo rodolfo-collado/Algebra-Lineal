@@ -21,11 +21,15 @@ Estos ajustes no reabren P1, que permanece completado.
 
 ## P2 — Operaciones finitas
 
-- [ ] Implementar unión e intersección.
-- [ ] Implementar diferencias entre conjuntos.
-- [ ] Implementar complemento respecto de un conjunto universo explícito.
-- [ ] Calcular la cardinalidad de conjuntos finitos.
-- [ ] Admitir expresiones combinadas con agrupación y precedencia de operaciones.
+- [x] Implementar unión e intersección.
+- [x] Implementar diferencias entre conjuntos.
+- [x] Implementar complemento respecto de un conjunto universo explícito.
+- [x] Calcular la cardinalidad de conjuntos finitos.
+- [x] Admitir expresiones combinadas con agrupación y precedencia de operaciones.
+
+Sintaxis, presupuesto y contrato estructurado para presentación en
+[Conjuntos](conjuntos.md#contrato-para-presentación-claude). Se conserva el bloqueo
+público; el editor mínimo se comprueba solo con la URLConf de pruebas.
 
 ## P3 — Conjunto potencia y producto cartesiano
 

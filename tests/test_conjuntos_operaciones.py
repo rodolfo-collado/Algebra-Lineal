@@ -38,6 +38,7 @@ class OperacionesConjuntosTests(unittest.TestCase):
             ('{1,2} ∖ {2} ∪ {2}', '{1,2}'),
             ('{1,2} ∖ ({2} ∪ {1})', '{}'),
             ('{1,2} ∖ {1} ∖ {2}', '{}'),
+            ('{1,2} ∖ {2} ∩ {3}', '{1,2}'),
             ('∁(A ∩ B, U) ∩ B', '{3}'),
         ):
             with self.subTest(texto=texto):
@@ -81,6 +82,20 @@ class OperacionesConjuntosTests(unittest.TestCase):
         self.assertGreater(resultado.estimacion.calculo, 0)
         self.assertGreater(resultado.estimacion.procedimiento, len(resultado.pasos))
 
+    def test_operaciones_no_modifican_valores_y_hechos_no_confunden_relaciones(self):
+        entorno = {'A': analizar_literal('{1,{1}}'), 'B': analizar_literal('{{1}}')}
+        originales = dict(entorno)
+        for texto in ('A ∪ B', 'A ∩ B', 'A ∖ B', '∁(B,A)', '|A|'):
+            evaluar_expresion(analizar_expresion(texto), entorno)
+            self.assertEqual(entorno, originales)
+        for texto, campo, esperado in (('1 ∉ B', 'pertenece', False),
+                                       ('A ⊆ B', 'incluido', False),
+                                       ('A ⊂ A', 'iguales', True)):
+            paso = evaluar_expresion(analizar_relacion(texto), entorno).procedimiento[-1]
+            self.assertIs(getattr(paso, campo), esperado)
+        paso = evaluar_expresion(analizar_relacion('A ⊆ B'), entorno).procedimiento[-1]
+        self.assertEqual(paso.testigo, Fraction(1))
+
     def test_renombrado_y_presupuesto_acumulado(self):
         self.assertEqual(renombrar_referencias('∁(A,AA) ∪ {"A"}', {'A': 'S'}), '∁(S,AA) ∪ {"A"}')
         presupuesto = Presupuesto()
@@ -96,6 +111,7 @@ class OperacionesConjuntosTests(unittest.TestCase):
                       '∁(' * 51 + 'A' + ',U)' * 51):
             with self.subTest(texto=texto), self.assertRaises(ValueError):
                 self.calcular(texto)
+        self.assertEqual(self.calcular(' ∪ '.join(['∅'] * 50)).valor, analizar_literal('{}'))
 
     def test_presupuesto_real_no_se_reinicia_entre_operaciones(self):
         presupuesto = Presupuesto()

@@ -131,7 +131,12 @@ RELACIONES_CONJUNTOS = GrupoTeclas("Relaciones", (
     IGUAL, Tecla("≠", "≠", "Distinto"), Tecla("( )", "()", "Agrupar operando", 1),
 ))
 PERFIL_LITERAL_CONJUNTOS = Perfil("literal-conjuntos", (LITERALES_CONJUNTOS, GrupoTeclas("Definición", (IGUAL,))))
-PERFIL_RELACION_CONJUNTOS = Perfil("relacion-conjuntos", (LITERALES_CONJUNTOS, RELACIONES_CONJUNTOS))
+OPERACIONES_CONJUNTOS = GrupoTeclas("Operaciones finitas", (
+    Tecla("∪", "∪", "Unión"), Tecla("∩", "∩", "Intersección"),
+    Tecla("∖", "∖", "Diferencia"), Tecla("∁", "∁(, )", "Complemento: conjunto y universo", 3),
+    Tecla("| |", "||", "Cardinalidad", 1),
+))
+PERFIL_RELACION_CONJUNTOS = Perfil("relacion-conjuntos", (LITERALES_CONJUNTOS, RELACIONES_CONJUNTOS, OPERACIONES_CONJUNTOS))
 PERFILES_BASE = {
     base: Perfil(
         f"base-{base}",
