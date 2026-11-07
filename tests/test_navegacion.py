@@ -167,8 +167,8 @@ class PruebasCatalogo(SimpleTestCase):
             [(miga.nombre, miga.url, miga.actual) for miga in migas],
             [
                 ("Inicio", "/", False),
-                ("Álgebra lineal", "/#algebra-lineal", False),
-                ("Matrices", "/#matrices", False),
+                ("Álgebra lineal", "/areas/algebra-lineal/", False),
+                ("Matrices", "/areas/algebra-lineal/#matrices", False),
                 ("Reducción por filas", None, True),
             ],
         )
@@ -346,21 +346,24 @@ class PruebasNavegacion(SimpleTestCase):
                 self.assertContains(respuesta, herramienta.descripcion)
                 if herramienta.disponible:
                     self.assertContains(respuesta, f'href="{herramienta.ruta}"')
-        for elemento in (*catalogo.AREAS, *catalogo.CATEGORIAS):
-            if elemento.disponible:
-                self.assertIn(elemento.id, documento.ids)
-            else:
-                # UI-15: el universo próximo existe, pero no aparece al explorar sin búsqueda.
-                self.assertIn(elemento.id, documento.ids)
-        self.assertIn("hidden", documento.grupos["calculo"])
-        # Sin caminos duplicados: las herramientas se descubren dentro de su tema.
+        # Cada área es un canal; las próximas se anuncian sin enlace (Conjuntos y Cálculo).
+        for area in catalogo.AREAS:
+            self.assertIn(area.id, documento.ids)
+            self.assertEqual(f'href="{area.ruta}"' in respuesta.content.decode("utf-8"), area.disponible)
+        # Las herramientas se descubren dentro del tema de su área; en el inicio solo esperan
+        # ocultas a que el buscador las muestre. Sin caminos duplicados.
         self.assertNotContains(respuesta, "Acceso rápido")
+        for herramienta in catalogo.herramientas_disponibles():
+            explorador = self.client.get(herramienta.area.ruta)
+            self.assertContains(explorador, f'href="{herramienta.ruta}"')
+            self.assertContains(explorador, f'data-id="{herramienta.id}" aria-describedby', count=1)
 
     def test_proximamente_sin_enlaces_falsos(self):
         respuesta = self.client.get("/")
         self.assertContains(respuesta, "Próximamente")
         destinos = {attrs["href"] for _, attrs in Documento(respuesta).enlaces}
         self.assertEqual(destinos, {"/", "#contenido", *(h.ruta for h in disponibles()),
+                                    *(a.ruta for a in catalogo.AREAS if a.disponible),
                                     "/?q=gauss", "/?q=matriz", "/?q=vectores"})
 
     def test_sistemas_tiene_url_propia(self):
@@ -399,16 +402,16 @@ class PruebasNavegacion(SimpleTestCase):
         respuesta = self.client.get("/matrices/reduccion/")
         documento = Documento(respuesta)
         enlaces = [a["href"] for a in documento.enlaces_en("Ruta de navegación")]
-        self.assertEqual(enlaces, ["/", "/#algebra-lineal", "/#matrices"])
+        self.assertEqual(enlaces, ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertContains(respuesta, '<span aria-current="page">Reducción por filas</span>', html=True)
-        ids_inicio = Documento(self.client.get("/")).ids
-        self.assertIn("algebra-lineal", ids_inicio)
-        self.assertIn("matrices", ids_inicio)
-        self.assertNotIn("sistemas-ecuaciones", ids_inicio)
+        ids_area = Documento(self.client.get("/areas/algebra-lineal/")).ids
+        self.assertIn("matrices", ids_area)
+        self.assertNotIn("sistemas-ecuaciones", ids_area)
+        self.assertIn("algebra-lineal", Documento(self.client.get("/")).ids)
 
         respuesta = self.client.get("/bases/conversion/")
         enlaces = [a["href"] for a in Documento(respuesta).enlaces_en("Ruta de navegación")]
-        self.assertEqual(enlaces, ["/", "/#sistemas-numericos", "/#bases-numericas"])
+        self.assertEqual(enlaces, ["/", "/areas/sistemas-numericos/", "/areas/sistemas-numericos/#bases-numericas"])
         self.assertContains(respuesta, '<span aria-current="page">Conversión de bases</span>', html=True)
 
     def test_enlaces_y_anclas_de_paginas_y_resultados_existen(self):

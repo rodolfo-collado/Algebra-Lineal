@@ -136,7 +136,9 @@ class PruebasCatalogoMatrices(SimpleTestCase):
         respuesta = self.client.get("/")
         documento = Documento(respuesta)
         self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en("Herramientas")])
-        self.assertContains(respuesta, '<details class="topic" id="matrices"')
+        # El tema vive en el explorador de su área; el inicio enlaza a esa área.
+        self.assertContains(respuesta, 'href="/areas/algebra-lineal/"')
+        self.assertContains(self.client.get("/areas/algebra-lineal/"), '<p class="indice-tema" id="matrices">')
         self.assertIn(RUTA, [a["href"] for _, a in documento.enlaces if a.get("class") == "tool-link"])
 
     def test_busqueda_por_sinonimos_y_operaciones(self):
@@ -148,7 +150,7 @@ class PruebasCatalogoMatrices(SimpleTestCase):
     def test_breadcrumbs_estado_activo_categoria_abierta(self):
         respuesta = self.client.get(RUTA)
         doc = Documento(respuesta)
-        self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/#algebra-lineal", "/#matrices"])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
         self.assertTrue(doc.categorias["matrices"])
 

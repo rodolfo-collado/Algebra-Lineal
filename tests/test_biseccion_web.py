@@ -3,6 +3,7 @@
 import json
 import os
 import re
+from pathlib import Path
 from unittest.mock import patch
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
@@ -73,6 +74,26 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertNotContains(r, "no supera 0")
         r = self.client.post(RUTA, datos(funcion="x", a="0", b="1"))
         self.assertContains(r, 'title="Valor almacenado: 1.0"')
+
+    def test_f_de_c_lleva_un_solo_signo_de_relacion(self):
+        # Sin JavaScript se ve el valor completo con «=»; biseccion.js lo cambia por «≈» al
+        # redondear, en vez de añadir otro símbolo (antes: «f(c) = ≈ -0.00067»).
+        for funcion in ("x^2-2", "x-1.5"):
+            with self.subTest(funcion=funcion):
+                r = self.client.post(RUTA, datos(funcion=funcion, a="1", b="2"))
+                self.assertContains(r, "f(c) <span data-biseccion-relacion>=</span> <span data-biseccion-numero=", count=1)
+                self.assertNotRegex(r.content.decode(), r"f\(c\)\s*=\s*≈")
+        js = (Path(__file__).resolve().parents[1] / "frontend/web/calculadora/static/calculadora/biseccion.js").read_text(encoding="utf-8")
+        self.assertIn('relacion.textContent = aproximado ? "≈" : "="', js)
+
+    def test_iteraciones_en_singular_y_plural(self):
+        for cambios, texto in [({"funcion": "x-1.5", "a": "1", "b": "2"}, "1 iteración ·"),
+                               ({}, "13 iteraciones ·"),
+                               ({"funcion": "x", "a": "0", "b": "1"}, "0 iteraciones ·")]:
+            with self.subTest(cambios=cambios):
+                r = self.client.post(RUTA, datos(**cambios))
+                self.assertContains(r, texto)
+                self.assertNotContains(r, "1 iteraciones")
 
     def test_notaciones_comparten_resultado_muestras_y_clave_de_comparacion(self):
         implicita = "x⁴ - 5x³ + 0.5x² - 11x + 10"

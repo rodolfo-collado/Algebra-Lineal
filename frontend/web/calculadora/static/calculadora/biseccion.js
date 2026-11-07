@@ -16,7 +16,11 @@
     const seleccion = document.getElementById("grafica-seleccion");
     const elegir = [...document.querySelectorAll("[data-elegir-extremo]")];
     const filas = [...document.querySelectorAll("[data-iteracion]")];
-    const numero = (x, digitos = 12) => Number(x).toLocaleString("es", { maximumSignificantDigits: digitos });
+    // Punto decimal y sin separador de miles, como las tablas y el resultado de Bisección.
+    const numero = (x, digitos = 12) => Number(x).toLocaleString("en-US", { maximumSignificantDigits: digitos, useGrouping: false });
+    // En la gráfica: «=» si las cifras mostradas son el valor de la muestra; si no, «≈».
+    const etiqueta = (x, digitos) => x === null ? "" : `${Number(x.toPrecision(digitos)) === x ? "=" : "≈"} ${Number(x.toPrecision(digitos))}`;
+    const etiquetas = (xs, ys, digitos) => xs.map((x, i) => [etiqueta(x, digitos), etiqueta(ys[i], digitos)]);
     const campo = nombre => form.elements.namedItem(nombre);
     const color = nombre => getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
     let mutando = false, temporizador, peticion, inicializacion, generacion = 0, extremoElegido = null;
@@ -55,7 +59,10 @@
                 grupo.forEach((d, i) => {
                     const texto = esCompleto || p > 16 ? completo(d.valor) : textos[i];
                     const aproximado = Number(texto) !== d.valor;
-                    d.nodo.textContent = (aproximado && !d.nodo.closest(".biseccion-raiz") ? "≈ " : "") + texto;
+                    // Tras un «=» escrito, el redondeo cambia ese signo por «≈» en vez de sumar otro.
+                    const relacion = d.nodo.previousElementSibling?.matches("[data-biseccion-relacion]") ? d.nodo.previousElementSibling : null;
+                    if (relacion) relacion.textContent = aproximado ? "≈" : "=";
+                    d.nodo.textContent = (aproximado && !relacion && !d.nodo.closest(".biseccion-raiz") ? "≈ " : "") + texto;
                     d.nodo.setAttribute("aria-label", aproximado ? `${texto}, redondeado; valor almacenado ${d.valor}` : texto);
                 });
             }
@@ -101,20 +108,23 @@
         slider.value = String(i);
         anterior.disabled = i === 1;
         siguiente.disabled = i === pasos.length;
-        slider.setAttribute("aria-valuetext", `Iteración ${i} de ${pasos.length}, c = ${numero(p.c)}`);
+        // «=» solo si las cifras mostradas son el valor almacenado; si no, «≈».
+        const igual = (x, digitos) => `${Number(x.toPrecision(digitos)) === x ? "=" : "≈"} ${numero(x, digitos)}`;
+        slider.setAttribute("aria-valuetext", `Iteración ${i} de ${pasos.length}, c ${igual(p.c, 12)}`);
         const valores = new Set([p.a, p.c, p.b, p.nuevo_a, p.nuevo_b]);
         let digitos = 8;
         // Mostrar los puntos distintos como distintos, incluso con tolerancias muy pequeñas.
         while (digitos < 17 && new Set([...valores].map(x => numero(x, digitos))).size < valores.size) digitos++;
         const n = x => numero(x, digitos);
+        const r = x => igual(x, digitos);
         const signo = x => x > 0 ? "positivo" : x < 0 ? "negativo" : "cero";
         lectura.querySelector("#paso-titulo").textContent = `Iteración ${i} de ${pasos.length}`;
-        detallesPaso.querySelector("#paso-valores").textContent = `Antes de dividir: a (izquierdo) = ${n(p.a)} · c (punto medio) = ${n(p.c)} · b (derecho) = ${n(p.b)}.`;
-        detallesPaso.querySelector("#paso-signos").textContent = `f(a) = ${n(p.fa)} (${signo(p.fa)}) · f(c) = ${n(p.fc)} (${signo(p.fc)}) · f(b) = ${n(p.fb)} (${signo(p.fb)}).`;
+        detallesPaso.querySelector("#paso-valores").textContent = `Antes de dividir: a (izquierdo) ${r(p.a)} · c (punto medio) ${r(p.c)} · b (derecho) ${r(p.b)}.`;
+        detallesPaso.querySelector("#paso-signos").textContent = `f(a) ${r(p.fa)} (${signo(p.fa)}) · f(c) ${r(p.fc)} (${signo(p.fc)}) · f(b) ${r(p.fb)} (${signo(p.fb)}).`;
         const cambiaA = (p.fa < 0) === (p.fc < 0);
         const decision = cambiaA
-            ? `f(a) y f(c) tienen el mismo signo (${signo(p.fa)}). Descartamos la mitad izquierda [a,c]: c pasa a ser el nuevo a = ${n(p.c)}; b permanece en ${n(p.b)}. Conservamos la mitad derecha [c,b].`
-            : `f(c) y f(b) tienen el mismo signo (${signo(p.fb)}). Descartamos la mitad derecha [c,b]: c pasa a ser el nuevo b = ${n(p.c)}; a permanece en ${n(p.a)}. Conservamos la mitad izquierda [a,c].`;
+            ? `f(a) y f(c) tienen el mismo signo (${signo(p.fa)}). Descartamos la mitad izquierda [a,c]: c pasa a ser el nuevo a ${r(p.c)}; b permanece en ${n(p.b)}. Conservamos la mitad derecha [c,b].`
+            : `f(c) y f(b) tienen el mismo signo (${signo(p.fb)}). Descartamos la mitad derecha [c,b]: c pasa a ser el nuevo b ${r(p.c)}; a permanece en ${n(p.a)}. Conservamos la mitad izquierda [a,c].`;
         lectura.querySelector("#paso-decision").textContent = p.fc === 0
             ? `f(c) = 0 en aritmética de máquina: encontramos una raíz calculada. Ambos extremos pasan a c; no descartamos otra mitad ni seguimos dividiendo.`
             : decision;
@@ -123,6 +133,7 @@
         if (!grafica.data) return;
         mutando = true;
         Plotly.update(grafica, { x: [[p.a, p.c, p.b]], y: [[p.fa, p.fc, p.fb]],
+            customdata: [etiquetas([p.a, p.c, p.b], [p.fa, p.fc, p.fb], 12)],
             text: [["a", "c (punto medio)", "b"]] }, { "shapes[2].x0": p.a, "shapes[2].x1": p.b }, [1])
             .finally(() => { mutando = false; });
     }
@@ -147,7 +158,7 @@
             ayudaGrafica.hidden = false;
             await (inicializacion ??= iniciar());
             if (n !== generacion) return;
-            await Plotly.restyle(grafica, { x: [puntos.x], y: [puntos.y] }, [0]);
+            await Plotly.restyle(grafica, { x: [puntos.x], y: [puntos.y], customdata: [etiquetas(puntos.x, puntos.y, 10)] }, [0]);
             if (n !== generacion) return;
             if (moverEjes) {
                 mutando = true;
@@ -255,13 +266,14 @@
                 { ...linea(extremo("b") ?? 0, "b"), visible: extremo("b") !== null },
                 { ...franja(0, 0), visible: pasos.length > 0 }],
             dragmode: "pan",
+            separators: ".\u202f", // punto decimal también en los ejes; los textos siguen en español
         };
         await Plotly.newPlot(grafica, [
             { x: [], y: [], type: "scatter", mode: "lines", connectgaps: false, name: "f(x)",
-                line: { color: color("--color-brand"), width: 2 }, hovertemplate: "x = %{x:.10g}<br>f(x) = %{y:.10g}<extra></extra>" },
+                line: { color: color("--color-brand"), width: 2 }, hovertemplate: "x %{customdata[0]}<br>f(x) %{customdata[1]}<extra></extra>" },
             { x: [], y: [], type: "scatter", mode: "markers", name: "Iteración",
                 marker: { size: [9, 13, 9], symbol: ["circle", "diamond", "circle"], color: color("--color-text") },
-                hovertemplate: "%{text}<br>x = %{x:.12g}<br>f(x) = %{y:.12g}<extra></extra>" },
+                hovertemplate: "%{text}<br>x %{customdata[0]}<br>f(x) %{customdata[1]}<extra></extra>" },
         ], layout, { responsive: true, locale: "es", displaylogo: false, scrollZoom: false,
             edits: { shapePosition: true },
             modeBarButtons: [["zoom2d", "pan2d", "zoomIn2d", "zoomOut2d", "resetScale2d"]] });
@@ -305,7 +317,8 @@
             Plotly.restyle(grafica, { "marker.color": color("--color-text") }, [1]);
         }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-estilo"] });
         if (pasos.length) mostrarPaso(Number(slider.value));
-        else if (resultado) Plotly.restyle(grafica, { x: [[resultado.c]], y: [[resultado.fc]], text: [["c"]] }, [1]);
+        else if (resultado) Plotly.restyle(grafica, { x: [[resultado.c]], y: [[resultado.fc]], text: [["c"]],
+            customdata: [etiquetas([resultado.c], [resultado.fc], 12)] }, [1]);
     }
     campo("funcion").addEventListener("input", previsualizar);
     ["a", "b"].forEach(n => campo(n).addEventListener("input", sincronizarExtremos));

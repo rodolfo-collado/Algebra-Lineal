@@ -52,6 +52,24 @@
             valor(w, "funcion", "");
             ok(grafica(w).hidden && q(w, "#grafica-estado").textContent.includes("Introduce"), "Volver al estado vacío");
         }],
+        ["La gráfica adopta los colores de cada estilo y tema sin perder la curva", async (w, frame) => {
+            ejemplo(w);
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const raiz = w.document.documentElement;
+            const token = nombre => w.getComputedStyle(raiz).getPropertyValue(nombre).trim();
+            const fondos = new Set();
+            for (const estilo of ["minimalista", "estudio"]) for (const tema of ["dark", "light"]) {
+                raiz.setAttribute("data-estilo", estilo); raiz.setAttribute("data-theme", tema);
+                await esperar(() => grafica(w).layout.paper_bgcolor === token("--color-surface")
+                    && grafica(w).data[0].line.color === token("--color-brand")
+                    && grafica(w).layout.font.color === token("--color-text"), `Colores de ${estilo}/${tema}`);
+                fondos.add(grafica(w).layout.paper_bgcolor);
+                ok(!/color-mix|var\(/.test(token("--color-surface") + token("--color-brand")), "Plotly recibe colores que entiende");
+            }
+            ok(fondos.size >= 2, "El fondo cambia de verdad");
+            ok(grafica(w).data[0].x.length === 801 && grafica(w).layout.shapes.length === 3, "Conserva curva, extremos y franja");
+            ok(lista(w).length === 13, "No recalcula");
+        }],
         ["Teclado contextual de funciones reales conserva foco y cursor", async w => {
             const f = q(w, '[name="funcion"]'); f.focus();
             await esperar(() => q(w, ".math-keyboard").hasAttribute("data-abierto"));
@@ -138,7 +156,7 @@
             valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
             valor(w, "precision", "1e-10");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            const numeros = [...q(w, "#paso-valores").textContent.matchAll(/= ([\d,.-]+)/g)].map(m => m[1]);
+            const numeros = [...q(w, "#paso-valores").textContent.matchAll(/[=≈] ([\d,.-]+)/g)].map(m => m[1]);
             ok(numeros.length === 3 && new Set(numeros).size === 3, "No redondea los tres puntos al mismo número");
             const celdas = [...w.document.querySelectorAll(".biseccion-tabla tbody tr:last-child td [data-biseccion-numero]")].slice(0, 3);
             ok(new Set(celdas.map(n => n.textContent)).size === 3, "Tabla también distingue extremos");
@@ -159,6 +177,74 @@
             }
             ok(q(w, "#datos-biseccion").textContent === original && peticiones === 0, "Solo presentación");
             ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "No duplica aproximaciones");
+        }],
+        ["«=» para valores exactos y «≈» para redondeados, sin «= ≈», en ambos estilos", async (w, frame) => {
+            const leer = w => q(w, "#resultado .results-heading .muted").textContent.replace(/\s+/g, " ");
+            const decimales = (w, valor) => { const s = q(w, "#biseccion-decimales"); s.value = valor; s.dispatchEvent(new w.Event("change", { bubbles: true })); };
+            for (const estilo of ["estudio", "minimalista"]) {
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
+                w = await post(frame); await esperar(() => listaGrafica(w));
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                const fc = JSON.parse(q(w, "#datos-biseccion").textContent).resultado.fc;
+                ok(fc !== 0, "El caso redondeado necesita f(c) ≠ 0");
+                for (const precision of ["4", "6", "16"]) {
+                    decimales(w, precision);
+                    ok(/f\(c\) ≈ -?\d/.test(leer(w)), `${estilo}, ${precision}: f(c) redondeado usa ≈: ${leer(w)}`);
+                }
+                decimales(w, "completa");
+                ok(/f\(c\) = -?\d/.test(leer(w)), `${estilo}: el valor completo vuelve a «=»: ${leer(w)}`);
+                ok(!/=\s*≈|≈\s*=|≈\s*≈/.test(q(w, "#resultado").textContent + q(w, ".biseccion-recorrido").textContent), `${estilo}: sin símbolos dobles`);
+                ok(/f\(c\) [=≈] /.test(q(w, "#paso-signos").textContent) && !/[=≈] [=≈]/.test(q(w, "#paso-signos").textContent), "El paso usa un solo símbolo");
+                ok(/a \(izquierdo\) = 1 /.test(q(w, "#paso-valores").textContent.replace(/\s+/g, " ")) || q(w, "#iteracion-biseccion").value !== "1", "Un extremo exacto conserva «=»");
+                // Una raíz exacta: f(c) = 0, nunca ≈ 0.
+                valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "2");
+                w = await post(frame); await esperar(() => listaGrafica(w));
+                ok(JSON.parse(q(w, "#datos-biseccion").textContent).resultado.fc === 0, "El caso exacto necesita f(c) = 0");
+                for (const precision of ["4", "completa"]) {
+                    decimales(w, precision);
+                    ok(leer(w).includes("f(c) = 0"), `${estilo}, ${precision}: igualdad exacta: ${leer(w)}`);
+                }
+                ok(q(w, "#paso-signos").textContent.includes("f(c) = 0 (cero)"), "El paso también escribe f(c) = 0");
+            }
+            w.document.documentElement.setAttribute("data-estilo", "estudio");
+        }],
+        ["Punto decimal en explicaciones y ejes, y «=» o «≈» en la gráfica según el redondeo", async (w, frame) => {
+            for (const estilo of ["estudio", "minimalista"]) {
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
+                w = await post(frame); await esperar(() => listaGrafica(w));
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                q(w, "#paso-detalles").open = true;
+                const slider = q(w, "#iteracion-biseccion");
+                for (const i of ["1", "7", slider.max]) {
+                    slider.value = i; slider.dispatchEvent(new w.Event("input", { bubbles: true }));
+                    const texto = ["#paso-valores", "#paso-signos", "#paso-decision", "#paso-intervalo"].map(s => q(w, s).textContent).join(" ") + slider.getAttribute("aria-valuetext");
+                    ok(!/\d,\d/.test(texto), `${estilo}, iteración ${i}: sin coma decimal: ${texto}`);
+                    ok(/\d\.\d/.test(texto), `${estilo}, iteración ${i}: con punto decimal`);
+                }
+                ok(grafica(w).layout.separators.startsWith("."), "Ejes con punto decimal");
+                const comprobar = (traza, digitos) => {
+                    const d = grafica(w).data[traza];
+                    ok(!/= %\{[xy]/.test(d.hovertemplate), "Sin «=» fijo en la etiqueta");
+                    ok(d.customdata?.length === d.x.length, "Una etiqueta por punto");
+                    d.x.forEach((x, i) => [[x, d.customdata[i][0]], [d.y[i], d.customdata[i][1]]].forEach(([v, e]) => {
+                        if (v === null) return;
+                        const corto = Number(v.toPrecision(digitos));
+                        ok(e === `${corto === v ? "=" : "≈"} ${corto}`, `${estilo}: etiqueta de ${v}: ${e}`);
+                    }));
+                    return d.customdata.flat();
+                };
+                const curva = comprobar(0, 10), puntos = comprobar(1, 12);
+                ok(curva.some(e => e.startsWith("≈")) && curva.some(e => e.startsWith("=")), "La curva tiene valores exactos y redondeados");
+                ok(puntos.some(e => e.startsWith("≈")), "Los puntos de la iteración redondeados usan ≈");
+            }
+            // Singular y plural: una raíz exacta tras una iteración.
+            valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "2");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            ok(/^1 iteración ·/.test(q(w, "#resultado .results-heading .muted").textContent.trim()), "Una iteración, en singular");
+            ok(grafica(w).data[1].customdata[1][0] === "= 1.5", "c exacto en la gráfica: = 1.5");
+            w.document.documentElement.setAttribute("data-estilo", "estudio");
         }],
         ["Redondear no convierte una desigualdad estricta en igualdad", async (w, frame) => {
             valor(w, "funcion", "x-0.0001234567"); valor(w, "a", "0"); valor(w, "b", "0.00019999998");
