@@ -1,83 +1,378 @@
-/* Solo dibuja datos del motor; las operaciones y selección de regiones llegan calculadas. */
+/* Dibuja datos del motor: regiones, elementos, tramos y cantidades llegan calculados.
+   Aquí solo hay geometría (dónde está cada círculo o cada extremo) y estados de resaltado. */
 (() => {
     'use strict';
-    const ajuste = document.querySelector('[data-ajuste-cardinalidades]');
-    if (ajuste) for (const nombre of ['numero','modo']) ajuste.form.elements[nombre].addEventListener('change', () => ajuste.form.requestSubmit(ajuste));
-    const datos = document.getElementById('conjuntos-resultado-datos');
-    if (!datos) return;
-    const resultado = JSON.parse(datos.textContent);
-    const ns = 'http://www.w3.org/2000/svg';
-    const svg = (tipo, attrs = {}, texto) => {
-        const nodo = document.createElementNS(ns,tipo);
-        for (const [k,v] of Object.entries(attrs)) nodo.setAttribute(k,v);
+    const NS = 'http://www.w3.org/2000/svg';
+    const el = (tipo, attrs = {}, texto) => {
+        const nodo = document.createElementNS(NS, tipo);
+        for (const [k, v] of Object.entries(attrs)) if (v !== undefined && v !== null) nodo.setAttribute(k, v);
         if (texto !== undefined) nodo.textContent = texto;
         return nodo;
     };
-    const boton = (texto, accion) => {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-secondary';
-        b.textContent = texto; b.addEventListener('click',accion); return b;
+    let secuencia = 0;
+
+    /* —— Geometría fija de Venn (viewBox 320 × 240) —— */
+    const ANCHO = 320, ALTO = 240, MARCO = { x: 6, y: 6, width: 308, height: 228, rx: 12 };
+    const GEOMETRIA = {
+        1: { circulos: [[160, 118, 84]], nombres: [[86, 38]], anclas: { 0: [18, 222], 1: [160, 118] }, pequenas: [] },
+        2: { circulos: [[124, 120, 80], [196, 120, 80]], nombres: [[50, 40], [270, 40]],
+             anclas: { 0: [18, 222], 1: [88, 120], 2: [232, 120], 3: [160, 120] }, pequenas: [3] },
+        3: { circulos: [[130, 94, 70], [190, 94, 70], [160, 148, 70]], nombres: [[56, 30], [264, 30], [252, 214]],
+             anclas: { 0: [18, 226], 1: [100, 78], 2: [220, 78], 3: [160, 64], 4: [160, 190], 5: [124, 136], 6: [196, 136], 7: [160, 114] },
+             pequenas: [3, 5, 6, 7] },
     };
-    const recta = document.querySelector('[data-recta]');
-    if (recta && resultado.recta) {
-        const grafica = svg('svg',{viewBox:'0 0 100 32',width:'100%',role:'img','aria-label':'Intervalos del resultado en la recta real',style:'max-height:300px'});
-        grafica.append(svg('line',{x1:0,y1:14,x2:100,y2:14,stroke:'currentColor','stroke-width':0.3}));
-        const detalle = document.createElement('p'); detalle.setAttribute('aria-live','polite');
-        for (const [indice,t] of resultado.recta.tramos.entries()) {
-            const grupo = svg('g',{'data-tramo':indice});
-            grupo.append(svg('line',{x1:t.x1,y1:14,x2:t.x2,y2:14,stroke:'#16758a','stroke-width':1.2}));
-            for (const [x,valor,cerrado,lado] of [[t.x1,t.inferior,t.cerrado_inferior,-1],[t.x2,t.superior,t.cerrado_superior,1]]) {
-                if (valor === null) grupo.append(svg('path',{d:`M ${x-lado*2} 12 L ${x} 14 L ${x-lado*2} 16`,fill:'none',stroke:'currentColor','stroke-width':0.5}));
-                else grupo.append(svg('circle',{cx:x,cy:14,r:1,fill:cerrado?'#16758a':'white',stroke:'#16758a','stroke-width':0.4}));
-                grupo.append(svg('text',{x,y:23,'font-size':3,'text-anchor':'middle'},valor ?? (lado < 0 ? '−∞' : '+∞')));
+
+    function mascaraEn(geo, x, y) {
+        if (x < MARCO.x || y < MARCO.y || x > MARCO.x + MARCO.width || y > MARCO.y + MARCO.height) return null;
+        return geo.circulos.reduce((m, [cx, cy, r], i) => (Math.hypot(x - cx, y - cy) <= r ? m | (1 << i) : m), 0);
+    }
+
+    // Una región = el marco recortado por los círculos que la contienen y enmascarado por los demás.
+    function region(defs, geo, mascara, prefijo, clase) {
+        const id = `${prefijo}-${mascara}`;
+        const mascaraSvg = el('mask', { id: `${id}-m`, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: ANCHO, height: ALTO });
+        mascaraSvg.append(el('rect', { x: 0, y: 0, width: ANCHO, height: ALTO, fill: 'white' }));
+        const raiz = el('g');
+        let actual = raiz;
+        geo.circulos.forEach(([cx, cy, r], i) => {
+            if (mascara & (1 << i)) {
+                const clip = el('clipPath', { id: `${id}-c${i}` });
+                clip.append(el('circle', { cx, cy, r }));
+                defs.append(clip);
+                const g = el('g', { 'clip-path': `url(#${id}-c${i})` });
+                actual.append(g);
+                actual = g;
+            } else mascaraSvg.append(el('circle', { cx, cy, r, fill: 'black' }));
+        });
+        defs.append(mascaraSvg);
+        const rect = el('rect', { ...MARCO, mask: `url(#${id}-m)`, class: clase });
+        actual.append(rect);
+        return { raiz, rect, hoja: actual };
+    }
+
+    // Elementos escritos dentro de su región: líneas cortas y «+k» cuando no caben.
+    function lineas(etiquetas, pequena) {
+        const maximo = pequena ? 8 : 13, filas = pequena ? 2 : 3;
+        const cortar = t => (t.length > maximo ? `${t.slice(0, maximo - 1)}…` : t);
+        const salida = [];
+        let i = 0;
+        while (i < etiquetas.length && salida.length < filas) {
+            let linea = cortar(etiquetas[i++]);
+            while (i < etiquetas.length && `${linea}, ${etiquetas[i]}`.length <= maximo) linea += `, ${etiquetas[i++]}`;
+            salida.push(linea);
+        }
+        if (i < etiquetas.length) {
+            const resto = `+${etiquetas.length - i}`;
+            if (salida.length === filas) salida[filas - 1] = `${salida[filas - 1].slice(0, Math.max(1, maximo - resto.length - 1))} ${resto}`;
+            else salida.push(resto);
+        }
+        return salida;
+    }
+
+    function dibujarVenn(contenedor, venn, panel) {
+        const n = venn.nombres.length;
+        const geo = GEOMETRIA[n];
+        if (!geo) return;
+        const prefijo = `venn${++secuencia}`;
+        const cantidades = Boolean(venn.cantidades);
+        const svg = el('svg', { viewBox: `0 0 ${ANCHO} ${ALTO}`, role: 'img', class: 'venn-lienzo-interactivo',
+            'aria-label': `Diagrama de Venn de ${venn.nombres.join(', ')}${venn.universo ? ` dentro de ${venn.universo}` : ''}` });
+        const defs = el('defs');
+        const trama = el('pattern', { id: `${prefijo}-trama`, width: 7, height: 7, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)', class: 'venn-trama' });
+        trama.append(el('line', { x1: 0, y1: 0, x2: 0, y2: 7 }));
+        defs.append(trama);
+        svg.append(defs, el('rect', { ...MARCO, class: 'venn-marco' }));
+        const rellenos = new Map();
+        for (const r of venn.regiones) {
+            const { raiz, rect, hoja } = region(defs, geo, r.mascara, prefijo, `venn-relleno${r.seleccionada ? ' es-seleccionada' : ''}`);
+            rect.dataset.region = r.mascara;
+            if (r.seleccionada) hoja.append(el('rect', { ...MARCO, mask: rect.getAttribute('mask'), class: 'venn-relleno-trama', fill: `url(#${prefijo}-trama)` }));
+            rellenos.set(r.mascara, rect);
+            svg.append(raiz);
+        }
+        geo.circulos.forEach(([cx, cy, r], i) => {
+            svg.append(el('circle', { cx, cy, r, class: 'venn-circulo' }));
+            const [x, y] = geo.nombres[i];
+            svg.append(el('text', { x, y, 'text-anchor': 'middle', class: 'venn-nombre' }, venn.nombres[i]));
+        });
+        if (venn.universo || venn.regiones.some(r => r.mascara === 0 && r.exterior_conocido)) {
+            svg.append(el('text', { x: 306, y: 26, 'text-anchor': 'end', class: 'venn-nombre' }, venn.universo || 'U'));
+        }
+        for (const r of venn.regiones) {
+            const [x, y] = geo.anclas[r.mascara];
+            const exterior = r.mascara === 0;
+            const ancla = exterior ? 'start' : 'middle';
+            if (cantidades || r.cantidad === null) {
+                const texto = r.cantidad ?? '?';
+                const nodo = el('text', { x, y: y + (exterior ? 0 : 6), 'text-anchor': ancla, class: `venn-texto es-cantidad${r.cantidad === null ? ' es-desconocido' : ''}` }, texto);
+                svg.append(nodo);
+                continue;
             }
-            grafica.append(grupo);
-            recta.append(boton(`Tramo ${indice+1}`,() => {detalle.textContent = `${t.cerrado_inferior?'[':'('}${t.inferior ?? '−∞'}, ${t.superior ?? '+∞'}${t.cerrado_superior?']':')'}`; grupo.setAttribute('stroke-width','2');}));
+            if (!r.etiquetas.length) continue;
+            const filas = lineas(r.etiquetas, geo.pequenas.includes(r.mascara));
+            const nodo = el('text', { x, y: exterior ? y : y - (filas.length - 1) * 7 + 4, 'text-anchor': ancla, class: 'venn-texto' });
+            filas.forEach((linea, i) => nodo.append(el('tspan', { x, dy: i ? 14 : 0 }, linea)));
+            if (exterior) nodo.setAttribute('y', y - (filas.length - 1) * 14);
+            svg.append(nodo);
         }
-        if (!resultado.recta.tramos.length) detalle.textContent = 'El resultado es vacío: no hay puntos en la recta.';
-        let ancho = 100, inicio = 0;
-        const actualizar = () => grafica.setAttribute('viewBox',`${inicio} 0 ${ancho} 32`);
-        recta.prepend(grafica);
-        recta.append(boton('Acercar',() => {if(ancho>12){inicio+=ancho/4;ancho/=2;actualizar();}}),
-            boton('Alejar',() => {inicio-=ancho/2;ancho=Math.min(200,ancho*2);actualizar();}),
-            boton('←',() => {inicio-=ancho/4;actualizar();}), boton('→',() => {inicio+=ancho/4;actualizar();}),
-            boton('Restablecer',() => {inicio=0;ancho=100;actualizar();}),detalle);
-    }
-    const venn = document.querySelector('[data-venn]');
-    if (venn && resultado.venn) {
-        const {nombres,regiones} = resultado.venn;
-        const tres = nombres.length === 3;
-        const centros = tres ? [[42,35],[66,35],[54,56]] : [[42,43],[67,43]];
-        const radio = tres ? 23 : 25;
-        const grafica = svg('svg',{viewBox:'0 0 110 90',width:'100%',role:'img','aria-label':`Diagrama de Venn de ${nombres.join(', ')}`,style:'max-height:460px;color:#182b2f'});
-        const defs = svg('defs'); grafica.append(defs);
-        const detalle = document.createElement('p'); detalle.setAttribute('aria-live','polite');
-        const anchors = tres ? [[7,85],[25,32],[83,32],[54,22],[54,76],[38,55],[70,55],[54,44]] : [[7,82],[28,43],[80,43],[54,43]];
-        const etiquetas = [];
-        for (const r of regiones) {
-            const id = `conjuntos-region-${r.mascara}`;
-            const mask = svg('mask',{id,x:0,y:0,width:110,height:90,maskUnits:'userSpaceOnUse'});
-            mask.append(svg('rect',{width:110,height:90,fill:'white'}));
-            let grupo = svg('g'); const principal = grupo;
-            centros.forEach(([cx,cy],i) => {
-                if (r.pertenece[i]) {
-                    const clipId = `${id}-incluye-${i}`;
-                    const clip = svg('clipPath',{id:clipId}); clip.append(svg('circle',{cx,cy,r:radio})); defs.append(clip);
-                    const hijo = svg('g',{'clip-path':`url(#${clipId})`}); grupo.append(hijo); grupo=hijo;
-                } else mask.append(svg('circle',{cx,cy,r:radio,fill:'black'}));
+        // La trama usa un id por diagrama: dos diagramas en la página no comparten patrón.
+        svg.querySelectorAll('.venn-relleno-trama').forEach(nodo => nodo.setAttribute('fill', `url(#${prefijo}-trama)`));
+        contenedor.replaceChildren(svg);
+
+        const estado = document.createElement('p');
+        estado.className = 'field-help';
+        estado.setAttribute('role', 'status');
+        estado.setAttribute('aria-live', 'polite');
+        contenedor.append(estado);
+        const filas = new Map([...panel.querySelectorAll('[data-regiones] tr[data-mascara]')].map(fila => [Number(fila.dataset.mascara), fila]));
+        let fija = null;
+        const resaltar = mascaras => {
+            for (const [m, rect] of rellenos) rect.classList.toggle('es-activa', mascaras.includes(m));
+            for (const [m, fila] of filas) fila.classList.toggle('es-activa', mascaras.includes(m));
+        };
+        const describir = m => {
+            const r = venn.regiones.find(x => x.mascara === m);
+            if (!r) return '';
+            const contenido = cantidades ? `${r.cantidad ?? 'cantidad desconocida'} elementos`
+                : r.etiquetas.length ? `${r.etiquetas.length} elemento${r.etiquetas.length === 1 ? '' : 's'}: ${r.etiquetas.join(', ')}`
+                : r.exterior_conocido ? 'vacía' : 'desconocida, porque no hay universo';
+            const parte = venn.regiones.some(x => x.seleccionada) || cantidades
+                ? (r.seleccionada ? ' Forma parte del resultado.' : ' No forma parte del resultado.') : '';
+            return `${r.descripcion} (${r.etiqueta}): ${contenido}.${parte}`;
+        };
+        const fijar = m => {
+            fija = fija === m ? null : m;
+            resaltar(fija === null ? [] : [fija]);
+            estado.textContent = fija === null ? '' : describir(fija);
+        };
+        const enPunto = event => {
+            const p = svg.createSVGPoint();
+            p.x = event.clientX; p.y = event.clientY;
+            const local = p.matrixTransform(svg.getScreenCTM().inverse());
+            return mascaraEn(geo, local.x, local.y);
+        };
+        svg.addEventListener('pointermove', event => {
+            const m = enPunto(event);
+            resaltar(m === null ? (fija === null ? [] : [fija]) : [m]);
+        });
+        svg.addEventListener('pointerleave', () => resaltar(fija === null ? [] : [fija]));
+        svg.addEventListener('click', event => {
+            const m = enPunto(event);
+            if (m !== null && rellenos.has(m)) fijar(m);
+        });
+        for (const [m, fila] of filas) {
+            fila.tabIndex = 0;
+            fila.addEventListener('click', () => fijar(m));
+            fila.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); fijar(m); }
             });
-            defs.append(mask);
-            grupo.append(svg('rect',{x:1,y:1,width:108,height:87,fill:r.seleccionada?'#73c5bd':'#f5f1e7',mask:`url(#${id})`,'data-region':r.mascara}));
-            grafica.append(principal);
-            const nombre = nombres.map((n,i) => r.pertenece[i]?n:`${n}ᶜ`).join(' ∩ ');
-            etiquetas.push({r,nombre});
+            fila.addEventListener('mouseenter', () => resaltar([m]));
+            fila.addEventListener('mouseleave', () => resaltar(fija === null ? [] : [fija]));
         }
-        grafica.append(svg('rect',{x:1,y:1,width:108,height:87,fill:'none',stroke:'currentColor','stroke-width':0.4}));
-        centros.forEach(([cx,cy],i) => {grafica.append(svg('circle',{cx,cy,r:radio,fill:'none',stroke:'currentColor','stroke-width':0.4}));grafica.append(svg('text',{x:cx,y:cy-radio-2,'text-anchor':'middle','font-size':4},nombres[i]));});
-        for (const {r,nombre} of etiquetas) {
-            const [x,y] = anchors[r.mascara];
-            grafica.append(svg('text',{x,y,'text-anchor':'middle','font-size':3},r.cantidad ?? '?'));
-            venn.append(boton(nombre,() => {detalle.textContent = `${nombre}: ${r.cantidad ?? 'cardinalidad desconocida'}${r.etiquetas.length?'; '+r.etiquetas.join(', '):''}. ${r.seleccionada?'Región seleccionada por la expresión.':'Región no seleccionada por la expresión.'}`;}));
-        }
-        venn.prepend(grafica); venn.append(detalle);
+        // Cualquier elemento con data-mascaras (sumandos, términos, filas) ilumina sus regiones.
+        document.querySelectorAll('[data-mascaras]').forEach(nodo => {
+            const mascaras = nodo.dataset.mascaras.split(' ').filter(Boolean).map(Number);
+            const encender = () => { resaltar(mascaras); nodo.classList.add('es-activa'); };
+            const apagar = () => { resaltar(fija === null ? [] : [fija]); nodo.classList.remove('es-activa'); };
+            nodo.addEventListener('mouseenter', encender);
+            nodo.addEventListener('mouseleave', apagar);
+            nodo.addEventListener('focusin', encender);
+            nodo.addEventListener('focusout', apagar);
+        });
     }
+
+    // Icono de un dato de cardinalidad: sombrea las regiones que cuenta (0 = todo el universo).
+    function miniVenn(contenedor, n, cubre) {
+        const geo = GEOMETRIA[n];
+        const prefijo = `mini${++secuencia}`;
+        const svg = el('svg', { viewBox: `0 0 ${ANCHO} ${ALTO}`, focusable: 'false' });
+        const defs = el('defs');
+        svg.append(defs);
+        if (cubre.includes(0)) svg.append(el('rect', { ...MARCO, class: 'mini-venn-region' }));
+        else for (const m of cubre) svg.append(region(defs, geo, m, prefijo, 'mini-venn-region').raiz);
+        svg.append(el('rect', { ...MARCO, class: 'mini-venn-marco', 'stroke-width': 10 }));
+        geo.circulos.forEach(([cx, cy, r]) => svg.append(el('circle', { cx, cy, r, class: 'mini-venn-circulo', 'stroke-width': 10 })));
+        contenedor.replaceChildren(svg);
+    }
+
+    /* —— Recta real —— */
+    function dibujarRecta(contenedor, datos, panel) {
+        const filas = [...datos.filas.map(f => ({ ...f, resultado: false }))];
+        if (datos.tramos.length || datos.notacion) filas.push({ etiqueta: datos.relacion ? '' : 'Resultado', notacion: datos.notacion, tramos: datos.tramos, resultado: !datos.relacion });
+        const punto = panel.querySelector('[name="punto"]');
+        const estado = document.createElement('p');
+        estado.className = 'field-help';
+        estado.setAttribute('role', 'status');
+        estado.setAttribute('aria-live', 'polite');
+        const svg = el('svg', { class: 'recta-svg', role: 'img', tabindex: 0,
+            'aria-label': 'Recta real. Teclas: + y − para acercar o alejar, flechas para desplazar, 0 para la vista inicial.' });
+        let inicio = 0, ancho = 100, activo = null;
+        const ALTO_FILA = 64, MARGEN = 18;
+        const dibujar = () => {
+            const W = Math.max(260, contenedor.clientWidth || 600);
+            const H = filas.length * ALTO_FILA + (datos.x_punto !== null ? 18 : 6);
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            svg.setAttribute('width', W);
+            svg.setAttribute('height', H);
+            const px = x => MARGEN + (x - inicio) / ancho * (W - 2 * MARGEN);
+            const izquierda = MARGEN - 4, derecha = W - MARGEN + 4;
+            const recorte = el('clipPath', { id: 'recta-recorte' });
+            recorte.append(el('rect', { x: 0, y: 0, width: W, height: H }));
+            const grupo = el('g', { 'clip-path': 'url(#recta-recorte)' });
+            svg.replaceChildren(el('defs'), grupo);
+            svg.firstChild.append(recorte);
+            const desplazado = datos.x_punto !== null ? 18 : 0;
+            filas.forEach((fila, f) => {
+                const top = f * ALTO_FILA + desplazado;
+                const y = top + 30;
+                const g = el('g', { class: `recta-fila${fila.resultado ? ' es-resultado' : ''}` });
+                if (fila.etiqueta) g.append(el('text', { x: 6, y: top + 12, class: 'recta-etiqueta' }, fila.etiqueta));
+                g.append(el('line', { x1: izquierda, y1: y, x2: derecha, y2: y, class: 'recta-eje' }));
+                let ultimo = -Infinity, alterno = false;
+                fila.tramos.forEach((t, i) => {
+                    const tg = el('g', { class: `recta-tramo-grupo${fila.resultado && activo === i ? ' es-activo' : ''}` });
+                    const x1 = t.inferior === null ? izquierda : px(t.x1);
+                    const x2 = t.superior === null ? derecha : px(t.x2);
+                    tg.append(el('line', { x1, y1: y, x2, y2: y, class: 'recta-tramo' }));
+                    for (const [x, valor, cerrado, lado] of [[x1, t.inferior, t.cerrado_inferior, -1], [x2, t.superior, t.cerrado_superior, 1]]) {
+                        if (valor === null) {
+                            tg.append(el('path', { d: `M ${x - lado * 8} ${y - 6} L ${x} ${y} L ${x - lado * 8} ${y + 6}`, class: 'recta-flecha' }));
+                            continue;
+                        }
+                        if (t.inferior !== null && t.inferior === t.superior && lado === 1) continue;
+                        tg.append(el('circle', { cx: x, cy: y, r: 5.5, class: `recta-extremo${cerrado ? ' es-cerrado' : ''}` }));
+                        alterno = x - ultimo < 40 ? !alterno : false;
+                        ultimo = x;
+                        tg.append(el('text', { x, y: y + (alterno ? 32 : 20), 'text-anchor': 'middle', class: 'recta-valor' }, valor));
+                    }
+                    g.append(tg);
+                });
+                if (!fila.tramos.length) g.append(el('text', { x: W / 2, y: y - 8, 'text-anchor': 'middle', class: 'recta-valor' }, '∅: ningún punto'));
+                grupo.append(g);
+            });
+            if (datos.x_punto !== null) {
+                const x = px(datos.x_punto);
+                grupo.append(el('line', { x1: x, y1: 14, x2: x, y2: H - 4, class: 'recta-punto' }));
+                grupo.append(el('text', { x: x + 6, y: 12, class: 'recta-punto-texto' }, `x = ${datos.punto}`));
+                const fila = filas.length - 1;
+                grupo.append(el('circle', { cx: x, cy: fila * ALTO_FILA + desplazado + 30, r: 3.5, class: 'recta-punto-marca' }));
+            }
+        };
+        const mover = (nuevoInicio, nuevoAncho) => {
+            ancho = Math.min(400, Math.max(1.5, nuevoAncho));
+            inicio = Math.min(100, Math.max(-ancho, nuevoInicio));
+            dibujar();
+        };
+        const zoom = factor => mover(inicio + ancho / 2 - ancho * factor / 2, ancho * factor);
+        const boton = (texto, etiqueta, accion) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'btn btn-secondary';
+            b.textContent = texto;
+            if (etiqueta) b.setAttribute('aria-label', etiqueta);
+            b.addEventListener('click', accion);
+            return b;
+        };
+        const controles = document.createElement('div');
+        controles.className = 'recta-controles';
+        controles.setAttribute('role', 'group');
+        controles.setAttribute('aria-label', 'Vista de la recta');
+        controles.append(
+            boton('+', 'Acercar', () => zoom(0.5)), boton('−', 'Alejar', () => zoom(2)),
+            boton('←', 'Desplazar a la izquierda', () => mover(inicio - ancho / 4, ancho)),
+            boton('→', 'Desplazar a la derecha', () => mover(inicio + ancho / 4, ancho)),
+            boton('Vista inicial', null, () => { activo = null; tramos.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', 'false')); mover(0, 100); }),
+        );
+        // Tramos del resultado en notación exacta: elegir uno lo resalta y lo centra.
+        const tramos = document.createElement('ul');
+        tramos.className = 'recta-tramos';
+        const resultado = filas.find(f => f.resultado);
+        if (resultado && resultado.tramos.length > 1) {
+            resultado.tramos.forEach((t, i) => {
+                const li = document.createElement('li');
+                const b = boton(t.notacion, `Resaltar el tramo ${t.notacion}`, () => {
+                    activo = activo === i ? null : i;
+                    tramos.querySelectorAll('button').forEach((x, j) => x.setAttribute('aria-pressed', String(activo === j)));
+                    if (activo !== null && t.inferior !== null && t.superior !== null) mover((t.x1 + t.x2) / 2 - ancho / 2, ancho);
+                    else dibujar();
+                    estado.textContent = activo === null ? '' : `Tramo ${t.notacion} resaltado.`;
+                });
+                b.className = 'conjuntos-chip-boton conjuntos-math';
+                b.setAttribute('aria-pressed', 'false');
+                li.append(b);
+                tramos.append(li);
+            });
+        }
+        svg.addEventListener('keydown', event => {
+            const acciones = { '+': () => zoom(0.5), '=': () => zoom(0.5), '-': () => zoom(2), ArrowLeft: () => mover(inicio - ancho / 8, ancho),
+                ArrowRight: () => mover(inicio + ancho / 8, ancho), 0: () => mover(0, 100) };
+            if (acciones[event.key]) { event.preventDefault(); acciones[event.key](); }
+        });
+        // Arrastrar desplaza; un toque sin arrastre propone un punto redondeado a la escala visible.
+        let arrastre = null;
+        svg.addEventListener('pointerdown', event => {
+            arrastre = { x: event.clientX, inicio, movido: false };
+            svg.setPointerCapture(event.pointerId);
+        });
+        svg.addEventListener('pointermove', event => {
+            if (!arrastre) return;
+            const dx = event.clientX - arrastre.x;
+            if (Math.abs(dx) > 4) arrastre.movido = true;
+            if (arrastre.movido) mover(arrastre.inicio - dx / svg.getBoundingClientRect().width * ancho, ancho);
+        });
+        svg.addEventListener('pointerup', event => {
+            const proponer = arrastre && !arrastre.movido && punto;
+            arrastre = null;
+            if (!proponer) return;
+            const caja = svg.getBoundingClientRect();
+            const W = Number(svg.getAttribute('width'));
+            const x = inicio + ((event.clientX - caja.left) / caja.width * W - MARGEN) / (W - 2 * MARGEN) * ancho;
+            const [minimo, maximo] = datos.escala;
+            const aproximado = minimo + (x - 10) / 80 * (maximo - minimo);
+            const paso = 10 ** Math.floor(Math.log10(ancho / 80 * (maximo - minimo) / 20));
+            const decimales = Math.max(0, -Math.round(Math.log10(paso)));
+            const texto = (Math.round(aproximado / paso) * paso).toFixed(decimales).replace(/^-0(\.0+)?$/, '0');
+            punto.value = texto;
+            punto.dispatchEvent(new Event('input', { bubbles: true }));
+            estado.textContent = `Punto propuesto: ${texto}. Pulsa Comprobar para saber si pertenece.`;
+        });
+        contenedor.replaceChildren(controles, svg, tramos, estado);
+        if (!tramos.childElementCount) tramos.remove();
+        dibujar();
+        if ('ResizeObserver' in window) new ResizeObserver(() => dibujar()).observe(contenedor);
+    }
+
+    /* —— Arranque —— */
+    const ajuste = document.querySelector('[data-ajuste-cardinalidades]');
+    if (ajuste) {
+        // Cambiar número de conjuntos o tipo de datos recompone los campos (sin JavaScript: «Aplicar»).
+        ajuste.hidden = true;
+        ajuste.form.addEventListener('change', event => {
+            if (['numero', 'modo'].includes(event.target.name)) ajuste.form.requestSubmit(ajuste);
+        });
+        const campos = document.querySelector('.cardinalidad-campos');
+        const n = Number(campos?.dataset.conjuntos);
+        campos?.querySelectorAll('[data-cubre]').forEach(dato => {
+            miniVenn(dato.querySelector('.cardinalidad-icono'), n, dato.dataset.cubre.split(' ').map(Number));
+        });
+    }
+    const atajos = document.querySelector('[data-atajos]');
+    if (atajos) {
+        atajos.hidden = false;
+        const campo = atajos.closest('form').elements.expresion;
+        atajos.addEventListener('click', event => {
+            const b = event.target.closest('[data-expresion]');
+            if (!b) return;
+            campo.value = b.dataset.expresion;
+            campo.dispatchEvent(new Event('input', { bubbles: true }));
+            campo.focus();
+        });
+    }
+    const fuente = document.getElementById('conjuntos-resultado-datos');
+    if (!fuente) return;
+    const resultado = JSON.parse(fuente.textContent);
+    const venn = document.querySelector('[data-venn]');
+    if (venn && resultado.venn) dibujarVenn(venn, resultado.venn, venn.closest('section'));
+    const recta = document.querySelector('[data-recta]');
+    if (recta && resultado.recta) dibujarRecta(recta, resultado.recta, recta.closest('section'));
 })();

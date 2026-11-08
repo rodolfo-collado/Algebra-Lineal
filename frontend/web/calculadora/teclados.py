@@ -140,6 +140,12 @@ OPERACIONES_CONJUNTOS = GrupoTeclas("Operaciones finitas", (
     Tecla("| |", "||", "Cardinalidad", 1),
 ))
 PERFIL_RELACION_CONJUNTOS = Perfil("relacion-conjuntos", (LITERALES_CONJUNTOS, RELACIONES_CONJUNTOS, OPERACIONES_CONJUNTOS))
+# Cardinalidades: solo lo que nombra regiones del diagrama; los nombres llegan como operandos.
+PERFIL_REGIONES_CONJUNTOS = Perfil("regiones-conjuntos", (GrupoTeclas("Regiones", (
+    Tecla("∪", "∪", "Unión"), Tecla("∩", "∩", "Intersección"), Tecla("∖", "∖", "Diferencia"),
+    Tecla("∁", "∁(, U)", "Complemento respecto del universo U", 5), Tecla("( )", "()", "Agrupar", 1),
+    Tecla("∅", "∅", "Conjunto vacío"),
+)),))
 PERFILES_BASE = {
     base: Perfil(
         f"base-{base}",
@@ -151,7 +157,7 @@ PERFILES_BASE = {
 
 PERFILES = {perfil.id: perfil for perfil in (
     PERFIL_SISTEMA, PERFIL_NUMERICO, PERFIL_EXPRESION, PERFIL_LINEAL, PERFIL_FUNCION_REAL,
-    PERFIL_LITERAL_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, *PERFILES_BASE.values(),
+    PERFIL_LITERAL_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, PERFIL_REGIONES_CONJUNTOS, *PERFILES_BASE.values(),
 )}
 
 

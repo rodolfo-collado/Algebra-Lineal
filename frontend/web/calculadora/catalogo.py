@@ -144,7 +144,7 @@ SISTEMAS_NUMERICOS = Area(
     "Representación de números en distintas bases y en numeración romana.", "1011₂",
 )
 CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.", "lím")
-CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos y relaciones entre ellos.", "A ∩ B")
+CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos, sus operaciones y su cardinalidad.", "A ∩ B")
 METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones reales.", "f(c) ≈ 0")
 AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, METODOS_NUMERICOS, CONJUNTOS, CALCULO)
 
@@ -166,8 +166,8 @@ NUMERACION_ROMANA = Categoria(
     "Conversión entre números arábigos y romanos.", "XII",
 )
 LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.", "x → a")
-CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos finitos", CONJUNTOS,
-                            "Elementos, pertenencia e inclusión de conjuntos.", "{ a, b }")
+CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos e intervalos", CONJUNTOS,
+                            "Operaciones, relaciones, diagramas de Venn, intervalos y cardinalidad.", "{ a, b }")
 RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS, "Búsqueda de raíces en un intervalo.", "[a, b]")
 CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, CONJUNTOS_FINITOS, LIMITES)
 
@@ -337,12 +337,28 @@ DETERMINANTES = Herramienta(
 )
 
 RELACIONES_CONJUNTOS = Herramienta(
-    id="relaciones-conjuntos", nombre="Relaciones entre conjuntos", categoria=CONJUNTOS_FINITOS,
-    descripcion="Opera con conjuntos finitos e intervalos; explora relaciones, potencia, productos, Venn y cardinalidades.",
+    id="relaciones-conjuntos", nombre="Operaciones con conjuntos", categoria=CONJUNTOS_FINITOS,
+    descripcion="Define conjuntos, combínalos y compruébalo en un diagrama de Venn o en la recta real.",
     estado="proximamente",
-    palabras_clave=("pertenencia", "no pertenencia", "inclusión", "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados", 'potencia','producto cartesiano','intervalos','Venn','cardinalidad','inclusión-exclusión'),
-    invitacion="Define conjuntos y distingue pertenencia, inclusión e igualdad.",
-    puntos=('Pertenencia, inclusión e igualdad', 'Una explicación para cada relación'),
+    palabras_clave=("unión", "intersección", "diferencia", "complemento", "pertenencia", "no pertenencia", "inclusión",
+                    "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados", "potencia", "producto cartesiano",
+                    "pares ordenados", "intervalos", "recta real", "venn"),
+    relacionadas=("cardinalidad-conjuntos",),
+    invitacion="Define conjuntos y combínalos con ∪, ∩, ∖ y ∁.",
+    puntos=("Diagrama de Venn con los elementos en su región", "Intervalos exactos en la recta real"),
+    curiosidad="{1, {1}} tiene dos elementos: un conjunto puede ser elemento de otro sin que sus elementos se mezclen.",
+)
+
+CARDINALIDAD_CONJUNTOS = Herramienta(
+    id="cardinalidad-conjuntos", nombre="Cardinalidad e inclusión-exclusión", categoria=CONJUNTOS_FINITOS,
+    descripcion="Cuenta elementos por regiones de Venn y descubre por qué funciona la inclusión-exclusión.",
+    estado="proximamente",
+    palabras_clave=("cardinalidad", "inclusión-exclusión", "inclusión y exclusión", "contar", "regiones", "venn",
+                    "problemas de conteo", "encuestas"),
+    relacionadas=("relaciones-conjuntos",),
+    invitacion="Cuenta cuántos hay en A ∪ B sin contar dos veces.",
+    puntos=("Datos por regiones o por intersecciones", "Cada región contada exactamente una vez"),
+    curiosidad="En |A ∪ B ∪ C| la región común se suma tres veces, se resta tres y se suma una más: cuenta exactamente una vez.",
 )
 
 BISECCION = Herramienta(
@@ -366,6 +382,7 @@ HERRAMIENTAS = (
     CONVERSION_ROMANOS,
     BISECCION,
     RELACIONES_CONJUNTOS,
+    CARDINALIDAD_CONJUNTOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
                 "Calcula límites de funciones paso a paso.",
                 palabras_clave=("límite", "función", "tiende a")),

@@ -34,9 +34,11 @@ class AvanzadosWebTests(SimpleTestCase):
         self.assertTrue(regiones[3]['seleccionada'])
         self.assertContains(respuesta,'data-venn')
         for extra in ({'venn_nombres':'A,A'},{'venn_nombres':'A,B','venn_universo':'Z'},
-                      {'venn_nombres':'A,B','expresion':'potencia(A)'}, {'punto':'1','expresion':'A'}):
+                      {'venn_nombres':'A,B','expresion':'potencia(A)'}):
             with self.subTest(extra=extra):
                 self.assertNotContains(self.client.post(RUTA,datos(**extra)), 'id="resultado"')
+        # Un punto escrito para una recta anterior no se aplica a otros resultados.
+        self.assertNotIn('recta', contrato(self.client.post(RUTA,datos(punto='1',expresion='A'))))
 
     def test_cardinalidad_sin_javascript_y_ajustes(self):
         ruta = '/conjuntos/cardinalidad/'

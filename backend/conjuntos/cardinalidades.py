@@ -27,7 +27,7 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
         for k in descontar:
             valor -= regiones[k]
         if valor < 0:
-            raise ValueError(f'Datos incoherentes: la región exclusiva {m} tendría cardinalidad negativa.')
+            raise ValueError(f'Datos incoherentes: la región {etiqueta(m)} tendría {str(valor).replace('-', '−')} elementos. Una intersección no puede superar a los conjuntos que la contienen; revisa esos datos.')
         regiones[m] = valor
         pasos.append({'regla': 'region_exclusiva', 'mascara': m, 'etiqueta':etiqueta(m),
                       'inicial': datos[m], 'restar': descontar,
@@ -49,8 +49,11 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
         intersecciones[m] = valor
         signo = 1 if m.bit_count() % 2 else -1
         union += signo * valor
-        terminos.append({'mascara': m, 'etiqueta':' ∩ '.join(n for i,n in enumerate(nombres) if m & (1 << i)), 'signo': signo, 'valor': valor})
-    pasos.append({'regla': 'inclusion_exclusion', 'terminos': tuple(terminos), 'resultado': union})
+        terminos.append({'mascara': m, 'etiqueta':' ∩ '.join(n for i,n in enumerate(nombres) if m & (1 << i)), 'signo': signo, 'valor': valor,
+                         'cubre': tuple(k for k in range(1, cantidad) if k & m == m)})
+    # Cuántas veces cuenta cada región la suma con signos: siempre una, y por eso funciona.
+    veces = {k: sum(t['signo'] for t in terminos if k in t['cubre']) for k in range(1, cantidad)}
+    pasos.append({'regla': 'inclusion_exclusion', 'terminos': tuple(terminos), 'veces': veces, 'resultado': union})
     arbol = analizar_expresion(expresion, presupuesto=presupuesto)
     seleccionadas = seleccionar_regiones(arbol, nombres, 'U' if universo is not None else None, presupuesto)
     resultado = 0

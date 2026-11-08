@@ -40,13 +40,28 @@ def peso(valor):
     return 1
 
 
+def orden(valor):
+    """Orden de lectura: números de menor a mayor, textos, conjuntos por tamaño, pares e intervalos.
+
+    Solo decide cómo se escriben los elementos; la igualdad sigue sin depender del orden."""
+    if isinstance(valor, Fraction):
+        return (0, valor, "")
+    if isinstance(valor, str):
+        return (1, 0, valor)
+    if isinstance(valor, Conjunto):
+        return (2, len(valor.elementos), presentar(valor))
+    if isinstance(valor, Par):
+        return (3, 0, "", orden(valor.primero), orden(valor.segundo))
+    return (4, 0, presentar(valor))
+
+
 def presentar(valor):
     if isinstance(valor, Recta):
         return literal_recta(valor)
     if isinstance(valor, Par):
         return f"par({presentar(valor.primero)}, {presentar(valor.segundo)})"
     if isinstance(valor, Conjunto):
-        return "{" + ", ".join(sorted(presentar(e) for e in valor.elementos)) + "}" if valor.elementos else "∅"
+        return "{" + ", ".join(presentar(e) for e in sorted(valor.elementos, key=orden)) + "}" if valor.elementos else "∅"
     if isinstance(valor, str):
         return json.dumps(valor, ensure_ascii=False)
     return str(valor)
