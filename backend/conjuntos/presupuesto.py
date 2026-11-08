@@ -5,11 +5,23 @@ from dataclasses import dataclass
 from backend.operandos import CELDAS_MAXIMAS, OPERANDOS_MAXIMOS
 from backend.presupuesto_sistemas import LONGITUD_SISTEMA_MAXIMA
 
+VOLUMEN_MAXIMO = CELDAS_MAXIMAS * OPERANDOS_MAXIMOS
+
 
 @dataclass
 class Presupuesto:
     caracteres: int = 0
     entradas: int = 0
+    calculo: int = 0
+    procedimiento: int = 0
+
+    def reservar(self, *, calculo=0, procedimiento=0):
+        if self.calculo + calculo > VOLUMEN_MAXIMO:
+            raise ValueError("La expresión supera el presupuesto acumulado de cálculo de conjuntos.")
+        if self.procedimiento + procedimiento > VOLUMEN_MAXIMO:
+            raise ValueError("La expresión supera el presupuesto acumulado del procedimiento de conjuntos.")
+        self.calculo += calculo
+        self.procedimiento += procedimiento
 
     def texto(self, texto):
         self.longitud(len(texto))

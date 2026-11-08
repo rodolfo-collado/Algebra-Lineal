@@ -61,8 +61,13 @@ Los cálculos largos piden confirmación según el
 - [Bisección](docs/biseccion.md) manual con gráfica interactiva offline, recorrido
   de iteraciones y comparación de intervalos. Precisión predeterminada `0.0001`.
 
-Conjuntos y Cálculo figuran como **Próximamente**. El código y los avances de
-Conjuntos se conservan, con sus accesos públicos temporalmente bloqueados.
+### Conjuntos
+
+- [Operaciones con conjuntos y Cardinalidad e inclusión-exclusión](docs/conjuntos.md):
+  conjuntos finitos y anidados, potencia, producto cartesiano, intervalos en la recta
+  real, diagramas de Venn y conteo por regiones, con procedimiento paso a paso.
+
+Cálculo figura como **Próximamente**.
 
 ## Formas de usar el proyecto
 

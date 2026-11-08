@@ -1,15 +1,19 @@
 """Editor, catálogo y relaciones comparten el contrato del backend."""
 
+import json
 import os
+import re
+from unittest.mock import patch
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
 import django
 django.setup()
 
-from django.test import Client, SimpleTestCase, override_settings
+from django.test import Client, SimpleTestCase
 from django.urls import reverse
 
 from frontend.web.calculadora import catalogo
+from backend.conjuntos.evaluador import evaluar_expresion
 
 RUTA = "/conjuntos/relaciones/"
 
@@ -20,13 +24,14 @@ def datos(**extra):
             "expresion": "A ∈ B", "accion": "calcular", **extra}
 
 
-@override_settings(ROOT_URLCONF="tests.urls_conjuntos")
 class ConjuntosWebTests(SimpleTestCase):
     def test_catalogo_y_pantalla(self):
         self.assertEqual(reverse("calculadora:relaciones-conjuntos"), RUTA)
         self.assertEqual(catalogo.herramienta_por_id("relaciones-conjuntos").area.nombre, "Conjuntos")
-        self.assertContains(self.client.get("/?q=pertenencia"), "Relaciones entre conjuntos")
-        respuesta = self.client.get(RUTA)
+        self.assertContains(self.client.get("/?q=pertenencia"), "Operaciones con conjuntos")
+        self.assertEqual(catalogo.herramienta_por_id("cardinalidad-conjuntos").categoria,
+                         catalogo.herramienta_por_id("relaciones-conjuntos").categoria)
+        respuesta = self.client.get(RUTA + "?ejemplo=relaciones")
         for texto in ('name="nombre_0"', 'name="contenido_0"', 'name="expresion"',
                       'data-perfil="relacion-conjuntos"', 'calculadora/conjuntos.js', 'math-keyboard-profiles'):
             self.assertContains(respuesta, texto)
@@ -52,10 +57,12 @@ class ConjuntosWebTests(SimpleTestCase):
         self.assertContains(respuesta, 'name="nombre_0" value="B"')
         self.assertContains(self.client.post(RUTA, datos(contenido_0="{3}", expresion="3 ∈ A")), "Verdadero")
 
-    def test_guiado_genera_expresion_sin_calcular(self):
-        respuesta = self.client.post(RUTA, datos(accion="construir", izquierdo="{2}", operador="⊆", derecho="B"))
-        self.assertContains(respuesta, "{2} ⊆ B")
+    def test_guia_escribe_expresion_sin_calcular(self):
+        # La guía sustituye al constructor de relaciones: sin JavaScript también escribe la expresión.
+        respuesta = self.client.post(RUTA, datos(plantilla="inclusion"))
+        self.assertContains(respuesta, "A ⊆ B</textarea>")
         self.assertNotContains(respuesta, 'id="resultado"')
+        self.assertContains(self.client.post(RUTA, datos(plantilla="pertenencia")), "1 ∈ A</textarea>")
 
     def test_post_invalido_conserva_editor(self):
         for cambios, mensaje in (
@@ -63,7 +70,7 @@ class ConjuntosWebTests(SimpleTestCase):
             ({"contenido_0": "{1,}"}, "Se esperaba"), ({"expresion": "1 ⊆ A"}, "inclusión"),
             ({"cantidad": "999999999"}, "50"), ({"cantidad": "-1"}, "0"),
             ({"intruso": "1"}, "campos"), ({"nombre_0": "__import__"}, "nombre"),
-            ({"accion": "construir", "operador": "∪"}, "relación"),
+            ({"plantilla": "eval"}, "no está en la guía"), ({"accion": "construir"}, "Acción desconocida"),
             ({"contenido_0": "{" * 60 + "}" * 60}, "niveles"),
         ):
             with self.subTest(cambios=cambios):
@@ -89,11 +96,54 @@ class ConjuntosWebTests(SimpleTestCase):
     def test_cero_definiciones_y_fallback_guiado(self):
         respuesta = self.client.post(RUTA, {"cantidad": "0", "expresion": "{} = ∅", "accion": "calcular"})
         self.assertContains(respuesta, "Verdadero", count=1)
-        respuesta = self.client.post(RUTA, datos(accion="construir", izquierdo="2", operador="∈", derecho="A"))
-        self.assertContains(respuesta, "2 ∈ A")
+        respuesta = self.client.post(RUTA, {"cantidad": "0", "expresion": "", "plantilla": "union"})
+        self.assertContains(respuesta, "A ∪ B</textarea>")
 
     def test_metodos_csrf_y_borrador_conservado(self):
         self.assertEqual(self.client.put(RUTA).status_code, 405)
         self.assertEqual(Client(enforce_csrf_checks=True).post(RUTA, datos()).status_code, 403)
         respuesta = self.client.post(RUTA, datos(definicion="S = {3}"))
         self.assertContains(respuesta, 'value="S = {3}"')
+
+    def test_operaciones_y_cardinalidad_sin_javascript(self):
+        for expresion, esperado in (('A ∪ B', '{1, 2, {1, 2}}'),
+                                    ('A ∩ B', '{2}'), ('A ∖ B', '{1}'),
+                                    ('∁(A, A ∪ B)', '{{1, 2}}'), ('|A|', '2'),
+                                    ('|A ∩ B| = 1', 'Verdadero'), ('|∅|', '0'),
+                                    ('A ∩ ∅', '∅')):
+            with self.subTest(expresion=expresion):
+                respuesta = self.client.post(RUTA, datos(expresion=expresion))
+                self.assertContains(respuesta, f'data-respuesta-relacion>{esperado}</p>', html=False)
+                self.assertContains(respuesta, 'id="procedimiento"')
+                self.assertNotContains(respuesta, 'id="procedimiento" open')
+
+    def test_contrato_json_exacto_y_evaluacion_unica(self):
+        with patch('frontend.web.calculadora.servicios_conjuntos.evaluar_expresion', wraps=evaluar_expresion) as evaluar:
+            respuesta = self.client.post(RUTA, datos(expresion='|A ∪ B|'))
+        self.assertEqual(evaluar.call_count, 1)
+        contenido = re.search(r'<script id="conjuntos-resultado-datos"[^>]*>(.*?)</script>', respuesta.content.decode(), re.S)[1]
+        contrato = json.loads(contenido)
+        self.assertEqual(contrato['valor'], {'tipo': 'numero', 'numerador': '3', 'denominador': '1'})
+        self.assertEqual([p['regla'] for p in contrato['procedimiento']], ['union', 'cardinalidad'])
+        union = contrato['procedimiento'][0]
+        self.assertEqual(union['operandos'][0]['tipo'], 'conjunto')
+        self.assertEqual(union['resultado']['tipo'], 'conjunto')
+        self.assertEqual(len(union['resultado']['elementos']), 3)
+
+    def test_errores_p2_conservan_editor_y_no_presentan_resultado(self):
+        for expresion, mensaje in (('∁(A,B)', 'universo'), ('A ∪ 1', 'conjuntos finitos'),
+                                    ('|1|', 'conjuntos finitos'), ('A ∪', 'Falta un conjunto al final')):
+            with self.subTest(expresion=expresion):
+                respuesta = self.client.post(RUTA, datos(expresion=expresion))
+                self.assertContains(respuesta, mensaje)
+                self.assertNotContains(respuesta, 'id="resultado"')
+                self.assertContains(respuesta, 'name="nombre_0" value="A"')
+        conjunto = '{' + ','.join(map(str, range(250))) + '}'
+        respuesta = self.client.post(RUTA, datos(contenido_0=conjunto, expresion=' ∪ '.join(['A'] * 49)))
+        self.assertContains(respuesta, 'presupuesto')
+        self.assertNotContains(respuesta, 'id="resultado"')
+
+    def test_json_escapa_texto_y_conserva_tipo(self):
+        respuesta = self.client.post(RUTA, datos(expresion='{"</script><script>alert(1)</script>", 1/2} ∪ ∅'))
+        self.assertNotContains(respuesta, '</script><script>alert(1)</script>')
+        self.assertContains(respuesta, '\\u003C/script\\u003E')

@@ -1,0 +1,146 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static componentes %}
+{% comment %}Cardinalidad: datos por regiones o por intersecciones (cada campo con su región dibujada), qué contar, y un resultado que enseña de dónde sale: la suma de regiones, el diagrama y, plegada, la inclusión-exclusión con cuántas veces cuenta cada región.{% endcomment %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'calculadora/styles/conjuntos.css' %}">{% endblock %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-label="Datos de cardinalidad">
+    <form id="cardinalidades-form" method="post" action="{{ herramienta_actual.ruta }}#resultado" data-entrada-calculo autocomplete="off" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        {% csrf_token %}
+        <button class="conjuntos-envio-implicito" type="submit" name="accion" value="calcular" tabindex="-1" aria-hidden="true">Calcular</button>
+        {% include "calculadora/components/errores_generales.html" %}
+        <div class="cardinalidad-opciones">
+            <fieldset class="choice-fieldset">
+                <legend>{{ form.numero.label }}</legend>
+                <div class="segmented">{% for radio in form.numero %}<label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}</div>
+                {{ form.numero.errors }}
+            </fieldset>
+            <fieldset class="choice-fieldset">
+                <legend>{{ form.modo.label }}</legend>
+                <div class="segmented">{% for radio in form.modo %}<label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}</div>
+                {{ form.modo.errors }}
+            </fieldset>
+            <button type="submit" name="accion" value="ajustar" class="btn btn-secondary" data-ajuste-cardinalidades>Aplicar</button>
+        </div>
+
+        <section class="workspace-section" aria-labelledby="datos-titulo">
+            <h3 id="datos-titulo" class="section-title">{% if form.modo_actual == "intersecciones" %}Cardinalidades conocidas{% else %}Elementos en cada región{% endif %}</h3>
+            <p class="field-help">{% if form.modo_actual == "intersecciones" %}Cada dato cuenta a todos los de esos conjuntos, también a los que comparten con otros. {% else %}Cada región cuenta solo a quienes están exactamente ahí. {% endif %}Escribe 0 si no hay ninguno.</p>
+            <div class="cardinalidad-campos" data-conjuntos="{{ form.nombres|length }}">
+                {% for campo in form.regiones %}
+                    <div class="field-group cardinalidad-dato" data-cubre="{{ campo.cubre }}">
+                        <label for="{{ campo.id_for_label }}"><span class="cardinalidad-icono" aria-hidden="true"></span><span class="cardinalidad-etiqueta"><span class="conjuntos-math">{{ campo.label }}</span><span class="cardinalidad-lectura">{{ campo.descripcion }}</span></span></label>
+                        {{ campo }}{{ campo.errors }}
+                    </div>
+                {% endfor %}
+                <div class="field-group cardinalidad-dato cardinalidad-universo" data-cubre="0">
+                    <label for="{{ form.universo.id_for_label }}"><span class="cardinalidad-icono" aria-hidden="true"></span><span class="cardinalidad-etiqueta"><span class="conjuntos-math">|U|</span><span class="cardinalidad-lectura">Universo, opcional: hace falta para ∁</span></span></label>
+                    {{ form.universo }}{{ form.universo.errors }}
+                </div>
+            </div>
+        </section>
+
+        <section class="workspace-section" aria-labelledby="contar-titulo">
+            <h3 id="contar-titulo" class="section-title"><label for="{{ form.expresion.id_for_label }}">{{ form.expresion.label }}</label></h3>
+            <div class="field-group" data-perfil="regiones-conjuntos" data-operandos="#cardinalidad-nombres">
+                {{ form.expresion }}{{ form.expresion.errors }}
+                <p class="field-help">Combina {{ form.nombres|join:", " }} con ∪, ∩, ∖ y paréntesis. Para lo que queda fuera usa ∁(…, U).</p>
+                <div class="conjuntos-atajos" data-atajos hidden>
+                    {% for atajo in form.atajos %}<button type="button" class="conjuntos-chip-boton conjuntos-math" data-expresion="{{ atajo }}">{{ atajo }}</button>{% endfor %}
+                </div>
+            </div>
+            <span id="cardinalidad-nombres" hidden>{% for nombre in form.nombres %}<input type="hidden" data-campo="nombre" value="{{ nombre }}">{% endfor %}<input type="hidden" data-campo="nombre" value="U"></span>
+            {% include "calculadora/components/math_keyboard.html" %}
+        </section>
+        <div class="workspace-actions"><button type="submit" name="accion" value="calcular" class="btn btn-primary" data-calculo>Contar</button></div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+<section id="resultado" class="results cardinalidad-resultado" data-resultado="vigente" tabindex="-1" aria-labelledby="results-title">
+    <header class="results-heading"><h2 id="results-title" class="conjuntos-math">|{{ resultado.expresion }}|</h2></header>
+    {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+        <ol class="conjuntos-pasos">
+        {% for p in resultado.pasos_vista %}
+            {% if p.regla == "inclusion_exclusion" %}
+            <li class="conjuntos-paso">
+                <p class="conjuntos-paso-titulo"><strong>Inclusión-exclusión</strong> <span class="conjuntos-math">|{{ resultado.datos.venn.nombres|join:" ∪ " }}|</span></p>
+                <p class="conjuntos-regla">Sumamos los conjuntos, restamos las intersecciones de dos{% if resultado.datos.venn.nombres|length == 3 %} y sumamos la de tres{% endif %}.</p>
+                <p class="conjuntos-formula conjuntos-math">|{{ resultado.datos.venn.nombres|join:" ∪ " }}| = {% for t in p.terminos %}{% if not forloop.first %} {% if t.signo == 1 %}+{% else %}−{% endif %} {% endif %}|{{ t.etiqueta }}|{% endfor %}</p>
+                {% if resultado.modo == "regiones" %}
+                    <p class="conjuntos-regla">Cada término es la suma de las regiones que contiene:</p>
+                    <ul class="cardinalidad-desglose">{% for t in p.terminos %}<li data-mascaras="{{ t.cubre|join:' ' }}"><span class="conjuntos-math">|{{ t.etiqueta }}| = {{ t.desglose|join:" + " }}{% if t.desglose|length > 1 %} = {{ t.valor }}{% endif %}</span></li>{% endfor %}</ul>
+                {% endif %}
+                <p class="conjuntos-formula conjuntos-math">= {% for t in p.terminos %}{% if not forloop.first %} {% if t.signo == 1 %}+{% else %}−{% endif %} {% endif %}<span data-mascaras="{{ t.cubre|join:' ' }}">{{ t.valor }}</span>{% endfor %} = {{ p.resultado }}</p>
+                <div class="table-wrap">
+                    <table class="procedure-table cardinalidad-veces">
+                        <caption>¿Cuántas veces cuenta cada región?</caption>
+                        <thead><tr><th scope="col">Región</th>{% for t in p.terminos %}<th scope="col" class="conjuntos-math">{% if t.signo == 1 %}+{% else %}−{% endif %}|{{ t.etiqueta }}|</th>{% endfor %}<th scope="col">Total</th></tr></thead>
+                        <tbody>{% for fila in p.tabla %}<tr data-mascaras="{{ fila.mascara }}"><th scope="row">{{ fila.descripcion }}</th>{% for celda in fila.celdas %}<td class="conjuntos-math">{{ celda }}</td>{% endfor %}<td class="conjuntos-math"><strong>{{ fila.veces }}</strong></td></tr>{% endfor %}</tbody>
+                    </table>
+                </div>
+                <p class="conjuntos-conclusion">Cada región suma exactamente 1: la fórmula cuenta a cada elemento una sola vez.</p>
+            </li>
+            {% elif p.regla == "suma_regiones" %}
+            <li class="conjuntos-paso">
+                <p class="conjuntos-paso-titulo"><strong>Regiones que forman</strong> <span class="conjuntos-math">{{ resultado.expresion }}</span></p>
+                <p class="conjuntos-regla">Las regiones no se solapan: basta sumar una vez cada región elegida.</p>
+                <p class="conjuntos-formula conjuntos-math">{% for s in p.sumandos %}{% if not forloop.first %} + {% endif %}{{ s.cantidad }}{% empty %}0{% endfor %} = {{ p.resultado }}</p>
+            </li>
+            {% elif resultado.modo == "intersecciones" and forloop.first %}
+            <li class="conjuntos-paso">
+                <p class="conjuntos-paso-titulo"><strong>De los datos a las regiones</strong></p>
+                <p class="conjuntos-regla">Empezamos por la intersección más interior y vamos hacia fuera: a cada dato le restamos las regiones interiores ya calculadas, para no contarlas dos veces.</p>
+                <ul class="cardinalidad-desglose">
+                {% for q in resultado.pasos_vista %}{% if q.regla == "region_exclusiva" %}
+                    <li data-mascaras="{{ q.mascara }}">{{ q.descripcion }}: <span class="conjuntos-math">{{ q.inicial }}{% for s in q.sustraendos %} − {{ s.cantidad }}{% endfor %} = {{ q.resultado }}</span></li>
+                {% endif %}{% endfor %}
+                </ul>
+            </li>
+            {% endif %}
+        {% endfor %}
+        </ol>
+    {% enddisclosure %}
+    <section class="panel panel-final" aria-labelledby="results-final-title">
+        <h3 id="results-final-title" class="panel-title">Resultado</h3>
+        <p class="conjuntos-respuesta conjuntos-math"><span data-cardinalidad>{{ resultado.resultado }}</span></p>
+        {% for p in resultado.pasos_vista %}{% if p.regla == "suma_regiones" %}
+            {% if p.sumandos %}
+            <p class="cardinalidad-suma">Sale de sumar sus regiones:</p>
+            <ul class="cardinalidad-sumandos">
+                {% for s in p.sumandos %}<li data-mascaras="{{ s.mascara }}" tabindex="0"><span class="conjuntos-math">{{ s.cantidad }}</span> <span class="cardinalidad-lectura">{{ s.descripcion }}</span></li>{% endfor %}
+            </ul>
+            {% else %}
+            <p class="cardinalidad-suma">Ninguna región forma esta expresión: siempre está vacía.</p>
+            {% endif %}
+        {% endif %}{% endfor %}
+    </section>
+    <section class="panel conjuntos-venn" aria-labelledby="venn-titulo">
+        <h3 id="venn-titulo" class="panel-title">Diagrama de Venn</h3>
+        <p class="field-help">Cada número es una región que no se solapa con las demás. Sombreado: lo que cuenta {{ resultado.expresion }}. En total, <span class="conjuntos-math">|{{ resultado.datos.venn.nombres|join:" ∪ " }}| = {{ resultado.union }}</span>.</p>
+        <div class="conjuntos-venn-lienzo" data-venn></div>
+        <div class="table-wrap">
+            <table class="procedure-table conjuntos-regiones" data-regiones>
+                <caption class="sr-only">Regiones exclusivas</caption>
+                <thead><tr><th scope="col">Región</th><th scope="col">Elementos</th><th scope="col">Se cuenta</th></tr></thead>
+                <tbody>
+                {% for r in resultado.filas %}
+                    <tr data-mascara="{{ r.mascara }}"{% if r.seleccionada %} data-seleccionada{% endif %}>
+                        <th scope="row"><span class="conjuntos-region-nombre">{{ r.descripcion }}</span> <span class="conjuntos-region-notacion conjuntos-math">{{ r.etiqueta }}</span></th>
+                        <td class="conjuntos-math">{{ r.cantidad|default_if_none:"Desconocida" }}</td>
+                        <td>{% if r.seleccionada %}<span class="conjuntos-si">Sí</span>{% else %}No{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{{ resultado.datos|json_script:"conjuntos-resultado-datos" }}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'calculadora/conjuntos_visual.js' %}" defer></script><script src="{% static 'calculadora/teclado.js' %}" defer></script>{% endblock %}

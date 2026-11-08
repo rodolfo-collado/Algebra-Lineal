@@ -33,7 +33,7 @@ dejar correr la reproducción continua.
 Bisección: `uv run --locked python -m unittest tests.test_biseccion
 tests.test_biseccion_web tests.test_biseccion_assets` cubre los tres intervalos del
 profesor, las trece iteraciones, precisión estricta, seguridad del AST,
-dominio/continuidad, no finitos, límites y bloqueo público de Conjuntos.
+dominio/continuidad, no finitos, límites y la publicación de Conjuntos en catálogo y rutas.
 Para interacción real ejecuta `uv run --locked python -m tests.biseccion_browser`
 y abre `http://127.0.0.1:8896/__pruebas/`: comprueba cursor, foco, deslizador,
 ausencia de peticiones al recorrer pasos, zoom, extremos editables y comparación.
@@ -52,8 +52,8 @@ Las pruebas web cubren la verificación de raíz calculada, longitud, límite de
 iteraciones y estancamiento; el perfil del teclado se prueba con los demás perfiles.
 Verifica además flechas y arrastre físico del control, pantalla táctil, temas y
 anchos de 320, 768, 1024 y 1440 px, bloqueando las peticiones fuera de loopback.
-El runner de Conjuntos conserva el editor bajo una URLConf exclusiva de pruebas;
-las pruebas públicas exigen 404 y ausencia de enlaces. Véase [Bisección](biseccion.md).
+El runner de Conjuntos (`python -m tests.conjuntos_browser`, puerto 8894) usa las rutas
+públicas. Véase [Bisección](biseccion.md) y [Conjuntos](conjuntos.md).
 
 Validación de mejoras UX (2026-11-03): 1889 pruebas Python; Bisección 16/16 y
 teclado 36/36 en Edge y WebView2 156.0.4314.58. En una ventana nativa de WebView2

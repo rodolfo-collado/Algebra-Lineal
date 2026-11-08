@@ -232,7 +232,7 @@ class PruebasRegistro(unittest.TestCase):
 
     def test_el_registro_tiene_perfiles_completos_sin_duplicados(self):
         self.assertEqual(set(PERFILES), {"sistema", "numerico", "expresion", "lineal", "base-2", "base-8", "base-10", "base-16",
-                                       "literal-conjuntos", "relacion-conjuntos", "funcion-real"})
+                                       "literal-conjuntos", "relacion-conjuntos", "regiones-conjuntos", "funcion-real"})
         for id_, perfil in PERFILES.items():
             with self.subTest(perfil=id_):
                 self.assertIsInstance(perfil, Perfil)
