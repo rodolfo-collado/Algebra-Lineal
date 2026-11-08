@@ -27,6 +27,9 @@ class Operacion:
     operandos: tuple[object, ...]
 
 
+_SIN_OPERANDO = ("∪", "∩", "∖", "×", ",", ")", "}")
+
+
 def _operando(lector, profundidad=0):
     if lector.actual().texto in ("potencia", "par"):
         lector.presupuesto.elemento(profundidad)
@@ -60,6 +63,11 @@ def _operando(lector, profundidad=0):
     if lector.actual().tipo == "nombre" and lector.actual().texto != 'intervalo':
         lector.presupuesto.elemento(profundidad)
         return Referencia(validar_nombre(lector.tomar().texto))
+    # Sin operando (final, operador o cierre), el mensaje de literales confundiría: aquí sí hay nombres.
+    if lector.actual().tipo == "fin":
+        raise ValueError("Falta un conjunto al final de la expresión; complétala, por ejemplo A ∪ B.")
+    if lector.actual().texto in (*_SIN_OPERANDO, *(simbolo for simbolo, _ in OPERADORES)):
+        raise ValueError(f"Falta un conjunto antes de «{lector.actual().texto}».")
     return lector.literal(profundidad)
 
 

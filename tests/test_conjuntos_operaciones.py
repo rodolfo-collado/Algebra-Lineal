@@ -2,6 +2,7 @@
 
 from dataclasses import FrozenInstanceError
 from fractions import Fraction
+import re
 import unittest
 
 from backend.conjuntos.evaluador import evaluar_expresion
@@ -66,6 +67,12 @@ class OperacionesConjuntosTests(unittest.TestCase):
                       'A + B', 'A - B', 'A ∪', '{A ∪ B}', 'A[0]',
                       '__import__("os")', '|A', 'A|', 'A B'):
             with self.subTest(texto=texto), self.assertRaises(ValueError):
+                self.calcular(texto)
+
+    def test_operando_ausente_no_habla_de_literales(self):
+        for texto, mensaje in (('A ∪', 'al final'), ('A ∩∩ B', 'antes de «∩»'), ('A ⊆', 'al final'),
+                               ('(A ∪ )', 'antes de «)»'), ('∪ A', 'antes de «∪»'), ('A × = B', 'antes de «=»')):
+            with self.subTest(texto=texto), self.assertRaisesRegex(ValueError, re.escape(f'Falta un conjunto {mensaje}')):
                 self.calcular(texto)
 
     def test_evidencia_estructurada_e_inmutable(self):

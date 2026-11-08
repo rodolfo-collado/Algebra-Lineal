@@ -233,9 +233,12 @@ def notacion_region(mascara, nombres):
 
 
 def _leer_punto(punto, presupuesto):
-    lector = Lector(punto, presupuesto)
-    valor = lector.literal()
-    lector.fin()
+    try:
+        lector = Lector(punto, presupuesto)
+        valor = lector.literal()
+        lector.fin()
+    except ValueError:
+        valor = None
     if not isinstance(valor, Fraction):
         raise ValueError('Escribe un número exacto, por ejemplo 1/2 o 0.25.')
     return valor

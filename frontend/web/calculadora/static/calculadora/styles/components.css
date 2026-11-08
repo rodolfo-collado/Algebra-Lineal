@@ -782,10 +782,12 @@ html.js body:has(.math-keyboard) { padding-bottom: 8rem; }
     gap: 0.35rem;
 }
 
+/* Los operandos no se encogen por debajo de su contenido (perfiles con muchas teclas los
+   dejaban en una tecla, con el título montado): el dock se desplaza y, por encima del 40 %,
+   se desplazan sus propias teclas. */
 .math-keyboard-operands {
-    min-width: 0;
+    flex: none;
     max-width: 40%;
-    flex-shrink: 1;
 }
 
 .math-keyboard-operands .math-keys {

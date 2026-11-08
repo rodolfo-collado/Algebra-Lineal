@@ -25,6 +25,11 @@ class AvanzadosWebTests(SimpleTestCase):
         self.assertIs(d['recta']['pertenece'],True)
         self.assertContains(respuesta,'data-recta')
         self.assertContains(respuesta,'pertenece al resultado')
+        for punto in ('abc', '{1}', '1 ∪'):
+            with self.subTest(punto=punto):
+                respuesta = self.client.post(RUTA,datos(expresion='intervalo(0, 1, abierto, cerrado)',punto=punto))
+                self.assertContains(respuesta,'Escribe un número exacto')
+                self.assertContains(respuesta,'data-recta')
 
     def test_venn_incluye_regiones_vacias_y_elementos_completos(self):
         respuesta = self.client.post(RUTA,datos(expresion='A ∩ B',venn_nombres='A, B'))

@@ -133,7 +133,7 @@ class ConjuntosWebTests(SimpleTestCase):
 
     def test_errores_p2_conservan_editor_y_no_presentan_resultado(self):
         for expresion, mensaje in (('∁(A,B)', 'universo'), ('A ∪ 1', 'conjuntos finitos'),
-                                    ('|1|', 'conjuntos finitos'), ('A ∪', 'Se esperaba')):
+                                    ('|1|', 'conjuntos finitos'), ('A ∪', 'Falta un conjunto al final')):
             with self.subTest(expresion=expresion):
                 respuesta = self.client.post(RUTA, datos(expresion=expresion))
                 self.assertContains(respuesta, mensaje)
