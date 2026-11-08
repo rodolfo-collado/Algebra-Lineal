@@ -27,7 +27,7 @@ window.Musica = (() => {
     }
 
     let eleccion = eleccionGuardada();
-    let deseada = false, activa = null, reloj = null, esperando = false, reinicio = null;
+    let deseada = false, activa = null, reloj = null, esperando = false, reinicio = null, preparacion = null;
     let marca = { pieza: eleccion === CONTINUA ? PIEZAS[0].id : eleccion, segundos: 0 };
     try {
         deseada = sessionStorage.getItem(SESION) === "on";
@@ -82,7 +82,7 @@ window.Musica = (() => {
     }
 
     function encender() {
-        if (activa || !deseada || document.hidden) return;
+        if (activa || preparacion !== null || !deseada || document.hidden) return;
         const c = window.Sonido.contexto();
         if (!c) return;
         if (c.state !== "running") {
@@ -101,6 +101,14 @@ window.Musica = (() => {
             }
             return;
         }
+        // Abrir el dispositivo y sintetizar las muestras no deben ser una sola tarea larga.
+        preparacion = { c, reloj: setTimeout(() => {
+            preparacion = null;
+            if (deseada && !document.hidden) comenzar(c);
+        }) };
+    }
+
+    function comenzar(c) {
         const pieza = porId(marca.pieza);
         const volumen = c.createGain();
         volumen.gain.value = nivel(pieza);
@@ -119,6 +127,11 @@ window.Musica = (() => {
     // Baja el volumen sin parar la música de golpe; el contexto se duerme si ya no hace falta.
     function apagar() {
         clearTimeout(reinicio);
+        if (preparacion) {
+            clearTimeout(preparacion.reloj);
+            if (!deseada || document.hidden) preparacion.c.suspend();
+            preparacion = null;
+        }
         if (!activa) return;
         const { c, fundido, volumen, escena, origen, fin } = activa;
         // En el silencio entre dos piezas ya toca la siguiente.

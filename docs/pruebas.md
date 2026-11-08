@@ -18,6 +18,10 @@ propia, la dirección decidida en el `<head>`, el estilo independiente del tema,
 preferencias de escritorio, el sonido local y opcional, y que el ambiente solo se
 mueva con movimiento permitido. `tests.test_microinteracciones` aplica sus reglas a
 las hojas funcionales; `estudio.css` es el ambiente opcional y tiene las suyas.
+La [comparación de rendimiento de Estudio](rendimiento-estudio.md) incluye el
+ejecutor opcional `tests.fluidez_browser`, mediciones antes/después y clics reales
+durante la transición, con navegador y WebView2. Los contratos de interactividad
+y el presupuesto de 300 ms se comprueban también en `tests.test_estudio` y CI.
 En navegador real, `tests.buscador_browser` incluye el explorador (una parada de
 Tab, flechas, panel y nada guardado). Revisión manual: recorrer Inicio → área →
 herramienta → Atrás → Adelante en Estudio y Minimalista, de día y de noche, a

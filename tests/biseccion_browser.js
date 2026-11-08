@@ -368,11 +368,11 @@
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(q(w, "#paso-decision").textContent.includes("f(c) = 0"), "Explica raíz exacta en punto medio");
         }],
-        ["Conjuntos bloqueado en producción y marcado Próximamente", async w => {
+        ["Conjuntos publicado en producción y disponible en la búsqueda", async w => {
             const respuesta = await w.fetch("/conjuntos/relaciones/");
-            ok(respuesta.status === 404, "GET directo bloqueado");
+            ok(respuesta.status === 200, "GET directo disponible");
             const html = await (await w.fetch("/?q=pertenencia")).text();
-            ok(!html.includes('href="/conjuntos/relaciones/"') && html.includes("Próximamente"), "Sin enlace público");
+            ok(html.includes('href="/conjuntos/relaciones/"'), "Enlace público en la búsqueda");
         }],
     ];
     let aprobados = 0;

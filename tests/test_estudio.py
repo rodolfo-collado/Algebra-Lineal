@@ -191,6 +191,33 @@ class PruebasHistorialReal(SimpleTestCase):
 
 
 class PruebasEstiloYSonido(SimpleTestCase):
+    def test_las_capturas_no_dejan_los_controles_sin_respuesta(self):
+        css = (STATIC / "styles" / "estudio.css").read_text(encoding="utf-8")
+        self.assertRegex(css, r":root\s*\{\s*view-transition-name:\s*none;")
+        self.assertRegex(css, r"::view-transition\s*\{\s*pointer-events:\s*none;")
+        # Una captura de fondo a pantalla completa taparía la interfaz viva.
+        nombres = re.findall(r"view-transition-name:\s*([\w-]+)", css)
+        self.assertEqual(set(nombres), {"none", "diorama"})
+
+    def test_la_camara_viaja_detras_del_contenido_sin_capturar_la_pagina(self):
+        css = (STATIC / "styles" / "estudio.css").read_text(encoding="utf-8")
+        inicial = (APP / "templates/calculadora/components/tema_inicial.html").read_text(encoding="utf-8")
+        self.assertIn("@starting-style", css)
+        self.assertIn("transform: var(--camara-desde)", css)
+        self.assertIn("filter: var(--filtro-desde)", css)
+        for contrato in ('"pygebra-camara"', "getComputedStyle(camara)", 'root.removeAttribute("data-camara-previa")'):
+            self.assertIn(contrato, inicial)
+
+    def test_el_viaje_entre_paginas_tiene_un_presupuesto_breve(self):
+        css = (STATIC / "styles" / "estudio.css").read_text(encoding="utf-8")
+        reglas = re.findall(r"::view-transition-group\([^)]*\)\s*\{([^}]+)\}", css)
+        self.assertTrue(reglas)
+        for regla in reglas:
+            duracion = re.search(r"animation-duration:\s*([\d.]+)(ms|s)", regla)
+            self.assertIsNotNone(duracion)
+            ms = float(duracion[1]) * (1000 if duracion[2] == "s" else 1)
+            self.assertLessEqual(ms, 300)
+
     def test_estilo_independiente_del_tema_y_guardado_como_preferencia(self):
         inicial = (APP / "templates" / "calculadora" / "components" / "tema_inicial.html").read_text(encoding="utf-8")
         self.assertIn('preferencias.leer("pygebra-estilo") === "minimalista" ? "minimalista" : "estudio"', inicial)
@@ -221,7 +248,7 @@ class PruebasEstiloYSonido(SimpleTestCase):
         self.assertNotRegex(fuera, r"\banimation\s*:")
         self.assertNotRegex(fuera, r"\binfinite\b")
         # En el explorador y en la mesa de trabajo la habitación se queda quieta.
-        self.assertIn(':is([data-vista="area"], [data-vista="herramienta"]) .escena * { animation-play-state: paused !important; }', movimiento)
+        self.assertIn(':is([data-vista="areas"], [data-vista="area"], [data-vista="herramienta"]) .escena * { animation-play-state: paused !important; }', movimiento)
         base = (STATIC / "styles" / "base.css").read_text(encoding="utf-8").split("@media (prefers-reduced-motion: reduce)", 1)[1]
         self.assertRegex(base, r"animation:\s*none\s*!important")
 
