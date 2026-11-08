@@ -3,7 +3,7 @@
 [Documentación de Conjuntos](conjuntos.md) · [Índice](README.md)
 
 Seguimiento del plan tras la integración del [PR #104](https://github.com/rodolfo-collado/Algebra-Lineal/pull/104).
-P2–P6 se completan en la misma rama `feature/conjuntos-p2-operaciones` y el único PR #113; la revisión final corresponde a Claude.
+P2–P6 y la revisión visual de Claude se completan en la misma rama `feature/conjuntos-p2-operaciones` y el único PR #113.
 
 ## P1 — Definición y relaciones entre conjuntos
 
@@ -13,11 +13,11 @@ P2–P6 se completan en la misma rama `feature/conjuntos-p2-operaciones` y el ú
 
 Estos ajustes no reabren P1, que permanece completado.
 
-- [ ] Mejorar el espaciado y la distribución de los botones.
-- [ ] Revisar la ubicación de «Guardar cambios» y «Añadir conjunto».
-- [ ] Evitar ejemplos precargados innecesarios; considerar la acción «Cargar ejemplo».
-- [ ] Reducir las instrucciones y los comentarios permanentes en los formularios.
-- [ ] Evaluar el editor estructurado recursivo opcional para conjuntos anidados; el lector textual sigue siendo la entrada segura común.
+- [x] Mejorar el espaciado y la distribución de los botones: filas `A = {…}` con × y «Añadir» junto a su campo.
+- [x] Revisar la ubicación de «Guardar cambios» y «Añadir conjunto»: Guardar aparece solo con cambios pendientes; Intro añade.
+- [x] Evitar ejemplos precargados: el editor empieza vacío y ofrece cinco ejemplos opcionales.
+- [x] Reducir las instrucciones permanentes: una línea de ayuda por campo; la sintaxis vive en «Operaciones disponibles».
+- [x] Evaluar el editor estructurado recursivo: se descartó; la lectura por pastillas bajo cada fila muestra los elementos completos sin un segundo modelo.
 
 ## P2 — Operaciones finitas
 
@@ -60,10 +60,13 @@ público; el editor mínimo se comprueba solo con la URLConf de pruebas.
 
 - [x] Completar la integración del teclado contextual para las nuevas herramientas.
 - [x] Actualizar la documentación de uso y las limitaciones.
-- [ ] Verificar la accesibilidad y la navegación por teclado.
-- [ ] Completar las pruebas matemáticas, de integración web y de interacción desktop.
+- [x] Revisión visual y de interacción (Claude): editor, guía, procedimientos, Venn, recta y cardinalidad en Estudio y Minimalista, claro y oscuro, de 320 px a escritorio.
+- [x] Verificar la navegación por teclado: filas de regiones, recta, guía y campos con foco visible.
+- [x] Completar las pruebas matemáticas, de integración web y de interacción (14 flujos DOM en Chrome y Edge).
+- [ ] Probar en la app de escritorio real (WebView2) y con lector de pantalla una vez habilitadas las rutas.
+- [ ] Habilitar las rutas y el catálogo después de publicar v0.14.0.
 
-El acceso público permanece bloqueado hasta la revisión final de Claude. La entrega funcional incluye pruebas matemáticas, HTTP y once flujos de navegador; quedan la revisión visual, la interacción desktop física y el lector de pantalla.
+El acceso público sigue bloqueado mientras se tramita v0.14.0: la habilitación es el último paso.
 
 ## Posibles extensiones futuras
 
