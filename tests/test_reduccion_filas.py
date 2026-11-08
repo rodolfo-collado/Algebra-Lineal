@@ -60,14 +60,15 @@ class PruebasCatalogoReduccion(ContextoHTTP):
     def test_inicio_menu_y_breadcrumb_en_matrices(self):
         inicio = self.client.get("/")
         html = inicio.content.decode()
-        tema = elemento_html(html, html.index('id="matrices"'), "details")
+        area = self.client.get("/areas/algebra-lineal/").content.decode()
+        tema = elemento_html(area, area.index('aria-labelledby="matrices"') + 1, "ul")
         self.assertIn('href="/matrices/reduccion/"', tema)
         self.assertNotIn("sistemas-ecuaciones", Documento(inicio).ids)
         pagina = self.client.get(RUTA)
         documento = Documento(pagina)
         self.assertEqual([c for c, abierta in documento.categorias.items() if abierta], ["matrices"])
         self.assertNotIn("sistemas-ecuaciones", documento.categorias)
-        self.assertEqual([a["href"] for a in documento.enlaces_en("Ruta de navegación")], ["/", "/#algebra-lineal", "/#matrices"])
+        self.assertEqual([a["href"] for a in documento.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertContains(pagina, '<span aria-current="page">Reducción por filas</span>', html=True)
         self.assertContains(pagina, 'action="/matrices/reduccion/#resultado"')
         for herramienta in catalogo.herramientas_disponibles():

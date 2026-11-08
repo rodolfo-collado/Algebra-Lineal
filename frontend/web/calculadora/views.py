@@ -55,6 +55,21 @@ def inicio(request):
     })
 
 
+@require_GET
+def area(request, area):
+    """Explorador de un área: índice de sus herramientas y un panel destacado."""
+    elegida = catalogo.area_por_id(area)
+    if elegida is None or not elegida.disponible:
+        raise Http404("Área no disponible.")
+    categorias = dict(catalogo.arbol())[elegida]
+    return render(request, "calculadora/pages/area.html", {
+        "area": elegida,
+        "categorias": categorias,
+        "inicial": next(h for _, herramientas in categorias for h in herramientas if h.disponible),
+        "migas": (catalogo.Miga("Inicio", reverse("calculadora:inicio")), catalogo.Miga(elegida.nombre, actual=True)),
+    })
+
+
 @require_http_methods(["GET", "POST"])
 def sistemas(request):
     """Reducción por filas: método a elegir (o comparar los dos) y bloques del resultado."""

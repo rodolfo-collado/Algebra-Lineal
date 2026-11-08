@@ -109,7 +109,12 @@ iteración ya guardada. Esta llamada real actualiza los puntos y la franja:
             .finally(() => { mutando = false; });
 ```
 
-El cursor sobre una fila, su foco y el deslizador llaman al mismo recorrido.
+Con solo la función se abre una ventana de exploración `[-10, 10]`. Los botones
+**Seleccionar a/b** permiten elegir un punto de la curva; los campos y las líneas
+permiten afinar los extremos. Esto no prueba que exista una raíz: Resolver valida
+dominio, continuidad y signos de forma independiente.
+
+El cursor sobre una fila, su foco, Anterior/Siguiente y el deslizador llaman al mismo recorrido.
 La lectura identifica a, c y b, sus signos y qué mitad conservamos, separando
 el intervalo antes y después del recorte. La verificación plegable explica
 existencia, resta de extremos y precisión con los valores de nuestro cálculo.

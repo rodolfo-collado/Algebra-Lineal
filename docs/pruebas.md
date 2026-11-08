@@ -11,6 +11,25 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+Estudio: `uv run --locked python -m unittest tests.test_estudio` cubre las páginas
+de área y su explorador sin JavaScript, los canales del inicio y el universo del
+buscador, la mesa de trabajo (hermanas y «Para curiosos»), Atrás/Adelante sin pila
+propia, la dirección decidida en el `<head>`, el estilo independiente del tema, las
+preferencias de escritorio, el sonido local y opcional, y que el ambiente solo se
+mueva con movimiento permitido. `tests.test_microinteracciones` aplica sus reglas a
+las hojas funcionales; `estudio.css` es el ambiente opcional y tiene las suyas.
+En navegador real, `tests.buscador_browser` incluye el explorador (una parada de
+Tab, flechas, panel y nada guardado). Revisión manual: recorrer Inicio → área →
+herramienta → Atrás → Adelante en Estudio y Minimalista, de día y de noche, a
+1440 × 900, 900 × 600 y 390 × 844; activar Con efectos en Opciones y escuchar
+seleccionar, entrar, volver, calcular y un error; repetir con movimiento reducido.
+La música se comprueba en `tests.buscador_browser` (apagada al empezar, reproductor,
+elección y volumen recordados y aparte de los efectos, una preferencia inválida no rompe
+nada, ensayo de las cuatro piezas con `OfflineAudioContext`: suenan, no saturan y un mismo
+compás siempre suena igual; en las partituras, sin semitonos ni novenas menores
+simultáneos, también al dar la vuelta); juzgarla, solo de oído: elegir cada pieza y
+dejar correr la reproducción continua.
+
 Bisección: `uv run --locked python -m unittest tests.test_biseccion
 tests.test_biseccion_web tests.test_biseccion_assets` cubre los tres intervalos del
 profesor, las trece iteraciones, precisión estricta, seguridad del AST,
@@ -18,20 +37,54 @@ dominio/continuidad, no finitos, límites y bloqueo público de Conjuntos.
 Para interacción real ejecuta `uv run --locked python -m tests.biseccion_browser`
 y abre `http://127.0.0.1:8896/__pruebas/`: comprueba cursor, foco, deslizador,
 ausencia de peticiones al recorrer pasos, zoom, extremos editables y comparación.
-Los trece flujos incluyen campos inicialmente vacíos sin muestras inventadas,
-vista previa al completar la entrada, teclado contextual y cursor, signos y mitad
+Los dieciséis flujos incluyen campos inicialmente vacíos sin muestras inventadas,
+vista previa con solo la función, selección de a/b desde la curva, teclado contextual y cursor, signos y mitad
 conservada en el recorrido, comparación de uno, varios y fallidos cálculos,
 cifras distinguibles con precisión pequeña y respuestas de vista previa obsoletas.
 El modo superíndice se prueba con dígitos físicos/táctiles, signo inicial, selección,
 Deshacer y cambio de foco; sen()/sin() y √()/sqrt() comparten cálculos y muestras.
 También se prueban π, e, log₁₀, errores de dominio explicados y controles de
 decimales que preservan valores pequeños, extremos cercanos y el JSON original.
+Anterior/Siguiente comparte el recorrido del deslizador y la tabla. Una regresión
+comprueba que Vista inicial cancela un zoom pendiente; otra evita que longitud
+y tolerancia distintas se lean como iguales o se duplique el signo ≈.
 Las pruebas web cubren la verificación de raíz calculada, longitud, límite de
 iteraciones y estancamiento; el perfil del teclado se prueba con los demás perfiles.
 Verifica además flechas y arrastre físico del control, pantalla táctil, temas y
 anchos de 320, 768, 1024 y 1440 px, bloqueando las peticiones fuera de loopback.
 El runner de Conjuntos conserva el editor bajo una URLConf exclusiva de pruebas;
 las pruebas públicas exigen 404 y ausencia de enlaces. Véase [Bisección](biseccion.md).
+
+Validación de mejoras UX (2026-11-03): 1889 pruebas Python; Bisección 16/16 y
+teclado 36/36 en Edge y WebView2 156.0.4314.58. En una ventana nativa de WebView2
+se reprodujo el salto de foco del scrollbar hacia `main#contenido` y se verificó
+la corrección con arrastre, inserción del último dígito y Ctrl+Z; también selección,
+panorámica y zoom de la gráfica sin extremos escritos. Los runners ocultos de
+WebView2 emularon el foco para permitir enfocar sus iframes. Se comprobó el cálculo
+de 13 pasos y la verificación sin JavaScript, y la navegación Home/flechas/Espacio.
+Sin tráfico externo; se revisaron 320/390/768/1024/1440 px y claro/oscuro.
+La combinación temporal con PR #110 (`058d343`) no tuvo conflictos y pasó 84
+pruebas focalizadas y Bisección 16/16, con revisión de Estudio/Minimalista.
+No se probó lector de pantalla ni táctil físico (gestos emulados), ni se generó instalador.
+
+Validación de Estudio con Bisección y música (2026-11-03): 1912 pruebas Python y los
+18 runners DOM en Chrome headless, con el único fallo conocido de Alt+←/→ en
+escritorio. En el ejecutable empaquetado (WebView2 156): Bisección de 13 pasos,
+colores de la gráfica al cambiar de estilo, extremo elegido desde la curva, teclado y
+la música con un gesto real (señal medida, continúa al navegar, se pausa, reabrir
+empieza en silencio y recuerda solo el volumen). Sin desbordes en 126 combinaciones de
+siete páginas, nueve tamaños y ambos estilos. Se generó el instalador; no se instaló.
+Nadie ha juzgado la música de oído todavía, ni se probó con lector de pantalla.
+
+Banda sonora de cuatro piezas (2026-11-07, tras oír la segunda): Rincón y Café se
+compararon muestra a muestra con sus originales (diferencia de redondeo, ~2·10⁻⁷).
+Las tres partituras escritas no tienen semitonos ni novenas menores simultáneos, las
+cuerdas de Tarde de lluvia quedan a menos de 1 cent y las cuatro piezas a menos de 2 dBA
+entre sí. En Chrome headless y en el ejecutable (WebView2 156): lista, anterior,
+siguiente, pausa, transición continua con unos 2 s de silencio y sin solaparse,
+continúa en otra página y al reabrir empieza en silencio con la elección y el volumen
+recordados. Se incorporaron con el visto bueno de Erving tras los ensayos; no se probó con lector
+de pantalla.
 
 Operandos múltiples: `uv run python -m unittest tests.test_operandos_multiples`
 cubre aridad, colecciones exactas, dimensiones consecutivas, cadenas de tres y

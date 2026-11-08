@@ -21,6 +21,10 @@ plantillas Django, CSS propio y JavaScript mínimo, todos locales.
   `#7DCFC6` en oscuro, reservado para acciones, enlaces, selección y foco.
 - [Identidad visual](identidad-visual.md) documenta la geometría y sus derivados.
 
+El **estilo** (Estudio o Minimalista, en Opciones) y el **tema** claro u oscuro (botón
+Tema) son decisiones independientes: cualquier estilo funciona de día y de noche.
+Estudio es el predeterminado; ver [Estudio](#estudio).
+
 El tema claro u oscuro se guarda en `localStorage` (`pygebra-tema`). Se lee
 primero esta clave; si falta, se recupera y migra `algebra-lineal-tema`.
 En la app de escritorio también se conserva entre aperturas (ver [Escritorio](#escritorio)).
@@ -57,10 +61,13 @@ static/calculadora/
     ├── tokens.css          # colores, tipografía, radios, sombras, medidas del shell
     ├── base.css            # reset ligero, foco visible y utilidades
     ├── shell.css           # header, cajón de navegación, breadcrumbs, layout
-    ├── components.css      # herramienta, paneles, botones, buscador, inicio por temas,
-    │                       # relacionadas, explorar, desplegables, teclado, controles de
-    │                       # estructura, matrices
-    └── modules.css         # formularios y resultados de sistemas, bases, vectores y matrices
+    ├── components.css      # herramienta, paneles, botones, buscador, relacionadas,
+    │                       # explorar, desplegables, teclado, controles de estructura, matrices
+    ├── modules.css         # formularios y resultados de sistemas, bases, vectores y matrices
+    ├── navegacion.css      # historial, Opciones, canales del inicio, explorador de área y
+    │                       # mesa de trabajo (estructura común a Estudio y Minimalista)
+    └── estudio.css         # estilo Estudio: tokens día/noche, habitación, dioramas, gestos
+                            # y transiciones; nada de esto aplica en Minimalista
 ```
 
 Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-raised`,
@@ -156,8 +163,8 @@ no evidencia ni procedimiento educativo.
 
 ## Shell y navegación
 
-`templates/calculadora/base.html` monta el header (`☰ Menú`, marca y selector
-de tema), el cajón de navegación (`components/sidebar.html`), su fondo y el
+`templates/calculadora/base.html` monta el header (Atrás y Adelante, marca,
+`☰ Menú`, Tema y Opciones), el cajón de navegación (`components/sidebar.html`), su fondo y el
 contenido con sus breadcrumbs (`components/breadcrumbs.html`). Todo sale del
 registro central `catalogo.py` a través de `context_processors.navegacion`,
 que también marca la herramienta activa y calcula las relacionadas.
@@ -173,7 +180,7 @@ que también marca la herramienta activa y calcula las relacionadas.
   durante la ejecución (`sessionStorage`, clave `algebra-lineal-menu-secciones`):
   un arranque nuevo parte limpio y se retira la copia en `localStorage` de
   versiones anteriores. También abre los desplegables que contienen el
-  destino de un ancla (`/#bases-numericas`) al llegar por la URL.
+  destino de un ancla al llegar por la URL.
 - Una página restaurada del historial (`pageshow` con `persisted`) vuelve con
   el cajón cerrado, `data-drawer` retirado, fondo oculto, `main` sin `inert`,
   `aria-expanded="false"` y el foco fuera del cajón (pasa al botón Menú).
@@ -201,25 +208,52 @@ que también marca la herramienta activa y calcula las relacionadas.
   valor exacto restaura el estado servidor. Los vacíos ofrecen enlaces `?q=`.
   Escape lateral con texto limpia sin cerrar el Menú; vacío puede cerrarlo.
 
-### Inicio por temas
+### Inicio, áreas y mesa de trabajo
 
-`pages/inicio.html` presenta PyGebra, «Aprende resolviendo», «¿Qué quieres
-resolver?» con su buscador y «Explorar por temas». Cada área disponible es
-un `details` cerrado; al abrirla aparecen todos sus temas plegados, también
-los de una sola herramienta. Al cerrar un área, `navigation.js` cierra sus
-temas, así que al reabrirla vuelven plegados; nada se guarda y el buscador
-restaura lo que el usuario abrió o cerró. Cada tema despliega las
-herramientas de `catalogo.py`. Son filas con bordes
-discretos: ninguna cuadrícula de tarjetas ni accesos duplicados. Las áreas
-sin herramientas disponibles permanecen ocultas en Inicio y se encuentran
-tanto por GET como en vivo. Cálculo muestra «Próximamente» en el Menú.
-Con `?q=` se muestran únicamente las coincidencias; todas las filas permanecen
-en el DOM para permitir cambiar la consulta sin otro envío.
+El recorrido es Inicio → área → herramienta → resultado, con páginas reales de
+Django y el historial del navegador.
 
-El recorrido es Inicio → área → tema → herramienta → resultado. Los
-breadcrumbs abren las anclas de área y categoría con todos sus ancestros.
-El drawer también pliega las áreas y conserva búsqueda, categorías,
-Escape, backdrop, teclado, restauración de foco, `aria-expanded` e `inert`.
+- **Inicio** (`pages/inicio.html`): bienvenida con PyGebra, «Aprende resolviendo»,
+  «¿Qué quieres resolver?» con su buscador, «Retomar» la última herramienta de la
+  visita (`historial.js`, `sessionStorage`) y «¿Qué quieres explorar hoy?» con un
+  **canal** por área: notación (`Area.chip`), nombre, descripción y temas
+  disponibles. Todo el canal enlaza a su área; Conjuntos y Cálculo se anuncian
+  como «Próximamente» sin enlace. Cada canal es un grupo del buscador y guarda,
+  ocultas, las filas de sus herramientas: al escribir viajan a los resultados en
+  el orden del servidor y al limpiar vuelven a su canal. Con `?q=` se muestran
+  solo las coincidencias, con todas las filas en el DOM.
+- **Área** (`/areas/<área>/`, `views.area`, `pages/area.html`): a la izquierda un
+  índice por temas (cada tema con su `id`, destino de las migas
+  `/areas/<área>/#<tema>`); a la derecha un **panel destacado** con el rincón del
+  área, un ejemplo (`components/muestra.html`), la descripción, dos `puntos` del
+  catálogo y «Abrir». Sin JavaScript el índice son enlaces reales y el panel
+  muestra la primera herramienta. El panel da contexto con la descripción de la
+  categoría; la de la herramienta solo aparece si su tema tiene varias, porque con
+  una sola la repetiría (los `puntos` la concretan y el índice la conserva como
+  `aria-describedby`). `explorador.js` cambia el panel con el cursor
+  (tras 90 ms de intención, para cruzar hacia el panel), con el teclado (una sola
+  parada de Tab; ↑ ↓ Inicio Fin recorren, → va a Abrir, ← vuelve) o con un primer
+  toque (el segundo abre). Abrir siempre es un paso explícito. Cada área recuerda
+  durante la visita lo último que se miró. En pantallas de hasta 760 px el panel
+  se despliega bajo la opción elegida. Un área sin herramientas disponibles
+  responde 404.
+- **Mesa de trabajo** (`layouts/herramienta.html`, común a todas las
+  herramientas): a la izquierda las herramientas hermanas del área
+  (`catalogo.hermanas`, solo si hay más de una); por debajo de 1100 px son una
+  fila desplazable que centra la actual. La nota «Para curiosos»
+  (`Herramienta.curiosidad`) es un `<details>` nativo plegado junto al título, en el
+  mismo sitio en todas las herramientas: sin JavaScript también abre, y al abrirse
+  crece dentro de la cabecera y empuja el cálculo, nunca lo tapa. Hasta 640 px queda
+  bajo la descripción.
+- **Migas**: Inicio › área › tema › herramienta; en pantallas estrechas se reducen
+  a «‹ nivel anterior».
+- **Atrás y Adelante** (`historial.js`) llaman a `history.back()` y
+  `history.forward()`: no hay pila propia. La Navigation API (`canGoBack`,
+  `canGoForward`, `currententrychange`) los desactiva cuando no hay adónde ir;
+  sin ella ambos quedan activos. Nacen ocultos y aparecen con JavaScript.
+
+El drawer conserva búsqueda, categorías, Escape, backdrop, teclado, restauración
+de foco, `aria-expanded` e `inert`.
 
 Sin JavaScript la navegación permanece visible en flujo, antes del contenido,
 y el buscador usa su envío GET. En sistemas se puede resolver desde texto; la
@@ -228,6 +262,81 @@ Ax = b ofrecen además Aplicar en el servidor para preparar sus estructuras sin
 JavaScript. Las antiguas pantallas de métodos de sistemas redirigen a una sola
 herramienta con opciones de formulario; ya no se presentan como herramientas
 distintas que comparten el mismo sistema.
+
+## Estudio
+
+Estudio es la identidad visual de PyGebra: una habitación acogedora con
+referencias geek originales, de día y de noche. Es un **estilo**, no otra
+interfaz: Minimalista usa exactamente la misma estructura sin ilustraciones.
+
+- **Estilo y tema.** `tema_inicial.html` fija `data-estilo` (`estudio` salvo que se
+  haya elegido `minimalista`, clave `pygebra-estilo`) antes del primer pintado,
+  junto a `data-theme`. Sin JavaScript no hay `data-estilo` y la interfaz queda en
+  su forma sobria. Opciones (`components/opciones.html`, popover nativo; se cierra
+  con Esc o al pulsar fuera) elige estilo, sonido y volumen; `opciones.js` los
+  guarda con `window.preferencias`.
+- **Tokens.** `estudio.css` redefine los tokens de color (papel cálido de día,
+  índigo de noche), tipografías y radios bajo `[data-estilo="estudio"]`. Así todas
+  las herramientas, incluida la gráfica de Bisección (que lee los tokens y observa
+  `data-theme` y `data-estilo`), lo heredan sin tocar su plantilla. Todos los pares
+  de texto y fondo cumplen AA (≥ 4,5:1; bordes de campo ≥ 3:1).
+- **La habitación** (`components/escena.html`): fondo fijo y decorativo
+  (`aria-hidden`) de todas las páginas. De día entra el sol; de noche se encienden
+  la lámpara, la pantalla y las luces de cordel. La cámara se acerca a un rincón
+  distinto según la página (`body[data-vista]`, `data-area`) y se desenfoca más en
+  la mesa de trabajo, donde un velo casi opaco deja la hoja tranquila. En el
+  inicio la cámara se acerca al bajar hacia los canales.
+- **Dioramas** (`components/diorama.html`): un rincón por área con un objeto que
+  alude al tema y un gesto al enfocarlo: el vector se duplica, una cuenta del
+  ábaco se lleva, el extremo b de la bisección salta al punto medio y el intervalo
+  queda a la mitad, un peón entra en A ∩ B. En el panel destacado el rincón se
+  reencuadra hacia el objeto de cada tema (ábaco, pergamino; la pizarra pasa de
+  vector a matriz).
+- **Mesa de trabajo**: la herramienta es una hoja cuadriculada; la nota «Para
+  curiosos» es un papelito adhesivo, con cinta y la esquina doblada, sobre la hoja.
+- **Transiciones.** View Transitions entre documentos (`@view-transition`): la
+  cabecera no se mueve, la cámara viaja de un rincón a otro y el rincón del canal
+  abierto se convierte en el del área. La dirección (`html[data-dir]`) se decide en
+  el `<head>`: un salto del historial hacia atrás, o subir de nivel, se aleja. Una
+  transición que el navegador omite no deja errores. Sin soporte, la página
+  simplemente cambia.
+- **Movimiento.** Todo lo animado de Estudio vive dentro de
+  `prefers-reduced-motion: no-preference`, y `base.css` lo cancela con movimiento
+  reducido. Las luces titilan solo en el inicio: en el explorador y en la mesa de
+  trabajo la habitación se queda quieta. Con colores forzados se ocultan escena y
+  dioramas.
+- **Sonido** (`sonido.js`): notas breves de «madera tibia» sintetizadas con Web
+  Audio en la pentatónica de Re, con pequeñas variaciones de afinación e
+  intensidad. Efectos: recorrer opciones (altura según la posición), entrar (sube),
+  volver (baja), un cálculo resuelto, algo que corregir (grave, nunca una alarma),
+  el interruptor del tema y un toque para opciones pequeñas. Apagado por defecto,
+  sin archivos ni red; ninguna información depende del audio. Al llegar desde otra
+  página de PyGebra suena entrar, volver o el desenlace del cálculo; nunca al
+  recargar. Si el navegador aún no permite sonar, el efecto se descarta en vez de
+  sonar tarde.
+- **Música ambiental** (`musica_piezas.js`, `musica.js`): cuatro piezas originales e
+  instrumentales, sintetizadas con el contexto de audio de los efectos y sin notas al
+  azar. Comparten tonalidad (Re mayor y Si menor), timbres solo con armónicos, la misma
+  habitación y el motivo la – fa♯ – mi, salvo Rincón, que es la primera composición intacta.
+  - *Rincón tranquilo*: 50 pulsos por minuto, acordes lentos y teclas sueltas.
+  - *Café de medianoche*: lo-fi a 70 pulsos, bajo cálido, bombo, caja suave y shaker.
+  - *Órbita lenta*: 40 pulsos, sintetizadores ligados, arpegio que gira por el estéreo y
+    eco; sin percusión.
+  - *Tarde de lluvia*: jazz a 80 pulsos en Si menor; guitarra y contrabajo pulsados
+    (Karplus-Strong), vibráfono, escobillas y lluvia.
+
+  Opciones tiene un reproductor: la lista (una pieza o *Reproducción continua*), anterior,
+  reproducir o pausar, siguiente y su volumen, aparte de los efectos. Una pieza elegida se
+  repite. En continua se alternan las cuatro: cada una termina su vuelta, se apaga en
+  4 s y la siguiente entra tras unos 2 s de silencio, así que nunca suenan a la vez.
+  Apagada al empezar cada visita: encenderla y la posición duran la sesión
+  (`sessionStorage`), para que la app no suene por sorpresa, por ejemplo en clase; se
+  recuerdan lo elegido (`pygebra-musica-pieza`) y el volumen (`pygebra-musica-volumen`).
+  Sin archivos ni red. Al cambiar de página sigue por donde iba tras bajar y volver en
+  1,5 s (cada página es un documento nuevo). Con la ventana oculta calla y suspende el
+  contexto; al volver continúa donde estaba.
+- Las ilustraciones son originales: sin personajes, logotipos ni diseños
+  reconocibles de terceros.
 
 ## Estructura de una herramienta
 
@@ -319,7 +428,7 @@ Todo bloque plegable de una herramienta —opciones, ayuda, aplicaciones,
 procedimiento, sub-bloques y grupos de un producto— usa el componente
 `{% disclosure %}` (`templatetags/componentes.py`, que renderiza
 `components/disclosure.html`); las plantillas de `modules/` no escriben
-`<details>` a mano. Solo la navegación (Menú e Inicio por temas) conserva sus
+`<details>` a mano. Solo la navegación (Menú) conserva sus
 propios `details`, con el chevrón a la derecha de cada fila.
 
 ```django
@@ -758,6 +867,11 @@ matrices, usa `components/matriz.html`; para sistemas aumentados, `matrix.html`.
 Ambos admiten `columnas_pivote`. No copies el `<head>`, header, sidebar o selector
 de tema: extiende el layout común.
 
+En `catalogo.py`, una herramienta disponible declara también sus dos `puntos` y su
+`curiosidad` (panel destacado y nota «Para curiosos»); cada área y categoría, su
+`chip`. Añade su ejemplo a `components/muestra.html` y, si abre un área nueva, su
+rincón a `components/diorama.html` con colores de pared y mesa en `estudio.css`.
+
 Hoy están disponibles las herramientas de sistemas de ecuaciones, las
 operaciones con vectores (incluida la combinación lineal), las operaciones con
 matrices (incluidos `AB` y `Ax`), Resolver Ax = b, la matriz inversa, la
@@ -808,8 +922,9 @@ navegador. Django publica una única señal declarativa, `<html data-desktop>`,
 solo con `DESKTOP_MODE`; la web normal no la recibe y conserva el
 comportamiento de su navegador.
 
-- **Historial.** No hay botones Atrás/Adelante ni barra de direcciones: la
-  navegación visible siguen siendo migas, Menú, buscador y relacionadas. Los
+- **Historial.** No hay barra de direcciones. Los botones Atrás y Adelante del
+  header (ver [Inicio, áreas y mesa de trabajo](#inicio-áreas-y-mesa-de-trabajo))
+  usan el historial real de WebView2, que expone la Navigation API. Los
   botones laterales del ratón los atiende WebView2. `navigation.js` añade
   Alt+← (`history.back()`) y Alt+→ (`history.forward()`) solo con
   `data-desktop` y sin pila propia; ignora Ctrl, Shift, AltGr (Ctrl+Alt),
@@ -822,7 +937,9 @@ comportamiento de su navegador.
   vigente por error. En navegadores con bfcache, `pageshow` restaura Menú, tema
   y formato numérico (secciones anteriores).
 - **Preferencias.** Entre aperturas solo se conservan `pygebra-tema`,
-  `pygebra-formato-numerico` y `pygebra-precision-decimal`. WebView2 corre en
+  `pygebra-formato-numerico`, `pygebra-precision-decimal`, `pygebra-estilo`,
+  `pygebra-sonido`, `pygebra-volumen`, `pygebra-musica-volumen` y
+  `pygebra-musica-pieza`. WebView2 corre en
   modo privado y Django las guarda en `%LOCALAPPDATA%\PyGebra\preferencias.json`
   (`POST /preferencias/` con CSRF, lista blanca de claves y valores, escritura
   atómica) y las pinta como `data-pygebra-…` en `<html>`. Durante la ejecución

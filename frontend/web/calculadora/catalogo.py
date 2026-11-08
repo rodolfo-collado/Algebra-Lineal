@@ -25,10 +25,16 @@ class Area:
     id: str
     nombre: str
     descripcion: str = ""
+    # Notación breve que identifica el área en canales y explorador.
+    chip: str = ""
+
+    @property
+    def ruta(self) -> str:
+        return reverse("calculadora:area", kwargs={"area": self.id})
 
     @property
     def ancla(self) -> str:
-        return f"{reverse('calculadora:inicio')}#{self.id}"
+        return self.ruta
 
     @property
     def disponible(self) -> bool:
@@ -41,10 +47,11 @@ class Categoria:
     nombre: str
     area: Area
     descripcion: str = ""
+    chip: str = ""
 
     @property
     def ancla(self) -> str:
-        return f"{reverse('calculadora:inicio')}#{self.id}"
+        return f"{self.area.ruta}#{self.id}"
 
     @property
     def disponible(self) -> bool:
@@ -64,6 +71,10 @@ class Herramienta:
     relacionadas: tuple[str, ...] = ()
     # Frase corta en imperativo para sugerirla desde otra herramienta.
     invitacion: str = ""
+    # Dos cosas concretas que permite hacer, para el panel destacado de su área.
+    puntos: tuple[str, ...] = ()
+    # Un dato breve y cierto que invita a experimentar («Para curiosos»).
+    curiosidad: str = ""
 
     @property
     def disponible(self) -> bool:
@@ -126,38 +137,38 @@ def datos_buscador() -> dict:
 
 ALGEBRA_LINEAL = Area(
     "algebra-lineal", "Álgebra lineal",
-    "Vectores, matrices, sistemas de ecuaciones y sus aplicaciones.",
+    "Vectores, matrices, sistemas de ecuaciones y sus aplicaciones.", "Ax = b",
 )
 SISTEMAS_NUMERICOS = Area(
     "sistemas-numericos", "Sistemas numéricos",
-    "Representación de números en distintas bases y en numeración romana.",
+    "Representación de números en distintas bases y en numeración romana.", "1011₂",
 )
-CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.")
-CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos y relaciones entre ellos.")
-METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones reales.")
+CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.", "lím")
+CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos y relaciones entre ellos.", "A ∩ B")
+METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones reales.", "f(c) ≈ 0")
 AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, METODOS_NUMERICOS, CONJUNTOS, CALCULO)
 
 VECTORES = Categoria(
     "vectores", "Vectores", ALGEBRA_LINEAL,
-    "Operaciones con vectores y combinaciones lineales.",
+    "Operaciones con vectores y combinaciones lineales.", "u + v",
 )
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones con matrices, sistemas de ecuaciones, reducción por filas, la ecuación matricial Ax = b y la matriz inversa.",
+    "Operaciones con matrices, sistemas de ecuaciones, reducción por filas, la ecuación matricial Ax = b y la matriz inversa.", "[ A ]",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
-    "Conversión entre binario, octal, decimal y hexadecimal.",
+    "Conversión entre binario, octal, decimal y hexadecimal.", "A₁₆",
 )
 # Aparte de las bases: la numeración romana no es un sistema posicional.
 NUMERACION_ROMANA = Categoria(
     "numeracion-romana", "Numeración romana", SISTEMAS_NUMERICOS,
-    "Conversión entre números arábigos y romanos.",
+    "Conversión entre números arábigos y romanos.", "XII",
 )
-LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.")
+LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.", "x → a")
 CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos finitos", CONJUNTOS,
-                            "Elementos, pertenencia e inclusión de conjuntos.")
-RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS, "Búsqueda de raíces en un intervalo.")
+                            "Elementos, pertenencia e inclusión de conjuntos.", "{ a, b }")
+RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS, "Búsqueda de raíces en un intervalo.", "[a, b]")
 CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, CONJUNTOS_FINITOS, LIMITES)
 
 
@@ -181,6 +192,8 @@ REDUCCION_FILAS = Herramienta(
     ),
     relacionadas=("ecuaciones-matriciales",),
     invitacion="Parte de un sistema escrito o una matriz aumentada y sigue la reducción.",
+    puntos=('Desde ecuaciones o desde la matriz aumentada', 'Pivotes, variables libres y tipo de solución'),
+    curiosidad="Las operaciones elementales no cambian las soluciones: solo reescriben el sistema de una forma más fácil de leer.",
 )
 
 # Única herramienta de la categoría: la operación (suma, resta, escalar o
@@ -200,6 +213,8 @@ OPERACIONES_VECTORES = Herramienta(
     ),
     relacionadas=("ecuaciones-matriciales", "operaciones-matrices"),
     invitacion="Suma o resta vectores y encuentra coeficientes de una combinación lineal.",
+    puntos=('Suma, resta y multiplicación por escalar', 'Coeficientes de una combinación lineal'),
+    curiosidad="Dos vectores no paralelos del plano generan todo ℝ²: cualquier punto es combinación lineal de ellos.",
 )
 
 CONVERSION_BASES = Herramienta(
@@ -218,6 +233,8 @@ CONVERSION_BASES = Herramienta(
     ),
     relacionadas=("conversion-romanos",),
     invitacion="Cambia un número entre binario, octal, decimal y hexadecimal.",
+    puntos=('Varias bases de destino a la vez', 'Divisiones sucesivas o expansión posicional'),
+    curiosidad="Cada dígito hexadecimal equivale a cuatro binarios: B₁₆ = 1011₂.",
 )
 
 CONVERSION_ROMANOS = Herramienta(
@@ -235,6 +252,8 @@ CONVERSION_ROMANOS = Herramienta(
     ),
     relacionadas=("conversion-bases",),
     invitacion="Convierte entre números arábigos y romanos.",
+    puntos=('En ambos sentidos, del 1 al 3999', 'Avisa cuando un romano no está bien formado'),
+    curiosidad="La numeración romana no tiene símbolo para el cero; por eso la conversión empieza en 1.",
 )
 
 # Una sola herramienta para operaciones simples y compuestas (P26.6): A + B, 2A, AB,
@@ -256,6 +275,8 @@ OPERACIONES_MATRICES = Herramienta(
                     "multiplicar", "sumar", "restar", "transponer", "trasponer"),
     relacionadas=("ecuaciones-matriciales", "operaciones-vectores", "matriz-inversa"),
     invitacion="Combina operaciones con matrices, vectores y escalares.",
+    puntos=('Suma, producto, escalares y traspuesta', 'Expresiones con varios operandos'),
+    curiosidad="El producto de matrices no es conmutativo: en general AB ≠ BA. Pruébalo con dos matrices 2 × 2.",
 )
 
 # En Resolver Ax = b, x es la incógnita. Se reutilizan los motores de sistemas
@@ -272,6 +293,8 @@ ECUACIONES_MATRICIALES = Herramienta(
                     "sistema lineal", "sistemas lineales", "ecuaciones lineales"),
     relacionadas=("reduccion-filas", "operaciones-matrices", "operaciones-vectores"),
     invitacion="Si ya tienes A y b, encuentra x en Ax = b.",
+    puntos=('Reducción por filas, LU o Regla de Cramer', 'Detecta si no hay solución o hay infinitas'),
+    curiosidad="Ax = b tiene solución exactamente cuando b es combinación lineal de las columnas de A.",
 )
 
 # Solo para matrices cuadradas. El método (Gauss-Jordan o la regla 2×2) se elige
@@ -289,6 +312,8 @@ MATRIZ_INVERSA = Herramienta(
     ),
     relacionadas=("operaciones-matrices", "ecuaciones-matriciales", "determinantes"),
     invitacion="Si necesitas invertir una matriz cuadrada, sigue el procedimiento.",
+    puntos=('Gauss-Jordan sobre [A | I]', 'Regla directa para matrices 2 × 2'),
+    curiosidad="Una matriz cuadrada es invertible exactamente cuando su determinante es distinto de cero.",
 )
 
 # Cinco métodos con el mismo det(A): fórmula 2×2, Sarrus (3×3), cofactores, LU y
@@ -307,6 +332,8 @@ DETERMINANTES = Herramienta(
     ),
     relacionadas=("matriz-inversa", "reduccion-filas"),
     invitacion="Calcula det(A) y comprueba si una matriz cuadrada es invertible.",
+    puntos=('Cinco métodos con el procedimiento completo', 'Relación con la inversa y los sistemas'),
+    curiosidad="Si intercambias dos filas de A, el determinante cambia de signo.",
 )
 
 RELACIONES_CONJUNTOS = Herramienta(
@@ -315,6 +342,7 @@ RELACIONES_CONJUNTOS = Herramienta(
     estado="proximamente",
     palabras_clave=("pertenencia", "no pertenencia", "inclusión", "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados"),
     invitacion="Define conjuntos y distingue pertenencia, inclusión e igualdad.",
+    puntos=('Pertenencia, inclusión e igualdad', 'Una explicación para cada relación'),
 )
 
 BISECCION = Herramienta(
@@ -323,6 +351,8 @@ BISECCION = Herramienta(
     estado="disponible", route_name="calculadora:biseccion",
     palabras_clave=("bisección", "raíz", "raíces", "función", "intervalo", "punto medio", "gráfica", "bolzano"),
     invitacion="Busca una raíz de f(x) mediante bisección.",
+    puntos=('Gráfica interactiva del intervalo', 'Tabla de iteraciones paso a paso'),
+    curiosidad="Cada iteración reduce el intervalo a la mitad: tras 10 pasos mide menos de una milésima del original.",
 )
 
 HERRAMIENTAS = (
@@ -429,4 +459,17 @@ def migas(herramienta: Herramienta | None) -> tuple[Miga, ...]:
         Miga(categoria.area.nombre, categoria.area.ancla),
         Miga(categoria.nombre, categoria.ancla),
         Miga(herramienta.nombre, actual=True),
+    )
+
+
+def area_por_id(id_area: str) -> Area | None:
+    return next((area for area in AREAS if area.id == id_area), None)
+
+
+def hermanas(herramienta: Herramienta) -> tuple[tuple[Categoria, tuple[Herramienta, ...]], ...]:
+    """Categorías del área de la herramienta, cada una con sus herramientas disponibles."""
+    return tuple(
+        (categoria, disponibles)
+        for categoria in CATEGORIAS if categoria.area == herramienta.area
+        if (disponibles := tuple(h for h in herramientas_de(categoria) if h.disponible))
     )

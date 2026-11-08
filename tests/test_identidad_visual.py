@@ -66,17 +66,18 @@ class PruebasIdentidadVisual(SimpleTestCase):
     def test_inicio_eleva_identidad_y_areas(self):
         respuesta = self.client.get(reverse("calculadora:inicio"))
         self.assertContains(respuesta, "Aprende resolviendo")
-        self.assertContains(respuesta, "Explorar por temas")
+        self.assertContains(respuesta, "¿Qué quieres explorar hoy?")
         self.assertContains(respuesta, "home-hero")
         self.assertContains(respuesta, 'role="search"')
         self.assertContains(respuesta, "tool-link")
         self.assertNotContains(respuesta, 'data-categoria="sistemas-ecuaciones"')
         self.assertContains(respuesta, 'data-categoria="matrices"')
         ids = DocumentoIds(respuesta).ids
-        for fragmento in (
-            "algebra-lineal", "sistemas-numericos",
-            "vectores", "matrices", "bases-numericas",
-        ):
+        for fragmento in ("algebra-lineal", "sistemas-numericos", "metodos-numericos"):
+            self.assertIn(fragmento, ids)
+        # Los temas se anclan en el explorador de su área.
+        ids = DocumentoIds(self.client.get("/areas/algebra-lineal/")).ids
+        for fragmento in ("vectores", "matrices"):
             self.assertIn(fragmento, ids)
 
     def test_interfaz_en_espanol_sin_spanglish(self):
@@ -112,7 +113,7 @@ class PruebasIdentidadVisual(SimpleTestCase):
 
     def test_recursos_css_parciales_existen_y_se_importan(self):
         entrada = (STATIC / "styles.css").read_text(encoding="utf-8")
-        for nombre in ("tokens.css", "base.css", "shell.css", "components.css", "modules.css"):
+        for nombre in ("tokens.css", "base.css", "shell.css", "components.css", "modules.css", "navegacion.css", "estudio.css"):
             with self.subTest(archivo=nombre):
                 self.assertIn(f"styles/{nombre}", entrada)
                 self.assertTrue((STYLES / nombre).is_file())

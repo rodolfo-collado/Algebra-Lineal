@@ -3,10 +3,10 @@
     "use strict";
     const q = (w, s) => w.document.querySelector(s);
     const ok = (valor, mensaje) => { if (!valor) throw new Error(mensaje); };
-    const esperar = async condicion => {
+    const esperar = async (condicion, mensaje = "Espera agotada") => {
         const limite = Date.now() + 15000;
         while (!condicion()) {
-            if (Date.now() > limite) throw new Error("Espera agotada");
+            if (Date.now() > limite) throw new Error(mensaje);
             await new Promise(r => setTimeout(r, 40));
         }
     };
@@ -28,18 +28,47 @@
     const listaGrafica = w => grafica(w)?.data?.[0]?.x?.length === 801 &&
         !q(w, "#grafica-estado").textContent.includes("Actualizando");
     const casos = [
-        ["Inicio vacío y vista previa solo con datos completos", async w => {
+        ["Función sin extremos: exploración independiente y selección desde la curva", async w => {
             let peticiones = 0;
             const original = w.fetch; w.fetch = (...args) => { peticiones++; return original(...args); };
             for (const n of ["funcion", "a", "b"]) ok(q(w, `[name="${n}"]`).value === "", "Campo vacío");
             ok(!grafica(w).data && grafica(w).hidden, "Sin gráfica inventada");
-            valor(w, "funcion", "x^2-2"); valor(w, "a", "1");
-            await new Promise(r => setTimeout(r, 450));
-            ok(peticiones === 0 && grafica(w).hidden, "Sin pedir muestras con campos incompletos");
-            valor(w, "b", "2"); await esperar(() => listaGrafica(w));
+            valor(w, "funcion", "x^2-2"); await esperar(() => listaGrafica(w), "Sin muestras iniciales");
+            ok(peticiones === 1 && !grafica(w).hidden, "Solo función pide muestras");
+            ok(grafica(w).data[0].x[0] === -10 && grafica(w).data[0].x[800] === 10, "Ventana inicial de exploración");
+            ok(q(w, '[name="a"]').value === "" && q(w, '[name="b"]').value === "", "No inventa intervalo de cálculo");
+            ok(!grafica(w).layout.shapes[0].visible && !grafica(w).layout.shapes[1].visible, "No muestra extremos inventados");
+            q(w, '[data-elegir-extremo="a"]').click();
+            grafica(w).emit("plotly_click", { points: [{ curveNumber: 0, x: 1 }] });
+            await esperar(() => grafica(w).layout.shapes[0].visible, "No aparece a seleccionado");
+            q(w, '[data-elegir-extremo="b"]').click();
+            grafica(w).emit("plotly_click", { points: [{ curveNumber: 0, x: 2 }] });
+            await esperar(() => grafica(w).layout.shapes[1].visible, "No aparece b seleccionado");
+            ok(q(w, '[name="a"]').value === "1" && q(w, '[name="b"]').value === "2", "Selección reflejada en el formulario");
+            valor(w, "a", "3");
+            await esperar(() => grafica(w).layout.shapes[0].x0 === 3, "No se refleja la edición manual de a");
+            ok(!grafica(w).hidden && grafica(w).layout.xaxis.range[0] === -10, "Extremos invertidos no ocultan ni desplazan la exploración");
             ok(!q(w, "#resultado"), "Vista previa sin resolver");
             valor(w, "funcion", "");
             ok(grafica(w).hidden && q(w, "#grafica-estado").textContent.includes("Introduce"), "Volver al estado vacío");
+        }],
+        ["La gráfica adopta los colores de cada estilo y tema sin perder la curva", async (w, frame) => {
+            ejemplo(w);
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const raiz = w.document.documentElement;
+            const token = nombre => w.getComputedStyle(raiz).getPropertyValue(nombre).trim();
+            const fondos = new Set();
+            for (const estilo of ["minimalista", "estudio"]) for (const tema of ["dark", "light"]) {
+                raiz.setAttribute("data-estilo", estilo); raiz.setAttribute("data-theme", tema);
+                await esperar(() => grafica(w).layout.paper_bgcolor === token("--color-surface")
+                    && grafica(w).data[0].line.color === token("--color-brand")
+                    && grafica(w).layout.font.color === token("--color-text"), `Colores de ${estilo}/${tema}`);
+                fondos.add(grafica(w).layout.paper_bgcolor);
+                ok(!/color-mix|var\(/.test(token("--color-surface") + token("--color-brand")), "Plotly recibe colores que entiende");
+            }
+            ok(fondos.size >= 2, "El fondo cambia de verdad");
+            ok(grafica(w).data[0].x.length === 801 && grafica(w).layout.shapes.length === 3, "Conserva curva, extremos y franja");
+            ok(lista(w).length === 13, "No recalcula");
         }],
         ["Teclado contextual de funciones reales conserva foco y cursor", async w => {
             const f = q(w, '[name="funcion"]'); f.focus();
@@ -89,6 +118,20 @@
             await new Promise(r => w.requestAnimationFrame(r));
             ok(grafica(w).hidden && q(w, "#grafica-estado").textContent.includes("Introduce"), "Ignora respuesta obsoleta");
         }],
+        ["El estado listo espera a los extremos e ignora una entrada borrada durante la sincronización", async w => {
+            const original = w.Plotly.relayout;
+            let liberar;
+            w.Plotly.relayout = (...args) => args[1]["shapes[0].visible"] === undefined ? original(...args) : new Promise(resolve => {
+                liberar = () => { w.Plotly.relayout = original; return original(...args).then(resolve); };
+            });
+            valor(w, "funcion", "x²-2");
+            await esperar(() => !!liberar);
+            ok(q(w, "#grafica-estado").textContent.includes("Actualizando"), "No anuncia lista antes de sincronizar los extremos");
+            valor(w, "funcion", ""); await liberar();
+            await new Promise(r => w.requestAnimationFrame(r));
+            ok(grafica(w).hidden && q(w, "#grafica-seleccion").hidden
+                && q(w, "#grafica-estado").textContent.includes("Introduce"), "No muestra controles de una entrada borrada");
+        }],
         ["Modo superíndice físico respeta edición y foco", async w => {
             const f = q(w, '[name="funcion"]'); f.focus();
             await esperar(() => !!q(w, "[data-exponente-entero]"));
@@ -113,7 +156,7 @@
             valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
             valor(w, "precision", "1e-10");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            const numeros = [...q(w, "#paso-valores").textContent.matchAll(/= ([\d,.-]+)/g)].map(m => m[1]);
+            const numeros = [...q(w, "#paso-valores").textContent.matchAll(/[=≈] ([\d,.-]+)/g)].map(m => m[1]);
             ok(numeros.length === 3 && new Set(numeros).size === 3, "No redondea los tres puntos al mismo número");
             const celdas = [...w.document.querySelectorAll(".biseccion-tabla tbody tr:last-child td [data-biseccion-numero]")].slice(0, 3);
             ok(new Set(celdas.map(n => n.textContent)).size === 3, "Tabla también distingue extremos");
@@ -133,6 +176,86 @@
                 }
             }
             ok(q(w, "#datos-biseccion").textContent === original && peticiones === 0, "Solo presentación");
+            ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "No duplica aproximaciones");
+        }],
+        ["«=» para valores exactos y «≈» para redondeados, sin «= ≈», en ambos estilos", async (w, frame) => {
+            const leer = w => q(w, "#resultado .results-heading .muted").textContent.replace(/\s+/g, " ");
+            const decimales = (w, valor) => { const s = q(w, "#biseccion-decimales"); s.value = valor; s.dispatchEvent(new w.Event("change", { bubbles: true })); };
+            for (const estilo of ["estudio", "minimalista"]) {
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
+                w = await post(frame); await esperar(() => listaGrafica(w));
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                const fc = JSON.parse(q(w, "#datos-biseccion").textContent).resultado.fc;
+                ok(fc !== 0, "El caso redondeado necesita f(c) ≠ 0");
+                for (const precision of ["4", "6", "16"]) {
+                    decimales(w, precision);
+                    ok(/f\(c\) ≈ -?\d/.test(leer(w)), `${estilo}, ${precision}: f(c) redondeado usa ≈: ${leer(w)}`);
+                }
+                decimales(w, "completa");
+                ok(/f\(c\) = -?\d/.test(leer(w)), `${estilo}: el valor completo vuelve a «=»: ${leer(w)}`);
+                ok(!/=\s*≈|≈\s*=|≈\s*≈/.test(q(w, "#resultado").textContent + q(w, ".biseccion-recorrido").textContent), `${estilo}: sin símbolos dobles`);
+                ok(/f\(c\) [=≈] /.test(q(w, "#paso-signos").textContent) && !/[=≈] [=≈]/.test(q(w, "#paso-signos").textContent), "El paso usa un solo símbolo");
+                ok(/a \(izquierdo\) = 1 /.test(q(w, "#paso-valores").textContent.replace(/\s+/g, " ")) || q(w, "#iteracion-biseccion").value !== "1", "Un extremo exacto conserva «=»");
+                // Una raíz exacta: f(c) = 0, nunca ≈ 0.
+                valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "2");
+                w = await post(frame); await esperar(() => listaGrafica(w));
+                ok(JSON.parse(q(w, "#datos-biseccion").textContent).resultado.fc === 0, "El caso exacto necesita f(c) = 0");
+                for (const precision of ["4", "completa"]) {
+                    decimales(w, precision);
+                    ok(leer(w).includes("f(c) = 0"), `${estilo}, ${precision}: igualdad exacta: ${leer(w)}`);
+                }
+                ok(q(w, "#paso-signos").textContent.includes("f(c) = 0 (cero)"), "El paso también escribe f(c) = 0");
+            }
+            w.document.documentElement.setAttribute("data-estilo", "estudio");
+        }],
+        ["Punto decimal en explicaciones y ejes, y «=» o «≈» en la gráfica según el redondeo", async (w, frame) => {
+            for (const estilo of ["estudio", "minimalista"]) {
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
+                w = await post(frame); await esperar(() => listaGrafica(w));
+                w.document.documentElement.setAttribute("data-estilo", estilo);
+                q(w, "#paso-detalles").open = true;
+                const slider = q(w, "#iteracion-biseccion");
+                for (const i of ["1", "7", slider.max]) {
+                    slider.value = i; slider.dispatchEvent(new w.Event("input", { bubbles: true }));
+                    const texto = ["#paso-valores", "#paso-signos", "#paso-decision", "#paso-intervalo"].map(s => q(w, s).textContent).join(" ") + slider.getAttribute("aria-valuetext");
+                    ok(!/\d,\d/.test(texto), `${estilo}, iteración ${i}: sin coma decimal: ${texto}`);
+                    ok(/\d\.\d/.test(texto), `${estilo}, iteración ${i}: con punto decimal`);
+                }
+                ok(grafica(w).layout.separators.startsWith("."), "Ejes con punto decimal");
+                const comprobar = (traza, digitos) => {
+                    const d = grafica(w).data[traza];
+                    ok(!/= %\{[xy]/.test(d.hovertemplate), "Sin «=» fijo en la etiqueta");
+                    ok(d.customdata?.length === d.x.length, "Una etiqueta por punto");
+                    d.x.forEach((x, i) => [[x, d.customdata[i][0]], [d.y[i], d.customdata[i][1]]].forEach(([v, e]) => {
+                        if (v === null) return;
+                        const corto = Number(v.toPrecision(digitos));
+                        ok(e === `${corto === v ? "=" : "≈"} ${corto}`, `${estilo}: etiqueta de ${v}: ${e}`);
+                    }));
+                    return d.customdata.flat();
+                };
+                const curva = comprobar(0, 10), puntos = comprobar(1, 12);
+                ok(curva.some(e => e.startsWith("≈")) && curva.some(e => e.startsWith("=")), "La curva tiene valores exactos y redondeados");
+                ok(puntos.some(e => e.startsWith("≈")), "Los puntos de la iteración redondeados usan ≈");
+            }
+            // Singular y plural: una raíz exacta tras una iteración.
+            valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "2");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            ok(/^1 iteración ·/.test(q(w, "#resultado .results-heading .muted").textContent.trim()), "Una iteración, en singular");
+            ok(grafica(w).data[1].customdata[1][0] === "= 1.5", "c exacto en la gráfica: = 1.5");
+            w.document.documentElement.setAttribute("data-estilo", "estudio");
+        }],
+        ["Redondear no convierte una desigualdad estricta en igualdad", async (w, frame) => {
+            valor(w, "funcion", "x-0.0001234567"); valor(w, "a", "0"); valor(w, "b", "0.00019999998");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const selector = q(w, "#biseccion-decimales");
+            for (const precision of ["4", "6", "8", "12", "16", "completa"]) {
+                selector.value = precision; selector.dispatchEvent(new w.Event("change", { bubbles: true }));
+                const valores = [...w.document.querySelectorAll(".biseccion-comprobacion [data-biseccion-numero]")];
+                ok(valores.length === 2 && valores[0].textContent !== valores[1].textContent, "La longitud y la tolerancia siguen siendo distintas");
+                ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "Sin doble aproximación");
+            }
         }],
         ["Dominio explica raíz real y una corrección justificada", async (w, frame) => {
             valor(w, "funcion", "√(x)"); valor(w, "a", "-1"); valor(w, "b", "5");
@@ -171,6 +294,18 @@
             ok(grafica(w).layout.shapes[2].x0 === lista(w)[6].a, "Intervalo seleccionado");
             ok(peticiones === 0, "Sin nuevas peticiones al recorrer pasos");
             ok(grafica(w).layout.shapes.length === 3, "No se acumulan formas");
+            q(w, "#iteracion-anterior").click();
+            ok(slider.value === "6", "Retrocede una iteración");
+            q(w, "#iteracion-siguiente").click();
+            ok(slider.value === "7", "Avanza una iteración");
+            slider.value = "1"; slider.dispatchEvent(new w.Event("input", { bubbles: true }));
+            ok(q(w, "#iteracion-anterior").disabled, "No retrocede antes del primer paso");
+            ok(q(w, "#paso-decision").textContent.includes("c pasa a ser el nuevo b") && q(w, "#paso-decision").textContent.includes("a permanece"), "Explica sustitución de b y extremo conservado");
+            q(w, "#iteracion-siguiente").click();
+            ok(q(w, "#paso-decision").textContent.includes("c pasa a ser el nuevo a") && q(w, "#paso-decision").textContent.includes("b permanece"), "Explica sustitución de a y extremo conservado");
+            ok(q(w, "#paso-intervalo").textContent.includes("Nuevo intervalo"), "Nuevo intervalo separado");
+            slider.value = String(lista(w).length); slider.dispatchEvent(new w.Event("input", { bubbles: true }));
+            ok(q(w, "#iteracion-siguiente").disabled, "No avanza después del último paso");
         }],
         ["Explorar y ajustar extremos conserva el resultado anterior", async (w, frame) => {
             ejemplo(w);
@@ -181,6 +316,15 @@
             ok(Number(q(w, '[name="a"]').value) === .6, "Extremo conectado al formulario");
             ok(q(w, "#resultado").dataset.resultado === "desactualizado", "Aviso de resultado anterior");
             ok(lista(w).length === 13, "No vuelve a ejecutar la bisección");
+        }],
+        ["Vista inicial cancela el zoom pendiente y conserva ejes y muestras coherentes", async w => {
+            valor(w, "funcion", "x²-2"); await esperar(() => listaGrafica(w));
+            await w.Plotly.relayout(grafica(w), { "xaxis.range": [40, 60] });
+            q(w, "#grafica-restablecer").click();
+            await esperar(() => listaGrafica(w) && grafica(w).data[0].x[0] === -10);
+            await new Promise(r => setTimeout(r, 400));
+            ok(grafica(w).layout.xaxis.range[0] === -10 && grafica(w).data[0].x[0] === -10
+                && grafica(w).data[0].x[800] === 10, "Descarta la vista anterior pendiente");
         }],
         ["Dos intervalos de la segunda raíz: comparación de 13 y 10 pasos", async (w, frame) => {
             w.sessionStorage.removeItem("pygebra-biseccion-v1");

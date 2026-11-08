@@ -71,18 +71,19 @@ class PruebasRegistro(SimpleTestCase):
         self.assertEqual(catalogo.relacionadas_disponibles(self.herramienta), (catalogo.CONVERSION_BASES,))
 
     def test_inicio_presenta_el_tema_con_su_herramienta(self):
-        respuesta = self.client.get("/")
+        inicio = self.client.get("/")
+        self.assertContains(inicio, "Representación de números en distintas bases y en numeración romana.")
+        self.assertContains(inicio, "<span>Numeración romana</span>", html=True)
+        respuesta = self.client.get("/areas/sistemas-numericos/")
         html = respuesta.content.decode("utf-8")
         self.assertIn("numeracion-romana", Documento(respuesta).ids)
         inicio_tema = html.index('id="numeracion-romana"')
-        tema = html[inicio_tema:html.index("</details>", inicio_tema)]
-        for texto in ("Numeración romana", "Conversión entre números arábigos y romanos.", f'href="{RUTA}"',
-                      "Conversión de números romanos", self.herramienta.descripcion):
+        tema = elemento_html(html, html.index('aria-labelledby="numeracion-romana"') + 1, "ul")
+        for texto in (f'href="{RUTA}"', "Conversión de números romanos", self.herramienta.descripcion):
             self.assertIn(texto, tema)
+        self.assertIn("Numeración romana", html[inicio_tema:inicio_tema + 200])
         # El tema va después de Bases numéricas, dentro del área Sistemas numéricos.
-        self.assertLess(html.index('id="sistemas-numericos"'), html.index('id="bases-numericas"'))
         self.assertLess(html.index('id="bases-numericas"'), inicio_tema)
-        self.assertContains(respuesta, "Representación de números en distintas bases y en numeración romana.")
 
     def test_busqueda(self):
         # «decimal» ya no se muestra, pero sigue encontrando la herramienta en el buscador.
@@ -103,7 +104,7 @@ class PruebasRegistro(SimpleTestCase):
         documento = Documento(respuesta)
         self.assertEqual(
             [a["href"] for a in documento.enlaces_en("Ruta de navegación")],
-            ["/", "/#sistemas-numericos", "/#numeracion-romana"],
+            ["/", "/areas/sistemas-numericos/", "/areas/sistemas-numericos/#numeracion-romana"],
         )
         self.assertContains(respuesta, '<span aria-current="page">Conversión de números romanos</span>', html=True)
         activos = [a["href"] for a in documento.enlaces_en("Herramientas") if a.get("aria-current") == "page"]

@@ -39,13 +39,18 @@ class PruebasNavegacion(SimpleTestCase):
 
     def test_todos_los_temas_nacen_cerrados_aunque_tengan_una_sola_herramienta(self):
         html = self.client.get("/").content.decode("utf-8")
-        # Vectores, Bases numéricas y Numeración romana tienen una sola herramienta: antes nacían abiertos.
-        for categoria in catalogo.CATEGORIAS:
-            with self.subTest(categoria=categoria.id):
-                etiqueta = re.search(rf'<details class="topic[^"]*" id="{categoria.id}"[^>]*>', html).group()
-                self.assertNotIn(" open", etiqueta)
-        # Las áreas también llegan plegadas.
-        self.assertNotRegex(html, r'<details class="home-area"[^>]* open')
+        # Estudio: el inicio ya no despliega temas; cada área es un canal hacia su explorador,
+        # donde todos los temas se ven a la vez, también los de una sola herramienta.
+        catalogo_inicio = html[html.index('id="catalogo-inicio"'):html.index("</section>", html.index('id="catalogo-inicio"'))]
+        self.assertNotIn("<details", catalogo_inicio)
+        for area in catalogo.AREAS:
+            if not area.disponible:
+                continue
+            explorador = self.client.get(area.ruta).content.decode("utf-8")
+            for categoria in catalogo.CATEGORIAS:
+                if categoria.area == area and categoria.disponible:
+                    with self.subTest(categoria=categoria.id):
+                        self.assertRegex(explorador, rf'<p class="indice-tema" id="{categoria.id}">')
 
     def test_ui72_herramientas_sin_kicker_con_migas_y_titulo(self):
         for ruta in HERRAMIENTAS:

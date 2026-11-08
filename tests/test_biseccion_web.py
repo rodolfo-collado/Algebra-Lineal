@@ -3,6 +3,7 @@
 import json
 import os
 import re
+from pathlib import Path
 from unittest.mock import patch
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
@@ -49,7 +50,7 @@ class BiseccionWebTests(SimpleTestCase):
             self.assertIsNone(form[campo].value())
         self.assertEqual(form["precision"].value(), .0001)
         self.assertEqual(form["max_iteraciones"].value(), 200)
-        self.assertContains(r, "Introduce una función y un intervalo")
+        self.assertContains(r, "Introduce una función para")
         self.assertNotContains(r, "data-respuesta-errores")
 
     def test_verificacion_adaptada_al_resultado(self):
@@ -73,6 +74,26 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertNotContains(r, "no supera 0")
         r = self.client.post(RUTA, datos(funcion="x", a="0", b="1"))
         self.assertContains(r, 'title="Valor almacenado: 1.0"')
+
+    def test_f_de_c_lleva_un_solo_signo_de_relacion(self):
+        # Sin JavaScript se ve el valor completo con «=»; biseccion.js lo cambia por «≈» al
+        # redondear, en vez de añadir otro símbolo (antes: «f(c) = ≈ -0.00067»).
+        for funcion in ("x^2-2", "x-1.5"):
+            with self.subTest(funcion=funcion):
+                r = self.client.post(RUTA, datos(funcion=funcion, a="1", b="2"))
+                self.assertContains(r, "f(c) <span data-biseccion-relacion>=</span> <span data-biseccion-numero=", count=1)
+                self.assertNotRegex(r.content.decode(), r"f\(c\)\s*=\s*≈")
+        js = (Path(__file__).resolve().parents[1] / "frontend/web/calculadora/static/calculadora/biseccion.js").read_text(encoding="utf-8")
+        self.assertIn('relacion.textContent = aproximado ? "≈" : "="', js)
+
+    def test_iteraciones_en_singular_y_plural(self):
+        for cambios, texto in [({"funcion": "x-1.5", "a": "1", "b": "2"}, "1 iteración ·"),
+                               ({}, "13 iteraciones ·"),
+                               ({"funcion": "x", "a": "0", "b": "1"}, "0 iteraciones ·")]:
+            with self.subTest(cambios=cambios):
+                r = self.client.post(RUTA, datos(**cambios))
+                self.assertContains(r, texto)
+                self.assertNotContains(r, "1 iteraciones")
 
     def test_notaciones_comparten_resultado_muestras_y_clave_de_comparacion(self):
         implicita = "x⁴ - 5x³ + 0.5x² - 11x + 10"
@@ -136,6 +157,26 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertLessEqual(len(puntos["x"]), 801)
         for cambio in [{"funcion": "x.__class__"}, {"a": "inf"}, {"a": "1", "b": "0"}]:
             self.assertEqual(self.client.post(RUTA + "grafica/", datos(**cambio)).status_code, 400)
+
+    def test_explorar_solo_funcion_usa_ventana_independiente(self):
+        with patch("frontend.web.calculadora.views_biseccion.biseccion", side_effect=AssertionError("No calcular")):
+            r = self.client.post(RUTA + "grafica/", {"funcion": "x^2+1"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual((r.json()["x"][0], r.json()["x"][-1]), (-10, 10))
+        self.assertEqual(len(r.json()["x"]), 801)
+        # Ver una curva, incluso sin cambio de signo, no autoriza resolver.
+        for valores in [{"funcion": "x^2+1"}, {"funcion": "x^2+1", "a": "-1", "b": "1"}]:
+            r = self.client.post(RUTA, valores)
+            self.assertNotContains(r, 'id="resultado"')
+            self.assertContains(r, "data-respuesta-errores")
+
+    def test_exploracion_conserva_limites_y_validacion_de_entrada(self):
+        for valores in [{"funcion": "x", "intruso": "1"}, {"funcion": ["x", "x+1"]},
+                        {"funcion": "x", "a": "NaN", "b": "1"},
+                        {"funcion": "x", "a": "-1e308", "b": "1.7e308"},
+                        {"funcion": "x" * 513}]:
+            with self.subTest(valores=valores):
+                self.assertEqual(self.client.post(RUTA + "grafica/", valores).status_code, 400)
 
     def test_csrf_metodos_y_xss(self):
         self.assertEqual(Client(enforce_csrf_checks=True).post(RUTA, datos()).status_code, 403)

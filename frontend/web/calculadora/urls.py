@@ -19,6 +19,7 @@ urlpatterns = [
     path("metodos-numericos/biseccion/", resolver_biseccion, name="biseccion"),
     path("metodos-numericos/biseccion/grafica/", explorar_biseccion, name="biseccion-grafica"),
     path("", views.inicio, name="inicio"),
+    path("areas/<slug:area>/", views.area, name="area"),
     path("matrices/reduccion/", views.sistemas, name="reduccion-filas"),
     # Compatibilidad: GET redirige; POST raíz reutiliza la vista y slugs preservan el cuerpo.
     path("sistemas/", views.sistemas_ruta_antigua, name="sistemas"),

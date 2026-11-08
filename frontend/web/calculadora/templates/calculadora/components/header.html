@@ -1,5 +1,14 @@
 <header class="app-header">
     <div class="header-start">
+        {# Atrás y Adelante recorren el historial real; historial.js los muestra y sabe si hay adónde ir. #}
+        <div class="historial" role="group" aria-label="Historial" hidden>
+            <button type="button" id="historial-atras" class="historial-boton" aria-label="Atrás" title="Atrás (Alt+←)">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" id="historial-adelante" class="historial-boton" aria-label="Adelante" title="Adelante (Alt+→)">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
         <a class="app-brand" href="{% url 'calculadora:inicio' %}" aria-label="PyGebra, inicio">
             {% include "calculadora/components/mark.html" %}
             <span class="app-brand-text">
@@ -40,5 +49,7 @@
             </span>
             <span class="theme-toggle-text">Tema</span>
         </button>
+
+        {% include "calculadora/components/opciones.html" %}
     </div>
 </header>

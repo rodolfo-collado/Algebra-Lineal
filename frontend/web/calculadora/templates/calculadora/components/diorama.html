@@ -1,0 +1,74 @@
+{% comment %}Rincón ilustrado de cada área (estilo Estudio; Minimalista lo oculta). Cada uno tiene pared, mesa y una lámpara que se enciende de noche, y un objeto que alude al tema: el vector se duplica, una cuenta del ábaco se lleva, el intervalo se parte a la mitad, un peón entra en A ∩ B. Ilustraciones originales; decorativas.{% endcomment %}
+<svg class="diorama" viewBox="0 0 240 150" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid slice">
+    <rect class="d-pared" width="240" height="108"/>
+    <rect class="d-mesa" y="108" width="240" height="42"/>
+    <rect y="106" width="240" height="4" fill="#000" opacity=".14"/>
+{% if area_id == "algebra-lineal" %}
+    <g><circle class="solo-noche d-halo" cx="214" cy="30" r="34"/><path d="M214 0v16" stroke="#5B4636" stroke-width="2"/><path d="M201 28q13-18 26 0z" fill="#E2574C"/><circle class="solo-noche" cx="214" cy="29" r="4" fill="#FFE8B0"/></g>
+    <g transform="rotate(-4 24 34)"><rect x="8" y="16" width="32" height="38" fill="#FFFDF7"/><path d="M12 24h24M12 32h24M12 40h24M20 20v30M28 20v30" stroke="#8FB8B2" stroke-width="1"/></g>
+    <rect x="200" y="118" width="22" height="20" rx="3" fill="#C8664A"/>
+    <g fill="#4E9B5B"><ellipse cx="206" cy="110" rx="5" ry="11" transform="rotate(-20 206 110)"/><ellipse cx="216" cy="108" rx="5" ry="12" transform="rotate(18 216 108)"/></g>
+    <path d="M86 112L66 148M154 112L174 148M120 112v36" stroke="#7E4F31" stroke-width="5" stroke-linecap="round"/>
+    <rect x="48" y="16" width="144" height="100" rx="5" fill="#8E5A38"/>
+    <rect x="56" y="24" width="128" height="84" rx="2" fill="#24423F"/>
+    <path d="M74 96H174M74 96V34" stroke="#CFE3DF" stroke-width="2" opacity=".45"/>
+    <g class="d-matriz" fill="none" stroke="#FFF6DA" stroke-width="2.5" stroke-linecap="round">
+        <path d="M88 40v52M88 40h6M88 92h6M152 40v52M152 40h-6M152 92h-6"/>
+        <g fill="#FFF6DA" stroke="none" font-family="Cambria Math, Cambria, serif" font-size="16" text-anchor="middle"><text x="106" y="60">2</text><text x="134" y="60">1</text><text x="106" y="84">0</text><text x="134" y="84">3</text></g>
+    </g>
+    <g class="d-vector"><path d="M74 96L112 70" stroke="#F2C14E" stroke-width="4" stroke-linecap="round"/><path d="M106 64l12 2-6 11z" fill="#F2C14E"/></g>
+    <text class="d-v1" x="96" y="66" fill="#FFF6DA" font-family="Cambria Math, Cambria, serif" font-size="16" font-style="italic">v</text>
+    <text class="d-v2" x="156" y="62" fill="#FFF6DA" font-family="Cambria Math, Cambria, serif" font-size="16" font-style="italic">2v</text>
+    <rect x="44" y="112" width="152" height="7" rx="3" fill="#A86B43"/>
+    <rect x="152" y="104" width="22" height="8" rx="2" fill="#F7F3EA"/><rect x="70" y="105" width="12" height="7" rx="2" fill="#FFE58A"/>
+{% elif area_id == "sistemas-numericos" %}
+    <g><circle class="solo-noche d-halo" cx="98" cy="30" r="34"/><path d="M98 0v16" stroke="#5B4636" stroke-width="2"/><path d="M85 28q13-18 26 0z" fill="#E2574C"/><circle class="solo-noche" cx="98" cy="29" r="4" fill="#FFE8B0"/></g>
+    <g transform="rotate(3 206 18)"><rect x="176" y="4" width="54" height="24" rx="3" fill="#253055"/><text x="203" y="21" text-anchor="middle" font-family="Cambria Math, Cambria, serif" font-size="13" fill="#9FE3D9">FF₁₆</text></g>
+    <rect x="24" y="28" width="136" height="104" rx="6" fill="#C78C5E"/>
+    <rect x="32" y="36" width="120" height="88" fill="#F7F3EA"/>
+    <path d="M32 58h120M32 80h120M32 102h120" stroke="#8E5A38" stroke-width="3"/>
+    <g fill="#E2574C"><circle cx="46" cy="58" r="8"/><circle cx="64" cy="58" r="8"/><circle class="d-cuenta" cx="138" cy="58" r="8"/></g>
+    <g fill="#2F6E68"><circle cx="46" cy="80" r="8"/><circle cx="120" cy="80" r="8"/><circle cx="138" cy="80" r="8"/></g>
+    <g fill="#F2C14E"><circle cx="46" cy="102" r="8"/><circle cx="64" cy="102" r="8"/><circle cx="82" cy="102" r="8"/><circle cx="138" cy="102" r="8"/></g>
+    <g class="d-dado"><rect x="174" y="98" width="38" height="38" rx="7" fill="#F7F3EA" stroke="#C9BDA7" stroke-width="2"/><g fill="#253055"><circle cx="184" cy="108" r="3.4"/><circle cx="202" cy="108" r="3.4"/><circle cx="184" cy="126" r="3.4"/><circle cx="202" cy="126" r="3.4"/></g></g>
+    <g transform="rotate(-6 196 56)"><rect x="170" y="38" width="54" height="34" rx="4" fill="#FFF1C9"/><rect x="166" y="36" width="8" height="38" rx="4" fill="#E8B947"/><rect x="220" y="36" width="8" height="38" rx="4" fill="#E8B947"/><text x="197" y="62" text-anchor="middle" font-family="Cambria, serif" font-size="17" fill="#5B4636">XII</text></g>
+{% elif area_id == "metodos-numericos" %}
+    <g><circle class="solo-noche d-halo" cx="36" cy="30" r="34"/><path d="M36 0v16" stroke="#5B4636" stroke-width="2"/><path d="M23 28q13-18 26 0z" fill="#E2574C"/><circle class="solo-noche" cx="36" cy="29" r="4" fill="#FFE8B0"/></g>
+    <path d="M96 112L80 148M196 112L212 148" stroke="#7E4F31" stroke-width="5" stroke-linecap="round"/>
+    <rect x="70" y="10" width="156" height="100" rx="4" fill="#A86B43"/>
+    <rect x="76" y="16" width="144" height="88" fill="#FFFDF7"/>
+    <path d="M76 38h144M76 60h144M76 82h144M100 16v88M124 16v88M148 16v88M172 16v88M196 16v88" stroke="#CFE3DF" stroke-width="1"/>
+    <path d="M80 66H216" stroke="#5B4636" stroke-width="2"/>
+    <rect class="d-banda" x="100" y="20" width="96" height="80" fill="#2F6E68" opacity=".14"/>
+    <path d="M84 98C110 94 128 82 140 66S180 30 214 22" fill="none" stroke="#2F6E68" stroke-width="3" stroke-linecap="round"/>
+    <g class="d-a"><path d="M100 22v80" stroke="#E2574C" stroke-width="2.5" stroke-dasharray="5 4"/><text x="100" y="114" text-anchor="middle" font-family="Cambria Math, Cambria, serif" font-size="12" font-style="italic" fill="#5B4636">a</text></g>
+    <g class="d-b"><path d="M196 22v80" stroke="#E2574C" stroke-width="2.5" stroke-dasharray="5 4"/><text x="196" y="114" text-anchor="middle" font-family="Cambria Math, Cambria, serif" font-size="12" font-style="italic" fill="#5B4636">b</text></g>
+    <circle class="d-raiz" cx="140" cy="66" r="4.5" fill="#F2C14E" stroke="#5B4636" stroke-width="1.5"/>
+    <g transform="translate(18 118)"><circle cx="16" cy="14" r="13" fill="#F7F3EA" stroke="#5E6B78" stroke-width="3"/><rect x="13" y="-4" width="6" height="5" rx="1" fill="#5E6B78"/><path class="d-aguja" d="M16 14V5" stroke="#E2574C" stroke-width="2.4" stroke-linecap="round"/></g>
+    <rect x="160" y="124" width="56" height="6" rx="3" fill="#F2C14E" transform="rotate(-8 188 127)"/>
+{% elif area_id == "conjuntos" %}
+    <g><circle class="solo-noche d-halo" cx="120" cy="30" r="34"/><path d="M120 0v16" stroke="#5B4636" stroke-width="2"/><path d="M107 28q13-18 26 0z" fill="#E2574C"/><circle class="solo-noche" cx="120" cy="29" r="4" fill="#FFE8B0"/></g>
+    <path d="M0 8Q60 30 96 14" fill="none" stroke="#5B4636" stroke-width="1.5"/>
+    <g><path d="M14 12l8 0-4 10z" fill="#F2C14E"/><path d="M34 17l8 1-5 9z" fill="#4A8FD8"/><path d="M54 20l8-1-3 10z" fill="#E2574C"/><path d="M74 19l8-2-2 10z" fill="#4E9B5B"/></g>
+    <rect x="170" y="10" width="58" height="12" rx="2" fill="#8C6BD1"/><rect x="174" y="22" width="52" height="12" rx="2" fill="#4E9B5B"/><rect x="166" y="34" width="62" height="5" fill="#A86B43"/>
+    <ellipse cx="94" cy="104" rx="64" ry="32" fill="#2F6E68" fill-opacity=".14" stroke="#2F6E68" stroke-width="6"/>
+    <ellipse cx="150" cy="104" rx="64" ry="32" fill="#E2574C" fill-opacity=".14" stroke="#E2574C" stroke-width="6"/>
+    <text x="52" y="62" font-family="Cambria Math, Cambria, serif" font-size="18" font-style="italic" fill="#2F6E68">A</text>
+    <text x="184" y="62" font-family="Cambria Math, Cambria, serif" font-size="18" font-style="italic" fill="#E2574C">B</text>
+    <g fill="#F2C14E"><circle cx="64" cy="92" r="6.5"/><path d="M55 112q0-13 9-15q9 2 9 15z"/><rect x="54" y="110" width="20" height="5" rx="2"/></g>
+    <g fill="#8C6BD1"><circle cx="88" cy="80" r="6.5"/><path d="M79 100q0-13 9-15q9 2 9 15z"/><rect x="78" y="98" width="20" height="5" rx="2"/></g>
+    <g fill="#4A8FD8"><circle cx="178" cy="92" r="6.5"/><path d="M169 112q0-13 9-15q9 2 9 15z"/><rect x="168" y="110" width="20" height="5" rx="2"/></g>
+    <g fill="#4E9B5B"><circle cx="156" cy="80" r="6.5"/><path d="M147 100q0-13 9-15q9 2 9 15z"/><rect x="146" y="98" width="20" height="5" rx="2"/></g>
+    <g class="d-peon" fill="#F07B6F"><circle cx="216" cy="120" r="6.5"/><path d="M207 140q0-13 9-15q9 2 9 15z"/><rect x="206" y="138" width="20" height="5" rx="2"/></g>
+{% else %}
+    <g><circle class="solo-noche d-halo" cx="30" cy="30" r="34"/><path d="M30 0v16" stroke="#5B4636" stroke-width="2"/><path d="M17 28q13-18 26 0z" fill="#E2574C"/><circle class="solo-noche" cx="30" cy="29" r="4" fill="#FFE8B0"/></g>
+    <rect x="56" y="10" width="54" height="40" rx="2" fill="#253055"/>
+    <path d="M64 40l12-14 10 6 14-16" fill="none" stroke="#9FE3D9" stroke-width="1.2"/>
+    <g fill="#fff"><circle cx="64" cy="40" r="2"/><circle cx="76" cy="26" r="2"/><circle cx="86" cy="32" r="2"/><circle cx="100" cy="16" r="2"/></g>
+    <circle cx="172" cy="52" r="36" fill="#1F2752" stroke="#A86B43" stroke-width="7"/>
+    <circle cx="182" cy="44" r="13" fill="#F4F1DE"/><circle cx="188" cy="40" r="12" fill="#1F2752"/>
+    <g fill="#fff"><circle cx="152" cy="40" r="1.6"/><circle cx="160" cy="70" r="1.3"/><circle cx="190" cy="72" r="1.5"/></g>
+    <path d="M84 104L60 146M84 104L108 146M84 104v42" stroke="#5E6B78" stroke-width="4" stroke-linecap="round"/>
+    <g class="d-telescopio"><rect x="40" y="84" width="96" height="20" rx="6" fill="#6FA8DC" transform="rotate(-24 84 104)"/><rect x="124" y="56" width="16" height="26" rx="4" fill="#4A8FD8" transform="rotate(-24 84 104)"/></g>
+{% endif %}
+</svg>

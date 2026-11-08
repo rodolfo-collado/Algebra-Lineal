@@ -235,7 +235,8 @@ class PruebasCatalogoFinal(ContextoHTTP):
     def test_inicio_menu_y_breadcrumbs(self):
         inicio = self.client.get("/")
         html = inicio.content.decode()
-        self.assertIn(f'href="{RUTA}"', elemento_html(html, html.index('id="matrices"'), "details"))
+        area = self.client.get("/areas/algebra-lineal/").content.decode()
+        self.assertIn(f'href="{RUTA}"', elemento_html(area, area.index('aria-labelledby="matrices"') + 1, "ul"))
         enlaces = [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link" and a["href"].startswith("/matrices/")]
         self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/", "/matrices/inversa/",
                                    "/matrices/determinantes/"])
@@ -243,7 +244,7 @@ class PruebasCatalogoFinal(ContextoHTTP):
         self.assertEqual(menu, enlaces)
         pagina = self.client.get(RUTA)
         documento = Documento(pagina)
-        self.assertEqual([a["href"] for a in documento.enlaces_en("Ruta de navegación")], ["/", "/#algebra-lineal", "/#matrices"])
+        self.assertEqual([a["href"] for a in documento.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertContains(pagina, '<span aria-current="page">Operaciones con matrices</span>', html=True)
         self.assertContains(pagina, "Realiza y combina operaciones con matrices, vectores y escalares paso a paso.")
 

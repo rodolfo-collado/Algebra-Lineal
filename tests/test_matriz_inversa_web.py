@@ -111,7 +111,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertIn(RUTA, [a["href"] for _, a in inicio.enlaces if a.get("class") == "tool-link"])
         respuesta = self.client.get(RUTA)
         doc = Documento(respuesta)
-        self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/#algebra-lineal", "/#matrices"])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertContains(respuesta, '<span aria-current="page">Matriz inversa</span>', html=True)
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
         self.assertTrue(doc.categorias["matrices"])

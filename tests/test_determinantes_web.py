@@ -84,7 +84,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual(catalogo.buscar_herramientas("inversa"), (catalogo.MATRIZ_INVERSA,))
         self.assertNotIn(catalogo.DETERMINANTES, catalogo.buscar_herramientas("gauss"))
         doc = Documento(self.client.get(RUTA))
-        self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/#algebra-lineal", "/#matrices"])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
 
 
