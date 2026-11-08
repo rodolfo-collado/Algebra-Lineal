@@ -38,8 +38,8 @@
 - [Determinantes](determinantes.md): fórmula 2×2, Sarrus, cofactores, LU y
   reducción por filas; recorrido de A por cada capa y guía para exponer.
 - [Bisección](biseccion.md): algoritmo manual, gráfica offline, recorrido de iteraciones y comparación.
-- [Conjuntos](conjuntos.md): temporalmente Próximamente; se conservan definiciones finitas, relaciones, gramática segura,
-  presupuesto y propuesta de editor estructurado posterior.
+- [Conjuntos](conjuntos.md): operaciones, relaciones, potencia, producto cartesiano, intervalos,
+  Venn y cardinalidad por inclusión-exclusión; gramática segura y presupuesto.
 - [Menú de edición de entradas](edicion-entradas.md): clic derecho sobre matrices,
   vectores y números para rellenar al azar, limpiar y seleccionar.
 - [Selección matricial](seleccion-matricial.md): modelo de entrada, gestos,

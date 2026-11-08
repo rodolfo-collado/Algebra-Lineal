@@ -4,11 +4,8 @@
 
 P1 está completado e integrado mediante el [PR #104](https://github.com/rodolfo-collado/Algebra-Lineal/pull/104).
 P2–P6 extienden el mismo parser y evaluador con operaciones finitas, generación, intervalos, Venn y cardinalidades. Todo el trabajo continúa en la rama `feature/conjuntos-p2-operaciones` y el PR #113.
-El acceso público está temporalmente bloqueado: Conjuntos figura como
-**Próximamente**, igual que Cálculo, y las URL `/conjuntos/…` responden 404.
-La implementación, los avances y la documentación que sigue se conservan.
-Las pruebas matemáticas siguen activas; las del editor usan una URLConf exclusiva
-de pruebas, que no habilita el módulo en la aplicación ni en el ejecutable.
+Las dos herramientas están publicadas (tras v0.14.0) en `/conjuntos/relaciones/` y
+`/conjuntos/cardinalidad/`; el resto de `/conjuntos/…` responde 404.
 Consulta el [TODO de Conjuntos](TODO-conjuntos.md) para el estado de P1–P7, las mejoras
 detectadas en las pruebas desktop y las posibles extensiones futuras.
 
@@ -300,7 +297,7 @@ La geometría (qué círculos contienen el puntero) es lo único que calcula el 
 ## Cardinalidades e inclusión-exclusión (P6)
 
 **Cardinalidad e inclusión-exclusión** es una herramienta propia del catálogo
-(`cardinalidad-conjuntos`, en Próximamente como el resto). Se eligen dos o tres
+(`cardinalidad-conjuntos`). Se eligen dos o tres
 conjuntos y el tipo de datos: **Regiones separadas** (cuántos hay exactamente en
 cada región) o **Conjuntos e intersecciones** (|A|, |A ∩ B|…). Cada campo lleva un
 pequeño diagrama con la región que cuenta (`data-cubre`, calculado en el formulario)
@@ -337,7 +334,7 @@ El exterior desconocido queda como null. Nunca se infiere un universo numérico.
 
 ## Entrega a Claude y acceso privado
 
-Para probar todas las pantallas sin habilitar el módulo público:
+Para probar las pantallas en el navegador:
 
 ```powershell
 uv run --locked python -m tests.conjuntos_browser
@@ -345,11 +342,7 @@ uv run --locked python -m tests.conjuntos_browser
 
 Abre `http://127.0.0.1:8894/conjuntos/relaciones/` para el editor y
 `http://127.0.0.1:8894/conjuntos/cardinalidad/` para inclusión-exclusión.
-El servidor escucha solo en loopback y usa `tests.urls_conjuntos`. Solo dentro de
-ese proceso marca las dos herramientas como disponibles, para revisar título, migas,
-mesa de trabajo y relacionadas como se verán. Las rutas de la aplicación normal
-siguen bloqueadas (404); el catálogo publicado conserva Próximamente.
-No hay que cambiar versiones, ramas ni activar rutas públicas para revisar.
+El servidor escucha solo en loopback; `/__pruebas/` ejecuta los 14 flujos DOM.
 
 La serialización añade `tipo: "par"` con `primero` y `segundo` tipados recursivos.
 Las reglas nuevas del procedimiento son `par_ordenado`, `potencia`,
@@ -358,10 +351,9 @@ Las reglas nuevas del procedimiento son `par_ordenado`, `potencia`,
 y `relacion_intervalos`. Los gráficos reciben datos del motor; las cadenas solo
 se muestran, no se analizan para reconstruir matemáticas.
 
-La revisión visual y de interacción de Claude está integrada en esta rama y PR.
-Para habilitar las URL públicas falta solo el último paso: `estado="disponible"` y
-`route_name` en las dos herramientas del catálogo y sus rutas en `urls.py`, una vez
-publicada v0.14.0. No se implementa comprensión ni demostración simbólica de
+La revisión visual y de interacción de Claude está integrada en esta rama y PR,
+y las dos herramientas se habilitaron como último paso, una vez publicada v0.14.0.
+No se implementa comprensión ni demostración simbólica de
 identidades. No se añadió un editor estructurado recursivo: la lectura por pastillas
 bajo cada fila resuelve la duda habitual (qué es un elemento) sin un segundo modelo.
 
@@ -389,3 +381,30 @@ inversión de las 128 distribuciones binarias de regiones y validaciones web.
 El runner también prueba zoom, consulta exacta, selección de Venn, edición de
 cardinalidades, datos incoherentes y resultados desactualizados. La revisión
 física de táctil y lector de pantalla continúa pendiente.
+
+### Validación en la app de escritorio (WebView2)
+
+Tras habilitar las rutas (2026-11-07) se probó el ejecutable de PyInstaller
+(`build_windows.ps1 -Target App`) con WebView2 157, conectado por CDP
+(`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=…` y
+`ALGEBRA_PREFERENCIAS` aislado), con clics y teclas reales sobre el servidor
+de la propia app:
+
+- Recorrido de 47–48 comprobaciones en Estudio y Minimalista, a 1920×1058 en
+  claro y a la ventana mínima (760×560, 746×523 de área útil) en oscuro: ejemplos,
+  edición con «Guardar cambios», recálculo, potencia agrupada, producto como tabla,
+  teclado contextual (operandos pulsables, foco conservado), Intro que calcula sin
+  eliminar, Atrás/Adelante, guía, errores junto al campo, eliminar, Venn (puntero,
+  clic, Intro y Tab en la tabla), recta (zoom, tecla 0, punto exacto y erróneo),
+  cardinalidad de tres conjuntos (sumandos, tabla de veces, datos incoherentes),
+  sin desborde horizontal ni errores de consola.
+- El runner DOM de 14 casos dentro del mismo WebView2: 14/14 con la ventana al frente
+  (sin foco del sistema, `focus()` no emite `focusin` y fallan los dos casos de teclado).
+- Recorrido con Tab real: orden lógico, foco visible (también en los radios segmentados).
+
+Se corrigió lo encontrado: el grupo de operandos del teclado ya no se encoge
+hasta tapar sus teclas en perfiles largos; un operando ausente (`A ∪`, `A ∩∩ B`)
+dice «Falta un conjunto…» en vez del mensaje de literales; un punto que no es
+número dice «Escribe un número exacto…». La transición entre páginas de Estudio
+(View Transition, ~0,9 s) ignora clics hechos durante la animación; es general
+de la app, no de Conjuntos.

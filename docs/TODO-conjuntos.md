@@ -28,8 +28,8 @@ Estos ajustes no reabren P1, que permanece completado.
 - [x] Admitir expresiones combinadas con agrupación y precedencia de operaciones.
 
 Sintaxis, presupuesto y contrato estructurado para presentación en
-[Conjuntos](conjuntos.md#contrato-para-presentación-claude). Se conserva el bloqueo
-público; el editor mínimo se comprueba solo con la URLConf de pruebas.
+[Conjuntos](conjuntos.md#contrato-para-presentación-claude). Las rutas públicas
+se habilitaron en P7.
 
 ## P3 — Conjunto potencia y producto cartesiano
 
@@ -63,10 +63,9 @@ público; el editor mínimo se comprueba solo con la URLConf de pruebas.
 - [x] Revisión visual y de interacción (Claude): editor, guía, procedimientos, Venn, recta y cardinalidad en Estudio y Minimalista, claro y oscuro, de 320 px a escritorio.
 - [x] Verificar la navegación por teclado: filas de regiones, recta, guía y campos con foco visible.
 - [x] Completar las pruebas matemáticas, de integración web y de interacción (14 flujos DOM en Chrome y Edge).
-- [ ] Probar en la app de escritorio real (WebView2) y con lector de pantalla una vez habilitadas las rutas.
-- [ ] Habilitar las rutas y el catálogo después de publicar v0.14.0.
-
-El acceso público sigue bloqueado mientras se tramita v0.14.0: la habilitación es el último paso.
+- [x] Probar en la app de escritorio real (WebView2): ambos estilos, claro y oscuro, ventana mínima.
+- [ ] Probar con lector de pantalla (NVDA o Narrador).
+- [x] Habilitar las rutas y el catálogo después de publicar v0.14.0.
 
 ## Posibles extensiones futuras
 

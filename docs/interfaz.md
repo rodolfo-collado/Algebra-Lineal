@@ -217,7 +217,7 @@ Django y el historial del navegador.
   «¿Qué quieres resolver?» con su buscador, «Retomar» la última herramienta de la
   visita (`historial.js`, `sessionStorage`) y «¿Qué quieres explorar hoy?» con un
   **canal** por área: notación (`Area.chip`), nombre, descripción y temas
-  disponibles. Todo el canal enlaza a su área; Conjuntos y Cálculo se anuncian
+  disponibles. Todo el canal enlaza a su área; Cálculo se anuncia
   como «Próximamente» sin enlace. Cada canal es un grupo del buscador y guarda,
   ocultas, las filas de sus herramientas: al escribir viajan a los resultados en
   el orden del servidor y al limpiar vuelven a su canal. Con `?q=` se muestran
