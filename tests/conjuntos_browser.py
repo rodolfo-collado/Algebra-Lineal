@@ -25,15 +25,5 @@ def pruebas(environ, start_response):
 
 
 if __name__ == "__main__":
-    # Solo pruebas: la ruta de producción sigue respondiendo 404.
-    from django.conf import settings
-    settings.ROOT_URLCONF = "tests.urls_conjuntos"
-    # Solo en este proceso: muestra las herramientas como se verán al habilitarlas
-    # (título, migas, rail y relacionadas). El catálogo publicado sigue en «Próximamente».
-    from frontend.web.calculadora import catalogo
-    for herramienta, ruta in ((catalogo.RELACIONES_CONJUNTOS, "calculadora:relaciones-conjuntos"),
-                              (catalogo.CARDINALIDAD_CONJUNTOS, "calculadora:cardinalidades-conjuntos")):
-        object.__setattr__(herramienta, "estado", "disponible")
-        object.__setattr__(herramienta, "route_name", ruta)
     print("Conjuntos: http://127.0.0.1:8894/__pruebas/", flush=True)
     make_server("127.0.0.1", 8894, pruebas, server_class=ServidorConHilos).serve_forever()

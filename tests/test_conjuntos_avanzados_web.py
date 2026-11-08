@@ -1,7 +1,7 @@
 import json
 import re
 
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase
 from tests.test_conjuntos_web import datos, RUTA
 
 
@@ -10,7 +10,6 @@ def contrato(respuesta):
     return json.loads(re.search(r'<script id="conjuntos-resultado-datos"[^>]*>(.*?)</script>',texto,re.S)[1])
 
 
-@override_settings(ROOT_URLCONF='tests.urls_conjuntos')
 class AvanzadosWebTests(SimpleTestCase):
     def test_pares_potencia_y_recta_tipados(self):
         respuesta = self.client.post(RUTA,datos(expresion='{1} × {2}'))
@@ -64,8 +63,3 @@ class AvanzadosWebTests(SimpleTestCase):
         respuesta = self.client.post(ruta,{**campos,'region_7':'1','accion':'ajustar'})
         self.assertNotContains(respuesta,'name="region_7"')
         self.assertEqual(self.client.put(ruta).status_code,405)
-
-    @override_settings(ROOT_URLCONF='frontend.web.algebra_web.urls')
-    def test_todas_las_herramientas_permanecen_bloqueadas(self):
-        for ruta in (RUTA,'/conjuntos/cardinalidad/','/conjuntos/intervalos/','/conjuntos/venn/'):
-            self.assertEqual(self.client.get(ruta).status_code,404)

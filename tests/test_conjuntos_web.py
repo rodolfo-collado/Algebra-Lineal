@@ -9,7 +9,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settin
 import django
 django.setup()
 
-from django.test import Client, SimpleTestCase, override_settings
+from django.test import Client, SimpleTestCase
 from django.urls import reverse
 
 from frontend.web.calculadora import catalogo
@@ -24,7 +24,6 @@ def datos(**extra):
             "expresion": "A ∈ B", "accion": "calcular", **extra}
 
 
-@override_settings(ROOT_URLCONF="tests.urls_conjuntos")
 class ConjuntosWebTests(SimpleTestCase):
     def test_catalogo_y_pantalla(self):
         self.assertEqual(reverse("calculadora:relaciones-conjuntos"), RUTA)
@@ -148,10 +147,3 @@ class ConjuntosWebTests(SimpleTestCase):
         respuesta = self.client.post(RUTA, datos(expresion='{"</script><script>alert(1)</script>", 1/2} ∪ ∅'))
         self.assertNotContains(respuesta, '</script><script>alert(1)</script>')
         self.assertContains(respuesta, '\\u003C/script\\u003E')
-
-    @override_settings(ROOT_URLCONF='frontend.web.algebra_web.urls')
-    def test_p2_no_habilita_urls_publicas(self):
-        for ruta in ('/conjuntos/', RUTA, '/conjuntos/operaciones/'):
-            with self.subTest(ruta=ruta):
-                self.assertEqual(self.client.get(ruta).status_code, 404)
-                self.assertEqual(self.client.post(ruta, datos(expresion='A ∪ B')).status_code, 404)

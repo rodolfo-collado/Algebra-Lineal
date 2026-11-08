@@ -96,7 +96,7 @@ class PruebasExploradorDeArea(SimpleTestCase):
                     self.assertIn(f'id="lema-{herramienta.id}" hidden>{escape(herramienta.descripcion)}', html)
 
     def test_areas_proximas_o_inexistentes_no_tienen_pagina(self):
-        for ruta in ("/areas/conjuntos/", "/areas/calculo/", "/areas/inexistente/"):
+        for ruta in ("/areas/calculo/", "/areas/inexistente/"):
             with self.subTest(ruta=ruta):
                 self.assertEqual(self.client.get(ruta).status_code, 404)
         self.assertEqual(self.client.post("/areas/algebra-lineal/").status_code, 405)

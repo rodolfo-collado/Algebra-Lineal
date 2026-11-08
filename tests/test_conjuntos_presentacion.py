@@ -5,7 +5,7 @@ import json
 import re
 from fractions import Fraction
 
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase
 
 from backend.conjuntos.cardinalidades import resolver_cardinalidades
 from backend.conjuntos.literales import analizar_literal
@@ -75,7 +75,6 @@ class MotorPresentacionTests(SimpleTestCase):
         self.assertEqual(rellenar("{x} ∈ {a}", [], "7"), "7 ∈ A")
 
 
-@override_settings(ROOT_URLCONF="tests.urls_conjuntos")
 class EditorPresentacionTests(SimpleTestCase):
     def test_editor_vacio_y_ejemplos_opcionales(self):
         respuesta = self.client.get(RUTA)
@@ -133,7 +132,6 @@ class EditorPresentacionTests(SimpleTestCase):
         self.assertIn("relacion", contrato(self.client.post(RUTA, editor(filas, "3 ∈ I")))["recta"])
 
 
-@override_settings(ROOT_URLCONF="tests.urls_conjuntos")
 class CardinalidadPresentacionTests(SimpleTestCase):
     def test_campos_dibujan_su_region(self):
         respuesta = self.client.get(CARDINALIDAD)

@@ -1,21 +1,18 @@
 """Rutas de la calculadora web."""
 
-from django.http import Http404
-from django.urls import path, re_path
+from django.urls import path
 
 from . import views
 from .views_biseccion import resolver_biseccion, explorar_biseccion
+from .views_conjuntos import relaciones_conjuntos, cardinalidades_conjuntos
 
 
 app_name = "calculadora"
 
 
-def conjuntos_proximamente(request):
-    raise Http404("Conjuntos: próximamente.")
-
 urlpatterns = [
-    path("conjuntos/relaciones/", conjuntos_proximamente, name="relaciones-conjuntos"),
-    re_path(r"^conjuntos(?:/.*)?$", conjuntos_proximamente),
+    path("conjuntos/relaciones/", relaciones_conjuntos, name="relaciones-conjuntos"),
+    path("conjuntos/cardinalidad/", cardinalidades_conjuntos, name="cardinalidades-conjuntos"),
     path("metodos-numericos/biseccion/", resolver_biseccion, name="biseccion"),
     path("metodos-numericos/biseccion/grafica/", explorar_biseccion, name="biseccion-grafica"),
     path("", views.inicio, name="inicio"),

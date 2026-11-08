@@ -339,7 +339,7 @@ DETERMINANTES = Herramienta(
 RELACIONES_CONJUNTOS = Herramienta(
     id="relaciones-conjuntos", nombre="Operaciones con conjuntos", categoria=CONJUNTOS_FINITOS,
     descripcion="Define conjuntos, combínalos y compruébalo en un diagrama de Venn o en la recta real.",
-    estado="proximamente",
+    estado="disponible", route_name="calculadora:relaciones-conjuntos",
     palabras_clave=("unión", "intersección", "diferencia", "complemento", "pertenencia", "no pertenencia", "inclusión",
                     "subconjunto", "inclusión propia", "igualdad", "vacío", "anidados", "potencia", "producto cartesiano",
                     "pares ordenados", "intervalos", "recta real", "venn"),
@@ -352,7 +352,7 @@ RELACIONES_CONJUNTOS = Herramienta(
 CARDINALIDAD_CONJUNTOS = Herramienta(
     id="cardinalidad-conjuntos", nombre="Cardinalidad e inclusión-exclusión", categoria=CONJUNTOS_FINITOS,
     descripcion="Cuenta elementos por regiones de Venn y descubre por qué funciona la inclusión-exclusión.",
-    estado="proximamente",
+    estado="disponible", route_name="calculadora:cardinalidades-conjuntos",
     palabras_clave=("cardinalidad", "inclusión-exclusión", "inclusión y exclusión", "contar", "regiones", "venn",
                     "problemas de conteo", "encuestas"),
     relacionadas=("relaciones-conjuntos",),
