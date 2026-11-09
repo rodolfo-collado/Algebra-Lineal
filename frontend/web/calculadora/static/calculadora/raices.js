@@ -125,13 +125,16 @@
         const paso = metodo.paso(p, { formato, numero, signo }, { ultimo: i === pasos.length, resultado });
         slider.setAttribute("aria-valuetext", `Iteración ${i} de ${pasos.length}, ${paso.aria}`);
         lectura.querySelector("#paso-titulo").textContent = `Iteración ${i} de ${pasos.length}`;
-        detallesPaso.querySelector("#paso-valores").textContent = paso.valores;
-        detallesPaso.querySelector("#paso-signos").textContent = paso.signos;
-        lectura.querySelector("#paso-decision").textContent = paso.decision;
-        lectura.querySelector("#paso-intervalo").textContent = paso.intervalo;
-        const parada = lectura.querySelector("#paso-parada");
-        parada.textContent = paso.parada || "";
-        parada.hidden = !paso.parada;
+        for (const nombre of ["valores", "signos", "decision", "intervalo", "error", "parada"]) {
+            const nodo = document.getElementById(`paso-${nombre}`);
+            if (!nodo) continue;
+            const contenido = paso[nombre];
+            if (Array.isArray(contenido)) nodo.replaceChildren(...contenido.map(texto => {
+                const item = document.createElement("li"); item.textContent = texto; return item;
+            }));
+            else nodo.textContent = contenido || "";
+            nodo.hidden = !contenido;
+        }
         filas.forEach(f => f.toggleAttribute("data-activa", Number(f.dataset.iteracion) === i));
         if (!grafica.data) return;
         const { puntos, trazo } = paso;

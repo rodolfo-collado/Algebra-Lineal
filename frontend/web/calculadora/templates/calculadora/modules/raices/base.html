@@ -73,12 +73,14 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
             </div>
             <label for="iteracion-raices">Recorrer iteraciones</label>
             <input type="range" id="iteracion-raices" min="1" max="{{ resultado.iteraciones|length }}" step="1" value="{{ resultado.iteraciones|length }}" aria-describedby="iteracion-lectura">
+            {% block lectura_iteracion %}
             <div id="iteracion-lectura" role="status" aria-live="polite" aria-atomic="true">
                 <p id="paso-titulo"></p><p id="paso-decision"></p><p id="paso-intervalo"></p><p id="paso-parada" hidden></p>
             </div>
             {% disclosure titulo="Valores y signos de la iteración" id="paso-detalles" nivel=4 %}
                 <p id="paso-valores" class="field-help"></p><p id="paso-signos" class="field-help"></p>
             {% enddisclosure %}
+            {% endblock %}
         </div>
         {% endif %}
         </div>

@@ -21,6 +21,16 @@ def datos(**cambios):
 
 
 class ReglaFalsaWebTests(SimpleTestCase):
+    def test_panel_en_cinco_bloques_solo_para_regla_falsa(self):
+        r = self.client.post(RUTA, datos())
+        for titulo in ("Aproximación", "Signos", "Actualización del intervalo", "Error", "Decisión"):
+            self.assertContains(r, f"<h5>{titulo}</h5>", count=1, html=True)
+        self.assertContains(r, 'id="paso-error"', count=1)
+        self.assertNotContains(r, 'id="paso-detalles"')
+        b = self.client.post("/metodos-numericos/biseccion/", datos())
+        self.assertContains(b, 'id="paso-detalles"', count=1)
+        self.assertNotContains(b, 'id="paso-error"')
+
     def test_formulario_vacio_teclado_y_recursos_locales(self):
         r = self.client.get(RUTA)
         form = ReglaFalsaForm()
