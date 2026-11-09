@@ -1,0 +1,85 @@
+{% extends "calculadora/modules/raices/base.html" %}
+{% load static componentes raices %}
+
+{% block entrada_titulo %}Entrada de regla falsa{% endblock %}
+{% block ayuda_tolerancia %}Por defecto 0.0001. Admite valores positivos menores. Se compara con el error absoluto Ea = |xr actual − xr anterior|, no con un porcentaje.{% endblock %}
+{% block accion %}Resolver por regla falsa{% endblock %}
+
+{% block resumen %}
+        <p class="raices-raiz">xr ≈ <span>{{ resultado.xr|numero_raices }}</span></p>
+        <p class="raices-estado{% if not resultado.convergio %} raices-aviso{% endif %}">{{ resultado.mensaje }}</p>
+        <p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · f(xr) <span data-raices-relacion>=</span> {{ resultado.fxr|numero_raices }}</p>
+{% endblock %}
+
+{% block procedimiento %}
+    {% disclosure titulo="Procedimiento detallado" id="procedimiento-raices" clase="disclosure-procedure" %}
+        <p class="field-help">xr = b − f(b)·(a − b) / (f(a) − f(b)) es el corte con el eje x de la recta secante que une (a, f(a)) y (b, f(b)). Después xr sustituye al extremo cuya evaluación tiene su mismo signo. Pasa el cursor o enfoca una fila para verla en la gráfica.</p>
+        <div class="table-wrap">
+            <table class="procedure-table raices-tabla">
+                <caption>Iteraciones calculadas, sin redondeo intermedio</caption>
+                <thead><tr><th scope="col">i</th><th scope="col">a</th><th scope="col">b</th><th scope="col">f(a)</th><th scope="col">f(b)</th><th scope="col">xr</th><th scope="col">f(xr)</th><th scope="col">Error absoluto Ea</th><th scope="col">xr sustituye a</th></tr></thead>
+                <tbody>
+                {% for fila in resultado.iteraciones %}
+                    <tr data-iteracion="{{ fila.i }}" tabindex="0" data-raices-grupo aria-label="Iteración {{ fila.i }}">
+                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_raices }}</td><td>{{ fila.b|numero_raices }}</td>
+                        <td>{{ fila.fa|numero_raices }}</td><td>{{ fila.fb|numero_raices }}</td><td>{{ fila.xr|numero_raices }}</td><td>{{ fila.fxr|numero_raices }}</td>
+                        <td>{% if fila.error_absoluto is not None %}{{ fila.error_absoluto|numero_raices }}{% else %}No disponible{% endif %}</td>
+                        <td>{{ fila.sustituido|default:"Ninguno: f(xr) = 0" }}</td>
+                    </tr>
+                {% empty %}<tr><td colspan="9">{% if resultado.convergio %}Raíz en un extremo: no se necesitan iteraciones.{% else %}La fórmula no produjo un punto nuevo dentro del intervalo.{% endif %}</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="field-help">Ea = |xr actual − xr anterior| es el error absoluto aproximado: mide cuánto cambió la aproximación, no su distancia a la raíz. No está disponible en la primera iteración porque aún no hay una aproximación anterior.</p>
+    {% enddisclosure %}
+{% endblock %}
+
+{% block verificacion %}
+    {% disclosure titulo="Verificación" id="verificacion-raices" %}
+        <div class="raices-verificaciones" data-raices-grupo>
+        {% include "calculadora/modules/raices/existencia.html" %}
+        <section aria-labelledby="verificacion-parada">
+            <h4 id="verificacion-parada">¿Por qué terminó el cálculo?</h4>
+            <p><strong>Condición:</strong> Ea no mayor que la tolerancia y, además, un cambio de signo a esa distancia de xr; o un cero calculado.</p>
+            <dl>
+                <dt>Error absoluto Ea</dt><dd>{% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices }}{% else %}No disponible{% endif %}</dd>
+                <dt>Tolerancia</dt><dd>{{ resultado.tolerancia|numero_raices }}</dd>
+                {% if resultado.prueba is not None %}
+                <dt>Punto de prueba</dt><dd>{{ resultado.prueba|numero_raices }}</dd>
+                <dt>f en el punto de prueba</dt><dd>{{ resultado.f_prueba|numero_raices }} ({% if resultado.f_prueba > 0 %}positivo{% elif resultado.f_prueba < 0 %}negativo{% else %}cero{% endif %})</dd>
+                <dt>f(xr)</dt><dd>{{ resultado.fxr|numero_raices }} ({% if resultado.fxr > 0 %}positivo{% elif resultado.fxr < 0 %}negativo{% else %}cero{% endif %})</dd>
+                {% endif %}
+            </dl>
+            {% if resultado.error_absoluto is not None %}<p class="raices-comprobacion">{{ resultado.error_absoluto|numero_raices }} {% if resultado.error_absoluto <= resultado.tolerancia %}≤{% else %}&gt;{% endif %} {{ resultado.tolerancia|numero_raices }}</p>{% endif %}
+            <p class="raices-conclusion"><strong>Conclusión:</strong>
+                {% if resultado.estado == "exacta" %}{% if resultado.iteraciones %}xr da cero{% else %}El extremo da cero{% endif %} en aritmética de máquina; no hace falta seguir.
+                {% elif resultado.estado == "tolerancia" %}Se cumplen las dos condiciones: xr cambió como máximo la tolerancia y el punto de prueba da cero o tiene signo contrario a f(xr). Hay una raíz entre ambos.
+                {% elif resultado.estado == "estancamiento" %}Ea cumple la tolerancia, pero no se confirmó una raíz cercana mediante el punto de prueba. Esto no descarta raíces entre ambos puntos. El método avanza muy despacio (estancamiento) y agotó las iteraciones; no hay convergencia verificada.
+                {% elif resultado.estado == "limite" %}Se agotó el máximo de iteraciones sin que Ea cumpliera la tolerancia; no hay convergencia.
+                {% else %}Con los números de máquina la fórmula ya no produce un punto nuevo dentro del intervalo; no se alcanzó la tolerancia.{% endif %}
+            </p>
+            <p class="field-help">El punto de prueba está a no más de una tolerancia de xr, hacia el otro extremo del intervalo. Se limita al intervalo y se ajusta hacia xr si el redondeo supera la tolerancia. Solo se evalúa cuando Ea ya cumple la tolerancia y no modifica el intervalo.</p>
+        </section>
+        <section aria-labelledby="verificacion-cercania">
+            <h4 id="verificacion-cercania">¿Qué tan cerca está xr de la raíz?</h4>
+            <p><strong>Condición:</strong> tres medidas distintas que no deben confundirse.</p>
+            <dl>
+                <dt>Error absoluto aproximado</dt><dd>{% if resultado.error_absoluto is not None %}Ea = {{ resultado.error_absoluto|numero_raices }}: cuánto se movió xr en la última iteración.{% else %}No disponible: no hay dos aproximaciones que comparar.{% endif %}</dd>
+                <dt>Residuo</dt><dd>|f(xr)| = {{ resultado.residuo|numero_raices }}: altura de la función en xr; no se mide en unidades de x.</dd>
+                <dt>Error absoluto verdadero</dt><dd>|raíz − xr|: no se puede calcular sin conocer la raíz.{% if resultado.cota is not None %} Aquí queda acotado: no supera {{ resultado.cota|numero_raices }}.{% endif %}</dd>
+            </dl>
+            <p class="raices-conclusion"><strong>Conclusión:</strong>
+                {% if resultado.estado == "exacta" %}Obtuvimos cero con los números de máquina. El redondeo puede influir: esto no demuestra que el error matemático sea exactamente cero.
+                {% elif resultado.estado == "tolerancia" %}Bajo las condiciones de continuidad y signos comprobadas y la precisión de máquina, la distancia de xr a una raíz no supera {{ resultado.cota|numero_raices }}. Esa garantía viene del cambio de signo, no de Ea.
+                {% else %}No afirmamos haber conseguido la aproximación solicitada: Ea y el residuo, por pequeños que sean, no acotan la distancia a la raíz.{% endif %}
+            </p>
+            {% if resultado.extremo_fijo and resultado.veces_fijo > 1 %}<p>El extremo {{ resultado.extremo_fijo }} no se movió en las últimas {{ resultado.veces_fijo }} iteraciones. Es habitual en regla falsa: el intervalo final [{{ resultado.a|numero_raices }}; {{ resultado.b|numero_raices }}] mide {{ resultado.longitud|numero_raices }}. Su longitud acota la distancia a alguna raíz, pero puede seguir siendo grande aunque xr se acerque a ella.</p>{% endif %}
+        </section>
+        </div>
+        <p class="field-help">Usamos números de máquina y comprobaciones conservadoras. Puede haber más de una raíz en el intervalo.</p>
+    {% enddisclosure %}
+{% endblock %}
+
+{% block ayuda_comparacion %}Cambia a y b conservando la función y vuelve a resolver. Se guardan hasta 10 resultados en esta pestaña; la comparación usa el tramo donde cada cálculo confirmó su raíz y no demuestra unicidad.{% endblock %}
+
+{% block metodo_js %}<script src="{% static 'calculadora/regla_falsa.js' %}" defer></script>{% endblock %}

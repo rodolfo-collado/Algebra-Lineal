@@ -11,6 +11,35 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+Regla falsa: `uv run --locked python -m unittest tests.test_regla_falsa
+tests.test_regla_falsa_web tests.test_biseccion tests.test_biseccion_web
+tests.test_biseccion_assets` comprueba la secante, sustitución de ambos extremos,
+Ea, confirmación de cercanía, estados de parada, dominio, escala de la función,
+desbordamiento/cancelación/subnormales y el límite exacto del punto de prueba.
+La regresión de Bisección conserva sus trece iteraciones y su criterio por longitud.
+Véase [Regla falsa](regla-falsa.md) para el contrato y los ejemplos.
+
+Ejecuta `uv run --locked python -m tests.regla_falsa_browser` y abre
+`http://127.0.0.1:8897/__pruebas/`: once flujos de vista previa, extremos,
+secante y corte, recorrido sin peticiones, ceros y estados sin convergencia,
+teclado/Deshacer, zoom, temas, decimales, comparación separada de Bisección y
+recuperación de errores. Complementar con `tests.biseccion_browser`,
+`tests.teclado_browser`, `tests.buscador_browser` y `tests.presentacion_browser`.
+
+Validación de Regla falsa (2026-11-09): 1977 pruebas Python completas;
+158 focalizadas y las 27 de teclado tras incluir la nueva ruta; Django, compilación,
+lockfile y diff sin errores. En Edge 157.0.4341.42: Regla falsa 11/11,
+Bisección 19/19, teclado 36/36, buscador 21/21 y presentación 14/14, sin errores
+de JavaScript ni solicitudes externas. Se revisaron capturas y 48 combinaciones
+de ambos métodos, Estudio/Minimalista, claro/oscuro y 320/390/768/900/1024/1440 px;
+las mediciones esperan a que Plotly termine de adaptar su ancho. También clics
+reales para elegir a/b y Home/flecha para recorrer pasos, con movimiento reducido.
+El paquete PyInstaller se construyó y ejecutó en WebView2 157.0.4341.42:
+Regla falsa 11/11 y Bisección 19/19 contra el backend y los recursos empaquetados,
+con foco emulado para los iframes de prueba. No se probó lector de pantalla ni
+táctil físico. La instalación/desinstalación en cuenta limpia corresponde al CI
+de Windows; el build local no modifica la instalación existente.
+
 Estudio: `uv run --locked python -m unittest tests.test_estudio` cubre las páginas
 de área y su explorador sin JavaScript, los canales del inicio y el universo del
 buscador, la mesa de trabajo (hermanas y «Para curiosos»), Atrás/Adelante sin pila

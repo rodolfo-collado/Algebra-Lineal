@@ -40,6 +40,7 @@ STATIC = RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 # Cada herramienta declara solo los perfiles que usa; el registro no cambia por pantalla.
 HERRAMIENTAS = {
     "/metodos-numericos/biseccion/": {"funcion-real"},
+    "/metodos-numericos/regla-falsa/": {"funcion-real"},
     "/matrices/reduccion/": {"sistema", "numerico"},
     "/vectores/operaciones/": {"numerico"},
     "/matrices/operaciones/": {"numerico", "expresion", "lineal"},
@@ -52,6 +53,7 @@ HERRAMIENTAS = {
 # Contrato HTTP de cada formulario: el teclado no agrega controles de envío.
 CONTROLES = {
     "/metodos-numericos/biseccion/": {"csrfmiddlewaretoken", "funcion", "a", "b", "precision", "max_iteraciones"},
+    "/metodos-numericos/regla-falsa/": {"csrfmiddlewaretoken", "funcion", "a", "b", "precision", "max_iteraciones"},
     "/matrices/reduccion/": {
         "csrfmiddlewaretoken", "ecuaciones", "metodo", "mostrar", "mostrar_definido", "sistema",
         "tipo_entrada", "variables",

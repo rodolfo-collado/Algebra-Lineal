@@ -1,0 +1,55 @@
+"""Coordinación HTTP de los métodos de raíces: formulario → backend → datos y presentación."""
+
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.http import require_http_methods, require_POST
+from backend.biseccion import biseccion
+from backend.regla_falsa import regla_falsa
+from .forms_raices import BiseccionForm, RaicesForm, ReglaFalsaForm
+from .servicios_raices import muestrear, verificacion_inicial
+from .teclados import perfiles_para
+
+
+def _resolver(request, formulario, metodo, nombre):
+    form = formulario(request.POST if request.method == "POST" else None)
+    resultado = verificacion = None
+    if request.method == "POST" and form.is_valid():
+        d = form.cleaned_data
+        try:
+            resultado = metodo(form.funcion_real, d["a"], d["b"], d["precision"], d["max_iteraciones"])
+        except ValueError as error:
+            form.add_error(None, str(error))
+    datos = {"metodo": nombre, "resultado": resultado, "grafica_url": "grafica/"}
+    if resultado:
+        d = form.cleaned_data
+        datos.update({"funcion": d["funcion"], "clave": form.funcion_real.clave,
+                      "inicial_a": d["a"], "inicial_b": d["b"]})
+        verificacion = verificacion_inicial(form.funcion_real, d["a"], d["b"], resultado)
+    return render(request, f"calculadora/modules/{nombre}/index.html", {
+        "form": form, "resultado": resultado, "datos_raices": datos,
+        "verificacion": verificacion, "perfiles_teclado": perfiles_para("funcion-real"),
+    })
+
+
+@require_http_methods(["GET", "POST"])
+def resolver_biseccion(request):
+    return _resolver(request, BiseccionForm, biseccion, "biseccion")
+
+
+@require_http_methods(["GET", "POST"])
+def resolver_regla_falsa(request):
+    return _resolver(request, ReglaFalsaForm, regla_falsa, "regla_falsa")
+
+
+@require_POST
+def explorar_funcion(request):
+    """Muestras de la curva para la gráfica; no ejecuta ningún método."""
+    form = RaicesForm(request.POST, explorar=True)
+    if not form.is_valid():
+        errores = [str(mensaje) for mensajes in form.errors.values() for mensaje in mensajes]
+        return JsonResponse({"error": " ".join(errores)}, status=400)
+    try:
+        puntos = muestrear(form.funcion_real, form.cleaned_data["a"], form.cleaned_data["b"])
+    except ValueError as error:
+        return JsonResponse({"error": str(error)}, status=400)
+    return JsonResponse(puntos)

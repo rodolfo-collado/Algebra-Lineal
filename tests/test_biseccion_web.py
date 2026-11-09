@@ -25,7 +25,7 @@ def datos(**cambios):
 
 def resultado_html(respuesta):
     texto = respuesta.content.decode("utf-8")
-    return json.loads(re.search(r'<script id="datos-biseccion" type="application/json">(.*?)</script>', texto, re.S)[1])["resultado"]
+    return json.loads(re.search(r'<script id="datos-raices" type="application/json">(.*?)</script>', texto, re.S)[1])["resultado"]
 
 
 class BiseccionWebTests(SimpleTestCase):
@@ -44,7 +44,7 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertEqual(set(pagina.json["math-keyboard-profiles"]), {"funcion-real"})
         self.assertEqual(len(pagina.teclados), 1)
         self.assertContains(r, "calculadora/teclado.js")
-        from frontend.web.calculadora.forms_biseccion import BiseccionForm
+        from frontend.web.calculadora.forms_raices import BiseccionForm
         form = BiseccionForm()
         for campo in ("funcion", "a", "b"):
             self.assertIsNone(form[campo].value())
@@ -76,14 +76,14 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertContains(r, 'title="Valor almacenado: 1.0"')
 
     def test_f_de_c_lleva_un_solo_signo_de_relacion(self):
-        # Sin JavaScript se ve el valor completo con «=»; biseccion.js lo cambia por «≈» al
+        # Sin JavaScript se ve el valor completo con «=»; raices.js lo cambia por «≈» al
         # redondear, en vez de añadir otro símbolo (antes: «f(c) = ≈ -0.00067»).
         for funcion in ("x^2-2", "x-1.5"):
             with self.subTest(funcion=funcion):
                 r = self.client.post(RUTA, datos(funcion=funcion, a="1", b="2"))
-                self.assertContains(r, "f(c) <span data-biseccion-relacion>=</span> <span data-biseccion-numero=", count=1)
+                self.assertContains(r, "f(c) <span data-raices-relacion>=</span> <span data-raices-numero=", count=1)
                 self.assertNotRegex(r.content.decode(), r"f\(c\)\s*=\s*≈")
-        js = (Path(__file__).resolve().parents[1] / "frontend/web/calculadora/static/calculadora/biseccion.js").read_text(encoding="utf-8")
+        js = (Path(__file__).resolve().parents[1] / "frontend/web/calculadora/static/calculadora/raices.js").read_text(encoding="utf-8")
         self.assertIn('relacion.textContent = aproximado ? "≈" : "="', js)
 
     def test_iteraciones_en_singular_y_plural(self):
@@ -112,8 +112,8 @@ class BiseccionWebTests(SimpleTestCase):
         for ruta in ["/", "/?q=biseccion", RUTA]:
             self.assertContains(self.client.get(ruta), RUTA)
         r = self.client.get(RUTA)
-        for texto in ["plotly-basic", "biseccion.js", 'name="funcion"', 'name="a"', 'name="b"',
-                      'id="biseccion-grafica"', 'id="ajustes-biseccion"']:
+        for texto in ["plotly-basic", "biseccion.js", "raices.js", 'name="funcion"', 'name="a"', 'name="b"',
+                      'id="raices-grafica"', 'id="ajustes-raices"']:
             self.assertContains(r, texto)
         self.assertNotContains(r, 'id="resultado"')
 
@@ -122,7 +122,7 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertContains(r, "Convergencia por longitud")
         self.assertContains(r, 'data-iteracion=', count=13)
         self.assertContains(r, 'type="range"')
-        self.assertContains(r, 'id="comparacion-biseccion"')
+        self.assertContains(r, 'id="comparacion-raices"')
         resultado = resultado_html(r)
         self.assertEqual(len(resultado["iteraciones"]), 13)
         self.assertAlmostEqual(resultado["c"], .763970947265625)
@@ -148,7 +148,7 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertContains(r, "No converge")
 
     def test_explorar_no_ejecuta_biseccion_y_corta_discontinuidades(self):
-        with patch("frontend.web.calculadora.views_biseccion.biseccion", side_effect=AssertionError("No calcular")):
+        with patch("frontend.web.calculadora.views_raices.biseccion", side_effect=AssertionError("No calcular")):
             r = self.client.post(RUTA + "grafica/", {"funcion": "1/x", "a": "-1", "b": "1"})
         self.assertEqual(r.status_code, 200)
         puntos = r.json()
@@ -159,7 +159,7 @@ class BiseccionWebTests(SimpleTestCase):
             self.assertEqual(self.client.post(RUTA + "grafica/", datos(**cambio)).status_code, 400)
 
     def test_explorar_solo_funcion_usa_ventana_independiente(self):
-        with patch("frontend.web.calculadora.views_biseccion.biseccion", side_effect=AssertionError("No calcular")):
+        with patch("frontend.web.calculadora.views_raices.biseccion", side_effect=AssertionError("No calcular")):
             r = self.client.post(RUTA + "grafica/", {"funcion": "x^2+1"})
         self.assertEqual(r.status_code, 200)
         self.assertEqual((r.json()["x"][0], r.json()["x"][-1]), (-10, 10))

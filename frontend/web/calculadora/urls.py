@@ -3,7 +3,7 @@
 from django.urls import path
 
 from . import views
-from .views_biseccion import resolver_biseccion, explorar_biseccion
+from .views_raices import explorar_funcion, resolver_biseccion, resolver_regla_falsa
 from .views_conjuntos import relaciones_conjuntos, cardinalidades_conjuntos
 
 
@@ -14,7 +14,9 @@ urlpatterns = [
     path("conjuntos/relaciones/", relaciones_conjuntos, name="relaciones-conjuntos"),
     path("conjuntos/cardinalidad/", cardinalidades_conjuntos, name="cardinalidades-conjuntos"),
     path("metodos-numericos/biseccion/", resolver_biseccion, name="biseccion"),
-    path("metodos-numericos/biseccion/grafica/", explorar_biseccion, name="biseccion-grafica"),
+    path("metodos-numericos/biseccion/grafica/", explorar_funcion, name="biseccion-grafica"),
+    path("metodos-numericos/regla-falsa/", resolver_regla_falsa, name="regla-falsa"),
+    path("metodos-numericos/regla-falsa/grafica/", explorar_funcion, name="regla-falsa-grafica"),
     path("", views.inicio, name="inicio"),
     path("areas/<slug:area>/", views.area, name="area"),
     path("matrices/reduccion/", views.sistemas, name="reduccion-filas"),

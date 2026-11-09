@@ -10,8 +10,8 @@
             await new Promise(r => setTimeout(r, 40));
         }
     };
-    const grafica = w => q(w, "#biseccion-grafica");
-    const lista = w => JSON.parse(q(w, "#datos-biseccion").textContent).resultado.iteraciones;
+    const grafica = w => q(w, "#raices-grafica");
+    const lista = w => JSON.parse(q(w, "#datos-raices").textContent).resultado.iteraciones;
     const valor = (w, nombre, texto) => {
         const campo = q(w, `[name="${nombre}"]`);
         campo.value = texto; campo.dispatchEvent(new w.Event("input", { bubbles: true }));
@@ -158,35 +158,35 @@
             w = await post(frame); await esperar(() => listaGrafica(w));
             const numeros = [...q(w, "#paso-valores").textContent.matchAll(/[=≈] ([\d,.-]+)/g)].map(m => m[1]);
             ok(numeros.length === 3 && new Set(numeros).size === 3, "No redondea los tres puntos al mismo número");
-            const celdas = [...w.document.querySelectorAll(".biseccion-tabla tbody tr:last-child td [data-biseccion-numero]")].slice(0, 3);
+            const celdas = [...w.document.querySelectorAll(".raices-tabla tbody tr:last-child td [data-raices-numero]")].slice(0, 3);
             ok(new Set(celdas.map(n => n.textContent)).size === 3, "Tabla también distingue extremos");
         }],
         ["Decimales de lectura no recalculan ni crean ceros falsos", async (w, frame) => {
             valor(w, "funcion", "1e-20*(x²-2)"); valor(w, "a", "1"); valor(w, "b", "2");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            const original = q(w, "#datos-biseccion").textContent;
+            const original = q(w, "#datos-raices").textContent;
             let peticiones = 0; const fetch = w.fetch; w.fetch = (...args) => { peticiones++; return fetch(...args); };
             for (const precision of ["4", "16", "completa", "6"]) {
-                const selector = q(w, "#biseccion-decimales"); selector.value = precision;
+                const selector = q(w, "#raices-decimales"); selector.value = precision;
                 selector.dispatchEvent(new w.Event("change", { bubbles: true }));
-                for (const nodo of w.document.querySelectorAll("[data-biseccion-numero]")) {
+                for (const nodo of w.document.querySelectorAll("[data-raices-numero]")) {
                     const n = Number(nodo.textContent.replace("≈ ", ""));
-                    ok(Number(nodo.dataset.biseccionNumero) === 0 || n !== 0, "No convierte valores en cero");
-                    if (precision === "completa") ok(n === Number(nodo.dataset.biseccionNumero), "Valor de máquina accesible");
+                    ok(Number(nodo.dataset.raicesNumero) === 0 || n !== 0, "No convierte valores en cero");
+                    if (precision === "completa") ok(n === Number(nodo.dataset.raicesNumero), "Valor de máquina accesible");
                 }
             }
-            ok(q(w, "#datos-biseccion").textContent === original && peticiones === 0, "Solo presentación");
+            ok(q(w, "#datos-raices").textContent === original && peticiones === 0, "Solo presentación");
             ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "No duplica aproximaciones");
         }],
         ["«=» para valores exactos y «≈» para redondeados, sin «= ≈», en ambos estilos", async (w, frame) => {
             const leer = w => q(w, "#resultado .results-heading .muted").textContent.replace(/\s+/g, " ");
-            const decimales = (w, valor) => { const s = q(w, "#biseccion-decimales"); s.value = valor; s.dispatchEvent(new w.Event("change", { bubbles: true })); };
+            const decimales = (w, valor) => { const s = q(w, "#raices-decimales"); s.value = valor; s.dispatchEvent(new w.Event("change", { bubbles: true })); };
             for (const estilo of ["estudio", "minimalista"]) {
                 w.document.documentElement.setAttribute("data-estilo", estilo);
                 valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
                 w = await post(frame); await esperar(() => listaGrafica(w));
                 w.document.documentElement.setAttribute("data-estilo", estilo);
-                const fc = JSON.parse(q(w, "#datos-biseccion").textContent).resultado.fc;
+                const fc = JSON.parse(q(w, "#datos-raices").textContent).resultado.fc;
                 ok(fc !== 0, "El caso redondeado necesita f(c) ≠ 0");
                 for (const precision of ["4", "6", "16"]) {
                     decimales(w, precision);
@@ -194,13 +194,13 @@
                 }
                 decimales(w, "completa");
                 ok(/f\(c\) = -?\d/.test(leer(w)), `${estilo}: el valor completo vuelve a «=»: ${leer(w)}`);
-                ok(!/=\s*≈|≈\s*=|≈\s*≈/.test(q(w, "#resultado").textContent + q(w, ".biseccion-recorrido").textContent), `${estilo}: sin símbolos dobles`);
+                ok(!/=\s*≈|≈\s*=|≈\s*≈/.test(q(w, "#resultado").textContent + q(w, ".raices-recorrido").textContent), `${estilo}: sin símbolos dobles`);
                 ok(/f\(c\) [=≈] /.test(q(w, "#paso-signos").textContent) && !/[=≈] [=≈]/.test(q(w, "#paso-signos").textContent), "El paso usa un solo símbolo");
-                ok(/a \(izquierdo\) = 1 /.test(q(w, "#paso-valores").textContent.replace(/\s+/g, " ")) || q(w, "#iteracion-biseccion").value !== "1", "Un extremo exacto conserva «=»");
+                ok(/a \(izquierdo\) = 1 /.test(q(w, "#paso-valores").textContent.replace(/\s+/g, " ")) || q(w, "#iteracion-raices").value !== "1", "Un extremo exacto conserva «=»");
                 // Una raíz exacta: f(c) = 0, nunca ≈ 0.
                 valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "2");
                 w = await post(frame); await esperar(() => listaGrafica(w));
-                ok(JSON.parse(q(w, "#datos-biseccion").textContent).resultado.fc === 0, "El caso exacto necesita f(c) = 0");
+                ok(JSON.parse(q(w, "#datos-raices").textContent).resultado.fc === 0, "El caso exacto necesita f(c) = 0");
                 for (const precision of ["4", "completa"]) {
                     decimales(w, precision);
                     ok(leer(w).includes("f(c) = 0"), `${estilo}, ${precision}: igualdad exacta: ${leer(w)}`);
@@ -216,7 +216,7 @@
                 w = await post(frame); await esperar(() => listaGrafica(w));
                 w.document.documentElement.setAttribute("data-estilo", estilo);
                 q(w, "#paso-detalles").open = true;
-                const slider = q(w, "#iteracion-biseccion");
+                const slider = q(w, "#iteracion-raices");
                 for (const i of ["1", "7", slider.max]) {
                     slider.value = i; slider.dispatchEvent(new w.Event("input", { bubbles: true }));
                     const texto = ["#paso-valores", "#paso-signos", "#paso-decision", "#paso-intervalo"].map(s => q(w, s).textContent).join(" ") + slider.getAttribute("aria-valuetext");
@@ -249,10 +249,10 @@
         ["Redondear no convierte una desigualdad estricta en igualdad", async (w, frame) => {
             valor(w, "funcion", "x-0.0001234567"); valor(w, "a", "0"); valor(w, "b", "0.00019999998");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            const selector = q(w, "#biseccion-decimales");
+            const selector = q(w, "#raices-decimales");
             for (const precision of ["4", "6", "8", "12", "16", "completa"]) {
                 selector.value = precision; selector.dispatchEvent(new w.Event("change", { bubbles: true }));
-                const valores = [...w.document.querySelectorAll(".biseccion-comprobacion [data-biseccion-numero]")];
+                const valores = [...w.document.querySelectorAll(".raices-comprobacion [data-raices-numero]")];
                 ok(valores.length === 2 && valores[0].textContent !== valores[1].textContent, "La longitud y la tolerancia siguen siendo distintas");
                 ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "Sin doble aproximación");
             }
@@ -270,7 +270,7 @@
             ok(lista(w)[12].c === .763970947265625, "Raíz del ejemplo");
             ok(grafica(w).layout.shapes.length === 3, "Dos extremos y una sola franja");
             ok(grafica(w).layout.shapes[2].x0 === lista(w)[12].a, "Franja de la última iteración");
-            ok(!q(w, "#procedimiento-biseccion").open, "Detalle cerrado");
+            ok(!q(w, "#procedimiento-raices").open, "Detalle cerrado");
             ok(w.document.activeElement === q(w, "#resultado"), "Foco en el resultado");
         }],
         ["Cursor, foco y deslizador reutilizan pasos sin peticiones", async (w, frame) => {
@@ -278,17 +278,17 @@
             w = await post(frame); await esperar(() => listaGrafica(w));
             let peticiones = 0;
             const original = w.fetch; w.fetch = (...args) => { peticiones++; return original(...args); };
-            q(w, "#procedimiento-biseccion").open = true;
+            q(w, "#procedimiento-raices").open = true;
             const fila = q(w, '[data-iteracion="2"]');
             fila.dispatchEvent(new w.PointerEvent("pointerenter"));
             await esperar(() => grafica(w).data[1].x[1] === lista(w)[1].c);
-            ok(q(w, "#iteracion-biseccion").value === "2", "Cursor sincroniza el deslizador");
+            ok(q(w, "#iteracion-raices").value === "2", "Cursor sincroniza el deslizador");
             ok(q(w, "#paso-decision").textContent.includes("derecha [c,b]"), "Segunda iteración conserva derecha");
             ok(q(w, "#paso-valores").textContent.includes("a (izquierdo)"), "Extremos identificados");
             q(w, '[data-iteracion="4"]').focus();
             await esperar(() => grafica(w).data[1].x[1] === lista(w)[3].c);
             ok(q(w, "#paso-decision").textContent.includes("izquierda [a,c]"), "Cuarta iteración conserva izquierda");
-            const slider = q(w, "#iteracion-biseccion");
+            const slider = q(w, "#iteracion-raices");
             slider.value = "7"; slider.dispatchEvent(new w.Event("input", { bubbles: true }));
             await esperar(() => grafica(w).data[1].x[1] === lista(w)[6].c);
             ok(grafica(w).layout.shapes[2].x0 === lista(w)[6].a, "Intervalo seleccionado");
@@ -332,8 +332,8 @@
             valor(w, "a", "5"); valor(w, "b", "5.5");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 13, "Primer intervalo: 13");
-            ok(!q(w, "#biseccion-comparaciones table"), "Un solo cálculo sin tabla");
-            ok(q(w, "#biseccion-comparaciones").textContent.includes("Ya tienes un cálculo"), "Orientación inicial");
+            ok(!q(w, "#raices-comparaciones table"), "Un solo cálculo sin tabla");
+            ok(q(w, "#raices-comparaciones").textContent.includes("Ya tienes un cálculo"), "Orientación inicial");
             const funcion = q(w, '[name="funcion"]').value;
             ok(!funcion.includes("*"), "Función introducida con notación de clase");
             valor(w, "a", "5.2"); valor(w, "b", "5.3");
@@ -341,20 +341,20 @@
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 10, "Segundo intervalo: 10");
             ok(q(w, '[name="funcion"]').value.replaceAll("*", "").replaceAll("^4", "⁴").replaceAll("^3", "³").replaceAll("^2", "²") === funcion, "Función equivalente conservada");
-            ok(q(w, "#biseccion-comparaciones").textContent.includes("Compatible con la misma raíz"), "Misma raíz compatible");
-            const precision = q(w, "#biseccion-decimales"); precision.value = "4";
+            ok(q(w, "#raices-comparaciones").textContent.includes("Compatible con la misma raíz"), "Misma raíz compatible");
+            const precision = q(w, "#raices-decimales"); precision.value = "4";
             precision.dispatchEvent(new w.Event("change", { bubbles: true }));
-            const aproximaciones = [...w.document.querySelectorAll("#biseccion-comparaciones tbody tr td:nth-child(2) span")];
+            const aproximaciones = [...w.document.querySelectorAll("#raices-comparaciones tbody tr td:nth-child(2) span")];
             ok(aproximaciones.length === 2 && aproximaciones[0].textContent !== aproximaciones[1].textContent, "Comparación distingue aproximaciones cercanas");
             precision.value = "completa"; precision.dispatchEvent(new w.Event("change", { bubbles: true }));
-            ok(aproximaciones.every(n => Number(n.textContent) === Number(n.dataset.biseccionNumero)), "Comparación ofrece precisión completa");
+            ok(aproximaciones.every(n => Number(n.textContent) === Number(n.dataset.raicesNumero)), "Comparación ofrece precisión completa");
             valor(w, "a", ".55"); valor(w, "b", "1.1");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            ok(q(w, "#biseccion-comparaciones").textContent.includes("Intervalos finales distintos"), "Raíces distintas");
+            ok(q(w, "#raices-comparaciones").textContent.includes("Intervalos finales distintos"), "Raíces distintas");
             valor(w, "max_iteraciones", "1");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            ok(q(w, "#biseccion-comparaciones").textContent.includes("Actual · Sin convergencia verificada"), "Cálculo sin convergencia");
-            ok(q(w, "#biseccion-comparaciones tbody").rows.length === 4, "Conserva los cuatro cálculos");
+            ok(q(w, "#raices-comparaciones").textContent.includes("Actual · Sin convergencia verificada"), "Cálculo sin convergencia");
+            ok(q(w, "#raices-comparaciones tbody").rows.length === 4, "Conserva los cuatro cálculos");
         }],
         ["Errores accesibles y raíz en extremo sin deslizador", async (w, frame) => {
             valor(w, "funcion", "1/x"); valor(w, "a", "-1"); valor(w, "b", "1");
@@ -363,7 +363,7 @@
             ok(q(w, '[name="funcion"]').value === "1/x", "Conserva la entrada inválida");
             valor(w, "funcion", "x"); valor(w, "a", "0"); valor(w, "b", "1");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            ok(lista(w).length === 0 && !q(w, "#iteracion-biseccion"), "Raíz en extremo, sin iteraciones");
+            ok(lista(w).length === 0 && !q(w, "#iteracion-raices"), "Raíz en extremo, sin iteraciones");
             valor(w, "a", "-1");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(q(w, "#paso-decision").textContent.includes("f(c) = 0"), "Explica raíz exacta en punto medio");
@@ -382,7 +382,7 @@
         document.body.append(frame);
         try {
             await new Promise(resolve => { frame.onload = resolve; frame.src = "/metodos-numericos/biseccion/"; });
-            await esperar(() => !!q(frame.contentWindow, "#biseccion-form"));
+            await esperar(() => !!q(frame.contentWindow, "#raices-form"));
             await probar(frame.contentWindow, frame);
             item.textContent = `OK: ${nombre}`; aprobados++;
         } catch (e) { item.textContent = `FALLO: ${nombre}: ${e.message}`; }

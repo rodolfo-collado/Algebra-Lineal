@@ -3,7 +3,7 @@
 from backend.funciones_reales import finito
 
 
-def verificacion_biseccion(funcion, a, b, resultado):
+def verificacion_inicial(funcion, a, b, resultado):
     """Conservar la evidencia inicial al presentar también raíces en extremos."""
     filas = resultado["iteraciones"]
     fa, fb = (filas[0]["fa"], filas[0]["fb"]) if filas else (funcion(a), funcion(b))
