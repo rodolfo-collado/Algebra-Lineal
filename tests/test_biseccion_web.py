@@ -188,14 +188,14 @@ class BiseccionWebTests(SimpleTestCase):
 
 
 class ConjuntosPublicoTests(SimpleTestCase):
-    def test_bloqueado_en_get_post_y_catalogo(self):
-        h = catalogo.herramienta_por_id("relaciones-conjuntos")
-        self.assertEqual(h.estado, "proximamente")
-        self.assertIsNone(h.ruta)
-        for ruta in ["/conjuntos/relaciones/", "/conjuntos/", "/conjuntos/relaciones/?q=1"]:
+    def test_herramientas_publicadas_en_catalogo_y_rutas(self):
+        for id_, ruta in (("relaciones-conjuntos", "/conjuntos/relaciones/"),
+                          ("cardinalidad-conjuntos", "/conjuntos/cardinalidad/")):
+            with self.subTest(id_=id_):
+                h = catalogo.herramienta_por_id(id_)
+                self.assertEqual((h.estado, h.ruta), ("disponible", ruta))
+                self.assertContains(self.client.get(ruta), 'id="resultado"', count=0, status_code=200)
+                self.assertContains(self.client.get("/areas/conjuntos/"), f'href="{ruta}"')
+        self.assertContains(self.client.get("/?q=pertenencia"), 'href="/conjuntos/relaciones/"')
+        for ruta in ("/conjuntos/", "/conjuntos/venn/", "/conjuntos/intervalos/"):
             self.assertEqual(self.client.get(ruta).status_code, 404)
-            self.assertEqual(self.client.post(ruta, {}).status_code, 404)
-        for ruta in ["/", "/?q=pertenencia"]:
-            r = self.client.get(ruta)
-            self.assertNotContains(r, 'href="/conjuntos/relaciones/"')
-            self.assertContains(r, "Próximamente")

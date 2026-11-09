@@ -131,6 +131,39 @@ requiere después otro PR, CI verde y autorización manual mediante
 **Create a merge commit**. Solo entonces el workflow Release podrá crear el
 tag y publicar el instalador y `SHA256SUMS.txt`.
 
+El incremento preparado de 0.14.0 a **0.15.0 es MINOR**: habilita las
+herramientas completas de Conjuntos del PR #113 e incorpora la optimización
+de Estudio del PR #115, ambos integrados en `develop`. Son capacidades nuevas
+y mejoras compatibles; se conservan los algoritmos de las demás herramientas.
+La preparación actualiza únicamente versión, lockfile y estas notas, sin
+cambiar dependencias.
+
+### Notas preparadas de PyGebra v0.15.0
+
+- **Conjuntos:** acceso público a Operaciones con conjuntos y Cardinalidad e
+  inclusión-exclusión. Permite definir y editar conjuntos finitos y anidados,
+  evaluar pertenencia, inclusión e igualdad, y calcular unión, intersección,
+  diferencia, complemento con universo explícito y cardinalidad.
+- **Potencia y producto cartesiano:** genera el conjunto potencia y productos
+  de pares ordenados, con resultados exactos y procedimientos explicados.
+- **Intervalos:** opera con regiones reales de extremos exactos, abiertos o
+  cerrados, incluidas regiones no acotadas; presenta su recta numérica.
+  Las operaciones entre conjuntos finitos no vacíos e intervalos se rechazan
+  con una explicación, sin convertir unos en otros.
+- **Venn y cardinalidades:** diagramas de hasta tres conjuntos, selección de
+  regiones y edición de cantidades con validación de consistencia y
+  procedimiento de inclusión-exclusión.
+- **Estudio más ágil:** transiciones más breves y controles de navegación,
+  opciones y contenido interactivos durante el viaje. El ambiente se pausa al
+  bajar al catálogo y se mantiene el respeto por el movimiento reducido.
+- **Audio:** separa la apertura del dispositivo de la preparación de muestras
+  y cancela la preparación pendiente al pausar u ocultar la ventana, reduciendo
+  el bloqueo inicial sin cambiar las piezas ni las preferencias del reproductor.
+
+Estas notas describen una versión preparada, no una release publicada.
+Este PR se dirige únicamente a `develop`; la promoción a `main`, el tag y la
+publicación quedan pendientes de una revisión posterior y de su PR separado.
+
 ## Flujo de integración y entrega
 
 ```mermaid

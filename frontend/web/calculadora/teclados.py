@@ -121,6 +121,8 @@ PERFIL_FUNCION_REAL = Perfil("funcion-real", (
     grupo_digitos(10),
 ))
 LITERALES_CONJUNTOS = GrupoTeclas("Elementos", (
+    Tecla('par','par(, )','Par ordenado',3),
+    Tecla('intervalo','intervalo(0, 1, abierto, cerrado)','Intervalo con extremos y cierres explícitos'),
     Tecla("{ }", "{}", "Conjunto", 1), Tecla("∅", "∅", "Conjunto vacío"),
     Tecla(",", ", ", "Separar elementos"), Tecla('" "', '""', "Elemento textual", 1),
     MENOS, FRACCION,
@@ -131,7 +133,19 @@ RELACIONES_CONJUNTOS = GrupoTeclas("Relaciones", (
     IGUAL, Tecla("≠", "≠", "Distinto"), Tecla("( )", "()", "Agrupar operando", 1),
 ))
 PERFIL_LITERAL_CONJUNTOS = Perfil("literal-conjuntos", (LITERALES_CONJUNTOS, GrupoTeclas("Definición", (IGUAL,))))
-PERFIL_RELACION_CONJUNTOS = Perfil("relacion-conjuntos", (LITERALES_CONJUNTOS, RELACIONES_CONJUNTOS))
+OPERACIONES_CONJUNTOS = GrupoTeclas("Operaciones finitas", (
+    Tecla('𝒫','potencia()','Conjunto potencia',1), Tecla('×','×','Producto cartesiano'),
+    Tecla("∪", "∪", "Unión"), Tecla("∩", "∩", "Intersección"),
+    Tecla("∖", "∖", "Diferencia"), Tecla("∁", "∁(, )", "Complemento: conjunto y universo", 3),
+    Tecla("| |", "||", "Cardinalidad", 1),
+))
+PERFIL_RELACION_CONJUNTOS = Perfil("relacion-conjuntos", (LITERALES_CONJUNTOS, RELACIONES_CONJUNTOS, OPERACIONES_CONJUNTOS))
+# Cardinalidades: solo lo que nombra regiones del diagrama; los nombres llegan como operandos.
+PERFIL_REGIONES_CONJUNTOS = Perfil("regiones-conjuntos", (GrupoTeclas("Regiones", (
+    Tecla("∪", "∪", "Unión"), Tecla("∩", "∩", "Intersección"), Tecla("∖", "∖", "Diferencia"),
+    Tecla("∁", "∁(, U)", "Complemento respecto del universo U", 5), Tecla("( )", "()", "Agrupar", 1),
+    Tecla("∅", "∅", "Conjunto vacío"),
+)),))
 PERFILES_BASE = {
     base: Perfil(
         f"base-{base}",
@@ -143,7 +157,7 @@ PERFILES_BASE = {
 
 PERFILES = {perfil.id: perfil for perfil in (
     PERFIL_SISTEMA, PERFIL_NUMERICO, PERFIL_EXPRESION, PERFIL_LINEAL, PERFIL_FUNCION_REAL,
-    PERFIL_LITERAL_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, *PERFILES_BASE.values(),
+    PERFIL_LITERAL_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, PERFIL_REGIONES_CONJUNTOS, *PERFILES_BASE.values(),
 )}
 
 

@@ -11,7 +11,7 @@ def pruebas(environ, start_response):
     if ruta == "/__pruebas/":
         contenido = ('<!doctype html><html lang="es"><meta charset="utf-8">'
                      '<link rel="icon" href="/static/calculadora/favicon.svg">'
-                     '<title>PyGebra: Conjuntos P1</title><h1>Conjuntos P1</h1>'
+                     '<title>PyGebra: Conjuntos P1–P6</title><h1>Conjuntos P1–P6</h1>'
                      '<ol id="resultados"></ol><p id="total">Ejecutando…</p>'
                      '<script src="/__pruebas/pruebas.js"></script></html>').encode()
         tipo = "text/html"
@@ -25,8 +25,5 @@ def pruebas(environ, start_response):
 
 
 if __name__ == "__main__":
-    # Solo pruebas: la ruta de producción sigue respondiendo 404.
-    from django.conf import settings
-    settings.ROOT_URLCONF = "tests.urls_conjuntos"
     print("Conjuntos: http://127.0.0.1:8894/__pruebas/", flush=True)
     make_server("127.0.0.1", 8894, pruebas, server_class=ServidorConHilos).serve_forever()

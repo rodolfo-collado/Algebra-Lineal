@@ -73,8 +73,27 @@
             root.setAttribute("data-dir", atras ? "atras" : "adelante");
             // Solo se celebra la llegada desde otra página de PyGebra, nunca al recargar.
             if (activacion && activacion.from && activacion.navigationType !== "reload") root.setAttribute("data-llegada", "");
+            var camaraPrevia = null;
+            try { camaraPrevia = JSON.parse(sessionStorage.getItem("pygebra-camara")); } catch (_) {}
+            if (root.hasAttribute("data-llegada") && root.getAttribute("data-estilo") === "estudio" &&
+                camaraPrevia && typeof camaraPrevia.transform === "string" && typeof camaraPrevia.filter === "string") {
+                root.style.setProperty("--camara-desde", camaraPrevia.transform);
+                root.style.setProperty("--filtro-desde", camaraPrevia.filter);
+                root.setAttribute("data-camara-previa", "");
+            }
+            // @starting-style usa el primer pintado; después no debe repetirse al cambiar de estilo.
+            window.addEventListener("pageshow", function () {
+                requestAnimationFrame(function () { requestAnimationFrame(function () { root.removeAttribute("data-camara-previa"); }); });
+            });
             window.addEventListener("pagehide", function () {
-                try { sessionStorage.setItem("pygebra-nivel", String(nivel)); } catch (_) {}
+                try {
+                    sessionStorage.setItem("pygebra-nivel", String(nivel));
+                    var camara = document.querySelector(".escena-camara");
+                    if (camara && root.getAttribute("data-estilo") === "estudio") {
+                        var estilo = getComputedStyle(camara);
+                        sessionStorage.setItem("pygebra-camara", JSON.stringify({ transform: estilo.transform, filter: estilo.filter }));
+                    } else sessionStorage.removeItem("pygebra-camara");
+                } catch (_) {}
             });
         } catch (_) { /* Sin almacenamiento la transición avanza siempre. */ }
         // Una transición entre páginas que el navegador omite (por ejemplo al saltar a

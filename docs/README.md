@@ -24,6 +24,7 @@
 - [Guía de ejecución](ejecucion.md): requisitos, arranque web, terminal o
   escritorio y comprobaciones para usar el proyecto completo.
 - [Pruebas](pruebas.md): suite, Django, compilación, enlaces y smoke real Windows.
+- [Rendimiento de Estudio](rendimiento-estudio.md): diagnóstico, mediciones y respuesta de navegación en WebView2.
 - [Presupuesto computacional](presupuesto-computacional.md): límite frente a costo,
   cálculo y procedimiento, tamaño de los números, referencias calibrables y
   benchmark. El presupuesto de entrada de Reducción por filas sigue en
@@ -38,8 +39,8 @@
 - [Determinantes](determinantes.md): fórmula 2×2, Sarrus, cofactores, LU y
   reducción por filas; recorrido de A por cada capa y guía para exponer.
 - [Bisección](biseccion.md): algoritmo manual, gráfica offline, recorrido de iteraciones y comparación.
-- [Conjuntos](conjuntos.md): temporalmente Próximamente; se conservan definiciones finitas, relaciones, gramática segura,
-  presupuesto y propuesta de editor estructurado posterior.
+- [Conjuntos](conjuntos.md): operaciones, relaciones, potencia, producto cartesiano, intervalos,
+  Venn y cardinalidad por inclusión-exclusión; gramática segura y presupuesto.
 - [Menú de edición de entradas](edicion-entradas.md): clic derecho sobre matrices,
   vectores y números para rellenar al azar, limpiar y seleccionar.
 - [Selección matricial](seleccion-matricial.md): modelo de entrada, gestos,

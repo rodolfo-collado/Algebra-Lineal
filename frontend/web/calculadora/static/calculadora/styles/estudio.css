@@ -2,7 +2,7 @@
    Es un estilo, no otra interfaz: redefine los tokens de PyGebra (así cada herramienta
    lo hereda sin tocar su plantilla) y añade la escena, los dioramas y sus gestos.
    El tema claro u oscuro sigue siendo una decisión aparte (data-theme).
-   Minimalista y la página sin JavaScript no tienen data-estilo="estudio": no ven nada de esto. */
+   Minimalista y la página sin JavaScript conservan su apariencia sobria. */
 
 /* —— Tokens —— */
 
@@ -101,8 +101,7 @@
     margin-top: calc(max(100vh, 56.25vw) / -2);
     margin-left: calc(max(100vw, 177.78vh) / -2);
     transform-origin: 0 0;
-    view-transition-name: escena;
-    transition: transform 1s var(--curva), filter 1s var(--curva);
+    transition: transform 0.28s var(--curva), filter 0.28s var(--curva);
 }
 
 .cuarto {
@@ -126,7 +125,7 @@
     inset: 0;
     background: rgb(var(--color-velo));
     opacity: 0.55;
-    transition: opacity 1s var(--curva);
+    transition: opacity 0.28s var(--curva);
 }
 
 .escena-velo::before {
@@ -135,7 +134,7 @@
     inset: 0;
     opacity: 0;
     background: linear-gradient(90deg, rgb(var(--color-velo) / 0.94) 0%, rgb(var(--color-velo) / 0.74) 36%, rgb(var(--color-velo) / 0) 64%);
-    transition: opacity 1s var(--curva);
+    transition: opacity 0.28s var(--curva);
 }
 
 [data-vista="inicio"] .escena-velo { opacity: 1; background: transparent; }
@@ -174,7 +173,6 @@
     border-bottom-color: color-mix(in srgb, var(--color-border) 70%, transparent);
     background: rgb(var(--color-velo) / 0.78);
     backdrop-filter: blur(14px) saturate(1.2);
-    view-transition-name: cabecera;
 }
 
 [data-estilo="estudio"] .app-sidebar {
@@ -433,34 +431,31 @@
     padding: 0.1rem 0.85rem 0.95rem;
 }
 
-/* —— Transiciones entre páginas (View Transitions entre documentos) ——
-   La cabecera no se mueve, la cámara viaja de un rincón a otro y el rincón del canal
-   abierto se convierte en el del área. Al volver, todo se aleja. Sin soporte, la página
-   simplemente cambia. */
+/* El fondo permanece detrás de los controles; solo el diorama viaja como captura. */
+:root { view-transition-name: none; }
+::view-transition { pointer-events: none; }
+
+/* —— Transiciones entre páginas (View Transitions entre documentos) —— */
 
 @media (prefers-reduced-motion: no-preference) {
     @view-transition {
         navigation: auto;
     }
 
-    ::view-transition-group(escena) { animation-duration: 0.9s; animation-timing-function: var(--curva, ease); }
-    ::view-transition-group(diorama) { animation-duration: 0.6s; animation-timing-function: var(--curva, ease); }
-    ::view-transition-old(root) { animation: estudio-salir 0.18s ease both; }
-    ::view-transition-new(root) { animation: estudio-entrar 0.42s var(--curva, ease) both; }
-    html[data-dir="atras"]::view-transition-new(root) { animation-name: estudio-volver; }
+    ::view-transition-group(*) { animation-duration: 0.28s; animation-timing-function: var(--curva, ease); }
+    ::view-transition-old(diorama):only-child { display: none; }
 
-    /* Las vistas entran desde abajo al avanzar y desde arriba al volver. */
-    [data-estilo="estudio"] .area-header,
-    [data-estilo="estudio"] .explorador,
-    [data-estilo="estudio"] .home-hero-texto > * {
-        animation: estudio-subir 0.5s var(--curva) both;
+    @starting-style {
+        [data-camara-previa] .escena-camara {
+            transform: var(--camara-desde);
+            filter: var(--filtro-desde);
+        }
     }
 
-    [data-estilo="estudio"] .explorador { animation-delay: 70ms; }
-    [data-estilo="estudio"] .home-hero-texto > :nth-child(2) { animation-delay: 0.1s; }
-    [data-estilo="estudio"] .home-hero-texto > :nth-child(3) { animation-delay: 0.18s; }
-    [data-estilo="estudio"] .home-hero-texto > :nth-child(n + 4) { animation-delay: 0.26s; }
-    [data-estilo="estudio"][data-dir="atras"] :is(.area-header, .explorador, .home-hero-texto > *) { animation-name: estudio-bajar; }
+    /* Un solo fundido, sin transformar el contenedor del teclado fijo. */
+    [data-estilo="estudio"] .app-content {
+        animation: estudio-aparecer 0.18s ease both;
+    }
 
     /* El papelito se despliega con calma. */
     .nota[open] > p { animation: estudio-aparecer 0.2s ease both; }
@@ -491,7 +486,7 @@
     .vapor { animation: estudio-vapor 3.2s ease-in-out infinite; }
     .estrellas circle { animation: estudio-titilar 3s ease-in-out infinite; }
     .estrellas circle:nth-child(2n) { animation-delay: -1.5s; }
-    :is([data-vista="area"], [data-vista="herramienta"]) .escena * { animation-play-state: paused !important; }
+    :is([data-vista="areas"], [data-vista="area"], [data-vista="herramienta"]) .escena * { animation-play-state: paused !important; }
 
     [data-estilo="estudio"] .canal:not(.es-pronto):hover,
     [data-estilo="estudio"] .canal:has(.canal-enlace:focus-visible) {
@@ -503,11 +498,6 @@
     .destacado-escena.gesto .d-peon { animation-delay: 0.35s; }
 }
 
-@keyframes estudio-salir { to { opacity: 0; } }
-@keyframes estudio-entrar { from { opacity: 0; transform: translateY(10px) scale(0.99); } }
-@keyframes estudio-volver { from { opacity: 0; transform: translateY(-8px) scale(1.01); } }
-@keyframes estudio-subir { from { opacity: 0; transform: translateY(14px) scale(0.985); } }
-@keyframes estudio-bajar { from { opacity: 0; transform: translateY(-10px) scale(1.015); } }
 @keyframes estudio-cambiar { from { opacity: 0; transform: translateY(10px); } }
 @keyframes estudio-cambiar-arriba { from { opacity: 0; transform: translateY(-10px); } }
 @keyframes estudio-posar { from { opacity: 0; transform: rotate(-6deg) translateY(-8px); } }
