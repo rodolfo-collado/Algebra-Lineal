@@ -1,15 +1,19 @@
-"""Campos esenciales y ajustes opcionales, con el contrato HTTP habitual."""
+"""Función, intervalo y ajustes que comparten los métodos cerrados de raíces."""
 
 from django import forms
-from backend.biseccion import PRECISION, MAX_ITERACIONES
+from backend.metodos_cerrados import MAX_ITERACIONES, TOLERANCIA
 from backend.funciones_reales import FuncionReal
 from .forms_feedback import FormularioConErrores
 
 
-class BiseccionForm(FormularioConErrores):
+class RaicesForm(FormularioConErrores):
+    # Cada método nombra qué mide su tolerancia; el campo HTTP se llama igual en todos.
+    magnitud, etiqueta = "tolerancia", "Tolerancia"
+
     def __init__(self, *args, explorar=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.explorar = explorar
+        self.fields["precision"].label = self.etiqueta
         if explorar:
             self.fields["a"].required = self.fields["b"].required = False
 
@@ -20,8 +24,7 @@ class BiseccionForm(FormularioConErrores):
                          widget=forms.NumberInput(attrs={"class": "field-input", "step": "any"}))
     b = forms.FloatField(label="Extremo b",
                          widget=forms.NumberInput(attrs={"class": "field-input", "step": "any"}))
-    precision = forms.FloatField(label="Precisión del intervalo", initial=PRECISION, required=False,
-                                 max_value=PRECISION,
+    precision = forms.FloatField(initial=TOLERANCIA, required=False, max_value=TOLERANCIA,
                                  widget=forms.NumberInput(attrs={"class": "field-input", "step": "any",
                                                                  "aria-describedby": "precision-ayuda"}))
     max_iteraciones = forms.IntegerField(label="Máximo de iteraciones", initial=MAX_ITERACIONES,
@@ -48,11 +51,19 @@ class BiseccionForm(FormularioConErrores):
         if hasattr(self.data, "getlist") and any(len(self.data.getlist(n)) > 1 for n in self.data):
             self.add_error(None, "Envía un único valor por campo; hay campos repetidos.")
         if datos.get("precision") is None:
-            datos["precision"] = PRECISION
-        if not 0 < datos["precision"] <= PRECISION:
-            self.add_error("precision", "La precisión debe ser positiva y no mayor que 0.0001.")
+            datos["precision"] = TOLERANCIA
+        if not 0 < datos["precision"] <= TOLERANCIA:
+            self.add_error("precision", f"La {self.magnitud} debe ser positiva y no mayor que 0.0001.")
         if datos.get("max_iteraciones") is None:
             datos["max_iteraciones"] = MAX_ITERACIONES
         if "a" in datos and "b" in datos and datos["a"] >= datos["b"]:
             self.add_error("b", "El extremo b debe ser mayor que a.")
         return datos
+
+
+class BiseccionForm(RaicesForm):
+    magnitud, etiqueta = "precisión", "Precisión del intervalo"
+
+
+class ReglaFalsaForm(RaicesForm):
+    magnitud, etiqueta = "tolerancia", "Tolerancia del error absoluto"

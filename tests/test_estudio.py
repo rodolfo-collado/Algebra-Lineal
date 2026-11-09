@@ -51,7 +51,8 @@ class PruebasCatalogoEstudio(SimpleTestCase):
         grupos = catalogo.hermanas(catalogo.DETERMINANTES)
         self.assertEqual([c for c, _ in grupos], [catalogo.VECTORES, catalogo.MATRICES])
         self.assertIn(catalogo.DETERMINANTES, dict(grupos)[catalogo.MATRICES])
-        self.assertEqual(catalogo.hermanas(catalogo.BISECCION), ((catalogo.RAICES, (catalogo.BISECCION,)),))
+        self.assertEqual(catalogo.hermanas(catalogo.BISECCION),
+                         ((catalogo.RAICES, (catalogo.BISECCION, catalogo.REGLA_FALSA)),))
 
 
 class PruebasExploradorDeArea(SimpleTestCase):

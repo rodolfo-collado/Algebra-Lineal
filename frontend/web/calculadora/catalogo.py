@@ -366,9 +366,22 @@ BISECCION = Herramienta(
     descripcion="Aproxima una raíz real y explora cómo se reduce el intervalo en una gráfica interactiva.",
     estado="disponible", route_name="calculadora:biseccion",
     palabras_clave=("bisección", "raíz", "raíces", "función", "intervalo", "punto medio", "gráfica", "bolzano"),
+    relacionadas=("regla-falsa",),
     invitacion="Busca una raíz de f(x) mediante bisección.",
     puntos=('Gráfica interactiva del intervalo', 'Tabla de iteraciones paso a paso'),
     curiosidad="Cada iteración reduce el intervalo a la mitad: tras 10 pasos mide menos de una milésima del original.",
+)
+
+REGLA_FALSA = Herramienta(
+    id="regla-falsa", nombre="Método de regla falsa", categoria=RAICES,
+    descripcion="Aproxima una raíz real con rectas secantes y sigue en la gráfica cómo cada corte con el eje x se acerca a ella.",
+    estado="disponible", route_name="calculadora:regla-falsa",
+    palabras_clave=("regla falsa", "falsa posición", "regula falsi", "interpolación lineal", "secante", "raíz", "raíces",
+                    "función", "intervalo", "gráfica", "error absoluto"),
+    relacionadas=("biseccion",),
+    invitacion="Busca una raíz de f(x) mediante regla falsa.",
+    puntos=('Recta secante de cada iteración en la gráfica', 'Error absoluto y motivo de parada explicados'),
+    curiosidad="Se llama «falsa» porque una recta sustituye a la curva: su corte con el eje x es una posición falsa de la raíz, que cada paso corrige.",
 )
 
 HERRAMIENTAS = (
@@ -381,6 +394,7 @@ HERRAMIENTAS = (
     CONVERSION_BASES,
     CONVERSION_ROMANOS,
     BISECCION,
+    REGLA_FALSA,
     RELACIONES_CONJUNTOS,
     CARDINALIDAD_CONJUNTOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
