@@ -146,6 +146,7 @@
         }],
         ["Panel destacado: contexto del tema y lema solo si hay varias herramientas", "/areas/sistemas-numericos/", w => {
             const panel = () => w.document.querySelector(".destacado-cuerpo:not([hidden])");
+            w.document.querySelector('a.indice-item[data-id="conversion-bases"]').focus();
             igual(panel().querySelector(".destacado-contexto").textContent, "Conversión entre binario, octal, decimal y hexadecimal.");
             igual(panel().querySelector(".destacado-lema"), null);
             w.document.querySelector('a.indice-item[data-id="conversion-romanos"]').focus();
@@ -163,6 +164,23 @@
                 igual(nota.open, true);
                 if (nota.getBoundingClientRect().bottom > entrada.getBoundingClientRect().top + 4) throw new Error(`Tapa el cálculo en ${estilo}`);
             }
+        }],
+        ["Música: pausar antes de preparar las muestras cancela el arranque", "/", async w => {
+            if (w.Musica.pedida()) w.Musica.alternar();
+            const c = w.Sonido.contexto();
+            await c.resume();
+            const pieza = w.Musica.PIEZAS.find(p => p.id === w.Musica.actual().id);
+            const armar = pieza.armar;
+            let preparadas = 0;
+            pieza.armar = (...args) => { preparadas++; return armar(...args); };
+            try {
+                w.Musica.alternar();
+                w.Musica.alternar();
+                await turno(w);
+                igual(preparadas, 0);
+                igual(w.Musica.pedida(), false);
+                igual(c.state, "suspended");
+            } finally { pieza.armar = armar; }
         }],
         ["Música: apagada, voluntaria, con reproductor, y su volumen no toca el de los efectos", "/", async w => {
             const limpiar = almacen => ["pygebra-musica", "pygebra-musica-marca", "pygebra-musica-pieza", "pygebra-musica-volumen"].forEach(k => almacen.removeItem(k));
