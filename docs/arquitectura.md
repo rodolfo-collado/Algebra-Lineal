@@ -42,6 +42,16 @@ flowchart TD
 
 ## Catálogo y presentación
 
+Bisección y Regla falsa conservan sus ciclos en `backend/biseccion.py` y
+`backend/regla_falsa.py`; `metodos_cerrados.py` comparte solamente la validación
+del intervalo, la tolerancia y los signos. `FuncionReal` sigue siendo el único
+intérprete de expresiones. En Django, `forms_raices.py`, `views_raices.py`,
+`servicios_raices.py`, `templatetags/raices.py` y `modules/raices/base.html`
+comparten entrada, muestreo y presentación. `raices.js` coordina Plotly, extremos,
+recorrido y decimales; `biseccion.js` y `regla_falsa.js` aportan las lecturas y
+trazas de cada método, sin recalcular raíces. Las rutas existentes de Bisección
+se conservan. Véase [Regla falsa](regla-falsa.md).
+
 `frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
 inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,
 estado, nombre de ruta Django, palabras clave, relaciones por ID y la frase

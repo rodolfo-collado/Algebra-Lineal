@@ -4,7 +4,8 @@
 
 Disponible en **Métodos numéricos → Raíces de ecuaciones → Método de bisección**,
 en `/metodos-numericos/biseccion/`, tanto en Django como en Windows sin Internet.
-Esta entrega implementa únicamente bisección.
+Comparte la exploración, el teclado y la presentación con [Regla falsa](regla-falsa.md);
+cada método conserva su algoritmo y su criterio de parada.
 
 ## Uso
 
