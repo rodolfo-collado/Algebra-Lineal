@@ -37,10 +37,15 @@ class AvanzadosWebTests(SimpleTestCase):
         self.assertEqual(regiones[3]['etiquetas'],['2'])
         self.assertTrue(regiones[3]['seleccionada'])
         self.assertContains(respuesta,'data-venn')
-        for extra in ({'venn_nombres':'A,A'},{'venn_nombres':'A,B','venn_universo':'Z'},
-                      {'venn_nombres':'A,B','expresion':'potencia(A)'}):
+        for extra in ({'venn_nombres':'A,A'},{'venn_nombres':'A,B','venn_universo':'Z'}):
             with self.subTest(extra=extra):
                 self.assertNotContains(self.client.post(RUTA,datos(**extra)), 'id="resultado"')
+        for expresion in ('potencia(A)', '|A ∪ B|', 'A ∈ B'):
+            respuesta = self.client.post(RUTA, datos(venn_nombres='A,B', expresion=expresion))
+            venn = contrato(respuesta)['venn']
+            self.assertFalse(venn['resalta'])
+            self.assertFalse(any(r['seleccionada'] for r in venn['regiones']))
+            self.assertNotContains(respuesta, '<th scope="col">En el resultado</th>')
         # Un punto escrito para una recta anterior no se aplica a otros resultados.
         self.assertNotIn('recta', contrato(self.client.post(RUTA,datos(punto='1',expresion='A'))))
 

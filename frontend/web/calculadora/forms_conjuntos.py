@@ -6,6 +6,7 @@ from backend.conjuntos.literales import analizar_definicion, analizar_literal, v
 from backend.conjuntos.modelo import Conjunto, orden, presentar
 from backend.conjuntos.parser import renombrar_referencias
 from backend.conjuntos.presupuesto import Presupuesto
+from backend.conjuntos.regiones import conjuntos_desde_regiones
 from backend.operandos import OPERANDOS_MAXIMOS
 from backend.presupuesto_sistemas import LONGITUD_SISTEMA_MAXIMA
 from .forms_feedback import FormularioConErrores
@@ -80,7 +81,7 @@ class ConjuntosForm(FormularioConErrores):
     expresion = campo_texto("Expresión", multilinea=True, rows=2, placeholder="A ∪ B")
     definicion = campo_texto("Nuevo conjunto", placeholder="T = {1, 2, {3, 4}}")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, regiones=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.bloques = []
         try:
@@ -95,6 +96,24 @@ class ConjuntosForm(FormularioConErrores):
                                                          max_length=LONGITUD_SISTEMA_MAXIMA)
             self.bloques.append({"indice": i, "nombre": self[f"nombre_{i}"],
                                  "contenido": self[f"contenido_{i}"], "anterior": self[f"anterior_{i}"]})
+        fuente = self.data if self.is_bound else self.initial
+        elegidos = fuente.get("venn_nombres", "").strip()
+        actuales = [b["nombre"].value() for b in self.bloques if b["nombre"].value() and b["nombre"].value() != "U"][:3]
+        for n in ("A", "B"):
+            if len(actuales) < 2 and n not in actuales:
+                actuales.append(n)
+        self.nombres_regiones = tuple(n.strip() for n in elegidos.split(",")) if elegidos else tuple(actuales)
+        self.regiones = []
+        if regiones or fuente.get("accion") in ("aplicar_regiones", "azar_regiones") or any(n.startswith("venn_region_") for n in fuente):
+            for m in range(0 if fuente.get("venn_universo", "").strip() else 1, 1 << min(3, len(self.nombres_regiones))):
+                nombre = f"venn_region_{m}"
+                self.fields[nombre] = campo_texto(describir_region(m, self.nombres_regiones[:3]), multilinea=True,
+                                                  rows=1, placeholder="∅", **{"aria-describedby": "regiones-ayuda"})
+                campo = self[nombre]
+                campo.mascara = m
+                self.regiones.append(campo)
+            for nombre in ("venn_nombres", "venn_universo"):
+                self.fields[nombre].widget.attrs["readonly"] = True
 
     def clean(self):
         datos = super().clean()
@@ -103,10 +122,10 @@ class ConjuntosForm(FormularioConErrores):
             self.add_error(None, "El envío contiene campos ajenos al formulario.")
         if hasattr(self.data, "getlist") and any(len(self.data.getlist(n)) != 1 for n in self.data):
             self.add_error(None, "Envía un único valor por campo; hay campos repetidos.")
-        self.accion = "usar" if "plantilla" in self.data else self.data.get("accion", "calcular")
-        if self.accion not in {"calcular", "guardar", "agregar", "usar"}:
+        self.accion = self.data.get("accion", "usar" if self.data.get("plantilla") else "calcular")
+        if self.accion not in {"calcular", "guardar", "agregar", "usar", "editar_regiones", "aplicar_regiones", "azar_regiones"}:
             self.add_error(None, "Acción desconocida.")
-        if self.accion == "usar" and self.data.get("plantilla") not in PLANTILLAS:
+        if (self.accion == "usar" or self.data.get("plantilla")) and self.data.get("plantilla") not in PLANTILLAS:
             self.add_error(None, "Esa operación no está en la guía.")
         eliminar = self.data.get("eliminar")
         if eliminar is not None and eliminar not in {str(b["indice"]) for b in self.bloques}:
@@ -152,6 +171,8 @@ class ConjuntosForm(FormularioConErrores):
             except ValueError as error:
                 self.add_error("expresion", str(error))
         self.expresion = expresion
+        if self.accion in ("editar_regiones", "aplicar_regiones", "azar_regiones"):
+            self._regiones(datos)
         if self.accion == "agregar":
             try:
                 if len(self.filas) >= OPERANDOS_MAXIMOS:
@@ -163,6 +184,40 @@ class ConjuntosForm(FormularioConErrores):
             except ValueError as error:
                 self.add_error("definicion", str(error))
         return datos
+
+    def _regiones(self, datos):
+        nombres = self.nombres_regiones
+        universo = datos.get("venn_universo", "").strip() or None
+        campo_error = "venn_nombres"
+        try:
+            if len(nombres) not in (2, 3) or len(set(nombres)) != len(nombres):
+                raise ValueError("Selecciona dos o tres nombres distintos, separados por comas.")
+            for n in (*nombres, *((universo,) if universo else ())):
+                validar_nombre(n)
+            if universo in nombres:
+                raise ValueError("El universo debe tener un nombre distinto de los conjuntos.")
+            if len(set(self.entorno) | set(nombres) | ({universo} if universo else set())) > OPERANDOS_MAXIMOS:
+                raise ValueError(f"El editor admite hasta {OPERANDOS_MAXIMOS} conjuntos.")
+            if self.accion != "aplicar_regiones":
+                return
+            campo_error = None
+            regiones = {}
+            for campo in self.regiones:
+                try:
+                    regiones[int(campo.name.rsplit("_", 1)[1])] = analizar_literal(datos.get(campo.name) or "∅", presupuesto=self.presupuesto)
+                except ValueError as error:
+                    self.add_error(campo.name, str(error))
+            if self.errors:
+                return
+            conjuntos = conjuntos_desde_regiones(nombres, regiones, universo=universo, presupuesto=self.presupuesto)
+            filas = [(n, presentar(conjuntos[n]) if n in conjuntos else c) for n, c in self.filas]
+            filas.extend((n, presentar(v)) for n, v in conjuntos.items() if n not in self.entorno)
+            self.filas = filas
+            self.entorno.update(conjuntos)
+            if not self.expresion.strip():
+                self.expresion = " ∪ ".join(nombres)
+        except ValueError as error:
+            self.add_error(campo_error, str(error))
 
 
 def inicial_editor(filas=(), expresion="", **extra):

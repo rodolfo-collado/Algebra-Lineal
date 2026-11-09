@@ -3,7 +3,7 @@
 [Índice](README.md) · Herramientas web y desktop: **Conjuntos → Conjuntos e intervalos → Operaciones con conjuntos** y **Cardinalidad e inclusión-exclusión**.
 
 P1 está completado e integrado mediante el [PR #104](https://github.com/rodolfo-collado/Algebra-Lineal/pull/104).
-P2–P6 extienden el mismo parser y evaluador con operaciones finitas, generación, intervalos, Venn y cardinalidades. Todo el trabajo continúa en la rama `feature/conjuntos-p2-operaciones` y el PR #113.
+P2–P6 extienden el mismo parser y evaluador con operaciones finitas, generación, intervalos, Venn y cardinalidades, integrados mediante el PR #113.
 Las dos herramientas están publicadas (tras v0.14.0) en `/conjuntos/relaciones/` y
 `/conjuntos/cardinalidad/`; el resto de `/conjuntos/…` responde 404.
 Consulta el [TODO de Conjuntos](TODO-conjuntos.md) para el estado de P1–P7, las mejoras
@@ -12,10 +12,14 @@ detectadas en las pruebas desktop y las posibles extensiones futuras.
 ## Definir y editar
 
 El editor empieza vacío. Escribe en **Nuevo conjunto** `A = {1, 2, {3, 4}, "rojo"}` y
-pulsa **Añadir** (o Intro), o elige un ejemplo opcional (con conjuntos ya definidos, en «Cargar un ejemplo»): pertenencia
+pulsa **Añadir** (o Intro), o elige un ejemplo en **Edición → Cargar ejemplo**: pertenencia
 e inclusión, tres conjuntos con Venn, conjuntos anidados, potencia y producto, e
 intervalos. Un ejemplo sustituye los conjuntos y la expresión; también se abre con
 `?ejemplo=<clave>` (las claves están en `EJEMPLOS`, en `forms_conjuntos.py`).
+El mismo menú se abre con clic derecho o Shift+F10 en una definición o expresión;
+en los elementos de un conjunto ofrece relleno aleatorio y limpieza con Deshacer
+nativo. El botón Edición permite acceder también con teclado o pantalla táctil.
+Sin JavaScript, los ejemplos están en un desplegable nativo.
 
 Cada conjunto es una fila `A = {…}` con nombre y elementos editables y, debajo, su
 lectura: cuántos elementos tiene y cuáles, uno por pastilla. Así se ve que
@@ -99,13 +103,12 @@ Igualdad y desigualdad exigen tipos compatibles: dos conjuntos, dos números o
 dos textos. El vacío está incluido en cualquier conjunto, pero solo pertenece
 a los que lo contienen como elemento: `∅ ∈ {∅}`.
 
-**Operaciones disponibles** (plegable, abierta mientras la expresión está vacía)
-reúne operaciones, relaciones e intervalos: cada una muestra una expresión lista
-para usar con los nombres definidos (si existe `U`, se reserva como universo de ∁;
-con un solo conjunto, el segundo operando es `{1}`) y una frase sobre qué hace.
-Elegirla escribe la expresión; calcular sigue siendo decisión del usuario. Sin
-JavaScript funciona por POST (`plantilla=<clave>`), y sustituye al antiguo
-«Construir con ayuda», que solo cubría relaciones.
+**Insertar operación** reúne operaciones, relaciones e intervalos en un selector
+compacto, con los nombres definidos (si existe `U`, se reserva como universo de ∁;
+con un solo conjunto, el segundo operando es `{1}`). Solo muestra la explicación
+de la operación elegida. Insertar escribe en el cursor o sustituye la selección;
+no calcula y conserva Deshacer nativo. Sin JavaScript funciona por POST
+(`accion=usar`, `plantilla=<clave>`) y sustituye la expresión completa.
 El teclado contextual reutiliza el dock existente, con nombres de conjuntos,
 llaves, comillas, separador, relaciones y operaciones finitas. El resultado es un
 único conjunto, número, texto, **Verdadero** o **Falso**, acompañado de un
@@ -278,11 +281,13 @@ unión, pero la región exterior se marca como desconocida.
 Cada elemento completo, incluidos conjuntos anidados y pares, se distribuye en
 una única región. El backend selecciona también regiones vacías usando el mismo
 AST y evaluador sobre marcadores de región: el frontend no repite operaciones.
-El selector admite nombres elegidos, ∅, ∪, ∩, ∖ y ∁; rechaza generación,
-cardinalidades, relaciones y literales no vacíos porque no representan regiones
-completas del diagrama elegido.
+El sombreado admite nombres elegidos, ∅, ∪, ∩, ∖ y ∁. Si se piden conjuntos
+explícitamente y la expresión es una relación, cardinalidad, generación o usa
+literales no vacíos, se muestra su distribución sin sombreado: ese resultado no
+representa regiones completas del diagrama. Los nombres y el universo siguen
+validándose.
 
-`datos.venn` contiene `nombres`, `universo` y 2, 4 u 8 `regiones`. Cada región incluye `mascara`,
+`datos.venn` contiene `nombres`, `universo`, `resalta` y 2, 4 u 8 `regiones`. Cada región incluye `mascara`,
 `pertenece` (booleanos en orden de nombres), `elementos` tipados, `etiquetas` listas
 para mostrar, `cantidad` exacta como cadena (null si el exterior es desconocido),
 `seleccionada`, `exterior_conocido`, `etiqueta` (`A ∩ Bᶜ`) y `descripcion` («Solo en A»).
@@ -293,6 +298,28 @@ con color y trama las regiones del resultado. Pasar el puntero ilumina la regió
 pulsarla, o pulsar o elegir con Intro su fila de la tabla, la fija y anuncia sus
 elementos. La tabla de regiones funciona sin JavaScript y es el acceso por teclado.
 La geometría (qué círculos contienen el puntero) es lo único que calcula el script.
+
+### Llenar por regiones
+
+En **Diagrama de Venn**, indica dos o tres nombres separados por comas, por ejemplo
+`A, B, C`, y pulsa **Llenar por regiones**. Sin nombres se usan los del editor
+(hasta tres; al empezar vacío, A y B). Se abren las regiones exclusivas y compartidas,
+con un icono que señala cada zona. Si indicas universo, aparece también el exterior.
+Los nombres pueden existir o ser nuevos; los existentes deben ser conjuntos finitos.
+
+Escribe un literal en cada zona: `{1, 2}`, `{"rojo"}`, `{1/2, {3}}` o `∅` (también
+puedes dejarla vacía). Para un elemento compartido usa su única región de intersección;
+`1/2` en una región y `0.5` en otra se rechazan por representar el mismo elemento.
+**Rellenar aleatoriamente** propone dos enteros distintos por región, sin aplicarlos.
+**Aplicar regiones** reconstruye las definiciones con `conjuntos_desde_regiones`,
+incluido el universo, y conserva los conjuntos ajenos y la expresión. Si la expresión
+estaba vacía, propone la unión. Después puedes calcular o reabrir el editor: el
+diagrama y sus regiones se leen de nuevo desde esas definiciones.
+
+**Cancelar regiones** descarta el borrador. Durante la edición las definiciones se
+ocultan para evitar dos editores simultáneos. Tanto entrada manual como aleatoria,
+aplicación y cancelación funcionan por POST sin JavaScript. Se mantienen los
+presupuestos de entrada y cálculo y los errores no aplican cambios parciales.
 
 ## Cardinalidades e inclusión-exclusión (P6)
 

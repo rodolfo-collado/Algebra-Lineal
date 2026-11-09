@@ -5,6 +5,12 @@
         <p class="menu-edicion-titulo" id="menu-edicion-titulo" aria-hidden="true" data-edicion-titulo></p>
         <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-accion="rellenar">Rellenar aleatoriamente</button>
         <button type="button" class="menu-edicion-item" role="menuitem" tabindex="-1" data-accion="limpiar">Limpiar</button>
+        {% if ejemplos %}
+        <div class="menu-edicion-grupo" role="group" aria-labelledby="menu-edicion-ejemplos" data-ejemplos-menu>
+            <p class="menu-edicion-grupo-titulo" id="menu-edicion-ejemplos">Cargar ejemplo · sustituye el editor</p>
+            {% for clave, titulo in ejemplos %}<a class="menu-edicion-item" role="menuitem" tabindex="-1" href="?ejemplo={{ clave }}">{{ titulo }}</a>{% endfor %}
+        </div>
+        {% endif %}
         <div class="menu-edicion-separador" role="separator" data-seleccion-menu></div>
         <div class="menu-edicion-grupo" role="group" aria-labelledby="menu-edicion-seleccionar" data-seleccion-menu>
             <p class="menu-edicion-grupo-titulo" id="menu-edicion-seleccionar" aria-hidden="true">Seleccionar</p>
