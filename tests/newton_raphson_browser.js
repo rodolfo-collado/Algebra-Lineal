@@ -29,6 +29,8 @@
         }],
         ["Tangente, residuo y recorrido coinciden con todas las filas", async (w,frame)=>{
             w=await resolver(frame);const r=datos(w);let peticiones=0;
+            ok(q(w,"#iteracion-raices").value==="1","Abre en la primera tangente");
+            ok(!q(w,"#resultado").textContent.includes("= ≈"),"Sin igualdad falsa al redondear");
             const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
             q(w,"#procedimiento-raices").open=true;
             for(const p of r.iteraciones){

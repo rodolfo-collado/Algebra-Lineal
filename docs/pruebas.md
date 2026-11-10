@@ -23,6 +23,8 @@ uv run python manage.py check
   oculta; esto limita la evidencia sobre foco nativo y gestos físicos.
 - Build local PyInstaller de Windows correcto. `uv lock --check`, Django,
   `compileall`, sintaxis JavaScript y `git diff --check` correctos.
+- Clic sobre la curva y arrastre real de su línea mediante mouse de Playwright:
+  x₀ cambió de 1.5 a 2.5831528279181692, sin resolver automáticamente.
 - Capturas de escritorio y móvil revisadas, esperando redimensionado de Plotly.
   El recorrido abre en la primera tangente; el ajuste de decimales conserva el JSON.
 - No se verificaron lector de pantalla, touch físico ni instalación/desinstalación
