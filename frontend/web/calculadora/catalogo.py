@@ -366,7 +366,7 @@ BISECCION = Herramienta(
     descripcion="Aproxima una raíz real y explora cómo se reduce el intervalo en una gráfica interactiva.",
     estado="disponible", route_name="calculadora:biseccion",
     palabras_clave=("bisección", "raíz", "raíces", "función", "intervalo", "punto medio", "gráfica", "bolzano"),
-    relacionadas=("regla-falsa",),
+    relacionadas=("regla-falsa", "newton-raphson"),
     invitacion="Busca una raíz de f(x) mediante bisección.",
     puntos=('Gráfica interactiva del intervalo', 'Tabla de iteraciones paso a paso'),
     curiosidad="Cada iteración reduce el intervalo a la mitad: tras 10 pasos mide menos de una milésima del original.",
@@ -378,10 +378,21 @@ REGLA_FALSA = Herramienta(
     estado="disponible", route_name="calculadora:regla-falsa",
     palabras_clave=("regla falsa", "falsa posición", "regula falsi", "interpolación lineal", "secante", "raíz", "raíces",
                     "función", "intervalo", "gráfica", "error absoluto"),
-    relacionadas=("biseccion",),
+    relacionadas=("biseccion", "newton-raphson"),
     invitacion="Busca una raíz de f(x) mediante regla falsa.",
     puntos=('Recta secante de cada iteración en la gráfica', 'Error absoluto y motivo de parada explicados'),
     curiosidad="Se llama «falsa» porque una recta sustituye a la curva: su corte con el eje x es una posición falsa de la raíz, que cada paso corrige.",
+)
+
+NEWTON_RAPHSON = Herramienta(
+    id="newton-raphson", nombre="Método de Newton-Raphson", categoria=RAICES,
+    descripcion="Explora cómo las tangentes aproximan una raíz desde un punto inicial, con derivada manual.",
+    estado="disponible", route_name="calculadora:newton-raphson",
+    palabras_clave=("newton", "raphson", "derivada", "tangente", "raíz", "raíces", "gráfica"),
+    relacionadas=("biseccion", "regla-falsa"),
+    invitacion="Sigue el corte de cada tangente con el eje x.",
+    puntos=("Derivada manual y punto inicial en la gráfica", "Residuo y cambio entre aproximaciones"),
+    curiosidad="El corte de la tangente con el eje x propone la siguiente aproximación; la elección inicial puede cambiar el resultado.",
 )
 
 HERRAMIENTAS = (
@@ -395,6 +406,7 @@ HERRAMIENTAS = (
     CONVERSION_ROMANOS,
     BISECCION,
     REGLA_FALSA,
+    NEWTON_RAPHSON,
     RELACIONES_CONJUNTOS,
     CARDINALIDAD_CONJUNTOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,

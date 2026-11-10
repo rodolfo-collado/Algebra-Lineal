@@ -14,10 +14,12 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
             {{ form.funcion.label_tag }}{{ form.funcion }}{{ form.funcion.errors }}
             <p id="funcion-ayuda" class="field-help">Puedes escribir x², x³, 5x y 2(x+1). La tecla aⁿ activa o desactiva la escritura de dígitos elevados; también puedes usar ^ o **.</p>
         </div>
+        {% block parametros %}
         <div class="raices-campos">
             <div class="field-group">{{ form.a.label_tag }}{{ form.a }}{{ form.a.errors }}</div>
             <div class="field-group">{{ form.b.label_tag }}{{ form.b }}{{ form.b.errors }}</div>
         </div>
+        {% endblock %}
         {% disclosure titulo="Ajustes y funciones admitidas" id="ajustes-raices" %}
             <div class="raices-campos">
                 <div class="field-group">{{ form.precision.label_tag }}{{ form.precision }}{{ form.precision.errors }}
@@ -51,14 +53,14 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
 {% endif %}
     <section class="panel raices-visual" aria-labelledby="grafica-titulo">
         <h{% if resultado %}3{% else %}2{% endif %} id="grafica-titulo" class="panel-title">Gráfica de la función</h{% if resultado %}3{% else %}2{% endif %}>
-        <p class="field-help" id="grafica-ayuda" hidden>La exploración comienza en [−10, 10], independiente del intervalo de cálculo. Acerca o desplaza la gráfica; selecciona un extremo y pulsa sobre la curva. Después puedes arrastrar su línea o escribir su valor arriba.</p>
+        <p class="field-help" id="grafica-ayuda" hidden>{% block ayuda_grafica %}La exploración comienza en [−10, 10], independiente del intervalo de cálculo. Acerca o desplaza la gráfica; selecciona un extremo y pulsa sobre la curva. Después puedes arrastrar su línea o escribir su valor arriba.{% endblock %}</p>
         <div class="raices-exploracion">
         <div class="raices-lienzo">
         <div id="grafica-seleccion" class="raices-controles" role="group" aria-label="Elegir extremos y explorar" hidden>
-            <button type="button" class="btn btn-secondary" data-elegir-extremo="a" aria-pressed="false">Seleccionar a</button>
-            <button type="button" class="btn btn-secondary" data-elegir-extremo="b" aria-pressed="false">Seleccionar b</button>
+            {% block seleccion_puntos %}<button type="button" class="btn btn-secondary" data-elegir-extremo="a" aria-pressed="false">Seleccionar a</button>
+            <button type="button" class="btn btn-secondary" data-elegir-extremo="b" aria-pressed="false">Seleccionar b</button>{% endblock %}
             <button type="button" class="btn btn-secondary" id="grafica-restablecer">Vista inicial</button>
-            {% if resultado %}<button type="button" class="btn btn-secondary" id="grafica-intervalo">Ver intervalo calculado</button>{% endif %}
+            {% if resultado %}<button type="button" class="btn btn-secondary" id="grafica-intervalo">{% block texto_vista_calculo %}Ver intervalo calculado{% endblock %}</button>{% endif %}
         </div>
         <div id="raices-grafica" aria-label="Gráfica interactiva de f(x)" aria-describedby="grafica-ayuda" tabindex="0" hidden></div>
         <p id="grafica-estado" class="field-help" role="status" aria-live="polite">Introduce una función para visualizar su gráfica y elegir un intervalo.</p>
@@ -71,6 +73,7 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
                 <button type="button" class="btn btn-secondary" id="iteracion-anterior">Anterior</button>
                 <button type="button" class="btn btn-secondary" id="iteracion-siguiente">Siguiente</button>
             </div>
+            {% block encuadrar_paso %}{% endblock %}
             <label for="iteracion-raices">Recorrer iteraciones</label>
             <input type="range" id="iteracion-raices" min="1" max="{{ resultado.iteraciones|length }}" step="1" value="{{ resultado.iteraciones|length }}" aria-describedby="iteracion-lectura">
             {% block lectura_iteracion %}
@@ -88,10 +91,12 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
 {% if resultado %}
     {% block procedimiento %}{% endblock %}
     {% block verificacion %}{% endblock %}
+    {% block comparacion %}
     {% disclosure titulo="Comparar intervalos" id="comparacion-raices" %}
         <p class="field-help">{% block ayuda_comparacion %}{% endblock %}</p>
         <div id="raices-comparaciones" class="table-wrap"><p>Activa JavaScript para comparar cálculos de esta pestaña.</p></div>
     {% enddisclosure %}
+    {% endblock %}
 </section>
 {% endif %}
 {% endblock %}

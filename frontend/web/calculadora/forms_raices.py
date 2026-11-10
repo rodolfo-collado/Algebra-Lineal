@@ -67,3 +67,21 @@ class BiseccionForm(RaicesForm):
 
 class ReglaFalsaForm(RaicesForm):
     magnitud, etiqueta = "tolerancia", "Tolerancia del error absoluto"
+
+
+class NewtonRaphsonForm(RaicesForm):
+    a = b = None
+    etiqueta = "Tolerancia del cambio y del residuo"
+    derivada = forms.CharField(label="Derivada f′(x)", max_length=512,
+        widget=forms.TextInput(attrs={"class": "field-input", "spellcheck": "false",
+                                      "aria-describedby": "derivada-ayuda"}))
+    x0 = forms.FloatField(label="Aproximación inicial x₀",
+        widget=forms.NumberInput(attrs={"class": "field-input", "step": "any"}))
+
+    def clean_derivada(self):
+        texto = self.cleaned_data["derivada"]
+        try:
+            self.derivada_real = FuncionReal(texto)
+        except ValueError as error:
+            raise forms.ValidationError(str(error)) from error
+        return texto

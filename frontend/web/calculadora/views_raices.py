@@ -1,11 +1,14 @@
 """Coordinación HTTP de los métodos de raíces: formulario → backend → datos y presentación."""
 
+import math
+
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods, require_POST
 from backend.biseccion import biseccion
 from backend.regla_falsa import regla_falsa
-from .forms_raices import BiseccionForm, RaicesForm, ReglaFalsaForm
+from backend.newton_raphson import newton_raphson
+from .forms_raices import BiseccionForm, RaicesForm, ReglaFalsaForm, NewtonRaphsonForm
 from .servicios_raices import muestrear, verificacion_inicial
 from .teclados import perfiles_para
 
@@ -53,3 +56,28 @@ def explorar_funcion(request):
     except ValueError as error:
         return JsonResponse({"error": str(error)}, status=400)
     return JsonResponse(puntos)
+
+
+@require_http_methods(["GET", "POST"])
+def resolver_newton_raphson(request):
+    form = NewtonRaphsonForm(request.POST if request.method == "POST" else None)
+    resultado = None
+    if request.method == "POST" and form.is_valid():
+        d = form.cleaned_data
+        try:
+            resultado = newton_raphson(form.funcion_real, form.derivada_real, d["x0"],
+                                       d["precision"], d["max_iteraciones"])
+        except ValueError as error:
+            form.add_error(None, str(error))
+    datos = {"metodo": "newton_raphson", "resultado": resultado, "grafica_url": "grafica/"}
+    if resultado:
+        x0 = form.cleaned_data["x0"]
+        ancho = max(2., abs(x0) * .25)
+        a, b = x0 - ancho, x0 + ancho
+        if not all(map(math.isfinite, (a, b, b - a))):
+            a, b = -10., 10.
+        datos.update({"inicial_a": a, "inicial_b": b})
+    return render(request, "calculadora/modules/newton_raphson/index.html", {
+        "form": form, "resultado": resultado, "datos_raices": datos,
+        "perfiles_teclado": perfiles_para("funcion-real"),
+    })
