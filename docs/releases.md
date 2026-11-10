@@ -192,6 +192,29 @@ sus originales y los trabajos de navegación/Estudio se conservan intactos.
 No se incorporan otras funcionalidades en desarrollo. La promoción
 `develop → main` requiere un PR separado tras revisar e integrar esta preparación.
 
+## Preparación de v0.16.1
+
+Incremento **PATCH** desde 0.16.0: corrige la experiencia de **Operaciones con
+conjuntos**, que se sentía demasiado como un formulario. No cambia el motor
+matemático, el parser ni los formatos de resultado; no añade dependencias.
+Se prepara desde `develop` en `9ebeaea`, cuyo contenido es idéntico a la etiqueta
+`v0.16.0`. Esta versión todavía no está publicada.
+
+- **Barra de símbolos:** sustituye el selector «Insertar operación» y su botón.
+  Conjuntos definidos, ∪ ∩ ∖ ∁ |·| ( ) × 𝒫, ∈ ∉ ⊆ ⊂ = ≠ y ∅ { } par intervalo se
+  insertan en el cursor, con Deshacer nativo y navegación por flechas.
+- **Venn editable:** los elementos se escriben dentro de cada región del diagrama
+  (exclusivas, intersecciones y exterior). Diagrama y lista de conjuntos se
+  mantienen sincronizados mediante el modelo existente; el último lado editado
+  manda. El modo **Cantidades** solo maneja números y nunca inventa elementos.
+- **Tarjetas de resultados:** unión, intersecciones, diferencias, diferencia
+  simétrica, zonas exclusivas, complementos, cardinalidades, relaciones e
+  inclusión-exclusión, con su cardinalidad, copia al portapapeles, resultados
+  extensos plegados y «Ver pasos» hacia la expresión personalizada.
+- **Pantalla reorganizada:** conjuntos y diagrama lado a lado, tarjetas y
+  expresión personalizada con su procedimiento; ejemplos en el menú Edición.
+  Estados vacíos, errores por región y foco revisados en Estudio y Minimalista.
+
 ## Flujo de integración y entrega
 
 ```mermaid

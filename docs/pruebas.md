@@ -11,6 +11,37 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+## Preparación de v0.16.1 (2026-11-10)
+
+- **Python:** 1.994 pruebas completas correctas desde PowerShell (sin omisiones).
+  `test_conjuntos_regiones` añade la ida y vuelta escribir/leer de cada región
+  (vacía, anidados, ∅ como elemento, pares, intervalos), el diagrama leído siempre
+  del modelo, «el último lado editado manda», el universo creado desde el exterior,
+  el cambio de conjuntos del diagrama, las tarjetas con elementos y con cantidades,
+  «Ver pasos» (también con un nombre editado en el mismo envío) y el enlace a
+  cantidades que solo acepta enteros.
+- **Comprobaciones:** `uv lock --check`, Django `check`, `compileall`, sintaxis de
+  los JS modificados y `git diff --check`. El lockfile solo cambia la versión.
+- **Navegador:** runner de Conjuntos 19/19 en Edge 157 y en Chrome sin ventana
+  (CDP, foco emulado); menú de edición 72/72, teclado 36/36 y Bisección 19/19.
+  Matriz visual de 80 combinaciones (dos pantallas de Operaciones, el estado vacío y
+  Cantidades × Estudio/Minimalista × claro/oscuro × 320/390/768/1024/1440 px): sin
+  desborde horizontal, campos del diagrama dentro de su lienzo y tarjetas dentro de
+  la ventana. Capturas revisadas en escritorio y móvil.
+- **WebView2 (ejecutable de PyInstaller, WebView2 157):** con preferencias aisladas
+  y CDP, 12 comprobaciones con teclas y clics reales por estilo (Tab hacia la barra,
+  flechas, Intro que inserta, un solo alto de tabulación, clic que conserva el cursor,
+  región enfocada por clic con su leyenda, escritura e Intro que actualiza conjuntos
+  y tarjetas, cantidades dentro del diagrama) y el runner 19/19 dentro de la app.
+  Esta prueba encontró que añadir «, 11» a una región que mostraba `{5}` creaba el
+  elemento `{5}`: las regiones se muestran ahora sin llaves. Los únicos avisos de
+  consola fueron transiciones de página de Estudio interrumpidas por la navegación
+  automatizada (`@view-transition` de `estudio.css`, sin cambios en este PR).
+
+Pendiente de validación manual: lector de pantalla (NVDA o Narrador) sobre los
+campos del diagrama y la barra, y pantalla táctil física en las regiones pequeñas
+del diagrama de tres conjuntos.
+
 ## Preparación de v0.16.0 (2026-11-09)
 
 - **Python:** 1.986 pruebas completas y 125 focalizadas de Conjuntos, Regla Falsa
