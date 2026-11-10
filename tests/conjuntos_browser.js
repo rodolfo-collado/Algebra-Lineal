@@ -31,11 +31,13 @@
         ["El editor empieza vacío y ofrece ejemplos opcionales", async (w, frame) => {
             w = await cargar(frame, "/conjuntos/relaciones/");
             ok(q(w, '[name="cantidad"]').value === "0" && !q(w, '[name="nombre_0"]'), "Sin conjuntos precargados");
-            ok(q(w, "#guia-conjuntos").open, "Guía abierta mientras no hay expresión");
-            const enlace = qa(w, ".conjuntos-ejemplo-lista a").find(a => a.textContent.includes("Venn"));
+            ok(!q(w, "#guia-conjuntos") && q(w, "#conjuntos-operacion"), "Operaciones compactas");
+            q(w, "[data-edicion-abrir]").click();
+            ok(q(w, "[data-edicion-menu]").hidden === false, "Edición accesible por botón");
+            const enlace = qa(w, "[data-edicion-menu] a").find(a => a.textContent.includes("Venn"));
             w = await cargar(frame, enlace.href);
             ok(q(w, '[name="nombre_3"]').value === "C" && q(w, '[name="venn_universo"]').value === "U", "Ejemplo cargado");
-            ok(!q(w, "#guia-conjuntos").open, "Con expresión, la guía queda plegada");
+            ok(!q(w, ".conjuntos-ejemplo-lista"), "Sin bloque de ejemplos");
             ok(qa(w, "[data-lectura]").length === 4 && q(w, "[data-lectura]").textContent.includes("10 elementos"), "Lectura de cada conjunto");
         }],
         ["Editar marca la lectura pendiente y muestra Guardar cambios", async (w, frame) => {
@@ -57,12 +59,18 @@
             ok(q(w, "#conjuntos-form button[type=submit]").classList.contains("conjuntos-envio-implicito"), "El primer botón calcula, no elimina");
         }],
         ["La guía escribe operaciones con los nombres definidos", async (w, frame) => {
-            const inclusion = q(w, '[data-plantilla="{a} ⊆ {b}"]');
+            const inclusion = q(w, 'option[data-plantilla="{a} ⊆ {b}"]');
             ok(inclusion.textContent.includes("A ⊆ B"), "Plantilla con nombres reales");
             valor(w, "nombre_0", "P");
-            ok(q(w, '[data-plantilla="{a} ∪ {b}"] [data-guia-texto]').textContent === "P ∪ B", "Sigue los cambios de nombre");
+            ok(q(w, '[data-plantilla="{a} ∪ {b}"]').textContent.includes("P ∪ B"), "Sigue los cambios de nombre");
             valor(w, "nombre_0", "A");
-            inclusion.click();
+            valor(w, "expresion", "antes A ∈ B después");
+            q(w, '[name="expresion"]').setSelectionRange(6, 11);
+            q(w, '#conjuntos-operacion').value = inclusion.value;
+            q(w, '[data-insertar-operacion]').click();
+            ok(q(w, '[name="expresion"]').value === "antes A ⊆ B después", "Sustituye solo la selección");
+            q(w, '[name="expresion"]').select();
+            q(w, '[data-insertar-operacion]').click();
             ok(q(w, '[name="expresion"]').value === "A ⊆ B" && w.document.activeElement === q(w, '[name="expresion"]'), "Texto generado y foco");
             ok(!q(w, "#resultado"), "Escribir no calcula");
             w = await post(frame);
@@ -172,6 +180,41 @@
             ok(q(w, '[name="region_7"]') && qa(w, ".cardinalidad-icono svg").length === 8, "Cambiar a tres conjuntos recompone los campos");
             q(w, '[data-expresion="A ∩ B ∩ C"]').click();
             ok(q(w, '[name="expresion"]').value === "A ∩ B ∩ C", "Atajo escribe la expresión");
+        }],
+        ["Regiones manuales generan conjuntos y el Venn vuelve a leerlos", async (w, frame) => {
+            valor(w, "venn_nombres", "A, B, C"); valor(w, "venn_universo", "U");
+            w = await post(frame, '[value="editar_regiones"]');
+            ok(qa(w, '[data-regiones-editor] textarea').length === 8 && qa(w, '[data-regiones-editor] svg').length === 8, "Ocho regiones con sus iconos");
+            for (let m = 0; m < 8; m++) valor(w, `venn_region_${m}`, m === 7 ? '{1/2, "común"}' : m === 0 ? '{9}' : '∅');
+            w = await post(frame, '.btn[value="aplicar_regiones"]');
+            ok(!q(w, '[data-regiones-editor]') && !q(w, '#resultado'), "Aplicar escribe definiciones sin calcular");
+            valor(w, "expresion", "A ∩ B ∩ C"); w = await post(frame);
+            const datos = JSON.parse(q(w, '#conjuntos-resultado-datos').textContent);
+            ok(datos.venn.regiones[7].etiquetas.join('|') === '1/2|"común"' && datos.venn.regiones[0].etiquetas[0] === '9', "Intersección y exterior desde el modelo");
+            w = await post(frame, '[value="editar_regiones"]');
+            ok(q(w, '[name="venn_region_7"]').value === '{1/2, "común"}', "Reabrir lee los conjuntos aplicados");
+        }],
+        ["Regiones rechazan duplicados sin perder el borrador", async (w, frame) => {
+            w = await post(frame, '[value="editar_regiones"]');
+            valor(w, "venn_region_1", "{1/2}"); valor(w, "venn_region_2", "{0.5}");
+            w = await post(frame, '.btn[value="aplicar_regiones"]');
+            ok(errores(w).includes("regiones distintas") && q(w, '[name="venn_region_2"]').value === "{0.5}", "Error conserva entradas");
+            w = await post(frame, '[value="guardar"]');
+            ok(!q(w, '[data-regiones-editor]') && q(w, '[name="contenido_0"]').value === '{1, 2}', "Cancelar conserva conjuntos originales");
+        }],
+        ["Relleno de regiones aleatorio es disjunto y pasa por Aplicar", async (w, frame) => {
+            w = await post(frame, '[value="editar_regiones"]');
+            w = await post(frame, '[value="azar_regiones"]');
+            const textos = qa(w, '[data-regiones-editor] textarea').map(c => c.value);
+            const valores = textos.flatMap(t => t.slice(1, -1).split(',').map(Number));
+            ok(new Set(valores).size === valores.length && !q(w, '#resultado'), "Regiones disjuntas pendientes de aplicar");
+            w = await post(frame, '.btn[value="aplicar_regiones"]');
+            ok(w.document.body.textContent.includes('Regiones aplicadas a los conjuntos'), "Aplicación confirmada");
+            w = await post(frame);
+            const distribucion = JSON.parse(q(w, '#conjuntos-resultado-datos').textContent).venn;
+            ok(!distribucion.resalta && q(w, '[name="expresion"]').value === 'A ∈ B', "Relación conservada y distribución sin sombreado");
+            valor(w, "expresion", "A ∪ B"); w = await post(frame);
+            ok(q(w, '[data-respuesta-relacion]').textContent !== '∅', "Calcula desde las definiciones generadas");
         }],
         ["Teclado contextual inserta operadores, llaves y nombres", async w => {
             const campo = q(w, '[name="expresion"]');

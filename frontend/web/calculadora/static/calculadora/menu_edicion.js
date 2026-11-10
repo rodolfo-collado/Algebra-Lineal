@@ -18,7 +18,7 @@
     const celdas = n => n === 1 ? "1 celda" : `${n} celdas`;
     const aleatorio = (minimo, maximo) => minimo + Math.floor(Math.random() * (maximo - minimo + 1));
     const entero = () => String(aleatorio(MINIMO, MAXIMO));
-    const editable = input => Boolean(input?.isConnected && input.matches('input[type="text"]') && !input.readOnly &&
+    const editable = input => Boolean(input?.isConnected && input.matches('input[type="text"], textarea') && !input.readOnly &&
         !input.matches(":disabled") && !input.closest("[hidden], [inert]"));
     // Solo el ítem y su grupo: el menú cerrado también tiene hidden mientras se prepara.
     const visibles = () => [...menu.querySelectorAll('[role="menuitem"]')]
@@ -47,6 +47,10 @@
     // seleccionar; un campo suelto (k, el número romano) conserva el Ctrl+Z nativo.
     function entradaDe(input) {
         if (!editable(input)) return null;
+        if (input.form?.id === "conjuntos-form" && input.matches('[name="definicion"], [name="expresion"], [name^="contenido_"]')) {
+            return { titulo: "Conjuntos", celdas: [input], ejemplos: true,
+                generar: input.name.startsWith("contenido_") ? () => `{${[...new Set([entero(), entero(), entero()])].join(", ")}}` : null };
+        }
         if (input.closest("[data-numeracion-romana]")) return numeroRomano(input);
         if (!input.matches("input.matrix-input")) return null;
         const fila = input.closest("#vector-list .vector-row");
@@ -77,7 +81,7 @@
     function preparar(entrada) {
         const editables = entrada.celdas.every(editable);
         const seleccion = entrada.matriz ? window.seleccionMatricial?.obtener(entrada.matriz) : null;
-        menu.querySelector('[data-accion="rellenar"]').hidden = !editables;
+        menu.querySelector('[data-accion="rellenar"]').hidden = !editables || !entrada.generar;
         menu.querySelector('[data-accion="limpiar"]').hidden = !editables || entrada.celdas.every(celda => !celda.value);
         menu.querySelectorAll("[data-seleccion-menu]").forEach(nodo => { nodo.hidden = !seleccion; });
         menu.querySelectorAll("[data-seleccionar]").forEach(item => {
@@ -85,6 +89,7 @@
         });
         menu.querySelector('[data-accion="deseleccionar"]').hidden = !seleccion?.celdas.length;
         menu.querySelector("[data-seleccion-aumentada]").hidden = !seleccion || entrada.cuadricula.id !== "matrix-grid";
+        menu.querySelectorAll("[data-ejemplos-menu]").forEach(nodo => { nodo.hidden = !entrada.ejemplos; });
         const ayudas = [...menu.querySelectorAll(".menu-edicion-ayuda")].filter(ayuda => !ayuda.hidden);
         if (ayudas.length) menu.setAttribute("aria-describedby", ayudas.map(ayuda => ayuda.id).join(" "));
         else menu.removeAttribute("aria-describedby");
@@ -187,6 +192,7 @@
         if (!item || !abierto) return;
         const { input } = abierto;
         cerrar(true);
+        if (item.matches("a[href]")) return;
         // Se vuelve a leer la entrada: su DOM pudo cambiar con el menú abierto.
         const entrada = entradaDe(input);
         if (!entrada) return;
@@ -223,4 +229,15 @@
         if (abierto && !menu.contains(event.relatedTarget)) cerrar(!event.relatedTarget);
     });
     window.addEventListener("pagehide", () => cerrar());
+    document.querySelectorAll("[data-edicion-abrir]").forEach(boton => {
+        boton.hidden = false;
+        boton.addEventListener("click", () => {
+            const input = document.getElementById(boton.dataset.edicionAbrir);
+            const entrada = entradaDe(input);
+            if (!entrada || !preparar(entrada).length) return;
+            abierto = { input };
+            colocar(boton);
+            visibles()[0].focus();
+        });
+    });
 })();

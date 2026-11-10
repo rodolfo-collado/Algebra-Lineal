@@ -350,12 +350,12 @@
         ajuste.form.addEventListener('change', event => {
             if (['numero', 'modo'].includes(event.target.name)) ajuste.form.requestSubmit(ajuste);
         });
-        const campos = document.querySelector('.cardinalidad-campos');
-        const n = Number(campos?.dataset.conjuntos);
-        campos?.querySelectorAll('[data-cubre]').forEach(dato => {
-            miniVenn(dato.querySelector('.cardinalidad-icono'), n, dato.dataset.cubre.split(' ').map(Number));
-        });
     }
+    document.querySelectorAll('.cardinalidad-campos[data-conjuntos]').forEach(campos => {
+        campos.querySelectorAll('[data-cubre]').forEach(dato => {
+            miniVenn(dato.querySelector('.cardinalidad-icono'), Number(campos.dataset.conjuntos), dato.dataset.cubre.split(' ').map(Number));
+        });
+    });
     const atajos = document.querySelector('[data-atajos]');
     if (atajos) {
         atajos.hidden = false;

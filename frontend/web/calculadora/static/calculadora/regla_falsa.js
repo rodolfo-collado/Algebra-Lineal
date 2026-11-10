@@ -9,34 +9,39 @@
         const { n, r } = formato([p.a, p.b, p.xr, p.nuevo_a, p.nuevo_b]);
         const tolerancia = resultado.tolerancia;
         const fijo = p.sustituido === "a" ? "b" : "a";
-        let parada;
-        if (p.fxr === 0) parada = "El residuo f(xr) es cero: nos detenemos.";
-        else if (p.error_absoluto === null) parada = "Ea no disponible: es la primera aproximación y aún no hay una anterior con la cual compararla. Continuamos.";
+        const e = formato([p.error_absoluto ?? 0, tolerancia], 2);
+        const error = [p.error_absoluto === null ? "Ea no disponible: primera aproximación." : `Ea ${e.r(p.error_absoluto)}`,
+            `Tolerancia: ${e.n(tolerancia)}`];
+        const parada = [];
+        if (p.fxr === 0) parada.push("Se detiene: f(xr) = 0 en aritmética de máquina.");
         else {
-            // Dos cifras bastan para leer Ea, salvo que se confunda con la tolerancia.
-            const e = formato([p.error_absoluto, tolerancia], 2);
-            const cambio = `La aproximación cambió ${e.n(p.error_absoluto)} unidades respecto a la anterior`;
-            if (!p.cumple_tolerancia) parada = `${cambio}: Ea supera la tolerancia (${e.n(tolerancia)}). Continuamos.`;
+            if (p.error_absoluto === null) parada.push("Aún no hay dos aproximaciones para comparar.");
+            else if (!p.cumple_tolerancia) parada.push("Ea supera la tolerancia.");
             else {
-                const cumple = `${cambio}, ${p.error_absoluto < tolerancia ? "por debajo de" : "igual a"} la tolerancia establecida (${e.n(tolerancia)}). Eso solo indica que xr casi no se movió`;
-                const prueba = formato([p.xr, p.prueba]).n(p.prueba);
-                parada = p.confirmada
-                    ? `${cumple}; para declarar convergencia comprobamos además el punto ${prueba}, a no más de una tolerancia de xr: allí f ${p.f_prueba === 0 ? "vale cero" : `es ${signo(p.f_prueba)}, de signo contrario a f(xr)`}. Hay una raíz entre ambos, a no más de ${e.n(tolerancia)} de xr. Nos detenemos.`
-                    : `${cumple}; en ${prueba}, a no más de una tolerancia de xr, f sigue siendo ${signo(p.f_prueba)}, igual que f(xr). No se confirmó una raíz cercana: ese mismo signo tampoco descarta raíces entre ambos puntos. Continuamos.`;
+                const prueba = formato([p.xr, p.prueba]).r(p.prueba);
+                parada.push("Ea cumple la tolerancia.", `Punto de prueba ${prueba}: a no más de una tolerancia de xr.`);
+                if (p.confirmada) parada.push(p.f_prueba === 0 ? "f(prueba) = 0." : "f(prueba) y f(xr) tienen signos opuestos.",
+                    "Raíz confirmada entre xr y el punto de prueba.");
+                else parada.push("f(prueba) y f(xr) tienen el mismo signo.",
+                    "Sin confirmación de una raíz cercana.", "El mismo signo tampoco descarta raíces intermedias.");
             }
+            parada.push(p.confirmada ? "Se detiene: convergencia verificada."
+                : ultimo && !resultado.convergio
+                    ? resultado.estado === "maquina" ? "Se detiene sin convergencia: límite de los números de máquina."
+                        : "Se detiene sin convergencia: máximo de iteraciones."
+                    : "Continúa.");
         }
-        const cierre = { maquina: "La siguiente secante ya no da un punto nuevo con los números de máquina: el cálculo termina sin convergencia." }[resultado.estado]
-            || "Se alcanzó el máximo de iteraciones: el cálculo termina sin convergencia.";
-        if (ultimo && !resultado.convergio) parada = parada.replace(/Continuamos\.$/, cierre);
         return {
             aria: `xr ${formato([p.xr], 12).r(p.xr)}`,
-            valores: `Antes de sustituir: a ${r(p.a)} · b ${r(p.b)}. La recta secante que une (a, f(a)) y (b, f(b)) corta al eje x en xr ${r(p.xr)}.`,
-            signos: `f(a) ${r(p.fa)} (${signo(p.fa)}) · f(xr) ${r(p.fxr)} (${signo(p.fxr)}) · f(b) ${r(p.fb)} (${signo(p.fb)}).`,
-            decision: p.fxr === 0
-                ? "f(xr) = 0 en aritmética de máquina: xr es una raíz calculada. No hace falta sustituir ningún extremo."
-                : `Como f(${p.sustituido}) y f(xr) tienen el mismo signo (${signo(p.fxr)}), xr sustituye al extremo ${p.sustituido}: el nuevo ${p.sustituido} es ${n(p.xr)} y ${fijo} permanece en ${n(p[fijo])}. Así el intervalo conserva el cambio de signo.`,
-            intervalo: `Intervalo anterior: [${n(p.a)}; ${n(p.b)}]. Nuevo intervalo: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}].`
-                + (p.veces_fijo >= 3 ? ` El extremo ${p.extremo_fijo} lleva ${p.veces_fijo} iteraciones sin moverse: el método avanza por un solo lado.` : ""),
+            valores: [`xr ${r(p.xr)}`, "Corte de la secante con el eje x."],
+            signos: p.fxr === 0 ? ["f(xr) = 0 (cero)."]
+                : [`f(${p.sustituido}) y f(xr) tienen el mismo signo (${signo(p.fxr)}).`,
+                    `f(a) ${r(p.fa)} · f(b) ${r(p.fb)} · f(xr) ${r(p.fxr)}`],
+            decision: p.fxr === 0 ? ["No hace falta sustituir ningún extremo."]
+                : [`xr sustituye al extremo ${p.sustituido}.`, `${fijo} permanece en ${n(p[fijo])}.`],
+            intervalo: [`Nuevo intervalo: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}].`,
+                ...(p.veces_fijo >= 3 ? [`${p.extremo_fijo} lleva ${p.veces_fijo} iteraciones sin moverse.`] : [])],
+            error,
             parada,
             puntos: { x: [p.a, p.xr, p.b], y: [p.fa, p.fxr, p.fb], text: ["(a, f(a))", "(xr, f(xr))", "(b, f(b))"],
                 size: [9, 9, 9], symbol: ["circle", "circle", "circle"] },

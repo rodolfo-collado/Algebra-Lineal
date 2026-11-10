@@ -50,6 +50,16 @@
         ["Secante, corte y recorrido coinciden con cada fila sin peticiones", async (w, frame) => {
             w = await resolver(frame);
             const resultado = datos(w), g = grafica(w);
+            ok([...w.document.querySelectorAll(".regla-falsa-paso h5")].map(n => n.textContent).join("|") ===
+                "Aproximación|Signos|Actualización del intervalo|Error|Decisión", "Cinco bloques visibles");
+            ok([...w.document.querySelectorAll(".raices-tabla thead th")].map(n => n.textContent).join("|") ===
+                "i|a|b|xr|f(a)|f(b)|f(xr)|Error absoluto Ea|xr sustituye a", "Orden de columnas");
+            for (const p of resultado.iteraciones) {
+                const celdas = q(w, `[data-iteracion="${p.i}"]`).cells;
+                const valores = [...celdas].slice(1, 7).map(c => Number(c.querySelector("[data-raices-numero]").dataset.raicesNumero));
+                ok(JSON.stringify(valores) === JSON.stringify([p.a, p.b, p.xr, p.fa, p.fb, p.fxr]), "Mismos datos bajo cada encabezado");
+            }
+
             let peticiones = 0;
             const fetchOriginal = w.fetch;
             w.fetch = (...args) => { peticiones++; return fetchOriginal(...args); };
@@ -58,6 +68,8 @@
                 q(w, `[data-iteracion="${p.i}"]`).focus();
                 await esperar(() => g.data[1].x[1] === p.xr);
                 ok(g.data[2].x[0] === p.a && g.data[2].x[1] === p.b && g.data[2].x[3] === p.xr, "Secante y corte");
+                ok(q(w, "#paso-valores li").textContent.startsWith("xr "), "Aproximación breve");
+                ok(q(w, "#paso-error").children.length === 2, "Ea y tolerancia separados");
                 ok(g.data[2].y[0] === p.fa && g.data[2].y[1] === p.fb && g.data[2].y[3] === 0, "Alturas de la secante");
                 ok(g.layout.shapes[2].x0 === p.a && g.layout.shapes[2].x1 === p.b, "Intervalo anterior");
                 ok(q(w, "#paso-decision").textContent.includes("xr sustituye al extremo a"), "Explica el signo");
@@ -69,7 +81,7 @@
             const slider = q(w, "#iteracion-raices");
             slider.value = "1"; slider.dispatchEvent(new w.Event("input", {bubbles: true}));
             ok(q(w, "#iteracion-anterior").disabled, "Primera fila");
-            ok(q(w, "#paso-parada").textContent.includes("Ea no disponible"), "No inventa primer error");
+            ok(q(w, "#paso-error").textContent.includes("Ea no disponible"), "No inventa primer error");
             q(w, "#iteracion-siguiente").click();
             ok(slider.value === "2", "Siguiente");
             ok(peticiones === 0, "Recorrer no solicita muestras ni recalcula");
@@ -88,7 +100,7 @@
             const r = datos(w), texto = q(w, "#paso-parada").textContent;
             ok(r.estado === "estancamiento" && !r.convergio, "Sin convergencia");
             ok(texto.includes("tampoco descarta raíces") && texto.includes("máximo de iteraciones"), "Explica límite y signos");
-            ok(!texto.includes("Continuamos.") && !texto.includes("La raíz está más lejos"), "No promete continuar ni excluir raíces");
+            ok(!texto.includes("Continúa.") && !texto.includes("La raíz está más lejos"), "No promete continuar ni excluir raíces");
             ok(q(w, "#paso-intervalo").textContent.includes("200 iteraciones sin moverse"), "Extremo fijo");
         }],
         ["Máximo y límite de máquina terminan sin éxito falso", async (w, frame) => {

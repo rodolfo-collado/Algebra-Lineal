@@ -59,10 +59,10 @@ class ConjuntosWebTests(SimpleTestCase):
 
     def test_guia_escribe_expresion_sin_calcular(self):
         # La guía sustituye al constructor de relaciones: sin JavaScript también escribe la expresión.
-        respuesta = self.client.post(RUTA, datos(plantilla="inclusion"))
+        respuesta = self.client.post(RUTA, datos(accion="usar", plantilla="inclusion"))
         self.assertContains(respuesta, "A ⊆ B</textarea>")
         self.assertNotContains(respuesta, 'id="resultado"')
-        self.assertContains(self.client.post(RUTA, datos(plantilla="pertenencia")), "1 ∈ A</textarea>")
+        self.assertContains(self.client.post(RUTA, datos(accion="usar", plantilla="pertenencia")), "1 ∈ A</textarea>")
 
     def test_post_invalido_conserva_editor(self):
         for cambios, mensaje in (

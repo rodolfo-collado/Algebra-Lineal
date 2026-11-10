@@ -11,6 +11,41 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+## Preparación de v0.16.0 (2026-11-09)
+
+- **Python:** 1.986 pruebas completas y 125 focalizadas de Conjuntos, Regla Falsa
+  y Bisección correctas. La edición por regiones cubre conversión de ida y vuelta,
+  dos/tres conjuntos, exterior, vacíos, valores exactos/anidados/pares, duplicados
+  entre regiones, límites, atomicidad y conservación de las definiciones ajenas.
+- **Comprobaciones:** `uv lock --check`, `uv sync --locked`, Django, `compileall`,
+  sintaxis de los JS modificados y `git diff --check` correctos. El lockfile solo
+  cambia la versión del proyecto; no se añaden dependencias.
+- **Navegador:** Edge 157.0.4341.42, mediante Playwright ya instalado (Browser
+  plugin no disponible). Conjuntos 17/17, Regla Falsa 11/11, Bisección 19/19,
+  menú de edición 72/72 y teclado 36/36. Los casos de animación del teclado se
+  ejecutan con movimiento normal; los demás recorridos, con movimiento reducido.
+  Sin errores JavaScript y con tráfico externo bloqueado.
+- **Visual y responsive:** 72 combinaciones de Conjuntos (entrada, editor de ocho
+  regiones y resultado), más 48 de Regla Falsa/Bisección. Estudio/Minimalista,
+  claro/oscuro y 320/390/768/900/1024/1440 px: sin desbordamiento horizontal,
+  esperando a fuentes y redimensionado de Plotly. Capturas revisadas en escritorio
+  y móvil; el editor reutiliza los iconos de regiones de Cardinalidad.
+- **Interacción real:** Edición por botón y Shift+F10, flechas/Inicio/Fin/Escape,
+  relleno de un conjunto y Ctrl+Z, inserción en la selección. Con JavaScript
+  deshabilitado: ejemplos, entrada manual de regiones, aplicación, cálculo y
+  relleno aleatorio por POST. Los errores conservan el borrador y no aplican
+  cambios parciales; las incoherencias entre regiones se anuncian como error general.
+- **Windows local:** `scripts/build_windows.ps1` construyó PyInstaller y el
+  instalador `PyGebra-Setup-0.16.0.exe` (22,7 MiB), con metadatos 0.16.0 y
+  bootstrapper WebView2 firmado. El ejecutable empaquetado pasó Conjuntos 17/17,
+  Regla Falsa 11/11 y Bisección 19/19 en WebView2 157.0.4341.42, sin errores JS,
+  con preferencias aisladas, movimiento reducido y foco emulado en los iframes.
+  Se cerró al finalizar; la instalación habitual no se modificó.
+
+La instalación/desinstalación y actualización en una cuenta limpia corresponden
+al CI de Windows. No se repitieron lector de pantalla ni táctil físico. La
+promoción a `main` y la publicación siguen pendientes de revisión y PR separados.
+
 Regla falsa: `uv run --locked python -m unittest tests.test_regla_falsa
 tests.test_regla_falsa_web tests.test_biseccion tests.test_biseccion_web
 tests.test_biseccion_assets` comprueba la secante, sustitución de ambos extremos,
