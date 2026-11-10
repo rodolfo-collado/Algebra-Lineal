@@ -3,7 +3,8 @@
 from django.test import SimpleTestCase
 from fractions import Fraction
 
-from backend.conjuntos.modelo import Conjunto
+from backend.conjuntos.literales import analizar_literal
+from backend.conjuntos.modelo import Conjunto, presentar
 from backend.conjuntos.parser import analizar_expresion
 from backend.conjuntos.presupuesto import Presupuesto
 from backend.conjuntos.regiones import construir_venn, conjuntos_desde_regiones
@@ -32,7 +33,7 @@ class RegionesEditorTests(SimpleTestCase):
                                          venn_nombres="A, B, C", venn_universo="U"))
         self.assertContains(r, 'name="venn_region_7"')
         self.assertContains(r, 'En A, B y C</label>')
-        self.assertRegex(r.content.decode(), r'name="venn_region_7"[^>]*>\s*\{5\}</textarea>')
+        self.assertRegex(r.content.decode(), r'name="venn_region_7"[^>]*>\s*5</textarea>')
         self.assertNotContains(r, 'id="resultado"')
         self.assertContains(r, 'name="nombre_0" value="U"')
 
@@ -47,7 +48,8 @@ class RegionesEditorTests(SimpleTestCase):
         r = self.client.post(RUTA, campos)
         self.assertContains(r, 'name="nombre_3" value="U"')
         self.assertContains(r, 'A ∪ B</textarea>')
-        self.assertNotContains(r, 'name="venn_region_1"')
+        # El diagrama vuelve a leer las definiciones aplicadas: lo compartido sigue en su intersección.
+        self.assertRegex(r.content.decode(), r'name="venn_region_3"[^>]*>\s*2</textarea>')
         calculo = self.client.post(RUTA, editor(form.filas, form.expresion, venn_nombres="A,B", venn_universo="U"))
         self.assertEqual(contrato(calculo)["venn"]["regiones"][3]["etiquetas"], ["2"])
 
@@ -102,3 +104,104 @@ class RegionesEditorTests(SimpleTestCase):
         self.assertFalse(f.is_valid())
         self.assertIn("900 elementos", str(f.errors))
         self.assertEqual(f.filas, [])
+
+
+class DiagramaSincronizadoTests(SimpleTestCase):
+    """Conjuntos, diagrama y tarjetas son vistas del mismo modelo; el último lado editado manda."""
+
+    def test_leer_region_acepta_lista_suelta_y_conjunto(self):
+        from frontend.web.calculadora.forms_conjuntos import leer_region
+        for texto, esperado in (("1, 2", "{1, 2}"), ("{1, 2}", "{1, 2}"), ("", "∅"), ('"a"', '{"a"}'),
+                                ("{1}, {2}", "{{1}, {2}}"), ("1/2, par(1, 2)", "{1/2, par(1, 2)}")):
+            with self.subTest(texto=texto):
+                self.assertEqual(presentar(leer_region(texto, Presupuesto())), esperado)
+        with self.assertRaises(ValueError):
+            leer_region("{1,", Presupuesto())
+
+    def test_escribir_y_leer_una_region_conserva_sus_elementos(self):
+        # Ida y vuelta: lo que el diagrama escribe en una región se relee igual, también al añadir
+        # elementos detrás («5» + «, 11»), que era ambiguo cuando la región mostraba «{5}».
+        from frontend.web.calculadora.forms_conjuntos import escribir_region, leer_region
+        for texto in ("∅", "{1}", "{1, 3}", "{{1}}", "{{1}, 2}", "{∅}", "{∅, 1}", '{"a"}', "{par(1, {2})}",
+                      "{intervalo(0, 1, cerrado, cerrado)}"):
+            region = analizar_literal(texto)
+            with self.subTest(region=texto):
+                self.assertEqual(leer_region(escribir_region(list(region.elementos)), Presupuesto()), region)
+        self.assertEqual(escribir_region([Fraction(1), Fraction(3)]), "1, 3")
+        self.assertEqual(escribir_region([analizar_literal("{1}")]), "{{1}}")
+        self.assertEqual(presentar(leer_region(escribir_region([Fraction(5)]) + ", 11", Presupuesto())), "{5, 11}")
+
+    def test_diagrama_siempre_lee_el_modelo_y_ofrece_exterior(self):
+        r = self.client.get(RUTA)
+        self.assertContains(r, 'name="venn_region_1"')
+        self.assertContains(r, 'placeholder="?"')  # exterior aún desconocido: U no existe
+        self.assertNotContains(r, 'class="tarjetas"')
+        r = self.client.get(RUTA + "?ejemplo=venn")
+        self.assertRegex(r.content.decode(), r'name="venn_region_0"[^>]*>\s*8, 10</textarea>')
+        self.assertContains(r, 'name="base_nombres" value="A, B, C"')
+        # Con intervalos no hay conjuntos finitos que dibujar: se explica, sin inventar regiones.
+        r = self.client.get(RUTA + "?ejemplo=intervalos")
+        self.assertNotContains(r, 'name="venn_region_1"')
+        self.assertContains(r, "recta real")
+
+    def test_calcular_aplica_antes_el_diagrama_editado(self):
+        campos = editor([("A", "{1}"), ("B", "{2}")], "A ∪ B", base_nombres="A, B", base_universo="U",
+                        venn_fuente="regiones", venn_region_0="", venn_region_1="1, 7", venn_region_2="2",
+                        venn_region_3="5")
+        r = self.client.post(RUTA, campos)
+        self.assertContains(r, 'data-respuesta-relacion>{1, 2, 5, 7}</p>', html=False)
+        self.assertRegex(r.content.decode(), r'name="contenido_0"[^>]*>\s*\{1, 5, 7\}</textarea>')
+        # Sin exterior escrito no se crea un universo.
+        self.assertNotContains(r, 'name="nombre_2"')
+        # Si mandan los conjuntos, el borrador del diagrama se ignora y se vuelve a leer.
+        r = self.client.post(RUTA, {**campos, "venn_fuente": ""})
+        self.assertContains(r, 'data-respuesta-relacion>{1, 2}</p>', html=False)
+
+    def test_exterior_crea_universo_y_cambiar_nombres_descarta_regiones(self):
+        campos = editor([], "", accion="aplicar_regiones", base_nombres="A, B", base_universo="U",
+                        venn_region_0="9", venn_region_1="1", venn_region_2="", venn_region_3="")
+        form = ConjuntosForm(campos)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(dict(form.filas), {"A": "{1}", "B": "∅", "U": "{1, 9}"})
+        r = self.client.post(RUTA, editor(TRES, "", accion="editar_regiones", venn_nombres="A, B",
+                                          base_nombres="A, B, C", base_universo="U",
+                                          **{f"venn_region_{m}": "" for m in range(8)}))
+        self.assertNotContains(r, "campos ajenos")
+        self.assertNotContains(r, 'name="venn_region_7"')
+
+    def test_tarjetas_salen_del_modelo(self):
+        from frontend.web.calculadora.servicios_conjuntos import panorama_web
+        regiones = {0: (Fraction(9),), 1: (Fraction(1),), 2: (Fraction(3),), 3: (Fraction(2),)}
+        p = panorama_web(("A", "B"), "U", regiones)
+        valores = {t["clave"]: (t["texto"], t["cantidad"]) for t in p["operaciones"]}
+        self.assertEqual(valores["union"], ("{1, 2, 3}", 3))
+        self.assertEqual(valores["simetrica"], ("{1, 3}", 2))
+        self.assertEqual(valores["complemento_union"], ("{9}", 1))
+        self.assertEqual(p["inclusion_exclusion"]["valores"], "3 = 2 + 2 − 1")
+        self.assertEqual(p["relaciones"][0][0], "A ∩ B ≠ ∅")
+        # Solo cantidades: ninguna tarjeta escribe elementos.
+        p = panorama_web(("A", "B", "C"), None, {m: m for m in range(8)}, cantidades=True)
+        self.assertTrue(all(t["texto"].isdigit() for t in p["operaciones"]))
+        self.assertEqual(p["inclusion_exclusion"]["valores"], "28 = 16 + 18 + 22 − 10 − 12 − 13 + 7")
+        incluido = panorama_web(("A", "B"), None, {1: (), 2: (Fraction(3),), 3: (Fraction(2),)})
+        self.assertEqual(incluido["relaciones"][0][0], "A ⊂ B")
+
+    def test_ver_pasos_de_una_tarjeta(self):
+        base = editor(TRES, "A", base_nombres="A, B, C", base_universo="U")
+        r = self.client.post(RUTA, {**base, "tarjeta": "solo_0"})
+        self.assertContains(r, 'data-respuesta-relacion>{1, 3}</p>', html=False)
+        self.assertContains(r, "A ∖ (B ∪ C)</textarea>")
+        self.assertContains(self.client.post(RUTA, {**base, "tarjeta": "eval"}), "no está entre las tarjetas")
+        # Renombrar A sin guardar y pedir los pasos usa ya el nombre nuevo.
+        r = self.client.post(RUTA, {**base, "nombre_1": "P", "tarjeta": "union"})
+        self.assertContains(r, "P ∪ B ∪ C</textarea>")
+        self.assertContains(r, 'data-respuesta-relacion>{1, 2, 3, 4, 5, 6, 7, 9}</p>', html=False)
+
+    def test_cantidades_reciben_solo_enteros(self):
+        r = self.client.get(RUTA + "?ejemplo=venn")
+        self.assertContains(r, "numero=3&amp;region_1=2&amp;region_2=1&amp;region_3=1&amp;region_4=1&amp;region_5=1&amp;region_6=1&amp;region_7=1&amp;universo=10")
+        r = self.client.get("/conjuntos/cardinalidad/?numero=2&region_1=5&region_2=x&region_3=" + "9" * 101 + "&universo=7")
+        self.assertContains(r, 'name="region_1" value="5"')
+        self.assertNotContains(r, 'name="region_2" value="x"')
+        self.assertNotContains(r, "9" * 101)
+        self.assertContains(r, 'name="universo" value="7"')

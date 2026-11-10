@@ -2,6 +2,7 @@
 
 from django import forms
 
+from backend.conjuntos.intervalos import Recta
 from backend.conjuntos.literales import analizar_definicion, analizar_literal, validar_nombre
 from backend.conjuntos.modelo import Conjunto, orden, presentar
 from backend.conjuntos.parser import renombrar_referencias
@@ -10,7 +11,7 @@ from backend.conjuntos.regiones import conjuntos_desde_regiones
 from backend.operandos import OPERANDOS_MAXIMOS
 from backend.presupuesto_sistemas import LONGITUD_SISTEMA_MAXIMA
 from .forms_feedback import FormularioConErrores
-from .servicios_conjuntos import describir_region
+from .servicios_conjuntos import catalogo_operaciones, describir_region
 
 # Ejemplos opcionales: el editor empieza vacío y cada uno muestra una idea distinta.
 EJEMPLOS = {
@@ -65,6 +66,46 @@ def rellenar(plantilla, nombres, elemento="1"):
     return plantilla.replace("{a}", a).replace("{b}", b).replace("{u}", u).replace("{x}", elemento)
 
 
+def nombres_diagrama(definidos, elegidos=""):
+    """Conjuntos del diagrama: los elegidos o, si no, los tres primeros (con A y B si faltan)."""
+    if elegidos.strip():
+        return tuple(n.strip() for n in elegidos.split(","))
+    actuales = [n for n in definidos if n != "U"][:3]
+    for n in ("A", "B"):
+        if len(actuales) < 2 and n not in actuales:
+            actuales.append(n)
+    return tuple(actuales)
+
+
+def leer_region(texto, presupuesto):
+    """Una región admite un conjunto ({1, 2}) o solo sus elementos (1, 2); vacía es ∅."""
+    texto = texto.strip() or "∅"
+    try:
+        valor = analizar_literal(texto, presupuesto=presupuesto)
+    except ValueError as error:
+        # Una lista suelta («1, 2» o «{1}, {2}») son los elementos de la región.
+        try:
+            return analizar_literal("{" + texto + "}", presupuesto=presupuesto)
+        except ValueError:
+            raise error from None
+    # Un único elemento suelto («7», «"a"») se lee como el conjunto que lo contiene.
+    return valor if isinstance(valor, (Conjunto, Recta)) else analizar_literal("{" + texto + "}", presupuesto=presupuesto)
+
+
+def escribir_region(elementos):
+    """Texto de una región: solo sus elementos («1, 3»), que es lo que se completa a mano.
+
+    Si el único elemento es un conjunto (o un intervalo), «{1}» se leería como la región
+    {1}: entonces se escribe el conjunto completo de la región, «{{1}}». Vacía es «»."""
+    if len(elementos) == 1 and isinstance(elementos[0], (Conjunto, Recta)):
+        return presentar(Conjunto(elementos))
+    return ", ".join(presentar(e) for e in sorted(elementos, key=orden))
+
+
+def campo_oculto():
+    return forms.CharField(required=False, widget=forms.HiddenInput, max_length=LONGITUD_SISTEMA_MAXIMA)
+
+
 def campo_texto(etiqueta, *, multilinea=False, **attrs):
     widget = forms.Textarea if multilinea else forms.TextInput
     return forms.CharField(label=etiqueta, required=False, max_length=LONGITUD_SISTEMA_MAXIMA,
@@ -75,13 +116,18 @@ def campo_texto(etiqueta, *, multilinea=False, **attrs):
 class ConjuntosForm(FormularioConErrores):
     # Se escribe junto a la recta del resultado, fuera del <form>: `form` lo asocia igualmente.
     punto = campo_texto("Punto x", placeholder="1/2", inputmode="decimal", form="conjuntos-form")
-    venn_nombres = campo_texto("Conjuntos del diagrama", placeholder="Automático: los de la expresión")
-    venn_universo = campo_texto("Universo", placeholder="Ninguno")
+    venn_nombres = campo_texto("Conjuntos del diagrama", placeholder="Automático")
+    venn_universo = campo_texto("Universo", placeholder="Automático: U")
+    # Lo que dibujaba el diagrama al enviarse: sus regiones se aplican a estos nombres, aunque
+    # las opciones o las filas hayan cambiado después. `venn_fuente` dice si se editó el diagrama.
+    base_nombres = campo_oculto()
+    base_universo = campo_oculto()
+    venn_fuente = campo_oculto()
     cantidad = forms.IntegerField(min_value=0, max_value=OPERANDOS_MAXIMOS, widget=forms.HiddenInput)
     expresion = campo_texto("Expresión", multilinea=True, rows=2, placeholder="A ∪ B")
     definicion = campo_texto("Nuevo conjunto", placeholder="T = {1, 2, {3, 4}}")
 
-    def __init__(self, *args, regiones=False, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bloques = []
         try:
@@ -97,27 +143,30 @@ class ConjuntosForm(FormularioConErrores):
             self.bloques.append({"indice": i, "nombre": self[f"nombre_{i}"],
                                  "contenido": self[f"contenido_{i}"], "anterior": self[f"anterior_{i}"]})
         fuente = self.data if self.is_bound else self.initial
-        elegidos = fuente.get("venn_nombres", "").strip()
-        actuales = [b["nombre"].value() for b in self.bloques if b["nombre"].value() and b["nombre"].value() != "U"][:3]
-        for n in ("A", "B"):
-            if len(actuales) < 2 and n not in actuales:
-                actuales.append(n)
-        self.nombres_regiones = tuple(n.strip() for n in elegidos.split(",")) if elegidos else tuple(actuales)
+        accion = fuente.get("accion")
+        # «Actualizar diagrama» y los envíos sin diagrama dibujado leen las opciones visibles.
+        opciones = accion == "editar_regiones" or "base_nombres" not in fuente
+        self.universo_regiones = str(fuente.get("venn_universo" if opciones else "base_universo", "")).strip() or None
+        self.nombres_regiones = nombres_diagrama(
+            [b["nombre"].value() for b in self.bloques if b["nombre"].value()],
+            str(fuente.get("venn_nombres" if opciones else "base_nombres", "")))
         self.regiones = []
-        if regiones or fuente.get("accion") in ("aplicar_regiones", "azar_regiones") or any(n.startswith("venn_region_") for n in fuente):
-            for m in range(0 if fuente.get("venn_universo", "").strip() else 1, 1 << min(3, len(self.nombres_regiones))):
+        if ("base_nombres" in fuente or accion in ("editar_regiones", "aplicar_regiones", "azar_regiones")
+                or any(n.startswith("venn_region_") for n in fuente)):
+            for m in range(0 if self.universo_regiones else 1, 1 << min(3, len(self.nombres_regiones))):
                 nombre = f"venn_region_{m}"
                 self.fields[nombre] = campo_texto(describir_region(m, self.nombres_regiones[:3]), multilinea=True,
                                                   rows=1, placeholder="∅", **{"aria-describedby": "regiones-ayuda"})
                 campo = self[nombre]
                 campo.mascara = m
                 self.regiones.append(campo)
-            for nombre in ("venn_nombres", "venn_universo"):
-                self.fields[nombre].widget.attrs["readonly"] = True
 
     def clean(self):
         datos = super().clean()
-        permitidos = set(self.fields) | {"csrfmiddlewaretoken", "accion", "eliminar", "plantilla"}
+        permitidos = set(self.fields) | {"csrfmiddlewaretoken", "accion", "eliminar", "plantilla", "tarjeta"}
+        if self.data.get("accion") == "editar_regiones":
+            # Cambiar los conjuntos del diagrama descarta las regiones del diagrama anterior.
+            permitidos.update(f"venn_region_{m}" for m in range(8))
         if set(self.data) - permitidos:
             self.add_error(None, "El envío contiene campos ajenos al formulario.")
         if hasattr(self.data, "getlist") and any(len(self.data.getlist(n)) != 1 for n in self.data):
@@ -132,6 +181,7 @@ class ConjuntosForm(FormularioConErrores):
             self.add_error(None, "No existe el conjunto que intentas eliminar.")
         self.filas = []
         self.entorno = {}
+        self.regiones_aplicadas = False
         self.presupuesto = Presupuesto()
         cambios = {}
         if self.errors:
@@ -170,9 +220,26 @@ class ConjuntosForm(FormularioConErrores):
                 expresion = renombrar_referencias(expresion, cambios)
             except ValueError as error:
                 self.add_error("expresion", str(error))
+        tarjeta = self.data.get("tarjeta")
+        if tarjeta is not None:
+            # «Ver pasos» de una tarjeta: su expresión, con los conjuntos que dibujaba el diagrama.
+            operaciones = {}
+            if len(self.nombres_regiones) in (2, 3):
+                operaciones = {clave: texto for clave, _, _, texto
+                               in catalogo_operaciones(self.nombres_regiones, self.universo_regiones)}
+            if tarjeta not in operaciones:
+                self.add_error(None, "Esa operación no está entre las tarjetas.")
+            elif cambios:
+                # Un nombre editado en el mismo envío también renombra la operación de la tarjeta.
+                expresion = renombrar_referencias(operaciones[tarjeta], cambios)
+            else:
+                expresion = operaciones[tarjeta]
         self.expresion = expresion
-        if self.accion in ("editar_regiones", "aplicar_regiones", "azar_regiones"):
-            self._regiones(datos)
+        # El último lado editado manda: si fue el diagrama, sus regiones reescriben los conjuntos antes de seguir.
+        editado = bool(datos.get("venn_fuente") == "regiones" and self.regiones and eliminar is None
+                       and self.accion in ("calcular", "guardar", "agregar"))
+        if editado or self.accion in ("editar_regiones", "aplicar_regiones", "azar_regiones"):
+            self._regiones(datos, aplicar=editado or self.accion == "aplicar_regiones")
         if self.accion == "agregar":
             try:
                 if len(self.filas) >= OPERANDOS_MAXIMOS:
@@ -185,9 +252,9 @@ class ConjuntosForm(FormularioConErrores):
                 self.add_error("definicion", str(error))
         return datos
 
-    def _regiones(self, datos):
+    def _regiones(self, datos, aplicar):
         nombres = self.nombres_regiones
-        universo = datos.get("venn_universo", "").strip() or None
+        universo = self.universo_regiones
         campo_error = "venn_nombres"
         try:
             if len(nombres) not in (2, 3) or len(set(nombres)) != len(nombres):
@@ -198,22 +265,28 @@ class ConjuntosForm(FormularioConErrores):
                 raise ValueError("El universo debe tener un nombre distinto de los conjuntos.")
             if len(set(self.entorno) | set(nombres) | ({universo} if universo else set())) > OPERANDOS_MAXIMOS:
                 raise ValueError(f"El editor admite hasta {OPERANDOS_MAXIMOS} conjuntos.")
-            if self.accion != "aplicar_regiones":
+            if not aplicar:
                 return
             campo_error = None
             regiones = {}
             for campo in self.regiones:
                 try:
-                    regiones[int(campo.name.rsplit("_", 1)[1])] = analizar_literal(datos.get(campo.name) or "∅", presupuesto=self.presupuesto)
+                    regiones[campo.mascara] = leer_region(datos.get(campo.name, ""), self.presupuesto)
                 except ValueError as error:
                     self.add_error(campo.name, str(error))
             if self.errors:
                 return
+            # El universo automático no se crea si nadie escribió nada fuera de los conjuntos.
+            if (universo and universo not in self.entorno and not datos.get("venn_universo", "").strip()
+                    and isinstance(regiones[0], Conjunto) and not regiones[0].elementos):
+                universo = None
+                del regiones[0]
             conjuntos = conjuntos_desde_regiones(nombres, regiones, universo=universo, presupuesto=self.presupuesto)
             filas = [(n, presentar(conjuntos[n]) if n in conjuntos else c) for n, c in self.filas]
             filas.extend((n, presentar(v)) for n, v in conjuntos.items() if n not in self.entorno)
             self.filas = filas
             self.entorno.update(conjuntos)
+            self.regiones_aplicadas = True
             if not self.expresion.strip():
                 self.expresion = " ∪ ".join(nombres)
         except ValueError as error:

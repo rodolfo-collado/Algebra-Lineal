@@ -9,6 +9,22 @@ Las dos herramientas están publicadas (tras v0.14.0) en `/conjuntos/relaciones/
 Consulta el [TODO de Conjuntos](TODO-conjuntos.md) para el estado de P1–P7, las mejoras
 detectadas en las pruebas desktop y las posibles extensiones futuras.
 
+## Pantalla (v0.16.1)
+
+La herramienta se lee en tres zonas, de arriba abajo:
+
+1. **Conjuntos y diagrama**, lado a lado en pantallas anchas y apilados en las
+   estrechas: son dos vistas editables del mismo modelo. Se puede escribir
+   `A = {…}` en la lista o los elementos directamente dentro de cada región del
+   diagrama de Venn.
+2. **Operaciones y propiedades**: tarjetas con los resultados habituales de los
+   conjuntos del diagrama, calculadas sin pulsar nada.
+3. **Expresión personalizada**: cualquier expresión compuesta, con su barra de
+   símbolos, su procedimiento explicado y su resultado.
+
+Los ejemplos siguen en **Edición → Cargar ejemplo** (o clic derecho / Shift+F10),
+sin ocupar espacio fijo.
+
 ## Definir y editar
 
 El editor empieza vacío. Escribe en **Nuevo conjunto** `A = {1, 2, {3, 4}, "rojo"}` y
@@ -29,7 +45,9 @@ Al editar una fila, su lectura se atenúa como «Cambios sin guardar» y aparece
 las definiciones editadas. La × elimina solo esa definición: si una expresión aún
 la referencia, el próximo cálculo explica que falta. Intro en cualquier campo
 calcula (el primer botón del formulario es un envío implícito invisible), nunca
-elimina un conjunto.
+elimina un conjunto; en «Nuevo conjunto» añade y en una región del diagrama
+actualiza los conjuntos. Guardar o calcular también vuelven a dibujar el
+diagrama y las tarjetas con las definiciones nuevas.
 Los conjuntos pertenecen al formulario actual, como los operandos de matrices;
 no se guardan en disco ni entre aperturas de la herramienta.
 
@@ -103,14 +121,18 @@ Igualdad y desigualdad exigen tipos compatibles: dos conjuntos, dos números o
 dos textos. El vacío está incluido en cualquier conjunto, pero solo pertenece
 a los que lo contienen como elemento: `∅ ∈ {∅}`.
 
-**Insertar operación** reúne operaciones, relaciones e intervalos en un selector
-compacto, con los nombres definidos (si existe `U`, se reserva como universo de ∁;
-con un solo conjunto, el segundo operando es `{1}`). Solo muestra la explicación
-de la operación elegida. Insertar escribe en el cursor o sustituye la selección;
-no calcula y conserva Deshacer nativo. Sin JavaScript funciona por POST
-(`accion=usar`, `plantilla=<clave>`) y sustituye la expresión completa.
-El teclado contextual reutiliza el dock existente, con nombres de conjuntos,
-llaves, comillas, separador, relaciones y operaciones finitas. El resultado es un
+**Barra de símbolos** (v0.16.1): bajo la expresión, una fila de teclas con los
+conjuntos definidos, las operaciones (∪ ∩ ∖ ∁ |·| ( ) × 𝒫), las relaciones
+(∈ ∉ ⊆ ⊂ = ≠) y los valores (∅ { } par intervalo). Cada tecla escribe en el
+cursor o sustituye la selección, no calcula y conserva Deshacer nativo; ∁, |·|,
+( ) y { } dejan el cursor dentro. Es una barra de herramientas accesible: un solo
+alto de tabulación y flechas/Inicio/Fin para recorrerla; con el puntero el cursor
+sigue en la expresión, con el teclado el foco sigue en la tecla. Las teclas salen
+del perfil `relacion-conjuntos` de `teclados.py`, que ya no se muestra en el dock
+para este campo. Sin JavaScript, la barra se sustituye por el antiguo selector
+**Insertar operación** (`accion=usar`, `plantilla=<clave>`), que reemplaza la
+expresión completa. El dock contextual sigue apareciendo en los conjuntos y en
+las regiones del diagrama, con llaves, comillas, separador y vacío. El resultado es un
 único conjunto, número, texto, **Verdadero** o **Falso**, acompañado de un
 procedimiento inicialmente plegado. Por ejemplo, `|A ∩ B| ∈ {0, 1, 2}` evalúa
 primero la operación y después la pertenencia.
@@ -272,9 +294,9 @@ Sin JavaScript se conservan el resultado textual, las filas exactas y la consult
 El diagrama aparece solo: `detectar_venn` reconoce las expresiones de regiones
 (nombres, ∅, ∪, ∩, ∖ y ∁) con dos o tres conjuntos, o uno si hay universo, y toma
 como universo el segundo argumento de ∁ cuando es un nombre: `∁(A ∪ B, U) ∩ C`.
-En «Diagrama de Venn» (plegado, junto a la expresión) se pueden elegir otros
-conjuntos o un universo para ver también lo que queda fuera; el ejemplo de Venn ya
-indica `U`. El universo debe contener todos los conjuntos: si no, el resultado se
+En «Opciones del diagrama» (plegado, bajo el diagrama editable) se pueden elegir
+otros conjuntos o un universo para ver también lo que queda fuera; el ejemplo de
+Venn ya indica `U`. El universo debe contener todos los conjuntos: si no, el resultado se
 muestra igual y solo se explica por qué no hay diagrama. Sin universo se conoce la
 unión, pero la región exterior se marca como desconocida.
 
@@ -299,27 +321,67 @@ pulsarla, o pulsar o elegir con Intro su fila de la tabla, la fija y anuncia sus
 elementos. La tabla de regiones funciona sin JavaScript y es el acceso por teclado.
 La geometría (qué círculos contienen el puntero) es lo único que calcula el script.
 
-### Llenar por regiones
+### Diagrama editable (v0.16.1)
 
-En **Diagrama de Venn**, indica dos o tres nombres separados por comas, por ejemplo
-`A, B, C`, y pulsa **Llenar por regiones**. Sin nombres se usan los del editor
-(hasta tres; al empezar vacío, A y B). Se abren las regiones exclusivas y compartidas,
-con un icono que señala cada zona. Si indicas universo, aparece también el exterior.
-Los nombres pueden existir o ser nuevos; los existentes deben ser conjuntos finitos.
+El diagrama de la zona superior está siempre presente y siempre se lee del modelo:
+cada región es un campo colocado dentro de su zona del SVG (exclusivas,
+intersecciones y exterior). Dibuja los tres primeros conjuntos finitos del editor
+—al empezar vacío, A y B— o los elegidos en **Opciones del diagrama** (pueden ser
+nombres nuevos; se aplican con **Actualizar diagrama**). Sin universo indicado se
+ofrece `U`: si existe y contiene a los conjuntos, el exterior muestra sus elementos;
+si aún no existe, el exterior aparece con `?` y escribir en él crea `U`. Un `U`
+que no contiene a los conjuntos no se usa como universo y el diagrama queda sin
+exterior. Con solo intervalos no hay diagrama y se remite a la recta real.
 
-Escribe un literal en cada zona: `{1, 2}`, `{"rojo"}`, `{1/2, {3}}` o `∅` (también
-puedes dejarla vacía). Para un elemento compartido usa su única región de intersección;
-`1/2` en una región y `0.5` en otra se rechazan por representar el mismo elemento.
-**Rellenar aleatoriamente** propone dos enteros distintos por región, sin aplicarlos.
-**Aplicar regiones** reconstruye las definiciones con `conjuntos_desde_regiones`,
-incluido el universo, y conserva los conjuntos ajenos y la expresión. Si la expresión
-estaba vacía, propone la unión. Después puedes calcular o reabrir el editor: el
-diagrama y sus regiones se leen de nuevo desde esas definiciones.
+En cada región se escriben sus elementos: `1, 2`, `"rojo"`, `{1}, {2}` (dos
+conjuntos anidados) o un conjunto completo `{1, 2}`; vacía significa ∅. El
+diagrama muestra cada región sin llaves (`1, 3`), de modo que añadir `, 11` al
+final siempre agrega un elemento; solo una región cuyo único elemento es un
+conjunto se escribe completa, `{{1}}`, para no confundirla con `{1}`
+(`escribir_region` y `leer_region` son inversas, con prueba de ida y vuelta). Lo
+compartido va solo en su intersección; `1/2` en una región y `0.5` en otra se
+rechazan por ser el mismo elemento (aviso general, sin cambios parciales). Un
+literal mal escrito marca su región y nombra la zona en el mensaje.
 
-**Cancelar regiones** descarta el borrador. Durante la edición las definiciones se
-ocultan para evitar dos editores simultáneos. Tanto entrada manual como aleatoria,
-aplicación y cancelación funcionan por POST sin JavaScript. Se mantienen los
-presupuestos de entrada y cálculo y los errores no aplican cambios parciales.
+**El último lado editado manda.** Escribir en una región marca el diagrama como
+pendiente (`venn_fuente=regiones`) y atenúa lecturas y tarjetas; **Actualizar
+conjuntos** (o Intro en la región, o directamente Calcular/Guardar) reconstruye las
+definiciones con `conjuntos_desde_regiones`, conserva los conjuntos ajenos y, si la
+expresión estaba vacía, propone la unión. Editar después una fila devuelve el mando
+a los conjuntos y el borrador del diagrama se ignora; **Descartar** también lo
+abandona. Las regiones se aplican a los nombres que el diagrama dibujaba al
+enviarse (`base_nombres`, `base_universo`), aunque las opciones hayan cambiado.
+**Rellenar al azar** propone dos enteros distintos por región, sin aplicarlos.
+Todo funciona por POST sin JavaScript (la lista de campos sustituye al dibujo).
+
+El selector **Elementos | Cantidades** distingue los dos tipos de dato: con
+elementos se escriben valores; **Cantidades** lleva a *Cardinalidad e
+inclusión-exclusión* con cuántos hay en cada región ya contados (solo enteros en
+la URL, nunca elementos). Allí cada casilla de «Regiones separadas» también está
+dentro de su región del diagrama y `|U|` en la esquina; si solo se conocen
+cantidades, ninguna parte de la pantalla inventa elementos.
+
+### Operaciones y propiedades (tarjetas)
+
+`panorama_web` (en `servicios_conjuntos.py`) produce una tarjeta por resultado
+habitual de los conjuntos del diagrama: unión, intersecciones, diferencias (con
+dos conjuntos), diferencia simétrica `A △ B` = `(A ∖ B) ∪ (B ∖ A)`, zonas
+exclusivas (con tres), complementos y complemento de la unión (si el universo
+existe), cardinalidades, relaciones entre cada par (iguales, inclusión propia,
+disjuntos o solapados) e inclusión-exclusión con sus valores. Cada tarjeta reúne
+las regiones que elige `seleccionar_regiones`, el mismo evaluador que sombrea el
+diagrama, de modo que tarjetas y diagrama no pueden discrepar; con cantidades,
+suma los números de esas regiones. △ es solo notación: la expresión que se evalúa
+y se muestra debajo es la del parser.
+
+Cada tarjeta indica qué operación representa, su resultado y cuántos elementos
+tiene; pasar el puntero o el foco ilumina sus regiones. **Copiar** usa
+`navigator.clipboard` (con un respaldo para WebView2 sin permiso) y confirma
+«Copiado». Más de 12 elementos se resumen con «…» y el resto se despliega con
+el componente `disclosure`; Copiar lleva siempre el resultado completo. **Ver
+pasos** envía la expresión de la tarjeta (`tarjeta=<clave>`) a la expresión
+personalizada y la calcula con su procedimiento. Si los conjuntos tienen errores,
+las tarjetas esperan con un aviso hasta que se corrijan.
 
 ## Cardinalidades e inclusión-exclusión (P6)
 
@@ -369,7 +431,7 @@ uv run --locked python -m tests.conjuntos_browser
 
 Abre `http://127.0.0.1:8894/conjuntos/relaciones/` para el editor y
 `http://127.0.0.1:8894/conjuntos/cardinalidad/` para inclusión-exclusión.
-El servidor escucha solo en loopback; `/__pruebas/` ejecuta los 14 flujos DOM.
+El servidor escucha solo en loopback; `/__pruebas/` ejecuta los 19 flujos DOM.
 
 La serialización añade `tipo: "par"` con `primero` y `segundo` tipados recursivos.
 Las reglas nuevas del procedimiento son `par_ordenado`, `potencia`,
@@ -395,12 +457,22 @@ inválidos, presupuesto de operaciones repetidas y el contrato JSON seguro.
 `tests.test_conjuntos_presentacion` cubre el editor vacío y los ejemplos, la guía,
 el orden de lectura, el Venn automático, los pasos marcados, la recta con operandos
 y punto, y la explicación de cardinalidades.
-`python -m tests.conjuntos_browser` sirve catorce escenarios DOM en
-`http://127.0.0.1:8894/__pruebas/`: ejemplos, cambios pendientes, Intro, guía,
-aceptación, teclado, recta (zoom, tramo, punto propuesto y erróneo), Venn por
-teclado y por clic, cardinalidad con iconos, sumandos y atajos, CRUD, errores
-accesibles y resultado desactualizado. Pasa 14/14 en Chrome y en Edge headless
-(el motor de WebView2), con foco emulado por CDP. No añade dependencias.
+`tests.test_conjuntos_regiones` añade (v0.16.1) la lectura de regiones como
+lista suelta o conjunto, el diagrama leído siempre del modelo con exterior `?`,
+«el último lado editado manda» al calcular, el universo creado desde el
+exterior, el cambio de conjuntos del diagrama, las tarjetas (elementos y
+cantidades, relaciones e inclusión-exclusión), «Ver pasos» y el enlace a
+cantidades que solo admite enteros.
+`python -m tests.conjuntos_browser` sirve diecinueve escenarios DOM en
+`http://127.0.0.1:8894/__pruebas/`: estado vacío, ejemplos, cambios pendientes en
+ambos sentidos, Intro, barra de símbolos (cursor, selección, flechas, foco),
+aceptación, recta (zoom, tramo, punto propuesto y erróneo), Venn del resultado,
+escritura en las regiones (exterior, duplicados, Descartar), «el último lado
+manda», tres conjuntos y opciones, tarjetas (valores, resaltado, copiar,
+desplegar, Ver pasos), regiones por clic y foco, cantidades sin elementos, dock
+contextual, CRUD con renombrado, errores accesibles y resultado desactualizado.
+Pasa 19/19 en Chrome y en Edge headless (el motor de WebView2), con foco emulado
+por CDP. No añade dependencias.
 
 P3–P6 añaden comprobaciones de crecimiento previo, pares, generación exacta,
 extremos y contactos de intervalos, las ocho regiones de tres conjuntos,

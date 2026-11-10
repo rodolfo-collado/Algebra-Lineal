@@ -5,124 +5,166 @@
 {% block extra_head %}<link rel="stylesheet" href="{% static 'calculadora/styles/conjuntos.css' %}">{% endblock %}
 
 {% block tool_input %}
-<section class="panel workspace" aria-label="Entrada de conjuntos">
-    <form id="conjuntos-form"{% if form.regiones %} class="conjuntos-editando-regiones"{% endif %} data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
-        {% csrf_token %}
-        {{ form.cantidad }}
-        {% comment %}Primer botón del formulario: Intro en un campo calcula, nunca elimina un conjunto.{% endcomment %}
-        <button class="conjuntos-envio-implicito" type="submit" name="accion" value="{% if form.regiones %}aplicar_regiones{% else %}calcular{% endif %}" tabindex="-1" aria-hidden="true">Calcular</button>
+{% comment %}Tres zonas: los conjuntos y su diagrama (dos vistas del mismo modelo), las tarjetas de resultados y la expresión personalizada. El último lado editado manda (`venn_fuente`).{% endcomment %}
+<form id="conjuntos-form" class="conjuntos-mesa" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+    {% csrf_token %}
+    {{ form.cantidad }}{{ form.base_nombres }}{{ form.base_universo }}{{ form.venn_fuente }}
+    {% comment %}Primer botón del formulario: Intro en un campo calcula, nunca elimina un conjunto.{% endcomment %}
+    <button class="conjuntos-envio-implicito" type="submit" name="accion" value="calcular" tabindex="-1" aria-hidden="true">Calcular</button>
+
+    <section class="panel workspace conjuntos-entrada" aria-label="Conjuntos y diagrama">
         {% include "calculadora/components/errores_generales.html" %}
-        {% if regiones_aplicadas %}<p class="field-help" role="status">Regiones aplicadas a los conjuntos. Revisa la expresión y pulsa Calcular.</p>{% endif %}
-
-        <section class="workspace-section conjuntos-definiciones" aria-labelledby="sets-title">
-            <div class="conjuntos-cabecera">
-                <h3 id="sets-title" class="section-title">Conjuntos</h3>
-                <button class="btn btn-secondary" type="button" data-edicion-abrir="id_definicion" hidden aria-haspopup="menu">Edición</button>
+        {% if regiones_aplicadas %}<p class="field-help" role="status">Conjuntos actualizados desde el diagrama.</p>{% endif %}
+        <div class="conjuntos-zonas">
+            <section class="conjuntos-definiciones" aria-labelledby="sets-title">
+                <div class="conjuntos-cabecera">
+                    <h3 id="sets-title" class="section-title">Conjuntos</h3>
+                    <button class="btn btn-secondary" type="button" data-edicion-abrir="id_definicion" hidden aria-haspopup="menu">Edición</button>
+                    {% if form.bloques %}
+                        <button class="btn btn-secondary conjuntos-guardar" type="submit" name="accion" value="guardar" data-guardar>Guardar cambios</button>
+                    {% endif %}
+                </div>
                 {% if form.bloques %}
-                    <button class="btn btn-secondary conjuntos-guardar" type="submit" name="accion" value="guardar" data-guardar>Guardar cambios</button>
-                {% endif %}
-            </div>
-            {% if form.bloques %}
-                <ul id="conjuntos-lista" class="conjuntos-lista">
-                {% for bloque in form.bloques %}
-                    <li class="conjunto-fila" data-conjunto>
-                        {{ bloque.anterior }}
-                        <div class="conjunto-definicion">
-                            <label class="sr-only" for="{{ bloque.nombre.id_for_label }}">Nombre del conjunto {{ forloop.counter }}</label>
-                            {{ bloque.nombre }}
-                            <span class="conjunto-igual" aria-hidden="true">=</span>
-                            <div class="conjunto-contenido" data-perfil="literal-conjuntos">
-                                <label class="sr-only" for="{{ bloque.contenido.id_for_label }}">Elementos de {{ bloque.nombre.value|default:"este conjunto" }}</label>
-                                {{ bloque.contenido }}
+                    <ul id="conjuntos-lista" class="conjuntos-lista">
+                    {% for bloque in form.bloques %}
+                        <li class="conjunto-fila" data-conjunto>
+                            {{ bloque.anterior }}
+                            <div class="conjunto-definicion">
+                                <label class="sr-only" for="{{ bloque.nombre.id_for_label }}">Nombre del conjunto {{ forloop.counter }}</label>
+                                {{ bloque.nombre }}
+                                <span class="conjunto-igual" aria-hidden="true">=</span>
+                                <div class="conjunto-contenido" data-perfil="literal-conjuntos">
+                                    <label class="sr-only" for="{{ bloque.contenido.id_for_label }}">Elementos de {{ bloque.nombre.value|default:"este conjunto" }}</label>
+                                    {{ bloque.contenido }}
+                                </div>
+                                <button class="btn btn-secondary conjunto-eliminar" type="submit" name="eliminar" value="{{ bloque.indice }}" aria-label="Eliminar el conjunto {{ bloque.nombre.value }}" title="Eliminar">
+                                    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                                </button>
                             </div>
-                            <button class="btn btn-secondary conjunto-eliminar" type="submit" name="eliminar" value="{{ bloque.indice }}" aria-label="Eliminar el conjunto {{ bloque.nombre.value }}" title="Eliminar">
-                                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                            </button>
-                        </div>
-                        {{ bloque.nombre.errors }}{{ bloque.contenido.errors }}
-                        {% if bloque.resumen %}
-                            <p class="conjunto-lectura" data-lectura>
-                                {% if bloque.resumen.cantidad is None %}
-                                    <span class="conjunto-cantidad">Intervalo</span> <span class="conjuntos-math">{{ bloque.resumen.notacion }}</span>
-                                {% else %}
-                                    <span class="conjunto-cantidad">{{ bloque.resumen.cantidad }} elemento{{ bloque.resumen.cantidad|pluralize }}</span>
-                                    {% for e in bloque.resumen.elementos %}<span class="conjuntos-chip conjuntos-math">{{ e }}</span>{% endfor %}
-                                    {% if bloque.resumen.resto %}<span class="field-help">y {{ bloque.resumen.resto }} más</span>{% endif %}
-                                {% endif %}
-                                <span class="conjunto-pendiente">Cambios sin guardar</span>
-                            </p>
-                        {% endif %}
-                    </li>
-                {% endfor %}
-                </ul>
-            {% else %}
-                <div id="conjuntos-lista" class="conjuntos-vacio">
-                    <p>Aún no hay conjuntos. Añade uno para empezar.</p>
-                </div>
-            {% endif %}
-            <div class="conjunto-nuevo field-group" data-perfil="literal-conjuntos">
-                <label for="{{ form.definicion.id_for_label }}">{{ form.definicion.label }}</label>
-                <div class="conjunto-nuevo-fila">
-                    {{ form.definicion }}
-                    <button class="btn btn-secondary" type="submit" name="accion" value="agregar" data-agregar>Añadir</button>
-                </div>
-                {{ form.definicion.errors }}
-                {% disclosure titulo="Ayuda de escritura" id="conjuntos-sintaxis" nivel=4 %}
-                    <p id="conjuntos-ayuda" class="field-help">Llaves y comas: <code>{1, 2, {3}}</code>; texto entre comillas: <code>"rojo"</code>; vacío: <code>∅</code>. <span id="nombres-ayuda">Los nombres empiezan con letra y distinguen mayúsculas.</span></p>
-                {% enddisclosure %}
-            </div>
-            <noscript>{% disclosure titulo="Cargar un ejemplo" detalle="sustituye el editor" id="ejemplos-sin-js" nivel=4 %}<ul>{% for clave, titulo in ejemplos %}<li><a href="?ejemplo={{ clave }}">{{ titulo }}</a></li>{% endfor %}</ul>{% enddisclosure %}</noscript>
-        </section>
-
-        <section class="workspace-section" aria-labelledby="expresion-titulo">
-            <h3 id="expresion-titulo" class="section-title">{% if form.regiones %}Llenar por regiones{% else %}<label for="{{ form.expresion.id_for_label }}">Expresión</label>{% endif %}</h3>
-            <div class="field-group conjuntos-expresion" data-perfil="relacion-conjuntos" data-operandos="#conjuntos-lista">
-                {{ form.expresion }}{{ form.expresion.errors }}
-                <p class="field-help">Agrupa con paréntesis. También puedes combinar símbolos desde el teclado matemático.</p>
-            </div>
-            <div class="conjuntos-guia field-group" data-elemento="{{ elemento_guia }}">
-                <label for="conjuntos-operacion">Insertar operación</label>
-                <div class="conjunto-nuevo-fila">
-                <select name="plantilla" id="conjuntos-operacion" class="field-input" aria-describedby="operacion-ayuda">
-                <option value="">Elige una operación…</option>
-                {% for grupo, filas in guia %}
-                    <optgroup label="{{ grupo }}">
-                    {% for fila in filas %}
-                        <option value="{{ fila.clave }}" data-plantilla="{{ fila.plantilla }}" data-nombre="{{ fila.nombre }}" data-descripcion="{{ fila.descripcion }}">{{ fila.nombre }} · {{ fila.texto }}</option>
+                            {{ bloque.nombre.errors }}{{ bloque.contenido.errors }}
+                            {% if bloque.resumen %}
+                                <p class="conjunto-lectura" data-lectura>
+                                    {% if bloque.resumen.cantidad is None %}
+                                        <span class="conjunto-cantidad">Intervalo</span> <span class="conjuntos-math">{{ bloque.resumen.notacion }}</span>
+                                    {% else %}
+                                        <span class="conjunto-cantidad">{{ bloque.resumen.cantidad }} elemento{{ bloque.resumen.cantidad|pluralize }}</span>
+                                        {% for e in bloque.resumen.elementos %}<span class="conjuntos-chip conjuntos-math">{{ e }}</span>{% endfor %}
+                                        {% if bloque.resumen.resto %}<span class="field-help">y {{ bloque.resumen.resto }} más</span>{% endif %}
+                                    {% endif %}
+                                    <span class="conjunto-pendiente">Cambios sin guardar</span>
+                                </p>
+                            {% endif %}
+                        </li>
                     {% endfor %}
-                    </optgroup>
-                {% endfor %}
-                </select>
-                <button class="btn btn-secondary" type="submit" name="accion" value="usar" data-insertar-operacion>Insertar</button>
+                    </ul>
+                {% else %}
+                    <div id="conjuntos-lista" class="conjuntos-vacio">
+                        <p>Aún no hay conjuntos. Añade uno{% if form.regiones %} o escribe en el diagrama{% endif %}.</p>
+                    </div>
+                {% endif %}
+                <div class="conjunto-nuevo field-group" data-perfil="literal-conjuntos">
+                    <label for="{{ form.definicion.id_for_label }}">{{ form.definicion.label }}</label>
+                    <div class="conjunto-nuevo-fila">
+                        {{ form.definicion }}
+                        <button class="btn btn-secondary" type="submit" name="accion" value="agregar" data-agregar>Añadir</button>
+                    </div>
+                    {{ form.definicion.errors }}
+                    {% disclosure titulo="Ayuda de escritura" id="conjuntos-sintaxis" nivel=4 %}
+                        <p id="conjuntos-ayuda" class="field-help">Llaves y comas: <code>{1, 2, {3}}</code>; texto entre comillas: <code>"rojo"</code>; vacío: <code>∅</code>. <span id="nombres-ayuda">Los nombres empiezan con letra y distinguen mayúsculas.</span></p>
+                    {% enddisclosure %}
                 </div>
-                <p id="operacion-ayuda" class="field-help" role="status">Inserta en el cursor o sustituye el texto seleccionado.</p>
-                <noscript><p class="field-help">Insertar sustituye la expresión por la operación elegida.</p></noscript>
-            </div>
-            {% disclosure titulo="Diagrama de Venn" detalle="automático · editar regiones" id="opciones-venn" icono="opciones" abierto=form.regiones %}
-                <p class="field-help">Combina dos o tres conjuntos para ver el diagrama. Para llenarlo por regiones, indica sus nombres; el universo permite añadir elementos fuera de los círculos.</p>
-                <div class="conjuntos-opciones-venn">
-                    <div class="field-group">{{ form.venn_nombres.label_tag }}{{ form.venn_nombres }}{{ form.venn_nombres.errors }}</div>
-                    <div class="field-group">{{ form.venn_universo.label_tag }}{{ form.venn_universo }}{{ form.venn_universo.errors }}</div>
+                <noscript>{% disclosure titulo="Cargar un ejemplo" detalle="sustituye el editor" id="ejemplos-sin-js" nivel=4 %}<ul>{% for clave, titulo in ejemplos %}<li><a href="?ejemplo={{ clave }}">{{ titulo }}</a></li>{% endfor %}</ul>{% enddisclosure %}</noscript>
+            </section>
+
+            <section class="conjuntos-diagrama" aria-labelledby="diagrama-titulo">
+                <div class="conjuntos-cabecera">
+                    <h3 id="diagrama-titulo" class="section-title">Diagrama de Venn</h3>
+                    {% if diagrama %}
+                    <div class="venn-modo" role="group" aria-label="Datos del diagrama">
+                        <span class="venn-modo-opcion" aria-current="true">Elementos</span>
+                        <a class="venn-modo-opcion" href="{{ diagrama.cantidades_url }}" title="Solo cuántos hay en cada región, sin elementos">Cantidades</a>
+                    </div>
+                    {% endif %}
                 </div>
                 {% if form.regiones %}
-                    <p id="regiones-ayuda" class="field-help">Escribe un conjunto en cada región, como {1, 2}. Un elemento compartido va solo en su intersección. Vacío significa ∅. Aplicar actualizará las definiciones.</p>
-                    <div class="cardinalidad-campos" data-regiones-editor data-conjuntos="{{ form.nombres_regiones|length }}">
-                        {% for campo in form.regiones %}<div class="field-group cardinalidad-dato" data-perfil="literal-conjuntos" data-cubre="{{ campo.mascara }}"><label for="{{ campo.id_for_label }}"><span class="cardinalidad-icono" aria-hidden="true"></span>{{ campo.label }}</label>{{ campo }}{{ campo.errors }}</div>{% endfor %}
+                    <p id="regiones-ayuda" class="field-help">Escribe en cada región sus elementos, como <code>1, 2</code>. Lo compartido va solo en su intersección.</p>
+                    <div class="venn-editor" data-venn-editor data-nombres="{{ diagrama.nombres|join:',' }}"{% if diagrama.universo %} data-universo="{{ diagrama.universo }}"{% endif %}>
+                        {% for campo in form.regiones %}<div class="field-group venn-campo" data-perfil="literal-conjuntos" data-mascara="{{ campo.mascara }}"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}</div>{% endfor %}
                     </div>
-                    <div class="conjuntos-atajos">
-                        <button class="btn btn-primary" type="submit" name="accion" value="aplicar_regiones">Aplicar regiones</button>
-                        <button class="btn btn-secondary" type="submit" name="accion" value="azar_regiones">Rellenar aleatoriamente</button>
-                        <button class="btn btn-secondary" type="submit" name="accion" value="guardar">Cancelar regiones</button>
+                    {% for campo in form.regiones %}{% if campo.errors %}<p class="field-error" id="{{ campo.auto_id }}_error" role="alert">{{ campo.label }}: {{ campo.errors.0 }}</p>{% endif %}{% endfor %}
+                    <div class="venn-acciones">
+                        <span class="conjunto-pendiente" data-venn-pendiente>Cambios sin aplicar</span>
+                        <button class="btn btn-secondary" type="submit" name="accion" value="aplicar_regiones" data-aplicar-regiones>Actualizar conjuntos</button>
+                        {% comment %}Solo con JavaScript hay un borrador del diagrama que descartar; sin él, «Guardar cambios» ya lo ignora.{% endcomment %}
+                        <button class="btn btn-secondary" type="submit" name="accion" value="guardar" data-descartar-regiones hidden>Descartar</button>
+                        <button class="btn btn-secondary" type="submit" name="accion" value="azar_regiones">Rellenar al azar</button>
                     </div>
+                {% elif diagrama.aviso %}
+                    <p class="conjuntos-vacio">No se dibuja el diagrama: {{ diagrama.aviso }}</p>
                 {% else %}
-                    <button class="btn btn-secondary" type="submit" name="accion" value="editar_regiones">Llenar por regiones</button>
+                    <p class="conjuntos-vacio">El diagrama dibuja conjuntos finitos. Los intervalos se ven en la recta real del resultado.</p>
                 {% endif %}
-            {% enddisclosure %}
-            {% include "calculadora/components/math_keyboard.html" %}
-        </section>
+                {% disclosure titulo="Opciones del diagrama" id="opciones-venn" icono="opciones" nivel=4 abierto=opciones_abiertas %}
+                    <div class="conjuntos-opciones-venn">
+                        <div class="field-group">{{ form.venn_nombres.label_tag }}{{ form.venn_nombres }}{{ form.venn_nombres.errors }}</div>
+                        <div class="field-group">{{ form.venn_universo.label_tag }}{{ form.venn_universo }}{{ form.venn_universo.errors }}</div>
+                    </div>
+                    <p class="field-help">Dos o tres nombres separados por comas; pueden ser nuevos. El universo añade la región exterior.</p>
+                    <button class="btn btn-secondary" type="submit" name="accion" value="editar_regiones">Actualizar diagrama</button>
+                {% enddisclosure %}
+            </section>
+        </div>
+    </section>
+
+    <section class="conjuntos-panorama" aria-labelledby="panorama-titulo" data-panorama>
+        <h3 id="panorama-titulo" class="section-title">Operaciones y propiedades</h3>
+        {% if diagrama.panorama %}
+            {% include "calculadora/modules/conjuntos/_tarjetas.html" with panorama=diagrama.panorama pasos=True %}
+        {% elif form.errors and form.bloques %}
+            <p class="conjuntos-vacio">Corrige lo marcado para volver a ver los resultados.</p>
+        {% elif form.bloques and not form.regiones %}
+            <p class="conjuntos-vacio">Las tarjetas resumen conjuntos finitos. Con intervalos, escribe una expresión.</p>
+        {% else %}
+            <p class="conjuntos-vacio">Aquí aparecerán la unión, la intersección, las diferencias y más en cuanto haya conjuntos.</p>
+        {% endif %}
+    </section>
+
+    <section class="panel workspace conjuntos-personalizada" aria-labelledby="expresion-titulo">
+        <h3 id="expresion-titulo" class="section-title"><label for="{{ form.expresion.id_for_label }}">Expresión personalizada</label></h3>
+        <div class="field-group conjuntos-expresion">
+            {{ form.expresion }}{{ form.expresion.errors }}
+            {% comment %}Barra de símbolos: inserta en el cursor del campo. Un solo alto de tabulación; las flechas recorren las teclas.{% endcomment %}
+            <div class="conjuntos-barra" role="toolbar" aria-label="Símbolos para la expresión" aria-controls="{{ form.expresion.id_for_label }}" data-barra hidden>
+                <div class="conjuntos-barra-grupo" role="group" aria-label="Conjuntos" data-barra-nombres></div>
+                {% for grupo in barra %}
+                <div class="conjuntos-barra-grupo" role="group" aria-label="{{ grupo.nombre }}">
+                    {% for tecla in grupo.teclas %}<button type="button" class="math-key" tabindex="-1" data-insercion="{{ tecla.insercion }}" data-retroceso="{{ tecla.retroceso }}" aria-label="{{ tecla.etiqueta }} — {{ tecla.nombre }}" title="{{ tecla.nombre }}">{{ tecla.etiqueta }}</button>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            <p class="field-help">Combina conjuntos y símbolos; agrupa con paréntesis, como <code>(A ∪ B) ∖ C</code>.</p>
+            <noscript>
+                <div class="conjuntos-guia field-group">
+                    <label for="conjuntos-operacion">Insertar operación</label>
+                    <div class="conjunto-nuevo-fila">
+                        <select name="plantilla" id="conjuntos-operacion" class="field-input">
+                            <option value="">Elige una operación…</option>
+                            {% for grupo, filas in guia %}
+                            <optgroup label="{{ grupo }}">
+                                {% for fila in filas %}<option value="{{ fila.clave }}">{{ fila.nombre }} · {{ fila.texto }}</option>{% endfor %}
+                            </optgroup>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-secondary" type="submit" name="accion" value="usar">Insertar</button>
+                    </div>
+                    <p class="field-help">Insertar sustituye la expresión por la operación elegida.</p>
+                </div>
+            </noscript>
+        </div>
         <div class="workspace-actions"><button class="btn btn-primary" type="submit" name="accion" value="calcular" data-calculo>Calcular</button></div>
-    </form>
-</section>
+    </section>
+    {% include "calculadora/components/math_keyboard.html" %}
+</form>
 {% endblock %}
 
 {% block tool_result %}
@@ -205,7 +247,7 @@
                 </tbody>
             </table>
         </div>
-        {% if not resultado.venn.universo %}<p class="field-help">Sin universo no se sabe qué hay fuera de los conjuntos. Puedes indicarlo en «Diagrama de Venn», junto a la expresión.</p>{% endif %}
+        {% if not resultado.venn.universo %}<p class="field-help">Sin universo no se sabe qué hay fuera de los conjuntos. Puedes indicarlo en «Opciones del diagrama».</p>{% endif %}
     </section>
     {% elif resultado.venn_aviso %}
     <p class="field-help">{{ resultado.venn_aviso }}</p>

@@ -33,7 +33,7 @@ class ConjuntosWebTests(SimpleTestCase):
                          catalogo.herramienta_por_id("relaciones-conjuntos").categoria)
         respuesta = self.client.get(RUTA + "?ejemplo=relaciones")
         for texto in ('name="nombre_0"', 'name="contenido_0"', 'name="expresion"',
-                      'data-perfil="relacion-conjuntos"', 'calculadora/conjuntos.js', 'math-keyboard-profiles'):
+                      'data-barra', 'calculadora/conjuntos.js', 'math-keyboard-profiles'):
             self.assertContains(respuesta, texto)
 
     def test_resultado_unico_y_procedimiento(self):

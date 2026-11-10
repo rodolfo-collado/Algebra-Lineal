@@ -25,20 +25,31 @@
         </div>
 
         <section class="workspace-section" aria-labelledby="datos-titulo">
-            <h3 id="datos-titulo" class="section-title">{% if form.modo_actual == "intersecciones" %}Cardinalidades conocidas{% else %}Elementos en cada región{% endif %}</h3>
-            <p class="field-help">{% if form.modo_actual == "intersecciones" %}Cada dato cuenta a todos los de esos conjuntos, también a los que comparten con otros. {% else %}Cada región cuenta solo a quienes están exactamente ahí. {% endif %}Escribe 0 si no hay ninguno.</p>
-            <div class="cardinalidad-campos" data-conjuntos="{{ form.nombres|length }}">
-                {% for campo in form.regiones %}
-                    <div class="field-group cardinalidad-dato" data-cubre="{{ campo.cubre }}">
-                        <label for="{{ campo.id_for_label }}"><span class="cardinalidad-icono" aria-hidden="true"></span><span class="cardinalidad-etiqueta"><span class="conjuntos-math">{{ campo.label }}</span><span class="cardinalidad-lectura">{{ campo.descripcion }}</span></span></label>
-                        {{ campo }}{{ campo.errors }}
-                    </div>
-                {% endfor %}
-                <div class="field-group cardinalidad-dato cardinalidad-universo" data-cubre="0">
-                    <label for="{{ form.universo.id_for_label }}"><span class="cardinalidad-icono" aria-hidden="true"></span><span class="cardinalidad-etiqueta"><span class="conjuntos-math">|U|</span><span class="cardinalidad-lectura">Universo, opcional: hace falta para ∁</span></span></label>
-                    {{ form.universo }}{{ form.universo.errors }}
+            <div class="conjuntos-cabecera">
+                <h3 id="datos-titulo" class="section-title">{% if form.modo_actual == "intersecciones" %}Cardinalidades conocidas{% else %}Cuántos hay en cada región{% endif %}</h3>
+                <div class="venn-modo" role="group" aria-label="Datos del diagrama">
+                    <a class="venn-modo-opcion" href="{% url 'calculadora:relaciones-conjuntos' %}" title="Escribir los elementos de cada región">Elementos</a>
+                    <span class="venn-modo-opcion" aria-current="true">Cantidades</span>
                 </div>
             </div>
+            <p class="field-help">{% if form.modo_actual == "intersecciones" %}Cada dato cuenta a todos los de esos conjuntos, también a los que comparten con otros. {% else %}Cada región cuenta solo a quienes están exactamente ahí. {% endif %}Escribe 0 si no hay ninguno. Aquí solo hay cantidades: no se nombran elementos.</p>
+            {% comment %}Con regiones separadas, conjuntos_visual.js coloca cada campo dentro de su región del diagrama; sus errores van debajo, con el nombre de la región.{% endcomment %}
+            <div class="cardinalidad-campos" data-conjuntos="{{ form.nombres|length }}"{% if form.modo_actual == "regiones" %} data-venn-editor data-nombres="{{ form.nombres|join:',' }}"{% endif %}>
+                {% for campo in form.regiones %}
+                    <div class="field-group cardinalidad-dato" data-cubre="{{ campo.cubre }}" data-mascara="{{ campo.mascara }}">
+                        <label for="{{ campo.id_for_label }}"><span class="cardinalidad-icono" aria-hidden="true"></span><span class="cardinalidad-etiqueta"><span class="conjuntos-math">{{ campo.label }}</span><span class="cardinalidad-lectura">{{ campo.descripcion }}</span></span></label>
+                        {{ campo }}{% if form.modo_actual != "regiones" %}{{ campo.errors }}{% endif %}
+                    </div>
+                {% endfor %}
+                <div class="field-group cardinalidad-dato cardinalidad-universo" data-cubre="0" data-mascara="0">
+                    <label for="{{ form.universo.id_for_label }}"><span class="cardinalidad-icono" aria-hidden="true"></span><span class="cardinalidad-etiqueta"><span class="conjuntos-math">|U|</span><span class="cardinalidad-lectura">Universo, opcional: hace falta para ∁</span></span></label>
+                    {{ form.universo }}{% if form.modo_actual != "regiones" %}{{ form.universo.errors }}{% endif %}
+                </div>
+            </div>
+            {% if form.modo_actual == "regiones" %}
+                {% for campo in form.regiones %}{% if campo.errors %}<p class="field-error" id="{{ campo.auto_id }}_error" role="alert">{{ campo.descripcion }}: {{ campo.errors.0 }}</p>{% endif %}{% endfor %}
+                {% if form.universo.errors %}<p class="field-error" id="{{ form.universo.auto_id }}_error" role="alert">Universo: {{ form.universo.errors.0 }}</p>{% endif %}
+            {% endif %}
         </section>
 
         <section class="workspace-section" aria-labelledby="contar-titulo">
@@ -138,9 +149,13 @@
             </table>
         </div>
     </section>
+    <section class="conjuntos-panorama" aria-labelledby="panorama-titulo" data-panorama>
+        <h3 id="panorama-titulo" class="section-title">Operaciones y propiedades</h3>
+        {% include "calculadora/modules/conjuntos/_tarjetas.html" with panorama=resultado.panorama %}
+    </section>
 </section>
 {{ resultado.datos|json_script:"conjuntos-resultado-datos" }}
 {% endif %}
 {% endblock %}
 
-{% block extra_js %}<script src="{% static 'calculadora/conjuntos_visual.js' %}" defer></script><script src="{% static 'calculadora/teclado.js' %}" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'calculadora/conjuntos.js' %}" defer></script><script src="{% static 'calculadora/conjuntos_visual.js' %}" defer></script><script src="{% static 'calculadora/teclado.js' %}" defer></script>{% endblock %}

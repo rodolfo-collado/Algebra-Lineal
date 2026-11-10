@@ -14,10 +14,12 @@ from backend.conjuntos.modelo import Conjunto, Par, orden, presentar
 from backend.conjuntos.parser import Operacion, Referencia, Relacion, analizar_expresion
 from backend.conjuntos.presupuesto import Presupuesto
 from backend.conjuntos.recta_visual import datos_recta, notacion_recta
-from backend.conjuntos.regiones import construir_venn, detectar_venn
+from backend.conjuntos.regiones import construir_venn, detectar_venn, seleccionar_regiones
 
 # Por encima de estos tamaños el paso muestra su fórmula, sin desglosar elemento a elemento.
 CHIPS_MAXIMOS = 40
+# Elementos que una tarjeta escribe antes de plegar el resto.
+TARJETA_MAXIMO = 12
 SUBCONJUNTOS_MAXIMOS = 64
 PRODUCTO_MAXIMO = 10
 
@@ -343,6 +345,93 @@ def resumen_definiciones(entorno):
     return resumen
 
 
+def catalogo_operaciones(nombres, universo=None):
+    """Operaciones habituales entre los conjuntos del diagrama: (clave, título, notación, expresión).
+
+    La expresión es la que entiende el parser; △ solo es notación de (A ∖ B) ∪ (B ∖ A)."""
+    a, b, *resto = nombres
+    union, interseccion = " ∪ ".join(nombres), " ∩ ".join(nombres)
+    filas = [("union", "Unión", union, union), ("interseccion", "Intersección", interseccion, interseccion)]
+    if resto:
+        pares = ((a, b), (a, resto[0]), (b, resto[0]))
+        filas += [(f"interseccion_{i}", "Intersección", f"{x} ∩ {y}", f"{x} ∩ {y}") for i, (x, y) in enumerate(pares)]
+        for i, x in enumerate(nombres):
+            otros = " ∪ ".join(n for n in nombres if n != x)
+            filas.append((f"solo_{i}", f"Solo {x}", f"{x} ∖ ({otros})", f"{x} ∖ ({otros})"))
+    else:
+        filas += [("diferencia_0", "Diferencia", f"{a} ∖ {b}", f"{a} ∖ {b}"),
+                  ("diferencia_1", "Diferencia", f"{b} ∖ {a}", f"{b} ∖ {a}"),
+                  ("simetrica", "Diferencia simétrica", f"{a} △ {b}", f"({a} ∖ {b}) ∪ ({b} ∖ {a})")]
+    if universo:
+        filas += [(f"complemento_{i}", "Complemento", f"{x}ᶜ", f"∁({x}, {universo})") for i, x in enumerate(nombres)]
+        filas.append(("complemento_union", "Complemento de la unión", f"({union})ᶜ", f"∁({union}, {universo})"))
+    return filas
+
+
+def panorama_web(nombres, universo, regiones, *, cantidades=False):
+    """Tarjetas de operaciones y propiedades de los conjuntos del diagrama.
+
+    `regiones` asigna a cada máscara sus elementos o, con `cantidades`, cuántos tiene. Cada
+    tarjeta reúne (o suma) las regiones que selecciona el mismo evaluador que sombrea el
+    diagrama: si solo se conocen cantidades, ninguna tarjeta escribe elementos."""
+    presupuesto = Presupuesto()
+    medidas = {}
+
+    def medir(expresion):
+        if expresion not in medidas:
+            mascaras = seleccionar_regiones(analizar_expresion(expresion, presupuesto=presupuesto), nombres, universo, presupuesto)
+            if cantidades:
+                medidas[expresion] = mascaras, sum(regiones[m] for m in mascaras), None
+            else:
+                elementos = sorted((e for m in mascaras for e in regiones[m]), key=orden)
+                medidas[expresion] = mascaras, len(elementos), elementos
+        return medidas[expresion]
+
+    def tarjeta(clave, titulo, notacion, expresion):
+        mascaras, cantidad, elementos = medir(expresion)
+        vista = {'clave': clave, 'titulo': titulo, 'cantidad': cantidad, 'mascaras': mascaras, 'resto': 0,
+                 'notacion': f"|{notacion}|" if cantidades else notacion,
+                 'detalle': expresion if expresion != notacion else None}
+        if cantidades:
+            vista['texto'] = vista['resumen'] = str(cantidad)
+        else:
+            vista['texto'] = vista['resumen'] = presentar(Conjunto(elementos))
+            if cantidad > TARJETA_MAXIMO:
+                vista['resumen'] = "{" + ", ".join(presentar(e) for e in elementos[:TARJETA_MAXIMO]) + ", …}"
+                vista['resto'] = cantidad - TARJETA_MAXIMO
+                vista['mas'] = f"Ver los {cantidad} elementos"
+        return vista
+
+    def relacion(x, y):
+        """Lo que une a dos conjuntos, leído de sus regiones: iguales, incluido, disjuntos o solapados."""
+        solo_x, solo_y, comunes = (medir(e)[1] for e in (f"{x} ∖ {y}", f"{y} ∖ {x}", f"{x} ∩ {y}"))
+        if not solo_x and not solo_y:
+            return f"{x} = {y}", "Tienen los mismos elementos."
+        if not solo_x or not solo_y:
+            dentro, fuera = (x, y) if not solo_x else (y, x)
+            return f"{dentro} ⊂ {fuera}", f"Todo elemento de {dentro} está en {fuera}."
+        if not comunes:
+            return f"{x} ∩ {y} = ∅", "Son disjuntos: no comparten elementos."
+        return f"{x} ∩ {y} ≠ ∅", f"Comparten {comunes} elemento{'' if comunes == 1 else 's'}; ninguno contiene al otro."
+
+    medibles = [*nombres, *((universo,) if universo else ())]
+    cardinalidades = [(f"|{n}|", medir(n)[1]) for n in medibles]
+    pares = [(x, y) for i, x in enumerate(nombres) for y in nombres[i + 1:]]
+    # Inclusión-exclusión: cada lado lo mide el modelo; aquí solo se escribe la identidad con sus valores.
+    terminos = [(' ∩ '.join(n for i, n in enumerate(nombres) if m & (1 << i)), '+' if m.bit_count() % 2 else '−')
+                for m in sorted(range(1, 1 << len(nombres)), key=lambda m: (m.bit_count(), m))]
+    union = ' ∪ '.join(nombres)
+    lado = lambda escribir: ' '.join(f"{signo} {escribir(e)}" for e, signo in terminos)[2:]
+    formula = f"|{union}| = {lado(lambda e: f'|{e}|')}"
+    valores = f"{medir(union)[1]} = {lado(lambda e: str(medir(e)[1]))}"
+    return {'cantidades': cantidades,
+            'operaciones': [tarjeta(*fila) for fila in catalogo_operaciones(nombres, universo)],
+            'cardinalidades': cardinalidades,
+            'cardinalidades_texto': ', '.join(f"{etiqueta} = {valor}" for etiqueta, valor in cardinalidades),
+            'relaciones': [relacion(x, y) for x, y in pares],
+            'inclusion_exclusion': {'formula': formula, 'valores': valores, 'texto': f"{formula}; {valores}"}}
+
+
 def cardinalidades_web(nombres, datos, *, modo, universo, expresion):
     """Resultado, regiones con su lectura y la evidencia de inclusión-exclusión, en cadenas exactas."""
     r = resolver_cardinalidades(nombres, datos, modo=modo, universo=universo, expresion=expresion)
@@ -373,6 +462,8 @@ def cardinalidades_web(nombres, datos, *, modo, universo, expresion):
                                   'descripcion': por_mascara[m]['descripcion'], 'etiqueta': por_mascara[m]['etiqueta']}
                                  for m in p['regiones']]
         pasos.append(vista)
-    return {**r, 'filas': regiones, 'pasos_vista': pasos, 'expresion': expresion, 'modo': modo, 'datos': {
+    # Sin universo no hay exterior que contar: las tarjetas se limitan a lo que está dentro.
+    panorama = panorama_web(nombres, 'U' if universo is not None else None, r['regiones'], cantidades=True)
+    return {**r, 'filas': regiones, 'pasos_vista': pasos, 'expresion': expresion, 'modo': modo, 'panorama': panorama, 'datos': {
         'venn': {'nombres': nombres, 'regiones': regiones, 'cantidades': True},
         'resultado': str(r['resultado']), 'union': str(r['union']), 'pasos': pasos}}
