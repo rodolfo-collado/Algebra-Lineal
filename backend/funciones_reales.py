@@ -135,7 +135,7 @@ class FuncionReal:
         try:
             return self._rango(self.arbol, (a, b))
         except (ArithmeticError, ValueError) as error:
-            raise ValueError("No podemos aplicar bisección con este intervalo. " + str(error)) from error
+            raise ValueError("No podemos aplicar el método en este intervalo. " + str(error)) from error
 
     def _rango(self, nodo, intervalo):
         if isinstance(nodo, ast.Constant):

@@ -164,6 +164,34 @@ Estas notas describen una versión preparada, no una release publicada.
 Este PR se dirige únicamente a `develop`; la promoción a `main`, el tag y la
 publicación quedan pendientes de una revisión posterior y de su PR separado.
 
+## Preparación de v0.16.0
+
+Incremento **MINOR** desde 0.15.0: añade Regla Falsa clásica y la edición de
+conjuntos por regiones, conservando las operaciones y los formatos existentes.
+Esta versión se prepara para revisión; todavía no está publicada.
+
+- **Regla Falsa:** vista previa de la función, secante y corte con el eje x,
+  recorrido de iteraciones, error absoluto y confirmación de cercanía de la raíz.
+  La lectura separa aproximación, signos, actualización, error y decisión; la
+  tabla presenta a, b y xr antes de sus evaluaciones. Bisección conserva su método.
+- **Conjuntos:** ejemplos en el menú Edición (también clic derecho y Shift+F10),
+  selector compacto para insertar operaciones y ayuda de escritura plegable.
+  El teclado matemático y los procedimientos didácticos siguen disponibles.
+- **Venn por regiones:** entrada manual o aleatoria para dos o tres conjuntos,
+  intersecciones y exterior cuando se indica universo. Aplicar genera las
+  definiciones matemáticas y conserva los conjuntos ajenos a la distribución.
+  Los elementos repetidos en regiones distintas se rechazan; el diagrama se
+  recalcula desde las definiciones. El flujo manual y aleatorio funciona sin JS.
+
+La revisión de `origin/main...origin/develop` partió de `main` en `f182f8c` y
+`develop` en `50de61d`: solo incluía el PR #118 (Regla Falsa), fusionado el
+9 de noviembre de 2026. `git merge-tree --write-tree origin/main origin/develop`
+terminó sin conflictos. Los siete archivos de ajustes visuales que aún no
+tenían commit en el worktree de Regla Falsa se incorporan en este PR;
+sus originales y los trabajos de navegación/Estudio se conservan intactos.
+No se incorporan otras funcionalidades en desarrollo. La promoción
+`develop → main` requiere un PR separado tras revisar e integrar esta preparación.
+
 ## Flujo de integración y entrega
 
 ```mermaid

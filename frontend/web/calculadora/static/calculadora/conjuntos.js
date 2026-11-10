@@ -5,6 +5,7 @@
     if (!form) return;
     const expresion = form.elements.expresion;
     const guia = form.querySelector(".conjuntos-guia");
+    const operacion = form.elements.plantilla;
     const guardar = form.querySelector("[data-guardar]");
     const nombres = () => [...form.querySelectorAll('[data-campo="nombre"]')].map(campo => campo.value.trim()).filter(Boolean);
 
@@ -25,20 +26,25 @@
     }
 
     function actualizarGuia() {
-        guia?.querySelectorAll("[data-plantilla]").forEach(boton => {
-            boton.querySelector("[data-guia-texto]").textContent = rellenar(boton.dataset.plantilla);
+        guia?.querySelectorAll("[data-plantilla]").forEach(opcion => {
+            opcion.textContent = `${opcion.dataset.nombre} · ${rellenar(opcion.dataset.plantilla)}`;
         });
     }
 
-    // Elegir una operación escribe la expresión; calcular sigue siendo decisión del usuario.
-    guia?.addEventListener("click", event => {
-        const boton = event.target.closest("[data-plantilla]");
-        if (!boton) return;
+    operacion.addEventListener("change", () => {
+        document.getElementById("operacion-ayuda").textContent = operacion.selectedOptions[0].dataset.descripcion ||
+            "Inserta en el cursor o sustituye el texto seleccionado.";
+    });
+    guia.querySelector("[data-insertar-operacion]").addEventListener("click", event => {
         event.preventDefault();
-        expresion.value = rellenar(boton.dataset.plantilla);
-        expresion.dispatchEvent(new Event("input", { bubbles: true }));
+        const opcion = operacion.selectedOptions[0];
+        if (!opcion.dataset.plantilla) { operacion.focus(); return; }
         expresion.focus();
-        expresion.setSelectionRange(expresion.value.length, expresion.value.length);
+        const texto = rellenar(opcion.dataset.plantilla);
+        if (!document.execCommand("insertText", false, texto)) {
+            expresion.setRangeText(texto, expresion.selectionStart, expresion.selectionEnd, "end");
+            expresion.dispatchEvent(new Event("input", { bubbles: true }));
+        }
     });
 
     // «Guardar cambios» solo aparece cuando hay algo que guardar (sin JavaScript, siempre).

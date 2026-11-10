@@ -80,8 +80,8 @@ evaluaciones porque la guía PDF y la última fila de la diapositiva tienen disc
 ## 4. Cómo se conecta el programa
 
 La ruta web llega a `resolver_biseccion()` en
-[views_biseccion.py](../frontend/web/calculadora/views_biseccion.py).
-`BiseccionForm`, en [forms_biseccion.py](../frontend/web/calculadora/forms_biseccion.py),
+[views_raices.py](../frontend/web/calculadora/views_raices.py).
+`BiseccionForm`, en [forms_raices.py](../frontend/web/calculadora/forms_raices.py),
 valida los campos y construye `FuncionReal`. Esta clase, en
 [funciones_reales.py](../backend/funciones_reales.py), convierte la expresión en
 un árbol de operaciones permitido. `explicitar_productos()` transforma `5x` en
@@ -97,15 +97,17 @@ cotas son conservadoras: pueden rechazar una expresión válida.
 
 ## 5. Qué hace la gráfica
 
-[servicios_biseccion.py](../frontend/web/calculadora/servicios_biseccion.py), mediante
-`muestrear()`, genera hasta 801 puntos. `explorar_biseccion()` entrega las muestras;
-no ejecuta la bisección. En [biseccion.js](../frontend/web/calculadora/static/calculadora/biseccion.js),
+[servicios_raices.py](../frontend/web/calculadora/servicios_raices.py), mediante
+`muestrear()`, genera hasta 801 puntos. `explorar_funcion()` entrega las muestras;
+no ejecuta la bisección. En [raices.js](../frontend/web/calculadora/static/calculadora/raices.js),
 `iniciar()` crea la gráfica con `Plotly.newPlot` y `mostrarPaso(i)` selecciona una
-iteración ya guardada. Esta llamada real actualiza los puntos y la franja:
+iteración ya guardada. [biseccion.js](../frontend/web/calculadora/static/calculadora/biseccion.js)
+aporta los puntos y la explicación de cada paso. El controlador compartido actualiza la franja:
 
 ```javascript
-        Plotly.update(grafica, { x: [[p.a, p.c, p.b]], y: [[p.fa, p.fc, p.fb]],
-            text: [["a", "c (punto medio)", "b"]] }, { "shapes[2].x0": p.a, "shapes[2].x1": p.b }, [1])
+        Plotly.update(grafica, { x: [puntos.x], y: [puntos.y], text: [puntos.text],
+            customdata: [etiquetas(puntos.x, puntos.y, 12)], "marker.size": [puntos.size], "marker.symbol": [puntos.symbol] },
+            { "shapes[2].x0": p.a, "shapes[2].x1": p.b }, [1])
             .finally(() => { mutando = false; });
 ```
 

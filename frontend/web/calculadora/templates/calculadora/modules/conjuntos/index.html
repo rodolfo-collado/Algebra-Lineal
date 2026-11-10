@@ -1,21 +1,23 @@
 {% extends "calculadora/layouts/herramienta.html" %}
 {% load static componentes %}
-{% comment %}Conjuntos → definir (filas «A = {…}» con su lectura), escribir la expresión (con una guía de operaciones) y leer el resultado con su procedimiento, el diagrama de Venn o la recta real. Todo lo que se dibuja llega calculado por el motor.{% endcomment %}
+{% comment %}El editor y las regiones escriben definiciones; el motor calcula todo lo que se dibuja.{% endcomment %}
 
 {% block extra_head %}<link rel="stylesheet" href="{% static 'calculadora/styles/conjuntos.css' %}">{% endblock %}
 
 {% block tool_input %}
 <section class="panel workspace" aria-label="Entrada de conjuntos">
-    <form id="conjuntos-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+    <form id="conjuntos-form"{% if form.regiones %} class="conjuntos-editando-regiones"{% endif %} data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         {{ form.cantidad }}
         {% comment %}Primer botón del formulario: Intro en un campo calcula, nunca elimina un conjunto.{% endcomment %}
-        <button class="conjuntos-envio-implicito" type="submit" name="accion" value="calcular" tabindex="-1" aria-hidden="true">Calcular</button>
+        <button class="conjuntos-envio-implicito" type="submit" name="accion" value="{% if form.regiones %}aplicar_regiones{% else %}calcular{% endif %}" tabindex="-1" aria-hidden="true">Calcular</button>
         {% include "calculadora/components/errores_generales.html" %}
+        {% if regiones_aplicadas %}<p class="field-help" role="status">Regiones aplicadas a los conjuntos. Revisa la expresión y pulsa Calcular.</p>{% endif %}
 
-        <section class="workspace-section" aria-labelledby="sets-title">
+        <section class="workspace-section conjuntos-definiciones" aria-labelledby="sets-title">
             <div class="conjuntos-cabecera">
                 <h3 id="sets-title" class="section-title">Conjuntos</h3>
+                <button class="btn btn-secondary" type="button" data-edicion-abrir="id_definicion" hidden aria-haspopup="menu">Edición</button>
                 {% if form.bloques %}
                     <button class="btn btn-secondary conjuntos-guardar" type="submit" name="accion" value="guardar" data-guardar>Guardar cambios</button>
                 {% endif %}
@@ -55,8 +57,7 @@
                 </ul>
             {% else %}
                 <div id="conjuntos-lista" class="conjuntos-vacio">
-                    <p>Aún no hay conjuntos. Escribe uno debajo, como <code>A = {1, 2, 3}</code>, o empieza con un ejemplo:</p>
-                    <ul class="conjuntos-ejemplo-lista">{% for clave, titulo in ejemplos %}<li><a class="btn btn-secondary" href="?ejemplo={{ clave }}">{{ titulo }}</a></li>{% endfor %}</ul>
+                    <p>Aún no hay conjuntos. Añade uno para empezar.</p>
                 </div>
             {% endif %}
             <div class="conjunto-nuevo field-group" data-perfil="literal-conjuntos">
@@ -66,45 +67,56 @@
                     <button class="btn btn-secondary" type="submit" name="accion" value="agregar" data-agregar>Añadir</button>
                 </div>
                 {{ form.definicion.errors }}
-                <p id="conjuntos-ayuda" class="field-help">Llaves y comas: <code>{1, 2, {3}}</code>; texto entre comillas: <code>"rojo"</code>; vacío: <code>∅</code>. <span id="nombres-ayuda">Los nombres empiezan con letra y distinguen mayúsculas.</span></p>
-            </div>
-            {% if form.bloques %}
-                {% disclosure titulo="Cargar un ejemplo" detalle="sustituye los conjuntos actuales" id="conjuntos-ejemplos" nivel=4 %}
-                    <ul class="conjuntos-ejemplo-lista">{% for clave, titulo in ejemplos %}<li><a class="btn btn-secondary" href="?ejemplo={{ clave }}">{{ titulo }}</a></li>{% endfor %}</ul>
+                {% disclosure titulo="Ayuda de escritura" id="conjuntos-sintaxis" nivel=4 %}
+                    <p id="conjuntos-ayuda" class="field-help">Llaves y comas: <code>{1, 2, {3}}</code>; texto entre comillas: <code>"rojo"</code>; vacío: <code>∅</code>. <span id="nombres-ayuda">Los nombres empiezan con letra y distinguen mayúsculas.</span></p>
                 {% enddisclosure %}
-            {% endif %}
+            </div>
+            <noscript>{% disclosure titulo="Cargar un ejemplo" detalle="sustituye el editor" id="ejemplos-sin-js" nivel=4 %}<ul>{% for clave, titulo in ejemplos %}<li><a href="?ejemplo={{ clave }}">{{ titulo }}</a></li>{% endfor %}</ul>{% enddisclosure %}</noscript>
         </section>
 
         <section class="workspace-section" aria-labelledby="expresion-titulo">
-            <h3 id="expresion-titulo" class="section-title"><label for="{{ form.expresion.id_for_label }}">Expresión</label></h3>
-            <div class="field-group" data-perfil="relacion-conjuntos" data-operandos="#conjuntos-lista">
+            <h3 id="expresion-titulo" class="section-title">{% if form.regiones %}Llenar por regiones{% else %}<label for="{{ form.expresion.id_for_label }}">Expresión</label>{% endif %}</h3>
+            <div class="field-group conjuntos-expresion" data-perfil="relacion-conjuntos" data-operandos="#conjuntos-lista">
                 {{ form.expresion }}{{ form.expresion.errors }}
-                <p class="field-help">Usa paréntesis para agrupar: ∩ se resuelve antes que ∪ y ∖. El teclado aparece al escribir.</p>
+                <p class="field-help">Agrupa con paréntesis. También puedes combinar símbolos desde el teclado matemático.</p>
             </div>
-            {% disclosure titulo="Operaciones disponibles" detalle="∪ ∩ ∖ ∁ |A| × ∈ ⊆" id="guia-conjuntos" abierto=guia_abierta %}
-                <div class="conjuntos-guia" data-elemento="{{ elemento_guia }}">
+            <div class="conjuntos-guia field-group" data-elemento="{{ elemento_guia }}">
+                <label for="conjuntos-operacion">Insertar operación</label>
+                <div class="conjunto-nuevo-fila">
+                <select name="plantilla" id="conjuntos-operacion" class="field-input" aria-describedby="operacion-ayuda">
+                <option value="">Elige una operación…</option>
                 {% for grupo, filas in guia %}
-                    <h4 class="conjuntos-guia-grupo">{{ grupo }}</h4>
-                    <ul class="conjuntos-guia-lista">
+                    <optgroup label="{{ grupo }}">
                     {% for fila in filas %}
-                        <li{% if fila.plantilla|length > 40 %} class="es-larga"{% endif %}>
-                            <button type="submit" name="plantilla" value="{{ fila.clave }}" class="conjuntos-guia-uso" data-plantilla="{{ fila.plantilla }}" aria-describedby="guia-{{ fila.clave }}">
-                                <span class="sr-only">Escribir {{ fila.nombre|lower }}: </span><code data-guia-texto>{{ fila.texto }}</code>
-                            </button>
-                            <span id="guia-{{ fila.clave }}" class="conjuntos-guia-descripcion"><strong>{{ fila.nombre }}.</strong> {{ fila.descripcion }}</span>
-                        </li>
+                        <option value="{{ fila.clave }}" data-plantilla="{{ fila.plantilla }}" data-nombre="{{ fila.nombre }}" data-descripcion="{{ fila.descripcion }}">{{ fila.nombre }} · {{ fila.texto }}</option>
                     {% endfor %}
-                    </ul>
+                    </optgroup>
                 {% endfor %}
+                </select>
+                <button class="btn btn-secondary" type="submit" name="accion" value="usar" data-insertar-operacion>Insertar</button>
                 </div>
-                <p class="field-help">Elegir una operación la escribe en la expresión con tus nombres; puedes editarla antes de calcular.</p>
-            {% enddisclosure %}
-            {% disclosure titulo="Diagrama de Venn" detalle="automático" id="opciones-venn" icono="opciones" %}
-                <p class="field-help">Se dibuja solo cuando la expresión combina dos o tres conjuntos con ∪, ∩, ∖ o ∁; en ∁(A, U), U es el universo. Aquí puedes elegir otros conjuntos o un universo para ver también lo que queda fuera.</p>
+                <p id="operacion-ayuda" class="field-help" role="status">Inserta en el cursor o sustituye el texto seleccionado.</p>
+                <noscript><p class="field-help">Insertar sustituye la expresión por la operación elegida.</p></noscript>
+            </div>
+            {% disclosure titulo="Diagrama de Venn" detalle="automático · editar regiones" id="opciones-venn" icono="opciones" abierto=form.regiones %}
+                <p class="field-help">Combina dos o tres conjuntos para ver el diagrama. Para llenarlo por regiones, indica sus nombres; el universo permite añadir elementos fuera de los círculos.</p>
                 <div class="conjuntos-opciones-venn">
                     <div class="field-group">{{ form.venn_nombres.label_tag }}{{ form.venn_nombres }}{{ form.venn_nombres.errors }}</div>
                     <div class="field-group">{{ form.venn_universo.label_tag }}{{ form.venn_universo }}{{ form.venn_universo.errors }}</div>
                 </div>
+                {% if form.regiones %}
+                    <p id="regiones-ayuda" class="field-help">Escribe un conjunto en cada región, como {1, 2}. Un elemento compartido va solo en su intersección. Vacío significa ∅. Aplicar actualizará las definiciones.</p>
+                    <div class="cardinalidad-campos" data-regiones-editor data-conjuntos="{{ form.nombres_regiones|length }}">
+                        {% for campo in form.regiones %}<div class="field-group cardinalidad-dato" data-perfil="literal-conjuntos" data-cubre="{{ campo.mascara }}"><label for="{{ campo.id_for_label }}"><span class="cardinalidad-icono" aria-hidden="true"></span>{{ campo.label }}</label>{{ campo }}{{ campo.errors }}</div>{% endfor %}
+                    </div>
+                    <div class="conjuntos-atajos">
+                        <button class="btn btn-primary" type="submit" name="accion" value="aplicar_regiones">Aplicar regiones</button>
+                        <button class="btn btn-secondary" type="submit" name="accion" value="azar_regiones">Rellenar aleatoriamente</button>
+                        <button class="btn btn-secondary" type="submit" name="accion" value="guardar">Cancelar regiones</button>
+                    </div>
+                {% else %}
+                    <button class="btn btn-secondary" type="submit" name="accion" value="editar_regiones">Llenar por regiones</button>
+                {% endif %}
             {% enddisclosure %}
             {% include "calculadora/components/math_keyboard.html" %}
         </section>
@@ -176,18 +188,18 @@
     {% if resultado.venn %}
     <section class="panel conjuntos-venn" aria-labelledby="venn-titulo">
         <h3 id="venn-titulo" class="panel-title">Diagrama de Venn</h3>
-        <p class="field-help">{% if resultado.tipo == 'conjunto' %}Sombreado: las regiones que forman el resultado. {% endif %}Pulsa una región o una fila para ver sus elementos.</p>
+        <p class="field-help">{% if resultado.venn.resalta %}Sombreado: las regiones que forman el resultado. {% else %}Distribución de los conjuntos definidos. {% endif %}Pulsa una región o una fila para ver sus elementos.</p>
         <div class="conjuntos-venn-lienzo" data-venn></div>
         <div class="table-wrap">
             <table class="procedure-table conjuntos-regiones" data-regiones>
                 <caption class="sr-only">Cada elemento está en una sola región</caption>
-                <thead><tr><th scope="col">Región</th><th scope="col">Elementos</th>{% if resultado.tipo == 'conjunto' %}<th scope="col">En el resultado</th>{% endif %}</tr></thead>
+                <thead><tr><th scope="col">Región</th><th scope="col">Elementos</th>{% if resultado.venn.resalta %}<th scope="col">En el resultado</th>{% endif %}</tr></thead>
                 <tbody>
                 {% for region in resultado.regiones %}
                     <tr data-mascara="{{ region.mascara }}"{% if region.seleccionada %} data-seleccionada{% endif %}>
                         <th scope="row"><span class="conjuntos-region-nombre">{{ region.descripcion }}</span> <span class="conjuntos-region-notacion conjuntos-math">{{ region.etiqueta }}</span></th>
                         <td class="conjuntos-math">{% for e in region.etiquetas %}{{ e }}{% if not forloop.last %}, {% endif %}{% empty %}{% if region.exterior_conocido %}<span class="field-help">vacía</span>{% else %}<span class="field-help">desconocida: no hay universo</span>{% endif %}{% endfor %}</td>
-                        {% if resultado.tipo == 'conjunto' %}<td>{% if region.seleccionada %}<span class="conjuntos-si">Sí</span>{% else %}No{% endif %}</td>{% endif %}
+                        {% if resultado.venn.resalta %}<td>{% if region.seleccionada %}<span class="conjuntos-si">Sí</span>{% else %}No{% endif %}</td>{% endif %}
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -234,4 +246,5 @@
 <script src="{% static 'calculadora/conjuntos.js' %}" defer></script>
 <script src="{% static 'calculadora/teclado.js' %}" defer></script>
 <script src="{% static 'calculadora/conjuntos_visual.js' %}" defer></script>
+{% include "calculadora/components/menu_edicion.html" %}
 {% endblock %}

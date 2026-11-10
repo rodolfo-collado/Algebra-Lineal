@@ -8,6 +8,29 @@ from .parser import Operacion, Referencia
 from .presupuesto import Presupuesto
 
 
+def conjuntos_desde_regiones(nombres, regiones, *, universo=None, presupuesto=None):
+    """Inversa de la distribución de Venn: cada elemento ocupa una única región."""
+    presupuesto = presupuesto if presupuesto is not None else Presupuesto()
+    if len(nombres) not in (2, 3) or len(set(nombres)) != len(nombres):
+        raise ValueError('Selecciona dos o tres nombres distintos para llenar por regiones.')
+    if universo in nombres:
+        raise ValueError('El universo debe tener un nombre distinto de los conjuntos.')
+    esperadas = set(range(0 if universo else 1, 1 << len(nombres)))
+    if set(regiones) != esperadas or any(not isinstance(r, Conjunto) for r in regiones.values()):
+        raise ValueError('Indica un conjunto finito en cada región; usa ∅ si está vacía.')
+    presupuesto.reservar(calculo=sum(peso(r) for r in regiones.values()) * (len(nombres) + 1))
+    vistos = set()
+    for region in regiones.values():
+        if vistos.intersection(region.elementos):
+            raise ValueError('Un mismo elemento no puede ocupar regiones distintas. Escríbelo solo en la región compartida que corresponda.')
+        vistos.update(region.elementos)
+    conjuntos = {n: Conjunto(e for m, r in regiones.items() if m & (1 << i) for e in r.elementos)
+                 for i, n in enumerate(nombres)}
+    if universo:
+        conjuntos[universo] = Conjunto(vistos)
+    return conjuntos
+
+
 def seleccionar_regiones(arbol, nombres, universo, presupuesto):
     pendientes = [arbol]
     while pendientes:

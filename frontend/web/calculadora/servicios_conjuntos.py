@@ -246,6 +246,7 @@ def _leer_punto(punto, presupuesto):
 
 def _venn(expresion, entorno, nombres, universo, presupuesto):
     """Regiones para el diagrama: las pedidas o, si no se pidieron, las que usa la expresión."""
+    resalta = True
     if not nombres:
         detectado = detectar_venn(expresion, entorno)
         if detectado is None:
@@ -257,13 +258,15 @@ def _venn(expresion, entorno, nombres, universo, presupuesto):
         except ValueError as error:
             return None, f"No se dibuja el diagrama: {error}"
     else:
-        regiones = construir_venn(nombres, entorno, expresion, universo=universo, presupuesto=presupuesto)
+        # Una relación o cardinalidad conserva el diagrama de los conjuntos, sin sombrear un resultado distinto.
+        resalta = detectar_venn(expresion, entorno) is not None
+        regiones = construir_venn(nombres, entorno, expresion if resalta else Conjunto(), universo=universo, presupuesto=presupuesto)
     regiones = [{**r, 'elementos': [_valor_web(e) for e in r['elementos']],
                  'etiqueta': notacion_region(r['mascara'], nombres),
                  'descripcion': describir_region(r['mascara'], nombres),
                  'etiquetas': [presentar(e) for e in r['elementos']],
                  'cantidad': str(len(r['elementos'])) if r['exterior_conocido'] else None} for r in regiones]
-    return {'nombres': nombres, 'universo': universo, 'regiones': regiones}, None
+    return {'nombres': nombres, 'universo': universo, 'regiones': regiones, 'resalta': resalta}, None
 
 
 def _recta(resultado, nodos, punto):

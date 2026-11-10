@@ -8,8 +8,8 @@ register = template.Library()
 
 
 @register.filter
-def numero_biseccion(valor):
+def numero_raices(valor):
     numero = float(valor)
     completo = repr(numero)
     texto = format(Decimal(completo), "f") if numero == 0 or 1e-16 <= abs(numero) < 1e12 else completo
-    return format_html('<span data-biseccion-numero="{}" title="Valor almacenado: {}">{}</span>', completo, completo, texto)
+    return format_html('<span data-raices-numero="{}" title="Valor almacenado: {}">{}</span>', completo, completo, texto)

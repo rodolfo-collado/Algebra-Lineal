@@ -1,11 +1,16 @@
 """Flujo HTTP del editor y la única evaluación de expresiones."""
 
+from random import sample
+
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
 from backend.conjuntos.literales import analizar_literal
 from backend.conjuntos.presupuesto import Presupuesto
-from .forms_conjuntos import EJEMPLOS, GUIA, CardinalidadesForm, ConjuntosForm, elegir_nombres, inicial_ejemplo, rellenar
+from backend.conjuntos.modelo import Conjunto, presentar
+from backend.conjuntos.parser import analizar_expresion
+from backend.conjuntos.regiones import construir_venn
+from .forms_conjuntos import EJEMPLOS, GUIA, CardinalidadesForm, ConjuntosForm, elegir_nombres, inicial_editor, inicial_ejemplo, rellenar
 from .servicios_conjuntos import cardinalidades_web, relacion_web, resumen_definiciones
 from .teclados import perfiles_para
 
@@ -38,37 +43,58 @@ def _guia(form):
                      for clave, nombre, plantilla, descripcion in filas]) for grupo, filas in GUIA]
 
 
+def _inicial_regiones(form):
+    nombres = form.nombres_regiones
+    universo = form.cleaned_data.get("venn_universo", "").strip() or None
+    entorno = {**form.entorno, **{n: form.entorno.get(n, Conjunto()) for n in nombres}}
+    if universo and universo not in entorno:
+        entorno[universo] = Conjunto(e for n in nombres if isinstance(entorno[n], Conjunto) for e in entorno[n].elementos)
+    regiones = construir_venn(nombres, entorno, analizar_expresion(" ∪ ".join(nombres)),
+                              universo=universo, presupuesto=form.presupuesto)
+    valores = {f'venn_region_{r["mascara"]}': presentar(Conjunto(r["elementos"]))
+               for r in regiones if r["mascara"] or universo}
+    if form.accion == "azar_regiones":
+        numeros = iter(sample(range(1, 50), len(valores) * 2))
+        valores = {n: f"{{{next(numeros)}, {next(numeros)}}}" for n in valores}
+    return {"venn_nombres": ", ".join(nombres), **valores}
+
+
 @require_http_methods(["GET", "POST"])
 def relaciones_conjuntos(request):
     inicial = inicial_ejemplo(request.GET.get("ejemplo", ""))
     form = ConjuntosForm(request.POST if request.method == "POST" else None, initial=inicial)
     resultado = None
+    regiones_aplicadas = False
     if request.method == "POST" and form.is_valid():
         venn = {}
+        regiones = None
         try:
             if form.accion == "calcular" and "eliminar" not in request.POST:
                 venn = {"venn_nombres": tuple(n.strip() for n in form.cleaned_data.get("venn_nombres", "").split(",") if n.strip()),
                         "venn_universo": form.cleaned_data.get("venn_universo", "").strip() or None}
                 resultado = relacion_web(form.expresion, form.entorno, presupuesto=form.presupuesto,
                                          punto=form.cleaned_data.get("punto", "").strip(), **venn)
+            elif form.accion in ("editar_regiones", "azar_regiones"):
+                regiones = _inicial_regiones(form)
         except ValueError as error:
             pedido = venn.get("venn_nombres") or venn.get("venn_universo")
-            form.add_error("venn_nombres" if pedido and ("Venn" in str(error) or "universo" in str(error)) else "expresion", str(error))
+            campo = "venn_nombres" if form.accion in ("editar_regiones", "azar_regiones") or pedido and ("Venn" in str(error) or "universo" in str(error)) else "expresion"
+            form.add_error(campo, str(error))
         if resultado and resultado["error_punto"]:
             # El resultado sigue siendo válido: el error queda junto al punto, en la recta.
             form.add_error("punto", resultado["error_punto"])
         elif not form.errors:
-            inicial = {"cantidad": len(form.filas), "expresion": form.expresion,
-                       "definicion": "" if form.accion == "agregar" else form.cleaned_data.get("definicion", ""),
-                       **{n: form.cleaned_data.get(n, "") for n in ("punto", "venn_nombres", "venn_universo")}}
-            for i, (nombre, contenido) in enumerate(form.filas):
-                inicial.update({f"nombre_{i}": nombre, f"contenido_{i}": contenido, f"anterior_{i}": nombre})
-            form = ConjuntosForm(initial=inicial)
+            regiones_aplicadas = form.accion == "aplicar_regiones"
+            inicial = inicial_editor(form.filas, form.expresion,
+                                     definicion="" if form.accion == "agregar" else form.cleaned_data.get("definicion", ""),
+                                     **{n: form.cleaned_data.get(n, "") for n in ("punto", "venn_nombres", "venn_universo")})
+            if regiones is not None:
+                inicial.update(regiones)
+            form = ConjuntosForm(initial=inicial, regiones=regiones is not None)
     _resumir(form)
     return render(request, "calculadora/modules/conjuntos/index.html", {
         "form": form, "resultado": resultado, "guia": _guia(form), "elemento_guia": _elemento_guia(form),
-        # La guía se ofrece abierta mientras no hay nada escrito; después deja sitio al cálculo.
-        "guia_abierta": not (form["expresion"].value() or "").strip(),
+        "regiones_aplicadas": regiones_aplicadas,
         "ejemplos": [(clave, titulo) for clave, (titulo, *_resto) in EJEMPLOS.items()],
         "perfiles_teclado": perfiles_para("literal-conjuntos", "relacion-conjuntos"),
     })

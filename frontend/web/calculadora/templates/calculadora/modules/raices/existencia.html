@@ -1,0 +1,13 @@
+{% load raices %}
+{# Evidencia inicial común a los métodos cerrados: continuidad y cambio de signo. #}
+<section aria-labelledby="verificacion-existencia">
+    <h4 id="verificacion-existencia">¿Cómo sabemos que hay una raíz?</h4>
+    <p><strong>Condición:</strong> continuidad y raíz en un extremo o cambio de signo.</p>
+    <dl>
+        <dt>Intervalo inicial</dt><dd>[{{ verificacion.a|numero_raices }}; {{ verificacion.b|numero_raices }}]</dd>
+        <dt>f(a)</dt><dd>{{ verificacion.fa|numero_raices }} ({{ verificacion.signo_a }})</dd>
+        <dt>f(b)</dt><dd>{{ verificacion.fb|numero_raices }} ({{ verificacion.signo_b }})</dd>
+    </dl>
+    <p class="raices-conclusion"><strong>Conclusión:</strong> {% if verificacion.fa == 0 or verificacion.fb == 0 %}Un extremo ya da cero en la evaluación numérica: es una raíz calculada allí, sin una prueba simbólica de que sea exacta.{% else %}Los signos son opuestos: una función continua debe pasar por cero entre ellos.{% endif %}</p>
+    <p class="field-help">Comprobamos que la expresión es continua en el intervalo inicial: no hay saltos ni huecos según las comprobaciones de la herramienta. El muestreo gráfico no demuestra esta condición.</p>
+</section>

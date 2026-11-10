@@ -1,23 +1,11 @@
 """Punto medio y selección manual del subintervalo (diapositivas 3 y 6)."""
 
 from .funciones_reales import finito
-
-
-PRECISION = 0.0001
-MAX_ITERACIONES = 200
+from .metodos_cerrados import MAX_ITERACIONES, TOLERANCIA as PRECISION, exigir_cambio_de_signo, preparar_intervalo
 
 
 def biseccion(funcion, a, b, precision=PRECISION, max_iteraciones=MAX_ITERACIONES):
-    a, b, precision = finito(a), finito(b), finito(precision)
-    if a >= b:
-        raise ValueError("El extremo a debe ser menor que b.")
-    if not 0 < precision <= PRECISION:
-        raise ValueError("La precisión debe ser positiva y no mayor que 0.0001.")
-    if type(max_iteraciones) is not int or not 1 <= max_iteraciones <= 1000:
-        raise ValueError("El máximo de iteraciones debe ser un entero entre 1 y 1000.")
-    finito(b - a)
-    funcion.rango(a, b)
-    fa, fb = funcion(a), funcion(b)
+    a, b, precision, fa, fb = preparar_intervalo(funcion, a, b, precision, max_iteraciones)
     filas = []
 
     def resultado(c, estado, mensaje):
@@ -31,8 +19,7 @@ def biseccion(funcion, a, b, precision=PRECISION, max_iteraciones=MAX_ITERACIONE
         a = b = c
         fa = fb = 0.
         return resultado(c, "exacta", "Raíz en un extremo: f(c) = 0.")
-    if (fa < 0) == (fb < 0):
-        raise ValueError("Los extremos deben tener signos opuestos, o contener una raíz en un extremo.")
+    exigir_cambio_de_signo(fa, fb)
     anterior = None
     for i in range(1, max_iteraciones + 1):
         c = a + (b - a) / 2
