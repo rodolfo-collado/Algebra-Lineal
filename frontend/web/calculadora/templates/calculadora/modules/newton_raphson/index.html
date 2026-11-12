@@ -3,7 +3,7 @@
 {% block entrada_titulo %}Entrada de Newton-Raphson{% endblock %}
 {% block bajo_funcion %}
 {# Derivada automática: el backend la calcula al escribir f(x), con la misma petición que muestrea la gráfica. #}
-<p id="raices-derivada" class="raices-derivada" aria-live="polite">{% if resultado.derivada %}f′(x) = <span class="raices-expresion">{{ resultado.derivada|expresion_legible }}</span>{% endif %}</p>
+<p id="raices-derivada" class="raices-derivada" aria-live="polite">{% if resultado.derivada %}f′(x) = <span class="raices-expresion">{{ resultado.derivada }}</span>{% endif %}</p>
 {% endblock %}
 {% block parametros %}
 <div class="field-group raices-valor">{{ form.x0.label_tag }}{{ form.x0 }}{{ form.x0.errors }}</div>
@@ -41,6 +41,13 @@
 <th scope="row">{{ p.i }}</th><td>{{ p.siguiente|numero_raices:"x" }}</td><td>{{ p.fsiguiente|numero_raices:"f" }}</td></tr>
 {% endfor %}
 </tbody></table>
+{% endblock %}
+{% block formula_paso %}
+{# Diapositivas 8 y 10: la función, su derivada y la fórmula; la sustitución del paso activo va debajo. #}
+<div class="newton-formula" role="group" aria-label="Función, derivada y fórmula de Newton-Raphson">
+<p class="newton-funciones"><span>f(x) = {{ funcion_natural }}</span> <span>f′(x) = {{ resultado.derivada }}</span></p>
+<p class="newton-general"><span class="sr-only">x sub n más 1 = x sub n − f(x sub n) / f′(x sub n)</span><span aria-hidden="true">xₙ₊₁ = xₙ − <span class="raices-fraccion"><span>f(xₙ)</span><span>f′(xₙ)</span></span></span></p>
+</div>
 {% endblock %}
 {% block lectura_iteracion %}
 <div id="iteracion-lectura" class="regla-falsa-paso">

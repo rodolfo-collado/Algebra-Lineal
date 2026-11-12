@@ -29,7 +29,11 @@ class NewtonWebTests(SimpleTestCase):
         r=self.client.post(RUTA,datos())
         esperado=newton_raphson(FuncionReal("x²-2"), 1.5)
         self.assertEqual(resultado_html(r), esperado)
-        self.assertContains(r, 'f′(x) = <span class="raices-expresion">2 · x</span>', count=1)
+        self.assertContains(r, 'f′(x) = <span class="raices-expresion">2x</span>', count=1)
+        # Diapositivas 12 y 14: función, derivada y fórmula fijas sobre la sustitución del paso.
+        formula = r.content.decode().split('class="newton-formula"')[1].split("</div>")[0]
+        for texto in ["f(x) = x² − 2", "f′(x) = 2x", "xₙ₊₁ = xₙ − ", "<span>f(xₙ)</span><span>f′(xₙ)</span>"]:
+            self.assertIn(texto, formula)
         # n = 0 es el punto inicial; después, una fila por cada xₙ calculada.
         self.assertContains(r,"data-iteracion=", count=len(esperado["iteraciones"]) + 1)
         for texto in ["tangente", "Verificación", "Residuo", "Cambio absoluto", "Anterior", "Siguiente", "error verdadero"]:
@@ -79,7 +83,7 @@ class NewtonWebTests(SimpleTestCase):
 
     def test_derivada_reactiva_llega_con_las_muestras(self):
         r = self.client.post(RUTA + "grafica/", {"funcion": "x^3-x-2"})
-        self.assertEqual(r.json()["derivada"], "3 · x² − 1")
+        self.assertEqual(r.json()["derivada"], "3x² − 1")
         self.assertEqual(len(r.json()["x"]), 801)
         # Una entrada incompleta no deriva ni calcula: error de validación de la función.
         incompleta = self.client.post(RUTA + "grafica/", {"funcion": "x^"})
@@ -90,12 +94,21 @@ class NewtonWebTests(SimpleTestCase):
         self.assertEqual(self.client.get(RUTA + "grafica/").status_code, 405)
         self.assertEqual(Client(enforce_csrf_checks=True).post(RUTA + "grafica/", {"funcion": "x"}).status_code, 403)
 
-    def test_derivada_legible_solo_cambia_la_presentacion(self):
-        from backend.derivacion_real import legible
-        for texto, esperado in [("3 · x^2 − 1", "3 · x² − 1"), ("x^(-2)", "x⁻²"), ("x^2.5", "x^2.5"),
-                                ("(x + 1)^12", "(x + 1)¹²"), ("x^(1/2)", "x^(1/2)")]:
-            self.assertEqual(legible(texto), esperado)
-        self.assertEqual(newton_raphson(FuncionReal("x^3-x-2"), 1.5)["derivada"], "3 · x^2 − 1")
+    def test_notacion_natural_solo_cambia_la_presentacion(self):
+        from backend.derivacion_real import DerivadaReal, natural
+        # Coeficientes pegados, superíndices, − tipográfico y nombres de clase; nunca 3 · x².
+        for texto, funcion, derivada in [
+                ("x^3-x-2", "x³ − x − 2", "3x² − 1"), ("x³-2x+2", "x³ − 2x + 2", "3x² − 2"),
+                ("x^-2", "x⁻²", "−2x⁻³"), ("x^2.5", "x^2.5", "2.5x^1.5"), ("(x+1)^12", "(x + 1)¹²", "12(x + 1)¹¹"),
+                ("cos(3x)", "cos(3x)", "−3sen(3x)"), ("x*sen(x)", "x · sen(x)", "sen(x) + x · cos(x)"),
+                ("√(x)+abs(x)", "√x + |x|", "1/(2√x) + x/|x|"), ("log10(x)", "log₁₀(x)", "1/(x · ln(10))"),
+                ("0.00001x^2 - -3", "0.00001x² + 3", "0.00002x"), ("2π*x + e^2*x", "2πx + e²x", "2π + e²")]:
+            with self.subTest(texto=texto):
+                f = FuncionReal(texto)
+                self.assertEqual((natural(f.arbol), DerivadaReal(f).texto), (funcion, derivada))
+        r = newton_raphson(FuncionReal("x^3-x-2"), 1.5)
+        self.assertEqual(r["derivada"], "3x² − 1")
+        self.assertEqual(r["iteraciones"][0]["dfxn"], 5.75)
 
     def test_tono_proporcional_de_cada_clasificacion(self):
         for cambios, tono in [({}, "exito"), ({"max_iteraciones": "1"}, "aviso"), ({"x0": "0"}, "info")]:

@@ -201,10 +201,11 @@
         const titulo = paso.titulo || `Iteración ${i} de ${pasos.length}`;
         slider.setAttribute("aria-valuetext", `${titulo}, ${paso.aria}`);
         $("paso-titulo").textContent = titulo;
+        // Cada entrada es un texto o un nodo ya construido por el método (fórmulas con fracciones).
         breve.replaceChildren(...paso.breve.map((texto, k) => {
-            const nodo = document.createElement("p");
-            nodo.textContent = texto;
-            if (k === paso.breve.length - 1) nodo.className = "raices-paso-cierre";
+            const nodo = texto instanceof Node ? texto : document.createElement("p");
+            if (nodo !== texto) nodo.textContent = texto;
+            if (k === paso.breve.length - 1) nodo.classList.add("raices-paso-cierre");
             return nodo;
         }));
         for (const nombre of ["valores", "signos", "decision", "intervalo", "error", "parada"]) {
