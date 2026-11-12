@@ -3,8 +3,9 @@
 [Índice](README.md) · [Bisección](biseccion.md) · [Regla falsa](regla-falsa.md)
 
 Abre **Métodos numéricos → Raíces de ecuaciones → Método de Newton-Raphson**.
-Introduce f(x) y x₀. La gráfica puede explorarse antes de resolver y permite
-seleccionar x₀ sobre la curva. El resultado muestra f′(x) automáticamente.
+Introduce f(x) y x₀. Mientras escribes f(x), f′(x) aparece bajo el campo sin
+resolver nada. La gráfica puede explorarse antes de resolver y permite elegir x₀
+sobre la curva.
 
 ## Derivación y dominio
 
@@ -41,11 +42,64 @@ y x₀ = 1.5, f(x₀) = −0.125, f′(x₀) = 5.75 y x₁ ≈ 1.521739130434782
 El recorrido une (1.5, −0.125) con (x₁, 0) y después muestra (x₁, f(x₁)).
 La raíz aproximada es 1.5213797068.
 
+Como en la diapositiva 15, la tabla tiene tres columnas: n, xₙ y f(xₙ). Empieza
+en n = 0 con el punto inicial, y el recorrido también abre allí. El paso n traza la
+tangente en xₙ₋₁ y obtiene xₙ. La derivada, la fórmula aplicada, el error absoluto
+y el residuo de ese paso aparecen en la explicación y en el procedimiento detallado.
+
 Newton depende del punto inicial y del comportamiento de la función. Un salto
 fuera del dominio, una derivada nula o un salto no finito pueden detenerlo.
 Las oscilaciones sin repetición exacta y la divergencia finita pueden alcanzar
 el límite de iteraciones. El cambio y el residuo miden magnitudes distintas,
 y el criterio numérico carece de una cota garantizada de distancia a la raíz.
+
+## Zona de estudio compartida
+
+Los tres métodos usan la misma composición. La entrada agrupa función, parámetros y
+**Resolver** en una fila cuando el ancho lo permite. El veredicto encabeza el
+resultado con un tono proporcional: verde para una raíz aproximada, ámbar sin
+convergencia y neutro para «no aplicable» o «ausencia de raíces demostrada». Ninguna
+condición matemática se presenta como error de la aplicación.
+
+Debajo, la gráfica y la explicación breve del paso activo comparten una fila en
+escritorio; la tabla tiene una fila por iteración y desplazamiento propio, para verse
+junto a la gráfica. El reproductor ofrece Reiniciar, Anterior, Reproducir/Pausar,
+Siguiente, barra de progreso y velocidades 0.5×, 1×, 2× y 4×. Empieza en pausa en la
+primera iteración. Al terminar, cambiar los datos, enviar otro cálculo u ocultar la
+pestaña, se detiene. Un clic en una fila la selecciona; con el foco en la tabla, las
+flechas, Inicio, Fin, RePág y AvPág recorren las filas sin desplazar la página. Todo
+usa el JSON calculado: recorrer no vuelve a calcular ni pide muestras.
+
+Durante la reproducción la explicación no se anuncia en cada paso; en pausa vuelve
+a ser una región `aria-live`. No hay animaciones: cada paso es un cambio discreto,
+también con movimiento reducido. La rueda sobre la gráfica acerca o aleja, salvo si
+la página ya se estaba desplazando y la gráfica pasa bajo el cursor. Arrastrar
+desplaza la vista. **Vista inicial** vuelve a `[-10, 10]`; **Enfocar intervalo** o
+**Enfocar tangente** encuadra el paso activo. Cambiar de iteración respeta el zoom.
+
+El **Historial de esta sesión** aparece desde la segunda ejecución del método en la
+pestaña. Guarda hasta 12 en `sessionStorage` y agrupa por función equivalente, sin
+mezclar métodos. Cada fila muestra el intervalo inicial o x₀, la aproximación, las
+iteraciones, el criterio de parada (cumplido o no, con su motivo) y las medidas que lo
+justifican, con la tolerancia usada. Bisección usa la longitud final y la precisión.
+Regla Falsa y Newton usan el error absoluto y la tolerancia. Todas muestran el
+residuo. **Ver** vuelve a enviar los datos de una ejecución y la marca como actual
+sin duplicarla.
+
+**Decimales** fija los decimales de tablas, historial y explicaciones. Se recuerda
+como las demás preferencias, también en la app de escritorio. Los números se escriben
+en decimal llano, sin notación científica, y sin ceros finales, como en el resto de
+PyGebra. Hay dos protecciones. Un valor distinto de cero nunca se lee como 0: solo
+ese valor gana las cifras necesarias (f(x₃) ≈ 0.00000000000005), sin cambiar a sus
+vecinos. Y los valores distintos de una misma magnitud en una fila (a, b y c, por
+ejemplo) se distinguen, sin compararlos con magnitudes diferentes. Sin JavaScript se muestran el veredicto, la tabla completa,
+el procedimiento y la verificación.
+
+Con Newton, el endpoint `grafica/` añade `derivada` a las muestras: el texto de
+`DerivadaReal` con exponentes enteros en superíndice, o `null` si no se puede derivar.
+Así f′(x) llega con la misma petición, con espera de 300 ms tras escribir y sin un
+motor simbólico en JavaScript. Una función incompleta devuelve el error de
+validación habitual, sin `derivada`.
 
 ## Contrato de datos de los métodos de raíces
 

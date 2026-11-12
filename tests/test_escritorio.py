@@ -317,7 +317,7 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
         inicial = (TEMPLATES / "calculadora" / "components" / "tema_inicial.html").read_text(encoding="utf-8")
         self.assertIn("localStorage.setItem(clave, valor)", inicial)
         self.assertEqual(set(preferencias.VALORES), {"pygebra-tema", "pygebra-formato-numerico", "pygebra-precision-decimal",
-                                                     "pygebra-estilo", "pygebra-sonido", "pygebra-volumen",
+                                                     "pygebra-raices-decimales", "pygebra-estilo", "pygebra-sonido", "pygebra-volumen",
                                                      "pygebra-musica-volumen", "pygebra-musica-pieza"})
 
     def test_volver_no_restaura_formularios_que_no_corresponden_al_resultado(self):

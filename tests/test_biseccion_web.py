@@ -126,7 +126,14 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertContains(r, "Convergencia por longitud")
         self.assertContains(r, 'data-iteracion=', count=13)
         self.assertContains(r, 'type="range"')
-        self.assertContains(r, 'id="comparacion-raices"')
+        # Sin JavaScript: tabla y resultado completos; reproductor e historial esperan al script.
+        for marca in ('id="raices-reproductor"', 'id="raices-historial"', 'id="raices-tabla-marco"', 'id="paso-breve"'):
+            self.assertContains(r, marca, count=1)
+        self.assertContains(r, '<div class="raices-recorrido" hidden>', count=1)
+        self.assertContains(r, 'class="panel raices-historial" aria-labelledby="historial-titulo" hidden', count=1)
+        self.assertContains(r, 'data-tono="exito"', count=1)
+        for velocidad in ("0.5×", "1×", "2×", "4×"):
+            self.assertContains(r, velocidad)
         resultado = resultado_html(r)
         self.assertEqual(len(resultado["iteraciones"]), 13)
         self.assertAlmostEqual(resultado["c"], .763970947265625)

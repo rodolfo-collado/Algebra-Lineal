@@ -11,6 +11,59 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+## Historial y tabla de Newton de los métodos de raíces (2026-11-13)
+
+Ajuste del PR #125 sin cambiar algoritmos, criterios de parada ni contratos.
+
+- **Python:** 2.024 pruebas completas correctas desde PowerShell. Las nuevas fijan la
+  tabla de Newton de la diapositiva 15 (n, xₙ y f(xₙ) desde n = 0; 1.5 y −0.125 en la
+  primera fila), el filtro sin notación científica (5e-14 → 0.00000000000005) y la
+  preferencia cerrada `pygebra-raices-decimales` del escritorio.
+- **Navegador (Edge 157):** Bisección 23/23, Regla Falsa 12/12 y Newton 9/9, con
+  movimiento normal y reducido. Casos nuevos: decimales elegidos por valor (un f(c)
+  diminuto no infla su fila), la explicación sigue los decimales, n = 0 sin tangente,
+  columnas y criterio del historial por método, y «Ver» que conserva los decimales.
+- **WebView2 157 (ejecutable de PyInstaller):** 23/23, 12/12 y 9/9, normal y con movimiento
+  reducido, sin errores de consola. Aquí se vio que elegir decimales en escritorio escribe
+  `/preferencias/` (como el tema o el estilo) y que el archivo conserva la elección entre
+  casos: los runners fijan 6 decimales al empezar cada caso y no cuentan esa escritura como
+  un cálculo.
+- **Visual:** 36 combinaciones sin desborde ni errores JavaScript, más historial con
+  ejecuciones sin convergencia a 1280, 744 y 390 px. Capturas nuevas:
+  [Newton e historial](capturas/raices/07-newton-tabla-de-clase-e-historial.jpg) y
+  [historial en Minimalista noche](capturas/raices/08-historial-minimalista-noche-744.jpg).
+
+## Reproducción didáctica de los métodos de raíces (2026-11-12)
+
+Sin cambios en los algoritmos ni en la versión (sigue preparada 0.17.0).
+
+- **Python:** 2.022 pruebas completas correctas desde PowerShell. Las nuevas cubren
+  `derivada` en las muestras de Newton (y su ausencia en Bisección, Regla Falsa y
+  entradas incompletas), los superíndices de `legible`, el tono de cada clasificación
+  y la página sin JavaScript (tabla completa, reproductor e historial ocultos).
+- **Navegador (Edge 157, Playwright):** Bisección 22/22, Regla Falsa 12/12 y Newton
+  8/8, con movimiento normal y reducido. Casos nuevos: reproducción (pausa inicial,
+  0.5× y 4×, fin, reinicio, pausa al editar), teclado en la tabla sin desplazar la
+  página, rueda con zoom y paso libre del desplazamiento, zoom respetado entre
+  iteraciones, enfoque del paso, historial agrupado por función con «Ver», y f′(x)
+  reactiva con una sola petición por ráfaga de escritura.
+- **Entrada real:** rueda del ratón que desplaza la página al cruzar la gráfica y
+  acerca sobre ella; Tab hasta Reproducir y Espacio para reproducir y pausar;
+  arrastre de la línea de x₀ (marca el resultado como anterior, sin resolver).
+- **WebView2 157 (ejecutable de PyInstaller con CDP y preferencias aisladas):** los tres
+  runners 22/22, 12/12 y 8/8, también con movimiento reducido. El único aviso de consola
+  es la transición de vista de Estudio interrumpida por la navegación automatizada.
+- **Visual:** 36 combinaciones (tres métodos × Estudio/Minimalista × claro/oscuro ×
+  1280/744/390 px), sin desborde horizontal ni errores JavaScript. Capturas:
+  [Bisección](capturas/raices/01-biseccion-estudio-1280.jpg),
+  [Regla Falsa](capturas/raices/02-regla-falsa-minimalista-noche-1280.jpg),
+  [Newton](capturas/raices/03-newton-estudio-noche-744.jpg),
+  [móvil](capturas/raices/04-biseccion-minimalista-390.jpg),
+  [historial](capturas/raices/05-historial-biseccion.jpg) y
+  [derivada](capturas/raices/06-derivada-antes-de-resolver.jpg).
+
+Pendiente: lector de pantalla real (NVDA o Narrador) y pantalla táctil física.
+
 ## Preparación de v0.17.0 (2026-11-11)
 
 Preparada primero como 0.16.1; pasa a 0.17.0 al integrar Newton-Raphson desde

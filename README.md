@@ -59,7 +59,7 @@ Los cálculos largos piden confirmación según el
 ### Métodos numéricos
 
 - [Bisección](docs/biseccion.md) manual con gráfica interactiva offline, recorrido
-  de iteraciones y comparación de intervalos. Precisión predeterminada `0.0001`.
+  reproducible de iteraciones e historial de intervalos. Precisión predeterminada `0.0001`.
 - [Regla falsa](docs/regla-falsa.md) con secantes, error absoluto aproximado y
   confirmación de cercanía por signos. Comparte la exploración y el teclado con Bisección.
 

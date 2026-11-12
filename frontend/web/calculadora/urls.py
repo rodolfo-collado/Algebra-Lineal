@@ -12,7 +12,7 @@ app_name = "calculadora"
 
 urlpatterns = [
     path("metodos-numericos/newton-raphson/", resolver_newton_raphson, name="newton-raphson"),
-    path("metodos-numericos/newton-raphson/grafica/", explorar_funcion, name="newton-raphson-grafica"),
+    path("metodos-numericos/newton-raphson/grafica/", explorar_funcion, {"derivar": True}, name="newton-raphson-grafica"),
     path("conjuntos/relaciones/", relaciones_conjuntos, name="relaciones-conjuntos"),
     path("conjuntos/cardinalidad/", cardinalidades_conjuntos, name="cardinalidades-conjuntos"),
     path("metodos-numericos/biseccion/", resolver_biseccion, name="biseccion"),
