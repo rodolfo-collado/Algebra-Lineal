@@ -437,7 +437,9 @@
         };
         const tabla = document.createElement("table");
         tabla.className = "procedure-table raices-historial-tabla";
-        tabla.createCaption().textContent = "Ejecuciones de esta sesión";
+        const leyenda = tabla.createCaption();
+        leyenda.className = "sr-only"; // El encabezado visible de la sección ya la nombra.
+        leyenda.textContent = "Ejecuciones de esta sesión";
         const cabecera = tabla.createTHead().insertRow();
         [extremos.length === 2 ? "Intervalo inicial" : "x₀", "Estado", "Aproximación", "Iteraciones", "Residuo", ""].forEach(texto => {
             const th = document.createElement("th"); th.scope = "col"; th.textContent = texto; cabecera.append(th);

@@ -130,7 +130,7 @@ class BiseccionWebTests(SimpleTestCase):
         for marca in ('id="raices-reproductor"', 'id="raices-historial"', 'id="raices-tabla-marco"', 'id="paso-breve"'):
             self.assertContains(r, marca, count=1)
         self.assertContains(r, '<div class="raices-recorrido" hidden>', count=1)
-        self.assertContains(r, 'class="raices-historial" aria-labelledby="historial-titulo" hidden', count=1)
+        self.assertContains(r, 'class="panel raices-historial" aria-labelledby="historial-titulo" hidden', count=1)
         self.assertContains(r, 'data-tono="exito"', count=1)
         for velocidad in ("0.5×", "1×", "2×", "4×"):
             self.assertContains(r, velocidad)

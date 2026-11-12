@@ -11,6 +11,37 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+## Reproducción didáctica de los métodos de raíces (2026-11-12)
+
+Sin cambios en los algoritmos ni en la versión (sigue preparada 0.17.0).
+
+- **Python:** 2.022 pruebas completas correctas desde PowerShell. Las nuevas cubren
+  `derivada` en las muestras de Newton (y su ausencia en Bisección, Regla Falsa y
+  entradas incompletas), los superíndices de `legible`, el tono de cada clasificación
+  y la página sin JavaScript (tabla completa, reproductor e historial ocultos).
+- **Navegador (Edge 157, Playwright):** Bisección 22/22, Regla Falsa 12/12 y Newton
+  8/8, con movimiento normal y reducido. Casos nuevos: reproducción (pausa inicial,
+  0.5× y 4×, fin, reinicio, pausa al editar), teclado en la tabla sin desplazar la
+  página, rueda con zoom y paso libre del desplazamiento, zoom respetado entre
+  iteraciones, enfoque del paso, historial agrupado por función con «Ver», y f′(x)
+  reactiva con una sola petición por ráfaga de escritura.
+- **Entrada real:** rueda del ratón que desplaza la página al cruzar la gráfica y
+  acerca sobre ella; Tab hasta Reproducir y Espacio para reproducir y pausar;
+  arrastre de la línea de x₀ (marca el resultado como anterior, sin resolver).
+- **WebView2 157 (ejecutable de PyInstaller con CDP y preferencias aisladas):** los tres
+  runners 22/22, 12/12 y 8/8, también con movimiento reducido. El único aviso de consola
+  es la transición de vista de Estudio interrumpida por la navegación automatizada.
+- **Visual:** 36 combinaciones (tres métodos × Estudio/Minimalista × claro/oscuro ×
+  1280/744/390 px), sin desborde horizontal ni errores JavaScript. Capturas:
+  [Bisección](capturas/raices/01-biseccion-estudio-1280.jpg),
+  [Regla Falsa](capturas/raices/02-regla-falsa-minimalista-noche-1280.jpg),
+  [Newton](capturas/raices/03-newton-estudio-noche-744.jpg),
+  [móvil](capturas/raices/04-biseccion-minimalista-390.jpg),
+  [historial](capturas/raices/05-historial-biseccion.jpg) y
+  [derivada](capturas/raices/06-derivada-antes-de-resolver.jpg).
+
+Pendiente: lector de pantalla real (NVDA o Narrador) y pantalla táctil física.
+
 ## Preparación de v0.17.0 (2026-11-11)
 
 Preparada primero como 0.16.1; pasa a 0.17.0 al integrar Newton-Raphson desde
