@@ -2,8 +2,6 @@
 {% load static componentes raices %}
 {% block entrada_titulo %}Entrada de Newton-Raphson{% endblock %}
 {% block parametros %}
-<div class="field-group" data-perfil="funcion-real">{{ form.derivada.label_tag }}{{ form.derivada }}{{ form.derivada.errors }}
-<p id="derivada-ayuda" class="field-help">Introduce la derivada de f(x) calculada por ti. Comprueba que corresponde a la función; PyGebra utiliza la expresión que escribas.</p></div>
 <div class="field-group">{{ form.x0.label_tag }}{{ form.x0 }}{{ form.x0.errors }}</div>
 {% disclosure titulo="Ejemplos" id="ejemplos-newton" %}
 <p class="field-help">Carga un ejemplo y pulsa Resolver para recorrer sus tangentes.</p>
@@ -12,15 +10,18 @@
 <button type="button" class="btn btn-secondary" data-newton-ejemplo="cubica">x³ − x − 2</button>
 <button type="button" class="btn btn-secondary" data-newton-ejemplo="ciclo">Ciclo: x³ − 2x + 2</button>
 </div>
-<noscript><p>Prueba f(x) = x² − 2, f′(x) = 2x, x₀ = 1.5; o f(x) = x³ − x − 2, f′(x) = 3x² − 1, x₀ = 1.5.</p></noscript>
+<noscript><p>Prueba f(x) = x² − 2, x₀ = 1.5; o f(x) = x³ − x − 2, x₀ = 1.5.</p></noscript>
 {% enddisclosure %}
 {% endblock %}
 {% block ayuda_tolerancia %}Por defecto 0.0001, positiva y reducible. Deben cumplirla tanto |f(x siguiente)| como |x siguiente − x actual|. El cambio no es el error verdadero ni un porcentaje.{% endblock %}
 {% block accion %}Resolver por Newton-Raphson{% endblock %}
-{% block ayuda_grafica %}Explora f(x) antes de calcular. Pulsa Seleccionar x₀ y después sobre la curva; arrastra la línea o escribe el valor inicial. En el recorrido, la tangente usa la derivada introducida y corta el eje x en la siguiente aproximación.{% endblock %}
+{% block ayuda_grafica %}Explora f(x) antes de calcular. Pulsa Seleccionar x₀ y después sobre la curva; arrastra la línea o escribe el valor inicial. En el recorrido, la tangente usa la derivada calculada automáticamente y corta el eje x en la siguiente aproximación.{% endblock %}
 {% block texto_vista_calculo %}Ver entorno inicial{% endblock %}
 {% block seleccion_puntos %}<button type="button" class="btn btn-secondary" data-elegir-extremo="x0" aria-pressed="false">Seleccionar x₀</button>{% endblock %}
 {% block encuadrar_paso %}<button type="button" class="btn btn-secondary" id="iteracion-encuadrar">Ver tangente de este paso</button>{% endblock %}
+{% block datos_funcion %}
+{% if resultado.derivada %}<p id="newton-derivada">f′(x) = {{ resultado.derivada }}</p>{% endif %}
+{% endblock %}
 {% block resumen %}
 <p class="raices-raiz">x ≈ {{ resultado.x|numero_raices }}</p>
 <p class="raices-estado{% if not resultado.convergio %} raices-aviso{% endif %}">{{ resultado.mensaje }}</p>
@@ -55,7 +56,7 @@
 <p>Cambio absoluto: {% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices }}{% else %}No disponible: no hubo una actualización.{% endif %}</p>
 <p class="raices-conclusion">{{ resultado.mensaje }}</p>
 <p>El residuo mide la altura de la curva; el cambio compara dos aproximaciones. Ninguno es el error verdadero |x − raíz|. Newton no conserva un intervalo con raíz ni proporciona una cota garantizada de distancia.</p>
-<p>Un cero calculado depende de la aritmética de máquina. La convergencia depende del punto inicial y de que la derivada manual sea correcta. La gráfica es un muestreo y puede omitir detalles.</p>
+<p>Un cero calculado depende de la aritmética de máquina. La convergencia depende del punto inicial y del comportamiento de la función. La gráfica es un muestreo y puede omitir detalles.</p>
 </div>
 {% enddisclosure %}
 {% endblock %}

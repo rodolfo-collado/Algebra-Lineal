@@ -175,10 +175,20 @@
             ok(q(w, "#raices-comparaciones").textContent.includes("Actual · Sin convergencia verificada"), "Límite sin certeza");
             ok(w.sessionStorage.getItem("pygebra-biseccion-v1") === "[]", "Bisección intacta");
         }],
-        ["Dominio inválido conserva entradas y muestra error", async (w, frame) => {
+        ["Mismo signo conserva la gráfica sin inventar una secante", async (w, frame) => {
+            for (const [funcion, clasificacion] of [["x²+1", "sin_raices_demostrado"], ["x²", "no_aplicable"]]) {
+                w = await resolver(frame, {funcion, a: "-1", b: "1"});
+                ok(datos(w).clasificacion === clasificacion, "Distingue demostración y falta de aplicabilidad");
+                ok(grafica(w).data[1].x.length === 0 && grafica(w).data[2].x.length === 0, "Sin candidato ni secante");
+                ok(!q(w, "#iteracion-raices") && !q(w, "[data-respuesta-errores]"), "Sin recorrido ni error de entrada");
+            }
+        }],
+        ["Intervalo no aplicable conserva entradas y explica el dominio", async (w, frame) => {
             valor(w, "funcion", "1/x"); valor(w, "a", "-1"); valor(w, "b", "1");
             w = await post(frame);
-            ok(!q(w, "#resultado") && q(w, "[data-respuesta-errores]"), "Sin resultado en discontinuidad");
+            ok(q(w, "#resultado") && !q(w, "[data-respuesta-errores]"), "Resultado informativo en discontinuidad");
+            ok(datos(w).clasificacion === "no_aplicable" && datos(w).xr === null, "Sin aproximación en discontinuidad");
+            ok(!q(w, "#iteracion-raices"), "Sin recorrido");
             ok(q(w, '[name="funcion"]').value === "1/x", "Conserva función");
             w = await resolver(frame);
             ok(datos(w).convergio, "Se recupera corrigiendo la función");

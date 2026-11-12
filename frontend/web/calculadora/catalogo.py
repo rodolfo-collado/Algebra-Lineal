@@ -386,7 +386,7 @@ REGLA_FALSA = Herramienta(
 
 NEWTON_RAPHSON = Herramienta(
     id="newton-raphson", nombre="Método de Newton-Raphson", categoria=RAICES,
-    descripcion="Explora cómo las tangentes aproximan una raíz desde un punto inicial, con derivada manual.",
+    descripcion="Explora cómo las tangentes aproximan una raíz desde un punto inicial, con derivación automática.",
     estado="disponible", route_name="calculadora:newton-raphson",
     palabras_clave=("newton", "raphson", "derivada", "tangente", "raíz", "raíces", "gráfica"),
     relacionadas=("biseccion", "regla-falsa"),

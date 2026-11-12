@@ -10,7 +10,7 @@
     const extremos = metodo.extremos || ["a", "b"];
     const resultado = datos.resultado;
     const pasos = resultado?.iteraciones || [];
-    const resumen = resultado ? metodo.resumen(resultado) : null;
+    const resumen = resultado?.residuo != null && resultado.clasificacion !== "no_aplicable" ? metodo.resumen(resultado) : null;
     const estado = document.getElementById("grafica-estado");
     const slider = document.getElementById("iteracion-raices");
     const lectura = document.getElementById("iteracion-lectura");
@@ -181,9 +181,13 @@
             await sincronizarExtremos();
             if (n !== generacion) return;
             seleccion.hidden = false;
-            estado.textContent = puntos.y.some(y => y === null)
-                ? "La curva tiene huecos donde no se pudo verificar el dominio. La gráfica es un muestreo, no una prueba de raíces."
+            const dominio = puntos.y.some(y => y === null)
+                ? "La curva tiene huecos donde no se pudo verificar el dominio."
                 : metodo.comprobacion || "Gráfica muestreada. Resolver comprueba dominio y cambio de signo del intervalo.";
+            const hallazgo = puntos.clasificacion === "indicios_numericos"
+                ? "El muestreo encontró indicios numéricos de raíces."
+                : "El muestreo no detectó raíces. El resultado es no concluyente.";
+            estado.textContent = dominio + " " + hallazgo;
         } catch (error) {
             if (error.name !== "AbortError" && n === generacion) {
                 grafica.hidden = true;
@@ -335,7 +339,7 @@
                 "textfont.color": color("--color-text") }, [2]);
         }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-estilo"] });
         if (pasos.length) mostrarPaso(Number(slider.value));
-        else if (resultado) Plotly.restyle(grafica, { x: [[resumen.x]], y: [[resumen.fx]], text: [[resumen.nombre]],
+        else if (resumen) Plotly.restyle(grafica, { x: [[resumen.x]], y: [[resumen.fx]], text: [[resumen.nombre]],
             customdata: [etiquetas([resumen.x], [resumen.fx], 12)] }, [1]);
     }
     campo("funcion").addEventListener("input", previsualizar);
