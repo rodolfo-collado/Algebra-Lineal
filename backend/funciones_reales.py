@@ -66,6 +66,34 @@ def explicitar_productos(texto):
     return tokenize.untokenize(salida)
 
 
+def _signos(nodo, a, b):
+    """Signos posibles por reglas exactas para un subconjunto de expresiones reales."""
+    if isinstance(nodo, ast.Constant):
+        return {(nodo.value > 0) - (nodo.value < 0)}
+    if isinstance(nodo, ast.Name):
+        if nodo.id != "x":
+            return {1}
+        return {signo for signo, posible in ((-1, a < 0), (0, a <= 0 <= b), (1, b > 0)) if posible}
+    if isinstance(nodo, ast.UnaryOp):
+        signos = _signos(nodo.operand, a, b)
+        return {-s for s in signos} if isinstance(nodo.op, ast.USub) else signos
+    if isinstance(nodo, ast.BinOp):
+        op = nodo.op
+        if isinstance(op, ast.Pow) and isinstance(nodo.right, ast.Constant):
+            n = nodo.right.value
+            if type(n) is int and n > 0 and n % 2 == 0:
+                return {abs(s) for s in _signos(nodo.left, a, b)}
+        if isinstance(op, (ast.Add, ast.Sub, ast.Mult)):
+            izq, der = _signos(nodo.left, a, b), _signos(nodo.right, a, b)
+            if isinstance(op, ast.Mult):
+                return {s * t for s in izq for t in der}
+            if isinstance(op, ast.Sub):
+                der = {-s for s in der}
+            if not (-1 in izq and 1 in der or 1 in izq and -1 in der):
+                return {(s + t > 0) - (s + t < 0) for s in izq for t in der}
+    return {-1, 0, 1}
+
+
 class FuncionReal:
     def __init__(self, texto):
         if not isinstance(texto, str) or not texto.strip() or len(texto) > 512:
@@ -113,7 +141,10 @@ class FuncionReal:
             valor = self._numero(nodo.operand, x)
             return -valor if isinstance(nodo.op, ast.USub) else valor
         if isinstance(nodo, ast.Call):
-            valor = finito(FUNCIONES[nodo.func.id](self._numero(nodo.args[0], x)))
+            argumento = self._numero(nodo.args[0], x)
+            if nodo.func.id == "tan" and abs(math.remainder(argumento, math.pi)) == math.pi / 2:
+                raise ValueError("La tangente no está definida en un polo.")
+            valor = finito(FUNCIONES[nodo.func.id](argumento))
             if nodo.func.id == "exp" and valor == 0:
                 raise ValueError("Subdesbordamiento: exp(x) se redondeó a cero.")
             return valor
@@ -129,6 +160,10 @@ class FuncionReal:
             return self._numero(self.arbol, finito(x))
         except (ArithmeticError, ValueError) as error:
             raise ValueError(f"No se puede evaluar f({x:g}): {error}") from error
+
+    def signo_estricto(self, a, b):
+        """Probar que cero queda excluido por los signos, dado un dominio válido."""
+        return _signos(self.arbol, a, b) in ({-1}, {1})
 
     def rango(self, a, b):
         """Envolvente conservadora; falla si no puede certificar dominio y continuidad."""

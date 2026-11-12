@@ -260,7 +260,8 @@
         ["Dominio explica raíz real y una corrección justificada", async (w, frame) => {
             valor(w, "funcion", "√(x)"); valor(w, "a", "-1"); valor(w, "b", "5");
             w = await post(frame);
-            ok(!q(w, "#resultado"), "Mantiene el rechazo");
+            ok(q(w, "#results-title").textContent === "Método no aplicable", "Informa el impedimento de dominio");
+            ok(!q(w, "[data-respuesta-errores]") && lista(w).length === 0, "Conserva el formulario sin iterar");
             ok(w.document.body.textContent.includes("valores negativos de x") && w.document.body.textContent.includes("a ≥ 0"), "Condición y corrección de raíz directa");
         }],
         ["Ejemplo del profesor: 13 filas y raíz verificada", async (w, frame) => {
@@ -356,11 +357,12 @@
             ok(q(w, "#raices-comparaciones").textContent.includes("Actual · Sin convergencia verificada"), "Cálculo sin convergencia");
             ok(q(w, "#raices-comparaciones tbody").rows.length === 4, "Conserva los cuatro cálculos");
         }],
-        ["Errores accesibles y raíz en extremo sin deslizador", async (w, frame) => {
+        ["Discontinuidad informativa y raíz en extremo sin deslizador", async (w, frame) => {
             valor(w, "funcion", "1/x"); valor(w, "a", "-1"); valor(w, "b", "1");
             w = await post(frame);
-            ok(!q(w, "#resultado"), "No declara raíz en una discontinuidad");
-            ok(q(w, '[name="funcion"]').value === "1/x", "Conserva la entrada inválida");
+            ok(q(w, "#results-title").textContent === "Método no aplicable", "Informa la discontinuidad");
+            ok(!q(w, ".raices-raiz") && !q(w, "#iteracion-raices"), "No declara raíz en una discontinuidad");
+            ok(q(w, '[name="funcion"]').value === "1/x", "Conserva la función introducida");
             valor(w, "funcion", "x"); valor(w, "a", "0"); valor(w, "b", "1");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 0 && !q(w, "#iteracion-raices"), "Raíz en extremo, sin iteraciones");

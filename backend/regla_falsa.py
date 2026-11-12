@@ -4,7 +4,8 @@ from fractions import Fraction
 import math
 
 from .funciones_reales import finito
-from .metodos_cerrados import MAX_ITERACIONES, TOLERANCIA, exigir_cambio_de_signo, preparar_intervalo
+from .metodos_cerrados import MAX_ITERACIONES, TOLERANCIA, preparar_intervalo
+from .resultados_raices import ClasificacionRaices as Clasificacion
 
 
 def interseccion_secante(a, b, fa, fb):
@@ -29,15 +30,19 @@ def confirmar_cercania(funcion, xr, fxr, a, b, tolerancia):
 
 
 def regla_falsa(funcion, a, b, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIONES):
-    a, b, tolerancia, fa, fb = preparar_intervalo(funcion, a, b, tolerancia, max_iteraciones, "tolerancia")
+    inicial, tolerancia, impedimento = preparar_intervalo(funcion, a, b, tolerancia, max_iteraciones, "tolerancia")
+    a, b, fa, fb = (inicial[k] for k in ("a", "b", "fa", "fb"))
     filas = []
 
-    def resultado(xr, estado, mensaje):
-        fxr = funcion(xr)  # Verificación final independiente del valor guardado en la fila.
+    def resultado(xr, estado, mensaje, clasificacion=None):
+        fxr = funcion(xr) if xr is not None else None  # Verificación final independiente del valor guardado en la fila.
         ultima = filas[-1] if filas and filas[-1]["xr"] == xr else {}
-        return {"xr": xr, "fxr": fxr, "residuo": abs(fxr), "a": a, "b": b, "fa": fa, "fb": fb,
+        convergio = estado in ("exacta", "tolerancia")
+        clasificacion = clasificacion or (Clasificacion.RAIZ_APROXIMADA if convergio else Clasificacion.SIN_CONVERGENCIA)
+        return {"clasificacion": clasificacion, "inicial": inicial, "max_iteraciones": max_iteraciones,
+                "xr": xr, "fxr": fxr, "residuo": abs(fxr) if fxr is not None else None, "a": a, "b": b, "fa": fa, "fb": fb,
                 "longitud": b - a, "tolerancia": tolerancia, "iteraciones": filas, "estado": estado,
-                "convergio": estado in ("exacta", "tolerancia"), "mensaje": mensaje,
+                "convergio": convergio, "mensaje": mensaje,
                 "error_absoluto": ultima.get("error_absoluto"), "prueba": ultima.get("prueba"),
                 "f_prueba": ultima.get("f_prueba"), "extremo_fijo": ultima.get("extremo_fijo"),
                 "veces_fijo": ultima.get("veces_fijo", 0),
@@ -45,12 +50,15 @@ def regla_falsa(funcion, a, b, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERAC
                 "cota": min(tolerancia, math.nextafter(abs(ultima["prueba"] - xr), math.inf))
                 if estado == "tolerancia" else None}
 
+    if impedimento:
+        estado, clasificacion, mensaje = impedimento
+        return resultado(None, estado, mensaje, clasificacion)
+
     if fa == 0 or fb == 0:
         xr = a if fa == 0 else b
         a = b = xr
         fa = fb = 0.
         return resultado(xr, "exacta", "Raíz en un extremo: f(xr) = 0.")
-    exigir_cambio_de_signo(fa, fb)
     anterior = fijo = None
     veces_fijo = 0
     for i in range(1, max_iteraciones + 1):
@@ -59,7 +67,10 @@ def regla_falsa(funcion, a, b, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERAC
             # El redondeo llevó xr a un extremo: ya no hay un punto nuevo que evaluar.
             return resultado(min(max(xr, a), b), "maquina",
                              "No converge a la tolerancia pedida: se alcanzó el límite de los números de máquina.")
-        fxr = funcion(xr)
+        try:
+            fxr = funcion(xr)
+        except ValueError as error:
+            return resultado(anterior, "evaluacion", str(error))
         error = None if anterior is None else abs(xr - anterior)
         fila = {"i": i, "a": a, "b": b, "fa": fa, "fb": fb, "xr": xr, "fxr": fxr, "error_absoluto": error}
         filas.append(fila)
@@ -81,7 +92,11 @@ def regla_falsa(funcion, a, b, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERAC
         prueba = f_prueba = None
         confirmada = False
         if cumple and fxr != 0:
-            prueba, f_prueba, confirmada = confirmar_cercania(funcion, xr, fxr, a, b, tolerancia)
+            try:
+                prueba, f_prueba, confirmada = confirmar_cercania(funcion, xr, fxr, a, b, tolerancia)
+            except ValueError:
+                # Sin una evaluación válida no se puede certificar la cercanía.
+                pass
         fila.update({"sustituido": sustituido, "nuevo_a": a, "nuevo_b": b, "extremo_fijo": fijo,
                      "veces_fijo": veces_fijo, "cumple_tolerancia": cumple, "prueba": prueba,
                      "f_prueba": f_prueba, "confirmada": confirmada})

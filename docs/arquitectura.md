@@ -51,6 +51,11 @@ comparten entrada, muestreo y presentación. `raices.js` coordina Plotly, extrem
 recorrido y decimales; `biseccion.js` y `regla_falsa.js` aportan las lecturas y
 trazas de cada método, sin recalcular raíces. Las rutas existentes de Bisección
 se conservan. Véase [Regla falsa](regla-falsa.md).
+Newton-Raphson añade `backend/newton_raphson.py`, su formulario y una vista propia
+para f y x₀, con derivación automática en el backend. Extiende la misma plantilla y controlador, con un
+solo punto seleccionable y sin franja de intervalo. `newton_raphson.js` aporta
+la tangente y la explicación, sin duplicar Plotly, parser ni teclado.
+Véase [Newton-Raphson](newton-raphson.md).
 
 `frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
 inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,

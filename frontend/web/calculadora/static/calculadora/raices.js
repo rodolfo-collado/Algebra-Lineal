@@ -7,9 +7,10 @@
     if (!form || !grafica) return;
     const datos = JSON.parse(document.getElementById("datos-raices").textContent);
     const metodo = window.metodosRaices[datos.metodo];
+    const extremos = metodo.extremos || ["a", "b"];
     const resultado = datos.resultado;
     const pasos = resultado?.iteraciones || [];
-    const resumen = resultado ? metodo.resumen(resultado) : null;
+    const resumen = resultado?.residuo != null && resultado.clasificacion !== "no_aplicable" ? metodo.resumen(resultado) : null;
     const estado = document.getElementById("grafica-estado");
     const slider = document.getElementById("iteracion-raices");
     const lectura = document.getElementById("iteracion-lectura");
@@ -30,9 +31,10 @@
     let mutando = false, temporizador, peticion, inicializacion, generacion = 0, extremoElegido = null;
     const vistaInicial = [-10, 10];
     const anchoInicial = datos.inicial_b - datos.inicial_a;
-    const vistaCalculo = resultado ? [datos.inicial_a - anchoInicial / 4, datos.inicial_b + anchoInicial / 4] : null;
+    const vistaCalculo = resultado ? (metodo.vista && pasos.length ? metodo.vista(pasos[0])
+        : [datos.inicial_a - anchoInicial / 4, datos.inicial_b + anchoInicial / 4]) : null;
     const ayudaGrafica = document.getElementById("grafica-ayuda");
-    const indicacion = "Introduce una función para visualizar su gráfica y elegir un intervalo.";
+    const indicacion = metodo.indicacion || "Introduce una función para visualizar su gráfica y elegir un intervalo.";
     ayudaGrafica.hidden = true;
 
     // Cifras suficientes para que valores distintos no se lean como iguales.
@@ -93,7 +95,7 @@
     function sincronizarExtremos() {
         if (!grafica.data) return;
         const cambios = {};
-        ["a", "b"].forEach((nombre, i) => {
+        extremos.forEach((nombre, i) => {
             const x = extremo(nombre);
             cambios[`shapes[${i}].visible`] = x !== null;
             cambios[`shapes[${i}].x0`] = cambios[`shapes[${i}].x1`] = x ?? 0;
@@ -144,7 +146,7 @@
             "marker.size": [trazo?.size || []], textposition: trazo?.posicion || "top center" }, [2]);
         Plotly.update(grafica, { x: [puntos.x], y: [puntos.y], text: [puntos.text],
             customdata: [etiquetas(puntos.x, puntos.y, 12)], "marker.size": [puntos.size], "marker.symbol": [puntos.symbol] },
-            { "shapes[2].x0": p.a, "shapes[2].x1": p.b }, [1])
+            extremos.length === 2 ? { "shapes[2].x0": p.a, "shapes[2].x1": p.b } : {}, [1])
             .finally(() => { mutando = false; });
     }
 
@@ -179,9 +181,13 @@
             await sincronizarExtremos();
             if (n !== generacion) return;
             seleccion.hidden = false;
-            estado.textContent = puntos.y.some(y => y === null)
-                ? "La curva tiene huecos donde no se pudo verificar el dominio. La gráfica es un muestreo, no una prueba de raíces."
-                : "Gráfica muestreada. Resolver comprueba dominio y cambio de signo del intervalo.";
+            const dominio = puntos.y.some(y => y === null)
+                ? "La curva tiene huecos donde no se pudo verificar el dominio."
+                : metodo.comprobacion || "Gráfica muestreada. Resolver comprueba dominio y cambio de signo del intervalo.";
+            const hallazgo = puntos.clasificacion === "indicios_numericos"
+                ? "El muestreo encontró indicios numéricos de raíces."
+                : "El muestreo no detectó raíces. El resultado es no concluyente.";
+            estado.textContent = dominio + " " + hallazgo;
         } catch (error) {
             if (error.name !== "AbortError" && n === generacion) {
                 grafica.hidden = true;
@@ -273,9 +279,9 @@
             font: { family: "Segoe UI, sans-serif", color: color("--color-text") },
             xaxis: { title: { text: "x" }, range: vistaInicial, gridcolor: color("--color-border"), zerolinecolor: color("--color-muted") },
             yaxis: { title: { text: "f(x)" }, gridcolor: color("--color-border"), zerolinecolor: color("--color-muted") },
-            shapes: [{ ...linea(extremo("a") ?? 0, "a"), visible: extremo("a") !== null },
-                { ...linea(extremo("b") ?? 0, "b"), visible: extremo("b") !== null },
-                { ...franja(0, 0), visible: pasos.length > 0 }],
+            shapes: [{ ...linea(extremo(extremos[0]) ?? 0, extremos[0]), visible: extremo(extremos[0]) !== null },
+                { ...linea(extremos.length === 2 ? extremo("b") ?? 0 : 0, "b"), visible: extremos.length === 2 && extremo("b") !== null },
+                { ...franja(0, 0), visible: extremos.length === 2 && pasos.length > 0 }],
             dragmode: "pan",
             separators: ". ", // punto decimal también en los ejes; los textos siguen en español
         };
@@ -294,7 +300,7 @@
         grafica.on("plotly_relayout", cambio => {
             if (mutando || grafica.hidden) return;
             let cambioExtremos = false;
-            ["a", "b"].forEach((nombre, i) => {
+            extremos.forEach((nombre, i) => {
                 const x = cambio[`shapes[${i}].x0`] ?? cambio[`shapes[${i}].x1`] ?? cambio.shapes?.[i]?.x0;
                 if (!Number.isFinite(x)) return;
                 campo(nombre).value = String(x);
@@ -318,7 +324,7 @@
             input.dispatchEvent(new Event("input", { bubbles: true }));
             extremoElegido = null;
             elegir.forEach(b => b.setAttribute("aria-pressed", "false"));
-            estado.textContent = "Extremo seleccionado. Puedes arrastrar su línea o ajustar el valor en el formulario. Resolver validará el intervalo.";
+            estado.textContent = "Punto seleccionado. Puedes arrastrar su línea o ajustar el valor en el formulario.";
         });
         new MutationObserver(() => {
             Plotly.relayout(grafica, { paper_bgcolor: color("--color-surface"), plot_bgcolor: color("--color-surface"),
@@ -333,11 +339,11 @@
                 "textfont.color": color("--color-text") }, [2]);
         }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-estilo"] });
         if (pasos.length) mostrarPaso(Number(slider.value));
-        else if (resultado) Plotly.restyle(grafica, { x: [[resumen.x]], y: [[resumen.fx]], text: [[resumen.nombre]],
+        else if (resumen) Plotly.restyle(grafica, { x: [[resumen.x]], y: [[resumen.fx]], text: [[resumen.nombre]],
             customdata: [etiquetas([resumen.x], [resumen.fx], 12)] }, [1]);
     }
     campo("funcion").addEventListener("input", previsualizar);
-    ["a", "b"].forEach(n => campo(n).addEventListener("input", sincronizarExtremos));
+    extremos.forEach(n => campo(n).addEventListener("input", sincronizarExtremos));
     elegir.forEach(boton => boton.addEventListener("click", () => {
         extremoElegido = extremoElegido === boton.dataset.elegirExtremo ? null : boton.dataset.elegirExtremo;
         elegir.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.elegirExtremo === extremoElegido)));
@@ -347,6 +353,10 @@
     document.getElementById("grafica-intervalo")?.addEventListener("click", () => {
         muestrear(vistaCalculo.every(Number.isFinite) ? vistaCalculo : [datos.inicial_a, datos.inicial_b], true);
     });
+    document.getElementById("iteracion-encuadrar")?.addEventListener("click", () => {
+        const rango = metodo.vista(pasos[Number(slider.value) - 1]);
+        if (rango.every(Number.isFinite) && rango[0] < rango[1]) muestrear(rango, true);
+    });
     slider?.addEventListener("input", () => mostrarPaso(Number(slider.value)));
     anterior?.addEventListener("click", () => mostrarPaso(Number(slider.value) - 1));
     siguiente?.addEventListener("click", () => mostrarPaso(Number(slider.value) + 1));
@@ -355,6 +365,6 @@
     });
     comparar();
     presentarNumeros();
-    if (pasos.length) mostrarPaso(pasos.length);
+    if (pasos.length) mostrarPaso(metodo.pasoInicial || pasos.length);
     previsualizar();
 })();

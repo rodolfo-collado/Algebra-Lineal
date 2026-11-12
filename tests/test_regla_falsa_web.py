@@ -101,8 +101,7 @@ class ReglaFalsaWebTests(SimpleTestCase):
             self.assertNotContains(r, "NaN")
 
     def test_errores_de_entrada_no_producen_resultado(self):
-        for cambios in [{"funcion": "1/x", "a": "-1", "b": "1"}, {"funcion": "x^2+1"},
-                         {"funcion": "x.__class__"}, {"precision": "0"}, {"precision": ".001"},
+        for cambios in [{"funcion": "x.__class__"}, {"precision": "0"}, {"precision": ".001"},
                          {"precision": "NaN"}, {"a": "inf"}, {"a": ["0", "1"]}, {"b": "0"},
                          {"intruso": "1"}, {"max_iteraciones": "1001"}]:
             with self.subTest(cambios=cambios):
@@ -111,6 +110,22 @@ class ReglaFalsaWebTests(SimpleTestCase):
                 self.assertNotContains(r, 'id="resultado"')
         r = self.client.post(RUTA, datos(precision="", max_iteraciones=""))
         self.assertEqual(resultado_html(r)["tolerancia"], .0001)
+
+    def test_intervalo_no_aplicable_muestra_resultado_informativo(self):
+        for texto, a, b, clasificacion in [
+            ("x^2+1", "-1", "1", "sin_raices_demostrado"),
+            ("x^2", "-1", "1", "no_aplicable"),
+            ("x^2-1", "-2", "2", "no_aplicable"),
+            ("1/x", "-1", "1", "no_aplicable"),
+        ]:
+            with self.subTest(texto=texto):
+                r = self.client.post(RUTA, datos(funcion=texto, a=a, b=b))
+                self.assertEqual(r.status_code, 200)
+                self.assertEqual(resultado_html(r)["clasificacion"], clasificacion)
+                self.assertNotContains(r, "data-respuesta-errores")
+                self.assertContains(r, 'id="resultado"')
+                self.assertNotContains(r, 'data-iteracion=')
+                self.assertNotContains(r, "Aproximación sin convergencia")
 
     def test_previsualizacion_compartida_no_ejecuta_metodos(self):
         with patch("frontend.web.calculadora.views_raices.regla_falsa", side_effect=AssertionError("No calcular")), \
