@@ -226,6 +226,13 @@ matemático, el parser y los formatos de resultado no cambian:
 - **Pantalla reorganizada:** conjuntos y diagrama lado a lado, tarjetas y
   expresión personalizada con su procedimiento; ejemplos en el menú Edición.
   Estados vacíos, errores por región y foco revisados en Estudio y Minimalista.
+- **Un solo Venn:** tras Calcular o Contar, el resultado se sombrea en el diagrama
+  editable (sin alterar lo escrito y con un botón para quitarlo); la tabla de
+  regiones sigue debajo. Solo un resultado con conjuntos que el diagrama no
+  muestra dibuja el suyo.
+- **Elementos ↔ Cantidades con contexto:** volver de Cantidades recupera los
+  conjuntos, la expresión y el diagrama tal como se dejaron; las cantidades nunca
+  se convierten en elementos.
 
 ## Flujo de integración y entrega
 

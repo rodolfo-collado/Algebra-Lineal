@@ -263,12 +263,27 @@ def _venn(expresion, entorno, nombres, universo, presupuesto):
         # Una relación o cardinalidad conserva el diagrama de los conjuntos, sin sombrear un resultado distinto.
         resalta = detectar_venn(expresion, entorno) is not None
         regiones = construir_venn(nombres, entorno, expresion if resalta else Conjunto(), universo=universo, presupuesto=presupuesto)
+    return _venn_web(nombres, universo, regiones, resalta), None
+
+
+def _venn_web(nombres, universo, regiones, resalta):
     regiones = [{**r, 'elementos': [_valor_web(e) for e in r['elementos']],
                  'etiqueta': notacion_region(r['mascara'], nombres),
                  'descripcion': describir_region(r['mascara'], nombres),
                  'etiquetas': [presentar(e) for e in r['elementos']],
                  'cantidad': str(len(r['elementos'])) if r['exterior_conocido'] else None} for r in regiones]
-    return {'nombres': nombres, 'universo': universo, 'regiones': regiones, 'resalta': resalta}, None
+    return {'nombres': tuple(nombres), 'universo': universo, 'regiones': regiones, 'resalta': resalta}
+
+
+def venn_del_diagrama(texto, entorno, nombres, universo):
+    """El Venn del resultado sobre los conjuntos del diagrama editable, para sombrear ese mismo
+    diagrama en vez de dibujar otro. None si la expresión no es de regiones de esos conjuntos
+    (una relación, una potencia, otro conjunto…): entonces el resultado conserva su diagrama."""
+    try:
+        arbol = analizar_expresion(texto, presupuesto=Presupuesto())
+        return _venn_web(nombres, universo, construir_venn(nombres, entorno, arbol, universo=universo, presupuesto=Presupuesto()), True)
+    except ValueError:
+        return None
 
 
 def _recta(resultado, nodos, punto):

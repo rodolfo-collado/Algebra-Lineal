@@ -49,9 +49,19 @@ Preparada primero como 0.16.1; pasa a 0.17.0 al integrar Newton-Raphson desde
   cada uno con Copiar y Ver pasos, y alargan la página (de 1.494 a 2.590 px con
   tres conjuntos en Estudio). Diferencias anotadas en el PR: Cantidades es la otra
   herramienta, no un modo del mismo diagrama; las tarjetas cubren solo los dos o tres
-  conjuntos del diagrama; tras Calcular hay un segundo diagrama (el sombreado del
-  resultado); conjuntos, diagrama y tarjetas se sincronizan al guardar o
-  actualizar, no mientras se escribe.
+  conjuntos del diagrama; conjuntos, diagrama y tarjetas se sincronizan al guardar o
+  actualizar, no mientras se escribe. Tras esa revisión se corrigieron el segundo
+  diagrama después de Calcular (ahora se sombrea el editable) y la vuelta de
+  Cantidades a Elementos (ahora conserva el editor).
+- **Tras esas dos correcciones:** 2.019 pruebas Python (cinco nuevas: sombreado en
+  el editable, relación sin diagrama repetido, conjunto fuera del diagrama con su
+  propio Venn, Cardinalidad por regiones y la ida y vuelta con `volver`, que solo
+  admite campos del editor). Runner de Conjuntos 20/20 en Edge y Chrome; matriz
+  visual 80/80. En el ejecutable WebView2, 19 comprobaciones reales por estilo
+  (las anteriores más Calcular y Contar con un solo diagrama, el botón que quita y
+  repone el sombreado por clic e Intro, y Elementos → Cantidades → Contar →
+  Elementos recuperando conjuntos, expresión y diagrama) y el runner 20/20, sin
+  errores de consola.
 
 Pendiente de validación manual: lector de pantalla (NVDA o Narrador) sobre los
 campos del diagrama y la barra, y pantalla táctil física en las regiones pequeñas

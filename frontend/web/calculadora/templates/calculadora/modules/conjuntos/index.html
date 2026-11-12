@@ -227,11 +227,20 @@
         {% if resultado.motivo %}<p class="conjuntos-motivo">{{ resultado.motivo }}</p>{% endif %}
     </section>
 
-    {% if resultado.venn %}
-    <section class="panel conjuntos-venn" aria-labelledby="venn-titulo">
+    {% comment %}Un solo Venn: si el resultado es una región de los conjuntos del diagrama editable, se sombrea allí (conjuntos_visual.js) y aquí queda la tabla; sin JavaScript, la tabla dice qué regiones lo forman. Si solo repetiría la distribución de esos conjuntos, no se muestra.{% endcomment %}
+    {% if resultado.venn and not resultado.venn_repetido %}
+    <section class="panel conjuntos-venn" aria-labelledby="venn-titulo"{% if resultado.en_diagrama %} data-venn-en-diagrama{% endif %}>
+        {% if resultado.en_diagrama %}
+        <div class="conjuntos-cabecera">
+            <h3 id="venn-titulo" class="panel-title">Regiones del resultado</h3>
+            <button type="button" class="btn btn-secondary" data-sombreado aria-pressed="true" hidden>Sombrear en el diagrama</button>
+        </div>
+        <p class="field-help">Las regiones con «Sí» forman el resultado.<span data-con-diagrama hidden> Están sombreadas en el <a href="#diagrama-titulo">diagrama de arriba</a>; pulsa una fila para señalarla.</span></p>
+        {% else %}
         <h3 id="venn-titulo" class="panel-title">Diagrama de Venn</h3>
         <p class="field-help">{% if resultado.venn.resalta %}Sombreado: las regiones que forman el resultado. {% else %}Distribución de los conjuntos definidos. {% endif %}Pulsa una región o una fila para ver sus elementos.</p>
         <div class="conjuntos-venn-lienzo" data-venn></div>
+        {% endif %}
         <div class="table-wrap">
             <table class="procedure-table conjuntos-regiones" data-regiones>
                 <caption class="sr-only">Cada elemento está en una sola región</caption>

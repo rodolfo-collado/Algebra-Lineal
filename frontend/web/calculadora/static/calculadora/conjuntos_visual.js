@@ -145,19 +145,43 @@
             if (exterior) nodo.setAttribute('y', y - (filas.length - 1) * 14);
             svg.append(nodo);
         }
-        contenedor.replaceChildren(svg);
+        contenedor.replaceChildren(svg, estadoRegiones());
+        const resaltarRegiones = mascaras => {
+            for (const [m, rect] of rellenos) rect.classList.toggle('es-activa', mascaras.includes(m));
+        };
+        const { fijar, reposo, resaltar } = explorarRegiones(venn, panel, resaltarRegiones, contenedor.lastChild);
+        svg.addEventListener('pointermove', event => {
+            const m = enPunto(event);
+            resaltar(m === null ? reposo() : [m]);
+        });
+        svg.addEventListener('pointerleave', () => resaltar(reposo()));
+        svg.addEventListener('click', event => {
+            const m = enPunto(event);
+            if (m !== null) fijar(m);
+        });
+        // Sumandos, términos y tarjetas del resultado iluminan su diagrama.
+        enlazar([...panel.closest('[data-resultado]').querySelectorAll('[data-mascaras]')], resaltar, reposo);
+    }
 
+    function estadoRegiones() {
         const estado = document.createElement('p');
         estado.className = 'field-help';
         estado.setAttribute('role', 'status');
         estado.setAttribute('aria-live', 'polite');
-        contenedor.append(estado);
+        return estado;
+    }
+
+    // Tabla de regiones del resultado: pasar por una fila ilumina su región y pulsarla (o Intro)
+    // la fija y anuncia sus elementos. `resaltarRegiones` pinta el diagrama que corresponda.
+    function explorarRegiones(venn, panel, resaltarRegiones, estado) {
+        const cantidades = Boolean(venn.cantidades);
         const filas = new Map([...panel.querySelectorAll('[data-regiones] tr[data-mascara]')].map(fila => [Number(fila.dataset.mascara), fila]));
         let fija = null;
         const resaltar = mascaras => {
-            for (const [m, rect] of rellenos) rect.classList.toggle('es-activa', mascaras.includes(m));
+            resaltarRegiones(mascaras);
             for (const [m, fila] of filas) fila.classList.toggle('es-activa', mascaras.includes(m));
         };
+        const reposo = () => (fija === null ? [] : [fija]);
         const describir = m => {
             const r = venn.regiones.find(x => x.mascara === m);
             if (!r) return '';
@@ -170,18 +194,9 @@
         };
         const fijar = m => {
             fija = fija === m ? null : m;
-            resaltar(fija === null ? [] : [fija]);
+            resaltar(reposo());
             estado.textContent = fija === null ? '' : describir(fija);
         };
-        svg.addEventListener('pointermove', event => {
-            const m = enPunto(event);
-            resaltar(m === null ? (fija === null ? [] : [fija]) : [m]);
-        });
-        svg.addEventListener('pointerleave', () => resaltar(fija === null ? [] : [fija]));
-        svg.addEventListener('click', event => {
-            const m = enPunto(event);
-            if (m !== null) fijar(m);
-        });
         for (const [m, fila] of filas) {
             fila.tabIndex = 0;
             fila.addEventListener('click', () => fijar(m));
@@ -189,21 +204,22 @@
                 if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); fijar(m); }
             });
             fila.addEventListener('mouseenter', () => resaltar([m]));
-            fila.addEventListener('mouseleave', () => resaltar(fija === null ? [] : [fija]));
+            fila.addEventListener('mouseleave', () => resaltar(reposo()));
         }
-        // Las tarjetas iluminan el diagrama de su misma zona: aquí, solo las que acompañan a este resultado.
-        enlazar([...document.querySelectorAll('[data-mascaras]')].filter(nodo => !nodo.closest('[data-panorama]') || panel.parentElement.contains(nodo)),
-            resaltar, () => (fija === null ? [] : [fija]));
+        return { fijar, reposo, resaltar };
     }
 
     // Diagrama editable: los campos del formulario (uno por región, con su etiqueta) se colocan
     // dentro de su región. Sin JavaScript siguen siendo una lista de campos con nombre.
-    function editorVenn(editor) {
+    // Con `resultado` (su Venn y su panel), sombrea las regiones del resultado sin tocar lo escrito;
+    // «Sombrear en el diagrama» lo quita y lo vuelve a poner, y editar cualquier dato lo retira.
+    function editorVenn(editor, resultado) {
         const nombres = editor.dataset.nombres.split(',');
         const campos = [...editor.querySelectorAll('[data-mascara]')];
         if (!GEOMETRIA[nombres.length] || !campos.length) return;
         const exterior = campos.some(campo => campo.dataset.mascara === '0');
-        const regiones = Array.from({ length: 1 << nombres.length }, (_, mascara) => ({ mascara }))
+        const enResultado = new Set((resultado?.venn.regiones || []).filter(r => r.seleccionada).map(r => r.mascara));
+        const regiones = Array.from({ length: 1 << nombres.length }, (_, mascara) => ({ mascara, seleccionada: enResultado.has(mascara) }))
             .filter(r => r.mascara || exterior);
         const { svg, geo, rellenos, enPunto } = lienzoVenn(
             { nombres, universo: exterior ? editor.dataset.universo || 'U' : null, regiones }, { 'aria-hidden': 'true', focusable: 'false' });
@@ -249,7 +265,24 @@
         });
         editor.classList.add('es-diagrama');
         editor.replaceChildren(lienzo, leyenda);
-        enlazar([...document.querySelectorAll('[data-panorama] [data-mascaras]')].filter(nodo => !nodo.closest('[data-resultado]')), resaltar, reposo);
+        // Las tarjetas de arriba siempre son de este diagrama; las del resultado, solo si no dibuja el suyo.
+        enlazar([...document.querySelectorAll('[data-mascaras]')].filter(nodo => resultado || !nodo.closest('[data-resultado]')), resaltar, reposo);
+        if (!resultado) return;
+        const { panel } = resultado;
+        const boton = panel.querySelector('[data-sombreado]');
+        const sombrear = visible => {
+            lienzo.toggleAttribute('data-con-resultado', visible);
+            boton.setAttribute('aria-pressed', String(visible));
+        };
+        panel.querySelector('[data-con-diagrama]').hidden = false;
+        boton.hidden = false;
+        boton.addEventListener('click', () => sombrear(boton.getAttribute('aria-pressed') !== 'true'));
+        sombrear(true);
+        // El resultado deja de corresponder a los datos en cuanto se edita algo.
+        editor.closest('form').addEventListener('input', () => { sombrear(false); boton.hidden = true; });
+        const estado = estadoRegiones();
+        panel.querySelector('.table-wrap').before(estado);
+        explorarRegiones(resultado.venn, panel, resaltar, estado);
     }
 
     // Icono de un dato de cardinalidad: sombrea las regiones que cuenta (0 = todo el universo).
@@ -422,7 +455,11 @@
             if (['numero', 'modo'].includes(event.target.name)) ajuste.form.requestSubmit(ajuste);
         });
     }
-    document.querySelectorAll('[data-venn-editor]').forEach(editorVenn);
+    const fuente = document.getElementById('conjuntos-resultado-datos');
+    const resultado = fuente ? JSON.parse(fuente.textContent) : null;
+    const enDiagrama = document.querySelector('[data-venn-en-diagrama]');
+    document.querySelectorAll('[data-venn-editor]').forEach(editor => editorVenn(editor,
+        enDiagrama && resultado?.venn ? { venn: resultado.venn, panel: enDiagrama } : null));
     document.querySelectorAll('.cardinalidad-campos[data-conjuntos]:not(.es-diagrama)').forEach(campos => {
         campos.querySelectorAll('[data-cubre]').forEach(dato => {
             miniVenn(dato.querySelector('.cardinalidad-icono'), Number(campos.dataset.conjuntos), dato.dataset.cubre.split(' ').map(Number));
@@ -440,9 +477,7 @@
             campo.focus();
         });
     }
-    const fuente = document.getElementById('conjuntos-resultado-datos');
-    if (!fuente) return;
-    const resultado = JSON.parse(fuente.textContent);
+    if (!resultado) return;
     const venn = document.querySelector('[data-venn]');
     if (venn && resultado.venn) dibujarVenn(venn, resultado.venn, venn.closest('section'));
     const recta = document.querySelector('[data-recta]');

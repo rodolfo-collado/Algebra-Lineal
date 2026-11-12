@@ -321,6 +321,19 @@ pulsarla, o pulsar o elegir con Intro su fila de la tabla, la fija y anuncia sus
 elementos. La tabla de regiones funciona sin JavaScript y es el acceso por teclado.
 La geometría (qué círculos contienen el puntero) es lo único que calcula el script.
 
+**Un solo diagrama (v0.17.0).** Si el resultado es una región de los conjuntos que
+dibuja el diagrama editable (`venn_del_diagrama`: nombres, ∅, ∪, ∩, ∖ y ∁ sobre
+esos conjuntos y su universo), no se dibuja un segundo Venn: el editable sombrea
+las regiones del resultado sin tocar lo escrito en ellas, y el resultado conserva
+la tabla «Regiones del resultado». Una fila señala su región en el editable y la
+anuncia; **Sombrear en el diagrama** (`aria-pressed`) quita y repone el sombreado,
+y editar cualquier dato lo retira porque el resultado deja de corresponder. Una
+relación con los mismos conjuntos no repite la distribución. El resultado mantiene
+su propio diagrama cuando usa conjuntos que el editable no muestra (`A ∖ D` con
+A, B y C dibujados), y en Cardinalidad con «Conjuntos e intersecciones», que no
+tiene diagrama de casillas; con «Regiones separadas» se sombrean las casillas.
+Sin JavaScript, la tabla dice qué regiones forman el resultado.
+
 ### Diagrama editable (v0.17.0)
 
 El diagrama de la zona superior está siempre presente y siempre se lee del modelo:
@@ -360,6 +373,17 @@ inclusión-exclusión* con cuántos hay en cada región ya contados (solo entero
 la URL, nunca elementos). Allí cada casilla de «Regiones separadas» también está
 dentro de su región del diagrama y `|U|` en la esquina; si solo se conocen
 cantidades, ninguna parte de la pantalla inventa elementos.
+
+**Volver con el mismo contexto (v0.17.0).** El enlace a Cantidades lleva, aparte
+de los enteros, `volver=`: las filas, la expresión y las opciones del diagrama de
+Operaciones en una consulta (`estado_editor`). Cardinalidad la guarda en un campo
+oculto —sin mostrarla ni interpretarla, y también al Contar o cambiar de modo— y
+su **Elementos** vuelve a `/conjuntos/relaciones/?…` con ese estado
+(`url_elementos` solo acepta campos del editor; si no, abre el editor vacío). Así
+se recuperan los conjuntos tal como se dejaron y las cantidades nunca se convierten
+en elementos. Lo que se recupera es lo último guardado: un borrador sin guardar
+o sin «Actualizar conjuntos» no viaja. Sin contexto previo, Elementos abre el
+editor vacío.
 
 ### Operaciones y propiedades (tarjetas)
 
@@ -431,7 +455,7 @@ uv run --locked python -m tests.conjuntos_browser
 
 Abre `http://127.0.0.1:8894/conjuntos/relaciones/` para el editor y
 `http://127.0.0.1:8894/conjuntos/cardinalidad/` para inclusión-exclusión.
-El servidor escucha solo en loopback; `/__pruebas/` ejecuta los 19 flujos DOM.
+El servidor escucha solo en loopback; `/__pruebas/` ejecuta los 20 flujos DOM.
 
 La serialización añade `tipo: "par"` con `primero` y `segundo` tipados recursivos.
 Las reglas nuevas del procedimiento son `par_ordenado`, `potencia`,
@@ -463,15 +487,15 @@ lista suelta o conjunto, el diagrama leído siempre del modelo con exterior `?`,
 exterior, el cambio de conjuntos del diagrama, las tarjetas (elementos y
 cantidades, relaciones e inclusión-exclusión), «Ver pasos» y el enlace a
 cantidades que solo admite enteros.
-`python -m tests.conjuntos_browser` sirve diecinueve escenarios DOM en
+`python -m tests.conjuntos_browser` sirve veinte escenarios DOM en
 `http://127.0.0.1:8894/__pruebas/`: estado vacío, ejemplos, cambios pendientes en
 ambos sentidos, Intro, barra de símbolos (cursor, selección, flechas, foco),
-aceptación, recta (zoom, tramo, punto propuesto y erróneo), Venn del resultado,
+aceptación, recta (zoom, tramo, punto propuesto y erróneo), resultado sombreado en el editable o en su propio Venn,
 escritura en las regiones (exterior, duplicados, Descartar), «el último lado
 manda», tres conjuntos y opciones, tarjetas (valores, resaltado, copiar,
 desplegar, Ver pasos), regiones por clic y foco, cantidades sin elementos, dock
-contextual, CRUD con renombrado, errores accesibles y resultado desactualizado.
-Pasa 19/19 en Chrome y en Edge headless (el motor de WebView2), con foco emulado
+contextual, ida y vuelta Elementos–Cantidades, CRUD con renombrado, errores accesibles y resultado desactualizado.
+Pasa 20/20 en Chrome y en Edge headless (el motor de WebView2), con foco emulado
 por CDP. No añade dependencias.
 
 P3–P6 añaden comprobaciones de crecimiento previo, pares, generación exacta,

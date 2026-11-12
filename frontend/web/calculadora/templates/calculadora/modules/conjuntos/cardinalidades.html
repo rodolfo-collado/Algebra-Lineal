@@ -9,6 +9,7 @@
     <form id="cardinalidades-form" method="post" action="{{ herramienta_actual.ruta }}#resultado" data-entrada-calculo autocomplete="off" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         <button class="conjuntos-envio-implicito" type="submit" name="accion" value="calcular" tabindex="-1" aria-hidden="true">Calcular</button>
+        {{ form.volver }}
         {% include "calculadora/components/errores_generales.html" %}
         <div class="cardinalidad-opciones">
             <fieldset class="choice-fieldset">
@@ -28,7 +29,7 @@
             <div class="conjuntos-cabecera">
                 <h3 id="datos-titulo" class="section-title">{% if form.modo_actual == "intersecciones" %}Cardinalidades conocidas{% else %}Cuántos hay en cada región{% endif %}</h3>
                 <div class="venn-modo" role="group" aria-label="Datos del diagrama">
-                    <a class="venn-modo-opcion" href="{% url 'calculadora:relaciones-conjuntos' %}" title="Escribir los elementos de cada región">Elementos</a>
+                    <a class="venn-modo-opcion" href="{{ elementos_url }}" title="{% if '?' in elementos_url %}Volver a tus conjuntos con sus elementos{% else %}Escribir los elementos de cada región{% endif %}">Elementos</a>
                     <span class="venn-modo-opcion" aria-current="true">Cantidades</span>
                 </div>
             </div>
@@ -129,10 +130,19 @@
             {% endif %}
         {% endif %}{% endfor %}
     </section>
-    <section class="panel conjuntos-venn" aria-labelledby="venn-titulo">
+    {% comment %}Con regiones separadas, las casillas ya están en un diagrama: el resultado se sombrea allí. Con intersecciones no lo hay y el resultado dibuja el suyo.{% endcomment %}
+    <section class="panel conjuntos-venn" aria-labelledby="venn-titulo"{% if resultado.modo == "regiones" %} data-venn-en-diagrama{% endif %}>
+        {% if resultado.modo == "regiones" %}
+        <div class="conjuntos-cabecera">
+            <h3 id="venn-titulo" class="panel-title">Regiones que se cuentan</h3>
+            <button type="button" class="btn btn-secondary" data-sombreado aria-pressed="true" hidden>Sombrear en el diagrama</button>
+        </div>
+        <p class="field-help">Las regiones con «Sí» suman {{ resultado.resultado }}.<span data-con-diagrama hidden> Están sombreadas en el <a href="#datos-titulo">diagrama de arriba</a>.</span> En total, <span class="conjuntos-math">|{{ resultado.datos.venn.nombres|join:" ∪ " }}| = {{ resultado.union }}</span>.</p>
+        {% else %}
         <h3 id="venn-titulo" class="panel-title">Diagrama de Venn</h3>
         <p class="field-help">Cada número es una región que no se solapa con las demás. Sombreado: lo que cuenta {{ resultado.expresion }}. En total, <span class="conjuntos-math">|{{ resultado.datos.venn.nombres|join:" ∪ " }}| = {{ resultado.union }}</span>.</p>
         <div class="conjuntos-venn-lienzo" data-venn></div>
+        {% endif %}
         <div class="table-wrap">
             <table class="procedure-table conjuntos-regiones" data-regiones>
                 <caption class="sr-only">Regiones exclusivas</caption>

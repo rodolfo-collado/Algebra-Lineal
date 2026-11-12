@@ -171,17 +171,39 @@
             w = await cargar(frame, "/conjuntos/relaciones/?ejemplo=intervalos");
             ok(!q(w, "[data-venn-editor]") && !q(w, ".tarjetas") && q(w, ".conjuntos-diagrama").textContent.includes("recta real"), "Con intervalos no hay diagrama ni tarjetas, y se dice por qué");
         }],
-        ["P5: el resultado sombrea su propio Venn desde el motor", async (w, frame) => {
+        ["P5: el resultado se sombrea en el diagrama editable, sin un segundo Venn", async (w, frame) => {
             valor(w, "expresion", "A ∖ B"); w = await post(frame);
-            ok(qa(w, "[data-venn] [data-region]").length === 4, "Cuatro regiones sin pedir nombres");
+            ok(qa(w, "svg.venn-lienzo-interactivo").length === 1 && !q(w, "[data-venn]"), "Un solo diagrama en la página");
             const datos = JSON.parse(q(w, "#conjuntos-resultado-datos").textContent);
-            ok(datos.venn.regiones[1].seleccionada && !datos.venn.regiones[3].seleccionada, "Solo A resaltada");
-            ok(q(w, '[data-venn] [data-region="1"]').classList.contains("es-seleccionada"), "Sombreado del motor");
-            ok(!q(w, ".venn-editor-lienzo .es-seleccionada"), "El diagrama editable no se sombrea");
+            ok(datos.venn.regiones[1].seleccionada && !datos.venn.regiones[3].seleccionada, "Solo A resaltada por el motor");
+            const lienzo = q(w, ".venn-editor-lienzo");
+            ok(lienzo.hasAttribute("data-con-resultado") && qa(w, ".venn-editor-lienzo .es-seleccionada").map(r => r.dataset.region).join() === "1", "Sombreado en el editable");
+            ok(q(w, '[name="venn_region_1"]').value === "1" && q(w, '[name="venn_region_3"]').value === "2", "Lo escrito en las regiones no cambia");
+            const fila = q(w, '[data-regiones] tr[data-mascara="3"]');
+            fila.focus(); fila.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+            const estado = q(w, "[data-venn-en-diagrama] [role=status]");
+            ok(fila.classList.contains("es-activa") && q(w, '.venn-editor-lienzo [data-region="3"]').classList.contains("es-activa"), "La fila señala su región en el editable");
+            ok(estado.textContent.includes("En A y B") && estado.textContent.includes("1 elemento: 2.") && estado.textContent.includes("No forma parte"), "Y la anuncia: " + estado.textContent);
+            const boton = q(w, "[data-sombreado]");
+            ok(!boton.hidden && boton.getAttribute("aria-pressed") === "true" && !q(w, "[data-con-diagrama]").hidden, "Botón para volver al estado normal");
+            boton.click();
+            ok(!lienzo.hasAttribute("data-con-resultado") && boton.getAttribute("aria-pressed") === "false", "Quita el sombreado");
+            boton.click();
+            ok(lienzo.hasAttribute("data-con-resultado"), "Y lo repone");
+            valor(w, "venn_region_1", "1, 9");
+            ok(!lienzo.hasAttribute("data-con-resultado") && boton.hidden, "Editar retira el sombreado del resultado anterior");
+        }],
+        ["P5: con conjuntos fuera del diagrama, el resultado conserva su propio Venn", async (w, frame) => {
+            w = await cargar(frame, "/conjuntos/relaciones/?ejemplo=venn");
+            valor(w, "definicion", "D = {1, 9}");
+            w = await post(frame, "[data-agregar]");
+            valor(w, "expresion", "A ∖ D"); w = await post(frame);
+            ok(qa(w, "[data-venn] [data-region]").length === 4 && qa(w, "svg.venn-lienzo-interactivo").length === 2, "Diagrama propio de A y D: " + errores(w));
+            ok(q(w, '[data-venn] [data-region="1"]').classList.contains("es-seleccionada") && !q(w, ".venn-editor-lienzo .es-seleccionada"), "Sombrea el suyo, no el editable");
             const fila = q(w, '[data-regiones] tr[data-mascara="3"]');
             fila.focus(); fila.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
             const estado = q(w, "[data-venn] [role=status]");
-            ok(fila.classList.contains("es-activa") && estado.textContent.includes("En A y B") && estado.textContent.includes("1 elemento: 2."), "Fila por teclado: " + estado.textContent);
+            ok(fila.classList.contains("es-activa") && estado.textContent.includes("En A y D") && estado.textContent.includes("1 elemento: 1."), "Fila por teclado: " + estado.textContent);
             const svg = q(w, "[data-venn] svg");
             const p = enPantalla(svg, 88, 120);
             svg.dispatchEvent(new w.MouseEvent("click", { clientX: p.x, clientY: p.y, bubbles: true }));
@@ -292,26 +314,34 @@
             await cuadro();
             ok(q(w, ".math-keyboard").hasAttribute("data-abierto") && q(w, '.math-keyboard [data-insercion="{}"]'), "El teclado de elementos acompaña a la región");
             const cantidades = q(w, "a.venn-modo-opcion");
-            ok(q(w, ".venn-modo [aria-current]").textContent === "Elementos" && /numero=2&region_1=1&region_2=1&region_3=1$/.test(cantidades.search), "El modo de cantidades recibe solo cuántos hay: " + cantidades.search);
+            ok(q(w, ".venn-modo [aria-current]").textContent === "Elementos" && /numero=2&region_1=1&region_2=1&region_3=1&volver=/.test(cantidades.search), "El modo de cantidades recibe solo cuántos hay: " + cantidades.search);
         }],
         ["Cantidades: regiones dentro del diagrama, sin elementos, y tarjetas numéricas", async (w, frame) => {
             w = await cargar(frame, q(w, "a.venn-modo-opcion").href);
             ok(q(w, ".venn-modo [aria-current]").textContent === "Cantidades" && q(w, '[name="region_3"]').value === "1" && q(w, '[name="universo"]').value === "", "Cantidades contadas desde el diagrama de elementos");
+            ok(!/\{1, 2\}/.test(q(w, ".tool").textContent) && q(w, '[name="volver"]').type === "hidden", "Los elementos no se muestran: solo viajan para volver");
+            w = await post(frame);
+            ok(q(w, "[data-cardinalidad]").textContent === "3", "Contar desde lo traído (|A ∪ B| = 3): " + errores(w));
+            w = await recarga(frame, () => q(w, "a.venn-modo-opcion").click());
+            ok(q(w, '[name="contenido_0"]').value === "{1, 2}" && q(w, '[name="contenido_1"]').value === "{2, {1, 2}}" && q(w, '[name="expresion"]').value === "A ∈ B", "Volver a Elementos recupera conjuntos y expresión");
+            ok(q(w, '[name="venn_region_3"]').value === "2" && q(w, ".tarjetas"), "Con su diagrama y sus tarjetas");
             w = await cargar(frame, "/conjuntos/cardinalidad/");
+            ok(q(w, "a.venn-modo-opcion").getAttribute("href") === "/conjuntos/relaciones/", "Sin contexto previo, Elementos abre el editor vacío");
             ok(q(w, ".cardinalidad-campos.es-diagrama") && qa(w, ".venn-editor-lienzo input").length === 4 && !q(w, ".cardinalidad-icono svg"), "Tres regiones y |U| dentro del diagrama");
             ok(!q(w, "[data-ajuste-cardinalidades]").getClientRects().length && q(w, '[name="region_1"]').labels[0].classList.contains("sr-only") && q(w, '[name="universo"]').labels[0].getClientRects().length, "Etiquetas: accesibles en las regiones, visible en |U|");
             valor(w, "region_1", "5"); valor(w, "region_2", "3"); valor(w, "region_3", "2");
             w = await post(frame); ok(q(w, "[data-cardinalidad]").textContent === "10", "Suma exclusiva");
             const sumando = q(w, ".cardinalidad-sumandos li");
             sumando.dispatchEvent(new w.FocusEvent("focusin", { bubbles: true }));
-            ok(q(w, '[data-venn] [data-region="1"]').classList.contains("es-activa"), "El sumando ilumina su región");
+            ok(q(w, '.venn-editor-lienzo [data-region="1"]').classList.contains("es-activa") && qa(w, "svg.venn-lienzo-interactivo").length === 1, "Un solo diagrama: el sumando ilumina su región en las casillas");
+            ok(q(w, ".venn-editor-lienzo").hasAttribute("data-con-resultado") && qa(w, ".venn-editor-lienzo .es-seleccionada").length === 3, "Lo contado queda sombreado en las casillas");
             const numeros = Object.fromEntries(qa(w, ".tarjeta[data-mascaras]").map(t => [t.querySelector(".tarjeta-notacion").textContent, t.querySelector(".tarjeta-valor").textContent]));
             ok(numeros["|A ∪ B|"] === "10" && numeros["|A ∩ B|"] === "2" && numeros["|A ∖ B|"] === "5" && numeros["|A △ B|"] === "8", "Tarjetas con cantidades: " + JSON.stringify(numeros));
             ok(!q(w, ".tarjeta-cantidad") && !q(w, '[name="tarjeta"]') && !/[{}]/.test(q(w, ".tarjetas").textContent), "Ninguna tarjeta escribe elementos");
             ok(q(w, ".tarjeta-ancha .tarjeta-valor").textContent === "10 = 7 + 5 − 2" && q(w, ".tarjeta-hechos").textContent.includes("Comparten 2 elementos"), "Inclusión-exclusión y relación");
             const centro = qa(w, ".tarjeta[data-mascaras]").find(t => t.dataset.mascaras === "3");
             centro.dispatchEvent(new w.MouseEvent("mouseenter"));
-            ok(q(w, '[data-venn] [data-region="3"]').classList.contains("es-activa") && !q(w, ".venn-editor-lienzo .es-activa"), "Las tarjetas del resultado iluminan el diagrama del resultado");
+            ok(q(w, '.venn-editor-lienzo [data-region="3"]').classList.contains("es-activa"), "Las tarjetas del resultado iluminan las casillas");
             valor(w, "region_1", "7"); ok(q(w, "#resultado").dataset.resultado === "desactualizado", "Cambio invalida el resultado P6");
             w = await post(frame); ok(q(w, "[data-cardinalidad]").textContent === "12", "Recalcula");
             valor(w, "universo", "1"); w = await post(frame); ok(!q(w, "[data-cardinalidad]") && errores(w).includes("Universo:"), "Rechaza universo menor, nombrando el campo");

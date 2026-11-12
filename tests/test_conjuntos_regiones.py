@@ -1,5 +1,8 @@
 """La edición por regiones escribe conjuntos; el Venn se vuelve a calcular desde ellos."""
 
+import re
+from urllib.parse import parse_qs, urlencode, urlsplit
+
 from django.test import SimpleTestCase
 from fractions import Fraction
 
@@ -9,7 +12,7 @@ from backend.conjuntos.parser import analizar_expresion
 from backend.conjuntos.presupuesto import Presupuesto
 from backend.conjuntos.regiones import construir_venn, conjuntos_desde_regiones
 from frontend.web.calculadora.forms_conjuntos import ConjuntosForm
-from tests.test_conjuntos_presentacion import TRES, contrato, editor
+from tests.test_conjuntos_presentacion import CARDINALIDAD, TRES, contrato, editor
 from tests.test_conjuntos_web import RUTA
 
 
@@ -205,3 +208,68 @@ class DiagramaSincronizadoTests(SimpleTestCase):
         self.assertNotContains(r, 'name="region_2" value="x"')
         self.assertNotContains(r, "9" * 101)
         self.assertContains(r, 'name="universo" value="7"')
+
+
+class UnVennYContextoTests(SimpleTestCase):
+    """Tras Calcular hay un solo Venn, y Cantidades devuelve a Elementos el editor tal como estaba."""
+
+    def test_el_resultado_se_sombrea_en_el_diagrama_editable(self):
+        r = self.client.post(RUTA, editor(TRES, "(A ∪ B) ∖ C", venn_universo="U"))
+        venn = contrato(r)["venn"]
+        self.assertEqual(venn["nombres"], ["A", "B", "C"])
+        self.assertEqual([x["mascara"] for x in venn["regiones"] if x["seleccionada"]], [1, 2, 3])
+        self.assertContains(r, "data-venn-en-diagrama")
+        self.assertNotContains(r, "data-venn></div>")
+        self.assertContains(r, '<span class="conjuntos-si">Sí</span>', count=3)
+        self.assertRegex(r.content.decode(), r'name="venn_region_1"[^>]*>\s*1, 3</textarea>')
+        # Una expresión de dos de los tres conjuntos se sombrea igual sobre los tres.
+        venn = contrato(self.client.post(RUTA, editor(TRES, "A ∖ B")))["venn"]
+        self.assertEqual(([x["mascara"] for x in venn["regiones"] if x["seleccionada"]], len(venn["regiones"])), ([1, 5], 8))
+
+    def test_relacion_no_repite_el_diagrama_y_otros_conjuntos_conservan_el_suyo(self):
+        r = self.client.post(RUTA, editor(TRES, "A ⊆ B", venn_nombres="A, B, C"))
+        self.assertIn("venn", contrato(r))
+        self.assertNotContains(r, 'class="panel conjuntos-venn"')
+        r = self.client.post(RUTA, editor(TRES + [("D", "{1, 20}")], "A ∪ D"))
+        self.assertEqual(contrato(r)["venn"]["nombres"], ["A", "D"])
+        self.assertContains(r, "data-venn></div>")
+        self.assertNotContains(r, "data-venn-en-diagrama")
+
+    def test_cardinalidad_por_regiones_sombrea_sus_casillas(self):
+        campos = {"numero": "2", "modo": "regiones", "region_1": "5", "region_2": "3", "region_3": "2",
+                  "expresion": "A", "accion": "calcular"}
+        r = self.client.post(CARDINALIDAD, campos)
+        self.assertContains(r, "data-venn-en-diagrama")
+        self.assertNotContains(r, "data-venn></div>")
+        r = self.client.post(CARDINALIDAD, {**campos, "modo": "intersecciones", "region_1": "7"})
+        self.assertContains(r, "data-venn></div>")
+
+    def test_cantidades_devuelve_el_editor_intacto(self):
+        r = self.client.get(RUTA + "?ejemplo=venn")
+        enlace = re.search(r'href="(/conjuntos/cardinalidad/\?[^"]*)"', r.content.decode())[1].replace("&amp;", "&")
+        ida = parse_qs(urlsplit(enlace).query)
+        self.assertEqual(ida["region_1"], ["2"])
+        self.assertNotIn("contenido_1", ida)  # los elementos no viajan como datos de Cantidades
+        cantidades = self.client.get(enlace)
+        self.assertNotContains(cantidades, "{1, 2, 3, 4, 5}")
+        vuelta = re.search(r'class="venn-modo-opcion" href="([^"]*)"', cantidades.content.decode())[1].replace("&amp;", "&")
+        # Contar no pierde el camino de vuelta.
+        datos = {"numero": "3", "modo": "regiones", "accion": "calcular", "expresion": "A",
+                 "volver": ida["volver"][0], **{f"region_{m}": "1" for m in range(1, 8)}}
+        tras_contar = self.client.post(CARDINALIDAD, datos)
+        self.assertEqual(re.search(r'class="venn-modo-opcion" href="([^"]*)"', tras_contar.content.decode())[1].replace("&amp;", "&"), vuelta)
+        r = self.client.get(vuelta)
+        self.assertContains(r, 'name="nombre_3" value="C"')
+        self.assertContains(r, "{1, 2, 3, 4, 5}</textarea>")
+        self.assertContains(r, "(A ∪ B) ∖ C</textarea>")
+        self.assertContains(r, 'name="venn_universo" value="U"')
+        self.assertRegex(r.content.decode(), r'name="venn_region_1"[^>]*>\s*1, 3</textarea>')
+
+    def test_volver_solo_admite_campos_del_editor(self):
+        for volver in ("cantidad=1&nombre_0=A&evil=1", "nombre_0=A", "http://otro.example/"):
+            with self.subTest(volver=volver):
+                r = self.client.get(CARDINALIDAD + "?" + urlencode({"volver": volver}))
+                self.assertContains(r, 'class="venn-modo-opcion" href="/conjuntos/relaciones/"')
+        r = self.client.get(RUTA + "?" + urlencode({"cantidad": "999", "nombre_0": "A", "contenido_0": "{1"}))
+        self.assertContains(r, 'name="cantidad" value="50"')
+        self.assertContains(r, "{1</textarea>")

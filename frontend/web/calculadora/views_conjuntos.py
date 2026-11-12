@@ -1,7 +1,8 @@
 """Flujo HTTP del editor y la única evaluación de expresiones."""
 
+import re
 from random import sample
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode
 
 from django.shortcuts import render
 from django.urls import reverse
@@ -12,10 +13,43 @@ from backend.conjuntos.presupuesto import Presupuesto
 from backend.conjuntos.modelo import Conjunto
 from backend.conjuntos.parser import analizar_expresion
 from backend.conjuntos.regiones import construir_venn
+from backend.operandos import OPERANDOS_MAXIMOS
 from .forms_conjuntos import (EJEMPLOS, GUIA, CardinalidadesForm, ConjuntosForm, elegir_nombres, escribir_region, inicial_editor,
                               inicial_ejemplo, nombres_diagrama, rellenar)
-from .servicios_conjuntos import cardinalidades_web, panorama_web, relacion_web, resumen_definiciones
+from .servicios_conjuntos import cardinalidades_web, panorama_web, relacion_web, resumen_definiciones, venn_del_diagrama
 from .teclados import perfiles_para
+
+
+# Estado de Operaciones que viaja (opaco) por Cantidades para volver con los mismos conjuntos.
+# Solo campos del editor: las cantidades nunca vuelven convertidas en elementos.
+CAMPO_ESTADO = re.compile(r"cantidad|expresion|venn_nombres|venn_universo|(nombre|contenido)_\d+")
+
+
+def estado_editor(inicial):
+    """Consulta con las filas, la expresión y las opciones del diagrama del editor."""
+    return urlencode({clave: valor for clave, valor in inicial.items() if CAMPO_ESTADO.fullmatch(clave) and valor != ""})
+
+
+def editor_desde_estado(datos):
+    """Datos iniciales del editor a partir de esa consulta, o None si no la hay.
+
+    Solo se rellenan los campos: se validan, como siempre, al guardar o calcular."""
+    try:
+        cantidad = max(0, min(int(datos.get("cantidad", "")), OPERANDOS_MAXIMOS))
+    except ValueError:
+        return None
+    filas = [(datos.get(f"nombre_{i}", ""), datos.get(f"contenido_{i}", "")) for i in range(cantidad)]
+    return inicial_editor(filas, datos.get("expresion", ""), venn_nombres=datos.get("venn_nombres", ""),
+                          venn_universo=datos.get("venn_universo", ""))
+
+
+def url_elementos(volver):
+    """Enlace de Cantidades a Elementos: con el estado que trajo, si es del editor; si no, vacío."""
+    ruta = reverse("calculadora:relaciones-conjuntos")
+    pares = parse_qsl(volver or "", keep_blank_values=True)
+    if not pares or any(not CAMPO_ESTADO.fullmatch(clave) for clave, _ in pares) or "cantidad" not in dict(pares):
+        return ruta
+    return f"{ruta}?{urlencode(pares)}"
 
 
 def _resumir(form):
@@ -111,15 +145,32 @@ def _con_diagrama(inicial, azar=False):
         except ValueError:
             pass  # Nombres tan largos que agotan el presupuesto de lectura: el diagrama sigue, sin tarjetas.
     # ponytail: Cardinalidad nombra sus conjuntos A, B y C; con otros nombres el enlace no lleva cantidades.
+    consulta = {}
     if panorama and nombres in (("A", "B"), ("A", "B", "C")):
         consulta = {"numero": len(nombres), **{f'region_{r["mascara"]}': len(r["elementos"]) for r in regiones if r["mascara"]}}
         if definido:
             consulta["universo"] = len(entorno[universo].elementos)
-        cardinalidad += "?" + urlencode(consulta)
+    # El estado del editor va aparte y Cardinalidad lo devuelve intacto en su enlace «Elementos».
+    consulta["volver"] = estado_editor(inicial)
+    cardinalidad += "?" + urlencode(consulta)
     inicial = {**inicial, **valores, "base_nombres": ", ".join(nombres), "base_universo": universo or "",
                "venn_fuente": "regiones" if azar else ""}
     return inicial, {"nombres": nombres, "universo": universo, "exterior_conocido": definido, "aviso": aviso,
                      "panorama": panorama, "cantidades_url": cardinalidad}
+
+
+def _sombrear_en_diagrama(resultado, entorno, diagrama):
+    """Un solo Venn en la pantalla: si el resultado es una región de los conjuntos del diagrama
+    editable, ese diagrama lo sombrea y el resultado conserva su tabla; si solo repetiría la
+    distribución de esos mismos conjuntos (una relación), no se dibuja otra vez. En los demás
+    casos (otros conjuntos, potencia…) el resultado mantiene su propio diagrama."""
+    universo = diagrama["universo"] if diagrama["exterior_conocido"] else None
+    venn = venn_del_diagrama(resultado["expresion"], entorno, diagrama["nombres"], universo)
+    if venn:
+        resultado.update(venn=venn, regiones=venn["regiones"], venn_aviso=None, en_diagrama=True)
+        resultado["datos"]["venn"] = venn
+    elif resultado["venn"] and not resultado["venn"]["resalta"] and tuple(resultado["venn"]["nombres"]) == tuple(diagrama["nombres"]):
+        resultado["venn_repetido"] = True
 
 
 def _formulario(inicial, errores=(), azar=False):
@@ -142,7 +193,8 @@ def _formulario(inicial, errores=(), azar=False):
 
 @require_http_methods(["GET", "POST"])
 def relaciones_conjuntos(request):
-    inicial = inicial_ejemplo(request.GET.get("ejemplo", ""))
+    # De vuelta desde Cantidades, la URL trae el editor tal como se dejó; si no, un ejemplo o vacío.
+    inicial = editor_desde_estado(request.GET) or inicial_ejemplo(request.GET.get("ejemplo", ""))
     form = ConjuntosForm(request.POST) if request.method == "POST" else None
     resultado = diagrama = None
     regiones_aplicadas = False
@@ -163,10 +215,13 @@ def relaciones_conjuntos(request):
             # El resultado sigue siendo válido: el error queda junto al punto, en la recta.
             errores.append(("punto", resultado["error_punto"]))
         regiones_aplicadas = form.regiones_aplicadas and not resultado and not errores
+        entorno = form.entorno
         inicial = inicial_editor(form.filas, form.expresion,
                                  definicion="" if form.accion == "agregar" else form.cleaned_data.get("definicion", ""),
                                  **{n: form.cleaned_data.get(n, "") for n in ("punto", "venn_nombres", "venn_universo")})
         form, diagrama = _formulario(inicial, errores, azar=form.accion == "azar_regiones")
+        if resultado and diagrama and diagrama.get("nombres"):
+            _sombrear_en_diagrama(resultado, entorno, diagrama)
     elif form is None:
         form, diagrama = _formulario(inicial)
     elif form.regiones:
@@ -191,6 +246,8 @@ def cardinalidades_conjuntos(request):
     inicial = {'numero': '2', 'modo': 'regiones', 'expresion': 'A ∪ B'}
     # El diagrama de elementos enlaza aquí con sus cantidades ya contadas: solo enteros, nada más.
     numero = request.GET.get('numero')
+    if request.method == 'GET':
+        inicial['volver'] = request.GET.get('volver', '')
     if request.method == 'GET' and numero in ('2', '3'):
         inicial['numero'] = numero
         if numero == '3':
@@ -211,5 +268,7 @@ def cardinalidades_conjuntos(request):
             # Datos incoherentes afectan a varios campos: aviso general; el universo, junto a su campo.
             campo = None if 'incoherentes' in mensaje else 'universo' if 'universo' in mensaje and 'expresión' not in mensaje else 'expresion'
             form.add_error(campo, mensaje)
+    volver = (form.data if form.is_bound else form.initial).get('volver', '')
     return render(request, 'calculadora/modules/conjuntos/cardinalidades.html', {
-        'form': form, 'resultado': resultado, 'perfiles_teclado': perfiles_para('regiones-conjuntos')})
+        'form': form, 'resultado': resultado, 'perfiles_teclado': perfiles_para('regiones-conjuntos'),
+        'elementos_url': url_elementos(volver)})

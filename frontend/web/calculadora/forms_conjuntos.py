@@ -315,6 +315,8 @@ class CardinalidadesForm(FormularioConErrores):
                              choices=(('regiones', 'Regiones separadas'), ('intersecciones', 'Conjuntos e intersecciones')),
                              widget=forms.RadioSelect)
     universo = forms.IntegerField(label='Universo |U| (opcional)', required=False, min_value=0, max_value=10**100-1)
+    # Estado opaco de Operaciones con conjuntos para volver a él; aquí ni se muestra ni se interpreta.
+    volver = forms.CharField(required=False, widget=forms.HiddenInput, max_length=12 * LONGITUD_SISTEMA_MAXIMA)
     expresion = campo_texto('¿Qué quieres contar?', placeholder='A ∪ B')
 
     def __init__(self, *args, **kwargs):
