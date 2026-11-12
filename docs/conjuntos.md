@@ -9,7 +9,7 @@ Las dos herramientas están publicadas (tras v0.14.0) en `/conjuntos/relaciones/
 Consulta el [TODO de Conjuntos](TODO-conjuntos.md) para el estado de P1–P7, las mejoras
 detectadas en las pruebas desktop y las posibles extensiones futuras.
 
-## Pantalla (v0.16.1)
+## Pantalla (v0.17.0)
 
 La herramienta se lee en tres zonas, de arriba abajo:
 
@@ -121,7 +121,7 @@ Igualdad y desigualdad exigen tipos compatibles: dos conjuntos, dos números o
 dos textos. El vacío está incluido en cualquier conjunto, pero solo pertenece
 a los que lo contienen como elemento: `∅ ∈ {∅}`.
 
-**Barra de símbolos** (v0.16.1): bajo la expresión, una fila de teclas con los
+**Barra de símbolos** (v0.17.0): bajo la expresión, una fila de teclas con los
 conjuntos definidos, las operaciones (∪ ∩ ∖ ∁ |·| ( ) × 𝒫), las relaciones
 (∈ ∉ ⊆ ⊂ = ≠) y los valores (∅ { } par intervalo). Cada tecla escribe en el
 cursor o sustituye la selección, no calcula y conserva Deshacer nativo; ∁, |·|,
@@ -321,7 +321,7 @@ pulsarla, o pulsar o elegir con Intro su fila de la tabla, la fija y anuncia sus
 elementos. La tabla de regiones funciona sin JavaScript y es el acceso por teclado.
 La geometría (qué círculos contienen el puntero) es lo único que calcula el script.
 
-### Diagrama editable (v0.16.1)
+### Diagrama editable (v0.17.0)
 
 El diagrama de la zona superior está siempre presente y siempre se lee del modelo:
 cada región es un campo colocado dentro de su zona del SVG (exclusivas,
@@ -457,7 +457,7 @@ inválidos, presupuesto de operaciones repetidas y el contrato JSON seguro.
 `tests.test_conjuntos_presentacion` cubre el editor vacío y los ejemplos, la guía,
 el orden de lectura, el Venn automático, los pasos marcados, la recta con operandos
 y punto, y la explicación de cardinalidades.
-`tests.test_conjuntos_regiones` añade (v0.16.1) la lectura de regiones como
+`tests.test_conjuntos_regiones` añade (v0.17.0) la lectura de regiones como
 lista suelta o conjunto, el diagrama leído siempre del modelo con exterior `?`,
 «el último lado editado manda» al calcular, el universo creado desde el
 exterior, el cambio de conjuntos del diagrama, las tarjetas (elementos y

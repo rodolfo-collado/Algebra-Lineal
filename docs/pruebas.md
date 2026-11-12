@@ -11,7 +11,10 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
-## Preparación de v0.16.1 (2026-11-10)
+## Preparación de v0.17.0 (2026-11-11)
+
+Preparada primero como 0.16.1; pasa a 0.17.0 al integrar Newton-Raphson desde
+`develop` (véanse sus pruebas en la sección siguiente).
 
 - **Python:** 1.994 pruebas completas correctas desde PowerShell (sin omisiones);
   2.014 tras integrar Newton-Raphson desde `develop`, que no toca archivos de este cambio.
@@ -38,6 +41,17 @@ uv run python manage.py check
   elemento `{5}`: las regiones se muestran ahora sin llaves. Los únicos avisos de
   consola fueron transiciones de página de Estudio interrumpidas por la navegación
   automatizada (`@view-transition` de `estudio.css`, sin cambios en este PR).
+- **Revisión de aceptación (1280 px, Estudio y Minimalista, dos y tres conjuntos):**
+  comparada con v0.16.0 en las mismas pantallas, la zona de entrada conserva el
+  mismo número de controles (11 con dos conjuntos, 13 con tres) aunque ahora incluye
+  el diagrama editable, que antes era un modo aparte que ocultaba las definiciones.
+  Las tarjetas añaden 8 (dos conjuntos) o 15 (tres) resultados visibles a la vez,
+  cada uno con Copiar y Ver pasos, y alargan la página (de 1.494 a 2.590 px con
+  tres conjuntos en Estudio). Diferencias anotadas en el PR: Cantidades es la otra
+  herramienta, no un modo del mismo diagrama; las tarjetas cubren solo los dos o tres
+  conjuntos del diagrama; tras Calcular hay un segundo diagrama (el sombreado del
+  resultado); conjuntos, diagrama y tarjetas se sincronizan al guardar o
+  actualizar, no mientras se escribe.
 
 Pendiente de validación manual: lector de pantalla (NVDA o Narrador) sobre los
 campos del diagrama y la barra, y pantalla táctil física en las regiones pequeñas

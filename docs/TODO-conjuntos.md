@@ -67,7 +67,7 @@ se habilitaron en P7.
 - [ ] Probar con lector de pantalla (NVDA o Narrador).
 - [x] Habilitar las rutas y el catálogo después de publicar v0.14.0.
 
-## v0.16.1 — Experiencia de Operaciones con conjuntos
+## v0.17.0 — Experiencia de Operaciones con conjuntos
 
 - [x] Sustituir el selector «Insertar operación» por una barra de símbolos que escribe en el cursor (el selector queda solo sin JavaScript).
 - [x] Hacer editable el diagrama de Venn dentro de sus regiones, sincronizado con los conjuntos: el último lado editado manda.
