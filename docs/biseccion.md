@@ -178,9 +178,9 @@ No se cambia la versión ni se prepara una release.
 El selector **Decimales visibles** cambia solo la lectura de los resultados
 almacenados, sin peticiones ni nuevas iteraciones. Parte de seis decimales y
 permite disminuir o aumentar (4, 6, 8, 12, 16), o ver **Precisión completa**.
-Se prefiere escritura decimal normal; los valores extremos conservan notación
-científica. El formato aumenta automáticamente las cifras si los extremos u
-otros valores distintos quedarían iguales, o un número no nulo parecería cero.
+Siempre se usa escritura decimal, sin notación científica. Solo el valor que lo
+necesita gana cifras: un número no nulo nunca parece cero, y a, b y c de una misma
+fila no se confunden; véase [la interfaz compartida](newton-raphson.md#zona-de-estudio-compartida).
 `≈` señala valores redondeados y el título conserva el valor almacenado; en móvil
 puedes elegir precisión completa. Completa significa valor de máquina, no
 exactitud matemática. Sin JavaScript se conserva la lectura completa.

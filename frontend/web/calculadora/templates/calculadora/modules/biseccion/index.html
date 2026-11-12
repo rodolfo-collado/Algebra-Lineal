@@ -6,9 +6,9 @@
 {% block accion %}Resolver por bisección{% endblock %}
 
 {% block resumen %}
-        <p class="raices-raiz">c ≈ <span>{{ resultado.c|numero_raices }}</span></p>
+        <p class="raices-raiz">c ≈ <span>{{ resultado.c|numero_raices:"x" }}</span></p>
         <p class="raices-estado">{{ resultado.mensaje }}</p>
-        <p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · f(c) <span data-raices-relacion>=</span> {{ resultado.fc|numero_raices }}</p>
+        <p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · f(c) <span data-raices-relacion>=</span> {{ resultado.fc|numero_raices:"f" }}</p>
 {% endblock %}
 
 {% block tabla %}
@@ -18,9 +18,9 @@
                 <tbody>
                 {% for fila in resultado.iteraciones %}
                     <tr data-iteracion="{{ fila.i }}" tabindex="-1" data-raices-grupo aria-label="Iteración {{ fila.i }}">
-                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_raices }}</td><td>{{ fila.b|numero_raices }}</td><td>{{ fila.c|numero_raices }}</td>
-                        <td>{{ fila.fa|numero_raices }}</td><td>{{ fila.fb|numero_raices }}</td><td>{{ fila.fc|numero_raices }}</td><td>{{ fila.longitud|numero_raices }}</td>
-                        <td>{% if fila.error_relativo is not None %}{{ fila.error_relativo|numero_raices }} %{% else %}No definido{% endif %}</td>
+                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_raices:"x" }}</td><td>{{ fila.b|numero_raices:"x" }}</td><td>{{ fila.c|numero_raices:"x" }}</td>
+                        <td>{{ fila.fa|numero_raices:"f" }}</td><td>{{ fila.fb|numero_raices:"f" }}</td><td>{{ fila.fc|numero_raices:"f" }}</td><td>{{ fila.longitud|numero_raices:"longitud" }}</td>
+                        <td>{% if fila.error_relativo is not None %}{{ fila.error_relativo|numero_raices:"error" }} %{% else %}No definido{% endif %}</td>
                     </tr>
                 {% empty %}<tr><td colspan="9">Raíz en un extremo: no se necesitan iteraciones.</td></tr>{% endfor %}
                 </tbody>

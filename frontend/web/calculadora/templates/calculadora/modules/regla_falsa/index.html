@@ -6,9 +6,9 @@
 {% block accion %}Resolver por regla falsa{% endblock %}
 
 {% block resumen %}
-        <p class="raices-raiz">xr ≈ <span>{{ resultado.xr|numero_raices }}</span></p>
+        <p class="raices-raiz">xr ≈ <span>{{ resultado.xr|numero_raices:"x" }}</span></p>
         <p class="raices-estado">{{ resultado.mensaje }}</p>
-        <p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · f(xr) <span data-raices-relacion>=</span> {{ resultado.fxr|numero_raices }}</p>
+        <p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · f(xr) <span data-raices-relacion>=</span> {{ resultado.fxr|numero_raices:"f" }}</p>
 {% endblock %}
 
 {% block lectura_iteracion %}
@@ -28,9 +28,9 @@
                 <tbody>
                 {% for fila in resultado.iteraciones %}
                     <tr data-iteracion="{{ fila.i }}" tabindex="-1" data-raices-grupo aria-label="Iteración {{ fila.i }}">
-                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_raices }}</td><td>{{ fila.b|numero_raices }}</td>
-                        <td>{{ fila.xr|numero_raices }}</td><td>{{ fila.fa|numero_raices }}</td><td>{{ fila.fb|numero_raices }}</td><td>{{ fila.fxr|numero_raices }}</td>
-                        <td>{% if fila.error_absoluto is not None %}{{ fila.error_absoluto|numero_raices }}{% else %}No disponible{% endif %}</td>
+                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_raices:"x" }}</td><td>{{ fila.b|numero_raices:"x" }}</td>
+                        <td>{{ fila.xr|numero_raices:"x" }}</td><td>{{ fila.fa|numero_raices:"f" }}</td><td>{{ fila.fb|numero_raices:"f" }}</td><td>{{ fila.fxr|numero_raices:"f" }}</td>
+                        <td>{% if fila.error_absoluto is not None %}{{ fila.error_absoluto|numero_raices:"error" }}{% else %}No disponible{% endif %}</td>
                         <td>{{ fila.sustituido|default:"Ninguno: f(xr) = 0" }}</td>
                     </tr>
                 {% empty %}<tr><td colspan="9">{% if resultado.convergio %}Raíz en un extremo: no se necesitan iteraciones.{% else %}La fórmula no produjo un punto nuevo dentro del intervalo.{% endif %}</td></tr>{% endfor %}

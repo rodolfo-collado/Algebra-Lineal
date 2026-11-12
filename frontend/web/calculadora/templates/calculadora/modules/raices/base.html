@@ -95,8 +95,8 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
                     </div>
                     <div class="raices-progreso">
                         <label for="iteracion-raices" class="sr-only">Iteración</label>
-                        <input type="range" id="iteracion-raices" min="1" max="{{ resultado.iteraciones|length }}" step="1" value="1">
-                        <output id="iteracion-contador" for="iteracion-raices">1 / {{ resultado.iteraciones|length }}</output>
+                        <input type="range" id="iteracion-raices" min="{% block primer_paso %}1{% endblock %}" max="{{ resultado.iteraciones|length }}" step="1" value="1">
+                        <output id="iteracion-contador" for="iteracion-raices"></output>
                     </div>
                 </div>
                 <div class="raices-paso" aria-labelledby="paso-titulo">
@@ -115,8 +115,8 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
 {% if resultado %}
     <section id="raices-historial" class="panel raices-historial" aria-labelledby="historial-titulo" hidden>
         <h3 id="historial-titulo" class="panel-title">Historial de esta sesión</h3>
-        <p class="field-help">Cálculos de este método en esta pestaña, agrupados por función (hasta 12). «Ver» vuelve a mostrar uno con su gráfica y su recorrido.</p>
-        <div id="raices-historial-tabla" class="table-wrap" data-raices-grupo></div>
+        <p class="field-help">Ejecuciones de esta pestaña, agrupadas por función. «Ver» recupera una con su gráfica y su recorrido.</p>
+        <div id="raices-historial-tabla" class="table-wrap"></div>
     </section>
     {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
     {% disclosure titulo="Procedimiento detallado" id="procedimiento-raices" clase="disclosure-procedure" %}

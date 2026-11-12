@@ -165,7 +165,9 @@
             valor(w, "funcion", "1e-20*(x²-2)"); valor(w, "a", "1"); valor(w, "b", "2");
             w = await post(frame); await esperar(() => listaGrafica(w));
             const original = q(w, "#datos-raices").textContent;
-            let peticiones = 0; const fetch = w.fetch; w.fetch = (...args) => { peticiones++; return fetch(...args); };
+            // En escritorio, elegir decimales guarda la preferencia (/preferencias/): no es un cálculo.
+            let peticiones = 0; const fetch = w.fetch;
+            w.fetch = (...args) => { if (!String(args[0]).includes("/preferencias/")) peticiones++; return fetch(...args); };
             for (const precision of ["4", "16", "completa", "6"]) {
                 const selector = q(w, "#raices-decimales"); selector.value = precision;
                 selector.dispatchEvent(new w.Event("change", { bubbles: true }));
@@ -345,12 +347,18 @@
             const filas = () => [...historial().querySelectorAll("tbody tr:not(:first-child)")];
             ok(!historial().hidden && historial().querySelectorAll("tbody").length === 1, "Funciones equivalentes en un solo grupo");
             ok(filas().length === 2 && filas()[1].getAttribute("aria-current") === "true", "Dos ejecuciones; la última es la actual");
-            ok(filas()[0].cells[1].textContent === "Raíz aproximada" && filas()[0].cells[3].textContent === "13", "Estado e iteraciones");
-            ok(filas()[0].cells[4].querySelector("[data-raices-numero]"), "Residuo disponible");
+            const encabezados = [...historial().querySelectorAll("thead th")].map(th => th.textContent);
+            ok(encabezados.join("|") === "Intervalo inicial|Aproximación|Iteraciones|Criterio de parada|Longitud final|Residuo|Precisión|",
+                "Columnas propias de bisección: " + encabezados.join("|"));
+            ok(filas()[0].cells[2].textContent === "13" && filas()[1].cells[2].textContent === "10", "Iteraciones comparables");
+            ok(filas()[0].cells[3].textContent === "Cumplido" && filas()[0].cells[3].dataset.tono === "exito", "Criterio cumplido");
+            ok(filas()[0].cells[6].textContent === "0.0001", "Precisión usada");
+            ok(filas()[0].cells[4].querySelector("[data-raices-numero]") && filas()[0].cells[5].querySelector("[data-raices-numero]"), "Longitud y residuo");
             const precision = q(w, "#raices-decimales"); precision.value = "4";
             precision.dispatchEvent(new w.Event("change", { bubbles: true }));
-            const aproximaciones = filas().map(f => f.cells[2].querySelector("span"));
-            ok(aproximaciones[0].textContent !== aproximaciones[1].textContent, "Distingue aproximaciones cercanas");
+            const aproximaciones = filas().map(f => f.cells[1].querySelector("span"));
+            ok(aproximaciones.every(n => /^≈ \d+\.\d{1,4}$/.test(n.textContent)), "Cuatro decimales en las aproximaciones");
+            ok(filas().every(f => !/\de[-+]?\d/.test(f.textContent)), "Sin notación científica");
             precision.value = "completa"; precision.dispatchEvent(new w.Event("change", { bubbles: true }));
             ok(aproximaciones.every(n => Number(n.textContent) === Number(n.dataset.raicesNumero)), "Precisión completa");
             valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
@@ -363,10 +371,12 @@
             w = await new Promise(resolve => { frame.onload = () => resolve(frame.contentWindow); ver.click(); });
             await esperar(() => listaGrafica(w));
             ok(lista(w).length === 13 && q(w, '[name="a"]').value === "5", "Recupera el intervalo y su recorrido");
+            ok(q(w, "#raices-decimales").value === "completa", "«Ver» conserva los decimales elegidos");
             ok(filas().length === 3 && filas()[0].getAttribute("aria-current") === "true", "Sin duplicar; marcada como actual");
             valor(w, "max_iteraciones", "1");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            ok([...historial().querySelectorAll("td")].some(c => c.textContent === "Sin convergencia"), "Estado sin convergencia");
+            ok([...historial().querySelectorAll("td")].some(c => c.textContent === "No cumplido: máximo de iteraciones"
+                && c.dataset.tono === "aviso"), "Criterio no cumplido con su motivo");
         }],
         ["Reproducción: pausa inicial, velocidades, fin, reinicio y sin peticiones", async (w, frame) => {
             ejemplo(w);
@@ -403,6 +413,25 @@
             valor(w, "a", "0.5");
             const tras = slider.value; await new Promise(r => setTimeout(r, 700));
             ok(slider.value === tras && boton.getAttribute("aria-label") === "Reproducir", "Cambiar los datos detiene la reproducción");
+        }],
+        ["Decimales estrictos por valor: un f(c) diminuto no infla su fila ni usa exponentes", async (w, frame) => {
+            valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "1.6");
+            valor(w, "precision", "1e-12");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const ultima = q(w, ".raices-tabla tbody tr:last-child");
+            const celdas = [...ultima.querySelectorAll("[data-raices-numero]")];
+            const fc = celdas.find(n => n.parentElement.cellIndex === 6);
+            ok(Number(fc.dataset.raicesNumero) !== 0, "Caso con f(c) distinto de cero");
+            ok(!/e[-+]?\d/.test(q(w, "#resultado").textContent), "Sin notación científica en el resultado");
+            ok(Number(fc.textContent.replace("≈ ", "")) !== 0, "f(c) no se lee como cero");
+            const longitud = ultima.cells[7].querySelector("span");
+            ok(!/\.\d{7,}/.test(longitud.textContent.replace("≈ ", "")) || Number(longitud.dataset.raicesNumero) < 1e-6,
+                "La longitud conserva sus propios decimales");
+            const selector = q(w, "#raices-decimales"); selector.value = "4";
+            selector.dispatchEvent(new w.Event("change", { bubbles: true }));
+            ok([1, 2, 3].every(c => /^(≈ )?\d+(\.\d{1,4})?$/.test(q(w, '[data-iteracion="2"]').cells[c].textContent.trim())), "4 decimales en a, b y c");
+            ok(/\d\.\d{1,4}\b/.test(q(w, "#paso-breve").textContent) && !/\d\.\d{5,}/.test(q(w, "#paso-breve").textContent.split("longitud")[0]),
+                "La explicación sigue los decimales elegidos");
         }],
         ["Teclado en la tabla: flechas, Inicio y Fin sin desplazar la página", async (w, frame) => {
             ejemplo(w);
@@ -468,6 +497,7 @@
     let aprobados = 0;
     for (const [nombre, probar] of casos) {
         const item = document.createElement("li"); document.getElementById("resultados").append(item);
+        (window.preferencias ? window.preferencias.guardar("pygebra-raices-decimales", "6") : localStorage.setItem("pygebra-raices-decimales", "6")); // Cada caso parte de 6 decimales.
         const frame = document.createElement("iframe"); frame.title = nombre; frame.style.cssText = "width:100%;height:700px";
         document.body.append(frame);
         try {

@@ -23,26 +23,30 @@
 {% block accion %}Resolver por Newton-Raphson{% endblock %}
 {% block ayuda_grafica %}Rueda: zoom · Arrastrar: desplazar · «Elegir x₀» y pulsa la curva; su línea también se arrastra.{% endblock %}
 {% block texto_enfocar %}Enfocar tangente{% endblock %}
+{% block primer_paso %}0{% endblock %}
 {% block seleccion_puntos %}<button type="button" class="btn btn-secondary" data-elegir-extremo="x0" aria-pressed="false">Elegir x₀</button>{% endblock %}
 {% block resumen %}
-<p class="raices-raiz">x ≈ <span>{{ resultado.x|numero_raices }}</span></p>
+<p class="raices-raiz">x ≈ <span>{{ resultado.x|numero_raices:"x" }}</span></p>
 <p class="raices-estado">{{ resultado.mensaje }}</p>
-<p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · Residuo |f(x)| <span data-raices-relacion>=</span> {{ resultado.residuo|numero_raices }}</p>
+<p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · Residuo |f(x)| <span data-raices-relacion>=</span> {{ resultado.residuo|numero_raices:"f" }}</p>
 {% endblock %}
 {% block tabla %}
-<table class="procedure-table raices-tabla">
-<caption>Una fila por iteración, sin redondeo intermedio</caption>
-<thead><tr><th scope="col">i</th><th scope="col">x actual</th><th scope="col">f(x actual)</th><th scope="col">f′(x actual)</th><th scope="col">x siguiente</th><th scope="col">Residuo siguiente</th><th scope="col">Cambio absoluto</th></tr></thead><tbody>
-{% for p in resultado.iteraciones %}<tr data-iteracion="{{ p.i }}" tabindex="-1" data-raices-grupo aria-label="Iteración {{ p.i }}">
-<th scope="row">{{ p.i }}</th><td>{{ p.xn|numero_raices }}</td><td>{{ p.fxn|numero_raices }}</td><td>{{ p.dfxn|numero_raices }}</td><td>{{ p.siguiente|numero_raices }}</td><td>{{ p.residuo|numero_raices }}</td><td>{{ p.error_absoluto|numero_raices }}</td></tr>
-{% empty %}<tr><td colspan="7">{% if resultado.estado == "exacta" %}El punto inicial ya da f(x₀) = 0: no se necesitan tangentes.{% else %}No se completó ninguna actualización. Consulta el motivo de parada.{% endif %}</td></tr>{% endfor %}
+{# Como en la diapositiva 15: n, xₙ y f(xₙ), con n = 0 para el punto inicial. f′, el error y la fórmula van en el paso seleccionado. #}
+<table class="procedure-table raices-tabla raices-tabla-newton">
+<caption>Aproximaciones sucesivas; n = 0 es el punto inicial. Sin redondeo intermedio.</caption>
+<thead><tr><th scope="col">n</th><th scope="col">xₙ</th><th scope="col">f(xₙ)</th></tr></thead><tbody>
+<tr data-iteracion="0" tabindex="-1" data-raices-grupo aria-label="n = 0, punto inicial">
+<th scope="row">0</th><td>{{ resultado.x0|numero_raices:"x" }}</td><td>{% if resultado.iteraciones %}{{ resultado.iteraciones.0.fxn|numero_raices:"f" }}{% else %}{{ resultado.fx|numero_raices:"f" }}{% endif %}</td></tr>
+{% for p in resultado.iteraciones %}<tr data-iteracion="{{ p.i }}" tabindex="-1" data-raices-grupo aria-label="n = {{ p.i }}">
+<th scope="row">{{ p.i }}</th><td>{{ p.siguiente|numero_raices:"x" }}</td><td>{{ p.fsiguiente|numero_raices:"f" }}</td></tr>
+{% endfor %}
 </tbody></table>
 {% endblock %}
 {% block lectura_iteracion %}
 <div id="iteracion-lectura" class="regla-falsa-paso">
 <section><h5>Aproximación actual</h5><ul id="paso-valores"></ul></section>
 <section><h5>Tangente y siguiente aproximación</h5><ul id="paso-decision"></ul></section>
-<section><h5>Residuo y cambio</h5><ul id="paso-error"></ul></section>
+<section><h5>Error absoluto y residuo</h5><ul id="paso-error"></ul></section>
 <section><h5>Decisión</h5><ul id="paso-parada"></ul></section>
 </div>
 {% endblock %}

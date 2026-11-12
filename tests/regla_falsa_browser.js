@@ -183,8 +183,10 @@
             const filas = [...w.document.querySelectorAll("#raices-historial tbody tr:not(:first-child)")];
             ok(!q(w, "#raices-historial").hidden && filas.length === 4, "Cuatro ejecuciones de la misma función");
             ok(filas[1].cells[0].textContent.replace(/\s/g, "") === "[1.2;1.6]", "Intervalo inicial");
-            ok(filas[3].getAttribute("aria-current") === "true" && filas[3].cells[1].textContent === "Sin convergencia", "Actual sin convergencia");
-            ok(filas.every(f => f.cells[4].querySelector("[data-raices-numero]")), "Residuo de cada ejecución");
+            ok(filas[3].getAttribute("aria-current") === "true" && filas[3].cells[3].textContent === "No cumplido: máximo de iteraciones", "Actual sin convergencia");
+            ok(filas[0].cells[3].textContent === "Cumplido" && filas[0].cells[6].textContent === "0.0001", "Criterio y tolerancia");
+            ok([...q(w, "#raices-historial thead tr").cells].map(c => c.textContent).includes("Error absoluto"), "Error absoluto con su nombre");
+            ok(filas.every(f => f.cells[5].querySelector("[data-raices-numero]")), "Residuo de cada ejecución");
             ok(w.sessionStorage.getItem("pygebra-raices-historial-biseccion") === "[]", "Bisección intacta");
         }],
         ["Mismo signo conserva la gráfica sin inventar una secante", async (w, frame) => {
@@ -209,6 +211,7 @@
     let aprobados = 0;
     for (const [nombre, probar] of casos) {
         const item = document.createElement("li"); document.getElementById("resultados").append(item);
+        (window.preferencias ? window.preferencias.guardar("pygebra-raices-decimales", "6") : localStorage.setItem("pygebra-raices-decimales", "6")); // Cada caso parte de 6 decimales.
         const frame = document.createElement("iframe"); frame.title = nombre; frame.style.cssText = "width:100%;height:700px";
         document.body.append(frame);
         try {

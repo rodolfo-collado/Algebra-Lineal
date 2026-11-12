@@ -34,7 +34,12 @@
             const primero=r.iteraciones[0];
             ok(primero.fxn===-0.125 && primero.dfxn===5.75 && primero.siguiente===1.5217391304347827,
                "Primera iteración de la diapositiva");
-            ok(q(w,"#iteracion-raices").value==="1","Abre en la primera tangente");
+            ok(q(w,"#iteracion-raices").value==="0"&&q(w,"#paso-titulo").textContent==="Punto inicial (n = 0)","Abre en n = 0");
+            ok(q(w,'[data-iteracion="0"]').hasAttribute("data-activa")&&g(w).data[1].x.join()==="1.5"&&g(w).data[2].x.length===0,"Solo el punto inicial");
+            ok([...w.document.querySelectorAll(".raices-tabla thead th")].map(t=>t.textContent).join("|")==="n|xₙ|f(xₙ)","Tabla de clase");
+            ok(q(w,"#iteracion-anterior").disabled,"No hay paso antes de n = 0");
+            q(w,"#iteracion-siguiente").click();
+            ok(q(w,"#paso-breve").textContent.includes("x₁ = x₀ − f(x₀)/f′(x₀)"),"Fórmula del paso con subíndices");
             ok(!q(w,"#resultado").textContent.includes("= ≈"),"Sin igualdad falsa al redondear");
             const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
             q(w,"#procedimiento-raices").open=true;
@@ -77,7 +82,22 @@
             const h=q(w,"#raices-historial"),filas=[...h.querySelectorAll("tbody tr:not(:first-child)")];
             ok(!h.hidden&&h.querySelector("thead").textContent.includes("x₀")&&filas.length===2,"Dos x₀ en un grupo");
             ok(filas.map(f=>Number(f.cells[0].querySelector("span").dataset.raicesNumero)).join()==="1.5,0","Puntos iniciales");
-            ok(filas[1].cells[3].textContent===String(datos(w).iteraciones.length),"Iteraciones de cada x₀");
+            ok(filas[1].cells[2].textContent===String(datos(w).iteraciones.length),"Iteraciones de cada x₀");
+            ok([...h.querySelectorAll("thead th")].map(t=>t.textContent).join("|")==="x₀|Aproximación|Iteraciones|Criterio de parada|Error absoluto|Residuo|Tolerancia|","Columnas de Newton");
+            ok(filas[0].cells[3].textContent==="Cumplido","Criterio cumplido");
+        }],
+        ["Decimales elegidos en la tabla y la explicación, sin exponentes ni ceros falsos", async(w,frame)=>{
+            w=await resolver(frame,{funcion:"x³-x-2",x0:"1.5"});
+            const celda=(n,c)=>q(w,`[data-iteracion="${n}"]`).cells[c].textContent.replace("≈ ","").trim();
+            ok(celda(0,1)==="1.5"&&celda(0,2)==="-0.125","Fila n = 0 de la diapositiva");
+            ok(celda(3,1)==="1.52138","x₃ con 6 decimales, sin inflarse por f(x₃)");
+            ok(Number(celda(3,2))!==0&&!/e/.test(celda(3,2)),"f(x₃) diminuto en decimal llano y no nulo");
+            const s=q(w,"#raices-decimales");s.value="12";s.dispatchEvent(new w.Event("change"));
+            ok(celda(3,1)==="1.521379706805","x₃ con 12 decimales");
+            s.value="4";s.dispatchEvent(new w.Event("change"));
+            q(w,"#iteracion-siguiente").click();
+            ok(q(w,"#paso-breve").textContent.includes("≈ 1.5217."),"La explicación usa 4 decimales");
+            ok(!/\de[-+]?\d/.test(q(w,"#resultado").textContent),"Sin notación científica");
         }],
         ["Teclado matemático en la función", async w=>{
             const c=q(w,'[name="funcion"]');c.focus();
@@ -91,7 +111,7 @@
             q(w,"#ejemplos-newton").open=true;q(w,'[data-newton-ejemplo="ciclo"]').click();
             ok(q(w,'[name="funcion"]').value==="x³-2x+2" && q(w,'[name="x0"]').value==="0","Ejemplo completo");
             w=await resolver(frame,{funcion:"x³-2x+2",x0:"0"});
-            q(w,"#iteracion-siguiente").click();
+            q(w,"#iteracion-siguiente").click();q(w,"#iteracion-siguiente").click();
             ok(datos(w).estado==="oscilacion" && q(w,"#paso-parada").textContent.includes("ciclo"),"Explica oscilación");
             w=await resolver(frame,{funcion:"x²",x0:"0"});
             ok(!q(w,"#iteracion-raices") && g(w).data[1].x[0]===0,"Raíz inicial sin pasos inventados");
@@ -115,7 +135,7 @@
     ];
     let aprobados=0;
     for(const [nombre,probar] of casos){
-        const item=document.createElement("li");document.getElementById("resultados").append(item);
+        const item=document.createElement("li");document.getElementById("resultados").append(item);(window.preferencias ? window.preferencias.guardar("pygebra-raices-decimales", "6") : localStorage.setItem("pygebra-raices-decimales", "6"));
         const frame=document.createElement("iframe");frame.title=nombre;frame.style.cssText="width:100%;height:700px";document.body.append(frame);
         try{await new Promise(r=>{frame.onload=r;frame.src="/metodos-numericos/newton-raphson/";});await probar(frame.contentWindow,frame);item.textContent="OK: "+nombre;aprobados++;}
         catch(e){item.textContent="FALLO: "+nombre+": "+e.message;}frame.remove();

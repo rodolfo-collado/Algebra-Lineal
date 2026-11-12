@@ -1,4 +1,5 @@
 """Contrato HTTP, navegación, teclado y presentación sin JavaScript."""
+import re
 from tests.test_biseccion_web import resultado_html
 from django.test import Client, SimpleTestCase
 from django.urls import reverse
@@ -29,7 +30,8 @@ class NewtonWebTests(SimpleTestCase):
         esperado=newton_raphson(FuncionReal("x²-2"), 1.5)
         self.assertEqual(resultado_html(r), esperado)
         self.assertContains(r, 'f′(x) = <span class="raices-expresion">2 · x</span>', count=1)
-        self.assertContains(r,"data-iteracion=", count=len(esperado["iteraciones"]))
+        # n = 0 es el punto inicial; después, una fila por cada xₙ calculada.
+        self.assertContains(r,"data-iteracion=", count=len(esperado["iteraciones"]) + 1)
         for texto in ["tangente", "Verificación", "Residuo", "Cambio absoluto", "Anterior", "Siguiente", "error verdadero"]:
             self.assertContains(r,texto)
 
@@ -105,3 +107,31 @@ class NewtonWebTests(SimpleTestCase):
             self.assertEqual(resultado_html(r)["clasificacion"], clasificacion)
             self.assertContains(r, 'data-tono="info"', count=1)
             self.assertNotContains(r, "data-respuesta-errores")
+
+    def test_tabla_de_clase_n_xn_fxn_desde_cero(self):
+        # Diapositiva 15: f(x) = x³ − x − 2, x₀ = 1.5 → filas n = 0…3 con xₙ y f(xₙ).
+        r = self.client.post(RUTA, datos(funcion="x³-x-2"))
+        html = r.content.decode()
+        tabla = html[html.index('class="procedure-table raices-tabla raices-tabla-newton"'):]
+        tabla = tabla[:tabla.index("</table>")]
+        self.assertEqual(re.findall(r'<th scope="col">([^<]+)</th>', tabla), ["n", "xₙ", "f(xₙ)"])
+        filas = re.findall(r'data-iteracion="(\d+)"', tabla)
+        self.assertEqual(filas, ["0", "1", "2", "3"])
+        valores = re.findall(r'data-raices-numero="([^"]+)" data-raices-tipo="(x|f)"', tabla)
+        self.assertEqual(valores[:2], [("1.5", "x"), ("-0.125", "f")])
+        self.assertEqual(float(valores[2][0]), 1.5217391304347827)
+        for ausente in ("f′(x actual)", "Cambio absoluto</th>", "Residuo siguiente"):
+            self.assertNotIn(ausente, tabla)
+        exacta = self.client.post(RUTA, datos(funcion="x^2", x0="0"))
+        self.assertContains(exacta, "data-iteracion=", count=1)
+
+    def test_lectura_sin_notacion_cientifica(self):
+        from frontend.web.calculadora.templatetags.raices import numero_raices
+        for valor, texto in [(5e-14, "0.00000000000005"), (1e-20, "0.00000000000000000001"),
+                             (1.5e21, "1500000000000000000000"), (-0.125, "-0.125"), (1.0, "1.0")]:
+            html = str(numero_raices(valor, "f"))
+            self.assertIn(f">{texto}</span>", html)
+            self.assertIn(f'data-raices-numero="{repr(valor)}"', html)
+            self.assertIn('data-raices-tipo="f"', html)
+            self.assertNotRegex(html.split(">", 1)[1], r"\de[-+]")
+        self.assertNotIn("data-raices-tipo", str(numero_raices(0.5)))

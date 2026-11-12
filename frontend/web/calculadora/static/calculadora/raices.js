@@ -27,8 +27,6 @@
     const marcoTabla = $("raices-tabla-marco");
     const elegir = [...document.querySelectorAll("[data-elegir-extremo]")];
     const filas = [...document.querySelectorAll("[data-iteracion]")];
-    // Punto decimal y sin separador de miles, como las tablas y el resultado.
-    const numero = (x, digitos = 12) => Number(x).toLocaleString("en-US", { maximumSignificantDigits: digitos, useGrouping: false });
     // En la gráfica: «=» si las cifras mostradas son el valor de la muestra; si no, «≈».
     const etiqueta = (x, digitos) => x === null ? "" : `${Number(x.toPrecision(digitos)) === x ? "=" : "≈"} ${Number(x.toPrecision(digitos))}`;
     const etiquetas = (xs, ys, digitos) => xs.map((x, i) => [etiqueta(x, digitos), etiqueta(ys[i], digitos)]);
@@ -36,7 +34,9 @@
     const color = nombre => getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
     const valido = r => Array.isArray(r) && r.every(Number.isFinite) && r[0] < r[1];
     let mutando = false, temporizador, peticion, inicializacion, generacion = 0, extremoElegido = null;
-    let actual = 0, reloj = null;
+    let actual = -1, reloj = null;
+    // Newton empieza en n = 0 (punto inicial); los métodos cerrados, en la iteración 1.
+    const primero = slider ? Number(slider.min) : 1;
     const vistaInicial = [-10, 10];
     const indicacion = metodo.indicacion || "Introduce una función para visualizar su gráfica y elegir un intervalo.";
     ayudaGrafica.hidden = true;
@@ -61,54 +61,88 @@
     const vistaCalculo = !resultado ? null : pasos.length ? vistaPaso(pasos[0])
         : [datos.inicial_a - anchoInicial / 4, datos.inicial_b + anchoInicial / 4];
 
-    // Cifras suficientes para que valores distintos no se lean como iguales.
-    function formato(valores, digitos = 8) {
+    // ---- Lectura de números: los decimales elegidos, en decimal llano y con dos protecciones. ----
+    // Solo cambia lo que se lee: los datos y los cálculos conservan todas sus cifras.
+    const selectorDecimales = $("raices-decimales");
+    // Decimal llano con las cifras del valor almacenado: 5e-14 → 0.00000000000005, sin exponentes.
+    function plano(x) {
+        const [mantisa, exponente] = String(x).split("e");
+        if (exponente === undefined) return mantisa;
+        const menos = mantisa.startsWith("-") ? "-" : "";
+        const [entera, fraccion = ""] = mantisa.replace("-", "").split(".");
+        const digitos = entera + fraccion, punto = entera.length + Number(exponente);
+        if (punto <= 0) return `${menos}0.${"0".repeat(-punto)}${digitos}`;
+        if (punto >= digitos.length) return menos + digitos + "0".repeat(punto - digitos.length);
+        return `${menos}${digitos.slice(0, punto)}.${digitos.slice(punto)}`;
+    }
+    function decimal(x, p) {
+        if (Math.abs(x) >= 1e21 || p > 100) return plano(x);
+        const texto = x.toFixed(p);
+        return texto.includes(".") ? texto.replace(/0+$/, "").replace(/\.$/, "") : texto;
+    }
+    // Protección 1: un valor distinto de cero nunca se lee como 0. Solo ese valor gana cifras.
+    function sinCeroFalso(x, p) {
+        let texto = decimal(x, p);
+        while (x !== 0 && Number(texto) === 0 && p <= 100) texto = decimal(x, ++p);
+        return texto;
+    }
+    // Protección 2: valores distintos de una misma magnitud no se leen iguales (hasta 16 decimales).
+    function decimalesDistintos(valores, p) {
         const distintos = new Set(valores);
-        while (digitos < 17 && new Set([...distintos].map(x => numero(x, digitos))).size < distintos.size) digitos++;
-        // «=» solo si las cifras mostradas son el valor almacenado; si no, «≈».
-        return { n: x => numero(x, digitos),
-            r: x => `${Number(x.toPrecision(digitos)) === x ? "=" : "≈"} ${numero(x, digitos)}` };
+        while (p < 16 && new Set([...distintos].map(x => decimal(x, p))).size < distintos.size) p++;
+        return p;
+    }
+    function decimalesElegidos() {
+        if (!selectorDecimales) return 6;
+        return selectorDecimales.value === "completa" ? null : Number(selectorDecimales.value);
+    }
+    // Las explicaciones de cada paso leen los números igual que la tabla.
+    function formato(valores) {
+        const elegidos = decimalesElegidos();
+        const p = elegidos === null ? null : decimalesDistintos(valores.filter(Number.isFinite), elegidos);
+        const n = x => p === null ? plano(x) : sinCeroFalso(x, p);
+        // «=» solo si lo mostrado es el valor almacenado; si no, «≈».
+        return { n, r: x => `${Number(n(x)) === x ? "=" : "≈"} ${n(x)}` };
     }
     const signo = x => x > 0 ? "positivo" : x < 0 ? "negativo" : "cero";
 
     function presentarNumeros() {
         const controles = $("raices-formato");
         if (!controles) return;
-        const selector = $("raices-decimales");
-        const grupos = [...document.querySelectorAll("[data-raices-grupo]")].map(grupo =>
-            [...grupo.querySelectorAll("[data-raices-numero]")].map(nodo => ({ nodo, valor: Number(nodo.dataset.raicesNumero) })));
-        function completo(x) {
-            return x === 0 || (Math.abs(x) >= 1e-16 && Math.abs(x) < 1e12)
-                ? x.toLocaleString("en-US", { useGrouping: false, maximumSignificantDigits: 17 }) : String(x);
-        }
-        function decimal(x, p) {
-            if (Math.abs(x) >= 1e12 || (x !== 0 && Math.abs(x) < 1e-16)) return completo(x);
-            const texto = x.toFixed(p);
-            return texto.includes(".") ? texto.replace(/0+$/, "").replace(/\.$/, "") : texto;
-        }
+        // Cada grupo (fila, resumen, comprobación) se divide por magnitud: data-raices-tipo.
+        const conjuntos = [...document.querySelectorAll("[data-raices-grupo]")].flatMap(grupo => {
+            const tipos = new Map();
+            for (const nodo of grupo.querySelectorAll("[data-raices-numero]")) {
+                const tipo = nodo.dataset.raicesTipo || "";
+                if (!tipos.has(tipo)) tipos.set(tipo, []);
+                tipos.get(tipo).push({ nodo, valor: Number(nodo.dataset.raicesNumero) });
+            }
+            return [...tipos.values()];
+        });
         function aplicar() {
-            for (const grupo of grupos) {
-                const valores = new Set(grupo.map(d => d.valor));
-                let p = Number(selector.value);
-                const esCompleto = selector.value === "completa";
-                let textos = [];
-                for (; !esCompleto && p <= 16; p++) {
-                    textos = grupo.map(d => decimal(d.valor, p));
-                    if (new Set(textos).size === valores.size && !textos.some((t, i) => Number(t) === 0 && grupo[i].valor !== 0)) break;
-                }
-                grupo.forEach((d, i) => {
-                    const texto = esCompleto || p > 16 ? completo(d.valor) : textos[i];
+            const elegidos = decimalesElegidos();
+            for (const items of conjuntos) {
+                const p = elegidos === null ? null : decimalesDistintos(items.map(d => d.valor), elegidos);
+                for (const d of items) {
+                    const texto = p === null ? plano(d.valor) : sinCeroFalso(d.valor, p);
                     const aproximado = Number(texto) !== d.valor;
                     // Tras un «=» escrito, el redondeo cambia ese signo por «≈» en vez de sumar otro.
                     const relacion = d.nodo.previousElementSibling?.matches("[data-raices-relacion]") ? d.nodo.previousElementSibling : null;
                     if (relacion) relacion.textContent = aproximado ? "≈" : "=";
                     d.nodo.textContent = (aproximado && !relacion && !d.nodo.closest(".raices-raiz") ? "≈ " : "") + texto;
-                    d.nodo.setAttribute("aria-label", aproximado ? `${texto}, redondeado; valor almacenado ${d.valor}` : texto);
-                });
+                    d.nodo.setAttribute("aria-label", aproximado ? `${texto}, redondeado; valor almacenado ${plano(d.valor)}` : texto);
+                }
             }
+            if (actual >= primero) mostrarPaso(actual);
         }
         controles.hidden = false;
-        selector.addEventListener("change", aplicar);
+        // La elección se recuerda como las demás preferencias: «Ver» en el historial no la reinicia.
+        const guardada = window.preferencias?.leer("pygebra-raices-decimales");
+        if ([...selectorDecimales.options].some(o => o.value === guardada)) selectorDecimales.value = guardada;
+        selectorDecimales.addEventListener("change", () => {
+            aplicar();
+            window.preferencias?.guardar("pygebra-raices-decimales", selectorDecimales.value);
+        });
         aplicar();
     }
 
@@ -154,17 +188,19 @@
     }
 
     function mostrarPaso(i, { enfocarFila = false } = {}) {
-        i = Math.min(Math.max(i, 1), pasos.length);
-        const p = pasos[i - 1];
-        if (!p) return;
+        if (!pasos.length) return;
+        i = Math.min(Math.max(i, primero), pasos.length);
+        const p = i === 0 ? null : pasos[i - 1];
         actual = i;
         slider.value = String(i);
         contador.textContent = `${i} / ${pasos.length}`;
-        anterior.disabled = i === 1;
+        anterior.disabled = i === primero;
         siguiente.disabled = i === pasos.length;
-        const paso = metodo.paso(p, { formato, numero, signo }, { ultimo: i === pasos.length, resultado });
-        slider.setAttribute("aria-valuetext", `Iteración ${i} de ${pasos.length}, ${paso.aria}`);
-        $("paso-titulo").textContent = `Iteración ${i} de ${pasos.length}`;
+        const ayudas = { formato, signo }, contexto = { ultimo: i === pasos.length, resultado };
+        const paso = p ? metodo.paso(p, ayudas, contexto) : metodo.pasoInicial(resultado, ayudas, contexto);
+        const titulo = paso.titulo || `Iteración ${i} de ${pasos.length}`;
+        slider.setAttribute("aria-valuetext", `${titulo}, ${paso.aria}`);
+        $("paso-titulo").textContent = titulo;
         breve.replaceChildren(...paso.breve.map((texto, k) => {
             const nodo = document.createElement("p");
             nodo.textContent = texto;
@@ -225,7 +261,7 @@
     }
     function alternarReproduccion() {
         if (reloj) return pausar();
-        if (actual >= pasos.length) mostrarPaso(1);
+        if (actual >= pasos.length) mostrarPaso(primero);
         reproducir.setAttribute("data-reproduciendo", "");
         reproducir.setAttribute("aria-label", "Pausar");
         reproducir.title = "Pausar";
@@ -389,7 +425,7 @@
             Plotly.restyle(grafica, { "line.color": color("--color-warning"), "marker.color": color("--color-warning"),
                 "textfont.color": color("--color-text") }, [2]);
         }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-estilo"] });
-        if (pasos.length) mostrarPaso(actual || 1);
+        if (pasos.length) mostrarPaso(actual >= primero ? actual : primero);
         else if (resumen) Plotly.restyle(grafica, { x: [[resumen.x]], y: [[resumen.fx]], text: [[resumen.nombre]],
             customdata: [etiquetas([resumen.x], [resumen.fx], 12)] }, [1]);
     }
@@ -403,6 +439,17 @@
     }, { capture: true, passive: true });
 
     // ---- Historial de la sesión: un método por clave y agrupado por función equivalente. ----
+    // Cada método nombra su comprobación: longitud del intervalo (Bisección) o error absoluto.
+    const MOTIVOS = { limite: "máximo de iteraciones", estancamiento: "estancamiento", maquina: "límite de máquina",
+        oscilacion: "ciclo", divergencia: "salto no finito", dominio: "fuera del dominio", derivada: "derivada nula",
+        dominio_derivada: "derivada no definida", evaluacion: "evaluación no válida", derivacion: "sin derivada" };
+    function criterio(r) {
+        if (r.clasificacion === "no_aplicable") return ["No aplicable", "info"];
+        if (r.clasificacion === "sin_raices_demostrado") return ["Sin raíces (demostrado)", "info"];
+        if (r.convergio) return [r.estado === "exacta" ? "Cumplido: f = 0" : "Cumplido", "exito"];
+        return [MOTIVOS[r.estado] ? `No cumplido: ${MOTIVOS[r.estado]}` : "No cumplido", "aviso"];
+    }
+
     function historial() {
         const seccion = $("raices-historial");
         if (!seccion || !resultado) return;
@@ -411,12 +458,15 @@
         const ajustes = { precision: resultado.precision ?? resultado.tolerancia, max_iteraciones: resultado.max_iteraciones };
         const actualRegistro = { id: JSON.stringify([datos.clave, parametros, ajustes]), clave: datos.clave,
             funcion: datos.funcion, parametros, ajustes, clasificacion: resultado.clasificacion,
-            x: resumen?.x ?? null, iteraciones: pasos.length, residuo: resultado.residuo };
+            estado: resultado.estado, convergio: resultado.convergio, x: resumen?.x ?? null,
+            iteraciones: pasos.length, residuo: resultado.residuo,
+            metrica: resumen ? metodo.historial.valor(resultado) ?? null : null };
         let registros = [];
         try {
             const guardados = JSON.parse(sessionStorage.getItem(clave) || "[]");
             if (Array.isArray(guardados)) registros = guardados.filter(r => r && typeof r.id === "string"
-                && typeof r.funcion === "string" && Object.values(r.parametros || {}).every(Number.isFinite));
+                && typeof r.funcion === "string" && typeof r.estado === "string"
+                && Object.values(r.parametros || {}).every(Number.isFinite));
         } catch { /* Sin almacenamiento, el historial empieza en este cálculo. */ }
         // Volver a una ejecución no la duplica: conserva su lugar y pasa a ser la actual.
         const previo = registros.findIndex(r => r.id === actualRegistro.id);
@@ -425,40 +475,51 @@
         try { sessionStorage.setItem(clave, JSON.stringify(registros)); } catch { /* Solo esta página. */ }
         if (registros.length < 2) return;
 
-        const ESTADOS = { raiz_aproximada: "Raíz aproximada", sin_convergencia: "Sin convergencia",
-            no_aplicable: "No aplicable", sin_raices_demostrado: "Sin raíces (demostrado)" };
-        const valor = x => {
+        const valor = (x, tipo) => {
             if (x === null || x === undefined) return "—";
             const nodo = document.createElement("span");
             nodo.dataset.raicesNumero = String(x);
-            nodo.title = `Valor almacenado: ${x}`;
-            nodo.textContent = String(x);
+            nodo.dataset.raicesTipo = tipo;
+            nodo.title = `Valor almacenado: ${plano(x)}`;
+            nodo.textContent = plano(x);
             return nodo;
         };
+        // Primero lo que se compara (aproximación, iteraciones y criterio); después, las medidas que lo justifican.
+        const columnas = [extremos.length === 2 ? "Intervalo inicial" : "x₀", "Aproximación", "Iteraciones",
+            "Criterio de parada", metodo.historial.metrica, "Residuo", metodo.historial.tolerancia, ""];
         const tabla = document.createElement("table");
         tabla.className = "procedure-table raices-historial-tabla";
         const leyenda = tabla.createCaption();
         leyenda.className = "sr-only"; // El encabezado visible de la sección ya la nombra.
         leyenda.textContent = "Ejecuciones de esta sesión";
         const cabecera = tabla.createTHead().insertRow();
-        [extremos.length === 2 ? "Intervalo inicial" : "x₀", "Estado", "Aproximación", "Iteraciones", "Residuo", ""].forEach(texto => {
+        columnas.forEach(texto => {
             const th = document.createElement("th"); th.scope = "col"; th.textContent = texto; cabecera.append(th);
         });
         for (const funcionClave of new Set(registros.map(r => r.clave))) {
             const grupo = registros.filter(r => r.clave === funcionClave);
             const cuerpo = tabla.createTBody();
             const titulo = document.createElement("th");
-            titulo.scope = "rowgroup"; titulo.colSpan = 6;
+            titulo.scope = "rowgroup"; titulo.colSpan = columnas.length;
             titulo.textContent = `f(x) = ${grupo.at(-1).funcion}`;
             cuerpo.insertRow().append(titulo);
             for (const r of grupo) {
                 const fila = cuerpo.insertRow();
+                // Cada ejecución es un grupo propio: sus magnitudes no inflan las cifras de las demás.
+                fila.setAttribute("data-raices-grupo", "");
                 const p = r.parametros;
-                fila.insertCell().append(...("x0" in p ? [valor(p.x0)] : ["[", valor(p.a), "; ", valor(p.b), "]"]));
-                fila.insertCell().textContent = ESTADOS[r.clasificacion] || r.clasificacion;
-                fila.insertCell().append(valor(r.x));
+                fila.insertCell().append(...("x0" in p ? [valor(p.x0, "parametro")]
+                    : ["[", valor(p.a, "parametro"), "; ", valor(p.b, "parametro"), "]"]));
+                fila.insertCell().append(valor(r.x, "x"));
                 fila.insertCell().textContent = String(r.iteraciones);
-                fila.insertCell().append(valor(r.residuo));
+                const [texto, tono] = criterio(r);
+                const estadoCelda = fila.insertCell();
+                estadoCelda.className = "raices-criterio";
+                estadoCelda.dataset.tono = tono;
+                estadoCelda.textContent = texto;
+                fila.insertCell().append(valor(r.metrica, "error"));
+                fila.insertCell().append(valor(r.residuo, "f"));
+                fila.insertCell().append(valor(r.ajustes.precision, "tolerancia"));
                 const accion = fila.insertCell();
                 if (r.id === actualRegistro.id) {
                     fila.setAttribute("aria-current", "true");
@@ -469,17 +530,19 @@
                 ver.type = "button";
                 ver.className = "btn btn-secondary";
                 ver.textContent = "Ver";
-                ver.setAttribute("aria-label", `Ver la ejecución con ${"x0" in p ? `x₀ = ${p.x0}` : `[${p.a}; ${p.b}]`}`);
+                ver.setAttribute("aria-label", `Ver la ejecución con ${"x0" in p ? `x₀ = ${plano(p.x0)}` : `[${plano(p.a)}; ${plano(p.b)}]`}`);
                 ver.addEventListener("click", () => {
                     pausar();
                     for (const [nombre, dato] of Object.entries({ funcion: r.funcion, ...p, ...r.ajustes })) {
-                        if (campo(nombre)) campo(nombre).value = String(dato);
+                        if (campo(nombre)) campo(nombre).value = typeof dato === "number" ? plano(dato) : dato;
                     }
                     form.requestSubmit();
                 });
                 accion.append(ver);
             }
         }
+        seccion.querySelector(".field-help").textContent =
+            `Agrupadas por función. ${metodo.historial.criterio} «Ver» recupera una ejecución con su recorrido.`;
         $("raices-historial-tabla").replaceChildren(tabla);
         seccion.hidden = false;
     }
@@ -494,7 +557,7 @@
     }));
     $("grafica-restablecer").addEventListener("click", () => muestrear(vistaInicial, true));
     $("grafica-enfocar").addEventListener("click", () => {
-        const rango = pasos.length ? vistaPaso(pasos[actual - 1]) : vistaEntrada();
+        const rango = pasos.length ? vistaPaso(pasos[Math.max(actual, 1) - 1]) : vistaEntrada();
         if (valido(rango)) muestrear(rango, true);
         else estado.textContent = extremos.length === 2 ? "Escribe a y b, con a < b, para enfocar su intervalo." : "Escribe x₀ para enfocar su entorno.";
     });
@@ -503,7 +566,7 @@
         slider.addEventListener("input", () => irA(Number(slider.value)));
         anterior.addEventListener("click", () => irA(actual - 1));
         siguiente.addEventListener("click", () => irA(actual + 1));
-        $("iteracion-reiniciar").addEventListener("click", () => irA(1));
+        $("iteracion-reiniciar").addEventListener("click", () => irA(primero));
         reproducir.addEventListener("click", alternarReproduccion);
         velocidad.addEventListener("change", () => { if (reloj) programar(); });
         filas.forEach(fila => {
@@ -511,7 +574,7 @@
             fila.addEventListener("click", () => irA(i, { enfocarFila: true }));
             fila.addEventListener("focus", () => { if (actual !== i) irA(i); });
             fila.addEventListener("keydown", evento => {
-                const destino = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 1, End: pasos.length,
+                const destino = { ArrowDown: i + 1, ArrowUp: i - 1, Home: primero, End: pasos.length,
                     PageDown: i + 5, PageUp: i - 5 }[evento.key];
                 if (destino === undefined) return;
                 evento.preventDefault();
@@ -523,7 +586,7 @@
         form.addEventListener("submit", pausar);
         window.addEventListener("pagehide", pausar);
         document.addEventListener("visibilitychange", () => { if (document.hidden) pausar(); });
-        mostrarPaso(1);
+        mostrarPaso(primero);
     }
     historial();
     presentarNumeros();

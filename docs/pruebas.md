@@ -11,6 +11,28 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+## Historial y tabla de Newton de los métodos de raíces (2026-11-13)
+
+Ajuste del PR #125 sin cambiar algoritmos, criterios de parada ni contratos.
+
+- **Python:** 2.024 pruebas completas correctas desde PowerShell. Las nuevas fijan la
+  tabla de Newton de la diapositiva 15 (n, xₙ y f(xₙ) desde n = 0; 1.5 y −0.125 en la
+  primera fila), el filtro sin notación científica (5e-14 → 0.00000000000005) y la
+  preferencia cerrada `pygebra-raices-decimales` del escritorio.
+- **Navegador (Edge 157):** Bisección 23/23, Regla Falsa 12/12 y Newton 9/9, con
+  movimiento normal y reducido. Casos nuevos: decimales elegidos por valor (un f(c)
+  diminuto no infla su fila), la explicación sigue los decimales, n = 0 sin tangente,
+  columnas y criterio del historial por método, y «Ver» que conserva los decimales.
+- **WebView2 157 (ejecutable de PyInstaller):** 23/23, 12/12 y 9/9, normal y con movimiento
+  reducido, sin errores de consola. Aquí se vio que elegir decimales en escritorio escribe
+  `/preferencias/` (como el tema o el estilo) y que el archivo conserva la elección entre
+  casos: los runners fijan 6 decimales al empezar cada caso y no cuentan esa escritura como
+  un cálculo.
+- **Visual:** 36 combinaciones sin desborde ni errores JavaScript, más historial con
+  ejecuciones sin convergencia a 1280, 744 y 390 px. Capturas nuevas:
+  [Newton e historial](capturas/raices/07-newton-tabla-de-clase-e-historial.jpg) y
+  [historial en Minimalista noche](capturas/raices/08-historial-minimalista-noche-744.jpg).
+
 ## Reproducción didáctica de los métodos de raíces (2026-11-12)
 
 Sin cambios en los algoritmos ni en la versión (sigue preparada 0.17.0).

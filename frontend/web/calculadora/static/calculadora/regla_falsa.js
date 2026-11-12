@@ -2,11 +2,13 @@
 "use strict";
 (window.metodosRaices ||= {}).regla_falsa = {
     resumen: r => ({ nombre: "xr", x: r.xr, fx: r.fxr }),
+    historial: { metrica: "Error absoluto", tolerancia: "Tolerancia", valor: r => r.error_absoluto,
+        criterio: "El criterio se cumple si el error absoluto no supera la tolerancia y un cambio de signo confirma la raíz, o si f(xr) = 0." },
     paso(p, { formato, signo }, { ultimo, resultado }) {
         const { n, r } = formato([p.a, p.b, p.xr, p.nuevo_a, p.nuevo_b]);
         const tolerancia = resultado.tolerancia;
         const fijo = p.sustituido === "a" ? "b" : "a";
-        const e = formato([p.error_absoluto ?? 0, tolerancia], 2);
+        const e = formato([p.error_absoluto ?? 0, tolerancia]);
         const error = [p.error_absoluto === null ? "Ea no disponible: primera aproximación." : `Ea ${e.r(p.error_absoluto)}`,
             `Tolerancia: ${e.n(tolerancia)}`];
         const parada = [];
@@ -29,7 +31,7 @@
                     : "Continúa.");
         }
         return {
-            aria: `xr ${formato([p.xr], 12).r(p.xr)}`,
+            aria: `xr ${formato([p.xr]).r(p.xr)}`,
             breve: [`La secante entre (a, f(a)) y (b, f(b)) corta el eje x en xr ${r(p.xr)}.`,
                 p.fxr === 0 ? "f(xr) = 0: xr es una raíz calculada."
                     : `f(xr) tiene el signo de f(${p.sustituido}) (${signo(p.fxr)}): xr reemplaza al extremo ${p.sustituido}; ${fijo} se queda.`,

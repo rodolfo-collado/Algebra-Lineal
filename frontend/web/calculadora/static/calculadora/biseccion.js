@@ -3,6 +3,9 @@
 (window.metodosRaices ||= {}).biseccion = {
     // c queda dentro del intervalo final, cuya longitud acota su distancia a la raíz.
     resumen: r => ({ nombre: "c", x: r.c, fx: r.fc }),
+    // El criterio de parada de bisección es la longitud del intervalo, no un error entre aproximaciones.
+    historial: { metrica: "Longitud final", tolerancia: "Precisión", valor: r => r.longitud,
+        criterio: "El criterio se cumple si la longitud final es menor que la precisión, o si f(c) = 0." },
     paso(p, { formato, signo }, { ultimo, resultado }) {
         // Mostrar los puntos distintos como distintos, incluso con tolerancias muy pequeñas.
         const { n, r } = formato([p.a, p.c, p.b, p.nuevo_a, p.nuevo_b]);
@@ -14,7 +17,7 @@
             : cambiaA ? `f(c) tiene el signo de f(a) (${signo(p.fc)}): la raíz queda en [c, b].`
                 : `f(c) tiene el signo de f(b) (${signo(p.fc)}): la raíz queda en [a, c].`;
         return {
-            aria: `c ${formato([p.c], 12).r(p.c)}`,
+            aria: `c ${formato([p.c]).r(p.c)}`,
             // Explicación breve junto a la gráfica: qué se calcula, qué mitad sigue y si termina.
             breve: [`Punto medio c = (a + b)/2 ${r(p.c)}.`, conserva,
                 p.fc === 0 ? "Se detiene." : ultimo ? `Se detiene: ${resultado.mensaje}`

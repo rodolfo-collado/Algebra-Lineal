@@ -42,6 +42,11 @@ y x₀ = 1.5, f(x₀) = −0.125, f′(x₀) = 5.75 y x₁ ≈ 1.521739130434782
 El recorrido une (1.5, −0.125) con (x₁, 0) y después muestra (x₁, f(x₁)).
 La raíz aproximada es 1.5213797068.
 
+Como en la diapositiva 15, la tabla tiene tres columnas: n, xₙ y f(xₙ). Empieza
+en n = 0 con el punto inicial, y el recorrido también abre allí. El paso n traza la
+tangente en xₙ₋₁ y obtiene xₙ. La derivada, la fórmula aplicada, el error absoluto
+y el residuo de ese paso aparecen en la explicación y en el procedimiento detallado.
+
 Newton depende del punto inicial y del comportamiento de la función. Un salto
 fuera del dominio, una derivada nula o un salto no finito pueden detenerlo.
 Las oscilaciones sin repetición exacta y la divergencia finita pueden alcanzar
@@ -74,8 +79,20 @@ desplaza la vista. **Vista inicial** vuelve a `[-10, 10]`; **Enfocar intervalo**
 
 El **Historial de esta sesión** aparece desde la segunda ejecución del método en la
 pestaña. Guarda hasta 12 en `sessionStorage` y agrupa por función equivalente, sin
-mezclar métodos. **Ver** vuelve a enviar los datos de una ejecución y la marca como
-actual sin duplicarla. Sin JavaScript se muestran el veredicto, la tabla completa,
+mezclar métodos. Cada fila muestra el intervalo inicial o x₀, la aproximación, las
+iteraciones, el criterio de parada (cumplido o no, con su motivo) y las medidas que lo
+justifican, con la tolerancia usada. Bisección usa la longitud final y la precisión.
+Regla Falsa y Newton usan el error absoluto y la tolerancia. Todas muestran el
+residuo. **Ver** vuelve a enviar los datos de una ejecución y la marca como actual
+sin duplicarla.
+
+**Decimales** fija los decimales de tablas, historial y explicaciones. Se recuerda
+como las demás preferencias, también en la app de escritorio. Los números se escriben
+en decimal llano, sin notación científica, y sin ceros finales, como en el resto de
+PyGebra. Hay dos protecciones. Un valor distinto de cero nunca se lee como 0: solo
+ese valor gana las cifras necesarias (f(x₃) ≈ 0.00000000000005), sin cambiar a sus
+vecinos. Y los valores distintos de una misma magnitud en una fila (a, b y c, por
+ejemplo) se distinguen, sin compararlos con magnitudes diferentes. Sin JavaScript se muestran el veredicto, la tabla completa,
 el procedimiento y la verificación.
 
 Con Newton, el endpoint `grafica/` añade `derivada` a las muestras: el texto de
