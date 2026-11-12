@@ -1,26 +1,9 @@
 /* Geometría y lectura de Newton; el controlador compartido gestiona Plotly y el recorrido.
    Notación de clase: n = 0 es el punto inicial x₀; el paso n traza la tangente en xₙ₋₁ y obtiene xₙ. */
 "use strict";
-const subindiceNewton = k => String(k).replace(/\d/g, d => "₀₁₂₃₄₅₆₇₈₉"[d]);
-// Pizarra del paso activo: piezas DOM pequeñas, sin un motor de fórmulas.
-const nodoNewton = (etiqueta, clase, ...hijos) => {
-    const nodo = document.createElement(etiqueta);
-    if (clase) nodo.className = clase;
-    nodo.append(...hijos);
-    return nodo;
-};
-const menosNewton = texto => texto.replace(/^-/, "−");
-// Apilada a la vista; lineal para lectores de pantalla.
-function fraccionNewton(arriba, abajo) {
-    const visual = nodoNewton("span", "raices-fraccion", nodoNewton("span", "", arriba), nodoNewton("span", "", abajo));
-    visual.setAttribute("aria-hidden", "true");
-    return [nodoNewton("span", "sr-only", `(${arriba})/(${abajo})`), visual];
-}
-const bloqueNewton = (titulo, ...contenido) => nodoNewton("div", "newton-bloque", nodoNewton("p", "newton-etiqueta", titulo), ...contenido);
-function valoresNewton(pares, { n }) {
-    return nodoNewton("dl", "newton-valores", ...pares.map(([nombre, x]) => nodoNewton("div", "",
-        nodoNewton("dt", "", nombre), nodoNewton("dd", "", `${Number(n(x)) === x ? "=" : "≈"} ${menosNewton(n(x))}`))));
-}
+// Valores, fracciones y comprobación vienen de metodos_abiertos.js, compartidos con Secante.
+const { subindice: subindiceNewton, nodo: nodoNewton, menos: menosNewton, fraccion: fraccionNewton,
+    bloque: bloqueNewton, valores: valoresNewton } = window.metodosAbiertos;
 (window.metodosRaices ||= {}).newton_raphson = {
     extremos: ["x0"],
     indicacion: "Introduce una función para explorar su gráfica y elegir x₀.",
@@ -55,26 +38,17 @@ function valoresNewton(pares, { n }) {
         const k = subindiceNewton(p.i - 1), m = subindiceNewton(p.i);
         // «=» solo si las tres cifras sustituidas son exactamente las almacenadas.
         const exacta = [p.xn, p.fxn, p.dfxn].every(x => Number(n(x)) === x);
-        const medida = (nombre, x) => {
-            const cumple = x <= tolerancia;
-            const item = nodoNewton("li", "", nodoNewton("span", "", nombre),
-                nodoNewton("span", "newton-linea", `${Number(n(x)) === x ? "=" : "≈"} ${v(x)} ${cumple ? "≤" : ">"} ${n(tolerancia)} · `,
-                    nodoNewton("strong", "", cumple ? "cumple" : "no cumple")));
-            item.dataset.cumple = cumple;
-            return item;
-        };
-        const comprobacion = nodoNewton("ul", "newton-comprobacion",
-            medida(`Error absoluto |x${m} − x${k}|`, p.error_absoluto), medida(`Residuo |f(x${m})|`, p.residuo));
+        const comprobacion = window.metodosAbiertos.comprobacion(
+            [[`Error absoluto |x${m} − x${k}|`, p.error_absoluto], [`Residuo |f(x${m})|`, p.residuo]], tolerancia, lectura);
         return {
             titulo: `Iteración ${p.i} de ${resultado.iteraciones.length}: x${m}`,
             aria: `x${k} ${n(p.xn)}, x${m} ${n(p.siguiente)}`,
             breve: [
                 bloqueNewton(`Valores con n = ${p.i - 1}`, valoresNewton([[`x${k}`, p.xn], [`f(x${k})`, p.fxn], [`f′(x${k})`, p.dfxn]], lectura)),
                 bloqueNewton("Sustitución",
-                    nodoNewton("p", "newton-linea", `x${m} = x${k} − `, ...fraccionNewton(`f(x${k})`, `f′(x${k})`)),
-                    nodoNewton("p", "newton-linea", `x${m} ${exacta ? "=" : "≈"} ${v(p.xn)} − `, ...fraccionNewton(v(p.fxn), v(p.dfxn)))),
-                bloqueNewton("Nueva aproximación",
-                    nodoNewton("p", "newton-linea newton-nueva", `x${m} ${Number(n(p.siguiente)) === p.siguiente ? "=" : "≈"} `, nodoNewton("strong", "", v(p.siguiente)))),
+                    window.metodosAbiertos.linea(`x${m} = x${k} − `, ...fraccionNewton(`f(x${k})`, `f′(x${k})`)),
+                    window.metodosAbiertos.linea(`x${m} ${exacta ? "=" : "≈"} ${v(p.xn)} − `, ...fraccionNewton(v(p.fxn), v(p.dfxn)))),
+                bloqueNewton("Nueva aproximación", window.metodosAbiertos.nueva(`x${m}`, p.siguiente, lectura)),
                 bloqueNewton(`Comprobación con tolerancia ${n(tolerancia)}`, comprobacion),
                 ultimo ? `Se detiene: ${resultado.mensaje}`
                     : `Continúa: las dos medidas deben cumplir la tolerancia. La siguiente tangente parte de x${m}.`,
@@ -93,14 +67,3 @@ function valoresNewton(pares, { n }) {
         };
     },
 };
-const ejemplosNewton = {
-    cuadratica: ["x²-2", "1.5"], cubica: ["x³-x-2", "1.5"], ciclo: ["x³-2x+2", "0"],
-};
-document.querySelectorAll("[data-newton-ejemplo]").forEach(boton => boton.addEventListener("click", () => {
-    ["funcion", "x0"].forEach((nombre, i) => {
-        const campo = document.getElementById("raices-form").elements.namedItem(nombre);
-        campo.value = ejemplosNewton[boton.dataset.newtonEjemplo][i];
-        campo.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    document.getElementById("grafica-estado").textContent = "Ejemplo cargado. Puedes modificarlo o resolver.";
-}));

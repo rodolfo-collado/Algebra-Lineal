@@ -1,9 +1,11 @@
 # Newton-Raphson
 
-[Índice](README.md) · [Bisección](biseccion.md) · [Regla falsa](regla-falsa.md)
+[Índice](README.md) · [Secante](secante.md) · [Bisección](biseccion.md) · [Regla falsa](regla-falsa.md)
 
-Abre **Métodos numéricos → Raíces de ecuaciones → Método de Newton-Raphson**.
-Introduce f(x) y x₀. Mientras escribes f(x), f′(x) aparece bajo el campo sin
+Abre **Métodos numéricos → Raíces de ecuaciones → Métodos abiertos**; Newton-Raphson
+es el método inicial del selector, junto a [Secante](secante.md). Su ruta es
+`/metodos-numericos/metodos-abiertos/newton-raphson/`; la antigua
+`/metodos-numericos/newton-raphson/` redirige allí. Introduce f(x) y x₀. Mientras escribes f(x), f′(x) aparece bajo el campo sin
 resolver nada. La gráfica puede explorarse antes de resolver y permite elegir x₀
 sobre la curva.
 
@@ -84,7 +86,7 @@ y el criterio numérico carece de una cota garantizada de distancia a la raíz.
 
 ## Zona de estudio compartida
 
-Los tres métodos usan la misma composición. La entrada agrupa función, parámetros y
+Los cuatro métodos usan la misma composición. La entrada agrupa función, parámetros y
 **Resolver** en una fila cuando el ancho lo permite. El veredicto encabeza el
 resultado con un tono proporcional: verde para una raíz aproximada, ámbar sin
 convergencia y neutro para «no aplicable» o «ausencia de raíces demostrada». Ninguna
@@ -93,7 +95,7 @@ condición matemática se presenta como error de la aplicación.
 Debajo, la gráfica y la explicación breve del paso activo comparten una fila en
 escritorio; la tabla tiene una fila por iteración y desplazamiento propio, para verse
 junto a la gráfica. En Bisección y Regla Falsa va debajo de ambas, a todo el ancho; en
-Newton, bajo la gráfica, porque su explicación es más alta. El reproductor ofrece Reiniciar, Anterior, Reproducir/Pausar,
+los métodos abiertos (Newton y Secante), bajo la gráfica, porque su explicación es más alta. El reproductor ofrece Reiniciar, Anterior, Reproducir/Pausar,
 Siguiente, barra de progreso y velocidades 0.5×, 1×, 2× y 4×. Empieza en pausa en la
 primera iteración. Al terminar, cambiar los datos, enviar otro cálculo u ocultar la
 pestaña, se detiene. Un clic en una fila la selecciona; con el foco en la tabla, las
@@ -105,14 +107,14 @@ a ser una región `aria-live`. No hay animaciones: cada paso es un cambio discre
 también con movimiento reducido. La rueda sobre la gráfica acerca o aleja, salvo si
 la página ya se estaba desplazando y la gráfica pasa bajo el cursor. Arrastrar
 desplaza la vista. **Vista inicial** vuelve a `[-10, 10]`; **Enfocar intervalo** o
-**Enfocar tangente** encuadra el paso activo. Cambiar de iteración respeta el zoom.
+**Enfocar tangente** o **Enfocar secante** encuadra el paso activo. Cambiar de iteración respeta el zoom.
 
 El **Historial de esta sesión** aparece desde la segunda ejecución del método en la
 pestaña. Guarda hasta 12 en `sessionStorage` y agrupa por función equivalente, sin
 mezclar métodos. Cada fila muestra el intervalo inicial o x₀, la aproximación, las
 iteraciones, el criterio de parada (cumplido o no, con su motivo) y las medidas que lo
-justifican, con la tolerancia usada. Bisección usa la longitud final y la precisión.
-Regla Falsa y Newton usan el error absoluto y la tolerancia. Todas muestran el
+justifican, con la tolerancia usada (Secante muestra el par x₀, x₁). Bisección usa la
+longitud final y la precisión. Regla Falsa, Newton y Secante usan el error absoluto y la tolerancia. Todas muestran el
 residuo. **Ver** vuelve a enviar los datos de una ejecución y la marca como actual
 sin duplicarla.
 
@@ -163,6 +165,9 @@ publica el número de muestras válidas, ceros calculados y cambios de signo en
   `fsiguiente`, `residuo` y `error_absoluto`. La tangente queda definida por
   (xn, fxn), la pendiente dfxn y el corte (siguiente, 0).
   `intento_final` guarda los valores disponibles de un paso que no se completó.
+- **Secante.** `x0`, `x1`, `tolerancia`, `x`, `fx` y `error_absoluto`. Cada fila
+  contiene `anterior`, `fanterior`, `actual`, `factual`, `numerador`, `denominador`,
+  `siguiente`, `fsiguiente`, `residuo` y `error_absoluto`. Véase [Secante](secante.md).
 - **Bisección.** `inicial` contiene a, b, f(a) y f(b). Cada fila registra
   los extremos y sus evaluaciones, el punto medio (c, fc), el error relativo
   aproximado y el intervalo siguiente. El resultado contiene el intervalo
@@ -173,5 +178,5 @@ publica el número de muestras válidas, ceros calculados y cambios de signo en
   El resultado conserva `xr`, `fxr`, `tolerancia` y la cota cuando se confirmó.
 
 Las filas conservan el orden de cálculo y los valores de máquina. La tabla y
-la gráfica existente leen los mismos datos. Los tres runners DOM y las pruebas
+la gráfica existente leen los mismos datos. Los cuatro runners DOM y las pruebas
 Python se describen en [Pruebas](pruebas.md).

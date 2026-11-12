@@ -2,15 +2,17 @@
 
 import math
 
-from django.http import JsonResponse
+from django.http import HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 from backend.biseccion import biseccion
 from backend.regla_falsa import regla_falsa
 from backend.newton_raphson import newton_raphson
+from backend.secante import secante
 from backend.derivacion_real import DerivadaReal, natural
 from backend.resultados_raices import ClasificacionRaices as Clasificacion, evidencia_muestreo
-from .forms_raices import BiseccionForm, RaicesForm, ReglaFalsaForm, NewtonRaphsonForm
+from .forms_raices import BiseccionForm, RaicesForm, ReglaFalsaForm, NewtonRaphsonForm, SecanteForm
 from .servicios_raices import muestrear, verificacion_inicial
 from .teclados import perfiles_para
 
@@ -78,27 +80,53 @@ def explorar_funcion(request, derivar=False):
     return JsonResponse(respuesta)
 
 
-@require_http_methods(["GET", "POST"])
-def resolver_newton_raphson(request):
-    form = NewtonRaphsonForm(request.POST if request.method == "POST" else None)
+def _vista_abierta(*puntos):
+    """Encuadre inicial de la gráfica alrededor de los puntos de partida de un método abierto."""
+    lo, hi = min(puntos), max(puntos)
+    ancho = max(2., max(abs(lo), abs(hi)) * .25, (hi - lo) / 4)
+    a, b = lo - ancho, hi + ancho
+    return (a, b) if all(map(math.isfinite, (a, b, b - a))) else (-10., 10.)
+
+
+def _resolver_abierto(request, formulario, nombre, calcular, puntos):
+    """Métodos abiertos: el mismo esqueleto que los cerrados, con puntos iniciales en vez de intervalo.
+
+    Al cambiar de método llega ?funcion=…: la función escrita se conserva, nunca el resultado."""
+    form = formulario(request.POST if request.method == "POST" else None,
+                      initial={"funcion": request.GET.get("funcion", "")[:512]})
     resultado = None
     if request.method == "POST" and form.is_valid():
-        d = form.cleaned_data
         try:
-            resultado = newton_raphson(form.funcion_real, d["x0"],
-                                       d["precision"], d["max_iteraciones"])
+            resultado = calcular(form.funcion_real, form.cleaned_data)
         except ValueError as error:
             form.add_error(None, str(error))
-    datos = _datos_raices("newton_raphson", form, resultado)
+    datos = _datos_raices(nombre, form, resultado)
     if resultado:
-        x0 = form.cleaned_data["x0"]
-        ancho = max(2., abs(x0) * .25)
-        a, b = x0 - ancho, x0 + ancho
-        if not all(map(math.isfinite, (a, b, b - a))):
-            a, b = -10., 10.
-        datos.update({"inicial_a": a, "inicial_b": b})
-    return render(request, "calculadora/modules/newton_raphson/index.html", {
+        a, b = _vista_abierta(*(form.cleaned_data[p] for p in puntos))
+        datos.update(inicial_a=a, inicial_b=b)
+    return render(request, f"calculadora/modules/{nombre}/index.html", {
         "form": form, "resultado": resultado, "datos_raices": datos,
         "funcion_natural": natural(form.funcion_real.arbol) if resultado else None,
         "perfiles_teclado": perfiles_para("funcion-real"),
     })
+
+
+@require_http_methods(["GET", "POST"])
+def resolver_newton_raphson(request):
+    return _resolver_abierto(request, NewtonRaphsonForm, "newton_raphson", lambda f, d: newton_raphson(
+        f, d["x0"], d["precision"], d["max_iteraciones"]), ("x0",))
+
+
+@require_http_methods(["GET", "POST"])
+def resolver_secante(request):
+    return _resolver_abierto(request, SecanteForm, "secante", lambda f, d: secante(
+        f, d["x0"], d["x1"], d["precision"], d["max_iteraciones"]), ("x0", "x1"))
+
+
+def newton_raphson_ruta_antigua(request, grafica=False):
+    """Newton-Raphson pasó a Métodos abiertos. GET usa 301 y conserva la consulta; POST usa 308
+    para que el navegador reenvíe el mismo cuerpo, que el formulario entiende tal cual."""
+    destino = reverse("calculadora:newton-raphson-grafica" if grafica else "calculadora:newton-raphson")
+    if request.GET:
+        destino = f"{destino}?{request.GET.urlencode()}"
+    return HttpResponsePermanentRedirect(destino, preserve_request=request.method == "POST")

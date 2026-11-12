@@ -11,6 +11,33 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+## Secante y Métodos abiertos, versión 0.18.0 (2026-11-12)
+
+- **Python:** 2.047 pruebas completas correctas (`unittest discover`, desde PowerShell).
+  `test_secante` fija las diapositivas 22 y 23 (f(1) = −2, f(2) = 4, numerador 4,
+  denominador 6, x₂ = 4/3 y las seis filas redondeadas), la práctica x³ − 2x − 5 con
+  10⁻⁶, la recta de cada fila, el desplazamiento de los puntos, que un cambio pequeño
+  con residuo grande no converge, denominadores nulos y casi nulos, dominio, divergencia,
+  límite y JSON estricto. `test_secante_web` cubre formulario, selector, `?funcion=`,
+  estados sin JavaScript, validación, CSRF, rutas antiguas de Newton (301/308), catálogo,
+  barra lateral y buscador. Se actualizaron las rutas de Newton en sus pruebas y en las de
+  navegación unificada.
+- **Navegador (Edge, Playwright):** Secante 10/10 (selección de x₀ y x₁ en la curva sin
+  franjas, recta y rótulos de cada iteración frente al JSON, fórmula y sustitución de la
+  diapositiva 22, ejemplos, cambio de método sin mezclar estados, historial, denominador
+  nulo, teclado, Estudio/Minimalista claro/oscuro a 1280, 744 y 390 px, decimales).
+  Sin regresiones: Newton 10/10, Bisección 23/23, Regla Falsa 12/12, buscador 21/21 y
+  escritorio 27/27.
+- **WebView2 157 (ejecutable de PyInstaller):** Secante 10/10, Newton 10/10, Bisección 23/23 y Regla Falsa 12/12, sin errores de consola y sin desborde horizontal de la página.
+- **Hallazgos corregidos durante la validación:** el formulario base enviaba a la ruta de la
+  herramienta (la de Newton) y Secante necesitó el bloque `accion_ruta`; Plotly no
+  redibujaba los rótulos de una traza de varios puntos alineados, que pasaron a anotaciones.
+- **Capturas:** [selector de Métodos abiertos](capturas/raices/14-metodos-abiertos-selector.jpg),
+  [Secante en Estudio a 1280 px](capturas/raices/15-secante-estudio-1280.jpg),
+  [construcción de la diapositiva 19](capturas/raices/16-secante-diapositiva-19.jpg),
+  [Minimalista a 390 px](capturas/raices/17-secante-minimalista-390.jpg) y
+  [WebView2](capturas/raices/18-secante-webview2.jpg).
+
 ## Fórmula y sustitución de Newton-Raphson (2026-11-12)
 
 Ajuste didáctico sin cambiar algoritmos, criterios de parada ni la versión 0.17.0.
