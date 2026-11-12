@@ -47,8 +47,13 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
         <p id="raices-formato-ayuda" class="field-help">Solo cambia la lectura. ≈ indica redondeo. Mostramos más cifras si hacen falta para distinguir valores o evitar un cero falso; los cálculos conservan todos sus datos. Precisión completa muestra el valor de máquina, no exactitud matemática.</p>
     </div>
     <header class="results-heading" data-raices-grupo>
-        <h2 id="results-title">{% if resultado.convergio %}Raíz aproximada{% else %}Aproximación sin convergencia{% endif %}</h2>
-        {% block resumen %}{% endblock %}
+        <h2 id="results-title">{% if resultado.clasificacion == "sin_raices_demostrado" %}Ausencia de raíces demostrada{% elif resultado.clasificacion == "no_aplicable" %}Método no aplicable{% elif resultado.convergio %}Raíz aproximada{% elif resultado.residuo is None %}Cálculo sin convergencia{% else %}Aproximación sin convergencia{% endif %}</h2>
+        {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
+            {% block resumen %}{% endblock %}
+        {% else %}
+            <p class="raices-estado raices-aviso">{{ resultado.mensaje }}</p>
+        {% endif %}
+        {% block datos_funcion %}{% endblock %}
     </header>
 {% endif %}
     <section class="panel raices-visual" aria-labelledby="grafica-titulo">
@@ -89,6 +94,7 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
         </div>
     </section>
 {% if resultado %}
+    {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
     {% block procedimiento %}{% endblock %}
     {% block verificacion %}{% endblock %}
     {% block comparacion %}
@@ -97,6 +103,7 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
         <div id="raices-comparaciones" class="table-wrap"><p>Activa JavaScript para comparar cálculos de esta pestaña.</p></div>
     {% enddisclosure %}
     {% endblock %}
+    {% endif %}
 </section>
 {% endif %}
 {% endblock %}

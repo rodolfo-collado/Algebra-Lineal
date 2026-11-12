@@ -10,13 +10,13 @@
     const valor = (w,n,v) => { const c=q(w,`[name="${n}"]`); c.value=v; c.dispatchEvent(new w.Event("input",{bubbles:true})); };
     const resolver = async (frame,cambios={}) => {
         const w=frame.contentWindow;
-        for(const [n,v] of Object.entries({funcion:"x²-2",derivada:"2x",x0:"1.5",...cambios})) valor(w,n,v);
+        for(const [n,v] of Object.entries({funcion:"x²-2",x0:"1.5",...cambios})) valor(w,n,v);
         await new Promise(r=>{frame.onload=r;q(w,"[data-calculo]").click();});
         await esperar(()=>lista(frame.contentWindow)); return frame.contentWindow;
     };
     const datos = w => JSON.parse(q(w,"#datos-raices").textContent).resultado;
     const casos = [
-        ["Previsualización y selección de x₀ sin derivada", async w=>{
+        ["Previsualización y selección de x₀ antes de resolver", async w=>{
             valor(w,"funcion","x²-2"); await esperar(()=>lista(w));
             ok(!q(w,"#resultado"),"No calcula al explorar");
             q(w,'[data-elegir-extremo="x0"]').click();
@@ -28,7 +28,11 @@
             ok(!g(w).layout.shapes[1].visible,"Sin segundo extremo");
         }],
         ["Tangente, residuo y recorrido coinciden con todas las filas", async (w,frame)=>{
-            w=await resolver(frame);const r=datos(w);let peticiones=0;
+            w=await resolver(frame, {funcion:"x³-x-2"});const r=datos(w);let peticiones=0;
+            ok(q(w,"#newton-derivada").textContent.includes("3 · x^2 − 1"),"Derivada automática visible");
+            const primero=r.iteraciones[0];
+            ok(primero.fxn===-0.125 && primero.dfxn===5.75 && primero.siguiente===1.5217391304347827,
+               "Primera iteración de la diapositiva");
             ok(q(w,"#iteracion-raices").value==="1","Abre en la primera tangente");
             ok(!q(w,"#resultado").textContent.includes("= ≈"),"Sin igualdad falsa al redondear");
             const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
@@ -47,22 +51,21 @@
             ok(peticiones===0,"Recorrido sin recalcular ni pedir muestras");
             q(w,"#iteracion-encuadrar").click();await esperar(()=>peticiones>0);
         }],
-        ["Teclado matemático en función y derivada", async w=>{
-            for(const nombre of ["funcion","derivada"]){
-                const c=q(w,`[name="${nombre}"]`);c.focus();
-                await esperar(()=>q(w,".math-keyboard").hasAttribute("data-abierto"));
-                q(w,'[data-insercion="x²"]').click();
-                ok(c.value==="x²" && w.document.activeElement===c,"Inserción y foco en "+nombre);
-            }
+        ["Teclado matemático en la función", async w=>{
+            const c=q(w,'[name="funcion"]');c.focus();
+            await esperar(()=>q(w,".math-keyboard").hasAttribute("data-abierto"));
+            q(w,'[data-insercion="x²"]').click();
+            ok(c.value==="x²" && w.document.activeElement===c,"Inserción y foco en la función");
+            ok(!q(w,'[name="derivada"]'),"Sin entrada de derivada");
             q(w,'[name="x0"]').focus();ok(!q(w,".math-keyboard").hasAttribute("data-abierto"),"Oculto en x₀");
         }],
         ["Ejemplos, ciclos y raíz inicial", async(w,frame)=>{
             q(w,"#ejemplos-newton").open=true;q(w,'[data-newton-ejemplo="ciclo"]').click();
-            ok(q(w,'[name="derivada"]').value==="3x²-2","Ejemplo completo");
-            w=await resolver(frame,{funcion:"x³-2x+2",derivada:"3x²-2",x0:"0"});
+            ok(q(w,'[name="funcion"]').value==="x³-2x+2" && q(w,'[name="x0"]').value==="0","Ejemplo completo");
+            w=await resolver(frame,{funcion:"x³-2x+2",x0:"0"});
             q(w,"#iteracion-siguiente").click();
             ok(datos(w).estado==="oscilacion" && q(w,"#paso-parada").textContent.includes("ciclo"),"Explica oscilación");
-            w=await resolver(frame,{funcion:"x²",derivada:"2x",x0:"0"});
+            w=await resolver(frame,{funcion:"x²",x0:"0"});
             ok(!q(w,"#iteracion-raices") && g(w).data[1].x[0]===0,"Raíz inicial sin pasos inventados");
         }],
         ["Estilos, temas y responsive con geometría real", async(w,frame)=>{

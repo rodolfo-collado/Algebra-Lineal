@@ -13,6 +13,7 @@ class ReglaFalsaTests(unittest.TestCase):
         f = FuncionReal("x^2-2")
         r = regla_falsa(f, 1, 2)
         self.assertEqual(r["estado"], "tolerancia")
+        self.assertEqual(r["clasificacion"], "raiz_aproximada")
         self.assertAlmostEqual(r["iteraciones"][0]["xr"], 4 / 3)
         anterior = None
         for p in r["iteraciones"]:
@@ -63,6 +64,7 @@ class ReglaFalsaTests(unittest.TestCase):
         for tol, limite, estado in [(1e-4, 1, "limite"), (1e-30, 200, "maquina")]:
             r = regla_falsa(FuncionReal("x^2-2"), 1, 2, tol, limite)
             self.assertEqual(r["estado"], estado)
+            self.assertEqual(r["clasificacion"], "sin_convergencia")
             self.assertFalse(r["convergio"])
             self.assertIsNone(r["cota"])
 
@@ -108,12 +110,29 @@ class ReglaFalsaTests(unittest.TestCase):
         self.assertFalse(confirmada)
         self.assertEqual(f(.00002), 0)
 
-    def test_dominio_entrada_y_presupuesto_se_validan_antes_de_iterar(self):
-        for texto, a, b in [("x^2+1", -1, 1), ("1/x", -1, 1), ("tan(x)", 1, 2),
-                            ("log(x)", 0, 2), ("sqrt(x)", -1, 1), ("x", 1, 1),
-                            ("x", 2, 1), ("x", math.nan, 1), ("x", 0, math.inf)]:
-            with self.subTest(texto=texto, a=a, b=b), self.assertRaises(ValueError):
-                regla_falsa(FuncionReal(texto), a, b)
+    def test_no_hay_secante_valida_si_falla_el_dominio_o_el_cambio_de_signo(self):
+        for texto, a, b, estado, clasificacion in [
+            ("x^2+1", -1, 1, "sin_cambio_de_signo", "sin_raices_demostrado"),
+            ("x^2", -1, 1, "sin_cambio_de_signo", "no_aplicable"),
+            ("x^2-1", -2, 2, "sin_cambio_de_signo", "no_aplicable"),
+            ("1/x", -1, 1, "dominio", "no_aplicable"),
+            ("tan(x)", 1, 2, "dominio", "no_aplicable"),
+            ("log(x)", 0, 2, "dominio", "no_aplicable"),
+            ("sqrt(x)", -1, 1, "dominio", "no_aplicable"),
+        ]:
+            with self.subTest(texto=texto):
+                r = regla_falsa(FuncionReal(texto), a, b)
+                self.assertEqual((r["estado"], r["clasificacion"]), (estado, clasificacion))
+                self.assertEqual((r["a"], r["b"]), (a, b))
+                self.assertEqual(r["iteraciones"], [])
+                self.assertIsNone(r["xr"])
+                self.assertIsNone(r["residuo"])
+                self.assertFalse(r["convergio"])
+
+    def test_entrada_y_presupuesto_se_validan_antes_de_iterar(self):
+        for a, b in [(1, 1), (2, 1), (math.nan, 1), (0, math.inf)]:
+            with self.subTest(a=a, b=b), self.assertRaises(ValueError):
+                regla_falsa(FuncionReal("x"), a, b)
         for tol in (0, -1, .001, math.nan, math.inf):
             with self.assertRaises(ValueError):
                 regla_falsa(FuncionReal("x"), -1, 1, tol)

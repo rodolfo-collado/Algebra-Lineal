@@ -31,7 +31,7 @@ uv run python manage.py check
   local. El CI del PR ejecuta su propio build y smoke de distribución Windows.
 
 Ver [Newton-Raphson](newton-raphson.md) para los comandos reproducibles y límites
-matemáticos: la derivada manual debe ser correcta y la tolerancia no certifica
+matemáticos del criterio de convergencia. La tolerancia no certifica
 una distancia a la raíz.
 
 ## Preparación de v0.16.0 (2026-11-09)

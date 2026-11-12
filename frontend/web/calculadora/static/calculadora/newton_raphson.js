@@ -31,10 +31,10 @@
     },
 };
 const ejemplosNewton = {
-    cuadratica: ["x²-2", "2x", "1.5"], cubica: ["x³-x-2", "3x²-1", "1.5"], ciclo: ["x³-2x+2", "3x²-2", "0"],
+    cuadratica: ["x²-2", "1.5"], cubica: ["x³-x-2", "1.5"], ciclo: ["x³-2x+2", "0"],
 };
 document.querySelectorAll("[data-newton-ejemplo]").forEach(boton => boton.addEventListener("click", () => {
-    ["funcion", "derivada", "x0"].forEach((nombre, i) => {
+    ["funcion", "x0"].forEach((nombre, i) => {
         const campo = document.getElementById("raices-form").elements.namedItem(nombre);
         campo.value = ejemplosNewton[boton.dataset.newtonEjemplo][i];
         campo.dispatchEvent(new Event("input", { bubbles: true }));
