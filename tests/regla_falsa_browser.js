@@ -31,6 +31,10 @@
         await esperar(() => lista(nuevo));
         return nuevo;
     };
+    const final = w => {
+        const s = q(w, "#iteracion-raices");
+        s.value = s.max; s.dispatchEvent(new w.Event("input", {bubbles: true}));
+    };
     const casos = [
         ["Vista previa sin extremos y selección de a/b", async w => {
             ok(!q(w, "#resultado") && grafica(w).hidden, "Empieza sin resultado ni curva");
@@ -72,6 +76,8 @@
                 ok(q(w, "#paso-error").children.length === 2, "Ea y tolerancia separados");
                 ok(g.data[2].y[0] === p.fa && g.data[2].y[1] === p.fb && g.data[2].y[3] === 0, "Alturas de la secante");
                 ok(g.layout.shapes[2].x0 === p.a && g.layout.shapes[2].x1 === p.b, "Intervalo anterior");
+                ok(g.layout.shapes[3].x0 === p.nuevo_a && g.layout.shapes[3].x1 === p.nuevo_b, "Intervalo actualizado");
+                ok(q(w, "#paso-breve").textContent.includes("secante") && q(w, `[data-iteracion="${p.i}"]`).getAttribute("aria-current") === "step", "Paso breve y fila activa");
                 ok(q(w, "#paso-decision").textContent.includes("xr sustituye al extremo a"), "Explica el signo");
                 ok(q(w, "#iteracion-raices").getAttribute("aria-valuetext").includes("xr"), "Lectura accesible");
             }
@@ -97,6 +103,7 @@
         }],
         ["Ea pequeño sin confirmación no anuncia convergencia", async (w, frame) => {
             w = await resolver(frame, {funcion: "1e-200*(x^20-1)", a: "0"});
+            final(w);
             const r = datos(w), texto = q(w, "#paso-parada").textContent;
             ok(r.estado === "estancamiento" && !r.convergio, "Sin convergencia");
             ok(texto.includes("tampoco descarta raíces") && texto.includes("máximo de iteraciones"), "Explica límite y signos");
@@ -109,7 +116,10 @@
                 [{max_iteraciones: "200", precision: "1e-30"}, "maquina", "números de máquina"],
             ]) {
                 w = await resolver(frame, cambios);
+                final(w);
                 ok(datos(w).estado === estado && !datos(w).convergio, "Estado correcto");
+                ok(q(w, "#paso-breve").textContent.includes(mensaje), "La explicación breve también cierra sin éxito");
+                ok(q(w, ".raices-cabecera").dataset.tono === "aviso", "Tono de aviso, no de error");
                 ok(q(w, "#paso-parada").textContent.includes(mensaje), "Cierre del recorrido");
             }
         }],
@@ -135,7 +145,7 @@
             await esperar(() => g.data[0].x[0] === 1.3);
             q(w, "#grafica-restablecer").click();
             await esperar(() => g.data[0].x[0] === -10 && g.layout.xaxis.range[0] === -10);
-            q(w, "#grafica-intervalo").click();
+            q(w, "#grafica-enfocar").click();
             await esperar(() => g.layout.xaxis.range[0] === .75 && g.data[0].x[0] === .75);
             ok(JSON.stringify(datos(w)) === original && g.data[2].x.length === 5, "Mismo cálculo y secante");
         }],
@@ -162,18 +172,20 @@
             }
             ok(q(w, "#datos-raices").textContent === original, "JSON intacto");
         }],
-        ["Comparación conserva convergencia y se separa de Bisección", async (w, frame) => {
-            w.sessionStorage.removeItem("pygebra-regla_falsa-v1");
-            w.sessionStorage.setItem("pygebra-biseccion-v1", "[]");
+        ["Historial de intervalos separado de Bisección, con estados y residuo", async (w, frame) => {
+            w.sessionStorage.removeItem("pygebra-raices-historial-regla_falsa");
+            w.sessionStorage.setItem("pygebra-raices-historial-biseccion", "[]");
             w = await resolver(frame);
-            ok(q(w, "#raices-comparaciones").textContent.includes("Ya tienes un cálculo"), "Primer cálculo");
+            ok(q(w, "#raices-historial").hidden, "Una ejecución: sin historial");
             w = await resolver(frame, {a: "1.2", b: "1.6"});
-            ok(q(w, "#raices-comparaciones").textContent.includes("Compatible con la misma raíz"), "Tramos compatibles");
             w = await resolver(frame, {a: "-2", b: "-1"});
-            ok(q(w, "#raices-comparaciones").textContent.includes("Raíces confirmadas en tramos distintos"), "Raíz negativa distinta");
             w = await resolver(frame, {max_iteraciones: "1"});
-            ok(q(w, "#raices-comparaciones").textContent.includes("Actual · Sin convergencia verificada"), "Límite sin certeza");
-            ok(w.sessionStorage.getItem("pygebra-biseccion-v1") === "[]", "Bisección intacta");
+            const filas = [...w.document.querySelectorAll("#raices-historial tbody tr:not(:first-child)")];
+            ok(!q(w, "#raices-historial").hidden && filas.length === 4, "Cuatro ejecuciones de la misma función");
+            ok(filas[1].cells[0].textContent.replace(/\s/g, "") === "[1.2;1.6]", "Intervalo inicial");
+            ok(filas[3].getAttribute("aria-current") === "true" && filas[3].cells[1].textContent === "Sin convergencia", "Actual sin convergencia");
+            ok(filas.every(f => f.cells[4].querySelector("[data-raices-numero]")), "Residuo de cada ejecución");
+            ok(w.sessionStorage.getItem("pygebra-raices-historial-biseccion") === "[]", "Bisección intacta");
         }],
         ["Mismo signo conserva la gráfica sin inventar una secante", async (w, frame) => {
             for (const [funcion, clasificacion] of [["x²+1", "sin_raices_demostrado"], ["x²", "no_aplicable"]]) {

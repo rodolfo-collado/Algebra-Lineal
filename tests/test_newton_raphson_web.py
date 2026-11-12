@@ -28,7 +28,7 @@ class NewtonWebTests(SimpleTestCase):
         r=self.client.post(RUTA,datos())
         esperado=newton_raphson(FuncionReal("x²-2"), 1.5)
         self.assertEqual(resultado_html(r), esperado)
-        self.assertContains(r, "f′(x) = 2 · x")
+        self.assertContains(r, 'f′(x) = <span class="raices-expresion">2 · x</span>', count=1)
         self.assertContains(r,"data-iteracion=", count=len(esperado["iteraciones"]))
         for texto in ["tangente", "Verificación", "Residuo", "Cambio absoluto", "Anterior", "Siguiente", "error verdadero"]:
             self.assertContains(r,texto)
@@ -74,3 +74,34 @@ class NewtonWebTests(SimpleTestCase):
         self.assertEqual(r.status_code,200)
         self.assertEqual(len(r.json()["x"]),801)
         self.assertIn(None,r.json()["y"])
+
+    def test_derivada_reactiva_llega_con_las_muestras(self):
+        r = self.client.post(RUTA + "grafica/", {"funcion": "x^3-x-2"})
+        self.assertEqual(r.json()["derivada"], "3 · x² − 1")
+        self.assertEqual(len(r.json()["x"]), 801)
+        # Una entrada incompleta no deriva ni calcula: error de validación de la función.
+        incompleta = self.client.post(RUTA + "grafica/", {"funcion": "x^"})
+        self.assertEqual(incompleta.status_code, 400)
+        self.assertNotIn("derivada", incompleta.json())
+        for ruta in (catalogo.BISECCION.ruta, catalogo.REGLA_FALSA.ruta):
+            self.assertNotIn("derivada", self.client.post(ruta + "grafica/", {"funcion": "x^2"}).json())
+        self.assertEqual(self.client.get(RUTA + "grafica/").status_code, 405)
+        self.assertEqual(Client(enforce_csrf_checks=True).post(RUTA + "grafica/", {"funcion": "x"}).status_code, 403)
+
+    def test_derivada_legible_solo_cambia_la_presentacion(self):
+        from backend.derivacion_real import legible
+        for texto, esperado in [("3 · x^2 − 1", "3 · x² − 1"), ("x^(-2)", "x⁻²"), ("x^2.5", "x^2.5"),
+                                ("(x + 1)^12", "(x + 1)¹²"), ("x^(1/2)", "x^(1/2)")]:
+            self.assertEqual(legible(texto), esperado)
+        self.assertEqual(newton_raphson(FuncionReal("x^3-x-2"), 1.5)["derivada"], "3 · x^2 − 1")
+
+    def test_tono_proporcional_de_cada_clasificacion(self):
+        for cambios, tono in [({}, "exito"), ({"max_iteraciones": "1"}, "aviso"), ({"x0": "0"}, "info")]:
+            with self.subTest(tono=tono):
+                self.assertContains(self.client.post(RUTA, datos(**cambios)), f'data-tono="{tono}"', count=1)
+        bis = "/metodos-numericos/biseccion/"
+        for funcion, a, clasificacion in [("x²+1", "-1", "sin_raices_demostrado"), ("x²", "-1", "no_aplicable")]:
+            r = self.client.post(bis, {"funcion": funcion, "a": a, "b": "1"})
+            self.assertEqual(resultado_html(r)["clasificacion"], clasificacion)
+            self.assertContains(r, 'data-tono="info"', count=1)
+            self.assertNotContains(r, "data-respuesta-errores")

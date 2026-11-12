@@ -29,7 +29,8 @@
         }],
         ["Tangente, residuo y recorrido coinciden con todas las filas", async (w,frame)=>{
             w=await resolver(frame, {funcion:"x³-x-2"});const r=datos(w);let peticiones=0;
-            ok(q(w,"#newton-derivada").textContent.includes("3 · x^2 − 1"),"Derivada automática visible");
+            ok(q(w,"#raices-derivada").textContent==="f′(x) = 3 · x² − 1","Derivada automática visible");
+            ok(!q(w,"#resultado").textContent.includes("f′(x) ="),"La derivada no se repite en el resultado");
             const primero=r.iteraciones[0];
             ok(primero.fxn===-0.125 && primero.dfxn===5.75 && primero.siguiente===1.5217391304347827,
                "Primera iteración de la diapositiva");
@@ -49,7 +50,34 @@
             q(w,"#iteracion-anterior").click();ok(q(w,"#iteracion-raices").value===String(r.iteraciones.length-1),"Retrocede");
             q(w,"#iteracion-siguiente").click();ok(q(w,"#iteracion-siguiente").disabled,"Último paso");
             ok(peticiones===0,"Recorrido sin recalcular ni pedir muestras");
-            q(w,"#iteracion-encuadrar").click();await esperar(()=>peticiones>0);
+            q(w,"#grafica-enfocar").click();await esperar(()=>peticiones>0);
+            const p=r.iteraciones.at(-1),vista=w.metodosRaices.newton_raphson.vista(p);
+            await esperar(()=>g(w).layout.xaxis.range[0]===vista[0],"Enfoca la tangente del paso activo");
+            ok(vista[0]<Math.min(p.xn,p.siguiente)&&vista[1]>Math.max(p.xn,p.siguiente),"Tangente completa en el encuadre");
+        }],
+        ["Derivada reactiva sin resolver, sin ráfagas de peticiones y con mensajes discretos", async w=>{
+            let peticiones=0;const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
+            for(const t of ["x","x^","x^3","x^3-","x^3-x"]) valor(w,"funcion",t);
+            await esperar(()=>q(w,"#raices-derivada").textContent==="f′(x) = 3 · x² − 1");
+            ok(peticiones===1,"Una sola petición tras escribir");
+            ok(!q(w,"#resultado")&&!q(w,"#datos-raices").textContent.includes("iteraciones"),"Ningún cálculo de Newton");
+            valor(w,"funcion","x^");
+            await esperar(()=>q(w,"#raices-derivada").textContent.includes("aparecerá cuando f(x) esté completa"));
+            ok(q(w,"#raices-derivada").hasAttribute("data-pendiente")&&!q(w,"[data-respuesta-errores]"),"Discreto, sin error de formulario");
+            valor(w,"funcion","sen(x)/x");
+            await esperar(()=>q(w,"#raices-derivada").textContent.startsWith("f′(x) = (cos(x)"));
+            valor(w,"funcion","");
+            ok(q(w,"#raices-derivada").textContent==="","Vacía sin función");
+        }],
+        ["Historial compara puntos iniciales de la misma función", async(w,frame)=>{
+            w.sessionStorage.removeItem("pygebra-raices-historial-newton_raphson");
+            w=await resolver(frame,{funcion:"x³-x-2",x0:"1.5"});
+            ok(q(w,"#raices-historial").hidden,"Oculto con una ejecución");
+            w=await resolver(frame,{funcion:"x³-x-2",x0:"0"});
+            const h=q(w,"#raices-historial"),filas=[...h.querySelectorAll("tbody tr:not(:first-child)")];
+            ok(!h.hidden&&h.querySelector("thead").textContent.includes("x₀")&&filas.length===2,"Dos x₀ en un grupo");
+            ok(filas.map(f=>Number(f.cells[0].querySelector("span").dataset.raicesNumero)).join()==="1.5,0","Puntos iniciales");
+            ok(filas[1].cells[3].textContent===String(datos(w).iteraciones.length),"Iteraciones de cada x₀");
         }],
         ["Teclado matemático en la función", async w=>{
             const c=q(w,'[name="funcion"]');c.focus();

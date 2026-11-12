@@ -2,7 +2,6 @@
 "use strict";
 (window.metodosRaices ||= {}).newton_raphson = {
     extremos: ["x0"],
-    pasoInicial: 1,
     indicacion: "Introduce una función para explorar su gráfica y elegir x₀.",
     comprobacion: "Gráfica muestreada. Newton comprueba las evaluaciones de la función y la derivada en cada paso.",
     resumen: r => ({ nombre: "x", x: r.x, fx: r.fx }),
@@ -15,6 +14,9 @@
         const { n, r } = formato([p.xn, p.siguiente, p.fxn, p.dfxn, p.residuo, p.error_absoluto, resultado.tolerancia]);
         return {
             aria: `x actual ${n(p.xn)}, siguiente ${n(p.siguiente)}`,
+            breve: [`Tangente en x ${r(p.xn)}, con pendiente f′ ${r(p.dfxn)}.`,
+                `Corta el eje x en x siguiente ${r(p.siguiente)}; allí |f| ${r(p.residuo)}.`,
+                ultimo ? `Se detiene: ${resultado.mensaje}` : `Continúa: cambio ${r(p.error_absoluto)}; aún no se cumplen ambas condiciones.`],
             valores: [`x actual ${r(p.xn)}`, `f(x actual) ${r(p.fxn)}; f′(x actual) ${r(p.dfxn)}`],
             decision: [`x siguiente = ${n(p.xn)} − (${n(p.fxn)})/(${n(p.dfxn)}) ≈ ${n(p.siguiente)}`,
                 "El corte de la tangente con el eje x propone el siguiente punto."],

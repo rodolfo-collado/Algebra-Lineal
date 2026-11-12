@@ -1,36 +1,42 @@
 {% extends "calculadora/layouts/herramienta.html" %}
-{% comment %}Entrada, gráfica interactiva y recorrido que comparten los métodos de raíces.
-Cada método aporta en sus bloques el resumen, la tabla y la verificación propios.{% endcomment %}
+{% comment %}Entrada, gráfica, recorrido y tabla que comparten los métodos de raíces.
+Una sola zona de estudio: la gráfica y la explicación breve del paso activo arriba, la tabla debajo
+(una fila por iteración) y el reproductor que las sincroniza. Cada método aporta sus columnas,
+el resumen, la lectura detallada y la verificación propios.{% endcomment %}
 {% load static componentes raices %}
 
 {% block extra_head %}<link rel="stylesheet" href="{% static 'calculadora/styles/raices.css' %}">{% endblock %}
 
 {% block tool_input %}
-<section class="panel workspace" aria-label="{% block entrada_titulo %}{% endblock %}">
+<section class="panel workspace raices-entrada" aria-label="{% block entrada_titulo %}{% endblock %}">
     <form id="raices-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         {% include "calculadora/components/errores_generales.html" %}
-        <div class="field-group" data-perfil="funcion-real">
-            {{ form.funcion.label_tag }}{{ form.funcion }}{{ form.funcion.errors }}
-            <p id="funcion-ayuda" class="field-help">Puedes escribir x², x³, 5x y 2(x+1). La tecla aⁿ activa o desactiva la escritura de dígitos elevados; también puedes usar ^ o **.</p>
-        </div>
-        {% block parametros %}
-        <div class="raices-campos">
-            <div class="field-group">{{ form.a.label_tag }}{{ form.a }}{{ form.a.errors }}</div>
-            <div class="field-group">{{ form.b.label_tag }}{{ form.b }}{{ form.b.errors }}</div>
-        </div>
-        {% endblock %}
-        {% disclosure titulo="Ajustes y funciones admitidas" id="ajustes-raices" %}
-            <div class="raices-campos">
-                <div class="field-group">{{ form.precision.label_tag }}{{ form.precision }}{{ form.precision.errors }}
-                    <p id="precision-ayuda" class="field-help">{% block ayuda_tolerancia %}{% endblock %}</p>
-                </div>
-                <div class="field-group">{{ form.max_iteraciones.label_tag }}{{ form.max_iteraciones }}{{ form.max_iteraciones.errors }}</div>
+        <div class="raices-fila">
+            <div class="field-group raices-funcion" data-perfil="funcion-real">
+                {{ form.funcion.label_tag }}{{ form.funcion }}{{ form.funcion.errors }}
+                {% block bajo_funcion %}{% endblock %}
             </div>
-            <p class="field-help">Funciones: sen, cos, tan, exp, log o ln (natural), log10, √() y abs. También se admiten sin() y sqrt(). Constantes: π (también pi) y e. ln es el logaritmo natural, de base e; log₁₀ (log10) es el de base diez. Exponentes constantes; ángulos en radianes.</p>
-            <p class="field-help">Conserva los nombres completos: sen(x) es una función; xx y senx no se admiten. 1e-3 es notación científica; para multiplicar por e escribe 2*e. Productos y divisiones tienen igual prioridad: 1/2x equivale a (1/2)*x; usa 1/(2x) si todo es denominador.</p>
-        {% enddisclosure %}
-        <div class="workspace-actions"><button type="submit" class="btn btn-primary" data-calculo>{% block accion %}{% endblock %}</button></div>
+            {% block parametros %}
+            <div class="field-group raices-valor">{{ form.a.label_tag }}{{ form.a }}{{ form.a.errors }}</div>
+            <div class="field-group raices-valor">{{ form.b.label_tag }}{{ form.b }}{{ form.b.errors }}</div>
+            {% endblock %}
+            <div class="raices-accion"><button type="submit" class="btn btn-primary" data-calculo>{% block accion %}{% endblock %}</button></div>
+        </div>
+        <p id="funcion-ayuda" class="field-help">Escribe x², 5x o 2(x+1); también ^ o **. La tecla aⁿ activa o desactiva los dígitos elevados.</p>
+        <div class="raices-extras">
+            {% block extras %}{% endblock %}
+            {% disclosure titulo="Ajustes y funciones admitidas" id="ajustes-raices" %}
+                <div class="raices-campos">
+                    <div class="field-group">{{ form.precision.label_tag }}{{ form.precision }}{{ form.precision.errors }}
+                        <p id="precision-ayuda" class="field-help">{% block ayuda_tolerancia %}{% endblock %}</p>
+                    </div>
+                    <div class="field-group">{{ form.max_iteraciones.label_tag }}{{ form.max_iteraciones }}{{ form.max_iteraciones.errors }}</div>
+                </div>
+                <p class="field-help">Funciones: sen, cos, tan, exp, log o ln (natural), log10, √() y abs. También se admiten sin() y sqrt(). Constantes: π (también pi) y e. ln es el logaritmo natural, de base e; log₁₀ (log10) es el de base diez. Exponentes constantes; ángulos en radianes.</p>
+                <p class="field-help">Conserva los nombres completos: sen(x) es una función; xx y senx no se admiten. 1e-3 es notación científica; para multiplicar por e escribe 2*e. Productos y divisiones tienen igual prioridad: 1/2x equivale a (1/2)*x; usa 1/(2x) si todo es denominador.</p>
+            {% enddisclosure %}
+        </div>
         {% include "calculadora/components/math_keyboard.html" %}
     </form>
 </section>
@@ -38,71 +44,95 @@ Cada método aporta en sus bloques el resumen, la tabla y la verificación propi
 
 {% block tool_result %}
 {% if resultado %}
-<section id="resultado" class="results" data-resultado="vigente" tabindex="-1" aria-labelledby="results-title">
-    <div class="numeric-format raices-formato" id="raices-formato" hidden role="group" aria-label="Presentación de los números">
-        <label for="raices-decimales">Decimales visibles</label>
-        <select id="raices-decimales" aria-describedby="raices-formato-ayuda">
-            <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="12">12</option><option value="16">16</option><option value="completa">Precisión completa</option>
-        </select>
-        <p id="raices-formato-ayuda" class="field-help">Solo cambia la lectura. ≈ indica redondeo. Mostramos más cifras si hacen falta para distinguir valores o evitar un cero falso; los cálculos conservan todos sus datos. Precisión completa muestra el valor de máquina, no exactitud matemática.</p>
-    </div>
-    <header class="results-heading" data-raices-grupo>
-        <h2 id="results-title">{% if resultado.clasificacion == "sin_raices_demostrado" %}Ausencia de raíces demostrada{% elif resultado.clasificacion == "no_aplicable" %}Método no aplicable{% elif resultado.convergio %}Raíz aproximada{% elif resultado.residuo is None %}Cálculo sin convergencia{% else %}Aproximación sin convergencia{% endif %}</h2>
-        {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
-            {% block resumen %}{% endblock %}
-        {% else %}
-            <p class="raices-estado raices-aviso">{{ resultado.mensaje }}</p>
-        {% endif %}
-        {% block datos_funcion %}{% endblock %}
+<section id="resultado" class="results raices-resultado" data-resultado="vigente" tabindex="-1" aria-labelledby="results-title">
+    {# Un solo veredicto: verde si hay raíz aproximada, ámbar si no convergió y neutro si es información matemática. #}
+    <header class="results-heading raices-cabecera" data-tono="{% if resultado.clasificacion == 'raiz_aproximada' %}exito{% elif resultado.clasificacion == 'sin_convergencia' %}aviso{% else %}info{% endif %}" data-raices-grupo>
+        <div class="raices-veredicto">
+            <h2 id="results-title">{% if resultado.clasificacion == "sin_raices_demostrado" %}Ausencia de raíces demostrada{% elif resultado.clasificacion == "no_aplicable" %}Método no aplicable{% elif resultado.convergio %}Raíz aproximada{% elif resultado.residuo is None %}Cálculo sin convergencia{% else %}Aproximación sin convergencia{% endif %}</h2>
+            {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
+                {% block resumen %}{% endblock %}
+            {% else %}
+                <p class="raices-estado">{{ resultado.mensaje }}</p>
+            {% endif %}
+        </div>
+        <div class="numeric-format raices-formato" id="raices-formato" hidden role="group" aria-label="Presentación de los números">
+            <label for="raices-decimales">Decimales</label>
+            <select id="raices-decimales" aria-describedby="raices-formato-ayuda">
+                <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="12">12</option><option value="16">16</option><option value="completa">Precisión completa</option>
+            </select>
+            <p id="raices-formato-ayuda" class="field-help">Solo cambia la lectura: ≈ indica redondeo y los cálculos conservan todas sus cifras.</p>
+        </div>
     </header>
 {% endif %}
     <section class="panel raices-visual" aria-labelledby="grafica-titulo">
-        <h{% if resultado %}3{% else %}2{% endif %} id="grafica-titulo" class="panel-title">Gráfica de la función</h{% if resultado %}3{% else %}2{% endif %}>
-        <p class="field-help" id="grafica-ayuda" hidden>{% block ayuda_grafica %}La exploración comienza en [−10, 10], independiente del intervalo de cálculo. Acerca o desplaza la gráfica; selecciona un extremo y pulsa sobre la curva. Después puedes arrastrar su línea o escribir su valor arriba.{% endblock %}</p>
-        <div class="raices-exploracion">
-        <div class="raices-lienzo">
-        <div id="grafica-seleccion" class="raices-controles" role="group" aria-label="Elegir extremos y explorar" hidden>
-            {% block seleccion_puntos %}<button type="button" class="btn btn-secondary" data-elegir-extremo="a" aria-pressed="false">Seleccionar a</button>
-            <button type="button" class="btn btn-secondary" data-elegir-extremo="b" aria-pressed="false">Seleccionar b</button>{% endblock %}
-            <button type="button" class="btn btn-secondary" id="grafica-restablecer">Vista inicial</button>
-            {% if resultado %}<button type="button" class="btn btn-secondary" id="grafica-intervalo">{% block texto_vista_calculo %}Ver intervalo calculado{% endblock %}</button>{% endif %}
-        </div>
-        <div id="raices-grafica" aria-label="Gráfica interactiva de f(x)" aria-describedby="grafica-ayuda" tabindex="0" hidden></div>
-        <p id="grafica-estado" class="field-help" role="status" aria-live="polite">Introduce una función para visualizar su gráfica y elegir un intervalo.</p>
-        <noscript><p>Activa JavaScript para explorar la gráfica. El cálculo y el procedimiento funcionan sin JavaScript.</p></noscript>
-        </div>
-        {% if resultado.iteraciones %}
-        <div class="raices-recorrido" hidden>
-            <h4>Decisión de cada iteración</h4>
-            <div class="raices-controles" role="group" aria-label="Cambiar iteración">
-                <button type="button" class="btn btn-secondary" id="iteracion-anterior">Anterior</button>
-                <button type="button" class="btn btn-secondary" id="iteracion-siguiente">Siguiente</button>
+        <div class="raices-estudio">
+            <div class="raices-lienzo">
+                <div class="raices-lienzo-cabecera">
+                    <h{% if resultado %}3{% else %}2{% endif %} id="grafica-titulo" class="panel-title">Gráfica de la función</h{% if resultado %}3{% else %}2{% endif %}>
+                    <div id="grafica-seleccion" class="raices-herramientas" role="group" aria-label="Puntos y vista de la gráfica" hidden>
+                        {% block seleccion_puntos %}<button type="button" class="btn btn-secondary" data-elegir-extremo="a" aria-pressed="false">Elegir a</button>
+                        <button type="button" class="btn btn-secondary" data-elegir-extremo="b" aria-pressed="false">Elegir b</button>{% endblock %}
+                        <button type="button" class="btn btn-secondary" id="grafica-restablecer">Vista inicial</button>
+                        <button type="button" class="btn btn-secondary" id="grafica-enfocar">{% block texto_enfocar %}Enfocar intervalo{% endblock %}</button>
+                    </div>
+                </div>
+                <div id="raices-grafica" aria-label="Gráfica interactiva de f(x)" aria-describedby="grafica-ayuda" tabindex="0" hidden></div>
+                <p id="grafica-estado" class="field-help" role="status" aria-live="polite">Introduce una función para visualizar su gráfica y elegir un intervalo.</p>
+                <p class="field-help" id="grafica-ayuda" hidden>{% block ayuda_grafica %}Rueda: zoom · Arrastrar: desplazar · «Elegir a» o «Elegir b» y pulsa la curva; su línea también se arrastra.{% endblock %}</p>
+                <noscript><p class="field-help">Activa JavaScript para explorar la gráfica y reproducir el recorrido. El resultado, la tabla y el procedimiento funcionan sin JavaScript.</p></noscript>
             </div>
-            {% block encuadrar_paso %}{% endblock %}
-            <label for="iteracion-raices">Recorrer iteraciones</label>
-            <input type="range" id="iteracion-raices" min="1" max="{{ resultado.iteraciones|length }}" step="1" value="{{ resultado.iteraciones|length }}" aria-describedby="iteracion-lectura">
-            {% block lectura_iteracion %}
-            <div id="iteracion-lectura" role="status" aria-live="polite" aria-atomic="true">
-                <p id="paso-titulo"></p><p id="paso-decision"></p><p id="paso-intervalo"></p><p id="paso-parada" hidden></p>
+            {% if resultado.iteraciones %}
+            <div class="raices-recorrido" hidden>
+                <div id="raices-reproductor" class="raices-reproductor" role="group" aria-label="Reproducción de las iteraciones">
+                    <div class="raices-transporte">
+                        <button type="button" class="raices-control" id="iteracion-reiniciar" aria-label="Reiniciar" title="Reiniciar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 5v14M19 5 9 12l10 7z"/></svg></button>
+                        <button type="button" class="raices-control" id="iteracion-anterior" aria-label="Anterior" title="Anterior"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5-7 7 7 7"/></svg></button>
+                        <button type="button" class="raices-control raices-reproducir" id="iteracion-reproducir" aria-label="Reproducir" title="Reproducir"><svg class="icono-reproducir" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14l11-7z"/></svg><svg class="icono-pausar" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14M16 5v14"/></svg></button>
+                        <button type="button" class="raices-control" id="iteracion-siguiente" aria-label="Siguiente" title="Siguiente"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg></button>
+                        <label class="raices-velocidad"><span class="sr-only">Velocidad</span>
+                            <select id="iteracion-velocidad"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+                        </label>
+                    </div>
+                    <div class="raices-progreso">
+                        <label for="iteracion-raices" class="sr-only">Iteración</label>
+                        <input type="range" id="iteracion-raices" min="1" max="{{ resultado.iteraciones|length }}" step="1" value="1">
+                        <output id="iteracion-contador" for="iteracion-raices">1 / {{ resultado.iteraciones|length }}</output>
+                    </div>
+                </div>
+                <div class="raices-paso" aria-labelledby="paso-titulo">
+                    <h4 id="paso-titulo"></h4>
+                    <div id="paso-breve" aria-live="polite" aria-atomic="true"></div>
+                </div>
             </div>
-            {% disclosure titulo="Valores y signos de la iteración" id="paso-detalles" nivel=4 %}
-                <p id="paso-valores" class="field-help"></p><p id="paso-signos" class="field-help"></p>
-            {% enddisclosure %}
-            {% endblock %}
+            {% endif %}
+        </div>
+        {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
+        <div class="table-wrap raices-tabla-marco" id="raices-tabla-marco">
+            {% block tabla %}{% endblock %}
         </div>
         {% endif %}
-        </div>
     </section>
 {% if resultado %}
+    <section id="raices-historial" class="raices-historial" aria-labelledby="historial-titulo" hidden>
+        <h3 id="historial-titulo" class="panel-title">Historial de esta sesión</h3>
+        <p class="field-help">Cálculos de este método en esta pestaña, agrupados por función (hasta 12). «Ver» vuelve a mostrar uno con su gráfica y su recorrido.</p>
+        <div id="raices-historial-tabla" class="table-wrap" data-raices-grupo></div>
+    </section>
     {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
-    {% block procedimiento %}{% endblock %}
-    {% block verificacion %}{% endblock %}
-    {% block comparacion %}
-    {% disclosure titulo="Comparar intervalos" id="comparacion-raices" %}
-        <p class="field-help">{% block ayuda_comparacion %}{% endblock %}</p>
-        <div id="raices-comparaciones" class="table-wrap"><p>Activa JavaScript para comparar cálculos de esta pestaña.</p></div>
+    {% disclosure titulo="Procedimiento detallado" id="procedimiento-raices" clase="disclosure-procedure" %}
+        {% block procedimiento %}{% endblock %}
+        {% if resultado.iteraciones %}
+        <section class="raices-lectura" aria-labelledby="lectura-titulo">
+            <h4 id="lectura-titulo">Lectura completa de la iteración activa</h4>
+            {% block lectura_iteracion %}
+            <div id="iteracion-lectura">
+                <p id="paso-valores"></p><p id="paso-signos"></p><p id="paso-decision"></p><p id="paso-intervalo"></p><p id="paso-parada" hidden></p>
+            </div>
+            {% endblock %}
+        </section>
+        {% endif %}
     {% enddisclosure %}
-    {% endblock %}
+    {% block verificacion %}{% endblock %}
     {% endif %}
 </section>
 {% endif %}

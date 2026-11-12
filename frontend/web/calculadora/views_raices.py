@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from backend.biseccion import biseccion
 from backend.regla_falsa import regla_falsa
 from backend.newton_raphson import newton_raphson
+from backend.derivacion_real import DerivadaReal, legible
 from backend.resultados_raices import ClasificacionRaices as Clasificacion, evidencia_muestreo
 from .forms_raices import BiseccionForm, RaicesForm, ReglaFalsaForm, NewtonRaphsonForm
 from .servicios_raices import muestrear, verificacion_inicial
@@ -55,8 +56,11 @@ def resolver_regla_falsa(request):
 
 
 @require_POST
-def explorar_funcion(request):
-    """Muestras de la curva para la gráfica; no ejecuta ningún método."""
+def explorar_funcion(request, derivar=False):
+    """Muestras de la curva para la gráfica; no ejecuta ningún método.
+
+    Con derivar (Newton), la misma respuesta añade f′(x) para verla mientras se escribe:
+    una sola petición por cambio y el motor simbólico solo en el backend."""
     form = RaicesForm(request.POST, explorar=True)
     if not form.is_valid():
         errores = [str(mensaje) for mensajes in form.errors.values() for mensaje in mensajes]
@@ -65,7 +69,13 @@ def explorar_funcion(request):
         puntos = muestrear(form.funcion_real, form.cleaned_data["a"], form.cleaned_data["b"])
     except ValueError as error:
         return JsonResponse({"error": str(error), "clasificacion": Clasificacion.ENTRADA_INVALIDA}, status=400)
-    return JsonResponse({**puntos, **evidencia_muestreo(puntos["y"])})
+    respuesta = {**puntos, **evidencia_muestreo(puntos["y"])}
+    if derivar:
+        try:
+            respuesta["derivada"] = legible(DerivadaReal(form.funcion_real).texto)
+        except (ValueError, ArithmeticError):
+            respuesta["derivada"] = None
+    return JsonResponse(respuesta)
 
 
 @require_http_methods(["GET", "POST"])

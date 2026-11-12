@@ -1,10 +1,7 @@
 /* Lectura de una iteración de regla falsa: secante, corte con el eje x y extremo sustituido. */
 "use strict";
 (window.metodosRaices ||= {}).regla_falsa = {
-    distintas: "Raíces confirmadas en tramos distintos",
-    // Solo un cambio de signo confirmado deja un tramo que contiene la raíz.
-    resumen: r => ({ nombre: "xr", x: r.xr, fx: r.fxr,
-        certeza: r.cota === null ? [r.xr, r.xr] : [Math.min(r.xr, r.prueba), Math.max(r.xr, r.prueba)] }),
+    resumen: r => ({ nombre: "xr", x: r.xr, fx: r.fxr }),
     paso(p, { formato, signo }, { ultimo, resultado }) {
         const { n, r } = formato([p.a, p.b, p.xr, p.nuevo_a, p.nuevo_b]);
         const tolerancia = resultado.tolerancia;
@@ -33,6 +30,12 @@
         }
         return {
             aria: `xr ${formato([p.xr], 12).r(p.xr)}`,
+            breve: [`La secante entre (a, f(a)) y (b, f(b)) corta el eje x en xr ${r(p.xr)}.`,
+                p.fxr === 0 ? "f(xr) = 0: xr es una raíz calculada."
+                    : `f(xr) tiene el signo de f(${p.sustituido}) (${signo(p.fxr)}): xr reemplaza al extremo ${p.sustituido}; ${fijo} se queda.`,
+                parada.at(-1) === "Continúa."
+                    ? (p.error_absoluto === null ? "Continúa: aún no hay dos aproximaciones que comparar." : `Continúa: Ea ${e.r(p.error_absoluto)}.`)
+                    : parada.at(-1)],
             valores: [`xr ${r(p.xr)}`, "Corte de la secante con el eje x."],
             signos: p.fxr === 0 ? ["f(xr) = 0 (cero)."]
                 : [`f(${p.sustituido}) y f(xr) tienen el mismo signo (${signo(p.fxr)}).`,

@@ -26,10 +26,11 @@ class ReglaFalsaWebTests(SimpleTestCase):
         for titulo in ("Aproximación", "Signos", "Actualización del intervalo", "Error", "Decisión"):
             self.assertContains(r, f"<h5>{titulo}</h5>", count=1, html=True)
         self.assertContains(r, 'id="paso-error"', count=1)
-        self.assertNotContains(r, 'id="paso-detalles"')
         b = self.client.post("/metodos-numericos/biseccion/", datos())
-        self.assertContains(b, 'id="paso-detalles"', count=1)
         self.assertNotContains(b, 'id="paso-error"')
+        for respuesta in (r, b):
+            self.assertContains(respuesta, 'id="paso-breve"', count=1)
+            self.assertContains(respuesta, 'id="lectura-titulo"', count=1)
 
     def test_formulario_vacio_teclado_y_recursos_locales(self):
         r = self.client.get(RUTA)
@@ -65,7 +66,7 @@ class ReglaFalsaWebTests(SimpleTestCase):
         self.assertContains(r, "data-iteracion=", count=len(esperado["iteraciones"]))
         for texto in ("xr", "recta secante", "Error absoluto Ea", "No disponible",
                       "Residuo", "Error absoluto verdadero", "punto de prueba",
-                      "Su longitud acota", "no demuestra unicidad"):
+                      "Su longitud acota"):
             self.assertContains(r, texto)
         self.assertContains(r, 'id="resultado"', count=1)
         self.assertContains(r, "f(xr) <span data-raices-relacion>=</span>", count=1)

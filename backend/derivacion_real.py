@@ -1,7 +1,16 @@
 """Derivación de los árboles validados por FuncionReal."""
 
 import ast
+import re
 from .funciones_reales import _signos, finito
+
+_ELEVADOS = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
+
+
+def legible(texto):
+    """Exponentes enteros como superíndices: 3 · x^2 − 1 → 3 · x² − 1. Solo presentación."""
+    return re.sub(r"\^(?:\((-?\d+)\)|(\d+)(?![.\d]))",
+                  lambda m: (m[1] or m[2]).translate(_ELEVADOS), texto)
 
 
 def _operar(op, a, b):
