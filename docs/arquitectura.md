@@ -56,6 +56,12 @@ para f y x₀, con derivación automática en el backend. Extiende la misma plan
 solo punto seleccionable y sin franja de intervalo. `newton_raphson.js` aporta
 la tangente y la explicación, sin duplicar Plotly, parser ni teclado.
 Véase [Newton-Raphson](newton-raphson.md).
+Newton-Raphson y Secante forman la herramienta **Métodos abiertos**: un único
+`Herramienta` del catálogo cuya ruta es la de Newton; la de Secante se reconoce como
+alias en `herramienta_por_ruta`. `views_raices._resolver_abierto` comparte formulario,
+cálculo y encuadre; `backend/secante.py` implementa el método y `secante.js` su recta
+y su lectura. `metodos_abiertos.js` reúne las piezas de fórmula de ambos y el selector.
+Véase [Secante](secante.md).
 
 `frontend/web/calculadora/catalogo.py` es el registro central: las estructuras
 inmutables `Area`, `Categoria` y `Herramienta` definen identidad, descripción,
