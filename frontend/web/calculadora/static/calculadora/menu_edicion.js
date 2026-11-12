@@ -47,7 +47,7 @@
     // seleccionar; un campo suelto (k, el número romano) conserva el Ctrl+Z nativo.
     function entradaDe(input) {
         if (!editable(input)) return null;
-        if (input.form?.id === "conjuntos-form" && input.matches('[name="definicion"], [name="expresion"], [name^="contenido_"]')) {
+        if (input.form?.id === "conjuntos-form" && input.matches('[name="definicion"], [name="expresion"], [name^="contenido_"], [name^="venn_region_"]')) {
             return { titulo: "Conjuntos", celdas: [input], ejemplos: true,
                 generar: input.name.startsWith("contenido_") ? () => `{${[...new Set([entero(), entero(), entero()])].join(", ")}}` : null };
         }

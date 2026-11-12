@@ -1,14 +1,171 @@
+/* Métodos de raíces: entrada en una fila, zona de estudio (gráfica + paso activo + tabla) y veredicto. */
+
+/* —— Entrada: función, parámetros y acción en una fila cuando cabe —— */
+.raices-fila { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3); }
+.raices-funcion { flex: 1 1 18rem; min-width: 0; }
+.raices-valor { flex: 0 1 9rem; min-width: 7rem; }
+.raices-valor label { white-space: nowrap; }
+.raices-accion { flex: 0 0 auto; }
+/* Un renglón invisible con la métrica de una etiqueta alinea el botón con los campos. */
+.raices-accion::before { content: "\200b"; display: block; margin-bottom: var(--space-1); font-size: var(--text-sm); font-weight: 600; }
+.raices-accion .btn { min-height: calc(1.5em + 1.24rem + 2px); }
+#funcion-ayuda { margin: var(--space-2) 0 0; }
+.raices-extras { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
 .raices-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.raices-raiz { font-family: var(--font-math); font-size: clamp(1.2rem, 3vw, 1.8rem); overflow-wrap: anywhere; margin-block: var(--space-2); }
-.raices-estado { color: var(--color-success); font-weight: 600; }
-.raices-aviso { color: var(--color-warning); }
-.raices-visual { min-width: 0; }
-.raices-exploracion { display: grid; gap: var(--space-4); }
+.raices-derivada { margin: var(--space-2) 0 0; color: var(--color-muted); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.raices-derivada:empty { display: none; }
+.raices-derivada[data-pendiente] { opacity: .7; }
+.raices-expresion { font-family: var(--font-math); color: var(--color-text); }
+@media (max-width: 560px) {
+    .raices-valor { flex: 1 1 7rem; }
+    .raices-accion { flex: 1 1 100%; }
+    .raices-accion::before { display: none; }
+    .raices-accion .btn { width: 100%; }
+}
+
+/* —— Veredicto: un tono proporcional, nunca rojo, para condiciones matemáticas —— */
+.raices-cabecera {
+    --tono: var(--color-border-strong); --tono-texto: var(--color-text);
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: var(--space-3) var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border); border-left: 4px solid var(--tono); border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+}
+.raices-cabecera[data-tono="exito"] { --tono: var(--color-success); --tono-texto: var(--color-success); }
+.raices-cabecera[data-tono="aviso"] { --tono: var(--color-warning); --tono-texto: var(--color-warning); }
+.raices-veredicto { flex: 1 1 20rem; min-width: 0; }
+.raices-veredicto p { margin: var(--space-1) 0 0; }
+.raices-raiz { font-family: var(--font-math); font-size: clamp(1.25rem, 3vw, 1.7rem); overflow-wrap: anywhere; }
+.raices-estado { color: var(--tono-texto); font-weight: 600; }
+.raices-formato { flex: 0 1 17rem; margin: 0; }
+.raices-formato p { flex-basis: 100%; margin: 0; }
+
+/* —— Zona de estudio —— */
+.raices-visual { min-width: 0; container-type: inline-size; }
+.raices-estudio { display: grid; gap: var(--space-4); }
+@container (min-width: 44rem) {
+    .raices-estudio:has(> .raices-recorrido:not([hidden])) { grid-template-columns: minmax(0, 1.8fr) minmax(15rem, 1fr); }
+    /* Newton explica con fórmulas: la sustitución necesita más ancho que una frase, y la tabla
+       sube bajo la gráfica para ver gráfica, tabla y explicación a la vez. */
+    .raices-estudio:has(.newton-formula):has(> .raices-recorrido:not([hidden])) {
+        grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 1fr); grid-template-rows: auto 1fr;
+    }
+    .raices-estudio:has(.newton-formula) > .raices-recorrido:not([hidden]) { grid-area: 1 / 2 / 3 / 3; }
+    .raices-estudio:has(.newton-formula):has(> .raices-recorrido:not([hidden])) > .raices-tabla-marco { grid-column: 1; align-self: start; }
+    .raices-estudio:has(.newton-formula):has(> .raices-recorrido:not([hidden])) .raices-tabla-newton { width: 100%; }
+}
 .raices-lienzo { min-width: 0; }
-.raices-controles { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.raices-controles[hidden], .raices-recorrido[hidden] { display: none; }
-.raices-controles button { min-height: 44px; }
-.raices-controles [aria-pressed="true"] { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+.raices-lienzo-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.raices-lienzo-cabecera .panel-title { margin: 0; }
+.raices-herramientas { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.raices-herramientas[hidden], .raices-recorrido[hidden] { display: none; }
+.raices-herramientas .btn { min-height: 2.25rem; padding: .35rem .75rem; font-size: var(--text-sm); }
+.raices-herramientas [aria-pressed="true"] { border-color: var(--color-brand); background: var(--color-brand-soft); box-shadow: inset 0 0 0 1px var(--color-brand); }
+#raices-grafica { width: 100%; height: 320px; }
+#raices-grafica:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+/* Las franjas del intervalo son evidencia; solo se arrastran las líneas de los datos de entrada. */
+#raices-grafica .shape-group[data-index="2"] *, #raices-grafica .shape-group[data-index="3"] * { pointer-events: none !important; }
+#grafica-estado, #grafica-ayuda { margin: var(--space-1) 0 0; }
+
+/* —— Reproductor y paso activo —— */
+.raices-recorrido { display: grid; gap: var(--space-3); align-content: start; min-width: 0; }
+.raices-reproductor { display: grid; gap: var(--space-2); }
+.raices-transporte { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.raices-control {
+    display: inline-grid; place-items: center; inline-size: 2.75rem; block-size: 2.75rem; padding: 0;
+    border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+    background: var(--color-surface-raised); color: var(--color-text); cursor: pointer;
+}
+.raices-control:not(:disabled):hover { border-color: var(--color-brand); background: var(--color-brand-soft); }
+.raices-control:disabled { opacity: .4; cursor: default; }
+.raices-control:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.raices-control svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.raices-reproducir { border-color: var(--color-brand); background: var(--color-brand); color: var(--color-brand-text); }
+.raices-reproducir:not(:disabled):hover { background: var(--color-brand-strong); color: var(--color-brand-text); }
+.raices-reproducir .icono-reproducir { fill: currentColor; }
+.raices-reproducir .icono-pausar, .raices-reproducir[data-reproduciendo] .icono-reproducir { display: none; }
+.raices-reproducir[data-reproduciendo] .icono-pausar { display: block; }
+.raices-velocidad { margin-left: auto; }
+.raices-velocidad select {
+    min-height: 2.75rem; padding: .3rem .5rem; border: 1px solid var(--color-border-input); border-radius: var(--radius-sm);
+    background: var(--color-surface-raised); color: var(--color-text); font: inherit; font-variant-numeric: tabular-nums;
+}
+.raices-progreso { display: flex; align-items: center; gap: var(--space-2); }
+.raices-progreso input { flex: 1; min-width: 0; min-height: 44px; margin: 0; accent-color: var(--color-brand); }
+#iteracion-contador { min-width: 6ch; font-family: var(--font-math); font-variant-numeric: tabular-nums; text-align: end; }
+.raices-paso { min-width: 0; overflow-wrap: anywhere; }
+.raices-paso h4 { margin: 0 0 var(--space-2); font-size: 1rem; }
+.raices-paso p { margin: 0 0 var(--space-2); }
+.raices-paso-cierre { font-weight: 600; }
+
+/* —— Newton: función, derivada y fórmula fijas; valores, sustitución y comprobación del paso activo —— */
+.raices-fraccion { display: inline-grid; vertical-align: middle; margin-inline: .15em; line-height: 1.3; text-align: center; }
+.raices-fraccion > span { padding-inline: .3em; white-space: nowrap; }
+.raices-fraccion > span:first-child { border-bottom: 1.5px solid currentColor; }
+.newton-formula {
+    display: grid; gap: var(--space-2); margin-bottom: var(--space-3); padding: var(--space-3);
+    border-radius: var(--radius-sm); background: var(--color-surface-muted); font-family: var(--font-math);
+}
+.raices-paso .newton-formula p { margin: 0; }
+.newton-funciones { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+.newton-general { font-size: 1.15rem; overflow-x: auto; white-space: nowrap; }
+.newton-bloque { margin-bottom: var(--space-3); }
+.raices-paso .newton-etiqueta { margin: 0 0 var(--space-1); color: var(--color-muted); font-size: var(--text-xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.newton-valores { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; font-family: var(--font-math); }
+.newton-valores div { display: flex; gap: .4em; }
+.newton-valores dd { margin: 0; }
+/* Una fórmula no se parte: si no cabe, se desplaza sola en horizontal. */
+.raices-paso .newton-linea { margin: 0 0 var(--space-1); padding-block: .15em; font-family: var(--font-math); white-space: nowrap; overflow-wrap: normal; overflow-x: auto; }
+.raices-paso .newton-nueva { padding-left: var(--space-2); border-left: 3px solid var(--color-brand); }
+.newton-nueva strong { font-size: 1.15rem; }
+.newton-comprobacion { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.newton-comprobacion li { display: grid; font-size: var(--text-sm); }
+.raices-paso .newton-comprobacion .newton-linea { margin: 0; }
+.newton-comprobacion [data-cumple="true"] strong { color: var(--color-success); }
+
+/* —— Tabla: una fila por iteración, con desplazamiento propio para convivir con la gráfica —— */
+/* Va en la cuadrícula de estudio (hueco --space-4); el margen negativo conserva la separación --space-3. */
+.raices-tabla-marco { grid-column: 1 / -1; margin: calc(var(--space-3) - var(--space-4)) 0 0; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+/* Con JavaScript (data-estilo solo existe entonces) el reproductor recorre la tabla dentro de su marco;
+   sin él, la tabla se muestra completa. */
+[data-estilo] .raices-tabla-marco { max-height: 17rem; overflow: auto; overscroll-behavior: contain; }
+.raices-tabla caption { padding: var(--space-2) var(--space-3); color: var(--color-muted); font-size: var(--text-xs); text-align: left; }
+.raices-tabla th, .raices-tabla td { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.raices-tabla thead th { position: sticky; top: 0; z-index: 1; background: var(--color-surface-raised); box-shadow: inset 0 -1px 0 var(--color-border); }
+/* Tres columnas, como en la diapositiva de clase: no hace falta estirarlas a todo el ancho. */
+.raices-tabla-newton { width: auto; min-width: min(100%, 30rem); }
+.raices-tabla-newton td { padding-right: 2.5rem; }
+.raices-tabla tr[data-iteracion] { cursor: pointer; }
+.raices-tabla tr[data-iteracion]:hover > * { background: var(--color-surface-muted); }
+.raices-tabla tr[data-activa] > * { background: var(--color-brand-soft); }
+.raices-tabla tr[data-activa] > th { box-shadow: inset 4px 0 0 var(--color-brand); color: var(--color-text); }
+.raices-tabla tr:focus-visible { outline: 3px solid var(--color-focus); outline-offset: -3px; }
+
+/* —— Historial de la sesión —— */
+.raices-historial { min-width: 0; }
+.raices-historial .panel-title { margin: 0; }
+.raices-historial > .field-help { margin: var(--space-1) 0 var(--space-2); }
+.raices-historial-tabla td, .raices-historial-tabla th { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.raices-historial-tabla th[scope="rowgroup"] { padding-top: var(--space-3); color: var(--color-text); font-family: var(--font-math); font-size: var(--text-sm); }
+.raices-historial-tabla tr[aria-current] > td { background: var(--color-brand-soft); font-weight: 600; }
+/* El criterio se lee en texto; el color solo acompaña. */
+.raices-criterio { white-space: normal !important; min-width: 9rem; font-weight: 600; }
+.raices-criterio[data-tono="exito"] { color: var(--color-success); }
+.raices-criterio[data-tono="aviso"] { color: var(--color-warning); }
+.raices-criterio[data-tono="info"] { color: var(--color-muted); }
+.raices-historial-tabla .btn { min-height: 2.25rem; padding: .3rem .8rem; font-size: var(--text-sm); }
+
+/* —— Procedimiento y verificación —— */
+.raices-lectura { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
+.raices-lectura h4 { margin: 0 0 var(--space-2); }
+#iteracion-lectura { overflow-wrap: anywhere; }
+#iteracion-lectura p { margin-block: var(--space-1); }
+#paso-intervalo { font-weight: 600; }
+.regla-falsa-paso section { margin-top: var(--space-3); }
+.regla-falsa-paso section + section { border-top: 1px solid var(--color-border); padding-top: var(--space-3); }
+.regla-falsa-paso h5 { margin: 0 0 var(--space-2); font-size: 1rem; }
+.regla-falsa-paso ul { margin: 0; padding-left: var(--space-4); }
+.regla-falsa-paso li + li, .regla-falsa-paso ul + ul { margin-top: var(--space-2); }
 .raices-verificaciones { display: grid; gap: var(--space-4); }
 .raices-verificaciones section + section { border-top: 1px solid var(--color-border); padding-top: var(--space-4); }
 .raices-verificaciones h4 { margin-block: 0 var(--space-3); }
@@ -17,32 +174,10 @@
 .raices-verificaciones dt { font-weight: 600; }
 .raices-conclusion { border-left: 3px solid var(--color-brand); padding-left: var(--space-3); }
 .raices-comprobacion { font-family: var(--font-math); }
-@media (min-width: 1024px) {
-    .raices-exploracion:has(.raices-recorrido) { grid-template-columns: minmax(0, 3fr) minmax(16rem, 2fr); align-items: start; }
-    .raices-recorrido { border-left: 1px solid var(--color-border); padding-left: var(--space-4); }
-}
-#funcion-ayuda { margin-top: var(--space-2); }
-.raices-formato p { flex-basis: 100%; }
-#raices-grafica { width: 100%; height: 380px; }
-/* El intervalo calculado es evidencia; solo se arrastran los extremos de entrada. */
-#raices-grafica .shape-group[data-index="2"] * { pointer-events: none !important; }
-.raices-recorrido { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
-.raices-recorrido input { width: 100%; min-height: 44px; accent-color: var(--color-brand); }
-#iteracion-lectura { overflow-wrap: anywhere; }
-#iteracion-lectura p { margin-block: var(--space-1); }
-#iteracion-lectura #paso-decision { margin-block: var(--space-3); }
-#paso-intervalo { font-weight: 600; }
-.raices-tabla tr[data-activa] { background: var(--color-brand-soft); outline: 2px solid var(--color-brand); outline-offset: -2px; }
-.raices-tabla tr:focus-visible { outline: 3px solid var(--color-focus); outline-offset: -3px; }
-.raices-tabla th, .raices-tabla td { white-space: nowrap; }
+
 @media (max-width: 480px) {
     .raices-campos { grid-template-columns: 1fr; }
-    #raices-grafica { height: 310px; }
+    #raices-grafica { height: 300px; }
+    [data-estilo] .raices-tabla-marco { max-height: 15rem; }
     .raices-verificaciones dl { grid-template-columns: 1fr; }
 }
-
-.regla-falsa-paso section { margin-top: var(--space-4); }
-.regla-falsa-paso section + section { border-top: 1px solid var(--color-border); padding-top: var(--space-3); }
-.regla-falsa-paso h5 { margin: 0 0 var(--space-2); font-size: 1rem; }
-.regla-falsa-paso ul { margin: 0; padding-left: var(--space-4); }
-.regla-falsa-paso li + li, .regla-falsa-paso ul + ul { margin-top: var(--space-2); }

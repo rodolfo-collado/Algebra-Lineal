@@ -127,19 +127,27 @@ LITERALES_CONJUNTOS = GrupoTeclas("Elementos", (
     Tecla(",", ", ", "Separar elementos"), Tecla('" "', '""', "Elemento textual", 1),
     MENOS, FRACCION,
 ))
-RELACIONES_CONJUNTOS = GrupoTeclas("Relaciones", (
-    Tecla("∈", "∈", "Pertenece"), Tecla("∉", "∉", "No pertenece"),
-    Tecla("⊆", "⊆", "Inclusión"), Tecla("⊂", "⊂", "Inclusión propia"),
-    IGUAL, Tecla("≠", "≠", "Distinto"), Tecla("( )", "()", "Agrupar operando", 1),
-))
 PERFIL_LITERAL_CONJUNTOS = Perfil("literal-conjuntos", (LITERALES_CONJUNTOS, GrupoTeclas("Definición", (IGUAL,))))
-OPERACIONES_CONJUNTOS = GrupoTeclas("Operaciones finitas", (
-    Tecla('𝒫','potencia()','Conjunto potencia',1), Tecla('×','×','Producto cartesiano'),
-    Tecla("∪", "∪", "Unión"), Tecla("∩", "∩", "Intersección"),
-    Tecla("∖", "∖", "Diferencia"), Tecla("∁", "∁(, )", "Complemento: conjunto y universo", 3),
-    Tecla("| |", "||", "Cardinalidad", 1),
+# La expresión de conjuntos muestra este perfil como barra fija junto al campo, no en el dock:
+# primero lo que combina conjuntos, después las relaciones y, al final, lo que escribe valores.
+PERFIL_RELACION_CONJUNTOS = Perfil("relacion-conjuntos", (
+    GrupoTeclas("Operaciones", (
+        Tecla("∪", "∪", "Unión"), Tecla("∩", "∩", "Intersección"), Tecla("∖", "∖", "Diferencia"),
+        Tecla("∁", "∁(, )", "Complemento: conjunto y universo", 3), Tecla("| |", "||", "Cardinalidad", 1),
+        Tecla("( )", "()", "Agrupar", 1), Tecla('×', '×', 'Producto cartesiano'),
+        Tecla('𝒫', 'potencia()', 'Conjunto potencia', 1),
+    )),
+    GrupoTeclas("Relaciones", (
+        Tecla("∈", "∈", "Pertenece"), Tecla("∉", "∉", "No pertenece"),
+        Tecla("⊆", "⊆", "Inclusión"), Tecla("⊂", "⊂", "Inclusión propia"),
+        IGUAL, Tecla("≠", "≠", "Distinto"),
+    )),
+    GrupoTeclas("Valores", (
+        Tecla("∅", "∅", "Conjunto vacío"), Tecla("{ }", "{}", "Conjunto", 1),
+        Tecla('par', 'par(, )', 'Par ordenado', 3),
+        Tecla('intervalo', 'intervalo(0, 1, abierto, cerrado)', 'Intervalo con extremos y cierres explícitos'),
+    )),
 ))
-PERFIL_RELACION_CONJUNTOS = Perfil("relacion-conjuntos", (LITERALES_CONJUNTOS, RELACIONES_CONJUNTOS, OPERACIONES_CONJUNTOS))
 # Cardinalidades: solo lo que nombra regiones del diagrama; los nombres llegan como operandos.
 PERFIL_REGIONES_CONJUNTOS = Perfil("regiones-conjuntos", (GrupoTeclas("Regiones", (
     Tecla("∪", "∪", "Unión"), Tecla("∩", "∩", "Intersección"), Tecla("∖", "∖", "Diferencia"),

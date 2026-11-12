@@ -17,6 +17,7 @@ class BiseccionTests(unittest.TestCase):
                      .760546875, .7626953125, .76376953125, .764306640625,
                      .7640380859375, .76390380859375, .763970947265625]
         self.assertTrue(r["convergio"])
+        self.assertEqual(r["clasificacion"], "raiz_aproximada")
         self.assertEqual(len(r["iteraciones"]), 13)
         for fila, c in zip(r["iteraciones"], esperados):
             self.assertAlmostEqual(fila["c"], c, places=14)
@@ -42,16 +43,32 @@ class BiseccionTests(unittest.TestCase):
             self.assertEqual((r["c"], len(r["iteraciones"])), (c, cantidad))
             self.assertEqual(r["fc"], 0)
 
-    def test_sin_cambio_de_signo(self):
-        with self.assertRaisesRegex(ValueError, "signos"):
-            biseccion(FuncionReal("x^2 + 1"), -1, 1)
+    def test_sin_cambio_de_signo_solo_descarta_raices_con_demostracion(self):
+        for texto, a, b, clasificacion in [
+            ("x^2 + 1", -1, 1, "sin_raices_demostrado"),
+            ("x^2", -1, 1, "no_aplicable"),
+            ("x^2 - 1", -2, 2, "no_aplicable"),
+            ("x^2 + (0.1 + 0.2 - 0.3)", -1, 1, "no_aplicable"),
+        ]:
+            with self.subTest(texto=texto):
+                r = biseccion(FuncionReal(texto), a, b)
+                self.assertEqual(r["estado"], "sin_cambio_de_signo")
+                self.assertEqual(r["clasificacion"], clasificacion)
+                self.assertEqual((r["a"], r["b"]), (a, b))
+                self.assertEqual(r["iteraciones"], [])
+                self.assertIsNone(r["c"])
+                self.assertIsNone(r["residuo"])
+                self.assertFalse(r["convergio"])
 
     def test_dominio_y_discontinuidad_no_son_raices(self):
         for texto, a, b in [("1/x", -1, 1), ("1/(x-0.3)", 0, 1),
                             ("tan(x)", 1, 2), ("tan(x)", math.pi/2, 2),
                             ("tan(x)", -2, -math.pi/2), ("log(x)", -1, 2), ("sqrt(x)", -1, 1)]:
-            with self.subTest(texto=texto), self.assertRaises(ValueError):
-                biseccion(FuncionReal(texto), a, b)
+            with self.subTest(texto=texto):
+                r = biseccion(FuncionReal(texto), a, b)
+                self.assertEqual((r["estado"], r["clasificacion"]), ("dominio", "no_aplicable"))
+                self.assertEqual(r["iteraciones"], [])
+                self.assertIsNone(r["c"])
 
     def test_validacion_de_intervalo_precision_y_limite(self):
         for a, b, tol in [(1, 0, .0001), (0, 0, .0001), (0, math.inf, .0001),
@@ -67,6 +84,7 @@ class BiseccionTests(unittest.TestCase):
         r = biseccion(FuncionReal("x^2-2"), 1, 2, max_iteraciones=1)
         self.assertFalse(r["convergio"])
         self.assertEqual(r["estado"], "limite")
+        self.assertEqual(r["clasificacion"], "sin_convergencia")
         r = biseccion(FuncionReal("x^2-2"), 1, 2, 1e-30)
         self.assertFalse(r["convergio"])
         self.assertEqual(r["estado"], "estancamiento")

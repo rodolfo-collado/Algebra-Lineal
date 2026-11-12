@@ -1,0 +1,75 @@
+{% extends "calculadora/modules/raices/base.html" %}
+{% load static componentes raices %}
+{% block entrada_titulo %}Entrada de Newton-Raphson{% endblock %}
+{% block bajo_funcion %}
+{# Derivada automática: el backend la calcula al escribir f(x), con la misma petición que muestrea la gráfica. #}
+<p id="raices-derivada" class="raices-derivada" aria-live="polite">{% if resultado.derivada %}f′(x) = <span class="raices-expresion">{{ resultado.derivada }}</span>{% endif %}</p>
+{% endblock %}
+{% block parametros %}
+<div class="field-group raices-valor">{{ form.x0.label_tag }}{{ form.x0 }}{{ form.x0.errors }}</div>
+{% endblock %}
+{% block extras %}
+{% disclosure titulo="Ejemplos" id="ejemplos-newton" %}
+<p class="field-help">Carga un ejemplo y pulsa Resolver para recorrer sus tangentes.</p>
+<div class="raices-herramientas">
+<button type="button" class="btn btn-secondary" data-newton-ejemplo="cuadratica">√2: x² − 2</button>
+<button type="button" class="btn btn-secondary" data-newton-ejemplo="cubica">x³ − x − 2</button>
+<button type="button" class="btn btn-secondary" data-newton-ejemplo="ciclo">Ciclo: x³ − 2x + 2</button>
+</div>
+<noscript><p>Prueba f(x) = x² − 2, x₀ = 1.5; o f(x) = x³ − x − 2, x₀ = 1.5.</p></noscript>
+{% enddisclosure %}
+{% endblock %}
+{% block ayuda_tolerancia %}Por defecto 0.0001, positiva y reducible. Deben cumplirla tanto |f(x siguiente)| como |x siguiente − x actual|. El cambio no es el error verdadero ni un porcentaje.{% endblock %}
+{% block accion %}Resolver por Newton-Raphson{% endblock %}
+{% block ayuda_grafica %}Rueda: zoom · Arrastrar: desplazar · «Elegir x₀» y pulsa la curva; su línea también se arrastra.{% endblock %}
+{% block texto_enfocar %}Enfocar tangente{% endblock %}
+{% block primer_paso %}0{% endblock %}
+{% block seleccion_puntos %}<button type="button" class="btn btn-secondary" data-elegir-extremo="x0" aria-pressed="false">Elegir x₀</button>{% endblock %}
+{% block resumen %}
+<p class="raices-raiz">x ≈ <span>{{ resultado.x|numero_raices:"x" }}</span></p>
+<p class="raices-estado">{{ resultado.mensaje }}</p>
+<p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · Residuo |f(x)| <span data-raices-relacion>=</span> {{ resultado.residuo|numero_raices:"f" }}</p>
+{% endblock %}
+{% block tabla %}
+{# Como en la diapositiva 15: n, xₙ y f(xₙ), con n = 0 para el punto inicial. f′, el error y la fórmula van en el paso seleccionado. #}
+<table class="procedure-table raices-tabla raices-tabla-newton">
+<caption>Aproximaciones sucesivas; n = 0 es el punto inicial. Sin redondeo intermedio.</caption>
+<thead><tr><th scope="col">n</th><th scope="col">xₙ</th><th scope="col">f(xₙ)</th></tr></thead><tbody>
+<tr data-iteracion="0" tabindex="-1" data-raices-grupo aria-label="n = 0, punto inicial">
+<th scope="row">0</th><td>{{ resultado.x0|numero_raices:"x" }}</td><td>{% if resultado.iteraciones %}{{ resultado.iteraciones.0.fxn|numero_raices:"f" }}{% else %}{{ resultado.fx|numero_raices:"f" }}{% endif %}</td></tr>
+{% for p in resultado.iteraciones %}<tr data-iteracion="{{ p.i }}" tabindex="-1" data-raices-grupo aria-label="n = {{ p.i }}">
+<th scope="row">{{ p.i }}</th><td>{{ p.siguiente|numero_raices:"x" }}</td><td>{{ p.fsiguiente|numero_raices:"f" }}</td></tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}
+{% block formula_paso %}
+{# Diapositivas 8 y 10: la función, su derivada y la fórmula; la sustitución del paso activo va debajo. #}
+<div class="newton-formula" role="group" aria-label="Función, derivada y fórmula de Newton-Raphson">
+<p class="newton-funciones"><span>f(x) = {{ funcion_natural }}</span> <span>f′(x) = {{ resultado.derivada }}</span></p>
+<p class="newton-general"><span class="sr-only">x sub n más 1 = x sub n − f(x sub n) / f′(x sub n)</span><span aria-hidden="true">xₙ₊₁ = xₙ − <span class="raices-fraccion"><span>f(xₙ)</span><span>f′(xₙ)</span></span></span></p>
+</div>
+{% endblock %}
+{% block lectura_iteracion %}
+<div id="iteracion-lectura" class="regla-falsa-paso">
+<section><h5>Aproximación actual</h5><ul id="paso-valores"></ul></section>
+<section><h5>Tangente y siguiente aproximación</h5><ul id="paso-decision"></ul></section>
+<section><h5>Error absoluto y residuo</h5><ul id="paso-error"></ul></section>
+<section><h5>Decisión</h5><ul id="paso-parada"></ul></section>
+</div>
+{% endblock %}
+{% block procedimiento %}
+<p>x siguiente = x actual − f(x actual)/f′(x actual). La tangente y = f(x actual) + f′(x actual)·(x − x actual) corta el eje x en esa siguiente aproximación.</p>
+{% endblock %}
+{% block verificacion %}
+{% disclosure titulo="Verificación" id="verificacion-raices" %}
+<div data-raices-grupo>
+<p>Evaluación final independiente: f(x) <span data-raices-relacion>=</span> {{ resultado.fx|numero_raices }}.</p>
+<p>Residuo |f(x)| <span data-raices-relacion>=</span> {{ resultado.residuo|numero_raices }}. Tolerancia <span data-raices-relacion>=</span> {{ resultado.tolerancia|numero_raices }}.</p>
+<p>Cambio absoluto: {% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices }}{% else %}No disponible: no hubo una actualización.{% endif %}</p>
+<p class="raices-conclusion">{{ resultado.mensaje }}</p>
+<p>El residuo mide la altura de la curva; el cambio compara dos aproximaciones. Ninguno es el error verdadero |x − raíz|. Newton no conserva un intervalo con raíz ni proporciona una cota garantizada de distancia.</p>
+<p>Un cero calculado depende de la aritmética de máquina. La convergencia depende del punto inicial y del comportamiento de la función. La gráfica es un muestreo y puede omitir detalles.</p>
+</div>
+{% enddisclosure %}
+{% endblock %}
+{% block metodo_js %}<script src="{% static 'calculadora/newton_raphson.js' %}" defer></script>{% endblock %}

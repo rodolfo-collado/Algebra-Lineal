@@ -67,7 +67,7 @@
                 ok(!/color-mix|var\(/.test(token("--color-surface") + token("--color-brand")), "Plotly recibe colores que entiende");
             }
             ok(fondos.size >= 2, "El fondo cambia de verdad");
-            ok(grafica(w).data[0].x.length === 801 && grafica(w).layout.shapes.length === 3, "Conserva curva, extremos y franja");
+            ok(grafica(w).data[0].x.length === 801 && grafica(w).layout.shapes.length === 4, "Conserva curva, extremos y franjas");
             ok(lista(w).length === 13, "No recalcula");
         }],
         ["Teclado contextual de funciones reales conserva foco y cursor", async w => {
@@ -165,7 +165,9 @@
             valor(w, "funcion", "1e-20*(x²-2)"); valor(w, "a", "1"); valor(w, "b", "2");
             w = await post(frame); await esperar(() => listaGrafica(w));
             const original = q(w, "#datos-raices").textContent;
-            let peticiones = 0; const fetch = w.fetch; w.fetch = (...args) => { peticiones++; return fetch(...args); };
+            // En escritorio, elegir decimales guarda la preferencia (/preferencias/): no es un cálculo.
+            let peticiones = 0; const fetch = w.fetch;
+            w.fetch = (...args) => { if (!String(args[0]).includes("/preferencias/")) peticiones++; return fetch(...args); };
             for (const precision of ["4", "16", "completa", "6"]) {
                 const selector = q(w, "#raices-decimales"); selector.value = precision;
                 selector.dispatchEvent(new w.Event("change", { bubbles: true }));
@@ -215,7 +217,6 @@
                 valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
                 w = await post(frame); await esperar(() => listaGrafica(w));
                 w.document.documentElement.setAttribute("data-estilo", estilo);
-                q(w, "#paso-detalles").open = true;
                 const slider = q(w, "#iteracion-raices");
                 for (const i of ["1", "7", slider.max]) {
                     slider.value = i; slider.dispatchEvent(new w.Event("input", { bubbles: true }));
@@ -260,16 +261,24 @@
         ["Dominio explica raíz real y una corrección justificada", async (w, frame) => {
             valor(w, "funcion", "√(x)"); valor(w, "a", "-1"); valor(w, "b", "5");
             w = await post(frame);
-            ok(!q(w, "#resultado"), "Mantiene el rechazo");
+            ok(q(w, "#results-title").textContent === "Método no aplicable", "Informa el impedimento de dominio");
+            ok(!q(w, "[data-respuesta-errores]") && lista(w).length === 0, "Conserva el formulario sin iterar");
             ok(w.document.body.textContent.includes("valores negativos de x") && w.document.body.textContent.includes("a ≥ 0"), "Condición y corrección de raíz directa");
         }],
         ["Ejemplo del profesor: 13 filas y raíz verificada", async (w, frame) => {
             ejemplo(w);
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 13, "13 iteraciones");
+            // La tabla de Bisección sigue bajo gráfica y explicación, con todo el ancho (solo Newton la sube).
+            const caja = s => q(w, s).getBoundingClientRect(), t = caja("#raices-tabla-marco"), z = caja(".raices-estudio");
+            ok(t.top >= Math.max(caja(".raices-lienzo").bottom, caja(".raices-recorrido").bottom) && Math.abs(t.width - z.width) < 1, "Tabla a todo el ancho");
             ok(lista(w)[12].c === .763970947265625, "Raíz del ejemplo");
-            ok(grafica(w).layout.shapes.length === 3, "Dos extremos y una sola franja");
-            ok(grafica(w).layout.shapes[2].x0 === lista(w)[12].a, "Franja de la última iteración");
+            ok(grafica(w).layout.shapes.length === 4, "Dos extremos y dos franjas");
+            ok(grafica(w).layout.shapes[2].x0 === lista(w)[0].a && grafica(w).layout.shapes[2].x1 === lista(w)[0].b, "Comienza en la primera iteración");
+            ok(grafica(w).layout.shapes[3].x0 === lista(w)[0].nuevo_a && grafica(w).layout.shapes[3].x1 === lista(w)[0].nuevo_b, "Mitad conservada");
+            ok(grafica(w).data[2].x[0] === lista(w)[0].c && grafica(w).data[2].y[1] === lista(w)[0].fc, "Punto medio sobre el eje y su altura");
+            ok(q(w, "#iteracion-reproducir").getAttribute("aria-label") === "Reproducir", "Comienza en pausa");
+            ok(q(w, "#paso-breve").textContent.includes("Punto medio"), "Explicación breve del paso");
             ok(!q(w, "#procedimiento-raices").open, "Detalle cerrado");
             ok(w.document.activeElement === q(w, "#resultado"), "Foco en el resultado");
         }],
@@ -278,11 +287,11 @@
             w = await post(frame); await esperar(() => listaGrafica(w));
             let peticiones = 0;
             const original = w.fetch; w.fetch = (...args) => { peticiones++; return original(...args); };
-            q(w, "#procedimiento-raices").open = true;
             const fila = q(w, '[data-iteracion="2"]');
-            fila.dispatchEvent(new w.PointerEvent("pointerenter"));
+            fila.click();
             await esperar(() => grafica(w).data[1].x[1] === lista(w)[1].c);
-            ok(q(w, "#iteracion-raices").value === "2", "Cursor sincroniza el deslizador");
+            ok(q(w, "#iteracion-raices").value === "2", "Clic en la fila sincroniza el deslizador");
+            ok(fila.getAttribute("aria-current") === "step" && fila.tabIndex === 0 && w.document.activeElement === fila, "Fila activa enfocable");
             ok(q(w, "#paso-decision").textContent.includes("derecha [c,b]"), "Segunda iteración conserva derecha");
             ok(q(w, "#paso-valores").textContent.includes("a (izquierdo)"), "Extremos identificados");
             q(w, '[data-iteracion="4"]').focus();
@@ -293,7 +302,7 @@
             await esperar(() => grafica(w).data[1].x[1] === lista(w)[6].c);
             ok(grafica(w).layout.shapes[2].x0 === lista(w)[6].a, "Intervalo seleccionado");
             ok(peticiones === 0, "Sin nuevas peticiones al recorrer pasos");
-            ok(grafica(w).layout.shapes.length === 3, "No se acumulan formas");
+            ok(grafica(w).layout.shapes.length === 4, "No se acumulan formas");
             q(w, "#iteracion-anterior").click();
             ok(slider.value === "6", "Retrocede una iteración");
             q(w, "#iteracion-siguiente").click();
@@ -326,41 +335,154 @@
             ok(grafica(w).layout.xaxis.range[0] === -10 && grafica(w).data[0].x[0] === -10
                 && grafica(w).data[0].x[800] === 10, "Descarta la vista anterior pendiente");
         }],
-        ["Dos intervalos de la segunda raíz: comparación de 13 y 10 pasos", async (w, frame) => {
-            w.sessionStorage.removeItem("pygebra-biseccion-v1");
+        ["Historial: intervalos de una función agrupados, otra función aparte y regreso sin duplicar", async (w, frame) => {
+            w.sessionStorage.removeItem("pygebra-raices-historial-biseccion");
             ejemplo(w);
             valor(w, "a", "5"); valor(w, "b", "5.5");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 13, "Primer intervalo: 13");
-            ok(!q(w, "#raices-comparaciones table"), "Un solo cálculo sin tabla");
-            ok(q(w, "#raices-comparaciones").textContent.includes("Ya tienes un cálculo"), "Orientación inicial");
-            const funcion = q(w, '[name="funcion"]').value;
-            ok(!funcion.includes("*"), "Función introducida con notación de clase");
+            ok(q(w, "#raices-historial").hidden, "Oculto con una sola ejecución");
             valor(w, "a", "5.2"); valor(w, "b", "5.3");
             valor(w, "funcion", "x^4 - 5*x^3 + 0.5*x^2 - 11*x + 10");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 10, "Segundo intervalo: 10");
-            ok(q(w, '[name="funcion"]').value.replaceAll("*", "").replaceAll("^4", "⁴").replaceAll("^3", "³").replaceAll("^2", "²") === funcion, "Función equivalente conservada");
-            ok(q(w, "#raices-comparaciones").textContent.includes("Compatible con la misma raíz"), "Misma raíz compatible");
+            const historial = () => q(w, "#raices-historial");
+            const filas = () => [...historial().querySelectorAll("tbody tr:not(:first-child)")];
+            ok(!historial().hidden && historial().querySelectorAll("tbody").length === 1, "Funciones equivalentes en un solo grupo");
+            ok(filas().length === 2 && filas()[1].getAttribute("aria-current") === "true", "Dos ejecuciones; la última es la actual");
+            const encabezados = [...historial().querySelectorAll("thead th")].map(th => th.textContent);
+            ok(encabezados.join("|") === "Intervalo inicial|Aproximación|Iteraciones|Criterio de parada|Longitud final|Residuo|Precisión|",
+                "Columnas propias de bisección: " + encabezados.join("|"));
+            ok(filas()[0].cells[2].textContent === "13" && filas()[1].cells[2].textContent === "10", "Iteraciones comparables");
+            ok(filas()[0].cells[3].textContent === "Cumplido" && filas()[0].cells[3].dataset.tono === "exito", "Criterio cumplido");
+            ok(filas()[0].cells[6].textContent === "0.0001", "Precisión usada");
+            ok(filas()[0].cells[4].querySelector("[data-raices-numero]") && filas()[0].cells[5].querySelector("[data-raices-numero]"), "Longitud y residuo");
             const precision = q(w, "#raices-decimales"); precision.value = "4";
             precision.dispatchEvent(new w.Event("change", { bubbles: true }));
-            const aproximaciones = [...w.document.querySelectorAll("#raices-comparaciones tbody tr td:nth-child(2) span")];
-            ok(aproximaciones.length === 2 && aproximaciones[0].textContent !== aproximaciones[1].textContent, "Comparación distingue aproximaciones cercanas");
+            const aproximaciones = filas().map(f => f.cells[1].querySelector("span"));
+            ok(aproximaciones.every(n => /^≈ \d+\.\d{1,4}$/.test(n.textContent)), "Cuatro decimales en las aproximaciones");
+            ok(filas().every(f => !/\de[-+]?\d/.test(f.textContent)), "Sin notación científica");
             precision.value = "completa"; precision.dispatchEvent(new w.Event("change", { bubbles: true }));
-            ok(aproximaciones.every(n => Number(n.textContent) === Number(n.dataset.raicesNumero)), "Comparación ofrece precisión completa");
-            valor(w, "a", ".55"); valor(w, "b", "1.1");
+            ok(aproximaciones.every(n => Number(n.textContent) === Number(n.dataset.raicesNumero)), "Precisión completa");
+            valor(w, "funcion", "x^2-2"); valor(w, "a", "1"); valor(w, "b", "2");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            ok(q(w, "#raices-comparaciones").textContent.includes("Intervalos finales distintos"), "Raíces distintas");
+            ok(historial().querySelectorAll("tbody").length === 2, "Otra función, otro grupo: no se comparan entre sí");
+            ok(historial().querySelector("tbody").rows[0].textContent.includes("x^4"), "Encabezado del grupo con la función");
+            // «Ver» rehace la primera ejecución con sus datos y no añade una fila nueva.
+            const ver = historial().querySelector("tbody tr:nth-child(2) button");
+            ok(ver.textContent === "Ver", "Acción Ver");
+            w = await new Promise(resolve => { frame.onload = () => resolve(frame.contentWindow); ver.click(); });
+            await esperar(() => listaGrafica(w));
+            ok(lista(w).length === 13 && q(w, '[name="a"]').value === "5", "Recupera el intervalo y su recorrido");
+            ok(q(w, "#raices-decimales").value === "completa", "«Ver» conserva los decimales elegidos");
+            ok(filas().length === 3 && filas()[0].getAttribute("aria-current") === "true", "Sin duplicar; marcada como actual");
             valor(w, "max_iteraciones", "1");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            ok(q(w, "#raices-comparaciones").textContent.includes("Actual · Sin convergencia verificada"), "Cálculo sin convergencia");
-            ok(q(w, "#raices-comparaciones tbody").rows.length === 4, "Conserva los cuatro cálculos");
+            ok([...historial().querySelectorAll("td")].some(c => c.textContent === "No cumplido: máximo de iteraciones"
+                && c.dataset.tono === "aviso"), "Criterio no cumplido con su motivo");
         }],
-        ["Errores accesibles y raíz en extremo sin deslizador", async (w, frame) => {
+        ["Reproducción: pausa inicial, velocidades, fin, reinicio y sin peticiones", async (w, frame) => {
+            ejemplo(w);
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            let peticiones = 0;
+            const original = w.fetch; w.fetch = (...args) => { peticiones++; return original(...args); };
+            const boton = q(w, "#iteracion-reproducir"), slider = q(w, "#iteracion-raices"), vel = q(w, "#iteracion-velocidad");
+            ok([...vel.options].map(o => o.textContent).join(" ") === "0.5× 1× 2× 4×", "Cuatro velocidades");
+            await new Promise(r => setTimeout(r, 1600));
+            ok(slider.value === "1" && boton.getAttribute("aria-label") === "Reproducir", "No avanza sola");
+            vel.value = "0.5"; vel.dispatchEvent(new w.Event("change"));
+            boton.click();
+            ok(boton.getAttribute("aria-label") === "Pausar" && q(w, "#paso-breve").getAttribute("aria-live") === "off", "Reproduce sin anunciar cada paso");
+            await new Promise(r => setTimeout(r, 1500));
+            ok(slider.value === "1", "0.5×: aún no cambia tras 1.5 s");
+            vel.value = "4"; vel.dispatchEvent(new w.Event("change"));
+            await esperar(() => slider.value === "13", "Llega al final");
+            ok(boton.getAttribute("aria-label") === "Reproducir" && q(w, "#paso-breve").getAttribute("aria-live") === "polite", "Se detiene al final");
+            ok(q(w, '[data-iteracion="13"]').hasAttribute("data-activa") && grafica(w).data[1].x[1] === lista(w)[12].c, "Tabla y gráfica en la última fila");
+            ok(q(w, "#paso-breve").textContent.includes("Se detiene"), "Explica la parada");
+            boton.click();
+            ok(slider.value === "1", "Reproducir al final vuelve a empezar");
+            await esperar(() => Number(slider.value) >= 3);
+            boton.click();
+            const pausado = slider.value;
+            await new Promise(r => setTimeout(r, 700));
+            ok(slider.value === pausado, "Pausa detiene el avance");
+            q(w, "#iteracion-siguiente").click();
+            ok(Number(slider.value) === Number(pausado) + 1, "Siguiente");
+            q(w, "#iteracion-reiniciar").click();
+            ok(slider.value === "1" && q(w, "#iteracion-anterior").disabled, "Reiniciar");
+            ok(peticiones === 0, "Reproducir y recorrer no recalculan ni piden muestras");
+            boton.click(); await esperar(() => Number(slider.value) >= 2);
+            valor(w, "a", "0.5");
+            const tras = slider.value; await new Promise(r => setTimeout(r, 700));
+            ok(slider.value === tras && boton.getAttribute("aria-label") === "Reproducir", "Cambiar los datos detiene la reproducción");
+        }],
+        ["Decimales estrictos por valor: un f(c) diminuto no infla su fila ni usa exponentes", async (w, frame) => {
+            valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "1.6");
+            valor(w, "precision", "1e-12");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const ultima = q(w, ".raices-tabla tbody tr:last-child");
+            const celdas = [...ultima.querySelectorAll("[data-raices-numero]")];
+            const fc = celdas.find(n => n.parentElement.cellIndex === 6);
+            ok(Number(fc.dataset.raicesNumero) !== 0, "Caso con f(c) distinto de cero");
+            ok(!/e[-+]?\d/.test(q(w, "#resultado").textContent), "Sin notación científica en el resultado");
+            ok(Number(fc.textContent.replace("≈ ", "")) !== 0, "f(c) no se lee como cero");
+            const longitud = ultima.cells[7].querySelector("span");
+            ok(!/\.\d{7,}/.test(longitud.textContent.replace("≈ ", "")) || Number(longitud.dataset.raicesNumero) < 1e-6,
+                "La longitud conserva sus propios decimales");
+            const selector = q(w, "#raices-decimales"); selector.value = "4";
+            selector.dispatchEvent(new w.Event("change", { bubbles: true }));
+            ok([1, 2, 3].every(c => /^(≈ )?\d+(\.\d{1,4})?$/.test(q(w, '[data-iteracion="2"]').cells[c].textContent.trim())), "4 decimales en a, b y c");
+            ok(/\d\.\d{1,4}\b/.test(q(w, "#paso-breve").textContent) && !/\d\.\d{5,}/.test(q(w, "#paso-breve").textContent.split("longitud")[0]),
+                "La explicación sigue los decimales elegidos");
+        }],
+        ["Teclado en la tabla: flechas, Inicio y Fin sin desplazar la página", async (w, frame) => {
+            ejemplo(w);
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const fila = i => q(w, `[data-iteracion="${i}"]`);
+            ok(fila(1).tabIndex === 0 && fila(2).tabIndex === -1, "Un solo alto de tabulación");
+            fila(1).focus();
+            const tecla = k => w.document.activeElement.dispatchEvent(new w.KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }));
+            const y = w.scrollY;
+            tecla("ArrowDown"); ok(w.document.activeElement === fila(2) && q(w, "#iteracion-raices").value === "2", "Flecha abajo");
+            tecla("End"); ok(w.document.activeElement === fila(13), "Fin");
+            ok(q(w, "#raices-tabla-marco").scrollTop > 0, "El marco de la tabla se desplaza hasta la fila");
+            ok(w.scrollY === y, "La página no se desplaza");
+            tecla("ArrowUp"); ok(q(w, "#iteracion-raices").value === "12", "Flecha arriba");
+            tecla("Home"); ok(w.document.activeElement === fila(1) && grafica(w).data[1].x[1] === lista(w)[0].c, "Inicio sincroniza la gráfica");
+        }],
+        ["Zoom: rueda sobre la gráfica, respeto entre iteraciones y reenfoque explícito", async (w, frame) => {
+            ejemplo(w);
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const g = grafica(w);
+            const capa = g.querySelector(".nsewdrag"), caja = capa.getBoundingClientRect();
+            const rueda = (destino, x, y) => destino.dispatchEvent(new w.WheelEvent("wheel",
+                { deltaY: -200, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+            const antes = [...g.layout.xaxis.range];
+            const dentro = [caja.left + caja.width / 2, caja.top + caja.height / 2];
+            // Rueda que llega desplazando la página: no queda atrapada por la gráfica.
+            rueda(w.document.body, 5, 5);
+            ok(rueda(capa, ...dentro), "La página conserva el desplazamiento al pasar sobre la gráfica");
+            await new Promise(r => setTimeout(r, 700));
+            ok(g.layout.xaxis.range[0] === antes[0], "Sin zoom involuntario");
+            ok(!rueda(capa, ...dentro), "La rueda sobre la gráfica no desplaza la página");
+            await esperar(() => g.layout.xaxis.range[1] - g.layout.xaxis.range[0] < antes[1] - antes[0], "La rueda acerca");
+            await w.Plotly.relayout(g, { "xaxis.range": [0, 3] });
+            await esperar(() => g.data[0].x[0] === 0);
+            q(w, "#iteracion-siguiente").click(); q(w, "#iteracion-siguiente").click();
+            await new Promise(r => setTimeout(r, 300));
+            ok(g.layout.xaxis.range[0] === 0 && g.layout.xaxis.range[1] === 3, "Cambiar de iteración respeta el zoom");
+            q(w, "#grafica-enfocar").click();
+            const p = lista(w)[2], margen = (p.b - p.a) / 4;
+            await esperar(() => Math.abs(g.layout.xaxis.range[0] - (p.a - margen)) < 1e-12, "Enfoca el intervalo del paso");
+            await esperar(() => g.data[0].x[0] === g.layout.xaxis.range[0], "Muestras del nuevo encuadre");
+        }],
+        ["Discontinuidad informativa y raíz en extremo sin deslizador", async (w, frame) => {
             valor(w, "funcion", "1/x"); valor(w, "a", "-1"); valor(w, "b", "1");
             w = await post(frame);
-            ok(!q(w, "#resultado"), "No declara raíz en una discontinuidad");
-            ok(q(w, '[name="funcion"]').value === "1/x", "Conserva la entrada inválida");
+            ok(q(w, "#results-title").textContent === "Método no aplicable", "Informa la discontinuidad");
+            ok(!q(w, ".raices-raiz") && !q(w, "#iteracion-raices"), "No declara raíz en una discontinuidad");
+            ok(q(w, '[name="funcion"]').value === "1/x", "Conserva la función introducida");
             valor(w, "funcion", "x"); valor(w, "a", "0"); valor(w, "b", "1");
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 0 && !q(w, "#iteracion-raices"), "Raíz en extremo, sin iteraciones");
@@ -378,6 +500,7 @@
     let aprobados = 0;
     for (const [nombre, probar] of casos) {
         const item = document.createElement("li"); document.getElementById("resultados").append(item);
+        (window.preferencias ? window.preferencias.guardar("pygebra-raices-decimales", "6") : localStorage.setItem("pygebra-raices-decimales", "6")); // Cada caso parte de 6 decimales.
         const frame = document.createElement("iframe"); frame.title = nombre; frame.style.cssText = "width:100%;height:700px";
         document.body.append(frame);
         try {

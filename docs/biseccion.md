@@ -32,12 +32,13 @@ Escribe sen(x)² para elevar el resultado del seno; sen²(x) no se admite.
 También puedes
 escribir con el teclado físico. La gráfica se actualiza al editar la función;
 desplazarla o cambiar el zoom solicita nuevas muestras al servidor local, sin
-resolver de nuevo. **Seleccionar a/b** permite pulsar sobre la curva para llevar
+resolver de nuevo. La rueda del ratón sobre la gráfica acerca o aleja y arrastrar
+la desplaza. **Elegir a/b** permite pulsar sobre la curva para llevar
 la coordenada x muestreada al formulario; luego puedes ajustar el valor arrastrando
 su línea discontinua o escribiendo con teclado. Editar extremos no mueve los ejes
 ni exige que el intervalo ya sea válido. Resolver sí comprueba todas las condiciones.
-**Vista inicial** vuelve a `[-10, 10]`; después de resolver se encuadra el intervalo
-calculado, recuperable con **Ver intervalo calculado**. La franja y los marcadores
+**Vista inicial** vuelve a `[-10, 10]`; después de resolver se encuadra la primera
+iteración y **Enfocar intervalo** encuadra la iteración activa. La franja y los marcadores
 de las iteraciones conservan la evidencia del cálculo anterior cuando editas la entrada.
 
 **Ajustes y funciones admitidas** permite reducir la precisión predeterminada
@@ -60,21 +61,18 @@ Ambas notaciones generan la misma clave de comparación y los mismos resultados.
 
 Para preparar una demostración oral, consulta la [guía de exposición](guia-exposicion-biseccion.md).
 
-El resultado y su estado aparecen antes de la gráfica. En escritorio, un panel
-junto a ella explica la decisión seleccionada; en móvil pasa debajo sin superponer
-controles, con los valores completos en **Valores y signos de la iteración**.
-**Anterior/Siguiente** y el deslizador discreto
-recorre las iteraciones con arrastre, flechas del teclado o pantalla táctil.
-El cursor, el foco o un toque sobre una fila del procedimiento seleccionan esa
-misma iteración. La franja resalta el intervalo **antes** del recorte y los tres
+El resultado y su estado aparecen antes de la gráfica. La zona de estudio, la
+reproducción y la tabla se describen en [la interfaz compartida](newton-raphson.md#zona-de-estudio-compartida).
+La franja clara resalta el intervalo **antes** del recorte, la intensa la mitad que se
+conserva, una línea punteada baja del punto medio del eje a f(c) y los tres
 marcadores muestran `(a,f(a))`, `(c,f(c))` y `(b,f(b))`. Estas interacciones usan
 el JSON calculado, sin peticiones ni una nueva ejecución del algoritmo. La lectura
 identifica a (izquierdo), c (punto medio) y b (derecho), muestra los signos reales
 y explica qué mitad se descarta, que c sustituye al extremo con su mismo signo,
 cuál permanece y el nuevo intervalo. Distingue el intervalo antes de dividirlo del
 resultante; un cero calculado tiene su propia explicación. El resumen usa cifras
-legibles, aumentando las cifras si hace falta distinguir los extremos; el
-procedimiento y la verificación permiten elegir los decimales visibles.
+legibles, aumentando las cifras si hace falta distinguir los extremos. La lectura
+completa de la iteración activa está en **Procedimiento detallado**.
 
 **Verificación** separa condición, valores y conclusión para tres preguntas: por qué
 hay una raíz (continuidad y signos iniciales, o raíz en extremo), si se alcanzó la
@@ -84,14 +82,10 @@ y estancamiento, sin afirmar unicidad ni usar el error relativo como parada.
 Un cero en aritmética de máquina no prueba un error matemático exactamente cero.
 
 Para probar otro intervalo, cambia `a` y `b` y vuelve a resolver: la función se
-conserva. **Comparar intervalos** recuerda hasta diez cálculos en `sessionStorage`
-de la pestaña, separados por la expresión normalizada, con sus aproximaciones e
-iteraciones. Con un solo cálculo se muestra una orientación para probar otro
-intervalo; desde dos de la misma función aparece la tabla. Si los intervalos
-finales convergentes se solapan, dice **Compatible
-con la misma raíz**. Es evidencia numérica, no una demostración de unicidad;
-dos raíces muy cercanas pueden quedar en intervalos solapados. No persiste al
-cerrar la sesión de escritorio. Una edición marca el resultado como anterior.
+conserva. Desde la segunda ejecución aparece el **Historial de esta sesión**, con los
+intervalos de cada función agrupados y comparables. Dos aproximaciones parecidas no
+demuestran que sea la misma raíz ni que sea única. Una edición marca el resultado
+como anterior.
 
 ## Algoritmo y comprobaciones
 
@@ -184,9 +178,9 @@ No se cambia la versión ni se prepara una release.
 El selector **Decimales visibles** cambia solo la lectura de los resultados
 almacenados, sin peticiones ni nuevas iteraciones. Parte de seis decimales y
 permite disminuir o aumentar (4, 6, 8, 12, 16), o ver **Precisión completa**.
-Se prefiere escritura decimal normal; los valores extremos conservan notación
-científica. El formato aumenta automáticamente las cifras si los extremos u
-otros valores distintos quedarían iguales, o un número no nulo parecería cero.
+Siempre se usa escritura decimal, sin notación científica. Solo el valor que lo
+necesita gana cifras: un número no nulo nunca parece cero, y a, b y c de una misma
+fila no se confunden; véase [la interfaz compartida](newton-raphson.md#zona-de-estudio-compartida).
 `≈` señala valores redondeados y el título conserva el valor almacenado; en móvil
 puedes elegir precisión completa. Completa significa valor de máquina, no
 exactitud matemática. Sin JavaScript se conserva la lectura completa.

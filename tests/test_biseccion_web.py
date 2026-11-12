@@ -23,9 +23,13 @@ def datos(**cambios):
     return {"funcion": POLINOMIO, "a": "0.55", "b": "1.1", **cambios}
 
 
-def resultado_html(respuesta):
+def datos_raices_html(respuesta):
     texto = respuesta.content.decode("utf-8")
-    return json.loads(re.search(r'<script id="datos-raices" type="application/json">(.*?)</script>', texto, re.S)[1])["resultado"]
+    return json.loads(re.search(r'<script id="datos-raices" type="application/json">(.*?)</script>', texto, re.S)[1])
+
+
+def resultado_html(respuesta):
+    return datos_raices_html(respuesta)["resultado"]
 
 
 class BiseccionWebTests(SimpleTestCase):
@@ -122,7 +126,14 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertContains(r, "Convergencia por longitud")
         self.assertContains(r, 'data-iteracion=', count=13)
         self.assertContains(r, 'type="range"')
-        self.assertContains(r, 'id="comparacion-raices"')
+        # Sin JavaScript: tabla y resultado completos; reproductor e historial esperan al script.
+        for marca in ('id="raices-reproductor"', 'id="raices-historial"', 'id="raices-tabla-marco"', 'id="paso-breve"'):
+            self.assertContains(r, marca, count=1)
+        self.assertContains(r, '<div class="raices-recorrido" hidden>', count=1)
+        self.assertContains(r, 'class="panel raices-historial" aria-labelledby="historial-titulo" hidden', count=1)
+        self.assertContains(r, 'data-tono="exito"', count=1)
+        for velocidad in ("0.5×", "1×", "2×", "4×"):
+            self.assertContains(r, velocidad)
         resultado = resultado_html(r)
         self.assertEqual(len(resultado["iteraciones"]), 13)
         self.assertAlmostEqual(resultado["c"], .763970947265625)
@@ -130,13 +141,15 @@ class BiseccionWebTests(SimpleTestCase):
 
     def test_precision_opcional_y_validacion_estricta(self):
         for cambios in [{"precision": ".001"}, {"precision": "0"}, {"a": "NaN"},
-                         {"a": "2", "b": "1"}, {"funcion": "1/(x-.3)", "a": "0", "b": "1"},
+                         {"a": "2", "b": "1"},
                          {"intruso": "1"}, {"a": ["0", "1"]}, {"max_iteraciones": "1001"}]:
             with self.subTest(cambios=cambios):
                 r = self.client.post(RUTA, datos(**cambios))
                 self.assertEqual(r.status_code, 200)
                 self.assertContains(r, "data-respuesta-errores")
                 self.assertNotContains(r, 'id="resultado"')
+                self.assertEqual(datos_raices_html(r)["clasificacion"], "entrada_invalida")
+                self.assertIsNone(resultado_html(r))
         r = self.client.post(RUTA, datos(precision="", max_iteraciones=""))
         self.assertTrue(resultado_html(r)["convergio"])
         r = self.client.post(RUTA, datos(precision="1e-8"))
@@ -154,6 +167,7 @@ class BiseccionWebTests(SimpleTestCase):
         puntos = r.json()
         self.assertEqual(len(puntos["x"]), len(puntos["y"]))
         self.assertIn(None, puntos["y"])
+        self.assertEqual(puntos["clasificacion"], "exploracion_no_concluyente")
         self.assertLessEqual(len(puntos["x"]), 801)
         for cambio in [{"funcion": "x.__class__"}, {"a": "inf"}, {"a": "1", "b": "0"}]:
             self.assertEqual(self.client.post(RUTA + "grafica/", datos(**cambio)).status_code, 400)
@@ -164,11 +178,33 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual((r.json()["x"][0], r.json()["x"][-1]), (-10, 10))
         self.assertEqual(len(r.json()["x"]), 801)
-        # Ver una curva, incluso sin cambio de signo, no autoriza resolver.
-        for valores in [{"funcion": "x^2+1"}, {"funcion": "x^2+1", "a": "-1", "b": "1"}]:
-            r = self.client.post(RUTA, valores)
-            self.assertNotContains(r, 'id="resultado"')
-            self.assertContains(r, "data-respuesta-errores")
+        self.assertEqual(r.json()["clasificacion"], "exploracion_no_concluyente")
+        r = self.client.post(RUTA, {"funcion": "x^2+1"})
+        self.assertNotContains(r, 'id="resultado"')
+        self.assertContains(r, "data-respuesta-errores")
+
+    def test_intervalo_no_aplicable_muestra_resultado_informativo(self):
+        for texto, a, b, clasificacion in [
+            ("x^2+1", "-1", "1", "sin_raices_demostrado"),
+            ("x^2", "-1", "1", "no_aplicable"),
+            ("x^2-1", "-2", "2", "no_aplicable"),
+            ("1/(x-.3)", "0", "1", "no_aplicable"),
+        ]:
+            with self.subTest(texto=texto):
+                r = self.client.post(RUTA, datos(funcion=texto, a=a, b=b))
+                self.assertEqual(r.status_code, 200)
+                self.assertEqual(resultado_html(r)["clasificacion"], clasificacion)
+                self.assertNotContains(r, "data-respuesta-errores")
+                self.assertContains(r, 'id="resultado"')
+                self.assertNotContains(r, 'data-iteracion=')
+                self.assertNotContains(r, "Aproximación sin convergencia")
+
+    def test_exploracion_puede_detectar_indicios_sin_aplicar_un_metodo(self):
+        for texto in ("x^2", "x-.001"):
+            with self.subTest(texto=texto):
+                r = self.client.post(RUTA + "grafica/", {"funcion": texto, "a": "-1", "b": "1"})
+                self.assertEqual(r.status_code, 200)
+                self.assertEqual(r.json()["clasificacion"], "indicios_numericos")
 
     def test_exploracion_conserva_limites_y_validacion_de_entrada(self):
         for valores in [{"funcion": "x", "intruso": "1"}, {"funcion": ["x", "x+1"]},

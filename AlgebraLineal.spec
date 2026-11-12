@@ -76,6 +76,7 @@ hiddenimports = [
     "backend.vectores",
     "backend.biseccion",
     "backend.regla_falsa",
+    "backend.newton_raphson",
     "backend.metodos_cerrados",
     "backend.funciones_reales",
     "backend.matrices",

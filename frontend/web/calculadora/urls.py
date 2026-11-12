@@ -3,7 +3,7 @@
 from django.urls import path
 
 from . import views
-from .views_raices import explorar_funcion, resolver_biseccion, resolver_regla_falsa
+from .views_raices import explorar_funcion, resolver_biseccion, resolver_regla_falsa, resolver_newton_raphson
 from .views_conjuntos import relaciones_conjuntos, cardinalidades_conjuntos
 
 
@@ -11,6 +11,8 @@ app_name = "calculadora"
 
 
 urlpatterns = [
+    path("metodos-numericos/newton-raphson/", resolver_newton_raphson, name="newton-raphson"),
+    path("metodos-numericos/newton-raphson/grafica/", explorar_funcion, {"derivar": True}, name="newton-raphson-grafica"),
     path("conjuntos/relaciones/", relaciones_conjuntos, name="relaciones-conjuntos"),
     path("conjuntos/cardinalidad/", cardinalidades_conjuntos, name="cardinalidades-conjuntos"),
     path("metodos-numericos/biseccion/", resolver_biseccion, name="biseccion"),

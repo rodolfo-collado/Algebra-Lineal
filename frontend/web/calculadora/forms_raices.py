@@ -67,3 +67,10 @@ class BiseccionForm(RaicesForm):
 
 class ReglaFalsaForm(RaicesForm):
     magnitud, etiqueta = "tolerancia", "Tolerancia del error absoluto"
+
+
+class NewtonRaphsonForm(RaicesForm):
+    a = b = None
+    etiqueta = "Tolerancia del cambio y del residuo"
+    x0 = forms.FloatField(label="Aproximación inicial x₀",
+        widget=forms.NumberInput(attrs={"class": "field-input", "step": "any"}))

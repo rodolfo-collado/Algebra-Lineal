@@ -6,31 +6,30 @@
 {% block accion %}Resolver por bisección{% endblock %}
 
 {% block resumen %}
-        <p class="raices-raiz">c ≈ <span>{{ resultado.c|numero_raices }}</span></p>
-        <p class="raices-estado{% if not resultado.convergio %} raices-aviso{% endif %}">{{ resultado.mensaje }}</p>
-        <p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · f(c) <span data-raices-relacion>=</span> {{ resultado.fc|numero_raices }}</p>
+        <p class="raices-raiz">c ≈ <span>{{ resultado.c|numero_raices:"x" }}</span></p>
+        <p class="raices-estado">{{ resultado.mensaje }}</p>
+        <p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · f(c) <span data-raices-relacion>=</span> {{ resultado.fc|numero_raices:"f" }}</p>
 {% endblock %}
 
-{% block procedimiento %}
-    {% disclosure titulo="Procedimiento detallado" id="procedimiento-raices" clase="disclosure-procedure" %}
-        <p class="field-help">c = a + (b − a)/2. Se conserva el subintervalo con cambio de signo hasta que su longitud sea menor que la precisión. Pasa el cursor o enfoca una fila para verla en la gráfica.</p>
-        <div class="table-wrap">
+{% block tabla %}
             <table class="procedure-table raices-tabla">
-                <caption>Iteraciones calculadas, sin redondeo intermedio</caption>
+                <caption>Una fila por iteración, sin redondeo intermedio</caption>
                 <thead><tr><th scope="col">i</th><th scope="col">a</th><th scope="col">b</th><th scope="col">c</th><th scope="col">f(a)</th><th scope="col">f(b)</th><th scope="col">f(c)</th><th scope="col">Longitud restante</th><th scope="col">Error relativo (%)</th></tr></thead>
                 <tbody>
                 {% for fila in resultado.iteraciones %}
-                    <tr data-iteracion="{{ fila.i }}" tabindex="0" data-raices-grupo aria-label="Iteración {{ fila.i }}">
-                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_raices }}</td><td>{{ fila.b|numero_raices }}</td><td>{{ fila.c|numero_raices }}</td>
-                        <td>{{ fila.fa|numero_raices }}</td><td>{{ fila.fb|numero_raices }}</td><td>{{ fila.fc|numero_raices }}</td><td>{{ fila.longitud|numero_raices }}</td>
-                        <td>{% if fila.error_relativo is not None %}{{ fila.error_relativo|numero_raices }} %{% else %}No definido{% endif %}</td>
+                    <tr data-iteracion="{{ fila.i }}" tabindex="-1" data-raices-grupo aria-label="Iteración {{ fila.i }}">
+                        <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_raices:"x" }}</td><td>{{ fila.b|numero_raices:"x" }}</td><td>{{ fila.c|numero_raices:"x" }}</td>
+                        <td>{{ fila.fa|numero_raices:"f" }}</td><td>{{ fila.fb|numero_raices:"f" }}</td><td>{{ fila.fc|numero_raices:"f" }}</td><td>{{ fila.longitud|numero_raices:"longitud" }}</td>
+                        <td>{% if fila.error_relativo is not None %}{{ fila.error_relativo|numero_raices:"error" }} %{% else %}No definido{% endif %}</td>
                     </tr>
                 {% empty %}<tr><td colspan="9">Raíz en un extremo: no se necesitan iteraciones.</td></tr>{% endfor %}
                 </tbody>
             </table>
-        </div>
+{% endblock %}
+
+{% block procedimiento %}
+        <p>c = a + (b − a)/2. Se conserva el subintervalo con cambio de signo hasta que su longitud sea menor que la precisión.</p>
         <p class="field-help">Error relativo = |(c actual − c anterior)/c actual| × 100. No se define en la primera iteración ni cuando c = 0. No es el criterio de parada.</p>
-    {% enddisclosure %}
 {% endblock %}
 
 {% block verificacion %}
@@ -69,7 +68,5 @@
         <p class="field-help">Usamos números de máquina y comprobaciones conservadoras. Puede haber más de una raíz en el intervalo.</p>
     {% enddisclosure %}
 {% endblock %}
-
-{% block ayuda_comparacion %}Cambia a y b conservando la función y vuelve a resolver. Se guardan hasta 10 resultados en esta pestaña; la comparación usa los intervalos finales y no demuestra unicidad.{% endblock %}
 
 {% block metodo_js %}<script src="{% static 'calculadora/biseccion.js' %}" defer></script>{% endblock %}

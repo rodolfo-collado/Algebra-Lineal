@@ -192,6 +192,48 @@ sus originales y los trabajos de navegación/Estudio se conservan intactos.
 No se incorporan otras funcionalidades en desarrollo. La promoción
 `develop → main` requiere un PR separado tras revisar e integrar esta preparación.
 
+## Preparación de v0.17.0
+
+Incremento **MINOR** desde 0.16.0. Se preparó primero como el patch 0.16.1, pero
+mientras esperaba revisión `develop` integró **Newton-Raphson** (PR #122 y #123),
+una herramienta nueva: publicar `develop` como patch incluiría una funcionalidad,
+así que la versión pasa a 0.17.0. El PR de esta preparación solo cambia
+Operaciones con conjuntos; Newton llega por `develop`. No se añaden dependencias.
+Esta versión todavía no está publicada.
+
+- **Newton-Raphson:** nueva herramienta en *Métodos numéricos → Raíces de
+  ecuaciones*. Deriva f′(x) automáticamente (suma, producto, cociente, potencia
+  constante y cadena), respeta el dominio de f, permite elegir x₀ sobre la curva y
+  recorre las tangentes con el cambio absoluto, el residuo y el motivo de parada
+  (tolerancia, derivada nula, dominio, ciclo, estancamiento o máximo de iteraciones).
+  Bisección y Regla falsa comparten la clasificación de resultados. Véase
+  [Newton-Raphson](newton-raphson.md).
+
+Operaciones con conjuntos deja de sentirse como un formulario; el motor
+matemático, el parser y los formatos de resultado no cambian:
+
+- **Barra de símbolos:** sustituye el selector «Insertar operación» y su botón.
+  Conjuntos definidos, ∪ ∩ ∖ ∁ |·| ( ) × 𝒫, ∈ ∉ ⊆ ⊂ = ≠ y ∅ { } par intervalo se
+  insertan en el cursor, con Deshacer nativo y navegación por flechas.
+- **Venn editable:** los elementos se escriben dentro de cada región del diagrama
+  (exclusivas, intersecciones y exterior). Diagrama y lista de conjuntos se
+  mantienen sincronizados mediante el modelo existente; el último lado editado
+  manda. El modo **Cantidades** solo maneja números y nunca inventa elementos.
+- **Tarjetas de resultados:** unión, intersecciones, diferencias, diferencia
+  simétrica, zonas exclusivas, complementos, cardinalidades, relaciones e
+  inclusión-exclusión, con su cardinalidad, copia al portapapeles, resultados
+  extensos plegados y «Ver pasos» hacia la expresión personalizada.
+- **Pantalla reorganizada:** conjuntos y diagrama lado a lado, tarjetas y
+  expresión personalizada con su procedimiento; ejemplos en el menú Edición.
+  Estados vacíos, errores por región y foco revisados en Estudio y Minimalista.
+- **Un solo Venn:** tras Calcular o Contar, el resultado se sombrea en el diagrama
+  editable (sin alterar lo escrito y con un botón para quitarlo); la tabla de
+  regiones sigue debajo. Solo un resultado con conjuntos que el diagrama no
+  muestra dibuja el suyo.
+- **Elementos ↔ Cantidades con contexto:** volver de Cantidades recupera los
+  conjuntos, la expresión y el diagrama tal como se dejaron; las cantidades nunca
+  se convierten en elementos.
+
 ## Flujo de integración y entrega
 
 ```mermaid

@@ -11,6 +11,165 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+## Fórmula y sustitución de Newton-Raphson (2026-11-12)
+
+Ajuste didáctico sin cambiar algoritmos, criterios de parada ni la versión 0.17.0.
+
+- **Python:** 2.024 pruebas completas correctas (`unittest discover`). Fijan la notación
+  natural de f(x) y f′(x) (`3x² − 1`, `−3sen(3x)`, `1/(2√x) + x/|x|`, `2πx + e²x`) y el
+  bloque de función, derivada y fórmula general en la página resuelta.
+- **Navegador (Edge, Playwright):** Newton 10/10, normal y con movimiento reducido;
+  Bisección 23/23 y Regla Falsa 12/12 sin cambios. El caso nuevo recorre adelante, atrás y
+  reproduce en precisión completa: valores, sustitución, nueva aproximación y comprobación
+  coinciden con el JSON en cada paso, sin peticiones, y la fracción tiene lectura lineal.
+- **WebView2 157 (ejecutable de PyInstaller):** 23/23, 12/12 y 10/10, normal y con movimiento
+  reducido, sin errores de consola. En escritorio, elegir decimales guarda la preferencia con
+  una petición a `/preferencias/`: el caso nuevo elige los decimales antes de contar peticiones.
+- **Disposición:** en escritorio la tabla de Newton va bajo la gráfica (columna izquierda) y
+  la explicación a la derecha. Medida en Edge (Estudio y Minimalista, 1280, 1024, 744 y
+  390 px): Bisección y Regla Falsa conservan exactamente la misma geometría que antes, y
+  Newton solo cambia en escritorio. Los runners lo comprueban: la tabla de Bisección sigue a
+  todo el ancho y la de Newton bajo la gráfica a 1280 px y al final en columna única.
+- **Visual:** zona de estudio sin desborde en Estudio y Minimalista, claro y oscuro, a
+  1280, 744 y 390 px, también con «Precisión completa». Capturas:
+  [sustitución en Estudio](capturas/raices/09-newton-sustitucion-estudio-1280.jpg),
+  [parada en Minimalista noche](capturas/raices/10-newton-parada-minimalista-noche-1280.jpg),
+  [precisión completa a 744 px](capturas/raices/11-newton-precision-completa-estudio-noche-744.jpg)
+  [Minimalista a 390 px](capturas/raices/12-newton-minimalista-390.jpg) y
+  [WebView2](capturas/raices/13-newton-webview2.jpg).
+
+## Historial y tabla de Newton de los métodos de raíces (2026-11-13)
+
+Ajuste del PR #125 sin cambiar algoritmos, criterios de parada ni contratos.
+
+- **Python:** 2.024 pruebas completas correctas desde PowerShell. Las nuevas fijan la
+  tabla de Newton de la diapositiva 15 (n, xₙ y f(xₙ) desde n = 0; 1.5 y −0.125 en la
+  primera fila), el filtro sin notación científica (5e-14 → 0.00000000000005) y la
+  preferencia cerrada `pygebra-raices-decimales` del escritorio.
+- **Navegador (Edge 157):** Bisección 23/23, Regla Falsa 12/12 y Newton 9/9, con
+  movimiento normal y reducido. Casos nuevos: decimales elegidos por valor (un f(c)
+  diminuto no infla su fila), la explicación sigue los decimales, n = 0 sin tangente,
+  columnas y criterio del historial por método, y «Ver» que conserva los decimales.
+- **WebView2 157 (ejecutable de PyInstaller):** 23/23, 12/12 y 9/9, normal y con movimiento
+  reducido, sin errores de consola. Aquí se vio que elegir decimales en escritorio escribe
+  `/preferencias/` (como el tema o el estilo) y que el archivo conserva la elección entre
+  casos: los runners fijan 6 decimales al empezar cada caso y no cuentan esa escritura como
+  un cálculo.
+- **Visual:** 36 combinaciones sin desborde ni errores JavaScript, más historial con
+  ejecuciones sin convergencia a 1280, 744 y 390 px. Capturas nuevas:
+  [Newton e historial](capturas/raices/07-newton-tabla-de-clase-e-historial.jpg) y
+  [historial en Minimalista noche](capturas/raices/08-historial-minimalista-noche-744.jpg).
+
+## Reproducción didáctica de los métodos de raíces (2026-11-12)
+
+Sin cambios en los algoritmos ni en la versión (sigue preparada 0.17.0).
+
+- **Python:** 2.022 pruebas completas correctas desde PowerShell. Las nuevas cubren
+  `derivada` en las muestras de Newton (y su ausencia en Bisección, Regla Falsa y
+  entradas incompletas), los superíndices de `legible`, el tono de cada clasificación
+  y la página sin JavaScript (tabla completa, reproductor e historial ocultos).
+- **Navegador (Edge 157, Playwright):** Bisección 22/22, Regla Falsa 12/12 y Newton
+  8/8, con movimiento normal y reducido. Casos nuevos: reproducción (pausa inicial,
+  0.5× y 4×, fin, reinicio, pausa al editar), teclado en la tabla sin desplazar la
+  página, rueda con zoom y paso libre del desplazamiento, zoom respetado entre
+  iteraciones, enfoque del paso, historial agrupado por función con «Ver», y f′(x)
+  reactiva con una sola petición por ráfaga de escritura.
+- **Entrada real:** rueda del ratón que desplaza la página al cruzar la gráfica y
+  acerca sobre ella; Tab hasta Reproducir y Espacio para reproducir y pausar;
+  arrastre de la línea de x₀ (marca el resultado como anterior, sin resolver).
+- **WebView2 157 (ejecutable de PyInstaller con CDP y preferencias aisladas):** los tres
+  runners 22/22, 12/12 y 8/8, también con movimiento reducido. El único aviso de consola
+  es la transición de vista de Estudio interrumpida por la navegación automatizada.
+- **Visual:** 36 combinaciones (tres métodos × Estudio/Minimalista × claro/oscuro ×
+  1280/744/390 px), sin desborde horizontal ni errores JavaScript. Capturas:
+  [Bisección](capturas/raices/01-biseccion-estudio-1280.jpg),
+  [Regla Falsa](capturas/raices/02-regla-falsa-minimalista-noche-1280.jpg),
+  [Newton](capturas/raices/03-newton-estudio-noche-744.jpg),
+  [móvil](capturas/raices/04-biseccion-minimalista-390.jpg),
+  [historial](capturas/raices/05-historial-biseccion.jpg) y
+  [derivada](capturas/raices/06-derivada-antes-de-resolver.jpg).
+
+Pendiente: lector de pantalla real (NVDA o Narrador) y pantalla táctil física.
+
+## Preparación de v0.17.0 (2026-11-11)
+
+Preparada primero como 0.16.1; pasa a 0.17.0 al integrar Newton-Raphson desde
+`develop` (véanse sus pruebas en la sección siguiente).
+
+- **Python:** 1.994 pruebas completas correctas desde PowerShell (sin omisiones);
+  2.014 tras integrar Newton-Raphson desde `develop`, que no toca archivos de este cambio.
+  `test_conjuntos_regiones` añade la ida y vuelta escribir/leer de cada región
+  (vacía, anidados, ∅ como elemento, pares, intervalos), el diagrama leído siempre
+  del modelo, «el último lado editado manda», el universo creado desde el exterior,
+  el cambio de conjuntos del diagrama, las tarjetas con elementos y con cantidades,
+  «Ver pasos» (también con un nombre editado en el mismo envío) y el enlace a
+  cantidades que solo acepta enteros.
+- **Comprobaciones:** `uv lock --check`, Django `check`, `compileall`, sintaxis de
+  los JS modificados y `git diff --check`. El lockfile solo cambia la versión.
+- **Navegador:** runner de Conjuntos 19/19 en Edge 157 y en Chrome sin ventana
+  (CDP, foco emulado); menú de edición 72/72, teclado 36/36 y Bisección 19/19.
+  Matriz visual de 80 combinaciones (dos pantallas de Operaciones, el estado vacío y
+  Cantidades × Estudio/Minimalista × claro/oscuro × 320/390/768/1024/1440 px): sin
+  desborde horizontal, campos del diagrama dentro de su lienzo y tarjetas dentro de
+  la ventana. Capturas revisadas en escritorio y móvil.
+- **WebView2 (ejecutable de PyInstaller, WebView2 157):** con preferencias aisladas
+  y CDP, 12 comprobaciones con teclas y clics reales por estilo (Tab hacia la barra,
+  flechas, Intro que inserta, un solo alto de tabulación, clic que conserva el cursor,
+  región enfocada por clic con su leyenda, escritura e Intro que actualiza conjuntos
+  y tarjetas, cantidades dentro del diagrama) y el runner 19/19 dentro de la app.
+  Esta prueba encontró que añadir «, 11» a una región que mostraba `{5}` creaba el
+  elemento `{5}`: las regiones se muestran ahora sin llaves. Los únicos avisos de
+  consola fueron transiciones de página de Estudio interrumpidas por la navegación
+  automatizada (`@view-transition` de `estudio.css`, sin cambios en este PR).
+- **Revisión de aceptación (1280 px, Estudio y Minimalista, dos y tres conjuntos):**
+  comparada con v0.16.0 en las mismas pantallas, la zona de entrada conserva el
+  mismo número de controles (11 con dos conjuntos, 13 con tres) aunque ahora incluye
+  el diagrama editable, que antes era un modo aparte que ocultaba las definiciones.
+  Las tarjetas añaden 8 (dos conjuntos) o 15 (tres) resultados visibles a la vez,
+  cada uno con Copiar y Ver pasos, y alargan la página (de 1.494 a 2.590 px con
+  tres conjuntos en Estudio). Diferencias anotadas en el PR: Cantidades es la otra
+  herramienta, no un modo del mismo diagrama; las tarjetas cubren solo los dos o tres
+  conjuntos del diagrama; conjuntos, diagrama y tarjetas se sincronizan al guardar o
+  actualizar, no mientras se escribe. Tras esa revisión se corrigieron el segundo
+  diagrama después de Calcular (ahora se sombrea el editable) y la vuelta de
+  Cantidades a Elementos (ahora conserva el editor).
+- **Tras esas dos correcciones:** 2.019 pruebas Python (cinco nuevas: sombreado en
+  el editable, relación sin diagrama repetido, conjunto fuera del diagrama con su
+  propio Venn, Cardinalidad por regiones y la ida y vuelta con `volver`, que solo
+  admite campos del editor). Runner de Conjuntos 20/20 en Edge y Chrome; matriz
+  visual 80/80. En el ejecutable WebView2, 19 comprobaciones reales por estilo
+  (las anteriores más Calcular y Contar con un solo diagrama, el botón que quita y
+  repone el sombreado por clic e Intro, y Elementos → Cantidades → Contar →
+  Elementos recuperando conjuntos, expresión y diagrama) y el runner 20/20, sin
+  errores de consola.
+
+Pendiente de validación manual: lector de pantalla (NVDA o Narrador) sobre los
+campos del diagrama y la barra, y pantalla táctil física en las regiones pequeñas
+del diagrama de tres conjuntos.
+
+## Newton-Raphson (2026-11-10)
+
+- Suite completa: **1996 pruebas Python** correctas, incluidas las referencias y
+  estados de Newton, HTTP, validación, navegación, recursos y regresiones existentes.
+- DOM en Edge mediante Playwright: Newton **6/6**, Bisección **19/19**, Regla falsa
+  **11/11**, sin errores JavaScript. Estudio/Minimalista, claro/oscuro y 1280/744/390 px.
+- WebView2 real mediante pywebview: Newton **6/6**. Se usó una ventana oculta con
+  argumentos de diagnóstico para desactivar throttling y foco emulado mediante CDP.
+  Sin emulación, el runner de foco/recorrido no completa sus esperas en la ventana
+  oculta; esto limita la evidencia sobre foco nativo y gestos físicos.
+- Build local PyInstaller de Windows correcto. `uv lock --check`, Django,
+  `compileall`, sintaxis JavaScript y `git diff --check` correctos.
+- Clic sobre la curva y arrastre real de su línea mediante mouse de Playwright:
+  x₀ cambió de 1.5 a 2.5831528279181692, sin resolver automáticamente.
+- Capturas de escritorio y móvil revisadas, esperando redimensionado de Plotly.
+  El recorrido abre en la primera tangente; el ajuste de decimales conserva el JSON.
+- No se verificaron lector de pantalla, touch físico ni instalación/desinstalación
+  local. El CI del PR ejecuta su propio build y smoke de distribución Windows.
+
+Ver [Newton-Raphson](newton-raphson.md) para los comandos reproducibles y límites
+matemáticos del criterio de convergencia. La tolerancia no certifica
+una distancia a la raíz.
+
 ## Preparación de v0.16.0 (2026-11-09)
 
 - **Python:** 1.986 pruebas completas y 125 focalizadas de Conjuntos, Regla Falsa

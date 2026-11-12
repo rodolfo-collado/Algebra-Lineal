@@ -27,10 +27,11 @@ Minimalista conservan el mismo cálculo; el panel didáctico pasa debajo de la g
 en pantallas estrechas. El selector de decimales cambia solo la lectura y evita
 confundir valores distintos o mostrar ceros falsos.
 
-La comparación recuerda hasta diez cálculos por método en la pestaña. Para Regla
-falsa compara los tramos de confirmación, no todo el intervalo que puede conservar
-un extremo fijo. Un resultado sin convergencia nunca se presenta como una raíz
-confirmada. Un solapamiento es compatible con la misma raíz, sin demostrar unicidad.
+El historial de la sesión agrupa los intervalos probados con la misma función, con
+su estado, aproximación, iteraciones y residuo. Un resultado sin convergencia nunca
+se presenta como una raíz confirmada. La gráfica muestra la secante, su corte xr, la
+subida hasta f(xr), el intervalo de la iteración (franja clara) y el actualizado
+(franja intensa); véase [la interfaz compartida](newton-raphson.md#zona-de-estudio-compartida).
 
 ## Algoritmo y criterio de parada
 
