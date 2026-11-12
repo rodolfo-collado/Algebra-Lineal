@@ -1,0 +1,40 @@
+{% load componentes %}{% comment %}Tarjetas de operaciones y propiedades: una por resultado, con su notación, su valor y cuántos elementos tiene. `data-mascaras` ilumina sus regiones en el diagrama. Copiar necesita JavaScript; «Ver pasos» (solo con `pasos`) envía la expresión de la tarjeta al cálculo con procedimiento. Con `panorama.cantidades` solo hay números: nunca se escriben elementos.{% endcomment %}
+<p class="result-notice" role="status" data-panorama-aviso></p>
+<ul class="tarjetas">
+{% for t in panorama.operaciones %}
+    <li class="tarjeta" data-mascaras="{{ t.mascaras|join:' ' }}">
+        <h4 class="tarjeta-titulo"><span class="tarjeta-nombre">{{ t.titulo }}</span> <span class="tarjeta-notacion conjuntos-math">{{ t.notacion }}</span></h4>
+        {% if t.detalle %}<p class="tarjeta-detalle conjuntos-math">= {% if panorama.cantidades %}|{{ t.detalle }}|{% else %}{{ t.detalle }}{% endif %}</p>{% endif %}
+        <p class="tarjeta-valor conjuntos-math{% if panorama.cantidades %} es-cantidad{% endif %}">{{ t.resumen }}</p>
+        {% if t.resto %}
+        {% disclosure titulo=t.mas clase="tarjeta-mas" nivel=5 %}<p class="conjuntos-math">{{ t.texto }}</p>{% enddisclosure %}
+        {% endif %}
+        <p class="tarjeta-pie">
+            {% if not panorama.cantidades %}<span class="tarjeta-cantidad">{{ t.cantidad }} elemento{{ t.cantidad|pluralize }}</span>{% endif %}
+            <span class="tarjeta-acciones">
+                <button type="button" class="tarjeta-accion" data-copiar="{{ t.texto }}" hidden>Copiar<span class="sr-only"> {{ t.notacion }}</span></button>
+                {% if pasos %}<button type="submit" class="tarjeta-accion" name="tarjeta" value="{{ t.clave }}">Ver pasos<span class="sr-only"> de {{ t.notacion }}</span></button>{% endif %}
+            </span>
+        </p>
+    </li>
+{% endfor %}
+    <li class="tarjeta tarjeta-propiedad">
+        <h4 class="tarjeta-titulo"><span class="tarjeta-nombre">Cardinalidades</span></h4>
+        <dl class="tarjeta-datos">
+            {% for etiqueta, valor in panorama.cardinalidades %}<div><dt class="conjuntos-math">{{ etiqueta }}</dt><dd class="conjuntos-math">{{ valor }}</dd></div>{% endfor %}
+        </dl>
+        <p class="tarjeta-pie"><span class="tarjeta-acciones"><button type="button" class="tarjeta-accion" data-copiar="{{ panorama.cardinalidades_texto }}" hidden>Copiar<span class="sr-only"> las cardinalidades</span></button></span></p>
+    </li>
+    <li class="tarjeta tarjeta-propiedad">
+        <h4 class="tarjeta-titulo"><span class="tarjeta-nombre">Relaciones</span></h4>
+        <ul class="tarjeta-hechos">
+            {% for notacion, lectura in panorama.relaciones %}<li><span class="conjuntos-math">{{ notacion }}</span> <span class="tarjeta-lectura">{{ lectura }}</span></li>{% endfor %}
+        </ul>
+    </li>
+    <li class="tarjeta tarjeta-propiedad tarjeta-ancha">
+        <h4 class="tarjeta-titulo"><span class="tarjeta-nombre">Inclusión-exclusión</span></h4>
+        <p class="tarjeta-formula conjuntos-math">{{ panorama.inclusion_exclusion.formula }}</p>
+        <p class="tarjeta-valor conjuntos-math">{{ panorama.inclusion_exclusion.valores }}</p>
+        <p class="tarjeta-pie"><span class="tarjeta-acciones"><button type="button" class="tarjeta-accion" data-copiar="{{ panorama.inclusion_exclusion.texto }}" hidden>Copiar<span class="sr-only"> la inclusión-exclusión</span></button></span></p>
+    </li>
+</ul>

@@ -7,8 +7,9 @@ La terminal conserva su menú de matrices y sistemas; no incluye todos los módu
 
 **Método de bisección** permite buscar una raíz de una función real y recorrer
 sus iteraciones en una gráfica interactiva offline. Véase [Bisección](biseccion.md).
-**Conjuntos** está temporalmente marcado **Próximamente** y bloqueado por URL;
-su código y sus avances se conservan.
+**Conjuntos** ofrece Operaciones con conjuntos (definiciones, diagrama de Venn
+editable, tarjetas y expresiones) y Cardinalidad e inclusión-exclusión.
+Véase [Conjuntos](conjuntos.md).
 
 ## Terminal
 

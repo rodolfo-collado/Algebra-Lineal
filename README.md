@@ -67,7 +67,8 @@ Los cálculos largos piden confirmación según el
 
 - [Operaciones con conjuntos y Cardinalidad e inclusión-exclusión](docs/conjuntos.md):
   conjuntos finitos y anidados, potencia, producto cartesiano, intervalos en la recta
-  real, diagramas de Venn y conteo por regiones, con procedimiento paso a paso.
+  real, diagramas de Venn editables por regiones (elementos o cantidades), tarjetas
+  con las operaciones habituales y conteo por regiones, con procedimiento paso a paso.
 
 Cálculo figura como **Próximamente**.
 

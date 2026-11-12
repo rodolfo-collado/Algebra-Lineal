@@ -67,6 +67,16 @@ se habilitaron en P7.
 - [ ] Probar con lector de pantalla (NVDA o Narrador).
 - [x] Habilitar las rutas y el catálogo después de publicar v0.14.0.
 
+## v0.17.0 — Experiencia de Operaciones con conjuntos
+
+- [x] Sustituir el selector «Insertar operación» por una barra de símbolos que escribe en el cursor (el selector queda solo sin JavaScript).
+- [x] Hacer editable el diagrama de Venn dentro de sus regiones, sincronizado con los conjuntos: el último lado editado manda.
+- [x] Distinguir elementos y cantidades: el modo Cantidades no nombra elementos; sus casillas también viven en el diagrama.
+- [x] Presentar operaciones y propiedades como tarjetas copiables, con resultados extensos plegados y «Ver pasos».
+- [x] Reorganizar la pantalla en conjuntos y diagrama, tarjetas y expresión personalizada; ejemplos en el menú.
+- [ ] Probar con lector de pantalla (NVDA o Narrador) los campos del diagrama y la barra de símbolos.
+- [ ] Probar en pantalla táctil física la escritura en regiones pequeñas del diagrama de tres conjuntos.
+
 ## Posibles extensiones futuras
 
 - [ ] Explorar la definición por comprensión, con dominio y predicados admitidos explícitos.

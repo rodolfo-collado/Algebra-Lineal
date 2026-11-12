@@ -11,15 +11,20 @@
     };
     let secuencia = 0;
 
-    /* —— Geometría fija de Venn (viewBox 320 × 240) —— */
+    /* —— Geometría fija de Venn (viewBox 320 × 240) ——
+       `cajas`: ancho, alto y desplazamiento del campo editable que cabe en cada región. */
     const ANCHO = 320, ALTO = 240, MARCO = { x: 6, y: 6, width: 308, height: 228, rx: 12 };
     const GEOMETRIA = {
-        1: { circulos: [[160, 118, 84]], nombres: [[86, 38]], anclas: { 0: [18, 222], 1: [160, 118] }, pequenas: [] },
+        1: { circulos: [[160, 118, 84]], nombres: [[86, 38]], anclas: { 0: [18, 222], 1: [160, 118] }, pequenas: [],
+             cajas: { 0: [92, 26], 1: [112, 92] } },
         2: { circulos: [[124, 120, 80], [196, 120, 80]], nombres: [[50, 40], [270, 40]],
-             anclas: { 0: [18, 222], 1: [88, 120], 2: [232, 120], 3: [160, 120] }, pequenas: [3] },
+             anclas: { 0: [18, 222], 1: [88, 120], 2: [232, 120], 3: [160, 120] }, pequenas: [3],
+             cajas: { 0: [92, 26], 1: [58, 92, -5, 0], 2: [58, 92, 5, 0], 3: [62, 84] } },
         3: { circulos: [[130, 94, 70], [190, 94, 70], [160, 148, 70]], nombres: [[56, 30], [264, 30], [252, 214]],
              anclas: { 0: [18, 226], 1: [100, 78], 2: [220, 78], 3: [160, 64], 4: [160, 190], 5: [124, 136], 6: [196, 136], 7: [160, 114] },
-             pequenas: [3, 5, 6, 7] },
+             pequenas: [3, 5, 6, 7],
+             cajas: { 0: [80, 24], 1: [46, 36, -10, -2], 2: [46, 36, 10, -2], 3: [46, 28], 4: [84, 32, 0, 2],
+                      5: [32, 30, -10, 5], 6: [32, 30, 10, 5], 7: [46, 34] } },
     };
 
     function mascaraEn(geo, x, y) {
@@ -69,14 +74,11 @@
         return salida;
     }
 
-    function dibujarVenn(contenedor, venn, panel) {
-        const n = venn.nombres.length;
-        const geo = GEOMETRIA[n];
-        if (!geo) return;
+    // Base de cualquier diagrama: marco, una región por máscara, círculos y nombres.
+    function lienzoVenn(venn, atributos) {
+        const geo = GEOMETRIA[venn.nombres.length];
         const prefijo = `venn${++secuencia}`;
-        const cantidades = Boolean(venn.cantidades);
-        const svg = el('svg', { viewBox: `0 0 ${ANCHO} ${ALTO}`, role: 'img', class: 'venn-lienzo-interactivo',
-            'aria-label': `Diagrama de Venn de ${venn.nombres.join(', ')}${venn.universo ? ` dentro de ${venn.universo}` : ''}` });
+        const svg = el('svg', { viewBox: `0 0 ${ANCHO} ${ALTO}`, class: 'venn-lienzo-interactivo', ...atributos });
         const defs = el('defs');
         const trama = el('pattern', { id: `${prefijo}-trama`, width: 7, height: 7, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)', class: 'venn-trama' });
         trama.append(el('line', { x1: 0, y1: 0, x2: 0, y2: 7 }));
@@ -98,6 +100,34 @@
         if (venn.universo || venn.regiones.some(r => r.mascara === 0 && r.exterior_conocido)) {
             svg.append(el('text', { x: 306, y: 26, 'text-anchor': 'end', class: 'venn-nombre' }, venn.universo || 'U'));
         }
+        const enPunto = event => {
+            const p = svg.createSVGPoint();
+            p.x = event.clientX; p.y = event.clientY;
+            const local = p.matrixTransform(svg.getScreenCTM().inverse());
+            const m = mascaraEn(geo, local.x, local.y);
+            return rellenos.has(m) ? m : null;
+        };
+        return { svg, geo, rellenos, enPunto };
+    }
+
+    // Tarjetas, sumandos, términos y filas con data-mascaras iluminan sus regiones al pasar o enfocar.
+    function enlazar(nodos, resaltar, reposo) {
+        nodos.forEach(nodo => {
+            const mascaras = nodo.dataset.mascaras.split(' ').filter(Boolean).map(Number);
+            const encender = () => { resaltar(mascaras); nodo.classList.add('es-activa'); };
+            const apagar = () => { resaltar(reposo()); nodo.classList.remove('es-activa'); };
+            nodo.addEventListener('mouseenter', encender);
+            nodo.addEventListener('mouseleave', apagar);
+            nodo.addEventListener('focusin', encender);
+            nodo.addEventListener('focusout', apagar);
+        });
+    }
+
+    function dibujarVenn(contenedor, venn, panel) {
+        if (!GEOMETRIA[venn.nombres.length]) return;
+        const cantidades = Boolean(venn.cantidades);
+        const { svg, geo, rellenos, enPunto } = lienzoVenn(venn, { role: 'img',
+            'aria-label': `Diagrama de Venn de ${venn.nombres.join(', ')}${venn.universo ? ` dentro de ${venn.universo}` : ''}` });
         for (const r of venn.regiones) {
             const [x, y] = geo.anclas[r.mascara];
             const exterior = r.mascara === 0;
@@ -115,21 +145,43 @@
             if (exterior) nodo.setAttribute('y', y - (filas.length - 1) * 14);
             svg.append(nodo);
         }
-        // La trama usa un id por diagrama: dos diagramas en la página no comparten patrón.
-        svg.querySelectorAll('.venn-relleno-trama').forEach(nodo => nodo.setAttribute('fill', `url(#${prefijo}-trama)`));
-        contenedor.replaceChildren(svg);
+        contenedor.replaceChildren(svg, estadoRegiones());
+        const resaltarRegiones = mascaras => {
+            for (const [m, rect] of rellenos) rect.classList.toggle('es-activa', mascaras.includes(m));
+        };
+        const { fijar, reposo, resaltar } = explorarRegiones(venn, panel, resaltarRegiones, contenedor.lastChild);
+        svg.addEventListener('pointermove', event => {
+            const m = enPunto(event);
+            resaltar(m === null ? reposo() : [m]);
+        });
+        svg.addEventListener('pointerleave', () => resaltar(reposo()));
+        svg.addEventListener('click', event => {
+            const m = enPunto(event);
+            if (m !== null) fijar(m);
+        });
+        // Sumandos, términos y tarjetas del resultado iluminan su diagrama.
+        enlazar([...panel.closest('[data-resultado]').querySelectorAll('[data-mascaras]')], resaltar, reposo);
+    }
 
+    function estadoRegiones() {
         const estado = document.createElement('p');
         estado.className = 'field-help';
         estado.setAttribute('role', 'status');
         estado.setAttribute('aria-live', 'polite');
-        contenedor.append(estado);
+        return estado;
+    }
+
+    // Tabla de regiones del resultado: pasar por una fila ilumina su región y pulsarla (o Intro)
+    // la fija y anuncia sus elementos. `resaltarRegiones` pinta el diagrama que corresponda.
+    function explorarRegiones(venn, panel, resaltarRegiones, estado) {
+        const cantidades = Boolean(venn.cantidades);
         const filas = new Map([...panel.querySelectorAll('[data-regiones] tr[data-mascara]')].map(fila => [Number(fila.dataset.mascara), fila]));
         let fija = null;
         const resaltar = mascaras => {
-            for (const [m, rect] of rellenos) rect.classList.toggle('es-activa', mascaras.includes(m));
+            resaltarRegiones(mascaras);
             for (const [m, fila] of filas) fila.classList.toggle('es-activa', mascaras.includes(m));
         };
+        const reposo = () => (fija === null ? [] : [fija]);
         const describir = m => {
             const r = venn.regiones.find(x => x.mascara === m);
             if (!r) return '';
@@ -142,24 +194,9 @@
         };
         const fijar = m => {
             fija = fija === m ? null : m;
-            resaltar(fija === null ? [] : [fija]);
+            resaltar(reposo());
             estado.textContent = fija === null ? '' : describir(fija);
         };
-        const enPunto = event => {
-            const p = svg.createSVGPoint();
-            p.x = event.clientX; p.y = event.clientY;
-            const local = p.matrixTransform(svg.getScreenCTM().inverse());
-            return mascaraEn(geo, local.x, local.y);
-        };
-        svg.addEventListener('pointermove', event => {
-            const m = enPunto(event);
-            resaltar(m === null ? (fija === null ? [] : [fija]) : [m]);
-        });
-        svg.addEventListener('pointerleave', () => resaltar(fija === null ? [] : [fija]));
-        svg.addEventListener('click', event => {
-            const m = enPunto(event);
-            if (m !== null && rellenos.has(m)) fijar(m);
-        });
         for (const [m, fila] of filas) {
             fila.tabIndex = 0;
             fila.addEventListener('click', () => fijar(m));
@@ -167,18 +204,85 @@
                 if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); fijar(m); }
             });
             fila.addEventListener('mouseenter', () => resaltar([m]));
-            fila.addEventListener('mouseleave', () => resaltar(fija === null ? [] : [fija]));
+            fila.addEventListener('mouseleave', () => resaltar(reposo()));
         }
-        // Cualquier elemento con data-mascaras (sumandos, términos, filas) ilumina sus regiones.
-        document.querySelectorAll('[data-mascaras]').forEach(nodo => {
-            const mascaras = nodo.dataset.mascaras.split(' ').filter(Boolean).map(Number);
-            const encender = () => { resaltar(mascaras); nodo.classList.add('es-activa'); };
-            const apagar = () => { resaltar(fija === null ? [] : [fija]); nodo.classList.remove('es-activa'); };
-            nodo.addEventListener('mouseenter', encender);
-            nodo.addEventListener('mouseleave', apagar);
-            nodo.addEventListener('focusin', encender);
-            nodo.addEventListener('focusout', apagar);
+        return { fijar, reposo, resaltar };
+    }
+
+    // Diagrama editable: los campos del formulario (uno por región, con su etiqueta) se colocan
+    // dentro de su región. Sin JavaScript siguen siendo una lista de campos con nombre.
+    // Con `resultado` (su Venn y su panel), sombrea las regiones del resultado sin tocar lo escrito;
+    // «Sombrear en el diagrama» lo quita y lo vuelve a poner, y editar cualquier dato lo retira.
+    function editorVenn(editor, resultado) {
+        const nombres = editor.dataset.nombres.split(',');
+        const campos = [...editor.querySelectorAll('[data-mascara]')];
+        if (!GEOMETRIA[nombres.length] || !campos.length) return;
+        const exterior = campos.some(campo => campo.dataset.mascara === '0');
+        const enResultado = new Set((resultado?.venn.regiones || []).filter(r => r.seleccionada).map(r => r.mascara));
+        const regiones = Array.from({ length: 1 << nombres.length }, (_, mascara) => ({ mascara, seleccionada: enResultado.has(mascara) }))
+            .filter(r => r.mascara || exterior);
+        const { svg, geo, rellenos, enPunto } = lienzoVenn(
+            { nombres, universo: exterior ? editor.dataset.universo || 'U' : null, regiones }, { 'aria-hidden': 'true', focusable: 'false' });
+        const lienzo = document.createElement('div');
+        lienzo.className = 'venn-editor-lienzo';
+        // Leyenda visual de la región señalada; el lector de pantalla ya oye la etiqueta de cada campo.
+        const leyenda = document.createElement('p');
+        leyenda.className = 'venn-editor-leyenda';
+        leyenda.setAttribute('aria-hidden', 'true');
+        const etiquetas = new Map(), controles = new Map();
+        let enfocada = null;
+        const resaltar = mascaras => {
+            for (const [m, rect] of rellenos) rect.classList.toggle('es-activa', mascaras.includes(m));
+            leyenda.textContent = mascaras.length === 1 ? etiquetas.get(mascaras[0]) || '' : '';
+        };
+        const reposo = () => (enfocada === null ? [] : [enfocada]);
+        lienzo.append(svg);
+        for (const campo of campos) {
+            const m = Number(campo.dataset.mascara);
+            const [x, y] = geo.anclas[m], [ancho, alto, dx = 0, dy = 0] = geo.cajas[m];
+            // El exterior se ancla por su esquina inferior izquierda; las demás regiones, por su centro.
+            const estilo = { x: m ? x + dx : x + ancho / 2 - 6, y: m ? y + dy : y - alto / 2 + 6, w: ancho, h: alto };
+            for (const [clave, valor] of Object.entries(estilo)) {
+                campo.style.setProperty(`--${clave}`, `${valor / ('yh'.includes(clave) ? ALTO : ANCHO) * 100}%`);
+            }
+            const control = campo.querySelector('textarea, input');
+            etiquetas.set(m, campo.querySelector('.cardinalidad-lectura, label').textContent.trim());
+            // La región ya dice dónde se escribe: la etiqueta queda para el lector de pantalla.
+            if (!campo.matches('.cardinalidad-universo')) campo.querySelector('label').classList.add('sr-only');
+            controles.set(m, control);
+            control.addEventListener('focus', () => { enfocada = m; resaltar([m]); });
+            control.addEventListener('blur', () => { enfocada = null; resaltar([]); });
+            lienzo.append(campo);
+        }
+        lienzo.addEventListener('pointermove', event => {
+            const m = enPunto(event);
+            resaltar(m === null ? reposo() : [m]);
         });
+        lienzo.addEventListener('pointerleave', () => resaltar(reposo()));
+        // Pulsar una región lleva el cursor a su campo, aunque el toque caiga fuera de la caja.
+        lienzo.addEventListener('click', event => {
+            if (!event.target.closest('textarea, input')) controles.get(enPunto(event))?.focus();
+        });
+        editor.classList.add('es-diagrama');
+        editor.replaceChildren(lienzo, leyenda);
+        // Las tarjetas de arriba siempre son de este diagrama; las del resultado, solo si no dibuja el suyo.
+        enlazar([...document.querySelectorAll('[data-mascaras]')].filter(nodo => resultado || !nodo.closest('[data-resultado]')), resaltar, reposo);
+        if (!resultado) return;
+        const { panel } = resultado;
+        const boton = panel.querySelector('[data-sombreado]');
+        const sombrear = visible => {
+            lienzo.toggleAttribute('data-con-resultado', visible);
+            boton.setAttribute('aria-pressed', String(visible));
+        };
+        panel.querySelector('[data-con-diagrama]').hidden = false;
+        boton.hidden = false;
+        boton.addEventListener('click', () => sombrear(boton.getAttribute('aria-pressed') !== 'true'));
+        sombrear(true);
+        // El resultado deja de corresponder a los datos en cuanto se edita algo.
+        editor.closest('form').addEventListener('input', () => { sombrear(false); boton.hidden = true; });
+        const estado = estadoRegiones();
+        panel.querySelector('.table-wrap').before(estado);
+        explorarRegiones(resultado.venn, panel, resaltar, estado);
     }
 
     // Icono de un dato de cardinalidad: sombrea las regiones que cuenta (0 = todo el universo).
@@ -351,7 +455,12 @@
             if (['numero', 'modo'].includes(event.target.name)) ajuste.form.requestSubmit(ajuste);
         });
     }
-    document.querySelectorAll('.cardinalidad-campos[data-conjuntos]').forEach(campos => {
+    const fuente = document.getElementById('conjuntos-resultado-datos');
+    const resultado = fuente ? JSON.parse(fuente.textContent) : null;
+    const enDiagrama = document.querySelector('[data-venn-en-diagrama]');
+    document.querySelectorAll('[data-venn-editor]').forEach(editor => editorVenn(editor,
+        enDiagrama && resultado?.venn ? { venn: resultado.venn, panel: enDiagrama } : null));
+    document.querySelectorAll('.cardinalidad-campos[data-conjuntos]:not(.es-diagrama)').forEach(campos => {
         campos.querySelectorAll('[data-cubre]').forEach(dato => {
             miniVenn(dato.querySelector('.cardinalidad-icono'), Number(campos.dataset.conjuntos), dato.dataset.cubre.split(' ').map(Number));
         });
@@ -368,9 +477,7 @@
             campo.focus();
         });
     }
-    const fuente = document.getElementById('conjuntos-resultado-datos');
-    if (!fuente) return;
-    const resultado = JSON.parse(fuente.textContent);
+    if (!resultado) return;
     const venn = document.querySelector('[data-venn]');
     if (venn && resultado.venn) dibujarVenn(venn, resultado.venn, venn.closest('section'));
     const recta = document.querySelector('[data-recta]');
