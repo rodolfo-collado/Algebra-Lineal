@@ -234,6 +234,42 @@ matemático, el parser y los formatos de resultado no cambian:
   conjuntos, la expresión y el diagrama tal como se dejaron; las cantidades nunca
   se convierten en elementos.
 
+## Preparación de v0.18.0
+
+Incremento **MINOR** desde 0.17.0: añade el método de la secante y reúne
+Newton-Raphson y Secante en una sola herramienta, **Métodos abiertos**. Son
+capacidades nuevas compatibles: Newton conserva su algoritmo y su presentación, la
+ruta antigua de Newton redirige a la nueva y Bisección y Regla falsa no cambian. La
+preparación actualiza versión y lockfile (una línea cada uno) sin cambiar
+dependencias. Esta versión todavía no está publicada.
+
+### Notas preparadas de PyGebra v0.18.0
+
+- **Método de la secante:** aproxima una raíz desde dos puntos iniciales x₀ y x₁, sin
+  derivada ni cambio de signo. Sigue las diapositivas 18–24: fórmula como fracción
+  completa, sustitución numérica, operaciones, actualización de los puntos y tabla con
+  aproximación anterior, actual y nueva, cambio y residuo. Se detiene solo si el
+  cambio **y** el residuo cumplen la tolerancia, y explica los denominadores nulos o
+  casi nulos, los errores de dominio y la falta de convergencia. Véase
+  [Secante](secante.md).
+- **Construcción geométrica:** la gráfica dibuja P₀ y P₁, la recta secante y su corte
+  con el eje x en cada iteración; x₀ y x₁ se eligen o arrastran sobre la curva.
+- **Métodos abiertos:** Newton-Raphson y Secante comparten un único lugar en la
+  navegación, con un selector visible para cambiar de método. La función escrita se
+  conserva al cambiar; los resultados y el historial de cada método no se mezclan.
+  `/metodos-numericos/newton-raphson/` redirige a
+  `/metodos-numericos/metodos-abiertos/newton-raphson/`.
+- **Mejoras didácticas compartidas:** las piezas de fórmula, sustitución y
+  comprobación de Newton pasan a ser comunes; las igualdades largas bajan la fracción
+  completa al renglón siguiente en lugar de cortarse. Ejemplos precargados: x³ − x − 2
+  con x₀ = 1 y x₁ = 2, y la práctica x³ − 2x − 5 con tolerancia 10⁻⁶.
+- **Buscador:** ante un empate, una palabra clave completa ordena primero
+  («secante» lleva a Métodos abiertos antes que a Regla falsa).
+
+Estas notas describen una versión preparada, no una release publicada. El PR se
+dirige únicamente a `develop`; la promoción `develop → main`, el tag y la publicación
+quedan pendientes de una revisión posterior y de su PR separado.
+
 ## Flujo de integración y entrega
 
 ```mermaid
