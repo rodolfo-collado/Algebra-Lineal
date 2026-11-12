@@ -61,4 +61,5 @@ integración quedan para las herramientas posteriores.
     uv run --locked python manage.py check
 
 En Windows, `scripts/build_windows.ps1` incluye el adaptador mediante
-`AlgebraLineal.spec`. La compilación del paquete usa el mismo `uv.lock` que la suite.
+`AlgebraLineal.spec`, que también incorpora las licencias de SymPy y mpmath.
+La compilación del paquete usa el mismo `uv.lock` que la suite.
