@@ -72,6 +72,10 @@ otro caso. Las fracciones son HTML y CSS, sin biblioteca de fórmulas; los lecto
 de pantalla reciben su forma lineal, `(f(x₀))/(f′(x₀))`. Una fórmula que no cabe se
 desplaza en horizontal dentro de su línea, sin ensanchar la página.
 
+En escritorio, la explicación ocupa la columna derecha a toda altura y la tabla sube
+bajo la gráfica, en la columna izquierda: gráfica, tabla y sustitución se ven a la vez.
+Por debajo de 44rem de ancho de la zona, el orden es gráfica, explicación y tabla.
+
 Newton depende del punto inicial y del comportamiento de la función. Un salto
 fuera del dominio, una derivada nula o un salto no finito pueden detenerlo.
 Las oscilaciones sin repetición exacta y la divergencia finita pueden alcanzar
@@ -88,7 +92,8 @@ condición matemática se presenta como error de la aplicación.
 
 Debajo, la gráfica y la explicación breve del paso activo comparten una fila en
 escritorio; la tabla tiene una fila por iteración y desplazamiento propio, para verse
-junto a la gráfica. El reproductor ofrece Reiniciar, Anterior, Reproducir/Pausar,
+junto a la gráfica. En Bisección y Regla Falsa va debajo de ambas, a todo el ancho; en
+Newton, bajo la gráfica, porque su explicación es más alta. El reproductor ofrece Reiniciar, Anterior, Reproducir/Pausar,
 Siguiente, barra de progreso y velocidades 0.5×, 1×, 2× y 4×. Empieza en pausa en la
 primera iteración. Al terminar, cambiar los datos, enviar otro cálculo u ocultar la
 pestaña, se detiene. Un clic en una fila la selecciona; con el foco en la tabla, las

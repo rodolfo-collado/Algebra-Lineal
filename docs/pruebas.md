@@ -25,6 +25,11 @@ Ajuste didáctico sin cambiar algoritmos, criterios de parada ni la versión 0.1
 - **WebView2 157 (ejecutable de PyInstaller):** 23/23, 12/12 y 10/10, normal y con movimiento
   reducido, sin errores de consola. En escritorio, elegir decimales guarda la preferencia con
   una petición a `/preferencias/`: el caso nuevo elige los decimales antes de contar peticiones.
+- **Disposición:** en escritorio la tabla de Newton va bajo la gráfica (columna izquierda) y
+  la explicación a la derecha. Medida en Edge (Estudio y Minimalista, 1280, 1024, 744 y
+  390 px): Bisección y Regla Falsa conservan exactamente la misma geometría que antes, y
+  Newton solo cambia en escritorio. Los runners lo comprueban: la tabla de Bisección sigue a
+  todo el ancho y la de Newton bajo la gráfica a 1280 px y al final en columna única.
 - **Visual:** zona de estudio sin desborde en Estudio y Minimalista, claro y oscuro, a
   1280, 744 y 390 px, también con «Precisión completa». Capturas:
   [sustitución en Estudio](capturas/raices/09-newton-sustitucion-estudio-1280.jpg),
