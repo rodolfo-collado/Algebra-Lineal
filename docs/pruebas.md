@@ -11,6 +11,28 @@ uv run python -m unittest discover -v
 uv run python manage.py check
 ```
 
+## Fórmula y sustitución de Newton-Raphson (2026-11-12)
+
+Ajuste didáctico sin cambiar algoritmos, criterios de parada ni la versión 0.17.0.
+
+- **Python:** 2.024 pruebas completas correctas (`unittest discover`). Fijan la notación
+  natural de f(x) y f′(x) (`3x² − 1`, `−3sen(3x)`, `1/(2√x) + x/|x|`, `2πx + e²x`) y el
+  bloque de función, derivada y fórmula general en la página resuelta.
+- **Navegador (Edge, Playwright):** Newton 10/10, normal y con movimiento reducido;
+  Bisección 23/23 y Regla Falsa 12/12 sin cambios. El caso nuevo recorre adelante, atrás y
+  reproduce en precisión completa: valores, sustitución, nueva aproximación y comprobación
+  coinciden con el JSON en cada paso, sin peticiones, y la fracción tiene lectura lineal.
+- **WebView2 157 (ejecutable de PyInstaller):** 23/23, 12/12 y 10/10, normal y con movimiento
+  reducido, sin errores de consola. En escritorio, elegir decimales guarda la preferencia con
+  una petición a `/preferencias/`: el caso nuevo elige los decimales antes de contar peticiones.
+- **Visual:** zona de estudio sin desborde en Estudio y Minimalista, claro y oscuro, a
+  1280, 744 y 390 px, también con «Precisión completa». Capturas:
+  [sustitución en Estudio](capturas/raices/09-newton-sustitucion-estudio-1280.jpg),
+  [parada en Minimalista noche](capturas/raices/10-newton-parada-minimalista-noche-1280.jpg),
+  [precisión completa a 744 px](capturas/raices/11-newton-precision-completa-estudio-noche-744.jpg)
+  [Minimalista a 390 px](capturas/raices/12-newton-minimalista-390.jpg) y
+  [WebView2](capturas/raices/13-newton-webview2.jpg).
+
 ## Historial y tabla de Newton de los métodos de raíces (2026-11-13)
 
 Ajuste del PR #125 sin cambiar algoritmos, criterios de parada ni contratos.
