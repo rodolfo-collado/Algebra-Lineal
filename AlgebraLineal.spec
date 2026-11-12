@@ -79,6 +79,7 @@ hiddenimports = [
     "backend.newton_raphson",
     "backend.metodos_cerrados",
     "backend.funciones_reales",
+    "backend.calculo_simbolico",
     "backend.matrices",
     "backend.ecuaciones_matriciales",
     "backend.matriz_inversa",
