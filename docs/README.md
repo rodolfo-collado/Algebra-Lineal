@@ -39,6 +39,7 @@
 - [Determinantes](determinantes.md): fórmula 2×2, Sarrus, cofactores, LU y
   reducción por filas; recorrido de A por cada capa y guía para exponer.
 - [Bisección](biseccion.md): algoritmo manual, gráfica offline, recorrido de iteraciones y comparación.
+- [Newton-Raphson](newton-raphson.md): derivación automática, tangentes, residuo y cambio entre aproximaciones.
 - [Regla falsa](regla-falsa.md): secantes, error absoluto, confirmación por signos y límites numéricos.
 - [Conjuntos](conjuntos.md): operaciones, relaciones, potencia, producto cartesiano, intervalos,
   Venn y cardinalidad por inclusión-exclusión; gramática segura y presupuesto.

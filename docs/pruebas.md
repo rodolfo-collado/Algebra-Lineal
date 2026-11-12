@@ -13,7 +13,8 @@ uv run python manage.py check
 
 ## Preparación de v0.16.1 (2026-11-10)
 
-- **Python:** 1.994 pruebas completas correctas desde PowerShell (sin omisiones).
+- **Python:** 1.994 pruebas completas correctas desde PowerShell (sin omisiones);
+  2.014 tras integrar Newton-Raphson desde `develop`, que no toca archivos de este cambio.
   `test_conjuntos_regiones` añade la ida y vuelta escribir/leer de cada región
   (vacía, anidados, ∅ como elemento, pares, intervalos), el diagrama leído siempre
   del modelo, «el último lado editado manda», el universo creado desde el exterior,
@@ -41,6 +42,29 @@ uv run python manage.py check
 Pendiente de validación manual: lector de pantalla (NVDA o Narrador) sobre los
 campos del diagrama y la barra, y pantalla táctil física en las regiones pequeñas
 del diagrama de tres conjuntos.
+
+## Newton-Raphson (2026-11-10)
+
+- Suite completa: **1996 pruebas Python** correctas, incluidas las referencias y
+  estados de Newton, HTTP, validación, navegación, recursos y regresiones existentes.
+- DOM en Edge mediante Playwright: Newton **6/6**, Bisección **19/19**, Regla falsa
+  **11/11**, sin errores JavaScript. Estudio/Minimalista, claro/oscuro y 1280/744/390 px.
+- WebView2 real mediante pywebview: Newton **6/6**. Se usó una ventana oculta con
+  argumentos de diagnóstico para desactivar throttling y foco emulado mediante CDP.
+  Sin emulación, el runner de foco/recorrido no completa sus esperas en la ventana
+  oculta; esto limita la evidencia sobre foco nativo y gestos físicos.
+- Build local PyInstaller de Windows correcto. `uv lock --check`, Django,
+  `compileall`, sintaxis JavaScript y `git diff --check` correctos.
+- Clic sobre la curva y arrastre real de su línea mediante mouse de Playwright:
+  x₀ cambió de 1.5 a 2.5831528279181692, sin resolver automáticamente.
+- Capturas de escritorio y móvil revisadas, esperando redimensionado de Plotly.
+  El recorrido abre en la primera tangente; el ajuste de decimales conserva el JSON.
+- No se verificaron lector de pantalla, touch físico ni instalación/desinstalación
+  local. El CI del PR ejecuta su propio build y smoke de distribución Windows.
+
+Ver [Newton-Raphson](newton-raphson.md) para los comandos reproducibles y límites
+matemáticos del criterio de convergencia. La tolerancia no certifica
+una distancia a la raíz.
 
 ## Preparación de v0.16.0 (2026-11-09)
 

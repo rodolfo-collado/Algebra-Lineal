@@ -22,8 +22,8 @@ class BiseccionAssetsTests(unittest.TestCase):
 
     def test_paquete_windows_incluye_modulos_y_directorio_static_completo(self):
         spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
-        for modulo in ["backend.biseccion", "backend.regla_falsa", "backend.metodos_cerrados", "backend.funciones_reales", "forms_raices", "views_raices", "servicios_raices"]:
+        for modulo in ["backend.biseccion", "backend.regla_falsa", "backend.newton_raphson", "backend.metodos_cerrados", "backend.funciones_reales", "forms_raices", "views_raices", "servicios_raices"]:
             self.assertIn(modulo, spec)
         self.assertIn('"frontend/web/calculadora/static"', spec)
-        for script in ("raices.js", "biseccion.js", "regla_falsa.js"):
+        for script in ("raices.js", "biseccion.js", "regla_falsa.js", "newton_raphson.js"):
             self.assertTrue((STATIC / script).is_file())
