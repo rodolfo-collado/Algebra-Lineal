@@ -18,9 +18,11 @@
         if (!terminos.length) return [];
         return herramientas.map((h, orden) => ({ ...h, orden,
             aciertos: terminos.filter((t) => h.nombre.includes(t)).length,
+            // catalogo.buscar_herramientas: una palabra clave completa desempata antes que el orden.
+            claves: terminos.filter((t) => h.claves.includes(t)).length,
         })).filter((h) => terminos.every((t) => h.indice.includes(t)))
             .sort((a, b) => Number(b.disponible) - Number(a.disponible)
-                || b.aciertos - a.aciertos || a.orden - b.orden);
+                || b.aciertos - a.aciertos || b.claves - a.claves || a.orden - b.orden);
     }
 
     document.querySelectorAll("form[data-buscador]").forEach((form) => {

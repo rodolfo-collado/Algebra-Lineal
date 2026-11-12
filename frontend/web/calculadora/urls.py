@@ -3,7 +3,8 @@
 from django.urls import path
 
 from . import views
-from .views_raices import explorar_funcion, resolver_biseccion, resolver_regla_falsa, resolver_newton_raphson
+from .views_raices import (explorar_funcion, newton_raphson_ruta_antigua, resolver_biseccion, resolver_newton_raphson,
+                           resolver_regla_falsa, resolver_secante)
 from .views_conjuntos import relaciones_conjuntos, cardinalidades_conjuntos
 
 
@@ -11,8 +12,14 @@ app_name = "calculadora"
 
 
 urlpatterns = [
-    path("metodos-numericos/newton-raphson/", resolver_newton_raphson, name="newton-raphson"),
-    path("metodos-numericos/newton-raphson/grafica/", explorar_funcion, {"derivar": True}, name="newton-raphson-grafica"),
+    # Métodos abiertos: una herramienta con un método por ruta; la gráfica de Newton añade f′(x).
+    path("metodos-numericos/metodos-abiertos/newton-raphson/", resolver_newton_raphson, name="newton-raphson"),
+    path("metodos-numericos/metodos-abiertos/newton-raphson/grafica/", explorar_funcion, {"derivar": True}, name="newton-raphson-grafica"),
+    path("metodos-numericos/metodos-abiertos/secante/", resolver_secante, name="secante"),
+    path("metodos-numericos/metodos-abiertos/secante/grafica/", explorar_funcion, name="secante-grafica"),
+    # Compatibilidad: Newton-Raphson era una herramienta aparte (GET 301 con la consulta, POST 308).
+    path("metodos-numericos/newton-raphson/", newton_raphson_ruta_antigua, name="newton-raphson-antigua"),
+    path("metodos-numericos/newton-raphson/grafica/", newton_raphson_ruta_antigua, {"grafica": True}),
     path("conjuntos/relaciones/", relaciones_conjuntos, name="relaciones-conjuntos"),
     path("conjuntos/cardinalidad/", cardinalidades_conjuntos, name="cardinalidades-conjuntos"),
     path("metodos-numericos/biseccion/", resolver_biseccion, name="biseccion"),

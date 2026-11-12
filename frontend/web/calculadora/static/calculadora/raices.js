@@ -9,6 +9,9 @@
     const datos = JSON.parse(document.getElementById("datos-raices").textContent);
     const metodo = window.metodosRaices[datos.metodo];
     const extremos = metodo.extremos || ["a", "b"];
+    // Métodos cerrados: a y b delimitan un intervalo. Los abiertos nombran sus puntos (x0, x1) y no tienen franjas.
+    const intervalo = !metodo.extremos;
+    const rotulo = nombre => nombre.replace(/\d/g, d => "₀₁₂₃₄₅₆₇₈₉"[d]);
     const resultado = datos.resultado;
     const pasos = resultado?.iteraciones || [];
     const resumen = resultado?.residuo != null && resultado.clasificacion !== "no_aplicable" ? metodo.resumen(resultado) : null;
@@ -35,27 +38,29 @@
     const valido = r => Array.isArray(r) && r.every(Number.isFinite) && r[0] < r[1];
     let mutando = false, temporizador, peticion, inicializacion, generacion = 0, extremoElegido = null;
     let actual = -1, reloj = null;
-    // Newton empieza en n = 0 (punto inicial); los métodos cerrados, en la iteración 1.
+    // Newton empieza en n = 0 (punto inicial); los demás métodos, en la iteración 1.
     const primero = slider ? Number(slider.min) : 1;
     const vistaInicial = [-10, 10];
     const indicacion = metodo.indicacion || "Introduce una función para visualizar su gráfica y elegir un intervalo.";
     ayudaGrafica.hidden = true;
 
-    // Un intervalo con un cuarto de margen a cada lado; Newton aporta su propio encuadre de la tangente.
+    // Un intervalo con un cuarto de margen a cada lado; los métodos abiertos aportan su propio encuadre.
     function ampliar(a, b) {
         const margen = Math.max((b - a) / 4, Math.abs(a) * 1e-8, 1e-8);
         return [a - margen, b + margen];
     }
     const vistaPaso = p => metodo.vista ? metodo.vista(p) : ampliar(p.a, p.b);
     function vistaEntrada() {
-        if (extremos.length === 2) {
+        if (intervalo) {
             const a = extremo("a"), b = extremo("b");
             return a !== null && b !== null && a < b ? ampliar(a, b) : null;
         }
-        const x0 = extremo("x0");
-        if (x0 === null) return null;
-        const ancho = Math.max(2, Math.abs(x0) * .25);
-        return [x0 - ancho, x0 + ancho];
+        // Puntos iniciales: su entorno, como el encuadre inicial que calcula el servidor.
+        const puntos = extremos.map(extremo).filter(x => x !== null);
+        if (!puntos.length) return null;
+        const lo = Math.min(...puntos), hi = Math.max(...puntos);
+        const ancho = Math.max(2, Math.max(Math.abs(lo), Math.abs(hi)) * .25, (hi - lo) / 4);
+        return [lo - ancho, hi + ancho];
     }
     const anchoInicial = datos.inicial_b - datos.inicial_a;
     const vistaCalculo = !resultado ? null : pasos.length ? vistaPaso(pasos[0])
@@ -174,7 +179,7 @@
     function franja(opacidad) {
         return { type: "rect", x0: 0, x1: 0, y0: 0, y1: 1, yref: "paper", editable: false,
             fillcolor: color("--color-brand"), opacity: opacidad, line: { width: 0 }, layer: "below",
-            visible: extremos.length === 2 && pasos.length > 0 };
+            visible: intervalo && pasos.length > 0 };
     }
 
     // ---- Recorrido: una sola fuente de verdad (actual) para tabla, gráfica y explicación. ----
@@ -235,10 +240,13 @@
         // Solo cambian datos y franjas: los ejes respetan el zoom que haya elegido el usuario.
         Plotly.restyle(grafica, { x: [trazo?.x || []], y: [trazo?.y || []], text: [trazo?.text || []],
             "marker.size": [trazo?.size || []], textposition: trazo?.posicion || "top center" }, [2]);
+        // Rótulos de la construcción (P₀, P₁, xₙ₊₁ en Secante) como anotaciones: los textos de una traza
+        // de varios puntos no siempre se redibujan al actualizarla paso a paso.
+        const rotulos = (paso.rotulos || []).map(({ x, y, text }) => ({ x, y, text, showarrow: false, yshift: 14 }));
         Plotly.update(grafica, { x: [puntos.x], y: [puntos.y], text: [puntos.text],
             customdata: [etiquetas(puntos.x, puntos.y, 12)], "marker.size": [puntos.size], "marker.symbol": [puntos.symbol] },
-            extremos.length === 2 ? { "shapes[2].x0": p.a, "shapes[2].x1": p.b,
-                "shapes[3].x0": p.nuevo_a ?? p.a, "shapes[3].x1": p.nuevo_b ?? p.b } : {}, [1])
+            { annotations: rotulos, ...(intervalo ? { "shapes[2].x0": p.a, "shapes[2].x1": p.b,
+                "shapes[3].x0": p.nuevo_a ?? p.a, "shapes[3].x1": p.nuevo_b ?? p.b } : {}) }, [1])
             .finally(() => { mutando = false; });
     }
 
@@ -365,8 +373,9 @@
             font: { family: "Segoe UI, sans-serif", color: color("--color-text") },
             xaxis: { title: { text: "x" }, range: vistaInicial, gridcolor: color("--color-border"), zerolinecolor: color("--color-muted") },
             yaxis: { title: { text: "f(x)" }, gridcolor: color("--color-border"), zerolinecolor: color("--color-muted") },
-            shapes: [{ ...linea(extremo(extremos[0]) ?? 0, extremos[0]), visible: extremo(extremos[0]) !== null },
-                { ...linea(extremos.length === 2 ? extremo("b") ?? 0 : 0, "b"), visible: extremos.length === 2 && extremo("b") !== null },
+            shapes: [{ ...linea(extremo(extremos[0]) ?? 0, rotulo(extremos[0])), visible: extremo(extremos[0]) !== null },
+                { ...linea(extremos[1] ? extremo(extremos[1]) ?? 0 : 0, rotulo(extremos[1] || "b")),
+                    visible: Boolean(extremos[1]) && extremo(extremos[1]) !== null },
                 franja(.1), franja(.22)],
             dragmode: "pan",
             separators: ". ", // punto decimal también en los ejes; los textos siguen en español
@@ -455,7 +464,8 @@
         const seccion = $("raices-historial");
         if (!seccion || !resultado) return;
         const clave = `pygebra-raices-historial-${datos.metodo}`;
-        const parametros = extremos.length === 2 ? { a: datos.inicial_a, b: datos.inicial_b } : { x0: resultado.x0 };
+        const parametros = intervalo ? { a: datos.inicial_a, b: datos.inicial_b }
+            : Object.fromEntries(extremos.map(nombre => [nombre, resultado[nombre]]));
         const ajustes = { precision: resultado.precision ?? resultado.tolerancia, max_iteraciones: resultado.max_iteraciones };
         const actualRegistro = { id: JSON.stringify([datos.clave, parametros, ajustes]), clave: datos.clave,
             funcion: datos.funcion, parametros, ajustes, clasificacion: resultado.clasificacion,
@@ -486,7 +496,7 @@
             return nodo;
         };
         // Primero lo que se compara (aproximación, iteraciones y criterio); después, las medidas que lo justifican.
-        const columnas = [extremos.length === 2 ? "Intervalo inicial" : "x₀", "Aproximación", "Iteraciones",
+        const columnas = [intervalo ? "Intervalo inicial" : extremos.map(rotulo).join(", "), "Aproximación", "Iteraciones",
             "Criterio de parada", metodo.historial.metrica, "Residuo", metodo.historial.tolerancia, ""];
         const tabla = document.createElement("table");
         tabla.className = "procedure-table raices-historial-tabla";
@@ -509,8 +519,8 @@
                 // Cada ejecución es un grupo propio: sus magnitudes no inflan las cifras de las demás.
                 fila.setAttribute("data-raices-grupo", "");
                 const p = r.parametros;
-                fila.insertCell().append(...("x0" in p ? [valor(p.x0, "parametro")]
-                    : ["[", valor(p.a, "parametro"), "; ", valor(p.b, "parametro"), "]"]));
+                fila.insertCell().append(...(intervalo ? ["[", valor(p.a, "parametro"), "; ", valor(p.b, "parametro"), "]"]
+                    : extremos.flatMap((nombre, i) => [...(i ? ["; "] : []), valor(p[nombre], "parametro")])));
                 fila.insertCell().append(valor(r.x, "x"));
                 fila.insertCell().textContent = String(r.iteraciones);
                 const [texto, tono] = criterio(r);
@@ -531,7 +541,8 @@
                 ver.type = "button";
                 ver.className = "btn btn-secondary";
                 ver.textContent = "Ver";
-                ver.setAttribute("aria-label", `Ver la ejecución con ${"x0" in p ? `x₀ = ${plano(p.x0)}` : `[${plano(p.a)}; ${plano(p.b)}]`}`);
+                ver.setAttribute("aria-label", `Ver la ejecución con ${intervalo ? `[${plano(p.a)}; ${plano(p.b)}]`
+                    : extremos.map(nombre => `${rotulo(nombre)} = ${plano(p[nombre])}`).join(", ")}`);
                 ver.addEventListener("click", () => {
                     pausar();
                     for (const [nombre, dato] of Object.entries({ funcion: r.funcion, ...p, ...r.ajustes })) {
@@ -554,13 +565,14 @@
     elegir.forEach(boton => boton.addEventListener("click", () => {
         extremoElegido = extremoElegido === boton.dataset.elegirExtremo ? null : boton.dataset.elegirExtremo;
         elegir.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.elegirExtremo === extremoElegido)));
-        estado.textContent = extremoElegido ? `Pulsa sobre la curva para elegir ${extremoElegido}. También puedes escribirlo en el formulario.` : "Selección cancelada.";
+        estado.textContent = extremoElegido ? `Pulsa sobre la curva para elegir ${rotulo(extremoElegido)}. También puedes escribirlo en el formulario.` : "Selección cancelada.";
     }));
     $("grafica-restablecer").addEventListener("click", () => muestrear(vistaInicial, true));
     $("grafica-enfocar").addEventListener("click", () => {
         const rango = pasos.length ? vistaPaso(pasos[Math.max(actual, 1) - 1]) : vistaEntrada();
         if (valido(rango)) muestrear(rango, true);
-        else estado.textContent = extremos.length === 2 ? "Escribe a y b, con a < b, para enfocar su intervalo." : "Escribe x₀ para enfocar su entorno.";
+        else estado.textContent = intervalo ? "Escribe a y b, con a < b, para enfocar su intervalo."
+            : `Escribe ${extremos.map(rotulo).join(" y ")} para enfocar su entorno.`;
     });
     if (pasos.length) {
         slider.closest(".raices-recorrido").hidden = false;
