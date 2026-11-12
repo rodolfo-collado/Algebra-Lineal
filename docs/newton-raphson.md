@@ -13,7 +13,12 @@ El backend deriva el árbol de `FuncionReal` con las reglas de suma, producto,
 cociente, potencia constante y cadena. Admite las funciones del parser, entre
 ellas sen, cos, tan, ln, log₁₀, exp, √ y valor absoluto. Valida la función
 original al evaluar la derivada para conservar su dominio. Por ejemplo, para
-`ln(2x) + x² − sen(x)` muestra `1 / x + 2 · x − cos(x)`, con x > 0.
+`ln(2x) + x² − sen(x)` muestra `1/x + 2x − cos(x)`, con x > 0.
+
+f(x) y f′(x) se escriben en notación de clase a partir del árbol, sin tocar el
+cálculo: coeficientes pegados (`3x² − 1`, no `3 · x² − 1`), superíndices enteros,
+signo − tipográfico, `sen`, `√x`, `|x|` y `log₁₀`. El punto · solo separa dos
+factores no numéricos, como en `x · cos(x)`.
 
 Un punto donde la derivada no se pueda evaluar detiene el cálculo. Esto incluye
 la cúspide de `abs(x)` en cero y la pendiente no finita de `√(x)` en cero.
@@ -47,6 +52,30 @@ en n = 0 con el punto inicial, y el recorrido también abre allí. El paso n tra
 tangente en xₙ₋₁ y obtiene xₙ. La derivada, la fórmula aplicada, el error absoluto
 y el residuo de ese paso aparecen en la explicación y en el procedimiento detallado.
 
+### Fórmula y sustitución en la zona de estudio
+
+Junto a la gráfica, un bloque fijo muestra f(x), f′(x) y la fórmula general
+xₙ₊₁ = xₙ − f(xₙ)/f′(xₙ) con la fracción apilada (diapositivas 12 y 14). Debajo,
+cada paso del reproductor muestra:
+
+1. los valores de la iteración activa: xₙ, f(xₙ) y f′(xₙ);
+2. la sustitución, primero con símbolos y después con números, también como fracción;
+3. la nueva aproximación xₙ₊₁, destacada;
+4. la comprobación: error absoluto |xₙ₊₁ − xₙ| y residuo |f(xₙ₊₁)| frente a la
+   tolerancia, cada uno con «cumple» o «no cumple» escrito, y la decisión de continuar
+   o detenerse.
+
+Todo se construye con los valores del JSON al avanzar, retroceder o reproducir:
+no recalcula ni pide muestras. Los números siguen el selector **Decimales**; la
+sustitución usa «=» solo si las tres cifras mostradas son las almacenadas y «≈» en
+otro caso. Las fracciones son HTML y CSS, sin biblioteca de fórmulas; los lectores
+de pantalla reciben su forma lineal, `(f(x₀))/(f′(x₀))`. Una fórmula que no cabe se
+desplaza en horizontal dentro de su línea, sin ensanchar la página.
+
+En escritorio, la explicación ocupa la columna derecha a toda altura y la tabla sube
+bajo la gráfica, en la columna izquierda: gráfica, tabla y sustitución se ven a la vez.
+Por debajo de 44rem de ancho de la zona, el orden es gráfica, explicación y tabla.
+
 Newton depende del punto inicial y del comportamiento de la función. Un salto
 fuera del dominio, una derivada nula o un salto no finito pueden detenerlo.
 Las oscilaciones sin repetición exacta y la divergencia finita pueden alcanzar
@@ -63,7 +92,8 @@ condición matemática se presenta como error de la aplicación.
 
 Debajo, la gráfica y la explicación breve del paso activo comparten una fila en
 escritorio; la tabla tiene una fila por iteración y desplazamiento propio, para verse
-junto a la gráfica. El reproductor ofrece Reiniciar, Anterior, Reproducir/Pausar,
+junto a la gráfica. En Bisección y Regla Falsa va debajo de ambas, a todo el ancho; en
+Newton, bajo la gráfica, porque su explicación es más alta. El reproductor ofrece Reiniciar, Anterior, Reproducir/Pausar,
 Siguiente, barra de progreso y velocidades 0.5×, 1×, 2× y 4×. Empieza en pausa en la
 primera iteración. Al terminar, cambiar los datos, enviar otro cálculo u ocultar la
 pestaña, se detiene. Un clic en una fila la selecciona; con el foco en la tabla, las
@@ -96,7 +126,7 @@ ejemplo) se distinguen, sin compararlos con magnitudes diferentes. Sin JavaScrip
 el procedimiento y la verificación.
 
 Con Newton, el endpoint `grafica/` añade `derivada` a las muestras: el texto de
-`DerivadaReal` con exponentes enteros en superíndice, o `null` si no se puede derivar.
+`DerivadaReal` en notación de clase (`3x² − 1`), o `null` si no se puede derivar.
 Así f′(x) llega con la misma petición, con espera de 300 ms tras escribir y sin un
 motor simbólico en JavaScript. Una función incompleta devuelve el error de
 validación habitual, sin `derivada`.

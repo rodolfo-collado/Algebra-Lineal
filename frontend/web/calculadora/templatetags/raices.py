@@ -3,7 +3,6 @@
 from decimal import Decimal
 from django import template
 from django.utils.html import format_html
-from backend.derivacion_real import legible
 
 register = template.Library()
 
@@ -21,8 +20,3 @@ def numero_raices(valor, tipo=""):
         return format_html('<span data-raices-numero="{}" data-raices-tipo="{}" title="Valor almacenado: {}">{}</span>',
                            completo, tipo, texto, texto)
     return format_html('<span data-raices-numero="{}" title="Valor almacenado: {}">{}</span>', completo, texto, texto)
-
-
-@register.filter
-def expresion_legible(texto):
-    return legible(texto)

@@ -100,17 +100,19 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
                     </div>
                 </div>
                 <div class="raices-paso" aria-labelledby="paso-titulo">
+                    {% block formula_paso %}{% endblock %}
                     <h4 id="paso-titulo"></h4>
                     <div id="paso-breve" aria-live="polite" aria-atomic="true"></div>
                 </div>
             </div>
             {% endif %}
+            {# Dentro de la cuadrícula: ocupa todo el ancho, salvo en Newton, que la pone bajo la gráfica. #}
+            {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
+            <div class="table-wrap raices-tabla-marco" id="raices-tabla-marco">
+                {% block tabla %}{% endblock %}
+            </div>
+            {% endif %}
         </div>
-        {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
-        <div class="table-wrap raices-tabla-marco" id="raices-tabla-marco">
-            {% block tabla %}{% endblock %}
-        </div>
-        {% endif %}
     </section>
 {% if resultado %}
     <section id="raices-historial" class="panel raices-historial" aria-labelledby="historial-titulo" hidden>

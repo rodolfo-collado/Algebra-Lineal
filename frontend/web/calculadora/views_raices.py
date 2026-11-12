@@ -8,7 +8,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from backend.biseccion import biseccion
 from backend.regla_falsa import regla_falsa
 from backend.newton_raphson import newton_raphson
-from backend.derivacion_real import DerivadaReal, legible
+from backend.derivacion_real import DerivadaReal, natural
 from backend.resultados_raices import ClasificacionRaices as Clasificacion, evidencia_muestreo
 from .forms_raices import BiseccionForm, RaicesForm, ReglaFalsaForm, NewtonRaphsonForm
 from .servicios_raices import muestrear, verificacion_inicial
@@ -72,7 +72,7 @@ def explorar_funcion(request, derivar=False):
     respuesta = {**puntos, **evidencia_muestreo(puntos["y"])}
     if derivar:
         try:
-            respuesta["derivada"] = legible(DerivadaReal(form.funcion_real).texto)
+            respuesta["derivada"] = DerivadaReal(form.funcion_real).texto
         except (ValueError, ArithmeticError):
             respuesta["derivada"] = None
     return JsonResponse(respuesta)
@@ -99,5 +99,6 @@ def resolver_newton_raphson(request):
         datos.update({"inicial_a": a, "inicial_b": b})
     return render(request, "calculadora/modules/newton_raphson/index.html", {
         "form": form, "resultado": resultado, "datos_raices": datos,
+        "funcion_natural": natural(form.funcion_real.arbol) if resultado else None,
         "perfiles_teclado": perfiles_para("funcion-real"),
     })

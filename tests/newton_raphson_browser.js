@@ -29,8 +29,8 @@
         }],
         ["Tangente, residuo y recorrido coinciden con todas las filas", async (w,frame)=>{
             w=await resolver(frame, {funcion:"x³-x-2"});const r=datos(w);let peticiones=0;
-            ok(q(w,"#raices-derivada").textContent==="f′(x) = 3 · x² − 1","Derivada automática visible");
-            ok(!q(w,"#resultado").textContent.includes("f′(x) ="),"La derivada no se repite en el resultado");
+            ok(q(w,"#raices-derivada").textContent==="f′(x) = 3x² − 1","Derivada automática en notación de clase");
+            ok(q(w,"#resultado").textContent.split("f′(x) =").length===2&&q(w,".newton-formula").textContent.includes("f′(x) = 3x² − 1"),"La derivada aparece una vez en la zona de estudio");
             const primero=r.iteraciones[0];
             ok(primero.fxn===-0.125 && primero.dfxn===5.75 && primero.siguiente===1.5217391304347827,
                "Primera iteración de la diapositiva");
@@ -39,7 +39,7 @@
             ok([...w.document.querySelectorAll(".raices-tabla thead th")].map(t=>t.textContent).join("|")==="n|xₙ|f(xₙ)","Tabla de clase");
             ok(q(w,"#iteracion-anterior").disabled,"No hay paso antes de n = 0");
             q(w,"#iteracion-siguiente").click();
-            ok(q(w,"#paso-breve").textContent.includes("x₁ = x₀ − f(x₀)/f′(x₀)"),"Fórmula del paso con subíndices");
+            ok(q(w,"#paso-breve").textContent.includes("x₁ = 1.5 − (−0.125)/(5.75)"),"Sustitución de la diapositiva 14");
             ok(!q(w,"#resultado").textContent.includes("= ≈"),"Sin igualdad falsa al redondear");
             const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
             q(w,"#procedimiento-raices").open=true;
@@ -60,17 +60,44 @@
             await esperar(()=>g(w).layout.xaxis.range[0]===vista[0],"Enfoca la tangente del paso activo");
             ok(vista[0]<Math.min(p.xn,p.siguiente)&&vista[1]>Math.max(p.xn,p.siguiente),"Tangente completa en el encuadre");
         }],
+        ["Fórmula, sustitución y comprobación siguen al paso activo sin recalcular", async(w,frame)=>{
+            w=await resolver(frame,{funcion:"x³-x-2",x0:"1.5"});const r=datos(w);let peticiones=0;
+            // En escritorio, elegir decimales guarda la preferencia: se elige antes de contar peticiones.
+            const s=q(w,"#raices-decimales");s.value="completa";s.dispatchEvent(new w.Event("change"));
+            const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
+            const formula=q(w,".newton-formula").textContent;
+            ok(formula.includes("f(x) = x³ − x − 2")&&formula.includes("f′(x) = 3x² − 1")&&formula.includes("xₙ₊₁ = xₙ − "),"Función, derivada y fórmula general");
+            ok(q(w,".newton-formula .raices-fraccion").textContent==="f(xₙ)f′(xₙ)","Fracción apilada");
+            const leer=()=>[...w.document.querySelectorAll("#paso-breve dd")].map(d=>Number(d.textContent.slice(2).replace("−","-")));
+            const pizarra=()=>q(w,"#paso-breve").textContent;
+            for(const ir of [()=>q(w,"#iteracion-siguiente").click(),()=>q(w,"#iteracion-siguiente").click(),
+                             ()=>q(w,"#iteracion-anterior").click(),()=>q(w,"#iteracion-siguiente").click(),()=>q(w,"#iteracion-siguiente").click()]){
+                ir();const p=r.iteraciones[Number(q(w,"#iteracion-raices").value)-1];
+                ok(leer().join()===[p.xn,p.fxn,p.dfxn].join(),"Valores almacenados de la iteración "+p.i);
+                ok(Number(q(w,".newton-nueva strong").textContent)===p.siguiente,"Nueva aproximación almacenada");
+                const marcas=[...w.document.querySelectorAll(".newton-comprobacion li")].map(li=>li.dataset.cumple);
+                ok(marcas.join()===[p.error_absoluto<=r.tolerancia,p.residuo<=r.tolerancia].join(),"Comprobación de tolerancia "+p.i);
+                ok(w.document.querySelectorAll("#paso-breve .raices-fraccion").length===2&&pizarra().includes("Sustitución"),"Sustitución apilada");
+            }
+            ok(pizarra().includes("cumple")&&pizarra().includes("Se detiene"),"El último paso explica la parada");
+            q(w,"#iteracion-reproducir").click();await esperar(()=>q(w,"#iteracion-raices").value==="1");
+            ok(q(w,".newton-nueva").textContent.startsWith("x₁"),"Reproducir reinicia la pizarra en x₁");
+            q(w,"#iteracion-reproducir").click();
+            ok(peticiones===0,"Ninguna petición al recorrer");
+            const sr=q(w,"#paso-breve .sr-only").textContent,vista=q(w,"#paso-breve .raices-fraccion");
+            ok(sr==="(f(x₀))/(f′(x₀))"&&vista.getAttribute("aria-hidden")==="true","Lectura lineal para lectores de pantalla");
+        }],
         ["Derivada reactiva sin resolver, sin ráfagas de peticiones y con mensajes discretos", async w=>{
             let peticiones=0;const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
             for(const t of ["x","x^","x^3","x^3-","x^3-x"]) valor(w,"funcion",t);
-            await esperar(()=>q(w,"#raices-derivada").textContent==="f′(x) = 3 · x² − 1");
+            await esperar(()=>q(w,"#raices-derivada").textContent==="f′(x) = 3x² − 1");
             ok(peticiones===1,"Una sola petición tras escribir");
             ok(!q(w,"#resultado")&&!q(w,"#datos-raices").textContent.includes("iteraciones"),"Ningún cálculo de Newton");
             valor(w,"funcion","x^");
             await esperar(()=>q(w,"#raices-derivada").textContent.includes("aparecerá cuando f(x) esté completa"));
             ok(q(w,"#raices-derivada").hasAttribute("data-pendiente")&&!q(w,"[data-respuesta-errores]"),"Discreto, sin error de formulario");
             valor(w,"funcion","sen(x)/x");
-            await esperar(()=>q(w,"#raices-derivada").textContent.startsWith("f′(x) = (cos(x)"));
+            await esperar(()=>q(w,"#raices-derivada").textContent.startsWith("f′(x) = (x · cos(x)"));
             valor(w,"funcion","");
             ok(q(w,"#raices-derivada").textContent==="","Vacía sin función");
         }],
@@ -96,7 +123,7 @@
             ok(celda(3,1)==="1.521379706805","x₃ con 12 decimales");
             s.value="4";s.dispatchEvent(new w.Event("change"));
             q(w,"#iteracion-siguiente").click();
-            ok(q(w,"#paso-breve").textContent.includes("≈ 1.5217."),"La explicación usa 4 decimales");
+            ok(q(w,".newton-nueva").textContent==="x₁ ≈ 1.5217","La explicación usa 4 decimales");
             ok(!/\de[-+]?\d/.test(q(w,"#resultado").textContent),"Sin notación científica");
         }],
         ["Teclado matemático en la función", async w=>{
@@ -124,6 +151,10 @@
                 await esperar(()=>g(w).layout.paper_bgcolor===w.getComputedStyle(raiz).getPropertyValue("--color-surface").trim());
                 ok(raiz.scrollWidth<=raiz.clientWidth+1,"Sin desborde "+estilo+tema+ancho);
                 ok(g(w).getBoundingClientRect().width>200,"Gráfica visible");
+                // Escritorio: tabla bajo la gráfica y explicación al lado; estrecho: gráfica, explicación y tabla.
+                const caja=s=>q(w,s).getBoundingClientRect(),l=caja(".raices-lienzo"),e=caja(".raices-recorrido"),t=caja("#raices-tabla-marco");
+                if(ancho===1280) ok(t.top>=l.bottom&&t.right<=e.left&&Math.abs(t.left-l.left)<1,"Tabla bajo la gráfica "+estilo+tema);
+                else ok(t.top>=e.bottom&&e.top>=l.bottom,"Columna única "+estilo+tema+ancho);
             }
         }],
         ["Precisión de lectura conserva cálculos",async(w,frame)=>{

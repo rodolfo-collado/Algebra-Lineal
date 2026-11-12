@@ -18,7 +18,7 @@ def resolver(f="x^2-2", x=1.5, **opciones):
 class NewtonTests(unittest.TestCase):
     def test_ejemplo_de_las_diapositivas(self):
         r = resolver("x³ - x - 2")
-        self.assertEqual(r["derivada"], "3 · x^2 − 1")
+        self.assertEqual(r["derivada"], "3x² − 1")
         primero = r["iteraciones"][0]
         self.assertEqual(primero["xn"], 1.5)
         self.assertEqual(primero["fxn"], -0.125)
@@ -44,7 +44,7 @@ class NewtonTests(unittest.TestCase):
 
     def test_derivacion_compuesta_y_aliases(self):
         derivada = DerivadaReal(FuncionReal("ln(2x) + x² - sen(x)"))
-        self.assertEqual(derivada.texto, "1 / x + 2 · x − cos(x)")
+        self.assertEqual(derivada.texto, "1/x + 2x − cos(x)")
         for x in (0.25, 1., 2.5):
             self.assertAlmostEqual(derivada(x), 1/x + 2*x - math.cos(x))
         for x in (-1., 0.):
