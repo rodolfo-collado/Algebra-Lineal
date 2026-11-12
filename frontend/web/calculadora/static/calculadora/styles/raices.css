@@ -45,8 +45,14 @@
 .raices-estudio { display: grid; gap: var(--space-4); }
 @container (min-width: 44rem) {
     .raices-estudio:has(> .raices-recorrido:not([hidden])) { grid-template-columns: minmax(0, 1.8fr) minmax(15rem, 1fr); }
-    /* Newton explica con fórmulas: la sustitución necesita más ancho que una frase. */
-    .raices-estudio:has(.newton-formula):has(> .raices-recorrido:not([hidden])) { grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 1fr); }
+    /* Newton explica con fórmulas: la sustitución necesita más ancho que una frase, y la tabla
+       sube bajo la gráfica para ver gráfica, tabla y explicación a la vez. */
+    .raices-estudio:has(.newton-formula):has(> .raices-recorrido:not([hidden])) {
+        grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 1fr); grid-template-rows: auto 1fr;
+    }
+    .raices-estudio:has(.newton-formula) > .raices-recorrido:not([hidden]) { grid-area: 1 / 2 / 3 / 3; }
+    .raices-estudio:has(.newton-formula):has(> .raices-recorrido:not([hidden])) > .raices-tabla-marco { grid-column: 1; align-self: start; }
+    .raices-estudio:has(.newton-formula):has(> .raices-recorrido:not([hidden])) .raices-tabla-newton { width: 100%; }
 }
 .raices-lienzo { min-width: 0; }
 .raices-lienzo-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
@@ -118,7 +124,8 @@
 .newton-comprobacion [data-cumple="true"] strong { color: var(--color-success); }
 
 /* —— Tabla: una fila por iteración, con desplazamiento propio para convivir con la gráfica —— */
-.raices-tabla-marco { margin: var(--space-3) 0 0; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+/* Va en la cuadrícula de estudio (hueco --space-4); el margen negativo conserva la separación --space-3. */
+.raices-tabla-marco { grid-column: 1 / -1; margin: calc(var(--space-3) - var(--space-4)) 0 0; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
 /* Con JavaScript (data-estilo solo existe entonces) el reproductor recorre la tabla dentro de su marco;
    sin él, la tabla se muestra completa. */
 [data-estilo] .raices-tabla-marco { max-height: 17rem; overflow: auto; overscroll-behavior: contain; }

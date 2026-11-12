@@ -106,12 +106,13 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
                 </div>
             </div>
             {% endif %}
+            {# Dentro de la cuadrícula: ocupa todo el ancho, salvo en Newton, que la pone bajo la gráfica. #}
+            {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
+            <div class="table-wrap raices-tabla-marco" id="raices-tabla-marco">
+                {% block tabla %}{% endblock %}
+            </div>
+            {% endif %}
         </div>
-        {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
-        <div class="table-wrap raices-tabla-marco" id="raices-tabla-marco">
-            {% block tabla %}{% endblock %}
-        </div>
-        {% endif %}
     </section>
 {% if resultado %}
     <section id="raices-historial" class="panel raices-historial" aria-labelledby="historial-titulo" hidden>

@@ -269,6 +269,9 @@
             ejemplo(w);
             w = await post(frame); await esperar(() => listaGrafica(w));
             ok(lista(w).length === 13, "13 iteraciones");
+            // La tabla de Bisección sigue bajo gráfica y explicación, con todo el ancho (solo Newton la sube).
+            const caja = s => q(w, s).getBoundingClientRect(), t = caja("#raices-tabla-marco"), z = caja(".raices-estudio");
+            ok(t.top >= Math.max(caja(".raices-lienzo").bottom, caja(".raices-recorrido").bottom) && Math.abs(t.width - z.width) < 1, "Tabla a todo el ancho");
             ok(lista(w)[12].c === .763970947265625, "Raíz del ejemplo");
             ok(grafica(w).layout.shapes.length === 4, "Dos extremos y dos franjas");
             ok(grafica(w).layout.shapes[2].x0 === lista(w)[0].a && grafica(w).layout.shapes[2].x1 === lista(w)[0].b, "Comienza en la primera iteración");

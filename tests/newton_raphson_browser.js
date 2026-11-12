@@ -151,6 +151,10 @@
                 await esperar(()=>g(w).layout.paper_bgcolor===w.getComputedStyle(raiz).getPropertyValue("--color-surface").trim());
                 ok(raiz.scrollWidth<=raiz.clientWidth+1,"Sin desborde "+estilo+tema+ancho);
                 ok(g(w).getBoundingClientRect().width>200,"Gráfica visible");
+                // Escritorio: tabla bajo la gráfica y explicación al lado; estrecho: gráfica, explicación y tabla.
+                const caja=s=>q(w,s).getBoundingClientRect(),l=caja(".raices-lienzo"),e=caja(".raices-recorrido"),t=caja("#raices-tabla-marco");
+                if(ancho===1280) ok(t.top>=l.bottom&&t.right<=e.left&&Math.abs(t.left-l.left)<1,"Tabla bajo la gráfica "+estilo+tema);
+                else ok(t.top>=e.bottom&&e.top>=l.bottom,"Columna única "+estilo+tema+ancho);
             }
         }],
         ["Precisión de lectura conserva cálculos",async(w,frame)=>{
