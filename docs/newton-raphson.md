@@ -2,88 +2,92 @@
 
 [Índice](README.md) · [Bisección](biseccion.md) · [Regla falsa](regla-falsa.md)
 
-Disponible en **Métodos numéricos → Raíces de ecuaciones → Método de Newton-Raphson**,
-`/metodos-numericos/newton-raphson/`. No requiere servicios externos.
+Abre **Métodos numéricos → Raíces de ecuaciones → Método de Newton-Raphson**.
+Introduce f(x) y x₀. La gráfica puede explorarse antes de resolver y permite
+seleccionar x₀ sobre la curva. El resultado muestra f′(x) automáticamente.
 
-## Entrada y exploración
+## Derivación y dominio
 
-Escribe f(x), su derivada manual f′(x) y x₀. Ambas expresiones utilizan `FuncionReal`
-y el teclado matemático existente: potencias, productos implícitos, sen, ln, √, etc.
-La derivada debe corresponder a la función: no se calcula ni se comprueba simbólicamente.
-La gráfica de f(x) puede explorarse sin escribir la derivada ni resolver.
-Selecciona x₀ sobre la curva, arrastra su línea o escríbelo. Los ejemplos están plegados.
+El backend deriva el árbol de `FuncionReal` con las reglas de suma, producto,
+cociente, potencia constante y cadena. Admite las funciones del parser, entre
+ellas sen, cos, tan, ln, log₁₀, exp, √ y valor absoluto. Valida la función
+original al evaluar la derivada para conservar su dominio. Por ejemplo, para
+`ln(2x) + x² − sen(x)` muestra `1 / x + 2 · x − cos(x)`, con x > 0.
 
-La tolerancia predeterminada y máxima es **0.0001**; admite cualquier valor positivo
-menor representable. El máximo de iteraciones es 200, configurable entre 1 y 1000.
-La misma tolerancia se aplica por separado al cambio absoluto en x y al residuo en f(x).
-Estas cantidades tienen escalas distintas: cambiar la escala de f cambia su residuo.
+Un punto donde la derivada no se pueda evaluar detiene el cálculo. Esto incluye
+la cúspide de `abs(x)` en cero y la pendiente no finita de `√(x)` en cero.
+Algunas composiciones con singularidades removibles en la fórmula de la
+derivada requieren una simplificación adicional. Las potencias con exponente
+dependiente de x quedan fuera de la sintaxis de `FuncionReal`.
 
-## Algoritmo y criterio de parada
+## Algoritmo y parada
 
-1. Validar punto inicial, tolerancia, máximo y evaluación de f(x₀).
-2. Si f(x₀) da cero, devolverlo sin actualizaciones, incluso si su derivada es cero.
-3. Evaluar la derivada manual en x actual. Si es cero, no dividir.
-4. Calcular explícitamente `x siguiente = x actual − f(x actual)/f′(x actual)`.
-5. Evaluar f(x siguiente), registrar la tangente, el residuo siguiente y el cambio absoluto.
-6. Detenerse ante un cero calculado; en otro caso exigir **ambos**
-   `|x siguiente − x actual| ≤ tolerancia` y `|f(x siguiente)| ≤ tolerancia`.
-7. Una repetición exacta o un ciclo se detiene sin éxito, antes de aceptar tolerancia.
-8. Repetir hasta el límite; reevaluar f(x) independientemente al construir el resultado.
+1. Evaluar f(x₀). Si da cero en aritmética de máquina, devolver x₀.
+2. Evaluar f′(xₙ) y calcular xₙ₊₁ = xₙ − f(xₙ)/f′(xₙ).
+3. Evaluar f(xₙ₊₁) y registrar el cambio absoluto y el residuo.
+4. Detenerse ante un cero calculado o cuando tanto |xₙ₊₁ − xₙ| como
+   |f(xₙ₊₁)| cumplan la tolerancia. Un punto repetido con residuo distinto
+   de cero produce estancamiento o ciclo antes de aceptar la tolerancia.
+5. Reevaluar f en la aproximación final válida.
 
-El cambio es un error absoluto **aproximado**, no el error verdadero `|x − raíz|`.
-Newton no conserva un intervalo que encierre una raíz ni demuestra una cota de distancia.
-Cumplir las dos condiciones es un criterio numérico, no una prueba de existencia o unicidad.
-Un cero de máquina tampoco demuestra un cero matemático exacto.
+La tolerancia predeterminada y máxima es 0.0001 y se puede reducir. El límite
+predeterminado es 200 iteraciones, configurable entre 1 y 1000. La actualización
+opera con racionales sobre los valores de máquina y se convierte a float al
+final. El redondeo de lectura se aplica después del cálculo.
 
-No se fija un umbral absoluto arbitrario para pendientes pequeñas: una función escalada
-puede tener una pendiente pequeña perfectamente útil. La actualización se calcula con
-`Fraction` sobre los valores binarios de máquina y se convierte a float al final, siguiendo
-el patrón de Regla falsa. Si el salto o el cambio no son finitos, se detiene sin convergencia.
-Esto evita desbordamientos intermedios, sin volver exacta la evaluación de las expresiones.
+Las diapositivas 8 y 10–16 de *Solución numérica de ecuaciones. Métodos abiertos*
+describen la fórmula, la tangente y las comprobaciones. Con f(x) = x³ − x − 2
+y x₀ = 1.5, f(x₀) = −0.125, f′(x₀) = 5.75 y x₁ ≈ 1.5217391304347827.
+El recorrido une (1.5, −0.125) con (x₁, 0) y después muestra (x₁, f(x₁)).
+La raíz aproximada es 1.5213797068.
 
-| Estado | Significado |
+Newton depende del punto inicial y del comportamiento de la función. Un salto
+fuera del dominio, una derivada nula o un salto no finito pueden detenerlo.
+Las oscilaciones sin repetición exacta y la divergencia finita pueden alcanzar
+el límite de iteraciones. El cambio y el residuo miden magnitudes distintas,
+y el criterio numérico carece de una cota garantizada de distancia a la raíz.
+
+## Contrato de datos de los métodos de raíces
+
+El backend devuelve diccionarios serializables. En la página, `datos-raices`
+publica `metodo`, `funcion`, `clave`, `clasificacion` y `resultado`. La función
+es el texto original y la clave identifica el árbol del parser. Los resultados
+válidos incluyen `estado` (motivo de parada), `mensaje`, `convergio`, `residuo`,
+`max_iteraciones` e `iteraciones`. Los valores no disponibles se representan con
+`null`. Las entradas inválidas producen errores de validación y `resultado: null`.
+
+| Clasificación | Cuándo se emite |
 | --- | --- |
-| exacta | Cero calculado, en el punto inicial o tras una actualización. |
-| tolerancia | Residuo y cambio cumplen; no es una cota de distancia a la raíz. |
-| derivada | Derivada cero con residuo distinto de cero. |
-| dominio | La derivada o la siguiente evaluación no son válidas; conserva el último punto válido. |
-| divergencia | El salto o el cambio exceden el rango finito de máquina. |
-| oscilacion | Una aproximación repite exactamente otra anterior. |
-| estancamiento | La actualización redondea al mismo punto sin dar cero. |
-| limite | No se satisfacen las condiciones al agotar las iteraciones. |
+| `entrada_invalida` | Falta un campo o la sintaxis, el orden de los extremos o los ajustes son inválidos. |
+| `no_aplicable` | El dominio o las condiciones del método impiden comenzar con los parámetros dados. |
+| `raiz_aproximada` | Cero calculado o criterio de convergencia satisfecho. |
+| `sin_convergencia` | El cálculo se detuvo sin satisfacer el criterio. |
+| `sin_raices_demostrado` | Una prueba de signo estricto excluye el cero en todo el intervalo. |
+| `exploracion_no_concluyente` | La gráfica no detectó indicios en sus muestras. |
+| `indicios_numericos` | La gráfica detectó ceros de máquina o cambios de signo entre muestras válidas consecutivas. |
 
-El punto inicial fuera del dominio es un error de entrada. Si un salto posterior sale del
-dominio, no se añade una fila incompleta. Las oscilaciones sin repetición exacta y la
-divergencia que permanece finita pueden alcanzar `limite`; no se diagnostican por un
-umbral de tamaño arbitrario. No se sustituyen pasos por bisección ni se modifica el algoritmo.
+En Bisección y Regla Falsa, `sin_cambio_de_signo` detiene el algoritmo y deja
+vacía la aproximación. La prueba simbólica de signo usa reglas conservadoras
+sobre el árbol. Por ejemplo, x² ≥ 0 y 1 > 0 demuestran que x² + 1 > 0 en
+[−1, 1]. Para x² en [−1, 1] y x² − 1 en [−2, 2], se informa que el método
+no es aplicable con esos extremos. El endpoint `grafica/` conserva `x` e `y` y
+publica el número de muestras válidas, ceros calculados y cambios de signo en
+`evidencia`. Esos conteos describen la exploración.
 
-## Geometría y recorrido
+- **Newton-Raphson.** `derivada`, `x0`, `tolerancia`, `x`, `fx` y
+  `error_absoluto`. Cada fila contiene `xn`, `fxn`, `dfxn`, `siguiente`,
+  `fsiguiente`, `residuo` y `error_absoluto`. La tangente queda definida por
+  (xn, fxn), la pendiente dfxn y el corte (siguiente, 0).
+  `intento_final` guarda los valores disponibles de un paso que no se completó.
+- **Bisección.** `inicial` contiene a, b, f(a) y f(b). Cada fila registra
+  los extremos y sus evaluaciones, el punto medio (c, fc), el error relativo
+  aproximado y el intervalo siguiente. El resultado contiene el intervalo
+  final, `c`, `fc` y `precision`.
+- **Regla Falsa.** `inicial` también contiene a, b, f(a) y f(b). Cada fila
+  guarda los puntos de la secante (a, fa) y (b, fb), su corte (xr, 0),
+  f(xr), el intervalo siguiente y los datos de confirmación de cercanía.
+  El resultado conserva `xr`, `fxr`, `tolerancia` y la cota cuando se confirmó.
 
-Cada fila conserva `(xn, f(xn))`, la pendiente manual, el corte `(x siguiente, 0)`
-y el siguiente punto de la curva. El segmento de tangente une el punto actual con
-el corte; un segmento vertical muestra la nueva evaluación. Si la derivada manual
-es incorrecta, la recta dibujada no será la tangente real de f: revisa la expresión.
-
-Anterior/Siguiente, deslizador y foco/clic sobre las filas recorren el mismo JSON,
-sin recalcular ni solicitar muestras. **Ver tangente de este paso** encuadra los dos
-puntos en x y vuelve a muestrear; zoom, desplazamiento y Vista inicial siguen disponibles.
-El panel permanece junto a la curva en escritorio y debajo en pantallas estrechas.
-Estudio/Minimalista y día/noche utilizan los mismos tokens y componentes compartidos.
-El resultado, procedimiento y verificación también funcionan sin JavaScript.
-
-## Referencias y pruebas
-
-Con tolerancia 0.0001, `x²−2`, `2x`, x₀=1.5 aproxima √2;
-`x³−x−2`, `3x²−1`, x₀=1.5 aproxima 1.5213797068.
-`x³−2x+2`, `3x²−2`, x₀=0 repite 0 → 1 → 0.
-`ln(x)`, `1/x`, x₀=4 propone un salto negativo y termina por dominio.
-`x²`, `2x`, x₀=0 ya es raíz; `x²−2`, `2x`, x₀=0 tiene derivada nula.
-
-- `uv run --locked python -m unittest tests.test_newton_raphson tests.test_newton_raphson_web -v`
-- `uv run --locked python -m tests.newton_raphson_browser`; abrir `http://127.0.0.1:8901/__pruebas/`.
-- Ejecutar también los runners de Bisección/Regla falsa y la suite completa de [Pruebas](pruebas.md).
-
-El runner DOM comprueba selección/arrastre mediante eventos de Plotly, geometría de cada
-fila, recorrido, teclado en los dos campos, ejemplos, estados, cifras y ausencia de desborde
-en 1280, 744 y 390 px, en ambos estilos y temas. Los eventos sintéticos no sustituyen
-pruebas físicas de arrastre, touch o lector de pantalla.
+Las filas conservan el orden de cálculo y los valores de máquina. La tabla y
+la gráfica existente leen los mismos datos. Los tres runners DOM y las pruebas
+Python se describen en [Pruebas](pruebas.md).
