@@ -3,8 +3,9 @@
 [Índice](README.md) · [Bisección](biseccion.md) · [Regla falsa](regla-falsa.md)
 
 Abre **Métodos numéricos → Raíces de ecuaciones → Método de Newton-Raphson**.
-Introduce f(x) y x₀. La gráfica puede explorarse antes de resolver y permite
-seleccionar x₀ sobre la curva. El resultado muestra f′(x) automáticamente.
+Introduce f(x) y x₀. Mientras escribes f(x), f′(x) aparece bajo el campo sin
+resolver nada. La gráfica puede explorarse antes de resolver y permite elegir x₀
+sobre la curva.
 
 ## Derivación y dominio
 
@@ -46,6 +47,42 @@ fuera del dominio, una derivada nula o un salto no finito pueden detenerlo.
 Las oscilaciones sin repetición exacta y la divergencia finita pueden alcanzar
 el límite de iteraciones. El cambio y el residuo miden magnitudes distintas,
 y el criterio numérico carece de una cota garantizada de distancia a la raíz.
+
+## Zona de estudio compartida
+
+Los tres métodos usan la misma composición. La entrada agrupa función, parámetros y
+**Resolver** en una fila cuando el ancho lo permite. El veredicto encabeza el
+resultado con un tono proporcional: verde para una raíz aproximada, ámbar sin
+convergencia y neutro para «no aplicable» o «ausencia de raíces demostrada». Ninguna
+condición matemática se presenta como error de la aplicación.
+
+Debajo, la gráfica y la explicación breve del paso activo comparten una fila en
+escritorio; la tabla tiene una fila por iteración y desplazamiento propio, para verse
+junto a la gráfica. El reproductor ofrece Reiniciar, Anterior, Reproducir/Pausar,
+Siguiente, barra de progreso y velocidades 0.5×, 1×, 2× y 4×. Empieza en pausa en la
+primera iteración. Al terminar, cambiar los datos, enviar otro cálculo u ocultar la
+pestaña, se detiene. Un clic en una fila la selecciona; con el foco en la tabla, las
+flechas, Inicio, Fin, RePág y AvPág recorren las filas sin desplazar la página. Todo
+usa el JSON calculado: recorrer no vuelve a calcular ni pide muestras.
+
+Durante la reproducción la explicación no se anuncia en cada paso; en pausa vuelve
+a ser una región `aria-live`. No hay animaciones: cada paso es un cambio discreto,
+también con movimiento reducido. La rueda sobre la gráfica acerca o aleja, salvo si
+la página ya se estaba desplazando y la gráfica pasa bajo el cursor. Arrastrar
+desplaza la vista. **Vista inicial** vuelve a `[-10, 10]`; **Enfocar intervalo** o
+**Enfocar tangente** encuadra el paso activo. Cambiar de iteración respeta el zoom.
+
+El **Historial de esta sesión** aparece desde la segunda ejecución del método en la
+pestaña. Guarda hasta 12 en `sessionStorage` y agrupa por función equivalente, sin
+mezclar métodos. **Ver** vuelve a enviar los datos de una ejecución y la marca como
+actual sin duplicarla. Sin JavaScript se muestran el veredicto, la tabla completa,
+el procedimiento y la verificación.
+
+Con Newton, el endpoint `grafica/` añade `derivada` a las muestras: el texto de
+`DerivadaReal` con exponentes enteros en superíndice, o `null` si no se puede derivar.
+Así f′(x) llega con la misma petición, con espera de 300 ms tras escribir y sin un
+motor simbólico en JavaScript. Una función incompleta devuelve el error de
+validación habitual, sin `derivada`.
 
 ## Contrato de datos de los métodos de raíces
 

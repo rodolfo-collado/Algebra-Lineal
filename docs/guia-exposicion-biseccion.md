@@ -107,16 +107,17 @@ aporta los puntos y la explicación de cada paso. El controlador compartido actu
 ```javascript
         Plotly.update(grafica, { x: [puntos.x], y: [puntos.y], text: [puntos.text],
             customdata: [etiquetas(puntos.x, puntos.y, 12)], "marker.size": [puntos.size], "marker.symbol": [puntos.symbol] },
-            { "shapes[2].x0": p.a, "shapes[2].x1": p.b }, [1])
+            extremos.length === 2 ? { "shapes[2].x0": p.a, "shapes[2].x1": p.b,
+                "shapes[3].x0": p.nuevo_a ?? p.a, "shapes[3].x1": p.nuevo_b ?? p.b } : {}, [1])
             .finally(() => { mutando = false; });
 ```
 
 Con solo la función se abre una ventana de exploración `[-10, 10]`. Los botones
-**Seleccionar a/b** permiten elegir un punto de la curva; los campos y las líneas
+**Elegir a/b** permiten elegir un punto de la curva; los campos y las líneas
 permiten afinar los extremos. Esto no prueba que exista una raíz: Resolver valida
 dominio, continuidad y signos de forma independiente.
 
-El cursor sobre una fila, su foco, Anterior/Siguiente y el deslizador llaman al mismo recorrido.
+Reproducir, Anterior/Siguiente, la barra de progreso y un clic o las flechas sobre una fila llaman al mismo recorrido.
 La lectura identifica a, c y b, sus signos y qué mitad conservamos, separando
 el intervalo antes y después del recorte. La verificación plegable explica
 existencia, resta de extremos y precisión con los valores de nuestro cálculo.
@@ -133,15 +134,14 @@ sin Internet. La curva muestreada ayuda a explorar; no demuestra todas las raíc
 1. Empezar con los campos vacíos. Escribir la función y el intervalo del ejemplo;
    al enfocar f(x), mostrar el teclado contextual (x² inserta x² y aⁿ activa el modo superíndice para escribir el exponente).
    Resolver y señalar las 13 iteraciones.
-2. Abrir el procedimiento y recorrer los tres primeros pasos; mover el deslizador.
+2. Pulsar Reproducir a 1× y pausar en el tercer paso; mover la barra y señalar la fila activa.
 3. Arrastrar un extremo y explicar el aviso de resultado anterior.
 4. Resolver `[5,5.5]` y después `[5.2,5.3]`: requieren 13 y 10 pasos.
-   Abrir la comparación y señalar «Compatible con la misma raíz».
-   Con un solo cálculo aparece una indicación; la tabla empieza desde el segundo
-   cálculo de la misma función.
+   Señalar en el historial las dos aproximaciones cercanas y sus iteraciones.
+   El historial aparece desde la segunda ejecución y agrupa por función.
 
 **¿Por qué no asegura una sola raíz?** Continuidad y signos opuestos aseguran
-existencia; un intervalo puede contener varias. La comparación tampoco prueba unicidad.
+existencia; un intervalo puede contener varias. El historial tampoco prueba unicidad.
 
 **¿Qué pasa con `1/2x`?** Se lee `(1/2)*x`, con las mismas prioridades que la
 multiplicación explícita. Para otro denominador escribo `1/(2x)`. No adivinamos
