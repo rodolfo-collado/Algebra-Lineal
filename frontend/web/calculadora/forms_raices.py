@@ -1,4 +1,4 @@
-"""Función, intervalo y ajustes que comparten los métodos cerrados de raíces."""
+"""Función, intervalo o puntos iniciales y ajustes que comparten los métodos de raíces."""
 
 from django import forms
 from backend.metodos_cerrados import MAX_ITERACIONES, TOLERANCIA
@@ -74,3 +74,15 @@ class NewtonRaphsonForm(RaicesForm):
     etiqueta = "Tolerancia del cambio y del residuo"
     x0 = forms.FloatField(label="Aproximación inicial x₀",
         widget=forms.NumberInput(attrs={"class": "field-input", "step": "any"}))
+
+
+class SecanteForm(NewtonRaphsonForm):
+    x1 = forms.FloatField(label="Aproximación inicial x₁",
+        widget=forms.NumberInput(attrs={"class": "field-input", "step": "any"}))
+
+    def clean(self):
+        datos = super().clean()
+        # Sin orden ni cambio de signo: solo hacen falta dos puntos distintos para trazar la recta.
+        if datos.get("x0") is not None and datos.get("x0") == datos.get("x1"):
+            self.add_error("x1", "x₁ debe ser distinto de x₀: la secante necesita dos puntos.")
+        return datos

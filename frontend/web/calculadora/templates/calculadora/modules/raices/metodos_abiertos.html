@@ -1,0 +1,9 @@
+{% comment %}Selector de Métodos abiertos: un enlace por método (cada uno con su ruta, su formulario y su
+resultado). Con JavaScript, el enlace lleva la función escrita (?funcion=…); nunca el resultado.{% endcomment %}
+<nav class="metodos-abiertos" aria-label="Método abierto">
+    <span class="metodos-abiertos-titulo" aria-hidden="true">Método</span>
+    <div class="segmented">
+        <a class="segment" href="{% url 'calculadora:newton-raphson' %}" data-metodo-abierto{% if metodo == "newton_raphson" %} aria-current="page"{% endif %}>Newton-Raphson <small>tangente · x₀</small></a>
+        <a class="segment" href="{% url 'calculadora:secante' %}" data-metodo-abierto{% if metodo == "secante" %} aria-current="page"{% endif %}>Secante <small>dos puntos · x₀, x₁</small></a>
+    </div>
+</nav>

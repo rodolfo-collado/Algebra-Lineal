@@ -129,6 +129,7 @@ def datos_buscador() -> dict:
         "separador": SEPARADOR_TERMINOS,
         "herramientas": [
             {"id": h.id, "indice": h.indice, "nombre": normalizar(h.nombre),
+             "claves": sorted({normalizar(clave) for clave in h.palabras_clave}),
              "disponible": h.disponible}
             for h in HERRAMIENTAS
         ],
@@ -168,7 +169,8 @@ NUMERACION_ROMANA = Categoria(
 LIMITES = Categoria("limites", "Límites", CALCULO, "Límites de funciones.", "x → a")
 CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos e intervalos", CONJUNTOS,
                             "Operaciones, relaciones, diagramas de Venn, intervalos y cardinalidad.", "{ a, b }")
-RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS, "Búsqueda de raíces en un intervalo.", "[a, b]")
+RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS,
+                   "Búsqueda de raíces en un intervalo (métodos cerrados) o desde puntos iniciales (métodos abiertos).", "[a, b]")
 CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, CONJUNTOS_FINITOS, LIMITES)
 
 
@@ -366,7 +368,7 @@ BISECCION = Herramienta(
     descripcion="Aproxima una raíz real y explora cómo se reduce el intervalo en una gráfica interactiva.",
     estado="disponible", route_name="calculadora:biseccion",
     palabras_clave=("bisección", "raíz", "raíces", "función", "intervalo", "punto medio", "gráfica", "bolzano"),
-    relacionadas=("regla-falsa", "newton-raphson"),
+    relacionadas=("regla-falsa", "metodos-abiertos"),
     invitacion="Busca una raíz de f(x) mediante bisección.",
     puntos=('Gráfica interactiva del intervalo', 'Tabla de iteraciones paso a paso'),
     curiosidad="Cada iteración reduce el intervalo a la mitad: tras 10 pasos mide menos de una milésima del original.",
@@ -376,23 +378,26 @@ REGLA_FALSA = Herramienta(
     id="regla-falsa", nombre="Método de regla falsa", categoria=RAICES,
     descripcion="Aproxima una raíz real con rectas secantes y sigue en la gráfica cómo cada corte con el eje x se acerca a ella.",
     estado="disponible", route_name="calculadora:regla-falsa",
-    palabras_clave=("regla falsa", "falsa posición", "regula falsi", "interpolación lineal", "secante", "raíz", "raíces",
+    palabras_clave=("regla falsa", "falsa posición", "regula falsi", "interpolación lineal", "raíz", "raíces",
                     "función", "intervalo", "gráfica", "error absoluto"),
-    relacionadas=("biseccion", "newton-raphson"),
+    relacionadas=("biseccion", "metodos-abiertos"),
     invitacion="Busca una raíz de f(x) mediante regla falsa.",
     puntos=('Recta secante de cada iteración en la gráfica', 'Error absoluto y motivo de parada explicados'),
     curiosidad="Se llama «falsa» porque una recta sustituye a la curva: su corte con el eje x es una posición falsa de la raíz, que cada paso corrige.",
 )
 
-NEWTON_RAPHSON = Herramienta(
-    id="newton-raphson", nombre="Método de Newton-Raphson", categoria=RAICES,
-    descripcion="Explora cómo las tangentes aproximan una raíz desde un punto inicial, con derivación automática.",
+# Newton-Raphson y Secante son una sola herramienta: comparten función, gráfica y zona de estudio,
+# y el método se elige dentro. Cada uno conserva su ruta (la de Newton es la de la herramienta).
+METODOS_ABIERTOS = Herramienta(
+    id="metodos-abiertos", nombre="Métodos abiertos", categoria=RAICES,
+    descripcion="Aproxima una raíz desde uno o dos puntos iniciales, sin intervalo: tangentes con Newton-Raphson o rectas secantes.",
     estado="disponible", route_name="calculadora:newton-raphson",
-    palabras_clave=("newton", "raphson", "derivada", "tangente", "raíz", "raíces", "gráfica"),
+    palabras_clave=("métodos abiertos", "método abierto", "newton", "raphson", "newton-raphson", "derivada", "tangente",
+                    "secante", "método de la secante", "dos puntos", "punto inicial", "raíz", "raíces", "gráfica"),
     relacionadas=("biseccion", "regla-falsa"),
-    invitacion="Sigue el corte de cada tangente con el eje x.",
-    puntos=("Derivada manual y punto inicial en la gráfica", "Residuo y cambio entre aproximaciones"),
-    curiosidad="El corte de la tangente con el eje x propone la siguiente aproximación; la elección inicial puede cambiar el resultado.",
+    invitacion="Elige Newton-Raphson o Secante y sigue cada aproximación en la gráfica.",
+    puntos=("Newton-Raphson: tangente desde x₀ con derivada automática", "Secante: recta por x₀ y x₁, sin derivada"),
+    curiosidad="La secante sustituye la derivada por la pendiente entre dos puntos: no necesita f′(x) y aun así suele converger casi tan rápido como Newton.",
 )
 
 HERRAMIENTAS = (
@@ -406,7 +411,7 @@ HERRAMIENTAS = (
     CONVERSION_ROMANOS,
     BISECCION,
     REGLA_FALSA,
-    NEWTON_RAPHSON,
+    METODOS_ABIERTOS,
     RELACIONES_CONJUNTOS,
     CARDINALIDAD_CONJUNTOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,
@@ -415,6 +420,7 @@ HERRAMIENTAS = (
 )
 
 _POR_ID = {herramienta.id: herramienta for herramienta in HERRAMIENTAS}
+_ALIAS_RUTAS = {"calculadora:sistemas": REDUCCION_FILAS, "calculadora:secante": METODOS_ABIERTOS}
 
 
 def herramienta_por_id(id_herramienta: str) -> Herramienta | None:
@@ -457,7 +463,7 @@ def buscar_herramientas(consulta: str, herramientas=HERRAMIENTAS) -> tuple[Herra
     """Coincidencias reales por nombre, palabras clave, categoría o área.
 
     Todos los términos deben aparecer. Primero las disponibles y, entre ellas,
-    las que coinciden por nombre; después se respeta el orden del registro.
+    las que coinciden por nombre y después por palabra clave completa; luego, el orden del registro.
     """
     terminos = terminos_de(consulta)
     if not terminos:
@@ -470,20 +476,23 @@ def buscar_herramientas(consulta: str, herramientas=HERRAMIENTAS) -> tuple[Herra
             continue
         nombre = normalizar(herramienta.nombre)
         aciertos_nombre = sum(termino in nombre for termino in terminos)
-        coincidencias.append((not herramienta.disponible, -aciertos_nombre, herramienta))
+        # Desempate: una palabra clave completa («secante») pesa más que un fragmento de la descripción.
+        claves = {normalizar(clave) for clave in herramienta.palabras_clave}
+        aciertos_clave = sum(termino in claves for termino in terminos)
+        coincidencias.append((not herramienta.disponible, -aciertos_nombre, -aciertos_clave, herramienta))
 
-    coincidencias.sort(key=lambda entrada: entrada[:2])
-    return tuple(herramienta for _, _, herramienta in coincidencias)
+    coincidencias.sort(key=lambda entrada: entrada[:3])
+    return tuple(entrada[-1] for entrada in coincidencias)
 
 
 def herramienta_por_ruta(resolver_match) -> Herramienta | None:
     """Identifica la herramienta activa a partir de la ruta resuelta por Django."""
     if resolver_match is None:
         return None
-    # Los POST históricos de /sistemas/ usan la misma vista y navegación canónica.
-    # Es un alias de ruta, nunca una segunda herramienta en el catálogo.
-    if resolver_match.view_name == "calculadora:sistemas":
-        return REDUCCION_FILAS
+    # Alias de ruta, nunca una segunda herramienta en el catálogo: los POST históricos de
+    # /sistemas/ y el método de la secante, que vive dentro de Métodos abiertos.
+    if resolver_match.view_name in _ALIAS_RUTAS:
+        return _ALIAS_RUTAS[resolver_match.view_name]
     for herramienta in HERRAMIENTAS:
         if herramienta.route_name != resolver_match.view_name:
             continue

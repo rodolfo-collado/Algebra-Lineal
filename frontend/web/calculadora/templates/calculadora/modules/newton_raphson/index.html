@@ -1,5 +1,7 @@
 {% extends "calculadora/modules/raices/base.html" %}
 {% load static componentes raices %}
+{% block title %}Newton-Raphson · {{ herramienta_actual.nombre }} · PyGebra{% endblock %}
+{% block selector_metodo %}{% include "calculadora/modules/raices/metodos_abiertos.html" with metodo="newton_raphson" %}{% endblock %}
 {% block entrada_titulo %}Entrada de Newton-Raphson{% endblock %}
 {% block bajo_funcion %}
 {# Derivada automática: el backend la calcula al escribir f(x), con la misma petición que muestrea la gráfica. #}
@@ -12,9 +14,9 @@
 {% disclosure titulo="Ejemplos" id="ejemplos-newton" %}
 <p class="field-help">Carga un ejemplo y pulsa Resolver para recorrer sus tangentes.</p>
 <div class="raices-herramientas">
-<button type="button" class="btn btn-secondary" data-newton-ejemplo="cuadratica">√2: x² − 2</button>
-<button type="button" class="btn btn-secondary" data-newton-ejemplo="cubica">x³ − x − 2</button>
-<button type="button" class="btn btn-secondary" data-newton-ejemplo="ciclo">Ciclo: x³ − 2x + 2</button>
+<button type="button" class="btn btn-secondary" data-ejemplo='{"funcion": "x²-2", "x0": "1.5"}'>√2: x² − 2</button>
+<button type="button" class="btn btn-secondary" data-ejemplo='{"funcion": "x³-x-2", "x0": "1.5"}'>x³ − x − 2</button>
+<button type="button" class="btn btn-secondary" data-ejemplo='{"funcion": "x³-2x+2", "x0": "0"}'>Ciclo: x³ − 2x + 2</button>
 </div>
 <noscript><p>Prueba f(x) = x² − 2, x₀ = 1.5; o f(x) = x³ − x − 2, x₀ = 1.5.</p></noscript>
 {% enddisclosure %}
@@ -32,7 +34,7 @@
 {% endblock %}
 {% block tabla %}
 {# Como en la diapositiva 15: n, xₙ y f(xₙ), con n = 0 para el punto inicial. f′, el error y la fórmula van en el paso seleccionado. #}
-<table class="procedure-table raices-tabla raices-tabla-newton">
+<table class="procedure-table raices-tabla raices-tabla-abierta">
 <caption>Aproximaciones sucesivas; n = 0 es el punto inicial. Sin redondeo intermedio.</caption>
 <thead><tr><th scope="col">n</th><th scope="col">xₙ</th><th scope="col">f(xₙ)</th></tr></thead><tbody>
 <tr data-iteracion="0" tabindex="-1" data-raices-grupo aria-label="n = 0, punto inicial">
@@ -44,9 +46,9 @@
 {% endblock %}
 {% block formula_paso %}
 {# Diapositivas 8 y 10: la función, su derivada y la fórmula; la sustitución del paso activo va debajo. #}
-<div class="newton-formula" role="group" aria-label="Función, derivada y fórmula de Newton-Raphson">
-<p class="newton-funciones"><span>f(x) = {{ funcion_natural }}</span> <span>f′(x) = {{ resultado.derivada }}</span></p>
-<p class="newton-general"><span class="sr-only">x sub n más 1 = x sub n − f(x sub n) / f′(x sub n)</span><span aria-hidden="true">xₙ₊₁ = xₙ − <span class="raices-fraccion"><span>f(xₙ)</span><span>f′(xₙ)</span></span></span></p>
+<div class="abierto-formula" role="group" aria-label="Función, derivada y fórmula de Newton-Raphson">
+<p class="abierto-funciones"><span>f(x) = {{ funcion_natural }}</span> <span>f′(x) = {{ resultado.derivada }}</span></p>
+<p class="abierto-general"><span class="sr-only">x sub n más 1 = x sub n − f(x sub n) / f′(x sub n)</span><span aria-hidden="true">xₙ₊₁ = xₙ − <span class="raices-fraccion"><span>f(xₙ)</span><span>f′(xₙ)</span></span></span></p>
 </div>
 {% endblock %}
 {% block lectura_iteracion %}
@@ -72,4 +74,5 @@
 </div>
 {% enddisclosure %}
 {% endblock %}
-{% block metodo_js %}<script src="{% static 'calculadora/newton_raphson.js' %}" defer></script>{% endblock %}
+{% block metodo_js %}<script src="{% static 'calculadora/metodos_abiertos.js' %}" defer></script>
+<script src="{% static 'calculadora/newton_raphson.js' %}" defer></script>{% endblock %}

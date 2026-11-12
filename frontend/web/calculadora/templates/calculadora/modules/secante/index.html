@@ -1,0 +1,76 @@
+{% extends "calculadora/modules/raices/base.html" %}
+{% load static componentes raices %}
+{% block title %}Secante · {{ herramienta_actual.nombre }} · PyGebra{% endblock %}
+{% block selector_metodo %}{% include "calculadora/modules/raices/metodos_abiertos.html" with metodo="secante" %}{% endblock %}
+{% block entrada_titulo %}Entrada del método de la secante{% endblock %}
+{# Métodos abiertos tiene la ruta de Newton; Secante envía a la suya. #}
+{% block accion_ruta %}{% url 'calculadora:secante' %}{% endblock %}
+{% block parametros %}
+<div class="field-group raices-valor">{{ form.x0.label_tag }}{{ form.x0 }}{{ form.x0.errors }}</div>
+<div class="field-group raices-valor">{{ form.x1.label_tag }}{{ form.x1 }}{{ form.x1.errors }}</div>
+{% endblock %}
+{% block extras %}
+{% disclosure titulo="Ejemplos" id="ejemplos-secante" %}
+<p class="field-help">Carga un ejemplo y pulsa Resolver para recorrer sus secantes.</p>
+<div class="raices-herramientas">
+<button type="button" class="btn btn-secondary" data-ejemplo='{"funcion": "x³-x-2", "x0": "1", "x1": "2"}'>x³ − x − 2, x₀ = 1, x₁ = 2</button>
+<button type="button" class="btn btn-secondary" data-ejemplo='{"funcion": "x³-2x-5", "x0": "2", "x1": "3", "precision": "0.000001"}'>Práctica: x³ − 2x − 5, tolerancia 10⁻⁶</button>
+</div>
+<noscript><p>Prueba f(x) = x³ − x − 2 con x₀ = 1 y x₁ = 2; o f(x) = x³ − 2x − 5 con x₀ = 2, x₁ = 3 y tolerancia 0.000001.</p></noscript>
+{% enddisclosure %}
+{% endblock %}
+{% block ayuda_tolerancia %}Por defecto 0.0001, positiva y reducible. Deben cumplirla tanto |f(x siguiente)| como |x siguiente − x actual|. El cambio no es el error verdadero ni un porcentaje.{% endblock %}
+{% block accion %}Resolver por secante{% endblock %}
+{% block ayuda_grafica %}Rueda: zoom · Arrastrar: desplazar · «Elegir x₀» o «Elegir x₁» y pulsa la curva; sus líneas también se arrastran.{% endblock %}
+{% block texto_enfocar %}Enfocar secante{% endblock %}
+{% block seleccion_puntos %}<button type="button" class="btn btn-secondary" data-elegir-extremo="x0" aria-pressed="false">Elegir x₀</button>
+<button type="button" class="btn btn-secondary" data-elegir-extremo="x1" aria-pressed="false">Elegir x₁</button>{% endblock %}
+{% block resumen %}
+<p class="raices-raiz">x ≈ <span>{{ resultado.x|numero_raices:"x" }}</span></p>
+<p class="raices-estado">{{ resultado.mensaje }}</p>
+<p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · Residuo |f(x)| <span data-raices-relacion>=</span> {{ resultado.residuo|numero_raices:"f" }}</p>
+{% endblock %}
+{% block tabla %}
+{# Diapositiva 23: iteración, x anterior, x actual y nueva aproximación; después, las dos medidas de parada. #}
+{% if resultado.iteraciones %}
+<table class="procedure-table raices-tabla raices-tabla-abierta raices-tabla-secante">
+<caption>Cada fila une xₙ₋₁ y xₙ con una secante y obtiene xₙ₊₁. Sin redondeo intermedio.</caption>
+<thead><tr><th scope="col">n</th><th scope="col">xₙ₋₁ <small>anterior</small></th><th scope="col">xₙ <small>actual</small></th><th scope="col">xₙ₊₁ <small>nueva</small></th><th scope="col">|xₙ₊₁ − xₙ| <small>cambio</small></th><th scope="col">|f(xₙ₊₁)| <small>residuo</small></th></tr></thead><tbody>
+{% for p in resultado.iteraciones %}<tr data-iteracion="{{ p.i }}" tabindex="-1" data-raices-grupo aria-label="Iteración {{ p.i }}">
+<th scope="row">{{ p.i }}</th><td>{{ p.anterior|numero_raices:"x" }}</td><td>{{ p.actual|numero_raices:"x" }}</td><td>{{ p.siguiente|numero_raices:"x" }}</td><td>{{ p.error_absoluto|numero_raices:"error" }}</td><td>{{ p.residuo|numero_raices:"f" }}</td></tr>
+{% endfor %}
+</tbody></table>
+{% else %}<p class="field-help raices-sin-iteraciones">Sin iteraciones: uno de los puntos iniciales ya es una raíz.</p>{% endif %}
+{% endblock %}
+{% block formula_paso %}
+{# Diapositiva 20: la fórmula como una fracción completa; la sustitución del paso activo va debajo. #}
+<div class="abierto-formula" role="group" aria-label="Función y fórmula del método de la secante">
+<p class="abierto-funciones"><span>f(x) = {{ funcion_natural }}</span></p>
+<p class="abierto-general"><span class="sr-only">x sub n más 1 = x sub n − f(x sub n) · (x sub n − x sub n menos 1) / (f(x sub n) − f(x sub n menos 1))</span><span aria-hidden="true"><span class="abierto-prefijo">xₙ₊₁ = xₙ −</span> <span class="raices-fraccion"><span>f(xₙ) · (xₙ − xₙ₋₁)</span><span>f(xₙ) − f(xₙ₋₁)</span></span></span></p>
+</div>
+{% endblock %}
+{% block lectura_iteracion %}
+<div id="iteracion-lectura" class="regla-falsa-paso">
+<section><h5>Aproximaciones actuales</h5><ul id="paso-valores"></ul></section>
+<section><h5>Secante y siguiente aproximación</h5><ul id="paso-decision"></ul></section>
+<section><h5>Error absoluto y residuo</h5><ul id="paso-error"></ul></section>
+<section><h5>Decisión</h5><ul id="paso-parada"></ul></section>
+</div>
+{% endblock %}
+{% block procedimiento %}
+<p>x siguiente = x actual − f(x actual)·(x actual − x anterior) / [f(x actual) − f(x anterior)]. La recta secante que une (x anterior, f(x anterior)) y (x actual, f(x actual)) corta el eje x en esa siguiente aproximación; después, x anterior ← x actual y x actual ← x siguiente.</p>
+{% endblock %}
+{% block verificacion %}
+{% disclosure titulo="Verificación" id="verificacion-raices" %}
+<div data-raices-grupo>
+<p>Evaluación final independiente: f(x) <span data-raices-relacion>=</span> {{ resultado.fx|numero_raices }}.</p>
+<p>Residuo |f(x)| <span data-raices-relacion>=</span> {{ resultado.residuo|numero_raices }}. Tolerancia <span data-raices-relacion>=</span> {{ resultado.tolerancia|numero_raices }}.</p>
+<p>Cambio absoluto: {% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices }}{% else %}No disponible: no hubo una actualización.{% endif %}</p>
+<p class="raices-conclusion">{{ resultado.mensaje }}</p>
+<p>El residuo mide la altura de la curva; el cambio compara dos aproximaciones. Ninguno es el error verdadero |x − raíz|. La secante no exige cambio de signo ni conserva un intervalo que encierre la raíz, así que no da una cota garantizada de distancia.</p>
+<p>Un cero calculado depende de la aritmética de máquina. La convergencia depende de x₀, x₁ y del comportamiento de la función. La gráfica es un muestreo y puede omitir detalles.</p>
+</div>
+{% enddisclosure %}
+{% endblock %}
+{% block metodo_js %}<script src="{% static 'calculadora/metodos_abiertos.js' %}" defer></script>
+<script src="{% static 'calculadora/secante.js' %}" defer></script>{% endblock %}

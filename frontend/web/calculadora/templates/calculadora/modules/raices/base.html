@@ -9,7 +9,8 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
 
 {% block tool_input %}
 <section class="panel workspace raices-entrada" aria-label="{% block entrada_titulo %}{% endblock %}">
-    <form id="raices-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+    {% block selector_metodo %}{% endblock %}
+    <form id="raices-form" data-entrada-calculo autocomplete="off" action="{% block accion_ruta %}{{ herramienta_actual.ruta }}{% endblock %}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         {% include "calculadora/components/errores_generales.html" %}
         <div class="raices-fila">
@@ -106,7 +107,7 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
                 </div>
             </div>
             {% endif %}
-            {# Dentro de la cuadrícula: ocupa todo el ancho, salvo en Newton, que la pone bajo la gráfica. #}
+            {# Dentro de la cuadrícula: ocupa todo el ancho, salvo en los métodos abiertos, que la ponen bajo la gráfica. #}
             {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
             <div class="table-wrap raices-tabla-marco" id="raices-tabla-marco">
                 {% block tabla %}{% endblock %}

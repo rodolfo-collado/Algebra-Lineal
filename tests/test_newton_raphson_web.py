@@ -7,7 +7,7 @@ from backend.funciones_reales import FuncionReal
 from backend.newton_raphson import newton_raphson
 from frontend.web.calculadora import catalogo
 
-RUTA = "/metodos-numericos/newton-raphson/"
+RUTA = "/metodos-numericos/metodos-abiertos/newton-raphson/"
 def datos(**cambios):
     return {"funcion":"x²-2", "x0":"1.5", **cambios}
 
@@ -21,7 +21,8 @@ class NewtonWebTests(SimpleTestCase):
         self.assertNotContains(r, 'id="id_a"')
         self.assertNotContains(r,'id="resultado"')
         self.assertEqual(reverse("calculadora:newton-raphson"), RUTA)
-        self.assertTrue(catalogo.NEWTON_RAPHSON.disponible)
+        self.assertTrue(catalogo.METODOS_ABIERTOS.disponible)
+        self.assertEqual(catalogo.METODOS_ABIERTOS.ruta, RUTA)
         for ruta in ["/", "/?q=newton", "/areas/metodos-numericos/", catalogo.BISECCION.ruta, catalogo.REGLA_FALSA.ruta]:
             self.assertContains(self.client.get(ruta), f'href="{RUTA}"')
 
@@ -31,7 +32,7 @@ class NewtonWebTests(SimpleTestCase):
         self.assertEqual(resultado_html(r), esperado)
         self.assertContains(r, 'f′(x) = <span class="raices-expresion">2x</span>', count=1)
         # Diapositivas 12 y 14: función, derivada y fórmula fijas sobre la sustitución del paso.
-        formula = r.content.decode().split('class="newton-formula"')[1].split("</div>")[0]
+        formula = r.content.decode().split('class="abierto-formula"')[1].split("</div>")[0]
         for texto in ["f(x) = x² − 2", "f′(x) = 2x", "xₙ₊₁ = xₙ − ", "<span>f(xₙ)</span><span>f′(xₙ)</span>"]:
             self.assertIn(texto, formula)
         # n = 0 es el punto inicial; después, una fila por cada xₙ calculada.
@@ -125,7 +126,7 @@ class NewtonWebTests(SimpleTestCase):
         # Diapositiva 15: f(x) = x³ − x − 2, x₀ = 1.5 → filas n = 0…3 con xₙ y f(xₙ).
         r = self.client.post(RUTA, datos(funcion="x³-x-2"))
         html = r.content.decode()
-        tabla = html[html.index('class="procedure-table raices-tabla raices-tabla-newton"'):]
+        tabla = html[html.index('class="procedure-table raices-tabla raices-tabla-abierta"'):]
         tabla = tabla[:tabla.index("</table>")]
         self.assertEqual(re.findall(r'<th scope="col">([^<]+)</th>', tabla), ["n", "xₙ", "f(xₙ)"])
         filas = re.findall(r'data-iteracion="(\d+)"', tabla)
