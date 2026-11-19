@@ -4,6 +4,7 @@ from pathlib import Path
 import runpy
 
 from PyInstaller.building.build_main import Analysis, COLLECT, EXE, PYZ
+from PyInstaller.utils.hooks import copy_metadata
 
 
 PROJECT_ROOT = Path(SPECPATH).resolve()
@@ -30,6 +31,7 @@ datas = [
     # El actualizador lee de aquí la versión instalada (actualizador/versiones.py).
     (str(PROJECT_ROOT / "pyproject.toml"), "."),
 ]
+datas += copy_metadata("sympy", recursive=True)  # Incluye las licencias de SymPy y mpmath.
 
 hiddenimports = [
     "frontend.web.algebra_web.settings",
@@ -79,6 +81,7 @@ hiddenimports = [
     "backend.newton_raphson",
     "backend.metodos_cerrados",
     "backend.funciones_reales",
+    "backend.calculo_simbolico",
     "backend.matrices",
     "backend.ecuaciones_matriciales",
     "backend.matriz_inversa",
