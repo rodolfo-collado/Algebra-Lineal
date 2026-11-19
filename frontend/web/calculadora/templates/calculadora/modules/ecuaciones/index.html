@@ -61,27 +61,14 @@
 
 {% block tool_result %}
 {% if resultado %}
-    {% comment %}Entrada → procedimiento plegable (equivalencias y eliminación) → resultado (clasificación y solución, una vez) → comprobación e interpretación plegadas, que parten de la solución y aportan información distinta del procedimiento. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+    {% comment %}Resultado primero (clasificación, solución y comprobación breve) → comprobación e interpretación plegadas → procedimiento plegable (equivalencias y eliminación) al final. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
     {% numeric_results %}
     <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
-            <p class="section-kicker">Ecuación matricial · {{ resultado.titulo_metodo }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
-            <h2 id="results-title">{{ resultado.forma }}</h2>
+            <p class="section-kicker">Sistema lineal Ax = b · {{ resultado.forma }} · {{ resultado.titulo_metodo }}{% if resultado.comparando %} · Comparación de métodos{% endif %}</p>
+            <h2 id="results-title">{% if resultado.clasificacion_clave == "unica" %}Solución única{% elif resultado.clasificacion_clave == "infinitas" %}Infinitas soluciones{% elif resultado.clasificacion_clave == "inconsistente" %}Sin solución{% else %}{{ resultado.enunciado }}{% endif %}</h2>
         </header>
         {% include "calculadora/components/numeric_format.html" %}
-
-        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-            {% if resultado.cramer %}
-                {% include "calculadora/modules/ecuaciones/_cramer.html" %}
-            {% elif resultado.lu %}
-                <p class="stage-chain">A = LU → Ly = b → Ux = y</p>
-                {% include "calculadora/modules/ecuaciones/_lu.html" %}
-            {% else %}
-            <p class="stage-chain">Ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada → {{ resultado.titulo_metodo }} → conjunto solución</p>
-            {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
-            {% include "calculadora/modules/ecuaciones/_metodos.html" %}
-            {% endif %}
-        {% enddisclosure %}
 
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
@@ -115,6 +102,7 @@
                     </div>
                 {% endif %}
             </div>
+            {% if resultado.comprobacion %}<p class="muted" data-comprobacion-breve>Comprobación: al sustituir x, Ax {% if resultado.comprobacion.coincide %}= b ✓{% else %}≠ b{% endif %}</p>{% endif %}
         </section>
 
         {% if resultado.comprobacion %}
@@ -135,6 +123,19 @@
             <p class="interpretation">{{ resultado.interpretacion.texto|incognitas }}</p>
             {% if resultado.interpretacion.igualdad %}<p class="combination-equality"><code>{{ resultado.interpretacion.igualdad }}</code></p>{% endif %}
         {% enddisclosure %}{% endif %}
+
+        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+            {% if resultado.cramer %}
+                {% include "calculadora/modules/ecuaciones/_cramer.html" %}
+            {% elif resultado.lu %}
+                <p class="stage-chain">A = LU → Ly = b → Ux = y</p>
+                {% include "calculadora/modules/ecuaciones/_lu.html" %}
+            {% else %}
+            <p class="stage-chain">Ecuación matricial → ecuación vectorial → sistema equivalente → matriz aumentada → {{ resultado.titulo_metodo }} → conjunto solución</p>
+            {% include "calculadora/modules/ecuaciones/_equivalencias.html" %}
+            {% include "calculadora/modules/ecuaciones/_metodos.html" %}
+            {% endif %}
+        {% enddisclosure %}
     </section>
     {% endnumeric_results %}
 {% endif %}

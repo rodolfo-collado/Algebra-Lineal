@@ -1827,3 +1827,76 @@ textarea:focus {
     flex-wrap: wrap;
     gap: 0.6rem;
 }
+
+/* Ejemplos de Operaciones: enlaces compactos que cargan operandos y expresión; envuelven sin desbordar. */
+.plantillas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    margin: var(--space-1) 0 0;
+}
+
+.plantillas-titulo {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.plantilla {
+    padding: 0.25rem 0.7rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-math);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.plantilla:hover {
+    border-color: var(--color-brand);
+    color: var(--color-brand-strong);
+}
+
+/* Comprobación de la inversa: veredicto con texto, A y A⁻¹ juntas y cada producto con sus entradas. */
+.inverse-check {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+}
+
+.inverse-check .panel-title,
+.inverse-check-verdict {
+    margin: 0;
+}
+
+.inverse-check-verdict {
+    padding-left: var(--space-2);
+    border-left: 3px solid var(--color-success);
+}
+
+.inverse-check-verdict[data-verificada="false"] {
+    border-left-color: var(--color-danger);
+}
+
+.inverse-operands {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+}
+
+.inverse-entry-list li {
+    overflow-wrap: anywhere;
+}
+
+.inverse-entry-check {
+    color: var(--color-success);
+    font-size: var(--text-sm);
+    white-space: nowrap;
+}
+
+.inverse-entry-list li[data-coincide="false"] .inverse-entry-check {
+    color: var(--color-danger);
+    font-weight: 600;
+}

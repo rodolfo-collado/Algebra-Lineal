@@ -62,9 +62,6 @@
                 <h2 id="results-title">{{ resultado.titulo }}</h2>
             </header>
 
-            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                {% include "calculadora/modules/bases/_procedimiento.html" %}
-            {% enddisclosure %}
 
             <section class="panel panel-final" aria-labelledby="results-final-title">
                 <h3 id="results-final-title" class="panel-title">Resultado</h3>
@@ -85,6 +82,9 @@
                     </ul>
                 </div>
             </section>
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                {% include "calculadora/modules/bases/_procedimiento.html" %}
+            {% enddisclosure %}
         </section>
     {% endif %}
 {% endblock %}

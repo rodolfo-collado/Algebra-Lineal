@@ -23,7 +23,7 @@ from backend.sistemas import resolver_sistema_gauss, resolver_sistema_gauss_jord
 from frontend.web.calculadora.servicios import resolver_entrada_web, resolver_sistema_web
 from frontend.web.calculadora.servicios_ecuaciones import resolver_ecuacion_web
 from tests._regresion_sistemas_bloques_base import CASOS_BASE
-from tests.ayudas import antes_de_p2711, antes_de_p285, elemento_html
+from tests.ayudas import antes_de_p2711, antes_de_p285, antes_de_v019, elemento_html
 from tests.test_web import datos_matriz
 
 
@@ -180,7 +180,7 @@ class PruebasRegresionSistemasBloques(SimpleTestCase):
                         respuesta = self.client.post("/matrices/reduccion/", datos)
                         self.assertEqual(respuesta.status_code, 200)
                         # Fixtures originales, normalizando solo los cambios de presentación.
-                        html = antes_de_p2711(antes_de_p285(respuesta.content.decode("utf-8")))
+                        html = antes_de_p2711(antes_de_p285(antes_de_v019(respuesta.content.decode("utf-8"))))
                         panel = elemento_html(html, html.index('class="panel panel-final"'), "section")
                         self.assertEqual(" ".join(strip_tags(panel).split()), caso["final_html"])
                         self.assertEqual(html.count('id="final-title"'), 1)
