@@ -42,10 +42,10 @@ def lineas(html):
 
 class PruebasCatalogoP13B(SimpleTestCase):
     def test_los_productos_no_son_herramientas_aparte(self):
-        # AB y Ax se escriben en Operaciones con matrices; Resolver Ax = b busca x, no un producto.
+        # AB y Ax se escriben en Operaciones con matrices; Sistemas lineales (Ax = b) busca x, no un producto.
         documento = Documento(self.client.get(RUTA))
         enlaces = [a["href"] for a in documento.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, [RUTA, "/matrices/reduccion/", "/matrices/ecuaciones/", "/matrices/inversa/",
+        self.assertEqual(enlaces, [RUTA, "/matrices/ecuaciones/", "/matrices/reduccion/", "/matrices/inversa/",
                                    "/matrices/determinantes/"])
         self.assertNotIn("Multiplicación de matrices", [a.get("title") for a in documento.enlaces_en("Herramientas")])
 
@@ -62,7 +62,7 @@ class PruebasCatalogoP13B(SimpleTestCase):
 
     def test_la_ayuda_menciona_ab_ax_y_las_lecturas(self):
         respuesta = self.client.get(RUTA)
-        self.assertContains(respuesta, "Realiza y combina operaciones con matrices, vectores y escalares paso a paso.")
+        self.assertContains(respuesta, "Combina matrices, vectores y escalares en una expresión y obtén el resultado paso a paso.")
         for fragmento in ("<code>AB</code>", "<code>Ax</code>", "regla fila-vector", "combinación lineal de columnas"):
             self.assertContains(respuesta, fragmento)
 
@@ -137,7 +137,7 @@ class PruebasResultadosProducto(SimpleTestCase):
     def test_dos_por_tres_por_tres_por_dos_y_tres_por_dos_por_dos_por_cuatro(self):
         html, doc = self.calcular(datos_producto(a=[[1, 2, 3], [4, 5, 6]], b=[[7, 8], [9, 10], [11, 12]]))
         self.assertEqual(doc.tablas["Resultado"], [["58", "64"], ["139", "154"]])
-        self.assertIn("Expresión · 2×2", html)
+        self.assertIn("Expresión · Matriz 2×2", html)
         html, doc = self.calcular(datos_producto(a=[[1, 0], [0, 1], [2, 3]], b=[[1, 2, 3, 4], [5, 6, 7, 8]], metodo="columnas"))
         self.assertEqual(doc.tablas["Resultado"], [["1", "2", "3", "4"], ["5", "6", "7", "8"], ["17", "22", "27", "32"]])
         self.assertIn("A: 3×2 · B: 2×4 → AB: 3×4.", html)
@@ -169,7 +169,7 @@ class PruebasResultadosProducto(SimpleTestCase):
         self.assertEqual(html.count('class="disclosure disclosure-nested"'), 2)
         self.assertIn(">Fila por columna</h5>", html)
         self.assertIn(">Por columnas</h5>", html)
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
         self.assertLess(html.index(">Fila por columna</h5>"), html.index(">Por columnas</h5>"))
         # Ambas lecturas terminan en la misma matriz.
         self.assertEqual(doc.tablas["Resultado del desarrollo"], doc.tablas["Resultado"])
@@ -179,7 +179,7 @@ class PruebasResultadosProducto(SimpleTestCase):
         html, doc = self.calcular(datos_matriz_vector())
         self.assertEqual(doc.tablas["Resultado"], [["3"], ["6"]])
         self.assertEqual(doc.tablas["x"], [["4"], ["3"], ["7"]])
-        self.assertIn("Expresión · 2 componentes", html)
+        self.assertIn("Expresión · Vector de 2 componentes", html)
         self.assertIn("A (2×3) · x (3) → Ax (2).", html)
         self.assertEqual(lineas(html), [
             "(Ax)₁ = fila₁(A) · x = a₁₁x₁ + a₁₂x₂ + a₁₃x₃ = 1·4 + 2·3 + (-1)·7 = 4 + 6 + (-7) = 3",
@@ -210,7 +210,7 @@ class PruebasResultadosProducto(SimpleTestCase):
     def test_ax_una_fila_y_una_columna(self):
         html, doc = self.calcular(datos_matriz_vector(a=[[1, 2, 3]], x=[4, 5, 6]))
         self.assertEqual(doc.tablas["Resultado"], [["32"]])
-        self.assertIn("Expresión · 1 componente<", html)
+        self.assertIn("Expresión · Vector de 1 componente<", html)
         html, doc = self.calcular(datos_matriz_vector(a=[[1], [2], [3]], x=["1/2"], metodo="comparar"))
         self.assertEqual(doc.tablas["Resultado"], [["1/2"], ["1"], ["3/2"]])
         self.assertIn("(Ax)₁ = fila₁(A) · x = a₁₁x₁ = 1·(1/2) = 1/2", lineas(html))
@@ -235,7 +235,7 @@ class PruebasResultadosProducto(SimpleTestCase):
     def test_procedimiento_plegado_antes_del_resultado_y_recursos_locales(self):
         html, _ = self.calcular(datos_producto(metodo="comparar"))
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
         for recurso in ("expresiones.js", "teclado.js", "tema.js", "styles.css"):
             self.assertIn(f"/static/calculadora/{recurso}", html)
         self.assertNotIn('src="https://', html)

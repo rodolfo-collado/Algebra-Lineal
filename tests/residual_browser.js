@@ -25,32 +25,6 @@
     }
     const casos = [];
     const viewports = [[1280,650],[900,650],[760,560],[480,650],[390,650]];
-    for (const op of ["suma", "resta"]) for (const dimension of [2,3,10]) for (const [width,height] of viewports) {
-        casos.push([`UI-45 ${op}, n=${dimension}, ${width}×${height}`, "/vectores/operaciones/", async (w, frame) => {
-            await viewport(frame,width,height);
-            q(w, `[name="operacion"][value="${op}"]`).click();
-            input(w,"#id_dimension",dimension);
-            q(w,"[data-agregar-vector]").click();
-            const list = q(w,"#vector-list");
-            assert(style(w,list).overflowX === "auto", "La lista es el único scroll");
-            assert(all(w,".vector-inputs").every(n => style(w,n).overflowX === "visible" && n.scrollLeft === 0), "Una fila tiene scroll propio");
-            assert(all(w,".vector-row[data-vector]").length === 3, "Tres vectores");
-            assert(w.document.activeElement.name === "v3_0", "Foco al agregar");
-            // Un valor largo en una sola fila también comparte el ancho de su columna.
-            input(w,'[name="v2_0"]',"-123456");
-            aligned(w); pageFits(w);
-            q(w,`[name="v1_${dimension - 1}"]`).focus();
-            aligned(w);
-            list.scrollLeft = list.scrollWidth;
-            aligned(w); pageFits(w);
-            const remove = q(w,".vector-remove");
-            const last = q(w,`[name="v3_${dimension - 1}"]`);
-            assert(rect(remove).left > rect(last).right, "× no tapa la última componente");
-            assert(rect(remove).right <= rect(list).right + 1, "× accesible al final del scroll");
-            remove.click();
-            assert(all(w,".vector-row[data-vector]").length === 2 && w.document.activeElement.name === "v2_0", "Eliminar y foco contextual");
-        }]);
-    }
     for (const ruta of ["/matrices/reduccion/","/matrices/ecuaciones/","/matrices/inversa/","/bases/conversion/","/romanos/conversion/"]) {
         casos.push([`UI-68/64 ${ruta}: foco único y segmentos móviles en ambos temas`,ruta,async (w,frame) => {
             await viewport(frame,390,650);

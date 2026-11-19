@@ -130,7 +130,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual(catalogo.REDUCCION_FILAS.categoria, catalogo.MATRICES)
         self.assertEqual(catalogo.herramientas_de(catalogo.MATRICES), (
             catalogo.OPERACIONES_MATRICES,
-            catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA,
+            catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS, catalogo.MATRIZ_INVERSA,
             catalogo.DETERMINANTES,
         ))
         self.assertEqual(catalogo.REDUCCION_FILAS.ruta, "/matrices/reduccion/")
@@ -148,7 +148,6 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual(categorias, catalogo.CATEGORIAS)
         herramientas = tuple(h for _, grupos in arbol for _, hs in grupos for h in hs)
         self.assertEqual(herramientas, catalogo.HERRAMIENTAS)
-        self.assertTrue(catalogo.VECTORES.disponible)
         self.assertTrue(catalogo.MATRICES.disponible)
         self.assertFalse(catalogo.CALCULO.disponible)
 
@@ -186,11 +185,11 @@ class PruebasBuscador(SimpleTestCase):
                 self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.REDUCCION_FILAS,))
         # «inconsistente» también describe Ax = b (P14); Reducción por filas conserva el primer lugar.
         self.assertEqual(
-            catalogo.buscar_herramientas("inconsistente"), (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES),
+            catalogo.buscar_herramientas("inconsistente"), (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS),
         )
         self.assertEqual(
             catalogo.buscar_herramientas("sistemas de ecuaciones"),
-            (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES),
+            (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS),
         )
         self.assertIn(catalogo.REDUCCION_FILAS, catalogo.buscar_herramientas("álgebra lineal"))
 
@@ -219,7 +218,7 @@ class PruebasBuscador(SimpleTestCase):
         self.assertContains(respuesta, 'value="pivote"')
 
         respuesta = self.client.get("/", {"q": "matriz"})
-        self.assertContains(respuesta, "Operaciones con matrices")
+        self.assertContains(respuesta, ">Operaciones<")
         # UI-15: las próximas también permanecen en el universo, ocultas si no coinciden.
         items = [a for region, a in Documento(respuesta).herramientas if region is None]
         self.assertEqual(len(items), len(catalogo.HERRAMIENTAS))
@@ -243,10 +242,10 @@ class PruebasBuscador(SimpleTestCase):
     def test_consultas_naturales(self):
         consultas = {
             "calcular inversa": "matriz-inversa", "invertir matriz": "matriz-inversa",
-            "multiplicar matrices": "operaciones-matrices", "sumar vectores": "operaciones-vectores",
+            "multiplicar matrices": "operaciones-matrices", "sumar vectores": "operaciones-matrices",
             "convertir a binario": "conversion-bases", "método de gauss": "reduccion-filas",
             "transponer": "operaciones-matrices", "pasar decimal a binario": "conversion-bases",
-            "restar vectores": "operaciones-vectores", "reducir matriz": "reduccion-filas",
+            "restar vectores": "operaciones-matrices", "reducir matriz": "reduccion-filas",
         }
         for consulta, esperado in consultas.items():
             for variante in (consulta, consulta.upper(), f"  {consulta.replace(' ', '   ')}  "):
@@ -256,7 +255,7 @@ class PruebasBuscador(SimpleTestCase):
     def test_sistemas_y_proximas(self):
         for consulta in ("sistema de ecuaciones", "sistema lineal", "sistemas lineales", "ecuaciones lineales"):
             self.assertEqual(catalogo.buscar_herramientas(consulta),
-                             (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES))
+                             (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS))
         limites, = catalogo.buscar_herramientas("LÍMITES")
         self.assertEqual(limites.id, "limites-funciones")
         self.assertEqual(limites.estado, "proximamente")

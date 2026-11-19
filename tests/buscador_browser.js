@@ -34,7 +34,7 @@
         ["gauss → inversa → vectores → límites no envía GET ni duplica filas", "/?q=gauss", w => {
             const documento = w.document;
             for (const [texto, esperado] of [["inversa", ["matriz-inversa"]],
-                ["vectores", ["operaciones-vectores", "operaciones-matrices"]], ["límites", ["limites-funciones"]]]) {
+                ["vectores", ["operaciones-matrices"]], ["límites", ["limites-funciones"]]]) {
                 valor(w, texto); igual(ids(w), esperado);
                 igual(w.document, documento); igual(w.location.search, "?q=gauss");
                 igual(q(w, "[data-busqueda-servidor]").hidden, true);
@@ -117,11 +117,11 @@
             igual(w.document.activeElement, q(w, "#navigation-toggle"));
         }],
         ["Menú restaura grupos y memoria sin guardar aperturas de filtro", "/matrices/inversa/", async w => {
-            menu(w); const categoria = q(w, '[data-categoria="vectores"]'); categoria.open = true;
+            menu(w); const categoria = q(w, '[data-categoria="raices"]'); categoria.open = true;
             const area = q(w, "#nav-area-calculo").parentElement; area.open = false;
             await turno(w);
             const memoria = w.sessionStorage.getItem("algebra-lineal-menu-secciones");
-            igual(JSON.parse(memoria).includes("vectores"), true); igual(w.localStorage.getItem("algebra-lineal-menu-secciones"), null);
+            igual(JSON.parse(memoria).includes("raices"), true); igual(w.localStorage.getItem("algebra-lineal-menu-secciones"), null);
             const abiertos = todos(w, "#arbol-herramientas details").map(n => n.open);
             valor(w, "límites", true); await turno(w);
             igual(w.sessionStorage.getItem("algebra-lineal-menu-secciones"), memoria);
@@ -138,10 +138,11 @@
             items[0].focus(); tecla("End"); igual(w.document.activeElement, items.at(-1));
             igual(visible(), ["determinantes"]);
             tecla("ArrowUp"); igual(visible(), ["matriz-inversa"]);
+            // Cinco herramientas en Álgebra lineal: la inversa es la cuarta.
             tecla("ArrowRight"); igual(w.document.activeElement.matches(".destacado-abrir"), true);
             igual(w.document.activeElement.getAttribute("href"), "/matrices/inversa/");
-            tecla("ArrowLeft"); igual(w.document.activeElement, items[4]);
-            igual(items.map(a => a.tabIndex), [-1, -1, -1, -1, 0, -1]);
+            tecla("ArrowLeft"); igual(w.document.activeElement, items[3]);
+            igual(items.map(a => a.tabIndex), [-1, -1, -1, 0, -1]);
             igual(Object.keys(w.localStorage).sort(), claves);
         }],
         ["Panel destacado: contexto del tema y lema solo si hay varias herramientas", "/areas/sistemas-numericos/", w => {

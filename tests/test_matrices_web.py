@@ -278,7 +278,7 @@ class PruebasResultadosMatrices(SimpleTestCase):
         r = self.client.post(RUTA, datos_matrices())
         html = r.content.decode()
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
 
     def test_el_motor_delega_la_matematica(self):
         with patch("backend.expresiones_matriciales.evaluador.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:

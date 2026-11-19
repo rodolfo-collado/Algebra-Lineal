@@ -13,7 +13,7 @@ from backend.presupuesto_sistemas import CELDAS_MAXIMAS, dimensiones_admitidas
 
 from . import catalogo, preferencias
 from .exploraciones import exploraciones_sistema
-from .forms import ConversionBasesForm, SistemaForm, VectoresForm
+from .forms import ConversionBasesForm, SistemaForm
 from .forms_determinantes import DeterminantesForm
 from .forms_ecuaciones import EcuacionMatricialForm
 from .forms_expresiones import ExpresionMatricialForm
@@ -35,11 +35,10 @@ from .opciones_sistemas import (
     metodos_a_resolver,
     titulo_resultado,
 )
-from .opciones_vectores import AYUDAS, texto_boton
+from .opciones_matrices import PLANTILLA_DE_OPERACION_VECTORIAL, PLANTILLAS, datos_operacion_vectorial, estado_plantilla
 from .servicios import resolver_entrada_web
 from .servicios_bases import convertir_entrada
 from .servicios_romanos import convertir_romanos, numeracion_romana
-from .servicios_vectores import operar_vectores
 from .teclados import PERFILES_BASE, perfiles_para
 from .transferencia_matriz import recibir_matriz
 
@@ -159,53 +158,17 @@ def sistemas_ruta_antigua(request, herramienta=None):
 
 
 @require_http_methods(["GET", "POST"])
-def operaciones_vectores(request):
-    """Operaciones con vectores: suma, resta, escalar y combinación lineal en un solo flujo."""
-    actual = catalogo.herramienta_por_ruta(request.resolver_match)
-    if actual is None or actual.id != "operaciones-vectores":
-        raise Http404("No existe esa herramienta.")
+def operaciones_matrices(request, datos=None):
+    """Operaciones: matrices, vectores y escalares definidos uno a uno y una expresión que los combina.
 
-    resultado = None
-    if request.method == "POST" and "ajustar" not in request.POST:
-        form = VectoresForm(request.POST)
-        if form.is_valid():
-            try:
-                resultado = operar_vectores(form.cleaned_data["entrada"])
-            except ValueError as error:
-                form.add_error(None, str(error))
-    elif request.method == "POST":
-        # «Aplicar» sin JavaScript: se redibuja la estructura con lo escrito, sin calcular.
-        form = VectoresForm(request.POST, ajustar=True)
-        if form.is_valid():
-            form = VectoresForm(initial=VectoresForm.iniciales_desde(request.POST))
-    else:
-        form = VectoresForm()
-
-    estructura = form.estructura()
-    return render(
-        request,
-        "calculadora/modules/vectores/index.html",
-        {
-            "form": form,
-            "resultado": resultado,
-            "estructura": estructura,
-            "ayudas_operacion": AYUDAS,
-            "texto_boton": texto_boton(estructura["operacion"]),
-            "valores_vectores": form.valores_ingresados(),
-            "perfiles_teclado": perfiles_para("numerico"),
-        },
-    )
-
-
-@require_http_methods(["GET", "POST"])
-def operaciones_matrices(request):
-    """Operaciones con matrices: símbolos definidos uno a uno y una expresión que los combina.
-
-    A + B, 2A, AB, Ax, Aᵀ o A(B + C) - 2D usan el mismo flujo y el mismo motor de
-    expresiones, que reutiliza las operaciones exactas de backend.matrices.
+    A + B, 2u − v, AB, Ax, Aᵀ o A(B + C) - 2D usan el mismo flujo y el mismo motor de
+    expresiones, que reutiliza las operaciones exactas de backend.matrices. x1 u + x2 v = b
+    pide los coeficientes de una combinación lineal. ?plantilla=… carga un ejemplo editable.
     """
-    accion = next((nombre for nombre in ("agregar", "eliminar", "ajustar") if nombre in request.POST), None)
-    form = ExpresionMatricialForm(request.POST if request.method == "POST" else None, accion=accion)
+    datos = datos if datos is not None else request.POST if request.method == "POST" else None
+    accion = next((nombre for nombre in ("agregar", "eliminar", "ajustar") if datos and nombre in datos), None)
+    plantilla = estado_plantilla(request.GET.get("plantilla", "")) if datos is None else None
+    form = ExpresionMatricialForm(datos, accion=accion, initial=plantilla)
     resultado = confirmacion = None
     if request.method == "POST" and form.is_valid():
         if accion:
@@ -220,8 +183,23 @@ def operaciones_matrices(request):
                 form.add_error("expresion", str(error))
     return render(request, "calculadora/modules/expresiones/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
+        "plantillas": [(identificador, rotulo) for identificador, rotulo, _, _ in PLANTILLAS],
         "perfiles_teclado": perfiles_para("numerico", "expresion", "lineal"),
     })
+
+
+@require_http_methods(["GET", "POST"])
+def operaciones_vectores_ruta_antigua(request):
+    """Operaciones con vectores es ahora parte de Operaciones.
+
+    GET usa 301 hacia el ejemplo de vectores equivalente (?operacion=… elige cuál). El POST
+    antiguo (v1_0, v2_0, b_0, k…) se traduce a operandos y a la expresión equivalente y se
+    calcula aquí mismo con la herramienta unificada: no se pierde lo enviado.
+    """
+    if request.method == "POST":
+        return operaciones_matrices(request, datos_operacion_vectorial(request.POST))
+    plantilla = PLANTILLA_DE_OPERACION_VECTORIAL.get(request.GET.get("operacion"), "suma-vectores")
+    return HttpResponsePermanentRedirect(f"{reverse('calculadora:operaciones-matrices')}?plantilla={plantilla}")
 
 
 @require_http_methods(["GET", "POST"])

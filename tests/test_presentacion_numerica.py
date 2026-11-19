@@ -153,10 +153,10 @@ class PruebasIntegracionNumerica(SimpleTestCase):
                 for valor in valores.valores:
                     self.assertEqual(set(valor["decimales"]), {"2", "4", "6", "8"})
                     self.assertIn(valor["exacto"], strip_tags(html))
-                self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
+                self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
 
     def test_bases_entrada_y_errores_no_reciben_selector(self):
-        for ruta in ("/", "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/"):
+        for ruta in ("/", "/matrices/reduccion/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/"):
             self.assertNotContains(self.client.get(ruta), "data-numeric-controls")
         self.assertNotContains(self.client.post("/matrices/reduccion/", {"sistema": "x1+=1"}), "data-numeric-controls")
         conversion = self.client.post("/bases/conversion/", {

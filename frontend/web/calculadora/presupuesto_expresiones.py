@@ -6,6 +6,7 @@ from fractions import Fraction
 from django.utils.crypto import constant_time_compare, salted_hmac
 
 from backend.presupuesto_computacional import Categoria, categoria, intervalo_segundos
+from backend.expresiones_matriciales.combinacion import plantear as plantear_combinacion
 from backend.presupuesto_expresiones import analizar_presupuesto
 
 from .servicios_presupuesto import texto_intervalo
@@ -18,6 +19,9 @@ _SAL_CONFIRMACION = "pygebra.operaciones-matrices.confirmacion"
 
 
 def estimar_expresion_web(entrada):
+    # x1 u + x2 v = b es Gauss-Jordan sobre [u v … | b], de a lo sumo 10 × 51 celdas: siempre ligero.
+    if plantear_combinacion(entrada["expresion"], entrada["simbolos"]) is not None:
+        return None
     return analizar_presupuesto(entrada["expresion"], entrada["simbolos"], entrada.get("nodo")).total
 
 

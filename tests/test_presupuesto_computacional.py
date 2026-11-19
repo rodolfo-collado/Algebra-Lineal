@@ -46,7 +46,7 @@ from backend.presupuesto_sistemas import (
     validar_dimensiones,
 )
 from frontend.web.calculadora.opciones_matrices import DIMENSION_MAXIMA as DIMENSION_MATRICES
-from frontend.web.calculadora.opciones_vectores import DIMENSION_MAXIMA as DIMENSION_VECTORES
+from frontend.web.calculadora.opciones_matrices import DIMENSION_MAXIMA as DIMENSION_VECTORES
 from frontend.web.calculadora.servicios import estimar_entrada_web
 from frontend.web.calculadora.servicios_ecuaciones import estimar_ecuacion_web
 from scripts.benchmark_presupuesto import matriz as matriz_benchmark

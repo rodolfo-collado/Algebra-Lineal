@@ -17,11 +17,10 @@ from django.utils.html import strip_tags
 from backend.matrices import producto_punto, resolver_coleccion_matrices, resolver_operacion_matrices
 from backend.operandos import CAMPOS_MAXIMOS, CELDAS_MAXIMAS, OPERANDOS_MAXIMOS, nombre_matriz
 from backend.vectores import evaluar_combinacion_lineal, operar_vectores
-from frontend.web.calculadora.forms import VectoresForm
 from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm, nombre_libre
 from frontend.web.calculadora.presupuesto_expresiones import firmar_entrada
 from frontend.web.calculadora.templatetags.numeros import incognitas
-from frontend.web.calculadora.opciones_vectores import DIMENSION_MAXIMA as DIMENSION_VECTORES, nombres_vectores
+from frontend.web.calculadora.opciones_matrices import DIMENSION_MAXIMA as DIMENSION_VECTORES
 from tests.ayudas import elemento_html
 from tests.test_procedimiento_plegable import comprobar_estructura, partes
 from tests.test_vectores_web import datos_vectores, combinacion, RUTA as VECTORES
@@ -34,6 +33,11 @@ def nombres(cantidad):
     for _ in range(cantidad):
         usados.append(nombre_libre(set(usados)))
     return usados
+
+
+def nombres_vectores(_operacion, cantidad):
+    """v1, v2, …: los nombres del POST de la antigua Operaciones con vectores."""
+    return tuple(f"v{indice}" for indice in range(1, cantidad + 1))
 
 
 def datos_coleccion(operacion, matrices, metodo="comparar"):
@@ -131,26 +135,21 @@ class PruebasColecciones(SimpleTestCase):
 
 class PruebasWebColecciones(SimpleTestCase):
     def test_vectores_tres_y_cuatro_con_procedimiento(self):
-        for op, esperado in (("suma", "(12, 15, 18)"), ("resta", "(-10, -11, -12)")):
+        # La ruta antigua calcula con Operaciones: v1 + v2 + v3 se evalúa paso a paso, de izquierda a derecha.
+        for op, esperado, paso in (("suma", "[12, 15, 18]", "5 + 7 = 12"), ("resta", "[-10, -11, -12]", "(-3) − 7 = -10")):
             respuesta = self.client.post(VECTORES, datos_vectores(op, vectores=3, v1=[1, 2, 3], v2=[4, 5, 6], v3=[7, 8, 9]))
             self.assertContains(respuesta, 'id="resultado"')
             self.assertIn(esperado, strip_tags(respuesta.content.decode()))
-            self.assertIn("1 + 4 + 7" if op == "suma" else "1 - 4 - 7", strip_tags(respuesta.content.decode()))
+            self.assertIn(paso, strip_tags(respuesta.content.decode()))
 
-    def test_vectores_contrato_estricto(self):
+    def test_vectores_incompletos_no_calculan(self):
+        # La ruta antigua traduce el envío; Operaciones exige cada componente con sus propios mensajes.
         base = datos_vectores("suma", vectores=3, v1=[1], v2=[2], v3=[3])
-        casos = [base | {"vectores": "1"}, base | {"v3_1": "4"}, base | {"escalar": "2"},
-                 base | {"intruso": "2"}, base | {"operacion": "escalar", "escalar": "1"}]
         faltante = dict(base)
         del faltante["v3_0"]
-        casos.append(faltante)
-        duplicado = QueryDict("", mutable=True)
-        duplicado.update(base)
-        duplicado.appendlist("v1_0", "9")
-        casos.append(duplicado)
-        for datos in casos:
+        for datos in (faltante, base | {"v2_0": "x"}, base | {"dimension": "0"}):
             with self.subTest(datos=datos):
-                self.assertFalse(VectoresForm(datos).is_valid())
+                self.assertNotContains(self.client.post(VECTORES, datos), 'id="resultado"')
 
     def test_combinacion_reutiliza_coleccion_sin_maximo(self):
         respuesta = self.client.post(VECTORES, combinacion([[1, 0]] * 12, [3, 0]))
@@ -263,7 +262,7 @@ class PruebasPresupuesto(SimpleTestCase):
         self.assertEqual(Contenido(html).tablas["Resultado"], [[str(3 ** 11)] * 3] * 3)
         self.assertIn("ABCDEFGHIJKL", strip_tags(html))
         vectores = {nombre: [1] * 4 for nombre in nombres_vectores("suma", 12)}
-        self.assertIn("(12, 12, 12, 12)", strip_tags(self.post(VECTORES, datos_vectores("suma", vectores=12, **vectores))))
+        self.assertIn("[12, 12, 12, 12]", strip_tags(self.post(VECTORES, datos_vectores("suma", vectores=12, **vectores))))
 
     def test_cantidad_absurda_se_descarta_antes_de_construir_la_estructura(self):
         for cantidad in ("100000", "51"):
@@ -274,13 +273,11 @@ class PruebasPresupuesto(SimpleTestCase):
                 self.assertEqual(form.nombres_celdas, [])
                 self.assertFalse(form.is_valid())
                 self.assertEqual(form.errors["cantidad"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} operandos."])
-        with patch("frontend.web.calculadora.forms.nombres_vectores", wraps=nombres_vectores) as nombrar:
-            form = VectoresForm({"operacion": "suma", "vectores": "100000", "dimension": "10"})
-            self.assertFalse(form.is_valid())
-            self.assertEqual(len(form.estructura()["filas"]), OPERANDOS_MAXIMOS)
-        self.assertTrue(nombrar.called)
-        self.assertTrue(all(llamada.args[1] <= OPERANDOS_MAXIMOS for llamada in nombrar.call_args_list))
-        self.assertEqual(form.errors["vectores"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} vectores por operación."])
+        # La antigua ruta de vectores tampoco construye cien mil operandos: el formulario la rechaza.
+        respuesta = self.client.post(VECTORES, {"operacion": "suma", "vectores": "100000", "dimension": "10"})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertNotContains(respuesta, 'id="resultado"')
+        self.assertContains(respuesta, f"La interfaz admite hasta {OPERANDOS_MAXIMOS} operandos.")
 
     def test_matrices_de_tamano_maximo_con_una_cantidad_razonable(self):
         nueve = [llena(10, 10)] * 9  # 900 celdas: justo el presupuesto
@@ -391,14 +388,15 @@ class PruebasPresupuesto(SimpleTestCase):
                     self.assertLessEqual(celdas_dibujadas(html), CELDAS_MAXIMAS)
 
     def test_combinacion_con_mas_de_seis_generadores_hasta_el_tope(self):
-        for cantidad in (7, OPERANDOS_MAXIMOS):
+        # Los generadores y b son operandos de Operaciones: caben 49 generadores más b.
+        for cantidad in (7, OPERANDOS_MAXIMOS - 1):
             with self.subTest(generadores=cantidad):
                 html = self.post(VECTORES, combinacion([[1, 0]] * cantidad, [3, 0]))
                 self.assertIn('id="resultado"', html)
                 self.assertIn(incognitas(f"x{cantidad}"), strip_tags(html))
-        form = VectoresForm(combinacion([[1, 0]] * (OPERANDOS_MAXIMOS + 1), [3, 0]))
-        self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors["vectores"], [f"La interfaz admite hasta {OPERANDOS_MAXIMOS} vectores por operación."])
+        html = self.post(VECTORES, combinacion([[1, 0]] * OPERANDOS_MAXIMOS, [3, 0]))
+        self.assertNotIn('id="resultado"', html)
+        self.assertIn(f"La interfaz admite hasta {OPERANDOS_MAXIMOS} operandos.", html)
 
     def test_lo_que_la_interfaz_dibuja_siempre_se_puede_enviar(self):
         # Peor envío de operandos: 50 matrices con 790 celdas llenan los 990 campos de estructura y celdas.
@@ -411,8 +409,8 @@ class PruebasPresupuesto(SimpleTestCase):
         # Y el mayor cálculo de 50 matrices que cabe: 50 de 3×5.
         html = self.post(MATRICES, datos_coleccion("suma", [llena(3, 5)] * OPERANDOS_MAXIMOS))
         self.assertEqual(Contenido(html).tablas["Resultado"], [["50"] * 5] * 3)
-        # En vectores cierra por construcción: 50 generadores y b de dimensión máxima.
-        self.assertLessEqual((OPERANDOS_MAXIMOS + 1) * DIMENSION_VECTORES, CELDAS_MAXIMAS)
-        datos = combinacion([[1] * DIMENSION_VECTORES] * OPERANDOS_MAXIMOS, [1] * DIMENSION_VECTORES)
+        # En vectores cierra por construcción: 49 generadores y b de dimensión máxima.
+        self.assertLessEqual(OPERANDOS_MAXIMOS * DIMENSION_VECTORES, CELDAS_MAXIMAS)
+        datos = combinacion([[1] * DIMENSION_VECTORES] * (OPERANDOS_MAXIMOS - 1), [1] * DIMENSION_VECTORES)
         self.assertLessEqual(len(datos) + 2, settings.DATA_UPLOAD_MAX_NUMBER_FIELDS)
         self.assertIn('id="resultado"', self.post(VECTORES, datos))

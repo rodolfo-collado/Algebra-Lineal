@@ -21,43 +21,28 @@
         click(frame.contentWindow, '.workspace-actions button');
     });
     const casos = [
-        ["Vectores: agregar, eliminar intermedio, conservar orden y mínimo", "vectores", w => {
-            igual(cantidad(w, '[data-vector]'), 2);
-            igual(cantidad(w, '[aria-label^="Quitar vector"]'), 0);
-            click(w, '[data-agregar-vector]'); click(w, '[data-agregar-vector]');
-            click(w, '[name="operacion"][value="resta"]');
-            igual(cantidad(w, '[data-vector]'), 4);
-            valor(w, '[name="v3_0"]', 3); valor(w, '[name="v4_0"]', 4);
-            click(w, '[aria-label="Quitar vector v3"]');
-            igual(w.document.querySelector('[name="v3_0"]').value, '4');
-            click(w, '[aria-label="Quitar vector v3"]');
-            igual(cantidad(w, '[data-vector]'), 2);
-            igual(cantidad(w, '[aria-label^="Quitar vector"]'), 0);
-            click(w, '[data-agregar-vector]');
-            igual(w.document.querySelector('[name="v3_0"]').value, '');
+        // La antigua Operaciones con vectores redirige al ejemplo de vectores de Operaciones.
+        ["Vectores: la ruta antigua abre Operaciones con u, v y su expresión", "vectores", w => {
+            igual(w.location.pathname, '/matrices/operaciones/');
+            igual([...w.document.querySelectorAll('[data-campo="tipo"]')].map(s => s.value), ['vector', 'vector']);
+            igual(expresion(w).value, 'u + v');
+            enfocarExpresion(w);
+            igual(nombres(w), ['u', 'v']);
         }],
-        ["Vectores: suma real de tres y procedimiento", "vectores", async (w, frame) => {
-            click(w, '[data-agregar-vector]');
-            for (const [n, valores] of [['v1',[1,2,3]],['v2',[4,5,6]],['v3',[7,8,9]]]) {
-                valores.forEach((v, i) => valor(w, `[name="${n}_${i}"]`, v));
-            }
+        ["Vectores: suma real y escalar con el motor común", "vectores", async (w, frame) => {
             w = await enviar(frame);
-            igual(w.document.querySelector('#resultado').textContent.includes('(12, 15, 18)'), true);
-            igual(w.document.querySelector('#procedimiento').textContent.includes('1 + 4 + 7'), true);
+            igual(w.document.querySelector('#resultado .panel-final').textContent.includes('u + v = [5, 1, 3]'), true);
+            igual(w.document.querySelector('.section-kicker').textContent.trim(), 'Expresión · Vector de 3 componentes');
+            igual(w.document.querySelector('.panel-final').compareDocumentPosition(w.document.querySelector('#procedimiento')) & 4, 4);
+            valor(w, '[name="expresion"]', '2u - 3v');
+            w = await enviar(frame);
+            igual(w.document.querySelector('#resultado .panel-final').textContent.includes('2u - 3v = [-10, 7, 6]'), true);
         }],
-        ["Vectores: escalar unario y combinación con mínimo uno", "vectores", w => {
-            click(w, '[data-agregar-vector]');
-            click(w, '[name="operacion"][value="escalar"]');
-            igual(cantidad(w, '[data-vector]'), 1);
-            igual(w.document.querySelector('[data-agregar-vector]').hidden, true);
-            igual(w.document.querySelector('[name="vectores"]').disabled, true);
-            click(w, '[name="operacion"][value="combinacion"]');
-            const quitar = w.document.querySelector('[aria-label="Quitar vector v2"]');
-            if (quitar) quitar.click();
-            igual(cantidad(w, '[data-vector]'), 2); // generador + objetivo
-            igual(cantidad(w, '[aria-label^="Quitar vector"]'), 0);
-            for (let i = 0; i < 11; i++) click(w, '[data-agregar-vector]');
-            igual(cantidad(w, '[data-vector]'), 13);
+        ["Vectores: los ejemplos cargan sin JavaScript extra y conservan la edición directa", "vectores", w => {
+            const enlaces = [...w.document.querySelectorAll('.plantillas a')].map(a => a.getAttribute('href'));
+            igual(enlaces.includes('?plantilla=combinacion-lineal'), true);
+            valor(w, '[name="expresion"]', 'v + u');
+            igual(expresion(w).value, 'v + u');
         }],
         // Operaciones con matrices (P26.6): operandos con nombre y una expresión; el presupuesto común vive en expresiones.js.
         ["Teclado: operandos iniciales y grupos separados", "matrices", w => {
@@ -112,7 +97,7 @@
             igual([...w.document.querySelectorAll('.math-key')].map(b => b.dataset.insercion), ['-','/']);
             while (cantidad(w,'[data-simbolo]')) click(w,'[data-eliminar]');
             enfocarExpresion(w); await turno(); igual(nombres(w), []);
-            igual([...w.document.querySelectorAll('.math-key')].map(b => b.dataset.insercion), ['()','ᵀ','+','-','=','/']);
+            igual([...w.document.querySelectorAll('.math-key')].map(b => b.dataset.insercion), ['()','ᵀ','+','-','·','=','/']);
         }],
         ["Teclado: Opciones, Nombre, Tipo y Escape conservan ocultación contextual", "matrices", async w => {
             const dock = w.document.querySelector('.math-keyboard');
@@ -238,14 +223,6 @@
             click(w, '[data-agregar]');
             igual(cantidad(w, '[data-simbolo]'), 1);
             igual(w.document.querySelector('[name="cantidad"]').value, '1');
-        }],
-        ["Vectores: tope de 50 vectores con aviso", "vectores", w => {
-            for (let i = 2; i < 60; i++) click(w, '[data-agregar-vector]');
-            igual(cantidad(w, '[data-vector]'), 50);
-            igual(w.document.querySelector('[data-agregar-vector]').disabled, true);
-            igual(w.document.querySelector('[data-limite-operandos]').hidden, false);
-            click(w, '[name="operacion"][value="escalar"]');
-            igual(w.document.querySelector('[data-limite-operandos]').hidden, true);
         }],
     ];
     for (const metodo of ['fila_columna', 'columnas', 'comparar']) {

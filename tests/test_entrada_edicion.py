@@ -21,7 +21,7 @@ EJEMPLO = "2x1 - x2 = 3; x1 + 4x2 = 7"
 class PruebasEntradaEdicion(SimpleTestCase):
     def test_deshacer_comparte_carga_con_el_pegado_atomico(self):
         for ruta in ("/matrices/operaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/matrices/ecuaciones/",
-                     "/matrices/reduccion/", "/vectores/operaciones/"):
+                     "/matrices/reduccion/"):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
                 self.assertContains(respuesta, 'deshacer_pegado.js', count=1)
@@ -42,7 +42,7 @@ class PruebasEntradaEdicion(SimpleTestCase):
                 botones = [e for e in Pagina(plantilla).elementos if "data-seleccionar" in e]
                 self.assertEqual(len(botones), 7)
                 self.assertTrue(all(e.get("type") == "button" and "name" not in e for e in botones))
-        for ruta in ("/", "/vectores/operaciones/", "/bases/conversion/", "/romanos/conversion/"):
+        for ruta in ("/", "/bases/conversion/", "/romanos/conversion/"):
             with self.subTest(ruta=ruta):
                 self.assertNotContains(self.client.get(ruta), 'seleccion_matricial.js')
                 self.assertNotContains(self.client.get(ruta), 'copiar_matricial.js')
