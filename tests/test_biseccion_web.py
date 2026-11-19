@@ -16,7 +16,7 @@ from frontend.web.calculadora import catalogo
 from tests.test_biseccion import POLINOMIO
 
 
-RUTA = "/metodos-numericos/biseccion/"
+RUTA = "/metodos-numericos/metodos-cerrados/biseccion/"
 
 
 def datos(**cambios):
@@ -58,17 +58,18 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertNotContains(r, "data-respuesta-errores")
 
     def test_verificacion_adaptada_al_resultado(self):
-        for cambios, mensaje in [({}, "Se alcanzó la precisión"),
+        # El criterio, cumplido o no y por qué, en el resumen; la verificación, en «Ver desarrollo completo».
+        for cambios, mensaje in [({}, "· cumplido"),
                                  ({"funcion": "x", "a": "0", "b": "1"}, "Un extremo ya da cero"),
-                                 ({"funcion": "x", "a": "-1", "b": "1"}, "El punto medio da cero"),
-                                 ({"max_iteraciones": "1"}, "Se agotó el máximo"),
-                                 ({"funcion": "x^2-2", "a": "1", "b": "2", "precision": "1e-30"}, "La máquina ya no puede")]:
+                                 ({"funcion": "x", "a": "-1", "b": "1"}, "Cumplido: f(c) = 0 en aritmética de máquina"),
+                                 ({"max_iteraciones": "1"}, "no cumplido: se agotaron las iteraciones"),
+                                 ({"funcion": "x^2-2", "a": "1", "b": "2", "precision": "1e-30"}, "no cumplido: límite de los números de máquina")]:
             with self.subTest(cambios=cambios):
                 r = self.client.post(RUTA, datos(**cambios))
                 self.assertContains(r, mensaje)
                 self.assertContains(r, "¿Cómo sabemos que hay una raíz?")
-                self.assertContains(r, "¿Se alcanzó la precisión solicitada?")
-                self.assertContains(r, "b − a:")
+                self.assertContains(r, "Cuatro medidas que no deben confundirse")
+                self.assertContains(r, "Criterio de parada")
                 self.assertContains(r, "más de una raíz")
 
     def test_cero_de_maquina_no_se_presenta_como_error_matematico_cero(self):
@@ -85,19 +86,18 @@ class BiseccionWebTests(SimpleTestCase):
         for funcion in ("x^2-2", "x-1.5"):
             with self.subTest(funcion=funcion):
                 r = self.client.post(RUTA, datos(funcion=funcion, a="1", b="2"))
-                self.assertContains(r, "f(c) <span data-raices-relacion>=</span> <span data-raices-numero=", count=1)
+                # El residuo del resumen lleva su nombre y un solo valor, sin «= ≈».
+                self.assertContains(r, '<dt>Residuo <span class="raices-formula">|f(c)|</span></dt><dd><span data-raices-numero=', count=1)
                 self.assertNotRegex(r.content.decode(), r"f\(c\)\s*=\s*≈")
         js = (Path(__file__).resolve().parents[1] / "frontend/web/calculadora/static/calculadora/raices.js").read_text(encoding="utf-8")
         self.assertIn('relacion.textContent = aproximado ? "≈" : "="', js)
 
     def test_iteraciones_en_singular_y_plural(self):
-        for cambios, texto in [({"funcion": "x-1.5", "a": "1", "b": "2"}, "1 iteración ·"),
-                               ({}, "13 iteraciones ·"),
-                               ({"funcion": "x", "a": "0", "b": "1"}, "0 iteraciones ·")]:
+        for cambios, numero in [({"funcion": "x-1.5", "a": "1", "b": "2"}, 1), ({}, 13),
+                                ({"funcion": "x", "a": "0", "b": "1"}, 0)]:
             with self.subTest(cambios=cambios):
                 r = self.client.post(RUTA, datos(**cambios))
-                self.assertContains(r, texto)
-                self.assertNotContains(r, "1 iteraciones")
+                self.assertContains(r, f"<dt>Iteraciones</dt><dd>{numero}</dd>")
 
     def test_notaciones_comparten_resultado_muestras_y_clave_de_comparacion(self):
         implicita = "x⁴ - 5x³ + 0.5x² - 11x + 10"
@@ -112,12 +112,13 @@ class BiseccionWebTests(SimpleTestCase):
 
     def test_catalogo_navegacion_y_assets_locales(self):
         self.assertEqual(reverse("calculadora:biseccion"), RUTA)
-        self.assertTrue(catalogo.herramienta_por_id("biseccion").disponible)
+        self.assertTrue(catalogo.herramienta_por_id("metodos-cerrados").disponible)
+        self.assertIsNone(catalogo.herramienta_por_id("biseccion"))
         for ruta in ["/", "/?q=biseccion", RUTA]:
             self.assertContains(self.client.get(ruta), RUTA)
         r = self.client.get(RUTA)
         for texto in ["plotly-basic", "biseccion.js", "raices.js", 'name="funcion"', 'name="a"', 'name="b"',
-                      'id="raices-grafica"', 'id="ajustes-raices"']:
+                      'id="raices-grafica"', 'id="ajustes-raices"', 'aria-label="Método cerrado"']:
             self.assertContains(r, texto)
         self.assertNotContains(r, 'id="resultado"')
 
@@ -130,7 +131,10 @@ class BiseccionWebTests(SimpleTestCase):
         for marca in ('id="raices-reproductor"', 'id="raices-historial"', 'id="raices-tabla-marco"', 'id="paso-breve"'):
             self.assertContains(r, marca, count=1)
         self.assertContains(r, '<div class="raices-recorrido" hidden>', count=1)
-        self.assertContains(r, 'class="panel raices-historial" aria-labelledby="historial-titulo" hidden', count=1)
+        # El historial acompaña plegado y al final, sin desplazar el resultado.
+        self.assertContains(r, '<div id="raices-historial" class="raices-historial" hidden>', count=1)
+        html = r.content.decode()
+        self.assertLess(html.index('id="desarrollo-raices"'), html.index('id="raices-historial"'))
         self.assertContains(r, 'data-tono="exito"', count=1)
         for velocidad in ("0.5×", "1×", "2×", "4×"):
             self.assertContains(r, velocidad)

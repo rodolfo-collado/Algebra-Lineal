@@ -131,20 +131,20 @@
             igual(boton.hasAttribute("aria-busy"), false); igual(q(w, "#navegacion-principal").hidden, true);
         }],
         ["Menú: categorías solo durante la ejecución; nada en localStorage", "/", {}, async (w, frame) => {
-            w.localStorage.setItem("algebra-lineal-menu-secciones", '["vectores"]');
+            w.localStorage.setItem("algebra-lineal-menu-secciones", '["raices"]');
             w = await navegar(frame, () => w.location.reload());
             igual(w.localStorage.getItem("algebra-lineal-menu-secciones"), null);
-            igual(q(w, '[data-categoria="vectores"]').open, false);
+            igual(q(w, '[data-categoria="raices"]').open, false);
             q(w, "#navigation-toggle").click();
-            const categoria = q(w, '[data-categoria="vectores"]'); categoria.open = true; await turno(w);
-            igual(JSON.parse(w.sessionStorage.getItem("algebra-lineal-menu-secciones")), ["vectores"]);
+            const categoria = q(w, '[data-categoria="raices"]'); categoria.open = true; await turno(w);
+            igual(JSON.parse(w.sessionStorage.getItem("algebra-lineal-menu-secciones")), ["raices"]);
             w = await navegar(frame, () => w.location.reload());
-            igual(q(w, '[data-categoria="vectores"]').open, true);
+            igual(q(w, '[data-categoria="raices"]').open, true);
             igual(q(w, "#navegacion-principal").hidden, true);
             // Un arranque nuevo es una sesión nueva: categorías limpias, cajón cerrado.
             w.sessionStorage.clear();
             w = await navegar(frame, () => w.location.reload());
-            igual(q(w, '[data-categoria="vectores"]').open, false);
+            igual(q(w, '[data-categoria="raices"]').open, false);
             igual(Object.keys(w.localStorage).filter(k => k.includes("menu")), []);
         }],
         ["Escritorio: tema, formato y precisión vuelven en un arranque nuevo", "/", {}, async (w, frame) => {

@@ -262,21 +262,24 @@ La capa web llama una sola vez a `calcular_inversa(a, metodo)`. Solo cuando
 `verificar_inversa`; no vuelve a llamar a ningún método de inversión. Incluye
 `verificar_solicitado` y `verificacion` en los datos para las plantillas.
 
-Dentro de «Ver procedimiento», después de las etapas del método elegido,
-el encabezado semántico **Verificación** separa dos comprobaciones visibles:
-`A·A⁻¹ = matriz obtenida = I` y `A⁻¹·A = matriz obtenida = I`. Las matrices
-conservan sus `aria-label`; la comparación se comunica con texto. No se
-despliegan todos los productos fila por columna. Si ambas coinciden, se
-indica «Ambos productos son la matriz identidad.». Si alguna no coincide, se
-muestran igualmente los productos reales y se identifica cuál no coincide,
-sin afirmar que la verificación fue correcta.
+Desde 0.19.0 la verificación está activada por defecto y va justo después del
+resultado, antes de «Ver procedimiento». `servicios_inversa.presentar_verificacion`
+muestra A y la A⁻¹ obtenida, y los dos productos **realmente calculados** por el
+motor común (no una identidad dibujada), cada uno en un desplegable con su veredicto
+(`= I` o `≠ I`). Cada producto ofrece, bajo demanda, «Cómo se obtiene cada entrada»:
+`(AA⁻¹)₁₂ = (1/2)·(3/8) + (-1)·(3/16) = 0 = I(1, 2) ✓`. La igualdad es exacta
+(fracciones, sin tolerancia); el modo Decimal solo cambia la lectura. Si alguna
+entrada no coincide, se nombra su posición («A · A⁻¹ difiere de I en (1, 1)») sin
+afirmar éxito. Hasta 4×4 los productos nacen abiertos; con órdenes mayores, plegados.
+Una matriz singular no ejecuta productos: el resumen dice «A no es invertible»,
+`det(A) = 0` y por qué Gauss-Jordan o `ad − bc` no producen la inversa.
 
 ## Resultado y Exacto / Decimal
 
 `servicios_inversa.calcular_inversa_web` coordina una llamada a
-`calcular_inversa(a, metodo)`, la verificación opcional con la inversa obtenida
-y el formato de los datos exactos. El resultado va al
-final, una sola vez: la matriz de la función elegida en la tabla anterior,
+`calcular_inversa(a, metodo)`, la verificación con la inversa obtenida
+y el formato de los datos exactos. El resultado va primero, una sola vez, bajo el
+título «A es invertible» o «A no es invertible»: la matriz de la función elegida en la tabla anterior,
 el vector columna x o la explicación de por qué no puede aplicarse. El valor
 matricial común de cada propiedad aparece una vez en ese panel. A⁻¹ y los
 intermedios necesarios quedan en etapas dentro del procedimiento.

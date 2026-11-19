@@ -77,7 +77,7 @@ class PruebasIdentidadVisual(SimpleTestCase):
             self.assertIn(fragmento, ids)
         # Los temas se anclan en el explorador de su área.
         ids = DocumentoIds(self.client.get("/areas/algebra-lineal/")).ids
-        for fragmento in ("vectores", "matrices"):
+        for fragmento in ("matrices",):
             self.assertIn(fragmento, ids)
 
     def test_interfaz_en_espanol_sin_spanglish(self):

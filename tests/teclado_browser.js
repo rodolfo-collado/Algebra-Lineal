@@ -174,7 +174,7 @@
         }],
         ["Expresión: paréntesis con retroceso y traspuesta visual", async ({d, b, tecla, inserciones}) => {
             d.getElementById('celdas').dataset.perfil = 'expresion'; b.focus(); await turno();
-            igual(inserciones(), ['()','ᵀ','+','-','=','/']);
+            igual(inserciones(), ['()','ᵀ','+','-','·','=','/']);
             b.value = 'AB'; b.setSelectionRange(1,1); tecla('()').click();
             igual([b.value,b.selectionStart,b.selectionEnd], ['A()B',2,2]);
             tecla('ᵀ').click(); igual(b.value, 'A(ᵀ)B');

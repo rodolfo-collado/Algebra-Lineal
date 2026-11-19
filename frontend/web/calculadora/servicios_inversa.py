@@ -245,21 +245,72 @@ def _presentar_adicional(calculo):
     return datos
 
 
+# Hasta este orden los dos productos se muestran abiertos; con más entradas, plegados.
+ORDEN_VERIFICACION_ABIERTA = 4
+
+
+def _producto(producto, detalles, expresion):
+    """Cada entrada (i, j) del producto calculado: fila i por columna j, su valor y si es la de I.
+
+    El valor y la comparación son los de la matriz producto (la que se muestra); la fila y la
+    columna, las que el motor multiplicó para obtenerla.
+    """
+    entradas = []
+    for fila in detalles["pasos"]:
+        for paso in fila:
+            i, j = paso["posicion"]
+            valor, esperado = producto[i - 1][j - 1], 1 if i == j else 0
+            entradas.append({
+                "posicion": f"({i}, {j})",
+                "calculo": f"({expresion}){subindice(i, j)} = "
+                + " + ".join(f"{_operando(a)}·{_operando(b)}" for a, b in zip(paso["fila"], paso["columna"]))
+                + f" = {formatear_exacto(valor)}",
+                "esperado": str(esperado),
+                "coincide": valor == esperado,
+            })
+    return entradas
+
+
+def presentar_verificacion(a, inversa, comprobacion):
+    """A, A⁻¹ y los dos productos realmente calculados, comparados entrada por entrada con I.
+
+    Los productos vienen del motor común con aritmética racional exacta: «coincide» significa
+    igualdad exacta (sin tolerancia), y la vista decimal solo cambia cómo se leen.
+    """
+    productos = []
+    for clave, expresion, detalles in (
+        ("a_por_inversa", "AA⁻¹", comprobacion["detalles_a_por_inversa"]),
+        ("inversa_por_a", "A⁻¹A", comprobacion["detalles_inversa_por_a"]),
+    ):
+        entradas = _producto(comprobacion[clave], detalles, expresion)
+        distintas = [entrada["posicion"] for entrada in entradas if not entrada["coincide"]]
+        productos.append({
+            "clave": clave, "expresion": "A · A⁻¹" if clave == "a_por_inversa" else "A⁻¹ · A",
+            "etiqueta": "Producto A por su inversa" if clave == "a_por_inversa" else "Producto de la inversa por A",
+            "matriz": formatear_matriz(comprobacion[clave]),
+            "es_identidad": comprobacion[f"{clave}_es_identidad"],
+            "entradas": entradas, "distintas": distintas,
+        })
+    orden = len(a)
+    return {
+        "a": formatear_matriz(a), "inversa": formatear_matriz(inversa),
+        "identidad": formatear_matriz(comprobacion["identidad"]),
+        "productos": productos, "entradas_por_producto": orden * orden,
+        "abierta": orden <= ORDEN_VERIFICACION_ABIERTA,
+        "a_por_inversa_es_identidad": comprobacion["a_por_inversa_es_identidad"],
+        "inversa_por_a_es_identidad": comprobacion["inversa_por_a_es_identidad"],
+        "verificada": comprobacion["verificada"],
+    }
+
+
 def calcular_inversa_web(entrada):
     """Calcula la entrada ya validada (y confirmada, si hacía falta) y la deja lista para la plantilla."""
     calculo = calcular_inversa(entrada["a"], entrada["metodo"])
     verificar_solicitado = entrada.get("verificar", False)
     verificacion = None
     if verificar_solicitado and calculo["invertible"]:
-        comprobacion = verificar_inversa(entrada["a"], calculo["inversa"])
-        verificacion = {
-            clave: formatear_matriz(comprobacion[clave])
-            for clave in ("identidad", "a_por_inversa", "inversa_por_a")
-        }
-        verificacion.update({
-            clave: comprobacion[clave]
-            for clave in ("a_por_inversa_es_identidad", "inversa_por_a_es_identidad", "verificada")
-        })
+        verificacion = presentar_verificacion(
+            entrada["a"], calculo["inversa"], verificar_inversa(entrada["a"], calculo["inversa"]))
     orden = calculo["orden"]
     funcion = entrada.get("funcion_adicional", "ninguna")
     adicional = _presentar_adicional(aplicar_funcion_adicional(

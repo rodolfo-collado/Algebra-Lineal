@@ -39,10 +39,10 @@ class SecanteWebTests(SimpleTestCase):
         # Un solo selector con los dos métodos; el activo lo marca aria-current.
         nav = selector(r)
         self.assertEqual(re.findall(r'href="([^"]+)"', nav), [NEWTON, RUTA])
-        self.assertIn(f'href="{RUTA}" data-metodo-abierto aria-current="page"', nav)
-        self.assertNotIn(f'href="{NEWTON}" data-metodo-abierto aria-current', nav)
+        self.assertIn(f'href="{RUTA}" data-conservar="funcion" aria-current="page"', nav)
+        self.assertNotIn(f'href="{NEWTON}" data-conservar="funcion" aria-current', nav)
         nav_newton = selector(self.client.get(NEWTON))
-        self.assertIn(f'href="{NEWTON}" data-metodo-abierto aria-current="page"', nav_newton)
+        self.assertIn(f'href="{NEWTON}" data-conservar="funcion" aria-current="page"', nav_newton)
         self.assertContains(self.client.get(NEWTON), "<title>Newton-Raphson · Métodos abiertos · PyGebra</title>")
 
     def test_la_funcion_se_conserva_al_cambiar_de_metodo(self):
@@ -151,9 +151,9 @@ class MetodosAbiertosNavegacionTests(SimpleTestCase):
 
     def test_una_sola_herramienta_en_el_catalogo_y_la_navegacion(self):
         ids = [h.id for h in catalogo.herramientas_de(catalogo.RAICES)]
-        self.assertEqual(ids, ["biseccion", "regla-falsa", "metodos-abiertos"])
+        self.assertEqual(ids, ["metodos-cerrados", "metodos-abiertos"])
         self.assertIsNone(catalogo.herramienta_por_id("newton-raphson"))
-        for ruta in ("/", "/areas/metodos-numericos/", RUTA, NEWTON, catalogo.BISECCION.ruta):
+        for ruta in ("/", "/areas/metodos-numericos/", RUTA, NEWTON, catalogo.METODOS_CERRADOS.ruta):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode()
                 self.assertNotIn("Método de Newton-Raphson<", html)
@@ -161,7 +161,7 @@ class MetodosAbiertosNavegacionTests(SimpleTestCase):
         # La barra lateral marca Métodos abiertos tanto en Newton como en Secante.
         for ruta in (RUTA, NEWTON):
             self.assertContains(self.client.get(ruta), f'href="{NEWTON}" aria-current="page">Métodos abiertos<')
-        relacionadas = catalogo.relacionadas_disponibles(catalogo.REGLA_FALSA)
+        relacionadas = catalogo.relacionadas_disponibles(catalogo.METODOS_CERRADOS)
         self.assertIn(catalogo.METODOS_ABIERTOS, relacionadas)
 
     def test_buscador_encuentra_los_dos_metodos(self):

@@ -19,7 +19,8 @@ class PruebasFeedback(SimpleTestCase):
             ("/matrices/inversa/", datos_inversa(celda_A_0_0=""), "celda_A_0_0"),
             ("/matrices/determinantes/", {"orden": "1", "metodo": "lu", "celda_A_0_0": ""}, "celda_A_0_0"),
             ("/matrices/operaciones/", datos_matrices(""), "expresion"),
-            ("/vectores/operaciones/", datos_vectores("suma", v1=[1, "x"], v2=[1, 2]), "v1_1"),
+            # La ruta antigua de vectores responde con Operaciones: v1 es el operando 0.
+            ("/vectores/operaciones/", datos_vectores("suma", v1=[1, "x"], v2=[1, 2]), "celda_0_1_0"),
             ("/bases/conversion/", {"numero": "1", "base_origen": "10"}, "bases_destino"),
             ("/romanos/conversion/", {"numero": "IIII", "direccion": "romano_a_decimal"}, "numero"),
         ]

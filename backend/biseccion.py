@@ -1,6 +1,10 @@
-"""Punto medio y selección manual del subintervalo (diapositivas 3 y 6)."""
+"""Punto medio y selección manual del subintervalo (diapositivas 3 y 6).
 
-from .funciones_reales import finito
+El criterio de parada es la longitud del intervalo. Cada fila informa además el error
+absoluto aproximado |cᵢ − cᵢ₋₁|, que compara dos aproximaciones sucesivas: no decide la
+parada ni es la distancia a la raíz, y no existe en la primera iteración.
+"""
+
 from .metodos_cerrados import MAX_ITERACIONES, TOLERANCIA as PRECISION, preparar_intervalo
 from .resultados_raices import ClasificacionRaices as Clasificacion
 
@@ -17,6 +21,7 @@ def biseccion(funcion, a, b, precision=PRECISION, max_iteraciones=MAX_ITERACIONE
         return {"clasificacion": clasificacion, "inicial": inicial, "max_iteraciones": max_iteraciones,
                 "c": c, "fc": fc, "residuo": abs(fc) if fc is not None else None, "a": a, "b": b, "fa": fa, "fb": fb,
                 "longitud": b - a, "precision": precision, "iteraciones": filas,
+                "error_absoluto": filas[-1]["error_absoluto"] if filas and filas[-1]["c"] == c else None,
                 "estado": estado, "convergio": convergio, "mensaje": mensaje}
 
     if impedimento:
@@ -37,14 +42,10 @@ def biseccion(funcion, a, b, precision=PRECISION, max_iteraciones=MAX_ITERACIONE
             fc = funcion(c)
         except ValueError as error:
             return resultado(anterior, "evaluacion", str(error))
-        error = abs((c - anterior) / c) * 100 if anterior is not None and c != 0 else None
-        if error is not None:
-            try:
-                error = finito(error)
-            except ValueError:
-                error = None
+        # Diferencia de dos puntos del intervalo: finita y exacta salvo el redondeo de la resta.
+        error = None if anterior is None else abs(c - anterior)
         fila = {"i": i, "a": a, "b": b, "c": c, "fa": fa, "fb": fb, "fc": fc,
-                "error_relativo": error}
+                "error_absoluto": error}
         filas.append(fila)
         if fc == 0:
             a = b = c

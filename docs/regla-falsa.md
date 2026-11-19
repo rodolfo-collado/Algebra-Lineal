@@ -2,8 +2,8 @@
 
 [Índice](README.md) · [Bisección](biseccion.md) · [Pruebas](pruebas.md)
 
-Disponible en **Métodos numéricos → Raíces de ecuaciones → Método de regla falsa**,
-en `/metodos-numericos/regla-falsa/`, con recursos locales en navegador y escritorio.
+Disponible en **Métodos numéricos → Raíces de ecuaciones → Métodos cerrados → Regla falsa**,
+en `/metodos-numericos/metodos-cerrados/regla-falsa/`, con recursos locales en navegador y escritorio.
 
 ## Uso y recorrido
 

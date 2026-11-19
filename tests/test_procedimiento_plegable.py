@@ -201,7 +201,7 @@ def partes(html):
 
 
 def comprobar_estructura(caso, html):
-    """Contrato común: un solo «Ver procedimiento» cerrado y, después, el único panel final, fuera de él."""
+    """Contrato común: el único panel final primero (resultado primero) y, después, un solo «Ver procedimiento» cerrado, fuera de él."""
     estructura = Estructura(html)
     principal = estructura.principal()
     caso.assertEqual(principal["id"], "procedimiento")
@@ -209,10 +209,12 @@ def comprobar_estructura(caso, html):
     caso.assertEqual(principal["encabezado"], "h3")
     caso.assertEqual(len(estructura.paneles_finales), 1, "un solo resultado canónico")
     caso.assertEqual(estructura.paneles_finales[0]["dentro"], 0, "el resultado no vive dentro del details")
-    caso.assertLess(estructura.indice("details", id="procedimiento"), estructura.indice("panel-final"))
+    caso.assertLess(estructura.indice("panel-final"), estructura.indice("details", id="procedimiento"))
     caso.assertEqual(html.count('id="procedimiento"'), 1)
     for anidado in estructura.details:
-        if "procedure-group" not in anidado["clases"]:
+        # Excepciones deliberadas: grupos del producto y los dos productos de la verificación de
+        # la inversa (abiertos hasta 4×4, fuera del procedimiento).
+        if "procedure-group" not in anidado["clases"] and "inverse-product" not in anidado["clases"]:
             caso.assertFalse(anidado["open"], anidado["summary"])
     return estructura
 
@@ -304,22 +306,21 @@ class PruebasSistemas(SimpleTestCase):
 
 class PruebasVectores(SimpleTestCase):
     def test_operaciones_desarrollo_plegado_y_vector_resultante_una_vez(self):
+        # La ruta antigua calcula con Operaciones: una línea por componente y el vector una sola vez.
         casos = (
-            (datos_vectores("suma", v1=[1, 2, 3], v2=[4, 5, 6]), "v1 + v2", "(1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)"),
-            (datos_vectores("resta", v1=[4, 6], v2=[1, 2]), "v1 − v2", "(4, 6) − (1, 2) = (4 - 1, 6 - 2) = (3, 4)"),
-            (datos_vectores("escalar", escalar="3", v1=[1, -2, 4]), "k·v1", "3·(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)"),
-            (datos_vectores("escalar", escalar="-1/2", v1=["1/3", -4]), "k·v1", "(-1/2)·(1/3, -4) = ((-1/2)·(1/3), (-1/2)·(-4)) = (-1/6, 2)"),
+            (datos_vectores("suma", v1=[1, 2, 3], v2=[4, 5, 6]), "v1 + v2", "3 + 6 = 9", "[5, 7, 9]"),
+            (datos_vectores("resta", v1=[4, 6], v2=[1, 2]), "v1 - v2", "6 − 2 = 4", "[3, 4]"),
+            (datos_vectores("escalar", escalar="3", v1=[1, -2, 4]), "k v1", "3 · (-2) = -6", "[3, -6, 12]"),
+            (datos_vectores("escalar", escalar="-1/2", v1=["1/3", -4]), "k v1", "(-1/2) · (1/3) = -1/6", "[-1/6, 2]"),
         )
-        for datos, expresion, cadena in casos:
+        for datos, expresion, linea, vector in casos:
             with self.subTest(operacion=datos["operacion"]):
                 html = self.client.post(RUTA_VECTORES, datos).content.decode("utf-8")
                 comprobar_estructura(self, html)
                 procedimiento, resultado = partes(html)
-                # La cadena arranca en la expresión, sustituye los vectores y termina en el resultado.
-                self.assertIn(f"{expresion} = {cadena}", procedimiento)
-                self.assertNotIn("Vectores de entrada", procedimiento)
-                vector = cadena.rsplit("= ", 1)[1]
+                self.assertIn(linea, procedimiento)
                 self.assertIn(f"Resultado {expresion} = {vector}", resultado)
+                self.assertNotIn(vector, procedimiento)
                 self.assertEqual(texto_resultado(html).count("Resultado"), 1)
 
     def test_combinacion_lineal_conserva_las_etapas_sin_duplicar_la_conclusion(self):
@@ -495,7 +496,9 @@ class PruebasTransversales(SimpleTestCase):
         for ruta, datos in self.respuestas():
             with self.subTest(ruta=ruta):
                 html = self.client.post(ruta, datos).content.decode("utf-8")
-                self.assertIn(f'action="{ruta}#resultado"', html)
+                # La ruta antigua de vectores responde con Operaciones, que envía a su ruta canónica.
+                destino = RUTA_MATRICES if ruta == RUTA_VECTORES else ruta
+                self.assertIn(f'action="{destino}#resultado"', html)
                 self.assertRegex(html, r'<section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">')
                 self.assertEqual(html.count('id="resultado"'), 1)
 
@@ -536,8 +539,8 @@ class PruebasTransversales(SimpleTestCase):
             ("/romanos/conversion/", {"direccion": "romano_a_decimal", "numero": "MCMLXIII"}),
         )
 
-    def test_todas_leen_procedimiento_cerrado_y_despues_el_resultado(self):
-        """P25.1: el resultado sigue al procedimiento y queda visible con el desplegable cerrado."""
+    def test_todas_leen_el_resultado_y_despues_el_procedimiento_cerrado(self):
+        """Resultado primero (antes P25.1 lo ponía tras el procedimiento): visible y antes del desplegable cerrado."""
         for ruta, datos in self.todas():
             with self.subTest(ruta=ruta, entrada=datos.get("expresion") or datos.get("numero") or datos.get("operacion")):
                 html = self.client.post(ruta, datos).content.decode("utf-8")
@@ -548,7 +551,7 @@ class PruebasTransversales(SimpleTestCase):
                 self.assertEqual(procedimiento["encabezado"], "h3")
                 self.assertEqual(len(estructura.paneles_finales), 1)
                 self.assertEqual(estructura.paneles_finales[0]["dentro"], 0, "el resultado no vive dentro del details")
-                self.assertLess(estructura.indice("details", id="procedimiento"), estructura.indice("panel-final"))
+                self.assertLess(estructura.indice("panel-final"), estructura.indice("details", id="procedimiento"))
                 self.assertNotIn("Entender este resultado", html)
 
     def test_inicio_no_cambia_y_bases_sigue_el_patron_comun(self):
@@ -558,7 +561,7 @@ class PruebasTransversales(SimpleTestCase):
         bases = self.client.post("/bases/conversion/", {"numero": "13", "base_origen": "10", "bases_destino": ["2", "16"]}).content.decode("utf-8")
         comprobar_estructura(self, bases)
         procedimiento, resultado = partes(bases)
-        # El procedimiento compartido de P16 no cambia: solo pasa a estar plegado y antes del resultado.
+        # El procedimiento compartido de P16 no cambia: solo pasa a estar plegado y después del resultado.
         for etapa in ("Etapa 1 · Decimal → binario", "Etapa 2 · Decimal → hexadecimal", "Divisiones sucesivas entre 2"):
             self.assertIn(etapa, procedimiento)
             self.assertNotIn(etapa, resultado)

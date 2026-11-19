@@ -64,14 +64,14 @@
     };
 
     const HERRAMIENTAS = ["/matrices/reduccion/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/",
-        "/vectores/operaciones/", "/bases/conversion/", "/romanos/conversion/"];
+        "/bases/conversion/", "/romanos/conversion/"];
     const AUMENTADA = "/matrices/reduccion/?tipo_entrada=matriz&ecuaciones=2&variables=2";
     const SISTEMA = "x1+2x2-x3=4\n2x1-x2+3x3=7\nx1+x2+x3=6";
     const casos = [];
 
     // —— UI-31: celdas ——
     const VALORES = ["-11/13", "123/456", "-123456", "3.14159"];
-    for (const ruta of ["/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/operaciones/", AUMENTADA, "/vectores/operaciones/"]) {
+    for (const ruta of ["/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/operaciones/", AUMENTADA]) {
         casos.push([`UI-31 ${ruta}: valores largos completos, columnas alineadas y sin desborde`, ruta, async (w, frame) => {
             assert(w.CSS.supports("field-sizing", "content"), "field-sizing disponible en Chromium/WebView2");
             for (const [ancho, alto] of [[1280, 650], [744, 521], [390, 650], [760, 560]]) {
@@ -160,41 +160,6 @@
         todos(w, "[data-simbolo]")[0].querySelector("[data-eliminar]").click();
         assert(w.document.activeElement === q(w, "[data-agregar]"), "Sin operandos, foco en Agregar");
         assert(aviso.textContent === "Se eliminó el operando A.", "Último aviso");
-    }]);
-    casos.push(["UI-33: Vectores — agregar y quitar llevan el foco a una componente y lo anuncian", "/vectores/operaciones/", async w => {
-        const estado = q(w, "[data-estado-vectores]");
-        assert(estado.getAttribute("role") === "status", "Región de estado");
-        q(w, "[data-agregar-vector]").click();
-        assert(w.document.activeElement === q(w, '[name="v3_0"]') && estado.textContent === "Se agregó el vector v3.", "Alta con foco en v3");
-        q(w, "[data-agregar-vector]").click();
-        escribir(w, q(w, '[name="v4_0"]'), 9);
-        q(w, '[aria-label="Quitar vector v3"]').click();
-        assert(w.document.activeElement === q(w, '[name="v3_0"]') && w.document.activeElement.value === "9", "Foco en la fila que ocupa su lugar");
-        assert(estado.textContent === "Se eliminó el vector v3.", `Aviso de baja: ${estado.textContent}`);
-        q(w, '[aria-label="Quitar vector v3"]').click();
-        assert(w.document.activeElement === q(w, '[name="v2_0"]'), "Era la última: foco en la anterior");
-        const mas = q(w, '[data-estructura="vectores"] [data-paso="1"]');
-        mas.focus(); mas.click();
-        assert(w.document.activeElement === mas && estado.textContent === "Se agregó el vector v3.", "El stepper avisa sin mover el foco");
-    }]);
-    casos.push(["UI-33: el × pertenece a su fila, con borde completo, y los vectores quedan alineados", "/vectores/operaciones/", async (w, frame) => {
-        q(w, "[data-agregar-vector]").click();
-        for (const [ancho, alto] of [[1280, 650], [390, 650]]) {
-            await tamano(frame, ancho, alto);
-            const filas = todos(w, ".vector-row[data-vector]");
-            const quitar = q(w, ".vector-remove");
-            const fila = quitar.closest(".vector-row");
-            const rect = quitar.getBoundingClientRect(); const caja = fila.getBoundingClientRect();
-            assert(rect.top >= caja.top - 1 && rect.bottom <= caja.bottom + 1, `${ancho}px: × dentro de su fila`);
-            assert(rect.left >= fila.querySelector(".vector-inputs").getBoundingClientRect().right - 1, `${ancho}px: × después de las componentes`);
-            const css = w.getComputedStyle(quitar);
-            assert(["Left", "Right", "Top", "Bottom"].every(lado => parseFloat(css[`border${lado}Width`]) > 0) && parseFloat(css.borderTopLeftRadius) > 0, "Borde y esquinas completos");
-            const nombres = filas.map(f => f.querySelector(".vector-name").getBoundingClientRect().right);
-            const inicios = filas.map(f => f.querySelector(".vector-inputs").getBoundingClientRect().left);
-            assert(nombres.every(x => Math.abs(x - nombres[0]) < 1) && inicios.every(x => Math.abs(x - inicios[0]) < 1), `${ancho}px: nombres y componentes alineados`);
-            assert(filas.every(f => { const c = f.querySelector(".vector-inputs"); return c.scrollWidth <= c.clientWidth + 1; }), `${ancho}px: caben tres componentes`);
-            sinDesborde(w);
-        }
     }]);
 
     // —— UI-34: nombres accesibles ——
@@ -355,7 +320,9 @@
         escribir(w, q(w, '[name="sistema"]'), SISTEMA);
         q(w, '[name="metodo"][value="comparar"]').checked = true;
         w = await calcular(frame);
-        q(w, "#procedimiento").open = true; await turno(w);
+        q(w, "#procedimiento").open = true;
+        // El procedimiento va al final de la página: con el método abierto hay recorrido para el sticky.
+        q(w, "#procedimiento .disclosure-nested").open = true; await turno(w);
         const gauss = q(w, "#procedimiento .disclosure-nested > summary");
         w.scrollTo(0, gauss.getBoundingClientRect().top + w.scrollY - cabecera(w) - 20); await turno(w);
         const sticky = q(w, "#procedimiento > summary").getBoundingClientRect();

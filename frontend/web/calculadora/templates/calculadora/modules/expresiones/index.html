@@ -11,7 +11,7 @@
         {% include "calculadora/components/errores_generales.html" %}
         <section class="workspace-section" id="expression-fields" aria-labelledby="simbolos-title">
             <h3 class="section-title" id="simbolos-title">Operandos</h3>
-            <p class="field-help">Define las matrices, vectores y escalares que usarás en la expresión.</p>
+            <p class="field-help">Define las matrices, vectores y escalares; la expresión usa solo los que escribas. Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>.</p>
             <div id="symbol-list" class="symbol-list" data-simbolos>
                 {% for bloque in form.bloques %}
                     {% include "calculadora/modules/expresiones/_simbolo.html" %}
@@ -30,14 +30,20 @@
                 <label for="{{ form.expresion.id_for_label }}">Expresión</label>
                 {{ form.expresion }}
                 {{ form.expresion.errors }}
-                <p class="field-help">Por ejemplo <code>A + B</code>, <code>2A - B</code>, <code>AB</code>, <code>Ax</code>, <code>A(B + C)</code> o <code>Aᵀ</code> (también <code>A^T</code>).</p>
+                {# Ejemplos editables: cada enlace carga sus operandos y su expresión, también sin JavaScript. #}
+                <nav class="plantillas" aria-label="Ejemplos">
+                    <span class="plantillas-titulo">Ejemplos</span>
+                    {% for identificador, rotulo in plantillas %}<a class="plantilla" href="?plantilla={{ identificador }}" data-plantilla="{{ identificador }}">{{ rotulo }}</a>{% endfor %}
+                </nav>
                 {% disclosure titulo="Cómo se escribe" nivel=4 clase="disclosure-help" %}
                     <ul class="syntax-help">
                         <li><code>2A</code>, <code>AB</code> y <code>A(B + C)</code> multiplican sin escribir <code>*</code>. Si un texto admite más de una lectura, como <code>AB</code> cuando también existe un operando llamado AB, escribe <code>A*B</code>.</li>
                         <li>La traspuesta va después de lo que traspone: <code>Aᵀ</code> o <code>A^T</code>. <code>ABᵀ</code> es A por Bᵀ; para trasponer el producto escribe <code>(AB)ᵀ</code>. <code>^</code> no calcula potencias ni inversas.</li>
                         <li>En cada nivel se opera de izquierda a derecha: <code>A - B - C</code> es <code>(A - B) - C</code> y <code>ABC</code> es <code>(AB)C</code>.</li>
                         <li>Escribe fracciones como <code>1/2</code>, decimales como <code>0.5</code> y negativos con <code>-</code>.</li>
-                        <li>Un solo <code>=</code> compara dos expresiones con valores, como <code>A(B + C) = AB + AC</code>; no resuelve ecuaciones. Para hallar x en Ax = b usa la herramienta Resolver Ax = b.</li>
+                        <li>Un solo <code>=</code> compara dos expresiones con valores, como <code>A(B + C) = AB + AC</code>. Para hallar x en Ax = b usa la herramienta Sistemas lineales (Ax = b).</li>
+                        <li>Combinación lineal: con vectores u, v y b, <code>x1 u + x2 v = b</code> busca los coeficientes x1 y x2 (no se definen como operandos) y dice si b es combinación lineal de u y v.</li>
+                        <li>Solo se opera lo que está definido: una matriz y un vector no se suman, y <code>AB</code> (o <code>Ax</code>, una matriz por un vector) exige tantas columnas en A como filas en el otro factor.</li>
                         <li>Tipos simbólicos: con una matriz desconocida A, un vector simbólico x y un vector lineal b, <code>Ax = b</code> determina A comparando coeficientes.</li>
                     </ul>
                 {% enddisclosure %}
@@ -65,10 +71,17 @@
 
 {% block tool_result %}
 {% if resultado %}
-    {% comment %}Entrada → procedimiento plegable → resultado en los tres modos. En una igualdad, el valor de cada lado y el veredicto forman el resultado.{% endcomment %}
+    {% comment %}Resultado primero y procedimiento plegable después, en todos los modos. En una igualdad, el valor de cada lado y el veredicto forman el resultado.{% endcomment %}
     {% numeric_results %}
     <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
-        {% if resultado.modo == "determinacion" %}
+        {% if resultado.modo == "combinacion" %}
+            <header class="results-heading">
+                <p class="section-kicker">Combinación lineal · vectores de {{ resultado.dimension }} componente{{ resultado.dimension|pluralize }}</p>
+                <h2 id="results-title">{{ resultado.texto }}</h2>
+            </header>
+            {% include "calculadora/components/numeric_format.html" %}
+            {% include "calculadora/modules/expresiones/_combinacion.html" %}
+        {% elif resultado.modo == "determinacion" %}
             {% include "calculadora/modules/expresiones/_determinacion.html" %}
         {% elif resultado.modo == "igualdad" %}
             <header class="results-heading">
@@ -76,29 +89,26 @@
                 <h2 id="results-title">{{ resultado.texto }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}
+            <section class="panel panel-final" aria-labelledby="final-title">
+                <h3 id="final-title" class="panel-title equality-verdict equality-verdict-{{ resultado.veredicto }}">{{ resultado.titulo }}</h3>
+                <p class="equality-message">{{ resultado.mensaje }}</p>
+            </section>
+            <div class="equality-sides">
+                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.izquierda titulo="Lado izquierdo" identificador="lado-izquierdo" %}
+                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.derecha titulo="Lado derecho" identificador="lado-derecho" %}
+            </div>
             {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
                 <h4 class="stage-title">Lado izquierdo</h4>
                 {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos texto=resultado.izquierda.texto nivel=5 %}
                 <h4 class="stage-title">Lado derecho</h4>
                 {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos texto=resultado.derecha.texto nivel=5 %}
             {% enddisclosure %}
-            <div class="equality-sides">
-                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.izquierda titulo="Lado izquierdo" identificador="lado-izquierdo" %}
-                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.derecha titulo="Lado derecho" identificador="lado-derecho" %}
-            </div>
-            <section class="panel panel-final" aria-labelledby="final-title">
-                <h3 id="final-title" class="panel-title equality-verdict equality-verdict-{{ resultado.veredicto }}">{{ resultado.titulo }}</h3>
-                <p class="equality-message">{{ resultado.mensaje }}</p>
-            </section>
         {% else %}
             <header class="results-heading">
-                <p class="section-kicker">{% if resultado.parcial %}Subexpresión{% else %}Expresión{% endif %} · {{ resultado.dimensiones }}</p>
+                <p class="section-kicker">{% if resultado.parcial %}Subexpresión{% else %}Expresión{% endif %} · {{ resultado.tipo_texto }}</p>
                 <h2 id="results-title">{{ resultado.texto }}</h2>
             </header>
             {% include "calculadora/components/numeric_format.html" %}
-            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos texto=resultado.texto %}
-            {% enddisclosure %}
             <section class="panel panel-final" aria-labelledby="final-title">
                 <h3 id="final-title" class="panel-title">Resultado</h3>
                 <div class="matrix-equation">
@@ -112,6 +122,9 @@
                     {% endif %}
                 </div>
             </section>
+            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos texto=resultado.texto %}
+            {% enddisclosure %}
         {% endif %}
     </section>
     {% endnumeric_results %}

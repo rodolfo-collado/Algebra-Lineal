@@ -281,7 +281,7 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
     def test_las_cuadriculas_dejan_alt_flechas_al_historial(self):
         compartido = (STATIC / "entradas.js").read_text(encoding="utf-8")
         self.assertIn("event.altKey", compartido)
-        for nombre in ("matriz.js", "vectores.js", "ecuaciones.js", "expresiones.js", "inversa.js"):
+        for nombre in ("matriz.js", "ecuaciones.js", "expresiones.js", "inversa.js"):
             with self.subTest(script=nombre):
                 self.assertIn("window.entradasSeguras.flechaDeCelda(event)", (STATIC / nombre).read_text(encoding="utf-8"))
 

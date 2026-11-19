@@ -196,7 +196,7 @@ class PruebasConversionWeb(SimpleTestCase):
                 self.assertFalse(procedimiento["open"])
                 self.assertEqual(procedimiento["encabezado"], "h3")
                 self.assertEqual(len(estructura.details), 1)
-                self.assertLess(estructura.indice("details", id="procedimiento"), estructura.indice("panel-final"))
+                self.assertLess(estructura.indice("panel-final"), estructura.indice("details", id="procedimiento"))
 
     def test_procedimiento_decimal_a_romano_agrupado(self):
         texto = procedimiento_de(self.convertir("decimal_a_romano", "1963"))
