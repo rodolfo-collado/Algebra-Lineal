@@ -86,8 +86,11 @@ P26.5 sitúa **Reducción por filas** en **Álgebra lineal → Matrices**, con I
 `reduccion-filas`, ruta `/matrices/reduccion/` y nombre Django
 `calculadora:reduccion-filas`. La categoría pública Sistemas de ecuaciones se
 retira del registro; Inicio, menú, buscador y breadcrumbs cambian juntos.
-Matrices ordena sus herramientas así: Operaciones con matrices, Reducción por
-filas, Resolver Ax = b, Matriz inversa y Determinantes. Desde P26.6, Operaciones con matrices
+Álgebra lineal tiene una sola categoría, Matrices, con sus herramientas en este
+orden: Operaciones (también vectores y escalares), Sistemas lineales (Ax = b),
+Reducción por filas, Matriz inversa y Determinantes. Raíces de ecuaciones tiene
+Métodos cerrados (Bisección y Regla falsa, alias de ruta `calculadora:regla-falsa`)
+y Métodos abiertos (Newton-Raphson y Secante). Desde P26.6, Operaciones con matrices
 usa el motor de expresiones para operaciones simples y compuestas; la ruta
 `/matrices/expresiones/` solo redirige (GET 301, POST 308) y no es una
 herramienta del catálogo.

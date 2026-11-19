@@ -23,26 +23,24 @@ manualmente con Python estándar. Una vez instalado, funciona sin Internet.
 
 ## Capacidades
 
-### Vectores
+### Álgebra lineal
 
-- Suma, resta y multiplicación por escalar, con desarrollo componente a componente.
-- Combinación lineal: comprobación y cálculo de sus coeficientes.
-
-### Matrices
-
-- **Operaciones con matrices:** suma, resta, escalar, traspuesta, productos
-  `AB` y `Ax`, expresiones combinadas e igualdades. También determina una matriz
-  desconocida en `Ax = b` con un vector simbólico.
+- **Operaciones:** matrices, vectores y escalares en una expresión que usa solo los
+  operandos escritos: suma, resta, escalar, traspuesta, productos `AB` y `Ax`,
+  expresiones combinadas e igualdades, con ejemplos de un clic. `x1 u + x2 v = b`
+  comprueba si b es combinación lineal y halla sus coeficientes. También determina
+  una matriz desconocida en `Ax = b` con un vector simbólico.
 - **Reducción por filas:** Gauss, Gauss-Jordan o comparación de ambos, desde
   ecuaciones o una matriz aumentada; muestra pivotes, variables libres y solución.
-- **Resolver Ax = b:** encuentra x con A y b conocidos, también para matrices
+- **Sistemas lineales (Ax = b):** clasifica el sistema y encuentra x con A y b conocidos, también para matrices
   rectangulares, y explica la relación con el sistema lineal. Para A cuadrada
   ofrece LU y Regla de Cramer, con un método elegible para sus determinantes.
-- **Matriz inversa:** Gauss-Jordan o regla directa para 2×2; explica cuándo no
-  existe y permite verificar `A·A⁻¹ = I` y `A⁻¹·A = I`.
+- **Matriz inversa:** Gauss-Jordan o regla directa para 2×2; dice primero si A es
+  invertible, explica cuándo no existe y verifica `A·A⁻¹ = I` y `A⁻¹·A = I`
+  calculando ambos productos entrada por entrada.
 - **Propiedades y aplicación de la inversa:** `(A⁻¹)⁻¹ = A`,
   `(AB)⁻¹ = B⁻¹A⁻¹`, `(Aᵀ)⁻¹ = (A⁻¹)ᵀ` y `x = A⁻¹b`.
-  Esta aplicación requiere A invertible; **Resolver Ax = b** sigue siendo la
+  Esta aplicación requiere A invertible; **Sistemas lineales (Ax = b)** sigue siendo la
   herramienta general para hallar x.
 
 Consulta [Funcionalidades](docs/funcionalidades.md) y
@@ -58,10 +56,11 @@ Los cálculos largos piden confirmación según el
 
 ### Métodos numéricos
 
-- [Bisección](docs/biseccion.md) manual con gráfica interactiva offline, recorrido
-  reproducible de iteraciones e historial de intervalos. Precisión predeterminada `0.0001`.
-- [Regla falsa](docs/regla-falsa.md) con secantes, error absoluto aproximado y
-  confirmación de cercanía por signos. Comparte la exploración y el teclado con Bisección.
+- **Métodos cerrados:** [Bisección](docs/biseccion.md) manual (parada por longitud
+  del intervalo, con error absoluto aproximado |cᵢ − cᵢ₋₁|) y [Regla falsa](docs/regla-falsa.md)
+  con secantes y confirmación de cercanía por signos, en una sola herramienta con gráfica
+  interactiva offline, recorrido reproducible e historial. Precisión predeterminada `0.0001`.
+- **Métodos abiertos:** [Newton-Raphson](docs/newton-raphson.md) y [Secante](docs/secante.md).
 
 ### Conjuntos
 

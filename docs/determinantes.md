@@ -341,7 +341,7 @@ La adaptación común está en `presentar_determinante(calculo, nombre="det(A)")
 Recibe evidencia existente, formatea los pasos y permite nombrar el
 determinante D o Dᵢ. `calcular_determinante_web` la usa y añade la transferencia
 a Matriz inversa, que solo pertenece a esta vista. **Regla de Cramer** en
-[Resolver Ax = b](funcionalidades.md#resolver-ax--b) también la usa: calcula D
+[Sistemas lineales (Ax = b)](funcionalidades.md#sistemas-lineales-ax--b) también la usa: calcula D
 y cada Dᵢ con este motor y embebe `_procedimiento.html` en disclosures anidados,
 sin volver a ejecutar ni reconstruir los algoritmos. Cramer resuelve Ax=b;
 no es otro método para calcular det(A). Todos sus determinantes usan el mismo
