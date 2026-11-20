@@ -1,6 +1,7 @@
 """Interfaz interactiva de PyGebra para terminales de celdas Unicode."""
 
 from pathlib import Path
+import re
 
 from rich.text import Text
 from textual import on
@@ -12,11 +13,13 @@ from textual.theme import Theme
 from textual.widgets import Collapsible, DataTable, Input, Static, TextArea
 
 from .adaptador import Tabla, ejecutar, procedimiento
-from .dialogos import Campo, DIALOGOS
+from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra, validar_cantidad_matricial
+from .dialogos import Campo, DIALOGOS, ErrorEntrada
 
 from .navegacion import Navegacion
 
 
+_DIALOGOS = {**DIALOGOS, **DIALOGOS_ALGEBRA}
 _BLOQUES = (
     "████  █   █  ████  █████  ████   ████    ███ ",
     "█   █  █ █   █      █      █   █  █   █  █   █",
@@ -105,6 +108,7 @@ class PyGebra(App):
         self.debugging = False
         self.decimal = "."
         self.comando = None
+        self._campos = ()
         self.datos = {}
         self.paso = 0
         self.seleccion = set()
@@ -195,7 +199,9 @@ class PyGebra(App):
     def cambio_comando(self, evento):
         if self.comando is None and evento.value != "/":
             self.navegacion.indice = 0
-        self.actualizar_menu()
+            self.actualizar_menu()
+        elif self.comando is None:
+            self.actualizar_menu()
 
     def action_mover_menu(self, salto):
         if self.comando is not None:
@@ -278,20 +284,24 @@ class PyGebra(App):
                 self.abrir_herramienta(comando)
 
     def abrir_herramienta(self, comando, datos=None):
-        if comando.id not in DIALOGOS:
+        if comando.id not in _DIALOGOS:
             self.avisar("Esta herramienta aún se está integrando.")
             return
         self.comando = comando
         self.datos = dict(datos or {})
+        self.recalcular_campos()
         self.paso = 0
         self.mostrar_paso()
 
     def campos(self):
         if self.confirmacion:
-            return (Campo("confirmacion", self.confirmacion.mensaje, (
+            return (Campo("confirmacion", self.confirmacion["mensaje"], (
                 ("continuar", "Continuar"), ("cancelar", "Volver a los datos"),
-            ), "cancelar", self.confirmacion.tiempo),)
-        return DIALOGOS[self.comando.id](self.datos)
+            ), "cancelar", self.confirmacion.get("tiempo", "")),)
+        return self._campos
+
+    def recalcular_campos(self):
+        self._campos = _DIALOGOS[self.comando.id](self.datos)
 
     def campo_actual(self):
         return self.campos()[self.paso]
@@ -392,35 +402,52 @@ class PyGebra(App):
             if valor == "cancelar":
                 self.action_paso_anterior()
                 return
-            firma = self.confirmacion.firma
+            firma = self.confirmacion["firma"]
             self.confirmacion = None
             self.paso = len(self.campos()) - 1
             self.resolver(firma)
             return
+        if self.comando.id == "operaciones-matrices" and campo.id == "cantidad":
+            try:
+                valor = validar_cantidad_matricial(valor)
+            except ErrorEntrada as error:
+                self.avisar(str(error))
+                return
         self.datos[campo.id] = valor
+        self.recalcular_campos()
         if self.paso + 1 < len(self.campos()):
             self.paso += 1
             self.mostrar_paso()
         else:
             self.resolver()
 
+    def revisar(self, mensaje, nombres):
+        ids = [campo.id for campo in self.campos()]
+        pasos = [ids.index(n) for n in nombres if n in ids]
+        self.paso = min(pasos, default=self.paso)
+        self.mostrar_paso()
+        self.avisar(mensaje)
+
     def resolver(self, firma=None):
-        datos = dict(self.datos)
-        if firma is not None:
-            datos["confirmacion"] = firma
+        herramienta = self.comando.id
+        datos = {c.id: self.datos[c.id] for c in self.campos() if c.id in self.datos}
         try:
-            respuesta, archivos = ejecutar(self.comando.id, datos, self.debugging)
+            if herramienta in DIALOGOS_ALGEBRA:
+                datos = preparar_algebra(herramienta, datos, self.decimal)
+            if firma is not None:
+                datos["confirmacion"] = firma
+            respuesta, archivos = ejecutar(herramienta, datos, self.debugging)
+        except ErrorEntrada as error:
+            self.revisar(str(error), (error.campo,))
+            return
         except ValueError as error:
             self.avisar(str(error))
             return
         contexto = respuesta.context_data
         form = contexto["form"]
         if form.errors:
-            nombres = [campo.id for campo in self.campos()]
-            pasos = [nombres.index(n) for n in form.errors if n in nombres]
-            self.paso = min(pasos, default=self.paso)
-            self.mostrar_paso()
-            self.avisar(" ".join(str(m) for errores in form.errors.values() for m in errores))
+            mensaje = " ".join(str(m) for errores in form.errors.values() for m in errores)
+            self.revisar(mensaje, (campo_de_error(n) for n in form.errors))
             return
         if confirmacion := contexto.get("confirmacion"):
             self.confirmacion = confirmacion
@@ -431,9 +458,19 @@ class PyGebra(App):
         if not bloques:
             self.avisar("Revisa los datos del ejercicio y vuelve a confirmar.")
             return
+        if self.decimal == ",":
+            bloques = tuple(self._con_coma(b) for b in bloques)
         self.guardar_ejercicio(bloques, archivos)
         self.action_cerrar_menu()
         self.estado("Ejercicio resuelto · / para otro · F4 para repetir")
+
+    @staticmethod
+    def _con_coma(bloque):
+        sustituir = lambda texto: re.sub(r"(?<=[0-9])\.(?=[0-9])", ",", texto)
+        if isinstance(bloque, Tabla):
+            return Tabla(bloque.titulo, bloque.columnas,
+                         tuple(tuple(map(sustituir, f)) for f in bloque.filas))
+        return sustituir(bloque)
 
     def guardar_ejercicio(self, bloques, archivos):
         self.ultimo_ejercicio = (self.comando, dict(self.datos))

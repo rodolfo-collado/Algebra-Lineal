@@ -8,6 +8,12 @@ from frontend.web.calculadora.forms import ConversionBasesForm
 from frontend.web.calculadora.forms_romanos import ConversionRomanosForm
 
 
+class ErrorEntrada(ValueError):
+    def __init__(self, campo, mensaje):
+        super().__init__(mensaje)
+        self.campo = campo
+
+
 @dataclass(frozen=True)
 class Campo:
     id: str
