@@ -3,6 +3,8 @@
 import re
 import sqlite3
 
+from rich.cells import cell_len
+from rich.style import Style
 from rich.text import Text
 from textual import on, work
 from textual.app import App, ComposeResult
@@ -17,7 +19,7 @@ from frontend.web.calculadora.teclados import (
     PERFIL_NUMERICO, PERFIL_REGIONES_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, PERFIL_SISTEMA,
 )
 
-from .adaptador import Tabla, ejecutar, procedimiento
+from .adaptador import Linea, Tabla, ejecutar, procedimiento
 from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra, validar_cantidad_matricial
 from .conjuntos import (
     DIALOGOS_CONJUNTOS, GraficaConjuntos, cardinalidad, preparar_conjuntos, relaciones,
@@ -27,6 +29,7 @@ from .componentes import EntradaComando, Ficha, Paleta
 from .dialogos import Campo, DIALOGOS, ErrorEntrada
 
 from .graficas import Grafica
+from .marca import logotipo
 from .historial import Ejercicio, Historial
 from .navegacion import HERRAMIENTAS, Navegacion
 from .raices import DIALOGOS_RAICES, _CAMPOS_VISTA, curva, mensaje_previsualizacion, preparar_raices
@@ -39,16 +42,6 @@ _DIALOGOS = {
 }
 _VISUALES = set(DIALOGOS_RAICES) | DIALOGOS_CONJUNTOS
 _ERRORES_DISCO = (OSError, ValueError, KeyError, sqlite3.Error)
-_LETRAS = (
-    ("####.", "#####", "##.##", "####.", "##...", "##...", "##..."),
-    ("##.##", "##.##", ".###.", ".###.", "..#..", "..#..", "..#.."),
-    (".####", "#####", "##...", "##.##", "##.##", "#####", ".####"),
-    ("#####", "#####", "##...", "####.", "##...", "#####", "#####"),
-    ("####.", "#####", "##.##", "####.", "##.##", "#####", "####."),
-    ("####.", "#####", "##.##", "####.", "##.##", "##.##", "##.##"),
-    (".###.", "#####", "##.##", "#####", "##.##", "##.##", "##.##"),
-)
-_COLORES = ("#c9a6f4", "#bcaef1", "#a9c5ef", "#8edfec", "#92ded9", "#9ee2c3", "#ace6a5")
 
 
 class PyGebra(App):
@@ -61,6 +54,7 @@ class PyGebra(App):
         Binding("f3", "paso_anterior", show=False),
         Binding("f4", "repetir", show=False),
         Binding("f6", "simbolos", show=False, priority=True),
+        Binding("f7", "cambiar_panel", show=False, priority=True),
         Binding("space", "alternar_casilla", show=False, priority=True),
     ]
 
@@ -100,17 +94,22 @@ class PyGebra(App):
             with VerticalScroll(id="resultados", can_focus=True):
                 yield Grafica(id="grafica-viva")
                 yield GraficaConjuntos(id="diagrama-vivo")
-                yield Static("Historial", classes="titulo")
+                yield Static("Historial", id="titulo-historial", classes="titulo")
                 yield Static("Los ejercicios resueltos aparecerán aquí.", id="vacio", markup=False)
             with Container(id="chat"):
                 yield Static(id="migas", markup=False)
-                yield Static("Escribe / para elegir una herramienta.", id="pregunta", markup=False)
-                yield Static(id="respuestas", markup=False, classes="vacio")
-                yield Static(id="ayuda", markup=False, classes="vacio")
-                yield Static(id="menu", markup=False)
-                yield EntradaComando(placeholder="Escribe /", id="entrada")
-                yield TextArea(id="editor", show_line_numbers=False)
-                yield Static(id="aviso", markup=False)
+                yield Static(id="espacio-chat")
+                with VerticalScroll(id="conversacion", can_focus=False):
+                    yield Static(id="respuestas", markup=False, classes="vacio")
+                    yield Static(id="paso", markup=False, classes="vacio")
+                    yield Static("Escribe / para elegir una herramienta.", id="pregunta", markup=False)
+                    yield Static(id="ayuda", markup=False, classes="vacio")
+                with Container(id="redaccion"):
+                    yield Static(id="menu", markup=False)
+                    yield Static(id="detalle-menu", markup=False, classes="vacio")
+                    yield EntradaComando(placeholder="Escribe /", id="entrada")
+                    yield TextArea(id="editor", show_line_numbers=False)
+                    yield Static(id="aviso", markup=False)
         yield Static(id="teclas", markup=False)
 
     @property
@@ -145,25 +144,51 @@ class PyGebra(App):
         ancho, alto = size
         pantalla = self.query_one("#cuerpo").screen
         pantalla.set_class(ancho >= 96 and ancho >= 2.65 * alto, "ancha")
-        pantalla.set_class(alto < 24 or ancho < 51, "marca-breve")
-        pantalla.set_class(alto < 27, "corta")
-        marca = Text(justify="center")
-        colores = (_COLORES if self.theme == "pygebra" else
-                   ("#69458a", "#615182", "#395d8c", "#00606e", "#166756", "#22664a", "#205e38"))
-        if alto < 24 or ancho < 51:
-            for letra, color in zip("PYGEBRA", colores):
-                marca.append(letra, f"bold {color}")
-        else:
-            for fila in range(0, 8, 2):
-                if fila:
-                    marca.append("\n")
-                for letra, color in zip(_LETRAS, colores):
-                    superior = letra[fila]
-                    inferior = letra[fila + 1] if fila + 1 < len(letra) else "....."
-                    bloque = "".join(" ▄▀█"[2 * (a == "#") + (b == "#")]
-                                     for a, b in zip(superior, inferior))
-                    marca.append(bloque + "  ", color)
-        self.query_one("#marca", Static).update(marca)
+        if pantalla.has_class("ancha"):
+            pantalla.remove_class("lectura")
+        pantalla.set_class(alto < 32, "corta")
+        pantalla.set_class(alto < 23, "muy-corta")
+        self.query_one("#marca", Static).update(logotipo(ancho, alto, claro=self.theme == "pygebra-claro"))
+        self.call_after_refresh(self.actualizar_menu)
+
+    def _lista_opciones(self, opciones, seleccion, *, comandos=False):
+        """Mantiene la selección visible al recorrer listas más altas que el chat."""
+        menu = self.query_one("#menu", Static)
+        ancho = max(1, menu.content_size.width or (
+            self.size.width // 3 - 10 if self.screen.has_class("ancha") else self.size.width - 9
+        ))
+        maximo = 6 if self.screen.has_class("ancha") else 4 if self.size.height >= 32 else 3
+        inicio = min(max(0, seleccion - maximo + 1), max(0, len(opciones) - maximo))
+        tema = self.current_theme
+        activa = Style(color=tema.background if self.theme == "pygebra" else "#ffffff",
+                       bgcolor=tema.secondary, bold=True)
+        texto = Text()
+        for indice, opcion in enumerate(opciones[inicio:inicio + maximo], inicio):
+            if indice > inicio:
+                texto.append("\n")
+            elegida = indice == seleccion
+            if comandos:
+                etiqueta = "/" + opcion.id
+            else:
+                clave, etiqueta = opcion
+                if self.campo_actual().multiple:
+                    etiqueta = ("✓  " if clave in self.seleccion else "○  ") + etiqueta
+            linea = Text(("▌  " if elegida else "   ") + etiqueta)
+            linea.truncate(ancho, overflow="ellipsis")
+            if elegida:
+                linea.pad_right(max(0, ancho - cell_len(linea.plain)))
+                linea.stylize(activa)
+            texto.append(linea)
+        return texto
+
+    def _ruta_chat(self, ruta):
+        tema = self.current_theme
+        linea = Text()
+        for indice, parte in enumerate(ruta):
+            if indice:
+                linea.append("  ›  ", tema.primary)
+            linea.append(parte, f"bold {tema.secondary}" if indice == len(ruta) - 1 else "")
+        self.query_one("#migas", Static).update(linea)
 
     def actualizar_menu(self):
         if self.comando is not None:
@@ -173,19 +198,14 @@ class PyGebra(App):
         opciones = nav.opciones(self.entrada.value) if self.entrada.value.startswith("/") else ()
         menu = self.query_one("#menu", Static)
         menu.display = self.entrada.value.startswith("/")
-        texto = Text()
-        inicio = max(0, nav.indice - 5)
-        for indice, opcion in enumerate(opciones[inicio:inicio + 6], inicio):
-            if indice > inicio:
-                texto.append("\n")
-            seleccionada = indice == nav.indice
-            texto.append(("› " if seleccionada else "  ") + "/" + opcion.id,
-                         "bold reverse" if seleccionada else "")
-        menu.update(texto if opciones else "Sin coincidencias")
-        self.query_one("#migas", Static).update(" › ".join(c.titulo for c in nav.ruta))
+        menu.update(self._lista_opciones(opciones, nav.indice, comandos=True) if opciones else "Sin coincidencias")
+        descripcion = opciones[nav.indice].titulo if opciones and nav.indice < len(opciones) else ""
+        self.detalle_chat("#detalle-menu", descripcion)
+        ruta = ("Chat",) if len(nav.ruta) == 1 else ("Chat", *(c.titulo for c in nav.ruta[1:]))
+        self._ruta_chat(ruta)
         teclas = ("↑↓ Elegir · ← Atrás · → Volver · Enter Abrir" if menu.display
-                  else "/ Menú · Tab Cambiar foco · F4 Repetir · Ctrl+Q Salir")
-        self.query_one("#teclas", Static).update(teclas)
+                  else "/ Menú · F4 Repetir · Ctrl+Q Salir")
+        self.mostrar_teclas(teclas)
 
     @on(Input.Changed, "#entrada")
     def cambio_comando(self, evento):
@@ -220,6 +240,7 @@ class PyGebra(App):
             self.actualizar_menu()
 
     def action_cerrar_menu(self):
+        self.screen.remove_class("lectura")
         self._calculo += 1
         self._resolviendo = False
         self._revision_grafica += 1
@@ -230,7 +251,9 @@ class PyGebra(App):
         self.navegacion.reiniciar()
         self.query_one("#editor").display = False
         self.detalle_chat("#respuestas", "")
+        self.detalle_chat("#paso", "")
         self.detalle_chat("#ayuda", "")
+        self.detalle_chat("#detalle-menu", "")
         self.entrada.display = True
         self.entrada.placeholder = "Escribe /"
         self.entrada.focus()
@@ -325,18 +348,27 @@ class PyGebra(App):
         claves = [clave for clave, _ in campo.opciones]
         self.seleccion = set(valor) if campo.multiple else set()
         self.navegacion.indice = claves.index(valor) if valor in claves else 0
-        self.query_one("#migas", Static).update(f"Resolver › {self.comando.titulo}")
-        respuestas = []
-        for previo in campos[:self.paso][-3:]:
+        self._ruta_chat(("Resolver", self.comando.titulo))
+        anteriores = campos[:self.paso][-3:]
+        respuestas = Text()
+        for previo in anteriores:
             escrito = self.datos.get(previo.id, "")
             etiquetas = dict(previo.opciones)
             texto = (", ".join(etiquetas.get(v, v) for v in escrito) if previo.multiple
                      else etiquetas.get(escrito, escrito))
             resumen = " ".join(texto.split())
-            respuestas.append(f"› {previo.titulo} · {resumen[:90]}")
-        self.detalle_chat("#respuestas", "\n".join(respuestas))
-        self.estado(f"{campo.titulo}  ·  {self.paso + 1}/{len(campos)}")
+            if not resumen:
+                continue
+            if respuestas:
+                respuestas.append("\n\n" if self.screen.has_class("ancha") else "\n")
+            respuestas.append("✓  ", self.current_theme.accent)
+            respuestas.append(previo.titulo + "   ", "dim")
+            respuestas.append(resumen[:90], f"bold {self.current_theme.primary}")
+        self.detalle_chat("#respuestas", respuestas)
+        self.detalle_chat("#paso", f"Paso {self.paso + 1} de {len(campos)}")
+        self.estado(campo.titulo)
         self.detalle_chat("#ayuda", campo.ayuda)
+        self.call_after_refresh(self.query_one("#conversacion", VerticalScroll).scroll_end, animate=False)
         self.entrada.display = not campo.multilinea
         self.entrada.placeholder = "Enter para confirmar" if campo.opciones else "Escribe tu respuesta"
         self.entrada.value = "" if campo.opciones else valor
@@ -411,30 +443,46 @@ class PyGebra(App):
             self.programar_grafica()
 
     def mostrar_teclas(self, texto):
-        self.query_one("#teclas", Static).update(texto)
+        if "F7 " not in texto:
+            texto = "F7 Panel · " + texto
+        leyenda = Text()
+        for tramo in texto.split(" · "):
+            if leyenda:
+                leyenda.append("   ·   ", "dim")
+            tecla, _, significado = tramo.partition(" ")
+            leyenda.append(f"[{tecla}]", f"bold {self.current_theme.primary}")
+            leyenda.append(f" {significado}" if significado else "")
+        self.query_one("#teclas", Static).update(leyenda)
+
+    def action_cambiar_panel(self):
+        resultados = self.query_one("#resultados", VerticalScroll)
+        foco = self.focused
+        if foco is resultados or (foco is not None and resultados in foco.ancestors):
+            self.screen.remove_class("lectura")
+            entrada = self.entrada if self.entrada.display else self.query_one("#editor", TextArea)
+            entrada.focus()
+            self.actualizar_menu()
+        else:
+            self.screen.set_class(not self.screen.has_class("ancha"), "lectura")
+            resultados.focus(scroll_visible=False)
+            self.mostrar_teclas("F7 Chat · ↑↓ Desplazar · RePág/AvPág Página")
 
     def actualizar_opciones(self):
         campo = self.campo_actual()
         menu = self.query_one("#menu", Static)
         menu.display = bool(campo.opciones)
-        seleccionada = self.navegacion.indice
-        inicio = max(0, seleccionada - 4)
-        texto = Text()
-        for indice, (clave, etiqueta) in enumerate(campo.opciones[inicio:inicio + 5], inicio):
-            if indice > inicio:
-                texto.append("\n")
-            prefijo = ("[x] " if clave in self.seleccion else "[ ] ") if campo.multiple else ""
-            texto.append(("› " if indice == seleccionada else "  ") + prefijo + etiqueta,
-                         "bold reverse" if indice == seleccionada else "")
-        menu.update(texto)
+        menu.update(self._lista_opciones(campo.opciones, self.navegacion.indice))
+        self.detalle_chat("#detalle-menu", "")
         teclas = ("F2 Confirmar · Enter Nueva línea" if campo.multilinea else
                   "↑↓ Elegir · Espacio Marcar · Enter Confirmar" if campo.multiple else
                   "↑↓ Elegir · Enter Confirmar" if campo.opciones else "Enter Confirmar")
         if not campo.opciones:
             teclas += " · F6 Símbolos"
-        self.mostrar_teclas(teclas + " · F3 Atrás · Esc Cancelar · Tab Cambiar foco")
+        self.mostrar_teclas(teclas + " · F3 Atrás · Esc Cancelar")
 
     def check_action(self, action, parameters):
+        if action == "cambiar_panel":
+            return not isinstance(self.screen, Paleta)
         if action == "simbolos":
             return (self.comando is not None and not self._resolviendo and not self.campo_actual().opciones
                     and isinstance(self.focused, (EntradaComando, TextArea)))
@@ -649,7 +697,7 @@ class PyGebra(App):
         if isinstance(bloque, Tabla):
             return Tabla(bloque.titulo, bloque.columnas,
                          tuple(tuple(map(sustituir, f)) for f in bloque.filas))
-        return sustituir(bloque)
+        return Linea(sustituir(bloque), bloque.estilo) if isinstance(bloque, Linea) else sustituir(bloque)
 
     def guardar_ejercicio(self, bloques, archivos, grafica):
         datos = self.datos_activos()
@@ -682,7 +730,7 @@ class PyGebra(App):
     def avisar(self, mensaje):
         aviso = self.query_one("#aviso", Static)
         aviso.display = bool(mensaje)
-        aviso.update(mensaje)
+        aviso.update(Text.assemble(("!  ", "bold"), mensaje) if mensaje else "")
 
     def estado(self, mensaje):
         self.query_one("#pregunta", Static).update(mensaje)

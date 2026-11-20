@@ -172,3 +172,32 @@ class ConsolaInteractivaTests(unittest.IsolatedAsyncioTestCase):
             await teclas.pause()
             self.assertIsNotNone(app.ultimo_ejercicio)
             self.assertIn("Elige extremos", str(app.query_one("#aviso").content))
+
+    async def test_chat_esta_abajo_del_panel_ancho_y_f7_conserva_el_borrador(self):
+        app = PyGebra(self.historial)
+        async with app.run_test(size=(145, 39)) as teclas:
+            app.abrir_herramienta(HERRAMIENTAS["conversion-romanos"])
+            await teclas.press("enter")
+            app.entrada.value = "XL"
+            await teclas.pause()
+            chat = app.query_one("#chat")
+            self.assertGreater(app.entrada.region.y, chat.region.y + chat.region.height // 2)
+            await teclas.press("f7")
+            self.assertEqual(app.focused.id, "resultados")
+            await teclas.press("f7")
+            self.assertIs(app.focused, app.entrada)
+            self.assertEqual(app.entrada.value, "XL")
+            await teclas.resize_terminal(65, 38)
+            await teclas.pause()
+            self.assertGreaterEqual(chat.region.y, app.query_one("#resultados").region.bottom)
+            self.assertLessEqual(app.entrada.region.bottom, chat.region.bottom)
+
+            app.abrir_herramienta(HERRAMIENTAS["determinantes"])
+            editor = app.query_one("#editor", TextArea)
+            editor.load_text("1 2\n3 4")
+            await teclas.press("f7")
+            self.assertEqual(app.focused.id, "resultados")
+            self.assertTrue(app.screen.has_class("lectura"))
+            await teclas.press("f7")
+            self.assertIs(app.focused, editor)
+            self.assertEqual(editor.text, "1 2\n3 4")

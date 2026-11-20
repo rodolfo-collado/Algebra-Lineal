@@ -76,8 +76,10 @@ uv run --locked python main.py
 La consola funciona localmente. Escribe `/` para abrir el menú y entra en
 `/resolver` para elegir Álgebra lineal, Sistemas numéricos, Métodos numéricos
 o Conjuntos. Al ensanchar la ventana, el chat pasa a la derecha. En ventanas
-estrechas queda fijo debajo del historial. El espaciado compacto es el
-predeterminado. Usa el zoom de tu terminal para cambiar el tamaño de letra.
+estrechas queda fijo debajo del historial. En el panel de resultados, el valor
+final, el procedimiento y las advertencias se distinguen por su encabezado y
+color. El espaciado compacto es el predeterminado. Usa el zoom de tu terminal
+para cambiar el tamaño de letra.
 
 | Tecla | Acción |
 | --- | --- |
@@ -87,9 +89,18 @@ predeterminado. Usa el zoom de tu terminal para cambiar el tamaño de letra.
 | `Espacio` | Marcar o desmarcar una casilla. En una gráfica de raíces enfocada, reproducir las iteraciones. |
 | `F2` | Confirmar una entrada de varias líneas. `Enter` añade una línea. |
 | `F3`, `F4`, `F6` | Volver a la pregunta anterior, repetir el último ejercicio o insertar un símbolo matemático. |
-| `Tab`, `Mayús+Tab` | Cambiar el foco entre controles y paneles. |
+| `F7` | Pasar del chat a los resultados o volver al borrador. En una ventana estrecha, amplía el espacio de lectura. |
+| `RePág`, `AvPág` | Desplazar los resultados por páginas cuando el panel tiene el foco. |
+| `Tab`, `Mayús+Tab` | Cambiar el foco entre controles. |
 | `Ctrl+C`, `Ctrl+R`, `Ctrl+T` | Copiar la celda, la fila o la tabla completa en una tabla enfocada. |
 | `Esc`, `Ctrl+Q` | Cerrar el menú o ejercicio activo, o salir de PyGebra. |
+
+Las gráficas de raíces muestran los ejes, su escala y los puntos iniciales
+del método. Si se detecta un cambio de signo entre muestras del mismo tramo,
+la gráfica marca el corte aproximado y muestra los extremos que puedes
+probar como intervalo. La consola dibuja la imagen de Matplotlib dentro de
+los emuladores que admiten gráficos compatibles y usa una vista de texto con
+escala numérica en el resto.
 
 Para pegar en PyGebra puedes usar `Ctrl+V` con el portapapeles interno o el
 atajo de pegado de tu terminal para datos de otra aplicación. Las matrices
