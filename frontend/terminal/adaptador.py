@@ -16,7 +16,7 @@ _BLOQUES = frozenset({
     "article", "div", "footer", "h2", "h3", "h4", "h5", "header", "li", "p", "section", "summary",
 })
 _VACIOS = frozenset({"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "wbr"})
-_OMITIDOS = frozenset({"button", "script", "style", "svg", "form", "select", "label", "output", "template"})
+_OMITIDOS = frozenset({"button", "script", "style", "svg", "form", "select", "label", "output", "template", "noscript"})
 _OMITIR_IDS = frozenset({"raices-reproductor", "iteracion-lectura", "lectura-titulo", "raices-grafica"})
 
 
@@ -51,13 +51,14 @@ class ProcedimientoHTML(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attr = dict(attrs)
         if not self._activa:
-            self._activa = attr.get("id") == self.id_resultado
+            self._activa = self.id_resultado in (attr.get("id"), attr.get("aria-labelledby"))
             if not self._activa:
                 return
         clase = attr.get("class", "").split()
         oculto = (
             tag in _OMITIDOS or "sr-only" in clase or "hidden" in attr
-            or attr.get("id") in _OMITIR_IDS or (bool(self._pila) and self._pila[-1][1])
+            or attr.get("id") in _OMITIR_IDS or "raices-lienzo" in clase
+            or (bool(self._pila) and self._pila[-1][1])
         )
         if tag not in _VACIOS:
             self._pila.append((tag, oculto))

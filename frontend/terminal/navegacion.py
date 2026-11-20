@@ -38,6 +38,9 @@ RAIZ = Comando("", "PyGebra", (
 ))
 
 
+HERRAMIENTAS = {opcion.id: opcion for area in RAIZ.hijos[0].hijos for opcion in area.hijos}
+
+
 class Navegacion:
     def __init__(self):
         self.ruta = [RAIZ]

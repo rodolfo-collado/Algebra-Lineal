@@ -70,9 +70,12 @@ Screen {
 .ejercicio Contents { padding: 0 1; }
 .holgada .ejercicio { margin-bottom: 1; }
 .holgada .ejercicio Static { margin-bottom: 1; }
+.corta #respuestas { display: none; }
+.veredicto { color: $accent; text-style: bold; }
 .etiqueta { color: $primary; }
 TablaInteractiva { margin: 0; }
 
 Grafica { height: auto; padding: 0; color: $primary; text-wrap: nowrap; }
 Grafica:focus { background: $surface; }
 GraficaConjuntos { height: auto; }
+ArchivosBackend { height: auto; max-height: 10; padding: 0; }

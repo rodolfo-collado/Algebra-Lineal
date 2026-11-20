@@ -50,7 +50,7 @@ def _bases(datos):
     inicial = ("10",) if origen == "2" else ("2",)
     return (
         campo(form, "base_origen"),
-        campo(form, "numero", ayuda="Puedes incluir un signo − para los negativos."),
+        campo(form, "numero", ayuda="Puedes incluir un signo - para los negativos."),
         campo(form, "bases_destino", omitir=(origen,), inicial=inicial),
     )
 

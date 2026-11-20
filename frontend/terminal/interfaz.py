@@ -1,7 +1,10 @@
 """Interfaz interactiva de PyGebra para terminales de celdas Unicode."""
 
+import os
 from pathlib import Path
 import re
+import sqlite3
+import subprocess
 
 from rich.text import Text
 from textual import on, work
@@ -10,7 +13,7 @@ from textual.binding import Binding
 from textual.containers import Container, VerticalScroll
 from textual.events import Resize
 from textual.theme import Theme
-from textual.widgets import Collapsible, DataTable, Input, Static, TextArea
+from textual.widgets import Collapsible, DataTable, Input, OptionList, Static, TextArea
 
 from .adaptador import Tabla, ejecutar, procedimiento
 from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra, validar_cantidad_matricial
@@ -21,7 +24,8 @@ from .conjuntos import (
 from .dialogos import Campo, DIALOGOS, ErrorEntrada
 
 from .graficas import Grafica
-from .navegacion import Navegacion
+from .historial import Ejercicio, Historial
+from .navegacion import HERRAMIENTAS, Navegacion
 from .raices import DIALOGOS_RAICES, _CAMPOS_VISTA, curva, mensaje_previsualizacion, preparar_raices
 
 
@@ -30,6 +34,8 @@ _DIALOGOS = {
     "relaciones-conjuntos": relaciones,
     "cardinalidad-conjuntos": cardinalidad,
 }
+_VISUALES = set(DIALOGOS_RAICES) | DIALOGOS_CONJUNTOS
+_ERRORES_DISCO = (OSError, ValueError, KeyError, sqlite3.Error)
 _BLOQUES = (
     "████  █   █  ████  █████  ████   ████    ███ ",
     "█   █  █ █   █      █      █   █  █   █  █   █",
@@ -71,9 +77,10 @@ class TablaInteractiva(DataTable):
         self.tabla = tabla
 
     def on_mount(self):
-        ancho = max(len(self.tabla.columnas), *(len(f) for f in self.tabla.filas))
+        ancho = max(len(self.tabla.columnas), max(map(len, self.tabla.filas)))
         columnas = (*self.tabla.columnas, *("" for _ in range(ancho - len(self.tabla.columnas))))
-        self.add_columns(*columnas)
+        # Los encabezados e identificadores pueden contener corchetes matemáticos.
+        self.add_columns(*map(Text, columnas))
         for fila in self.tabla.filas:
             self.add_row(*map(Text, fila), *("" for _ in range(ancho - len(fila))))
         self.styles.height = min(10, len(self.tabla.filas) + bool(self.tabla.columnas) + 1)
@@ -100,6 +107,82 @@ class TablaInteractiva(DataTable):
         self.app.actualizar_menu()
 
 
+class ArchivosBackend(OptionList):
+    BINDINGS = [Binding("ctrl+c", "copiar_ruta", show=False)]
+
+    def __init__(self, archivos):
+        super().__init__(*(
+            Text(archivo, style=f"underline link {Path(archivo).as_uri()}") for archivo in archivos
+        ), markup=False)
+        self.archivos = archivos
+
+    def action_copiar_ruta(self):
+        if self.highlighted is not None:
+            self.app.copy_to_clipboard(self.archivos[self.highlighted])
+            self.app.notify("Ruta copiada")
+
+    @on(OptionList.OptionSelected)
+    def mostrar_archivo(self, evento):
+        ruta = Path(self.archivos[evento.option_index])
+        try:
+            if os.name == "nt":
+                subprocess.Popen(["explorer", "/select,", str(ruta)])
+            else:
+                subprocess.Popen(["xdg-open", str(ruta.parent)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except OSError:
+            self.app.notify("Usa Ctrl+C para copiar la ruta.")
+
+    def on_focus(self):
+        self.app.mostrar_teclas("↑↓ Elegir archivo · Enter Mostrar carpeta · Ctrl+C Copiar ruta")
+
+    def on_blur(self):
+        self.app.actualizar_menu()
+
+
+class Ficha(Collapsible):
+    def __init__(self, registro, **kwargs):
+        self.registro = registro
+        self.cargada = False
+        super().__init__(title=registro.titulo, classes="ejercicio", **kwargs)
+
+    async def cargar(self):
+        if self.cargada:
+            return
+        self.cargada = True
+        widgets = []
+        bloques = self.registro.bloques
+        grafica = self.registro.grafica
+        if grafica is not None:
+            if self.registro.comando in DIALOGOS_CONJUNTOS:
+                widgets.append(GraficaConjuntos(grafica))
+            else:
+                if len(bloques) >= 2 and all(isinstance(b, str) for b in bloques[:2]):
+                    widgets.append(Static("\n".join(bloques[:2]), classes="veredicto", markup=False))
+                    bloques = bloques[2:]
+                widgets.append(Grafica(grafica))
+        lineas = []
+        for bloque in bloques:
+            if isinstance(bloque, Tabla):
+                if lineas:
+                    widgets.append(Static("\n".join(lineas), markup=False))
+                    lineas.clear()
+                if bloque.titulo:
+                    widgets.append(Static(bloque.titulo, classes="etiqueta", markup=False))
+                widgets.append(TablaInteractiva(bloque))
+            else:
+                lineas.append(bloque)
+        if lineas:
+            widgets.append(Static("\n".join(lineas), markup=False))
+        if self.registro.archivos:
+            widgets.append(Collapsible(ArchivosBackend(self.registro.archivos), title="Archivos del backend"))
+        await self.query_one("Contents").mount(*widgets)
+
+    @on(Collapsible.Expanded)
+    async def cargar_al_abrir(self, evento):
+        if evento.collapsible is self:
+            await self.cargar()
+
+
 class PyGebra(App):
     TITLE = "PyGebra"
     CSS_PATH = "interfaz.tcss"
@@ -112,8 +195,9 @@ class PyGebra(App):
         Binding("space", "alternar_casilla", show=False, priority=True),
     ]
 
-    def __init__(self):
+    def __init__(self, historial=None):
         super().__init__()
+        self.historial = historial if historial is not None else Historial()
         self.navegacion = Navegacion()
         self.debugging = False
         self.decimal = "."
@@ -127,6 +211,8 @@ class PyGebra(App):
         self.ultimo_resultado = None
         self._reloj_grafica = None
         self._revision_grafica = 0
+        self._calculo = 0
+        self._resolviendo = False
         self.register_theme(Theme(
             name="pygebra", primary="#8edfec", secondary="#c9a6f4", accent="#ace6a5",
             foreground="#d8d6ed", background="#12121c", surface="#181824",
@@ -162,7 +248,22 @@ class PyGebra(App):
     def entrada(self):
         return self.query_one("#entrada", EntradaComando)
 
-    def on_mount(self):
+    async def on_mount(self):
+        try:
+            historico, ajustes = self.historial.abrir()
+        except _ERRORES_DISCO:
+            self.notify("El historial local no se pudo leer.", severity="warning")
+        else:
+            self.theme = "pygebra-claro" if ajustes.get("tema") == "pygebra-claro" else "pygebra"
+            self.decimal = "," if ajustes.get("decimal") == "," else "."
+            self.screen.set_class(ajustes.get("densidad") == "holgada", "holgada")
+            self.debugging = ajustes.get("debugging") == "si"
+            if historico:
+                fichas = [Ficha(e) for e in historico]
+                await self.query_one("#resultados").mount(*fichas)
+                self.ultimo_resultado = fichas[-1]
+                self.ultimo_ejercicio = historico[-1]
+                self.query_one("#vacio").display = False
         self.adaptar(self.size)
         self.entrada.focus()
         self.actualizar_menu()
@@ -175,16 +276,19 @@ class PyGebra(App):
         ancho, alto = size
         self.screen.set_class(ancho >= 96 and ancho >= 2.65 * alto, "ancha")
         self.screen.set_class(alto < 24 or ancho < 51, "marca-breve")
+        self.screen.set_class(alto < 27, "corta")
         marca = Text(justify="center")
+        colores = (_COLORES if self.theme == "pygebra" else
+                   ("#69458a", "#615182", "#395d8c", "#00606e", "#166756", "#22664a", "#205e38"))
         if alto < 24 or ancho < 51:
-            for letra, color in zip("PYGEBRA", _COLORES):
+            for letra, color in zip("PYGEBRA", colores):
                 marca.append(letra, f"bold {color}")
         else:
             for indice, linea in enumerate(_BLOQUES):
                 if indice:
                     marca.append("\n")
                 for columna, caracter in enumerate(linea):
-                    marca.append(caracter, _COLORES[min(6, columna * 7 // len(linea))])
+                    marca.append(caracter, colores[min(6, columna * 7 // len(linea))])
         self.query_one("#marca", Static).update(marca)
 
     def actualizar_menu(self):
@@ -242,6 +346,8 @@ class PyGebra(App):
             self.actualizar_menu()
 
     def action_cerrar_menu(self):
+        self._calculo += 1
+        self._resolviendo = False
         self._revision_grafica += 1
         self.query_one("#grafica-viva", Grafica).mostrar(None)
         self.query_one("#diagrama-vivo", GraficaConjuntos).mostrar(None)
@@ -291,26 +397,34 @@ class PyGebra(App):
                     self.ultimo_resultado.query_one("CollapsibleTitle").focus()
             case "debugging":
                 self.debugging = not self.debugging
+                self.guardar_preferencia("debugging", "si" if self.debugging else "")
                 self.estado(f"Depuración {'activada' if self.debugging else 'desactivada'}.")
             case "tema":
                 self.theme = "pygebra-claro" if self.theme == "pygebra" else "pygebra"
+                self.guardar_preferencia("tema", self.theme)
+                self.adaptar(self.size)
                 for grafica in self.query("Grafica, GraficaConjuntos"):
                     grafica.pintar()
             case "convencion-decimal":
                 self.decimal = "," if self.decimal == "." else "."
+                self.guardar_preferencia("decimal", self.decimal)
                 self.estado(f"Separador decimal seleccionado: {self.decimal}")
                 for grafica in self.query("Grafica, GraficaConjuntos"):
                     grafica.pintar()
             case "densidad":
                 espacio = self.screen.toggle_class("holgada").has_class("holgada")
+                self.guardar_preferencia("densidad", "holgada" if espacio else "compacta")
                 self.estado("Espaciado holgado." if espacio else "Espaciado compacto.")
             case _:
                 self.abrir_herramienta(comando)
 
+    def guardar_preferencia(self, clave, valor):
+        try:
+            self.historial.preferencia(clave, valor)
+        except _ERRORES_DISCO:
+            self.notify("El ajuste solo se aplicó a esta sesión.", severity="warning")
+
     def abrir_herramienta(self, comando, datos=None):
-        if comando.id not in _DIALOGOS:
-            self.avisar("Esta herramienta aún se está integrando.")
-            return
         self.comando = comando
         self.datos = dict(datos or {})
         self.recalcular_campos()
@@ -361,7 +475,7 @@ class PyGebra(App):
         else:
             self.entrada.focus()
         self.actualizar_opciones()
-        if self.comando.id in set(DIALOGOS_RAICES) | DIALOGOS_CONJUNTOS:
+        if self.comando.id in _VISUALES:
             self.programar_grafica()
 
     def programar_grafica(self):
@@ -462,7 +576,7 @@ class PyGebra(App):
             self.enviar_respuesta(editor.text)
 
     def action_paso_anterior(self):
-        if self.comando is None:
+        if self.comando is None or self._resolviendo:
             return
         self.avisar("")
         if self.confirmacion:
@@ -474,9 +588,13 @@ class PyGebra(App):
 
     def action_repetir(self):
         if self.comando is None and self.ultimo_ejercicio:
-            self.abrir_herramienta(*self.ultimo_ejercicio)
+            ultimo = self.ultimo_ejercicio
+            if ultimo.comando in HERRAMIENTAS:
+                self.abrir_herramienta(HERRAMIENTAS[ultimo.comando], ultimo.datos)
 
     def enviar_respuesta(self, texto):
+        if self._resolviendo:
+            return
         campo = self.campo_actual()
         if campo.multiple:
             valor = tuple(clave for clave, _ in campo.opciones if clave in self.seleccion)
@@ -521,57 +639,78 @@ class PyGebra(App):
         return {c.id: self.datos[c.id] for c in self.campos() if c.id in self.datos}
 
     def resolver(self, firma=None):
-        herramienta = self.comando.id
-        datos = self.datos_activos()
+        self._calculo += 1
+        self._resolviendo = True
+        self._revision_grafica += 1
+        self.estado("Calculando…")
+        self.procesar(self._calculo, self.comando.id, self.datos_activos(), self.decimal, self.debugging, firma)
+
+    @work(thread=True, group="calculo")
+    def procesar(self, version, herramienta, datos, decimal, depurar, firma):
         try:
+            entrada = datos
             if herramienta in DIALOGOS_ALGEBRA:
-                datos = preparar_algebra(herramienta, datos, self.decimal)
+                entrada = preparar_algebra(herramienta, datos, decimal)
             elif herramienta in DIALOGOS_RAICES:
-                datos = preparar_raices(datos, self.decimal)
+                entrada = preparar_raices(datos, decimal)
             if firma is not None:
-                datos["confirmacion"] = firma
+                entrada["confirmacion"] = firma
             if herramienta in DIALOGOS_CONJUNTOS:
-                entrada = preparar_conjuntos(herramienta, datos, self.decimal)
-                respuesta, archivos = resolver_conjuntos(herramienta, entrada, self.debugging,
+                entrada = preparar_conjuntos(herramienta, datos, decimal)
+                respuesta, archivos = resolver_conjuntos(herramienta, entrada, depurar,
                                                         azar=datos.get("@modo") == "azar")
             else:
-                respuesta, archivos = ejecutar(herramienta, datos, self.debugging)
+                respuesta, archivos = ejecutar(herramienta, entrada, depurar)
         except ErrorEntrada as error:
-            self.revisar(str(error), (error.campo,))
+            self.call_from_thread(self.recibir_calculo, version, str(error), (error.campo,))
             return
-        except ValueError as error:
-            self.avisar(str(error))
+        except (ValueError, ArithmeticError) as error:
+            self.call_from_thread(self.recibir_calculo, version, str(error))
             return
+
         contexto = respuesta.context_data
         form = contexto["form"]
         if form.errors:
             mensaje = " ".join(str(m) for errores in form.errors.values() for m in errores)
-            nombres = ("@definiciones" if n.startswith(("nombre_", "contenido_")) and herramienta == "relaciones-conjuntos"
-                       else campo_de_error(n) for n in form.errors)
-            self.revisar(mensaje, nombres)
+            nombres = tuple("@definiciones" if n.startswith(("nombre_", "contenido_")) and herramienta == "relaciones-conjuntos"
+                            else campo_de_error(n) for n in form.errors)
+            self.call_from_thread(self.recibir_calculo, version, mensaje, nombres)
             return
         if confirmacion := contexto.get("confirmacion"):
-            self.confirmacion = confirmacion
-            self.paso = 0
-            self.mostrar_paso()
+            self.call_from_thread(self.recibir_calculo, version, confirmacion=confirmacion)
             return
+
         bloques = procedimiento(respuesta)
-        if not bloques:
-            self.avisar("Revisa los datos del ejercicio y vuelve a confirmar.")
-            return
-        if self.decimal == ",":
-            bloques = tuple(self._con_coma(b) for b in bloques)
         grafica = None
         if herramienta in DIALOGOS_RAICES:
             try:
-                grafica = curva(herramienta, datos, contexto["resultado"])
+                grafica = curva(herramienta, entrada, contexto["resultado"])
             except (ValueError, ArithmeticError):
-                grafica = self.query_one("#grafica-viva", Grafica).curva
+                pass
         elif herramienta in DIALOGOS_CONJUNTOS:
             grafica = representacion(contexto)
-        self.guardar_ejercicio(bloques, archivos, grafica)
-        self.action_cerrar_menu()
-        self.estado("Ejercicio resuelto · / para otro · F4 para repetir")
+            if herramienta == "relaciones-conjuntos" and (contexto.get("diagrama") or {}).get("panorama"):
+                bloques += procedimiento(respuesta, "panorama-titulo")
+        if decimal == ",":
+            bloques = tuple(self._con_coma(b) for b in bloques)
+        self.call_from_thread(self.recibir_calculo, version, bloques=bloques, archivos=archivos, grafica=grafica)
+
+    def recibir_calculo(self, version, mensaje="", nombres=(), *, confirmacion=None, bloques=(), archivos=(), grafica=None):
+        if version != self._calculo or self.comando is None:
+            return
+        self._resolviendo = False
+        if mensaje:
+            self.revisar(mensaje, nombres)
+        elif confirmacion:
+            self.confirmacion = confirmacion
+            self.paso = 0
+            self.mostrar_paso()
+        elif bloques:
+            self.guardar_ejercicio(bloques, archivos, grafica)
+            self.action_cerrar_menu()
+            self.estado("Ejercicio resuelto · / para otro · F4 para repetir")
+        else:
+            self.revisar("Revisa los datos del ejercicio y vuelve a confirmar.", ())
 
     @staticmethod
     def _con_coma(bloque):
@@ -581,40 +720,27 @@ class PyGebra(App):
                          tuple(tuple(map(sustituir, f)) for f in bloque.filas))
         return sustituir(bloque)
 
-    def guardar_ejercicio(self, bloques, archivos, grafica=None):
-        self.ultimo_ejercicio = (self.comando, dict(self.datos))
-        widgets = []
-        if grafica is not None:
-            widgets.append(GraficaConjuntos(grafica) if self.comando.id in DIALOGOS_CONJUNTOS else Grafica(grafica))
-        lineas = []
-        for bloque in bloques:
-            if isinstance(bloque, Tabla):
-                if lineas:
-                    widgets.append(Static("\n".join(lineas), markup=False))
-                    lineas.clear()
-                if bloque.titulo:
-                    widgets.append(Static(bloque.titulo, classes="etiqueta", markup=False))
-                widgets.append(TablaInteractiva(bloque))
-            else:
-                lineas.append(bloque)
-        if lineas:
-            widgets.append(Static("\n".join(lineas), markup=False))
-        if archivos:
-            enlaces = Text()
-            for archivo in archivos:
-                if enlaces:
-                    enlaces.append("\n")
-                enlaces.append(archivo, f"underline link {Path(archivo).as_uri()}")
-            widgets.append(Collapsible(Static(enlaces, markup=False), title="Archivos del backend"))
+    def guardar_ejercicio(self, bloques, archivos, grafica):
+        datos = self.datos_activos()
+        entrada = next((datos[k] for k in ("funcion", "expresion", "sistema", "numero", "@A", "@matriz")
+                        if datos.get(k)), "")
+        resumen = " ".join(entrada.split())
+        if not resumen:
+            resumen = next((b for b in bloques if isinstance(b, str) and b != self.comando.titulo), "")
+        titulo = " · ".join(t for t in (self.comando.titulo, resumen[:75]) if t)
+        registro = Ejercicio(self.comando.id, titulo, datos, bloques, archivos, grafica)
+        self.ultimo_ejercicio = registro
+        try:
+            self.historial.agregar(registro)
+        except _ERRORES_DISCO:
+            self.notify("El ejercicio solo quedó guardado en esta sesión.", severity="warning")
         if self.ultimo_resultado is not None:
             self.ultimo_resultado.collapsed = True
-        titulo = self.comando.titulo
-        if isinstance(bloques[0], str) and bloques[0] != titulo:
-            titulo += " · " + bloques[0][:100]
-        ejercicio = Collapsible(*widgets, title=titulo, collapsed=False, classes="ejercicio")
+        ejercicio = Ficha(registro, collapsed=False)
         self.ultimo_resultado = ejercicio
         self.query_one("#vacio").display = False
         self.query_one("#resultados").mount(ejercicio)
+        self.call_after_refresh(ejercicio.cargar)
         self.call_after_refresh(ejercicio.scroll_visible, top=True)
 
     def avisar(self, mensaje):
