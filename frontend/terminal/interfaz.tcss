@@ -55,3 +55,20 @@ Screen {
     color: $foreground 75%;
     text-wrap: nowrap;
 }
+
+#respuestas { color: $foreground 70%; height: auto; }
+#ayuda { color: $foreground 80%; height: auto; }
+#editor {
+    display: none;
+    height: 5;
+    border: none;
+    padding: 0 1;
+    background: $panel;
+}
+#editor:focus { border: none; }
+.ejercicio { padding: 0; margin: 0; }
+.ejercicio Contents { padding: 0 1; }
+.holgada .ejercicio { margin-bottom: 1; }
+.holgada .ejercicio Static { margin-bottom: 1; }
+.etiqueta { color: $primary; }
+TablaInteractiva { margin: 0; }
