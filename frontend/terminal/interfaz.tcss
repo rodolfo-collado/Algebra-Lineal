@@ -75,3 +75,4 @@ TablaInteractiva { margin: 0; }
 
 Grafica { height: auto; padding: 0; color: $primary; text-wrap: nowrap; }
 Grafica:focus { background: $surface; }
+GraficaConjuntos { height: auto; }

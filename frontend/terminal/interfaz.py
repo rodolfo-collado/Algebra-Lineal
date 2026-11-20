@@ -14,6 +14,10 @@ from textual.widgets import Collapsible, DataTable, Input, Static, TextArea
 
 from .adaptador import Tabla, ejecutar, procedimiento
 from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra, validar_cantidad_matricial
+from .conjuntos import (
+    DIALOGOS_CONJUNTOS, GraficaConjuntos, cardinalidad, preparar_conjuntos, relaciones,
+    representacion, resolver_conjuntos,
+)
 from .dialogos import Campo, DIALOGOS, ErrorEntrada
 
 from .graficas import Grafica
@@ -21,7 +25,11 @@ from .navegacion import Navegacion
 from .raices import DIALOGOS_RAICES, _CAMPOS_VISTA, curva, mensaje_previsualizacion, preparar_raices
 
 
-_DIALOGOS = {**DIALOGOS, **DIALOGOS_ALGEBRA, **DIALOGOS_RAICES}
+_DIALOGOS = {
+    **DIALOGOS, **DIALOGOS_ALGEBRA, **DIALOGOS_RAICES,
+    "relaciones-conjuntos": relaciones,
+    "cardinalidad-conjuntos": cardinalidad,
+}
 _BLOQUES = (
     "████  █   █  ████  █████  ████   ████    ███ ",
     "█   █  █ █   █      █      █   █  █   █  █   █",
@@ -136,6 +144,7 @@ class PyGebra(App):
         with Container(id="cuerpo"):
             with VerticalScroll(id="resultados", can_focus=True):
                 yield Grafica(id="grafica-viva")
+                yield GraficaConjuntos(id="diagrama-vivo")
                 yield Static("Historial", classes="titulo")
                 yield Static("Los ejercicios resueltos aparecerán aquí.", id="vacio", markup=False)
             with Container(id="chat"):
@@ -208,6 +217,8 @@ class PyGebra(App):
             self.actualizar_menu()
         elif self.comando.id in DIALOGOS_RAICES and self.campo_actual().id in _CAMPOS_VISTA:
             self.programar_grafica()
+        elif self.comando.id in DIALOGOS_CONJUNTOS and self.campo_actual().id in {"expresion", "punto"}:
+            self.programar_grafica()
 
     def action_mover_menu(self, salto):
         if self.comando is not None:
@@ -233,6 +244,7 @@ class PyGebra(App):
     def action_cerrar_menu(self):
         self._revision_grafica += 1
         self.query_one("#grafica-viva", Grafica).mostrar(None)
+        self.query_one("#diagrama-vivo", GraficaConjuntos).mostrar(None)
         self.comando = None
         self.confirmacion = None
         self.navegacion.reiniciar()
@@ -282,12 +294,12 @@ class PyGebra(App):
                 self.estado(f"Depuración {'activada' if self.debugging else 'desactivada'}.")
             case "tema":
                 self.theme = "pygebra-claro" if self.theme == "pygebra" else "pygebra"
-                for grafica in self.query(Grafica):
+                for grafica in self.query("Grafica, GraficaConjuntos"):
                     grafica.pintar()
             case "convencion-decimal":
                 self.decimal = "," if self.decimal == "." else "."
                 self.estado(f"Separador decimal seleccionado: {self.decimal}")
-                for grafica in self.query(Grafica):
+                for grafica in self.query("Grafica, GraficaConjuntos"):
                     grafica.pintar()
             case "densidad":
                 espacio = self.screen.toggle_class("holgada").has_class("holgada")
@@ -349,7 +361,7 @@ class PyGebra(App):
         else:
             self.entrada.focus()
         self.actualizar_opciones()
-        if self.comando.id in DIALOGOS_RAICES:
+        if self.comando.id in set(DIALOGOS_RAICES) | DIALOGOS_CONJUNTOS:
             self.programar_grafica()
 
     def programar_grafica(self):
@@ -358,31 +370,57 @@ class PyGebra(App):
         if self._reloj_grafica is not None:
             self._reloj_grafica.stop()
         herramienta = self.comando.id
-        datos = dict(self.datos)
+        datos = self.datos_activos()
         clave = self.campo_actual().id
-        if clave in _CAMPOS_VISTA:
-            datos[clave] = self.entrada.value
-        datos = preparar_raices(datos, self.decimal)
-        self._reloj_grafica = self.set_timer(.15, lambda: self.calcular_previsualizacion(revision, herramienta, datos))
+        if clave in _CAMPOS_VISTA | {"punto", "expresion"} and not self.campo_actual().opciones:
+            dato = self.query_one("#editor", TextArea).text if self.campo_actual().multilinea else self.entrada.value
+            datos[clave] = dato
+        if herramienta in DIALOGOS_CONJUNTOS and (not datos.get("expresion") or datos.get("@modo") == "azar"):
+            return
+        decimal = self.decimal
+        self._reloj_grafica = self.set_timer(.15, lambda: self.calcular_previsualizacion(
+            revision, herramienta, datos, decimal,
+        ))
 
     @work(thread=True, exclusive=True)
-    def calcular_previsualizacion(self, revision, herramienta, datos):
+    def calcular_previsualizacion(self, revision, herramienta, datos, decimal):
+        es_raiz = herramienta in DIALOGOS_RAICES
+        aviso = ""
         try:
-            vista = curva(herramienta, datos)
-            aviso = ""
+            if es_raiz:
+                vista = curva(herramienta, preparar_raices(datos, decimal))
+            else:
+                entrada = preparar_conjuntos(herramienta, datos, decimal)
+                respuesta, _ = resolver_conjuntos(herramienta, entrada, False)
+                form = respuesta.context_data["form"]
+                aviso = " ".join(str(m) for errores in form.errors.values() for m in errores)
+                vista = representacion(respuesta.context_data) if not aviso else None
         except (ValueError, ArithmeticError) as error:
             vista = None
-            aviso = mensaje_previsualizacion(error, datos.get("funcion", ""))
+            aviso = mensaje_previsualizacion(error, datos.get("funcion", "")) if es_raiz else str(error)
         self.call_from_thread(self.aplicar_previsualizacion, revision, vista, aviso)
 
     def aplicar_previsualizacion(self, revision, vista, aviso):
         if revision != self._revision_grafica or self.comando is None:
             return
-        grafica = self.query_one("#grafica-viva", Grafica)
+        if self.comando.id in DIALOGOS_RAICES:
+            grafica = self.query_one("#grafica-viva", Grafica)
+            anterior = grafica.curva
+        else:
+            grafica = self.query_one("#diagrama-vivo", GraficaConjuntos)
+            anterior = grafica.vista
         if vista is not None:
             grafica.mostrar(vista)
-        if self.campo_actual().id in _CAMPOS_VISTA:
-            self.avisar(aviso + (" Se conserva la última gráfica válida." if aviso and grafica.curva else ""))
+            if anterior is None:
+                self.query_one("#resultados", VerticalScroll).scroll_home(animate=False)
+        if self.campo_actual().id in _CAMPOS_VISTA | {"punto", "expresion"}:
+            self.avisar(aviso + (" Se conserva la última gráfica válida." if aviso and anterior else ""))
+
+    @on(TextArea.Changed, "#editor")
+    def cambio_multilinea(self):
+        if (self.comando and self.comando.id in DIALOGOS_CONJUNTOS
+                and self.campo_actual().id == "expresion"):
+            self.programar_grafica()
 
     def mostrar_teclas(self, texto):
         self.query_one("#teclas", Static).update(texto)
@@ -462,6 +500,8 @@ class PyGebra(App):
             except ErrorEntrada as error:
                 self.avisar(str(error))
                 return
+        if campo.id in {"@plantilla", "@ejemplo"} and self.datos.get(campo.id) != valor:
+            self.datos.pop("expresion", None)
         self.datos[campo.id] = valor
         self.recalcular_campos()
         if self.paso + 1 < len(self.campos()):
@@ -477,9 +517,12 @@ class PyGebra(App):
         self.mostrar_paso()
         self.avisar(mensaje)
 
+    def datos_activos(self):
+        return {c.id: self.datos[c.id] for c in self.campos() if c.id in self.datos}
+
     def resolver(self, firma=None):
         herramienta = self.comando.id
-        datos = {c.id: self.datos[c.id] for c in self.campos() if c.id in self.datos}
+        datos = self.datos_activos()
         try:
             if herramienta in DIALOGOS_ALGEBRA:
                 datos = preparar_algebra(herramienta, datos, self.decimal)
@@ -487,7 +530,12 @@ class PyGebra(App):
                 datos = preparar_raices(datos, self.decimal)
             if firma is not None:
                 datos["confirmacion"] = firma
-            respuesta, archivos = ejecutar(herramienta, datos, self.debugging)
+            if herramienta in DIALOGOS_CONJUNTOS:
+                entrada = preparar_conjuntos(herramienta, datos, self.decimal)
+                respuesta, archivos = resolver_conjuntos(herramienta, entrada, self.debugging,
+                                                        azar=datos.get("@modo") == "azar")
+            else:
+                respuesta, archivos = ejecutar(herramienta, datos, self.debugging)
         except ErrorEntrada as error:
             self.revisar(str(error), (error.campo,))
             return
@@ -498,7 +546,9 @@ class PyGebra(App):
         form = contexto["form"]
         if form.errors:
             mensaje = " ".join(str(m) for errores in form.errors.values() for m in errores)
-            self.revisar(mensaje, (campo_de_error(n) for n in form.errors))
+            nombres = ("@definiciones" if n.startswith(("nombre_", "contenido_")) and herramienta == "relaciones-conjuntos"
+                       else campo_de_error(n) for n in form.errors)
+            self.revisar(mensaje, nombres)
             return
         if confirmacion := contexto.get("confirmacion"):
             self.confirmacion = confirmacion
@@ -517,6 +567,8 @@ class PyGebra(App):
                 grafica = curva(herramienta, datos, contexto["resultado"])
             except (ValueError, ArithmeticError):
                 grafica = self.query_one("#grafica-viva", Grafica).curva
+        elif herramienta in DIALOGOS_CONJUNTOS:
+            grafica = representacion(contexto)
         self.guardar_ejercicio(bloques, archivos, grafica)
         self.action_cerrar_menu()
         self.estado("Ejercicio resuelto · / para otro · F4 para repetir")
@@ -531,7 +583,9 @@ class PyGebra(App):
 
     def guardar_ejercicio(self, bloques, archivos, grafica=None):
         self.ultimo_ejercicio = (self.comando, dict(self.datos))
-        widgets = [Grafica(grafica)] if grafica is not None else []
+        widgets = []
+        if grafica is not None:
+            widgets.append(GraficaConjuntos(grafica) if self.comando.id in DIALOGOS_CONJUNTOS else Grafica(grafica))
         lineas = []
         for bloque in bloques:
             if isinstance(bloque, Tabla):
