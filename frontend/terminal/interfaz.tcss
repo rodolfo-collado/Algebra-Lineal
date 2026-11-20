@@ -72,3 +72,6 @@ Screen {
 .holgada .ejercicio Static { margin-bottom: 1; }
 .etiqueta { color: $primary; }
 TablaInteractiva { margin: 0; }
+
+Grafica { height: auto; padding: 0; color: $primary; text-wrap: nowrap; }
+Grafica:focus { background: $surface; }

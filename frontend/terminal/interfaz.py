@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 from rich.text import Text
-from textual import on
+from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, VerticalScroll
@@ -16,10 +16,12 @@ from .adaptador import Tabla, ejecutar, procedimiento
 from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra, validar_cantidad_matricial
 from .dialogos import Campo, DIALOGOS, ErrorEntrada
 
+from .graficas import Grafica
 from .navegacion import Navegacion
+from .raices import DIALOGOS_RAICES, _CAMPOS_VISTA, curva, mensaje_previsualizacion, preparar_raices
 
 
-_DIALOGOS = {**DIALOGOS, **DIALOGOS_ALGEBRA}
+_DIALOGOS = {**DIALOGOS, **DIALOGOS_ALGEBRA, **DIALOGOS_RAICES}
 _BLOQUES = (
     "████  █   █  ████  █████  ████   ████    ███ ",
     "█   █  █ █   █      █      █   █  █   █  █   █",
@@ -115,6 +117,8 @@ class PyGebra(App):
         self.confirmacion = None
         self.ultimo_ejercicio = None
         self.ultimo_resultado = None
+        self._reloj_grafica = None
+        self._revision_grafica = 0
         self.register_theme(Theme(
             name="pygebra", primary="#8edfec", secondary="#c9a6f4", accent="#ace6a5",
             foreground="#d8d6ed", background="#12121c", surface="#181824",
@@ -131,6 +135,7 @@ class PyGebra(App):
         yield Static(id="marca", markup=False)
         with Container(id="cuerpo"):
             with VerticalScroll(id="resultados", can_focus=True):
+                yield Grafica(id="grafica-viva")
                 yield Static("Historial", classes="titulo")
                 yield Static("Los ejercicios resueltos aparecerán aquí.", id="vacio", markup=False)
             with Container(id="chat"):
@@ -197,11 +202,12 @@ class PyGebra(App):
 
     @on(Input.Changed, "#entrada")
     def cambio_comando(self, evento):
-        if self.comando is None and evento.value != "/":
-            self.navegacion.indice = 0
+        if self.comando is None:
+            if evento.value != "/":
+                self.navegacion.indice = 0
             self.actualizar_menu()
-        elif self.comando is None:
-            self.actualizar_menu()
+        elif self.comando.id in DIALOGOS_RAICES and self.campo_actual().id in _CAMPOS_VISTA:
+            self.programar_grafica()
 
     def action_mover_menu(self, salto):
         if self.comando is not None:
@@ -225,6 +231,8 @@ class PyGebra(App):
             self.actualizar_menu()
 
     def action_cerrar_menu(self):
+        self._revision_grafica += 1
+        self.query_one("#grafica-viva", Grafica).mostrar(None)
         self.comando = None
         self.confirmacion = None
         self.navegacion.reiniciar()
@@ -274,9 +282,13 @@ class PyGebra(App):
                 self.estado(f"Depuración {'activada' if self.debugging else 'desactivada'}.")
             case "tema":
                 self.theme = "pygebra-claro" if self.theme == "pygebra" else "pygebra"
+                for grafica in self.query(Grafica):
+                    grafica.pintar()
             case "convencion-decimal":
                 self.decimal = "," if self.decimal == "." else "."
                 self.estado(f"Separador decimal seleccionado: {self.decimal}")
+                for grafica in self.query(Grafica):
+                    grafica.pintar()
             case "densidad":
                 espacio = self.screen.toggle_class("holgada").has_class("holgada")
                 self.estado("Espaciado holgado." if espacio else "Espaciado compacto.")
@@ -337,6 +349,43 @@ class PyGebra(App):
         else:
             self.entrada.focus()
         self.actualizar_opciones()
+        if self.comando.id in DIALOGOS_RAICES:
+            self.programar_grafica()
+
+    def programar_grafica(self):
+        self._revision_grafica += 1
+        revision = self._revision_grafica
+        if self._reloj_grafica is not None:
+            self._reloj_grafica.stop()
+        herramienta = self.comando.id
+        datos = dict(self.datos)
+        clave = self.campo_actual().id
+        if clave in _CAMPOS_VISTA:
+            datos[clave] = self.entrada.value
+        datos = preparar_raices(datos, self.decimal)
+        self._reloj_grafica = self.set_timer(.15, lambda: self.calcular_previsualizacion(revision, herramienta, datos))
+
+    @work(thread=True, exclusive=True)
+    def calcular_previsualizacion(self, revision, herramienta, datos):
+        try:
+            vista = curva(herramienta, datos)
+            aviso = ""
+        except (ValueError, ArithmeticError) as error:
+            vista = None
+            aviso = mensaje_previsualizacion(error, datos.get("funcion", ""))
+        self.call_from_thread(self.aplicar_previsualizacion, revision, vista, aviso)
+
+    def aplicar_previsualizacion(self, revision, vista, aviso):
+        if revision != self._revision_grafica or self.comando is None:
+            return
+        grafica = self.query_one("#grafica-viva", Grafica)
+        if vista is not None:
+            grafica.mostrar(vista)
+        if self.campo_actual().id in _CAMPOS_VISTA:
+            self.avisar(aviso + (" Se conserva la última gráfica válida." if aviso and grafica.curva else ""))
+
+    def mostrar_teclas(self, texto):
+        self.query_one("#teclas", Static).update(texto)
 
     def actualizar_opciones(self):
         campo = self.campo_actual()
@@ -434,6 +483,8 @@ class PyGebra(App):
         try:
             if herramienta in DIALOGOS_ALGEBRA:
                 datos = preparar_algebra(herramienta, datos, self.decimal)
+            elif herramienta in DIALOGOS_RAICES:
+                datos = preparar_raices(datos, self.decimal)
             if firma is not None:
                 datos["confirmacion"] = firma
             respuesta, archivos = ejecutar(herramienta, datos, self.debugging)
@@ -460,7 +511,13 @@ class PyGebra(App):
             return
         if self.decimal == ",":
             bloques = tuple(self._con_coma(b) for b in bloques)
-        self.guardar_ejercicio(bloques, archivos)
+        grafica = None
+        if herramienta in DIALOGOS_RAICES:
+            try:
+                grafica = curva(herramienta, datos, contexto["resultado"])
+            except (ValueError, ArithmeticError):
+                grafica = self.query_one("#grafica-viva", Grafica).curva
+        self.guardar_ejercicio(bloques, archivos, grafica)
         self.action_cerrar_menu()
         self.estado("Ejercicio resuelto · / para otro · F4 para repetir")
 
@@ -472,9 +529,9 @@ class PyGebra(App):
                          tuple(tuple(map(sustituir, f)) for f in bloque.filas))
         return sustituir(bloque)
 
-    def guardar_ejercicio(self, bloques, archivos):
+    def guardar_ejercicio(self, bloques, archivos, grafica=None):
         self.ultimo_ejercicio = (self.comando, dict(self.datos))
-        widgets = []
+        widgets = [Grafica(grafica)] if grafica is not None else []
         lineas = []
         for bloque in bloques:
             if isinstance(bloque, Tabla):
