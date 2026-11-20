@@ -608,9 +608,24 @@ class PyGebra(App):
                 bloques += procedimiento(respuesta, "panorama-titulo")
         if decimal == ",":
             bloques = tuple(self._con_coma(b) for b in bloques)
-        self.call_from_thread(self.recibir_calculo, version, bloques=bloques, archivos=archivos, grafica=grafica)
+        aviso = self.aviso_matematico(contexto.get("resultado"))
+        self.call_from_thread(self.recibir_calculo, version, bloques=bloques, archivos=archivos,
+                              grafica=grafica, aviso=aviso)
 
-    def recibir_calculo(self, version, mensaje="", nombres=(), *, confirmacion=None, bloques=(), archivos=(), grafica=None):
+    @staticmethod
+    def aviso_matematico(resultado):
+        if not isinstance(resultado, dict):
+            return ""
+        if resultado.get("clasificacion") in ("no_aplicable", "sin_convergencia"):
+            return resultado.get("mensaje", "")
+        if resultado.get("aplicable") is False:
+            return resultado.get("motivo", "")
+        if resultado.get("invertible") is False and "explicacion" in resultado:
+            return resultado["explicacion"]
+        return ""
+
+    def recibir_calculo(self, version, mensaje="", nombres=(), *,
+                       confirmacion=None, bloques=(), archivos=(), grafica=None, aviso=""):
         if version != self._calculo or self.comando is None:
             return
         self._resolviendo = False
@@ -623,7 +638,8 @@ class PyGebra(App):
         elif bloques:
             self.guardar_ejercicio(bloques, archivos, grafica)
             self.action_cerrar_menu()
-            self.estado("Ejercicio resuelto · / para otro · F4 para repetir")
+            self.estado("Ejercicio guardado · / para otro · F4 para repetir")
+            self.avisar(aviso)
         else:
             self.revisar("Revisa los datos del ejercicio y vuelve a confirmar.", ())
 

@@ -161,3 +161,14 @@ class ConsolaInteractivaTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("det(A) = -2", " ".join(
                 b for b in app.ultimo_ejercicio.bloques if isinstance(b, str)
             ))
+
+    async def test_metodo_no_aplicable_muestra_un_aviso_bajo_la_entrada(self):
+        app = PyGebra(self.historial)
+        async with app.run_test(size=(122, 35)) as teclas:
+            app.abrir_herramienta(HERRAMIENTAS["biseccion"])
+            app.entrada.value = "1/x"
+            await teclas.press("enter", "-", "1", "enter", "1", "enter", "enter", "enter")
+            await app.workers.wait_for_complete()
+            await teclas.pause()
+            self.assertIsNotNone(app.ultimo_ejercicio)
+            self.assertIn("Elige extremos", str(app.query_one("#aviso").content))
