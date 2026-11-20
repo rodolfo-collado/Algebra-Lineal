@@ -10,7 +10,7 @@ from frontend.web.calculadora.servicios_raices import muestrear
 from frontend.web.calculadora.views_raices import _vista_abierta
 
 from .dialogos import campo
-from .graficas import Curva, PasoGrafico
+from .graficas import Curva, MarcaGrafica, PasoGrafico
 
 
 _FORMULARIOS = {
@@ -36,6 +36,8 @@ def _dialogo(formulario):
 
 DIALOGOS_RAICES = {nombre: _dialogo(form) for nombre, form in _FORMULARIOS.items()}
 _CAMPOS_VISTA = frozenset({"funcion", "a", "b", "x0", "x1"})
+_ETIQUETAS_PUNTO = {"a": "a", "b": "b", "x0": "x₀", "x1": "x₁"}
+_CLAVES_RAIZ = {"biseccion": "c", "regla-falsa": "xr"}
 
 
 def preparar_raices(datos, decimal):
@@ -79,18 +81,35 @@ def curva(herramienta, datos, resultado=None):
         return None
     funcion = FuncionReal(texto)
     pasos = tuple(_paso(herramienta, f) for f in resultado.get("iteraciones", ())) if resultado else ()
-    if herramienta in {"biseccion", "regla-falsa"}:
-        a, b = _punto(datos, "a"), _punto(datos, "b")
-        if a is None and b is None:
-            a, b = -10., 10.
-        elif a is None:
-            a, _ = _vista_abierta(b)
-        elif b is None:
-            _, b = _vista_abierta(a)
+    puntos = {nombre: x for nombre in _ETIQUETAS_PUNTO if (x := _punto(datos, nombre)) is not None}
+    marcas = []
+    for nombre, x in puntos.items():
+        try:
+            y = funcion(x)
+        except (ValueError, ArithmeticError):
+            y = None
+        marcas.append(MarcaGrafica(_ETIQUETAS_PUNTO[nombre], x, y))
+    if resultado and resultado["convergio"]:
+        raiz = resultado.get(_CLAVES_RAIZ.get(herramienta, "x"))
+        if raiz is not None:
+            marcas.append(MarcaGrafica("Raíz", raiz, 0.))
+    if "a" in puntos and "b" in puntos:
+        a, b = puntos["a"], puntos["b"]
+        if a >= b:
+            raise ValueError("El extremo a debe ser menor que b.")
+        if resultado is None and max(abs(a), abs(b)) <= 100 and (
+            any(m.y is None for m in marcas) or (marcas[0].y < 0) == (marcas[1].y < 0)
+        ):
+            a, b = min(a, -10.), max(b, 10.)
+        margen = (b - a) * .08
+        if isfinite(a - margen) and isfinite(b + margen) and isfinite(b - a + 2 * margen):
+            a, b = a - margen, b + margen
     else:
-        puntos = [_punto(datos, n) for n in ("x0", "x1")]
-        puntos.extend(x for paso in pasos for x, _ in paso.puntos)
-        a, b = _vista_abierta(*(tuple(p for p in puntos if p is not None) or (-7.5, 7.5)))
+        abscisas = [*puntos.values(), *(x for paso in pasos for x, _ in paso.puntos)]
+        if herramienta in _CLAVES_RAIZ and abscisas and abs(abscisas[0]) <= 100:
+            a, b = min(-10., abscisas[0]), max(10., abscisas[0])
+        else:
+            a, b = _vista_abierta(*abscisas) if abscisas else (-10., 10.)
     muestras = muestrear(funcion, a, b)
     if all(y is None for y in muestras["y"]):
         raise ValueError("La función no tiene valores reales en la vista. Escribe puntos dentro de su dominio.")
@@ -100,7 +119,7 @@ def curva(herramienta, datos, resultado=None):
             etiqueta += "   f′(x) = " + DerivadaReal(funcion).texto
         except (ValueError, ArithmeticError):
             pass
-    return Curva(etiqueta, tuple(muestras["x"]), tuple(muestras["y"]), pasos)
+    return Curva(etiqueta, tuple(muestras["x"]), tuple(muestras["y"]), pasos, tuple(marcas))
 
 
 def mensaje_previsualizacion(error, texto):

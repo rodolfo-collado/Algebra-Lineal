@@ -7,8 +7,11 @@ requires-python = ">=3.13"
 dependencies = [
     "colorama==0.4.6",
     "django>=6.1.1",
+    "matplotlib>=3.10,<4",
+    "plotext>=5.3,<6",
     "pywebview>=6.2.1",
     "textual>=8,<9",
+    "textual-image[textual]>=0.14,<0.15",
     "waitress>=3.0.2",
 ]
 

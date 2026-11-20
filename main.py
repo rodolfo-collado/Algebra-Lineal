@@ -20,8 +20,10 @@ def main():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
     django.setup()
 
+    from frontend.terminal.graficas import preparar_imagenes
     from frontend.terminal.interfaz import PyGebra
 
+    preparar_imagenes()
     PyGebra().run()
 
 
