@@ -8,9 +8,9 @@ import sqlite3
 
 from platformdirs import user_data_path
 
-from .adaptador import Tabla
+from .adaptador import Linea, Tabla
 from .conjuntos import RepresentacionConjuntos
-from .graficas import Curva, PasoGrafico
+from .graficas import Curva, MarcaGrafica, PasoGrafico
 
 
 @dataclass(frozen=True)
@@ -23,24 +23,33 @@ class Ejercicio:
     grafica: Curva | RepresentacionConjuntos | None = None
 
     def serializar(self):
-        return json.dumps(asdict(self), ensure_ascii=False, separators=(",", ":"))
+        datos = asdict(self)
+        datos["bloques"] = [
+            {"texto": str(b), "estilo": b.estilo} if isinstance(b, Linea) else b for b in datos["bloques"]
+        ]
+        return json.dumps(datos, ensure_ascii=False, separators=(",", ":"))
 
     @classmethod
     def leer(cls, texto):
         datos = json.loads(texto)
-        bloques = tuple(
-            Tabla(b["titulo"], tuple(b["columnas"]), tuple(map(tuple, b["filas"]))) if isinstance(b, dict) else b
-            for b in datos["bloques"]
-        )
+        bloques = tuple(cls._leer_bloque(b) for b in datos["bloques"])
         grafica = datos["grafica"]
         if grafica and "x" in grafica:
-            vista = Curva(grafica["etiqueta"], tuple(grafica["x"]), tuple(grafica["y"]), tuple(
-                PasoGrafico(p["descripcion"], tuple(map(tuple, p["puntos"])), p["segmento"])
-                for p in grafica["pasos"]
-            ))
+            pasos = tuple(PasoGrafico(p["descripcion"], tuple(map(tuple, p["puntos"])), p["segmento"])
+                          for p in grafica["pasos"])
+            marcas = tuple(MarcaGrafica(**marca) for marca in grafica.get("marcas", ()))
+            vista = Curva(grafica["etiqueta"], tuple(grafica["x"]), tuple(grafica["y"]), pasos, marcas)
         else:
             vista = RepresentacionConjuntos(**grafica) if grafica else None
         return cls(datos["comando"], datos["titulo"], datos["datos"], bloques, tuple(datos["archivos"]), vista)
+
+    @staticmethod
+    def _leer_bloque(bloque):
+        if isinstance(bloque, str):
+            return Linea.legada(bloque)
+        if "texto" in bloque:
+            return Linea(bloque["texto"], bloque["estilo"])
+        return Tabla(bloque["titulo"], tuple(bloque["columnas"]), tuple(map(tuple, bloque["filas"])))
 
 
 class Historial:
