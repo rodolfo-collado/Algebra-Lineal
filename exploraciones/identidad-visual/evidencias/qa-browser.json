@@ -1,0 +1,205 @@
+{
+  "environment": "Codex in-app browser",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "checks": [
+    {
+      "check": "patio: sonido apagado al abrir",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: foco en título al navegar",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: suma exacta precalculada",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: foco en procedimiento",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: límite inicial",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: avanzar con Enter",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: límite final",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: formato decimal",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: activar sonido",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: silenciar sonido",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: cambiar ejemplo retira resultado anterior 0",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: resultado de ejemplo 0",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: cambiar ejemplo retira resultado anterior 2",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: resultado de ejemplo 2",
+      "result": "PASS"
+    },
+    {
+      "check": "patio: sin desborde a 1440",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: sonido apagado al abrir",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: foco en título al navegar",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: suma exacta precalculada",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: foco en procedimiento",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: límite inicial",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: avanzar con Enter",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: límite final",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: formato decimal",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: activar sonido",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: silenciar sonido",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: cambiar ejemplo retira resultado anterior 0",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: resultado de ejemplo 0",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: cambiar ejemplo retira resultado anterior 2",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: resultado de ejemplo 2",
+      "result": "PASS"
+    },
+    {
+      "check": "trama: sin desborde a 1440",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: sonido apagado al abrir",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: foco en título al navegar",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: suma exacta precalculada",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: foco en procedimiento",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: límite inicial",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: avanzar con Enter",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: límite final",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: formato decimal",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: activar sonido",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: silenciar sonido",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: cambiar ejemplo retira resultado anterior 0",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: resultado de ejemplo 0",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: cambiar ejemplo retira resultado anterior 2",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: resultado de ejemplo 2",
+      "result": "PASS"
+    },
+    {
+      "check": "prisma: sin desborde a 1440",
+      "result": "PASS"
+    },
+    {
+      "check": "teclado: Tab desde título llega a la entrada",
+      "result": "PASS"
+    },
+    {
+      "check": "teclado: Tab desde título llega al buscador",
+      "result": "PASS"
+    },
+    {
+      "check": "búsqueda: estado vacío con siguiente acción",
+      "result": "PASS"
+    },
+    {
+      "check": "teclado: expandir procedimiento con espacio",
+      "result": "PASS"
+    }
+  ]
+}
