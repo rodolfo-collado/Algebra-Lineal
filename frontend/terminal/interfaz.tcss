@@ -1,0 +1,57 @@
+Screen {
+    background: $background;
+    color: $foreground;
+}
+
+#marca {
+    width: 1fr;
+    height: 6;
+    content-align: center middle;
+}
+.marca-breve #marca { height: 1; }
+
+#cuerpo {
+    height: 1fr;
+    layout: vertical;
+}
+#resultados {
+    height: 1fr;
+    min-height: 2;
+    padding: 0 1;
+    scrollbar-size: 1 1;
+    border: solid $panel;
+}
+#chat {
+    height: auto;
+    max-height: 75%;
+    overflow-y: auto;
+    scrollbar-size: 1 1;
+    padding: 0 1;
+    background: $surface;
+    border: solid $panel;
+}
+.ancha #cuerpo { layout: horizontal; }
+.ancha #resultados { width: 2fr; }
+.ancha #chat { width: 1fr; height: 1fr; max-height: 100%; }
+
+.titulo, #migas {
+    color: $secondary;
+    text-style: bold;
+}
+#pregunta, #aviso { height: auto; }
+#aviso { color: $error; display: none; }
+#menu { height: auto; max-height: 7; color: $secondary; }
+#entrada {
+    height: 1;
+    border: none;
+    padding: 0 1;
+    background: $panel;
+    color: $primary;
+}
+#entrada:focus { border: none; }
+#teclas {
+    height: 1;
+    padding: 0 1;
+    color: $foreground 75%;
+    text-wrap: nowrap;
+}
