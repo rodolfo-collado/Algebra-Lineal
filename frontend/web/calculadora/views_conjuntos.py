@@ -4,7 +4,7 @@ import re
 from random import sample
 from urllib.parse import parse_qsl, urlencode
 
-from django.shortcuts import render
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
@@ -231,7 +231,7 @@ def relaciones_conjuntos(request):
     if diagrama and diagrama.get("nombres") and form.regiones and form.regiones[0].mascara == 0 and not diagrama["exterior_conocido"]:
         form.fields["venn_region_0"].widget.attrs["placeholder"] = "?"
     _resumir(form)
-    return render(request, "calculadora/modules/conjuntos/index.html", {
+    return TemplateResponse(request, "calculadora/modules/conjuntos/index.html", {
         "form": form, "resultado": resultado, "guia": _guia(form), "diagrama": diagrama,
         "regiones_aplicadas": regiones_aplicadas,
         "opciones_abiertas": bool(form["venn_nombres"].errors or form["venn_universo"].errors),
@@ -269,6 +269,6 @@ def cardinalidades_conjuntos(request):
             campo = None if 'incoherentes' in mensaje else 'universo' if 'universo' in mensaje and 'expresión' not in mensaje else 'expresion'
             form.add_error(campo, mensaje)
     volver = (form.data if form.is_bound else form.initial).get('volver', '')
-    return render(request, 'calculadora/modules/conjuntos/cardinalidades.html', {
+    return TemplateResponse(request, 'calculadora/modules/conjuntos/cardinalidades.html', {
         'form': form, 'resultado': resultado, 'perfiles_teclado': perfiles_para('regiones-conjuntos'),
         'elementos_url': url_elementos(volver)})

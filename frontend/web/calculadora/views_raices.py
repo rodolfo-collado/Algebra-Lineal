@@ -3,7 +3,7 @@
 import math
 
 from django.http import HttpResponsePermanentRedirect, JsonResponse
-from django.shortcuts import render
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 from backend.biseccion import biseccion
@@ -41,7 +41,7 @@ def _resolver(request, formulario, metodo, nombre):
         datos.update(inicial_a=d["a"], inicial_b=d["b"])
         if resultado["residuo"] is not None:
             verificacion = verificacion_inicial(resultado["inicial"])
-    return render(request, f"calculadora/modules/{nombre}/index.html", {
+    return TemplateResponse(request, f"calculadora/modules/{nombre}/index.html", {
         "form": form, "resultado": resultado, "datos_raices": datos,
         "verificacion": verificacion, "perfiles_teclado": perfiles_para("funcion-real"),
     })
@@ -104,7 +104,7 @@ def _resolver_abierto(request, formulario, nombre, calcular, puntos):
     if resultado:
         a, b = _vista_abierta(*(form.cleaned_data[p] for p in puntos))
         datos.update(inicial_a=a, inicial_b=b)
-    return render(request, f"calculadora/modules/{nombre}/index.html", {
+    return TemplateResponse(request, f"calculadora/modules/{nombre}/index.html", {
         "form": form, "resultado": resultado, "datos_raices": datos,
         "funcion_natural": natural(form.funcion_real.arbol) if resultado else None,
         "perfiles_teclado": perfiles_para("funcion-real"),
