@@ -2,8 +2,8 @@
 
 [Índice de documentación](README.md) · [Portada](../README.md)
 
-Las herramientas visuales se usan desde Django o desde la aplicación Windows.
-La terminal conserva su menú de matrices y sistemas; no incluye todos los módulos visuales.
+Las herramientas de Álgebra lineal, Sistemas numéricos, Métodos numéricos
+y Conjuntos se pueden usar desde la web, la aplicación Windows y la consola.
 
 **Método de bisección** permite buscar una raíz de una función real y recorrer
 sus iteraciones en una gráfica interactiva offline. Véase [Bisección](biseccion.md).
@@ -13,10 +13,14 @@ Véase [Conjuntos](conjuntos.md).
 
 ## Terminal
 
-Permite generar matrices aleatorias, crearlas manualmente, modificar o consultar
-elementos y mostrar las columnas alineadas. Inicia con `uv run python main.py`.
+Inicia con `uv run --locked python main.py`. El menú `/` abre las herramientas
+de cálculo con el mismo analizador de entradas que usa la web. El chat guía
+la resolución, y el historial conserva el procedimiento, las tablas y las
+gráficas asociadas. Consulta la [guía de ejecución](ejecucion.md#aplicación-de-terminal)
+para ver los atajos y el formato de pegado.
 
-El menú de la terminal es este:
+El modo clásico, disponible con `uv run --locked python main.py --clasico`,
+permite generar y editar matrices mediante el menú numerado:
 
 ```text
 1. Generar matriz
@@ -33,7 +37,7 @@ El menú de la terminal es este:
 Los cálculos usan `fractions.Fraction`, así que los resultados son exactos y se
 muestran como fracciones cuando no son enteros.
 
-La interfaz de terminal usa colores, limpia la pantalla entre secciones y espera
+El menú clásico usa colores, limpia la pantalla entre secciones y espera
 una confirmación antes de volver al menú, para que los resultados se puedan leer
 con calma.
 
@@ -108,7 +112,7 @@ misma matriz aumentada, así que son intercambiables.
 Volver al menú, o escribir un sistema con un formato inválido, deja intacta la
 matriz activa: solo un sistema creado correctamente la reemplaza.
 
-## Resolución de sistemas en terminal
+## Resolución de sistemas en el menú clásico
 
 Una matriz solo se interpreta como sistema de ecuaciones cuando se elige uno de
 los dos métodos de resolución. En ese caso la **última columna** se toma

@@ -78,7 +78,7 @@ Cálculo figura como **Próximamente**.
 | --- | --- |
 | Escritorio Windows | Herramientas visuales en una ventana local. |
 | Django en desarrollo | La misma interfaz desde el navegador local. |
-| Terminal | Matrices y sistemas por Gauss y Gauss-Jordan. |
+| Terminal | Álgebra lineal, sistemas numéricos, métodos numéricos y conjuntos desde el menú `/`. |
 
 La interfaz visual incluye tema claro/oscuro, búsqueda de herramientas y
 teclado matemático contextual.
