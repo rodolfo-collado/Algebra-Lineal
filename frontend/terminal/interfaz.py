@@ -1,10 +1,7 @@
 """Interfaz interactiva de PyGebra para terminales de celdas Unicode."""
 
-import os
-from pathlib import Path
 import re
 import sqlite3
-import subprocess
 
 from rich.text import Text
 from textual import on, work
@@ -13,7 +10,12 @@ from textual.binding import Binding
 from textual.containers import Container, VerticalScroll
 from textual.events import Resize
 from textual.theme import Theme
-from textual.widgets import Collapsible, DataTable, Input, OptionList, Static, TextArea
+from textual.widgets import Input, Static, TextArea
+
+from frontend.web.calculadora.teclados import (
+    PERFIL_EXPRESION, PERFIL_FUNCION_REAL, PERFIL_LINEAL, PERFIL_LITERAL_CONJUNTOS,
+    PERFIL_NUMERICO, PERFIL_REGIONES_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, PERFIL_SISTEMA,
+)
 
 from .adaptador import Tabla, ejecutar, procedimiento
 from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra, validar_cantidad_matricial
@@ -21,6 +23,7 @@ from .conjuntos import (
     DIALOGOS_CONJUNTOS, GraficaConjuntos, cardinalidad, preparar_conjuntos, relaciones,
     representacion, resolver_conjuntos,
 )
+from .componentes import EntradaComando, Ficha, Paleta
 from .dialogos import Campo, DIALOGOS, ErrorEntrada
 
 from .graficas import Grafica
@@ -36,151 +39,16 @@ _DIALOGOS = {
 }
 _VISUALES = set(DIALOGOS_RAICES) | DIALOGOS_CONJUNTOS
 _ERRORES_DISCO = (OSError, ValueError, KeyError, sqlite3.Error)
-_BLOQUES = (
-    "████  █   █  ████  █████  ████   ████    ███ ",
-    "█   █  █ █   █      █      █   █  █   █  █   █",
-    "████    █    █ ███  ████   ████   ████   █████",
-    "█       █    █   █  █      █   █  █  █   █   █",
-    "█       █    █████  █████  ████   █   █  █   █",
+_LETRAS = (
+    ("####.", "#####", "##.##", "####.", "##...", "##...", "##..."),
+    ("##.##", "##.##", ".###.", ".###.", "..#..", "..#..", "..#.."),
+    (".####", "#####", "##...", "##.##", "##.##", "#####", ".####"),
+    ("#####", "#####", "##...", "####.", "##...", "#####", "#####"),
+    ("####.", "#####", "##.##", "####.", "##.##", "#####", "####."),
+    ("####.", "#####", "##.##", "####.", "##.##", "##.##", "##.##"),
+    (".###.", "#####", "##.##", "#####", "##.##", "##.##", "##.##"),
 )
 _COLORES = ("#c9a6f4", "#bcaef1", "#a9c5ef", "#8edfec", "#92ded9", "#9ee2c3", "#ace6a5")
-
-
-class EntradaComando(Input):
-    BINDINGS = [
-        Binding("up", "app.mover_menu(-1)", show=False),
-        Binding("down", "app.mover_menu(1)", show=False),
-    ]
-
-    def action_cursor_left(self, select=False):
-        if self.app.comando is None and self.value.startswith("/") and not select:
-            self.app.volver_menu()
-        else:
-            super().action_cursor_left(select)
-
-    def action_cursor_right(self, select=False):
-        if self.app.comando is None and self.value.startswith("/") and not select:
-            self.app.avanzar_menu()
-        else:
-            super().action_cursor_right(select)
-
-
-class TablaInteractiva(DataTable):
-    BINDINGS = [
-        Binding("ctrl+c", "copiar('celda')", show=False),
-        Binding("ctrl+r", "copiar('fila')", show=False),
-        Binding("ctrl+t", "copiar('tabla')", show=False),
-    ]
-
-    def __init__(self, tabla):
-        super().__init__(show_header=bool(tabla.columnas), zebra_stripes=True)
-        self.tabla = tabla
-
-    def on_mount(self):
-        ancho = max(len(self.tabla.columnas), max(map(len, self.tabla.filas)))
-        columnas = (*self.tabla.columnas, *("" for _ in range(ancho - len(self.tabla.columnas))))
-        # Los encabezados e identificadores pueden contener corchetes matemáticos.
-        self.add_columns(*map(Text, columnas))
-        for fila in self.tabla.filas:
-            self.add_row(*map(Text, fila), *("" for _ in range(ancho - len(fila))))
-        self.styles.height = min(10, len(self.tabla.filas) + bool(self.tabla.columnas) + 1)
-        self.border_title = self.tabla.titulo
-
-    def action_copiar(self, alcance):
-        fila, columna = self.cursor_coordinate
-        valores = self.tabla.filas
-        if alcance == "tabla":
-            texto = "\n".join("\t".join(f) for f in valores)
-        elif alcance == "fila":
-            texto = "\t".join(valores[fila])
-        else:
-            texto = valores[fila][columna] if columna < len(valores[fila]) else ""
-        self.app.copy_to_clipboard(texto)
-        self.app.notify("Copiado")
-
-    def on_focus(self):
-        self.app.query_one("#teclas", Static).update(
-            "Ctrl+C Celda · Ctrl+R Fila · Ctrl+T Tabla · Tab Cambiar foco"
-        )
-
-    def on_blur(self):
-        self.app.actualizar_menu()
-
-
-class ArchivosBackend(OptionList):
-    BINDINGS = [Binding("ctrl+c", "copiar_ruta", show=False)]
-
-    def __init__(self, archivos):
-        super().__init__(*(
-            Text(archivo, style=f"underline link {Path(archivo).as_uri()}") for archivo in archivos
-        ), markup=False)
-        self.archivos = archivos
-
-    def action_copiar_ruta(self):
-        if self.highlighted is not None:
-            self.app.copy_to_clipboard(self.archivos[self.highlighted])
-            self.app.notify("Ruta copiada")
-
-    @on(OptionList.OptionSelected)
-    def mostrar_archivo(self, evento):
-        ruta = Path(self.archivos[evento.option_index])
-        try:
-            if os.name == "nt":
-                subprocess.Popen(["explorer", "/select,", str(ruta)])
-            else:
-                subprocess.Popen(["xdg-open", str(ruta.parent)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except OSError:
-            self.app.notify("Usa Ctrl+C para copiar la ruta.")
-
-    def on_focus(self):
-        self.app.mostrar_teclas("↑↓ Elegir archivo · Enter Mostrar carpeta · Ctrl+C Copiar ruta")
-
-    def on_blur(self):
-        self.app.actualizar_menu()
-
-
-class Ficha(Collapsible):
-    def __init__(self, registro, **kwargs):
-        self.registro = registro
-        self.cargada = False
-        super().__init__(title=registro.titulo, classes="ejercicio", **kwargs)
-
-    async def cargar(self):
-        if self.cargada:
-            return
-        self.cargada = True
-        widgets = []
-        bloques = self.registro.bloques
-        grafica = self.registro.grafica
-        if grafica is not None:
-            if self.registro.comando in DIALOGOS_CONJUNTOS:
-                widgets.append(GraficaConjuntos(grafica))
-            else:
-                if len(bloques) >= 2 and all(isinstance(b, str) for b in bloques[:2]):
-                    widgets.append(Static("\n".join(bloques[:2]), classes="veredicto", markup=False))
-                    bloques = bloques[2:]
-                widgets.append(Grafica(grafica))
-        lineas = []
-        for bloque in bloques:
-            if isinstance(bloque, Tabla):
-                if lineas:
-                    widgets.append(Static("\n".join(lineas), markup=False))
-                    lineas.clear()
-                if bloque.titulo:
-                    widgets.append(Static(bloque.titulo, classes="etiqueta", markup=False))
-                widgets.append(TablaInteractiva(bloque))
-            else:
-                lineas.append(bloque)
-        if lineas:
-            widgets.append(Static("\n".join(lineas), markup=False))
-        if self.registro.archivos:
-            widgets.append(Collapsible(ArchivosBackend(self.registro.archivos), title="Archivos del backend"))
-        await self.query_one("Contents").mount(*widgets)
-
-    @on(Collapsible.Expanded)
-    async def cargar_al_abrir(self, evento):
-        if evento.collapsible is self:
-            await self.cargar()
 
 
 class PyGebra(App):
@@ -192,6 +60,7 @@ class PyGebra(App):
         Binding("f2", "enviar_texto", show=False),
         Binding("f3", "paso_anterior", show=False),
         Binding("f4", "repetir", show=False),
+        Binding("f6", "simbolos", show=False, priority=True),
         Binding("space", "alternar_casilla", show=False, priority=True),
     ]
 
@@ -236,8 +105,8 @@ class PyGebra(App):
             with Container(id="chat"):
                 yield Static(id="migas", markup=False)
                 yield Static("Escribe / para elegir una herramienta.", id="pregunta", markup=False)
-                yield Static(id="respuestas", markup=False)
-                yield Static(id="ayuda", markup=False)
+                yield Static(id="respuestas", markup=False, classes="vacio")
+                yield Static(id="ayuda", markup=False, classes="vacio")
                 yield Static(id="menu", markup=False)
                 yield EntradaComando(placeholder="Escribe /", id="entrada")
                 yield TextArea(id="editor", show_line_numbers=False)
@@ -274,9 +143,10 @@ class PyGebra(App):
 
     def adaptar(self, size):
         ancho, alto = size
-        self.screen.set_class(ancho >= 96 and ancho >= 2.65 * alto, "ancha")
-        self.screen.set_class(alto < 24 or ancho < 51, "marca-breve")
-        self.screen.set_class(alto < 27, "corta")
+        pantalla = self.query_one("#cuerpo").screen
+        pantalla.set_class(ancho >= 96 and ancho >= 2.65 * alto, "ancha")
+        pantalla.set_class(alto < 24 or ancho < 51, "marca-breve")
+        pantalla.set_class(alto < 27, "corta")
         marca = Text(justify="center")
         colores = (_COLORES if self.theme == "pygebra" else
                    ("#69458a", "#615182", "#395d8c", "#00606e", "#166756", "#22664a", "#205e38"))
@@ -284,11 +154,15 @@ class PyGebra(App):
             for letra, color in zip("PYGEBRA", colores):
                 marca.append(letra, f"bold {color}")
         else:
-            for indice, linea in enumerate(_BLOQUES):
-                if indice:
+            for fila in range(0, 8, 2):
+                if fila:
                     marca.append("\n")
-                for columna, caracter in enumerate(linea):
-                    marca.append(caracter, colores[min(6, columna * 7 // len(linea))])
+                for letra, color in zip(_LETRAS, colores):
+                    superior = letra[fila]
+                    inferior = letra[fila + 1] if fila + 1 < len(letra) else "....."
+                    bloque = "".join(" ▄▀█"[2 * (a == "#") + (b == "#")]
+                                     for a, b in zip(superior, inferior))
+                    marca.append(bloque + "  ", color)
         self.query_one("#marca", Static).update(marca)
 
     def actualizar_menu(self):
@@ -355,8 +229,8 @@ class PyGebra(App):
         self.confirmacion = None
         self.navegacion.reiniciar()
         self.query_one("#editor").display = False
-        self.query_one("#respuestas", Static).update("")
-        self.query_one("#ayuda", Static).update("")
+        self.detalle_chat("#respuestas", "")
+        self.detalle_chat("#ayuda", "")
         self.entrada.display = True
         self.entrada.placeholder = "Escribe /"
         self.entrada.focus()
@@ -460,9 +334,9 @@ class PyGebra(App):
                      else etiquetas.get(escrito, escrito))
             resumen = " ".join(texto.split())
             respuestas.append(f"› {previo.titulo} · {resumen[:90]}")
-        self.query_one("#respuestas", Static).update("\n".join(respuestas))
+        self.detalle_chat("#respuestas", "\n".join(respuestas))
         self.estado(f"{campo.titulo}  ·  {self.paso + 1}/{len(campos)}")
-        self.query_one("#ayuda", Static).update(campo.ayuda)
+        self.detalle_chat("#ayuda", campo.ayuda)
         self.entrada.display = not campo.multilinea
         self.entrada.placeholder = "Enter para confirmar" if campo.opciones else "Escribe tu respuesta"
         self.entrada.value = "" if campo.opciones else valor
@@ -556,13 +430,54 @@ class PyGebra(App):
         teclas = ("F2 Confirmar · Enter Nueva línea" if campo.multilinea else
                   "↑↓ Elegir · Espacio Marcar · Enter Confirmar" if campo.multiple else
                   "↑↓ Elegir · Enter Confirmar" if campo.opciones else "Enter Confirmar")
-        self.query_one("#teclas", Static).update(teclas + " · F3 Atrás · Esc Cancelar · Tab Cambiar foco")
+        if not campo.opciones:
+            teclas += " · F6 Símbolos"
+        self.mostrar_teclas(teclas + " · F3 Atrás · Esc Cancelar · Tab Cambiar foco")
 
     def check_action(self, action, parameters):
+        if action == "simbolos":
+            return (self.comando is not None and not self._resolviendo and not self.campo_actual().opciones
+                    and isinstance(self.focused, (EntradaComando, TextArea)))
         if action == "alternar_casilla":
             return (self.comando is not None and self.entrada.has_focus
                     and self.campo_actual().multiple)
         return super().check_action(action, parameters)
+
+    def action_simbolos(self):
+        campo = self.campo_actual()
+        herramienta = self.comando.id
+        if campo.id == "sistema":
+            perfil = PERFIL_SISTEMA
+        elif herramienta in DIALOGOS_RAICES and campo.id == "funcion":
+            perfil = PERFIL_FUNCION_REAL
+        elif herramienta == "relaciones-conjuntos":
+            perfil = PERFIL_RELACION_CONJUNTOS if campo.id == "expresion" else PERFIL_LITERAL_CONJUNTOS
+        elif herramienta == "cardinalidad-conjuntos" and campo.id == "expresion":
+            perfil = PERFIL_REGIONES_CONJUNTOS
+        elif herramienta == "operaciones-matrices" and campo.id == "expresion":
+            perfil = PERFIL_EXPRESION
+        elif campo.id.startswith("@operando_") and self.datos.get("tipo_" + campo.id.split("_")[1]) == "vector_lineal":
+            perfil = PERFIL_LINEAL
+        else:
+            perfil = PERFIL_NUMERICO
+        entrada = self.focused
+
+        def insertar(respuesta):
+            if respuesta is None:
+                return
+            texto, retroceso = respuesta
+            if isinstance(entrada, TextArea):
+                inicio, fin = sorted(entrada.selection)
+                edicion = entrada.replace(texto, inicio, fin, maintain_selection_offset=False)
+                if retroceso:
+                    fila, columna = edicion.end_location
+                    entrada.move_cursor((fila, columna - retroceso))
+            else:
+                inicio, fin = sorted(entrada.selection)
+                entrada.replace(texto, inicio, fin)
+                entrada.cursor_position -= retroceso
+
+        self.push_screen(Paleta(perfil), insertar)
 
     def action_alternar_casilla(self):
         campo = self.campo_actual()
@@ -742,6 +657,11 @@ class PyGebra(App):
         self.query_one("#resultados").mount(ejercicio)
         self.call_after_refresh(ejercicio.cargar)
         self.call_after_refresh(ejercicio.scroll_visible, top=True)
+
+    def detalle_chat(self, selector, texto):
+        widget = self.query_one(selector, Static)
+        widget.set_class(not texto, "vacio")
+        widget.update(texto)
 
     def avisar(self, mensaje):
         aviso = self.query_one("#aviso", Static)

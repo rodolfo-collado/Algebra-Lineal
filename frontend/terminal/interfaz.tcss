@@ -5,7 +5,7 @@ Screen {
 
 #marca {
     width: 1fr;
-    height: 6;
+    height: 5;
     content-align: center middle;
 }
 .marca-breve #marca { height: 1; }
@@ -70,7 +70,7 @@ Screen {
 .ejercicio Contents { padding: 0 1; }
 .holgada .ejercicio { margin-bottom: 1; }
 .holgada .ejercicio Static { margin-bottom: 1; }
-.corta #respuestas { display: none; }
+.corta #respuestas, #respuestas.vacio, #ayuda.vacio { display: none; }
 .veredicto { color: $accent; text-style: bold; }
 .etiqueta { color: $primary; }
 TablaInteractiva { margin: 0; }
@@ -79,3 +79,7 @@ Grafica { height: auto; padding: 0; color: $primary; text-wrap: nowrap; }
 Grafica:focus { background: $surface; }
 GraficaConjuntos { height: auto; }
 ArchivosBackend { height: auto; max-height: 10; padding: 0; }
+
+Paleta { align: center middle; background: $background 70%; }
+#paleta { width: 50; max-width: 95%; height: auto; padding: 0 1; border: solid $secondary; background: $surface; }
+#paleta OptionList { height: auto; max-height: 12; }
