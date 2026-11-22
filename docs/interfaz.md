@@ -69,8 +69,10 @@ static/calculadora/
     │                       # mesa de trabajo (estructura común a Estudio y Minimalista)
     ├── estudio.css         # estilo Estudio: tokens día/noche, habitación, dioramas, gestos
     │                       # y transiciones; nada de esto aplica en Minimalista
-    └── homenajes.css       # temas homenaje: tokens claro/oscuro, detalles de navegación
-                            # y firma «En honor a …» sobre la forma de Minimalista
+    ├── homenajes.css       # temas homenaje: tokens claro/oscuro, logotipos de Opciones y
+    │                       # el gesto al cambiar de estilo
+    └── homenaje-*.css      # ChocoLab, BelugaCalc y HeyAlgb: portada, catálogo, navegación,
+                            # cabecera y movimiento propios (ver temas-homenaje.md)
 ```
 
 Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-raised`,
