@@ -265,17 +265,18 @@ OPERACIONES_MATRICES = Herramienta(
 # los motores de sistemas (Gauss, Gauss-Jordan, LU o Cramer) sobre [A | b].
 ECUACIONES_MATRICIALES = Herramienta(
     id="ecuaciones-matriciales", nombre="Sistemas lineales (Ax = b)", categoria=MATRICES,
-    descripcion="Si ya tienes A y b, encuentra x en Ax = b mediante reducción por filas, LU o Regla de Cramer.",
+    descripcion="Si ya tienes A y b, encuentra x en Ax = b con métodos directos o con Jacobi y Gauss-Seidel.",
     estado="disponible", route_name="calculadora:ecuaciones-matriciales",
     palabras_clave=("ecuación matricial", "ecuaciones matriciales", "ax=b", "ax = b", "resolver ax=b",
                     "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
                     "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
                     "inconsistente", "resolver sistema", "sistema de ecuaciones", "sistemas de ecuaciones",
                     "cramer", "regla de cramer",
-                    "sistema lineal", "sistemas lineales", "ecuaciones lineales"),
+                    "sistema lineal", "sistemas lineales", "ecuaciones lineales", "jacobi",
+                    "gauss-seidel", "gauss seidel", "métodos iterativos"),
     relacionadas=("reduccion-filas", "operaciones-matrices"),
     invitacion="Si ya tienes A y b, encuentra x en Ax = b.",
-    puntos=('Reducción por filas, LU o Regla de Cramer', 'Detecta si no hay solución o hay infinitas'),
+    puntos=('Reducción por filas, LU, Cramer, Jacobi y Gauss-Seidel', 'Comprobación y procedimiento de cada método'),
     curiosidad="Ax = b tiene solución exactamente cuando b es combinación lineal de las columnas de A.",
 )
 

@@ -102,7 +102,9 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
         # Reducción por filas conserva sus palabras; «resolver» prioriza el nombre de Ax = b.
         self.assertEqual(catalogo.buscar_herramientas("inconsistente")[:2], (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS))
         self.assertEqual(catalogo.buscar_herramientas("resolver")[0], catalogo.ECUACIONES_MATRICIALES)
-        for consulta in ("gauss", "pivote", "binario", "traspuesta"):
+        self.assertEqual(catalogo.buscar_herramientas("gauss")[:2],
+                         (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES))
+        for consulta in ("pivote", "binario", "traspuesta"):
             self.assertNotIn(catalogo.ECUACIONES_MATRICIALES, catalogo.buscar_herramientas(consulta))
 
 
@@ -117,14 +119,16 @@ class PruebasEstructuraEcuacion(SimpleTestCase):
         self.assertEqual(doc.tablas["Vector incógnita x, no editable"], [["x₁"], ["x₂"]])
         self.assertNotIn("celda_x_0_0", doc.campos)
         self.assertRegex(html, r'name="metodo" value="gauss_jordan"[^>]*checked')
-        self.assertEqual(len(re.findall(r'<input type="radio" name="metodo"', html)), 5)
+        self.assertEqual(len(re.findall(r'<input type="radio" name="metodo"', html)), 8)
         self.assertContains(respuesta, "A (2×2) · x (2) = b (2).")
         self.assertContains(respuesta, 'name="ajustar"')
         self.assertNotContains(respuesta, 'id="resultado"')
         self.assertNotContains(respuesta, 'name="operacion"')
         self.assertNotContains(respuesta, 'name="columnas_b"')
         self.assertEqual(METODO_PREDETERMINADO, "gauss_jordan")
-        self.assertEqual([m for m, _ in METODOS], ["gauss", "gauss_jordan", "comparar", "lu", "cramer"])
+        self.assertEqual([m for m, _ in METODOS],
+                         ["gauss", "gauss_jordan", "comparar", "lu", "cramer",
+                          "jacobi", "gauss_seidel", "comparar_iterativos"])
 
     def test_b_deriva_de_las_filas_y_x_de_las_columnas(self):
         respuesta = self.client.post(RUTA, {"filas": "3", "columnas": "2", "metodo": "gauss", "ajustar": "1"})

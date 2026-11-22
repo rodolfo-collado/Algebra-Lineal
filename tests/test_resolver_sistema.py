@@ -81,7 +81,8 @@ class PruebasNavegacionUnificada(SimpleTestCase):
              "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/", "/conjuntos/cardinalidad/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")
-        for consulta in ("gauss", "clasificación", "columnas pivote"):
+        self.assertContains(self.client.get("/", {"q": "gauss"}), "2 herramientas coinciden")
+        for consulta in ("clasificación", "columnas pivote"):
             with self.subTest(consulta=consulta):
                 respuesta = self.client.get("/", {"q": consulta})
                 self.assertContains(respuesta, "1 herramienta coincide")

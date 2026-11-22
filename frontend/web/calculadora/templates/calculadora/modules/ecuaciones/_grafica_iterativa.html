@@ -1,0 +1,20 @@
+<figure class="iterativo-grafica">
+    <svg viewBox="0 0 580 190" role="img" aria-label="Cambio máximo y norma del residuo por iteración, en escala logarítmica. Los valores están en la tabla de iteraciones.">
+        <path class="iterativo-ejes" d="M100 18V{% if grafica.ceros %}150H551{% else %}126{% endif %} M100 18H551 M100 126H551"/>
+        <polyline class="iterativo-serie iterativo-serie-cambio" points="{{ grafica.cambio }}"/>
+        <polyline class="iterativo-serie iterativo-serie-residuo" points="{{ grafica.residuo }}"/>
+        <g text-anchor="end">
+            <text x="92" y="23">{{ grafica.superior }}</text><text x="92" y="130">{{ grafica.inferior }}</text>
+            {% if grafica.ceros %}<text x="92" y="154">0</text>{% endif %}
+        </g>
+        <g text-anchor="middle">
+            <text x="100" y="171">0</text><text x="551" y="171">{{ grafica.ultima }}</text>
+            <text x="326" y="185">Iteración k</text>
+        </g>
+    </svg>
+    <figcaption>
+        <span class="iterativo-leyenda-cambio">Cambio máximo</span>
+        <span class="iterativo-leyenda-residuo">Norma del residuo</span>
+        <span class="muted">Escala logarítmica{% if grafica.ceros %}, con los ceros en la base{% endif %}.</span>
+    </figcaption>
+</figure>

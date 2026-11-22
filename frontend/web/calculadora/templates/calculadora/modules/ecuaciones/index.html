@@ -1,12 +1,23 @@
 {% extends "calculadora/layouts/herramienta.html" %}
 {% load static componentes numeros %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'calculadora/styles/iterativos.css' %}">
+{% endblock %}
+
 {% block tool_input %}
 <section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
     <h2 id="workspace-title" class="sr-only">Entrada</h2>
     <form id="ecuacion-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
         {% csrf_token %}
         {% include "calculadora/components/errores_generales.html" %}
+        {% url 'calculadora:ecuaciones-matriciales' as ruta_axb %}
+        {% disclosure titulo="Ejemplos de Jacobi y Gauss-Seidel" id="ejemplos-iterativos" %}
+            <div class="iterativos-enlaces">
+                <a class="btn btn-secondary" href="{{ ruta_axb }}?ejemplo=clase">Ejemplo de clase · (1, 2, −1, 1)</a>
+                <a class="btn btn-secondary" href="{{ ruta_axb }}?ejemplo=diapositiva-28">Práctica de la diapositiva 28 · 3 iteraciones</a>
+            </div>
+        {% enddisclosure %}
         <section class="workspace-section" id="equation-fields" data-perfil="numerico" aria-labelledby="equation-title">
             <h3 class="section-title" id="equation-title">Ecuación matricial</h3>
             <p class="field-help">A y b son conocidos; x es el vector incógnita que se busca. Elige solo las dimensiones de A: b tiene tantas componentes como filas tiene A, y x tantas como columnas.</p>
@@ -36,10 +47,14 @@
             <fieldset class="choice-fieldset">
                 <legend>{{ form.metodo.label }}</legend>
                 <div class="option-list">
-                    {% for radio in form.metodo %}<label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                    {% for radio in form.metodo %}{% if radio.data.value not in metodos_iterativos %}<label class="option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endif %}{% endfor %}
+                </div>
+                <p class="field-help option-help" data-ayuda-directos>{{ ayuda_metodos }}</p>
+                <div class="option-list iterativos-eleccion">
+                    {% for radio in form.metodo %}{% if radio.data.value in metodos_iterativos %}<label class="option" data-iterativo-metodo>{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endif %}{% endfor %}
                 </div>
                 {{ form.metodo.errors }}
-                <p class="field-help option-help">{{ ayuda_metodos }}</p>
+                <p class="field-help option-help" data-ayuda-iterativos>Jacobi y Gauss-Seidel requieren A cuadrada y coeficientes distintos de cero en la diagonal.</p>
             </fieldset>
             <fieldset class="choice-fieldset" data-cramer-methods>
                 <legend>{{ form.metodo_determinante.label }}</legend>
@@ -49,6 +64,7 @@
                 {{ form.metodo_determinante.errors }}
                 <p class="field-help">Solo para Regla de Cramer. D y todos los Dᵢ usan el mismo método de Determinantes. Cofactores elige automáticamente la fila o columna con más ceros; LU no intercambia filas.</p>
             </fieldset>
+            {% include "calculadora/modules/ecuaciones/_opciones_iterativas.html" %}
         </section>
         {% if confirmacion %}
             {% include "calculadora/components/confirmacion_costo.html" with operacion=confirmacion.operacion %}
@@ -60,7 +76,9 @@
 {% endblock %}
 
 {% block tool_result %}
-{% if resultado %}
+{% if iterativos %}
+    {% include "calculadora/modules/ecuaciones/_iterativos.html" %}
+{% elif resultado %}
     {% comment %}Resultado primero (clasificación, solución y comprobación breve) → comprobación e interpretación plegadas → procedimiento plegable (equivalencias y eliminación) al final. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
     {% numeric_results %}
     <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
@@ -149,5 +167,6 @@
 <template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
 <script src="{% static 'calculadora/metodos_determinantes.js' %}" defer></script>
 <script src="{% static 'calculadora/ecuaciones.js' %}" defer></script>
+{% if iterativos %}<script src="{% static 'calculadora/sistemas_iterativos.js' %}" defer></script>{% endif %}
 <script src="{% static 'calculadora/teclado.js' %}" defer></script>
 {% endblock %}

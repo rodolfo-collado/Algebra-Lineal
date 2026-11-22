@@ -20,6 +20,7 @@ from .forms_expresiones import ExpresionMatricialForm
 from .forms_inversa import InversaForm
 from .forms_romanos import ConversionRomanosForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
+from .opciones_ecuaciones import CLAVES_ITERATIVAS
 from .servicios_ecuaciones import resolver_ecuacion_web, confirmacion_pendiente as confirmar_ecuacion
 from .servicios_expresiones import evaluar_expresion_web
 from .presupuesto_expresiones import confirmacion_pendiente as confirmar_expresion
@@ -28,6 +29,7 @@ from .servicios_determinantes import (
     firmar_matriz,
 )
 from .servicios_inversa import calcular_inversa_web, confirmacion_pendiente
+from .servicios_iterativos import iniciales_ejemplo, resolver_iterativos_web
 from .opciones_sistemas import (
     BLOQUES_PREDETERMINADOS,
     METODO_PREDETERMINADO,
@@ -217,10 +219,14 @@ def expresiones_ruta_antigua(request):
 
 @require_http_methods(["GET", "POST"])
 def ecuaciones_matriciales(request):
-    """Resolver Ax = b: A y b conocidos; x se determina con los motores de Reducción por filas."""
+    """Resuelve Ax = b con el método directo o iterativo elegido."""
     ajustar = request.method == "POST" and "ajustar" in request.POST
-    form = EcuacionMatricialForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
+    if request.method == "POST":
+        form = EcuacionMatricialForm(request.POST, ajustar=ajustar)
+    else:
+        form = EcuacionMatricialForm(initial=iniciales_ejemplo(request.GET.get("ejemplo")))
     resultado = confirmacion = None
+    iterativos = []
     if request.method == "POST" and form.is_valid():
         if ajustar:
             # «Aplicar» sin JavaScript: se redibujan A, x y b con las dimensiones nuevas, sin resolver.
@@ -228,14 +234,18 @@ def ecuaciones_matriciales(request):
         else:
             try:
                 entrada = form.cleaned_data["entrada"]
-                confirmacion = confirmar_ecuacion(entrada, form.cleaned_data["confirmacion"])
-                if confirmacion is None:
-                    resultado = resolver_ecuacion_web(entrada)
+                if form.es_iterativo:
+                    iterativos = resolver_iterativos_web(entrada)
+                else:
+                    confirmacion = confirmar_ecuacion(entrada, form.cleaned_data["confirmacion"])
+                    if confirmacion is None:
+                        resultado = resolver_ecuacion_web(entrada)
             except ValueError as error:
                 form.add_error(None, str(error))
     return render(request, "calculadora/modules/ecuaciones/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
-        "ayuda_metodos": AYUDA_METODOS_ECUACION,
+        "ayuda_metodos": AYUDA_METODOS_ECUACION, "iterativos": iterativos,
+        "metodos_iterativos": CLAVES_ITERATIVAS,
         # El procedimiento reutiliza los bloques de Reducción por filas, todos visibles.
         "mostrar": frozenset(BLOQUES_PREDETERMINADOS), "perfiles_teclado": perfiles_para("numerico"),
     })

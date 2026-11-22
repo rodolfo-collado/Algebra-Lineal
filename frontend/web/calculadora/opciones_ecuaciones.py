@@ -7,10 +7,17 @@ componentes y x tiene n, así que la interfaz no pide medidas independientes.
 Añade LU y Cramer a los métodos de Reducción por filas, con Gauss-Jordan predeterminado.
 """
 
+from backend.sistemas_iterativos import METODOS as METODOS_ITERATIVOS
+
 from .opciones_matrices import DIMENSION_MAXIMA, DIMENSION_MINIMA, DIMENSION_PREDETERMINADA
 from .opciones_sistemas import METODO_PREDETERMINADO, METODOS as METODOS_REDUCCION, metodos_a_resolver
 
-METODOS = (*METODOS_REDUCCION, ("lu", "Factorización LU"), ("cramer", "Regla de Cramer"))
+COMPARAR_ITERATIVOS = "comparar_iterativos"
+CLAVES_ITERATIVAS = (*dict(METODOS_ITERATIVOS), COMPARAR_ITERATIVOS)
+METODOS = (
+    *METODOS_REDUCCION, ("lu", "Factorización LU"), ("cramer", "Regla de Cramer"),
+    *METODOS_ITERATIVOS, (COMPARAR_ITERATIVOS, "Comparar Jacobi y Gauss-Seidel"),
+)
 
 
 def titulo_resultado(metodo):

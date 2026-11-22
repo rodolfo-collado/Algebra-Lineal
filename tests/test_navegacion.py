@@ -180,9 +180,11 @@ class PruebasBuscador(SimpleTestCase):
 
     def test_busca_por_nombre_palabras_clave_categoria_y_area(self):
         # Lo que antes eran herramientas aparte sigue encontrándose: ahora lleva a Reducción por filas.
-        for consulta in ("Gauss", "pivote", "clasificacion", "gauss jordan", "escalonada"):
+        for consulta in ("pivote", "clasificacion", "gauss jordan", "escalonada"):
             with self.subTest(consulta=consulta):
                 self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.REDUCCION_FILAS,))
+        self.assertEqual(catalogo.buscar_herramientas("Gauss"),
+                         (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES))
         # «inconsistente» también describe Ax = b (P14); Reducción por filas conserva el primer lugar.
         self.assertEqual(
             catalogo.buscar_herramientas("inconsistente"), (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS),
