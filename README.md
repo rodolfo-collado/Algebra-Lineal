@@ -61,6 +61,8 @@ Los cálculos largos piden confirmación según el
   con secantes y confirmación de cercanía por signos, en una sola herramienta con gráfica
   interactiva offline, recorrido reproducible e historial. Precisión predeterminada `0.0001`.
 - **Métodos abiertos:** [Newton-Raphson](docs/newton-raphson.md) y [Secante](docs/secante.md).
+- **Métodos iterativos** · [Jacobi y Gauss-Seidel](docs/sistemas-iterativos.md) para sistemas lineales
+  cuadrados Ax = b, con comparación, tabla de iteraciones y sustituciones.
 
 ### Conjuntos
 

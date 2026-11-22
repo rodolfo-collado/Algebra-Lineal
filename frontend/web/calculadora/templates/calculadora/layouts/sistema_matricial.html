@@ -1,0 +1,52 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static %}
+
+{% block tool_input %}
+<section class="panel workspace" aria-labelledby="workspace-title" data-ecuacion>
+    <h2 id="workspace-title" class="sr-only">Entrada</h2>
+    <form id="ecuacion-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        {% csrf_token %}
+        {% include "calculadora/components/errores_generales.html" %}
+        {% block axb_antes %}{% endblock %}
+        <section class="workspace-section" id="equation-fields" data-perfil="numerico" aria-labelledby="equation-title">
+            <h3 class="section-title" id="equation-title">Ecuación matricial</h3>
+            <p class="field-help">A y b son conocidos; x es el vector incógnita que se busca. Elige solo las dimensiones de A: b tiene tantas componentes como filas tiene A, y x tantas como columnas.</p>
+            <div class="structure-controls structure-controls-matrices" role="group" aria-label="Dimensiones de A">
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.filas quitar="Quitar una fila de A" agregar="Agregar una fila de A" %}
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.columnas quitar="Quitar una columna de A" agregar="Agregar una columna de A" %}
+            </div>
+            <p class="field-help" data-equation-shape aria-live="polite">{{ form.forma_texto }}. De {{ form.filas.field.min_value }} a {{ form.filas.field.max_value }} filas y columnas.</p>
+            <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
+            <noscript><p class="field-help">Cambia las filas o columnas de A y pulsa <strong>Aplicar</strong> antes de resolver. Se conservan las celdas que siguen en la estructura.</p></noscript>
+            <div id="equation-entry" class="matrix-equation equation-entry" data-equation-entry>
+                {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.0.nombre filas=form.matrices.0.filas vector=False only %}
+                <span class="matrix-expression" aria-hidden="true">·</span>
+                <div class="matrix-operand unknown-vector" data-unknown>
+                    <span class="muted">Incógnita x</span>
+                    {% include "calculadora/components/matriz.html" with matriz=form.incognitas etiqueta="Vector incógnita x, no editable" only %}
+                    <p class="sr-only" data-unknown-help>x tiene {{ form.estructura.columnas }} componente{{ form.estructura.columnas|pluralize }} desconocida{{ form.estructura.columnas|pluralize }}; se determinan al resolver.</p>
+                </div>
+                <span class="matrix-expression" aria-hidden="true">=</span>
+                {% include "calculadora/components/matriz_entrada.html" with nombre=form.matrices.1.nombre filas=form.matrices.1.filas vector=True only %}
+            </div>
+            {% include "calculadora/components/errores_grupo.html" %}
+            <p class="field-help">Escribe enteros, fracciones como <code>1/2</code> o decimales con punto, como <code>0.5</code>; usa <code>-</code> para negativos. {% block axb_forma %}A puede ser rectangular.{% endblock %}</p>
+            {% include "calculadora/components/math_keyboard.html" %}
+        </section>
+        {% block axb_opciones %}{% endblock %}
+        {% block axb_accion %}
+            <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Resolver</button></div>
+        {% endblock %}
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% include "calculadora/components/seleccion_matricial.html" %}
+{% include "calculadora/components/menu_edicion.html" %}
+<template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
+<template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
+{% block axb_js %}{% endblock %}
+<script src="{% static 'calculadora/ecuaciones.js' %}" defer></script>
+<script src="{% static 'calculadora/teclado.js' %}" defer></script>
+{% endblock %}

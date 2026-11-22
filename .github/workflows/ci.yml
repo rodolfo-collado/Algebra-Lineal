@@ -52,8 +52,30 @@ jobs:
       - name: Verificar la compilacion
         run: uv run --locked python -m compileall -q actualizador backend frontend tests main.py manage.py desktop.py
 
+  windows_python:
+    name: Suite Python de Windows
+    runs-on: windows-2025
+    timeout-minutes: 40
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.7"
+          enable-cache: true
+          # El job de empaquetado guarda la caché compartida de Windows.
+          save-cache: false
+
+      - name: Ejecutar las pruebas en Windows
+        run: uv run --locked python -m unittest discover -v
+
   windows:
-    name: Distribución de Windows
+    name: Empaquetado y pruebas del instalador de Windows
     runs-on: windows-2025
     timeout-minutes: 40
     steps:
@@ -86,10 +108,7 @@ jobs:
 
       - name: Construir aplicación e instalador
         shell: pwsh
-        run: .\scripts\build_windows.ps1
-
-      - name: Ejecutar las pruebas en Windows
-        run: uv run --locked python -m unittest discover -v
+        run: .\scripts\build_windows.ps1 -IsccPath (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe')
 
       - name: Probar instalación, dos aperturas y desinstalación
         shell: pwsh
@@ -128,3 +147,21 @@ jobs:
           path: dist/installer/PyGebra-Setup-*.exe
           if-no-files-found: error
           retention-days: 14
+
+  windows_resultado:
+    # Conserva el check que cubría toda la validación de Windows.
+    name: Distribución de Windows
+    needs: [windows_python, windows]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    timeout-minutes: 2
+    steps:
+      - name: Exigir que pasen las pruebas y el empaquetado
+        shell: bash
+        env:
+          PRUEBAS: ${{ needs.windows_python.result }}
+          DISTRIBUCION: ${{ needs.windows.result }}
+        run: |
+          printf 'Suite Python de Windows: %s\nEmpaquetado y pruebas del instalador: %s\n' "$PRUEBAS" "$DISTRIBUCION"
+          [[ "$PRUEBAS" == success && "$DISTRIBUCION" == success ]]

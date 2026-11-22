@@ -171,11 +171,12 @@ claves oficiales `pv` de HKCU y HKLM (vista de 32 bits para la instalación por
 equipo), exige un runtime compatible con pywebview y evita el fallback a MSHTML.
 Consulta la [distribución de WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution).
 
-El job de Windows de `.github/workflows/ci.yml` instala Inno Setup desde su
-distribución oficial firmada, construye ambos artefactos y ejecuta las pruebas.
-Ejecuta también el smoke real y conserva el instalador como artifact temporal
-para revisión (la retención se configura en el workflow). El job Linux conserva
-sus verificaciones. Ninguno crea una Release.
+En `.github/workflows/ci.yml`, la suite Python de Windows corre en paralelo con
+el empaquetado. El job de empaquetado usa Inno Setup de la distribución oficial
+firmada, construye la aplicación y el instalador, prueba la instalación limpia y
+la actualización desde la última release estable, y conserva el instalador como
+artifact temporal para revisión. El check «Distribución de Windows» exige que
+ambos jobs pasen. Ubuntu ejecuta su propia suite y verificaciones.
 
 ## Comprobar la distribución real
 

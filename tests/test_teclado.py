@@ -44,6 +44,7 @@ HERRAMIENTAS = {
     "/matrices/reduccion/": {"sistema", "numerico"},
     "/matrices/operaciones/": {"numerico", "expresion", "lineal"},
     "/matrices/ecuaciones/": {"numerico"},
+    "/metodos-numericos/metodos-iterativos/": {"numerico"},
     "/matrices/inversa/": {"numerico"},
     "/matrices/determinantes/": {"numerico"},
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
@@ -68,6 +69,11 @@ CONTROLES = {
     "/matrices/ecuaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",
         "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo", "metodo_determinante",
+    },
+    "/metodos-numericos/metodos-iterativos/": {
+        "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",
+        "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo",
+        "inicial_iterativo", "tolerancia_iterativa", "max_iteraciones",
     },
     # «confirmacion» solo aparece en el aviso de un cálculo largo, nunca en el GET.
     "/matrices/inversa/": {

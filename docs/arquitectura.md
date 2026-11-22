@@ -90,7 +90,13 @@ retira del registro; Inicio, menú, buscador y breadcrumbs cambian juntos.
 orden: Operaciones (también vectores y escalares), Sistemas lineales (Ax = b),
 Reducción por filas, Matriz inversa y Determinantes. Raíces de ecuaciones tiene
 Métodos cerrados (Bisección y Regla falsa, alias de ruta `calculadora:regla-falsa`)
-y Métodos abiertos (Newton-Raphson y Secante). Desde P26.6, Operaciones con matrices
+y Métodos abiertos (Newton-Raphson y Secante). **Métodos iterativos** tiene una
+ruta propia en la categoría Sistemas lineales de Métodos numéricos. Comparte
+con Sistemas lineales (Ax = b) el editor de A y b, la validación de celdas
+y el teclado matemático. Jacobi y Gauss-Seidel calculan en
+[`backend/sistemas_iterativos.py`](../backend/sistemas_iterativos.py).
+
+Desde P26.6, Operaciones con matrices
 usa el motor de expresiones para operaciones simples y compuestas; la ruta
 `/matrices/expresiones/` solo redirige (GET 301, POST 308) y no es una
 herramienta del catálogo.
