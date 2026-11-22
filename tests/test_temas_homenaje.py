@@ -1,7 +1,9 @@
-"""Contratos de los temas homenaje (ChocoLab, BelugaCalc y HeyAlgb): son estilos como
-Minimalista, con tokens claro/oscuro, firma en Inicio y créditos de cada logotipo.
+"""Contratos de los temas homenaje (ChocoLab, BelugaCalc y HeyAlgb): estilos con tokens
+claro/oscuro, composición y movimiento propios, portada con dedicatoria, navegación por áreas
+y créditos de cada logotipo.
 
-El aspecto real (contraste, 390 px, foco) se revisó en Edge; ver docs/temas-homenaje.md.
+El aspecto real (contraste, 390 px, foco, transiciones) se revisó en Edge; ver
+docs/temas-homenaje.md.
 """
 
 import hashlib
@@ -35,6 +37,7 @@ class TemasHomenajeTests(SimpleTestCase):
 
     def test_cada_tema_define_claro_y_oscuro_y_se_carga_al_final(self):
         css = (STATIC / "styles" / "homenajes.css").read_text(encoding="utf-8")
+        entrada = (STATIC / "styles.css").read_text(encoding="utf-8")
         for estilo in HOMENAJES:
             for tema in ("light", "dark"):
                 bloque = re.search(rf'\[data-estilo="{estilo}"\]\[data-theme="{tema}"\] \{{(.*?)\}}', css, re.S)
@@ -42,19 +45,74 @@ class TemasHomenajeTests(SimpleTestCase):
                 for token in ("--color-bg", "--color-text", "--color-muted", "--color-brand",
                               "--color-brand-text", "--color-border-input", "--color-focus"):
                     self.assertIn(token + ":", bloque.group(1), f"{estilo} {tema} {token}")
-        entrada = (STATIC / "styles.css").read_text(encoding="utf-8")
         self.assertLess(entrada.index("estudio.css"), entrada.index("homenajes.css"))
+        for estilo in HOMENAJES:
+            # Cada tema trae su composición en su propio archivo, cargado después de los tokens.
+            self.assertLess(entrada.index("homenajes.css"), entrada.index(f"homenaje-{estilo}.css"))
+            propio = (STATIC / "styles" / f"homenaje-{estilo}.css").read_text(encoding="utf-8")
+            self.assertIn(f'[data-estilo="{estilo}"] .home-hero', propio)
+            self.assertIn(f'[data-estilo="{estilo}"] .canal', propio)
+
+    def test_el_movimiento_respeta_la_preferencia_de_reducirlo(self):
+        for estilo in HOMENAJES:
+            css = re.sub(r"/\*.*?\*/", "", (STATIC / "styles" / f"homenaje-{estilo}.css").read_text(encoding="utf-8"), flags=re.S)
+            movimiento = css.split("@media (prefers-reduced-motion: no-preference)", 1)[1].split("@keyframes", 1)[0]
+            fuera = css.replace(movimiento, "")
+            self.assertNotRegex(fuera, r"\banimation\s*:", estilo)
+            # Cada tema entra con su gesto propio al elegirlo en Opciones.
+            self.assertIn(f'[data-cambio-estilo][data-estilo="{estilo}"]::view-transition-new(root)', movimiento)
+        # Como Estudio, quedan fuera del contrato de microinteracciones; este es el suyo:
+        # transiciones breves (≤ 0.3 s) y solo sobre propiedades que no recolocan el contenido
+        # (width solo en el riel de BelugaCalc, que se despliega por encima de la página).
+        permitidas = {"background", "border-color", "color", "box-shadow", "opacity", "transform", "filter", "width"}
+        for archivo in sorted((STATIC / "styles").glob("homenaje*.css")):
+            css = re.sub(r"/\*.*?\*/", "", archivo.read_text(encoding="utf-8"), flags=re.S)
+            for valor in re.findall(r"\btransition\s*:\s*([^;{}]+);", css):
+                for parte in re.split(r",(?![^()]*\))", valor):
+                    propiedad, duracion = parte.split()[:2]
+                    with self.subTest(archivo=archivo.name, transicion=parte.strip()):
+                        self.assertIn(propiedad, permitidas)
+                        self.assertLessEqual(float(duracion.rstrip("s")), 0.3)
+            if "width" in " ".join(re.findall(r"\btransition\s*:\s*([^;{}]+);", css)):
+                self.assertEqual(archivo.name, "homenaje-belugacalc.css")
+        opciones = (STATIC / "opciones.js").read_text(encoding="utf-8")
+        self.assertIn('matchMedia("(prefers-reduced-motion: reduce)").matches', opciones)
+        self.assertIn("document.startViewTransition", opciones)
 
     def test_inicio_y_opciones_reconocen_a_cada_equipo(self):
         html = self.client.get("/").content.decode("utf-8")
         for estilo, nombre in zip(HOMENAJES, ("ChocoLab", "BelugaCalc", "HeyAlgb")):
             self.assertIn(f'<input type="radio" name="estilo" value="{estilo}">', html)
-            self.assertIn(f'data-homenaje="{estilo}"><span class="homenaje-logo">', html)
-            self.assertIn(f"En honor a <b>{nombre}</b>", html)
+            portada = re.search(rf'<figure class="portada" data-homenaje="{estilo}">(.*?)</figure>', html, re.S).group(1)
+            self.assertIn(f"En honor a <b>{nombre}</b>", portada)
+            self.assertIn(f"calculadora/homenajes/{estilo}.png", portada)
+            # Las ilustraciones son decorativas; la dedicatoria es texto que se lee.
+            self.assertNotRegex(portada, r"<figcaption[^>]*aria-hidden")
             self.assertIn(f"En honor a {nombre} ·", html)
             self.assertIn(f"calculadora/homenajes/{estilo}.png", html)
         # La identidad de PyGebra no cambia: mismo título y símbolo.
         self.assertIn('<h1 class="home-title">PyGebra</h1>', html)
+
+    def test_la_navegacion_por_areas_marca_donde_esta(self):
+        def actual(html):
+            nav = re.search(r'<nav class="homenaje-areas"[^>]*>(.*?)</nav>', html, re.S).group(1)
+            return re.findall(r'href="([^"]+)" aria-current="(\w+)"', nav)
+
+        self.assertEqual(actual(self.client.get("/").content.decode("utf-8")), [("/", "page")])
+        self.assertEqual(actual(self.client.get("/areas/algebra-lineal/").content.decode("utf-8")),
+                         [("/areas/algebra-lineal/", "page")])
+        # En una herramienta el área es la sección actual, no la página.
+        self.assertEqual(actual(self.client.get("/matrices/ecuaciones/").content.decode("utf-8")),
+                         [("/areas/algebra-lineal/", "true")])
+
+    def test_la_muesca_de_belugacalc_apunta_al_enlace_activo(self):
+        for ruta in ("/", "/areas/sistemas-numericos/", "/areas/conjuntos/", "/matrices/ecuaciones/",
+                     "/metodos-numericos/metodos-cerrados/biseccion/"):
+            html = self.client.get(ruta).content.decode("utf-8")
+            nav = re.search(r'<nav class="homenaje-areas"[^>]*style="--activo: (\d+)"[^>]*>(.*?)</nav>', html, re.S)
+            enlaces = re.findall(r"<li><a[^>]*>", nav.group(2))
+            activo = [i for i, enlace in enumerate(enlaces) if "aria-current" in enlace]
+            self.assertEqual(activo, [int(nav.group(1))], ruta)
 
     def test_cada_logotipo_tiene_credito_y_procedencia_verificable(self):
         creditos = (RAIZ / "docs" / "temas-homenaje.md").read_text(encoding="utf-8")

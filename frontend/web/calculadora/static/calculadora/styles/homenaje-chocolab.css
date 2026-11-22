@@ -1,0 +1,699 @@
+/* ChocoLab: un laboratorio matemático cálido. Reinterpreta su portada (rótulo, titular con
+   acento cobre y lámina con la gráfica), su cabecera con navegación en pastillas, sus módulos
+   numerados y su entrada suave. De día, papel crema y cuadrícula; de noche, cacao y brillo cobre.
+   Tipografía del sistema: titulares muy gruesos y símbolos en serifa, como en el original. */
+
+[data-estilo="chocolab"] {
+    --header-height: 4.5rem;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    --choco-serifa: Cambria, Georgia, "Times New Roman", serif;
+    --choco-sombra: 0 15px 36px var(--color-shadow);
+}
+
+[data-estilo="chocolab"][data-theme="light"] {
+    --choco-cobre: #b4744c;
+    --choco-trazo: #74412c;
+    --choco-cuadricula: #e8ddd1;
+    --choco-boton: #522e1d;
+    --choco-boton-hover: #794932;
+    --choco-boton-texto: #fff8ee;
+    --choco-fondo: radial-gradient(60rem 30rem at 85% -10%, #f1e4d4 0%, transparent 70%);
+}
+
+[data-estilo="chocolab"][data-theme="dark"] {
+    --choco-cobre: #d4a177;
+    --choco-trazo: #e0aa7e;
+    --choco-cuadricula: #3a2e26;
+    --choco-boton: #d4a177;
+    --choco-boton-hover: #e3b990;
+    --choco-boton-texto: #1d130c;
+    /* De noche la lámpara de cobre calienta la esquina de la mesa. */
+    --choco-fondo: radial-gradient(55rem 32rem at 82% -8%, rgb(212 161 119 / 0.16) 0%, transparent 70%);
+}
+
+[data-estilo="chocolab"] body {
+    background: var(--choco-fondo), var(--color-bg);
+    background-attachment: fixed;
+}
+
+/* —— Cabecera: marca a la izquierda, áreas en pastillas, ajustes a la derecha —— */
+
+[data-estilo="chocolab"] .app-header {
+    padding-inline: clamp(1rem, 3vw, 3.25rem);
+    background: var(--color-surface-raised);
+}
+
+[data-estilo="chocolab"] .app-name {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+[data-estilo="chocolab"] :is(.navigation-toggle, .options-toggle, .historial) {
+    border-radius: 9px;
+}
+
+/* El tema claro/oscuro, como su interruptor: una cápsula. */
+[data-estilo="chocolab"] .theme-toggle {
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+}
+
+@media (min-width: 1100px) {
+    [data-estilo="chocolab"] .homenaje-areas {
+        display: block;
+        margin-inline: auto;
+    }
+
+    [data-estilo="chocolab"] .homenaje-areas ul {
+        display: flex;
+        gap: 0.3rem;
+    }
+
+    [data-estilo="chocolab"] .areas-icono {
+        display: none;
+    }
+
+    [data-estilo="chocolab"] .areas-enlace {
+        padding: 0.7rem 0.95rem;
+        border-radius: 9px;
+        color: var(--color-muted);
+        font-size: 0.84rem;
+        font-weight: 700;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    [data-estilo="chocolab"] .areas-enlace:hover,
+    [data-estilo="chocolab"] .areas-enlace[aria-current] {
+        background: var(--color-surface-muted);
+        color: var(--color-text);
+    }
+
+    /* Un punto cobre marca el área donde estás. */
+    [data-estilo="chocolab"] .areas-enlace[aria-current]::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--choco-cobre);
+    }
+}
+
+/* —— Inicio: rótulo, titular y lámina de laboratorio —— */
+
+[data-estilo="chocolab"] .home-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+    align-items: center;
+    gap: 2rem clamp(2rem, 4vw, 3.5rem);
+    max-width: 1240px;
+    min-height: min(34rem, 80svh);
+    margin: 0.5rem auto 1rem;
+}
+
+[data-estilo="chocolab"] .home-hero-texto {
+    position: relative;
+    padding: 1rem 0;
+}
+
+/* Rótulo cobre con su punto encendido, como el «eyebrow» de la portada original. */
+[data-estilo="chocolab"] .home-hero-texto::before {
+    content: "Laboratorio matemático" / "";
+    display: block;
+    margin-bottom: 1.1rem;
+    padding-left: 1.2rem;
+    background: radial-gradient(circle at 4px 50%, var(--choco-cobre) 3.5px, transparent 4.5px),
+                radial-gradient(circle at 4px 50%, color-mix(in srgb, var(--choco-cobre) 22%, transparent) 7.5px, transparent 8px);
+    color: var(--choco-cobre);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+[data-theme="light"][data-estilo="chocolab"] .home-hero-texto::before {
+    color: var(--color-brand);
+}
+
+[data-estilo="chocolab"] .home-marca {
+    gap: 0.9rem;
+}
+
+[data-estilo="chocolab"] .home-lockup .app-mark {
+    width: clamp(3rem, 5.5vw, 4.4rem);
+}
+
+[data-estilo="chocolab"] .home-hero .home-title {
+    font: 800 clamp(2.8rem, 6vw, 4.6rem) / 1 var(--font-display);
+    letter-spacing: -0.055em;
+}
+
+/* El lema con el acento cursivo del titular original: cobre, en serifa, tamaño grande (≥ 3:1). */
+[data-estilo="chocolab"] .home-hero .home-lead {
+    margin-top: 0.6rem;
+    color: var(--choco-cobre);
+    font: italic 400 clamp(1.6rem, 2.6vw, 2.1rem) / 1.2 var(--choco-serifa);
+    letter-spacing: -0.01em;
+}
+
+[data-estilo="chocolab"] .home-proposito {
+    max-width: 36rem;
+    margin-top: 1rem;
+    font-size: 1rem;
+    line-height: 1.8;
+}
+
+[data-estilo="chocolab"] .home-hero .search {
+    margin-top: 1.9rem;
+}
+
+[data-estilo="chocolab"] .search-input {
+    border-radius: 12px;
+}
+
+[data-estilo="chocolab"] .search-submit,
+[data-estilo="chocolab"] .btn-primary {
+    border-color: transparent;
+    border-radius: 10px;
+    background: var(--choco-boton);
+    color: var(--choco-boton-texto);
+    font-weight: 800;
+    transition: transform 0.15s, background 0.2s;
+}
+
+[data-estilo="chocolab"] :is(.search-submit, .btn-primary):not(:disabled):hover {
+    background: var(--choco-boton-hover);
+    transform: translateY(-1px);
+}
+
+[data-estilo="chocolab"] .portada[data-homenaje="chocolab"] {
+    position: relative;
+    display: grid;
+    margin: 0;
+}
+
+/* La lámina: papel cuadriculado que se desvanece hacia la izquierda, con la gráfica encima. */
+.choco-lamina {
+    position: relative;
+    min-height: 21rem;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 25px;
+    background: linear-gradient(142deg, var(--color-surface-raised), var(--color-surface-muted));
+    box-shadow: var(--choco-sombra);
+}
+
+.choco-lamina::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(to right, var(--choco-cuadricula) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--choco-cuadricula) 1px, transparent 1px);
+    background-size: 35px 35px;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 55%);
+    mask-image: linear-gradient(to right, transparent, #000 55%);
+}
+
+.choco-grafica {
+    position: absolute;
+    inset: 1rem 1.25rem 2.5rem;
+    width: calc(100% - 2.5rem);
+    height: calc(100% - 3.5rem);
+    overflow: visible;
+    filter: drop-shadow(0 10px 14px rgb(180 116 76 / 0.18));
+}
+
+.choco-eje {
+    fill: none;
+    stroke: var(--color-border-strong);
+    stroke-width: 1.4;
+}
+
+.choco-curva {
+    fill: none;
+    stroke: var(--choco-trazo);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.choco-tangente,
+.choco-guia {
+    fill: none;
+    stroke: var(--choco-cobre);
+    stroke-width: 2;
+    stroke-dasharray: 6 6;
+}
+
+.choco-guia {
+    stroke-width: 1.4;
+    opacity: 0.7;
+}
+
+.choco-punto {
+    fill: var(--choco-cobre);
+    stroke: var(--color-surface-raised);
+    stroke-width: 3;
+}
+
+.choco-punto,
+.choco-raiz,
+.choco-rotulo {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.choco-raiz {
+    fill: none;
+    stroke: var(--choco-trazo);
+    stroke-width: 2.5;
+}
+
+.choco-rotulo {
+    fill: var(--color-text);
+    font: italic 700 15px var(--choco-serifa);
+}
+
+/* La anotación de la esquina, con su tarjeta. */
+.choco-anotacion {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 0.6rem 0.95rem;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface-raised);
+    color: var(--color-brand);
+    font: 800 1.05rem var(--font-display);
+}
+
+.choco-anotacion span {
+    color: var(--choco-cobre);
+}
+
+/* Una taza de cacao con vapor de senos: el motivo propio de este homenaje. */
+.choco-taza {
+    position: absolute;
+    bottom: 1rem;
+    right: 1.4rem;
+    width: 6.5rem;
+    height: 6.5rem;
+}
+
+.choco-taza-cuerpo {
+    fill: var(--color-brand);
+}
+
+.choco-taza-asa {
+    fill: none;
+    stroke: var(--color-brand);
+    stroke-width: 6;
+    stroke-linecap: round;
+}
+
+.choco-taza-cacao {
+    stroke: var(--choco-cobre);
+    stroke-width: 5;
+    stroke-linecap: round;
+}
+
+.choco-taza-pi {
+    fill: var(--color-surface-raised);
+    font: italic 700 24px var(--choco-serifa);
+    text-anchor: middle;
+}
+
+.choco-vapor {
+    fill: none;
+    stroke: var(--choco-cobre);
+    stroke-width: 3;
+    stroke-linecap: round;
+    opacity: 0.55;
+}
+
+/* La dedicatoria es una etiqueta de papel prendida a la lámina; de noche sigue siendo papel. */
+[data-estilo="chocolab"] .portada[data-homenaje="chocolab"] .portada-dedicatoria {
+    --color-text: #382417;
+    --color-muted: #6e5949;
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 0.55rem;
+    justify-self: start;
+    width: min(19rem, 82%);
+    margin: -4.25rem 0 0 1.5rem;
+    padding: 1rem 1.2rem 0.9rem;
+    border: 1px solid #e8ddd1;
+    border-radius: 16px;
+    background: #fffdf9;
+    color: var(--color-muted);
+    box-shadow: 0 18px 36px rgb(68 39 22 / 0.18);
+    transform: rotate(-2deg);
+}
+
+[data-estilo="chocolab"] .portada[data-homenaje="chocolab"] .portada-dedicatoria::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    width: 4.5rem;
+    height: 18px;
+    background: rgb(180 116 76 / 0.35);
+    transform: translateX(-50%) rotate(3deg);
+}
+
+[data-estilo="chocolab"] .portada-texto {
+    font-size: 0.86rem;
+}
+
+[data-estilo="chocolab"] .portada-texto b {
+    color: var(--color-text);
+    font-weight: 800;
+}
+
+/* —— Inicio: los módulos del laboratorio, numerados y en dos columnas —— */
+
+[data-estilo="chocolab"] .home-catalog {
+    max-width: 1240px;
+    margin-inline: auto;
+}
+
+[data-estilo="chocolab"] .home-section-heading {
+    display: grid;
+    gap: 0.35rem;
+    margin: 3rem 0 1.2rem;
+}
+
+[data-estilo="chocolab"] .home-section-heading h2 {
+    font-size: clamp(1.5rem, 2.4vw, 1.75rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+}
+
+[data-estilo="chocolab"] .home-section-heading h2::before {
+    content: "Módulos" / "";
+    display: block;
+    margin-bottom: 0.4rem;
+    color: var(--color-brand);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+[data-theme="dark"][data-estilo="chocolab"] .home-section-heading h2::before {
+    color: var(--choco-cobre);
+}
+
+/* Tres onzas bajo el título: una tableta de cacao como separador. */
+[data-estilo="chocolab"] .home-section-heading::after {
+    content: "";
+    width: 4.2rem;
+    height: 0.55rem;
+    margin-top: 0.3rem;
+    border-radius: 3px;
+    background: repeating-linear-gradient(90deg, var(--color-brand) 0 1.25rem, transparent 1.25rem 1.45rem);
+}
+
+[data-estilo="chocolab"] .canales {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem;
+    counter-reset: modulo;
+}
+
+[data-estilo="chocolab"] .canal {
+    counter-increment: modulo;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
+    align-content: start;
+    column-gap: 1rem;
+    min-height: 14.5rem;
+    padding: 1.55rem 1.65rem 1.35rem;
+    border-radius: 17px;
+    background: var(--color-surface-raised);
+    box-shadow: var(--choco-sombra);
+    transition: transform 0.17s, border-color 0.17s, box-shadow 0.17s;
+}
+
+[data-estilo="chocolab"] .canal > * {
+    margin: 0;
+}
+
+[data-estilo="chocolab"] .canal:not(.es-pronto):hover {
+    border-color: var(--choco-cobre);
+    box-shadow: 0 22px 40px var(--color-shadow-strong);
+    transform: translateY(-4px);
+}
+
+[data-estilo="chocolab"] .canal::before {
+    content: "Módulo " counter(modulo, decimal-leading-zero);
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    color: var(--color-brand);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+}
+
+[data-theme="dark"][data-estilo="chocolab"] .canal::before {
+    color: var(--choco-cobre);
+}
+
+[data-estilo="chocolab"] .canal-chip {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 3rem;
+    padding: 0.8rem 0.75rem;
+    border: 0;
+    border-radius: 12px;
+    background: var(--color-surface-muted);
+    color: var(--color-brand);
+    font: 400 1.05rem/1 var(--choco-serifa);
+    text-align: center;
+}
+
+[data-theme="dark"][data-estilo="chocolab"] .canal-chip {
+    color: var(--choco-cobre);
+}
+
+[data-estilo="chocolab"] .canal-nombre {
+    grid-column: 1 / -1;
+    margin-top: 1.15rem;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+[data-estilo="chocolab"] .canal-descripcion {
+    grid-column: 1 / -1;
+    margin-top: 0.45rem;
+    font-size: 0.9rem;
+    line-height: 1.65;
+}
+
+[data-estilo="chocolab"] .canal-temas {
+    grid-column: 1 / -1;
+    align-self: end;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--color-border);
+}
+
+[data-estilo="chocolab"] .canal-temas span {
+    padding: 0.3rem 0.7rem;
+    background: var(--color-surface-muted);
+    color: var(--color-muted);
+    font-size: 0.74rem;
+}
+
+[data-estilo="chocolab"] .canal:not(.es-pronto) .canal-temas::after {
+    content: "↗" / "";
+    margin-left: auto;
+    color: var(--choco-cobre);
+    font-size: 1.4rem;
+    line-height: 1;
+    transition: transform 0.17s;
+}
+
+[data-estilo="chocolab"] .canal:not(.es-pronto):hover .canal-temas::after {
+    transform: translate(3px, -3px);
+}
+
+[data-estilo="chocolab"] .canal.es-pronto {
+    border-style: dashed;
+    background: var(--color-surface-muted);
+    box-shadow: none;
+}
+
+/* —— Área y herramienta: la mesa de trabajo del laboratorio —— */
+
+[data-estilo="chocolab"] .area-header,
+[data-estilo="chocolab"] .tool-header {
+    position: relative;
+}
+
+[data-estilo="chocolab"] .area-header {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem 1.65rem 1.7rem;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-surface-raised);
+    box-shadow: var(--choco-sombra);
+}
+
+[data-estilo="chocolab"] :is(.area-title, .tool-title) {
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+[data-estilo="chocolab"] .area-title {
+    font-size: clamp(1.9rem, 3.3vw, 2.6rem);
+}
+
+[data-estilo="chocolab"] .tool-title {
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
+}
+
+[data-estilo="chocolab"] .breadcrumbs a {
+    color: var(--color-brand);
+    font-weight: 700;
+}
+
+[data-estilo="chocolab"] :is(.panel, .indice, .destacado) {
+    border-radius: 16px;
+    box-shadow: var(--choco-sombra);
+}
+
+/* Herramientas hermanas como su selector segmentado: la activa sale en relieve. */
+[data-estilo="chocolab"] .rail {
+    border-radius: 12px;
+    background: var(--color-surface-muted);
+}
+
+[data-estilo="chocolab"] .rail-enlace[aria-current="page"],
+[data-estilo="chocolab"] .indice-item.elegida {
+    background: var(--color-surface-raised);
+    color: var(--color-brand);
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.07);
+}
+
+[data-theme="dark"][data-estilo="chocolab"] :is(.rail-enlace[aria-current="page"], .indice-item.elegida) {
+    color: var(--choco-cobre);
+}
+
+/* —— Movimiento —— */
+
+@media (prefers-reduced-motion: no-preference) {
+    /* La entrada de cada vista del original: sube 8 px desde media opacidad. */
+    [data-estilo="chocolab"] .app-content {
+        animation: choco-entrar 0.32s ease both;
+    }
+
+    /* La curva se traza y la taza humea despacio solo en la portada. */
+    [data-estilo="chocolab"] .choco-curva {
+        stroke-dasharray: 1;
+        animation: choco-trazar 1.4s 0.15s cubic-bezier(0.45, 0, 0.2, 1) both;
+    }
+
+    [data-estilo="chocolab"] .choco-punto,
+    [data-estilo="chocolab"] .choco-raiz,
+    [data-estilo="chocolab"] .choco-rotulo {
+        animation: choco-aparecer 0.4s 1.2s ease both;
+    }
+
+    [data-estilo="chocolab"] .choco-vapor {
+        animation: choco-humear 3.2s ease-in-out infinite;
+    }
+
+    [data-estilo="chocolab"] .choco-vapor-2 { animation-delay: -1.1s; }
+    [data-estilo="chocolab"] .choco-vapor-3 { animation-delay: -2.2s; }
+
+    [data-estilo="chocolab"] .canal {
+        animation: choco-entrar 0.4s ease backwards;
+    }
+
+    [data-estilo="chocolab"] .canal:nth-child(2) { animation-delay: 60ms; }
+    [data-estilo="chocolab"] .canal:nth-child(3) { animation-delay: 120ms; }
+    [data-estilo="chocolab"] .canal:nth-child(n + 4) { animation-delay: 180ms; }
+
+    /* Al elegir ChocoLab, el ambiente se derrama desde la opción como cacao caliente. */
+    [data-cambio-estilo][data-estilo="chocolab"]::view-transition-new(root) {
+        animation: choco-verter 0.7s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+    }
+}
+
+@keyframes choco-entrar {
+    from { opacity: 0.5; transform: translateY(8px); }
+}
+
+@keyframes choco-trazar {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes choco-aparecer {
+    from { opacity: 0; transform: scale(0.6); }
+}
+
+@keyframes choco-humear {
+    0%, 100% { opacity: 0.15; transform: translateY(4px); }
+    50% { opacity: 0.6; transform: translateY(-3px); }
+}
+
+@keyframes choco-verter {
+    from { clip-path: circle(0 at var(--cambio-x, 100%) var(--cambio-y, 0)); }
+    to { clip-path: circle(150vmax at var(--cambio-x, 100%) var(--cambio-y, 0)); }
+}
+
+/* —— Pantallas estrechas —— */
+
+@media (max-width: 900px) {
+    [data-estilo="chocolab"] .home-hero {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 0;
+    }
+
+    [data-estilo="chocolab"] .choco-lamina {
+        min-height: 15rem;
+    }
+
+    [data-estilo="chocolab"] .canales {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 540px) {
+    [data-estilo="chocolab"] {
+        --header-height: 3.75rem;
+    }
+
+    [data-estilo="chocolab"] .choco-taza {
+        top: 4.2rem;
+        right: 0.9rem;
+        bottom: auto;
+        width: 4rem;
+        height: 4rem;
+    }
+
+    [data-estilo="chocolab"] .portada[data-homenaje="chocolab"] .portada-dedicatoria {
+        width: min(16rem, 78%);
+        margin-left: 0.75rem;
+    }
+
+    [data-estilo="chocolab"] .choco-anotacion {
+        top: 0.9rem;
+        right: 0.9rem;
+        font-size: 0.9rem;
+    }
+
+    [data-estilo="chocolab"] .canal {
+        min-height: 0;
+        padding: 1.2rem 1.25rem;
+    }
+}

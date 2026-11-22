@@ -24,6 +24,26 @@
         ahora.textContent = `${continua ? `Ahora: ${actual.nombre}. ` : ""}${actual.descripcion}.`;
     }
 
+    // Cambiar de estilo es cambiar de ambiente: cada estilo entra con su propio gesto
+    // (homenajes.css) desde la opción elegida. Sin View Transitions o con movimiento
+    // reducido el cambio es inmediato; nunca bloquea la página.
+    function cambiarEstilo(estilo, origen) {
+        const aplicar = () => root.setAttribute("data-estilo", estilo);
+        if (!document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            aplicar();
+            return;
+        }
+        const caja = origen.closest(".opcion")?.getBoundingClientRect();
+        if (caja) {
+            root.style.setProperty("--cambio-x", `${Math.round(caja.left + caja.width / 2)}px`);
+            root.style.setProperty("--cambio-y", `${Math.round(caja.top + caja.height / 2)}px`);
+        }
+        root.setAttribute("data-cambio-estilo", "");
+        const transicion = document.startViewTransition(aplicar);
+        transicion.ready.catch(() => {});
+        transicion.finished.catch(() => {}).finally(() => root.removeAttribute("data-cambio-estilo"));
+    }
+
     function sincronizar() {
         const actuales = {
             estilo: root.getAttribute("data-estilo"),
@@ -69,7 +89,7 @@
         }
         preferencias.guardar(`pygebra-${name}`, value);
         if (name === "estilo") {
-            root.setAttribute("data-estilo", value);
+            cambiarEstilo(value, event.target);
             window.Sonido.tocar("tic");
         } else {
             window.Sonido.configurar({ activo: value === "on" });

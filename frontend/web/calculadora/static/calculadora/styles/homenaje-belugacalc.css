@@ -1,0 +1,799 @@
+/* BelugaCalc: una aplicación de escritorio fluida. Reinterpreta su barra lateral (una píldora
+   marina flotante con una muesca en S donde encaja la bola celeste del módulo activo), su
+   bienvenida (tarjeta blanca con la mascota entre corchetes de matriz, sobre olas claras y
+   fórmulas en cursiva) y su menú de módulos, con la ligereza de Fluent: cristal, esquinas
+   suaves e indicadores que se deslizan entre páginas (View Transitions entre documentos).
+   De día, agua clara; de noche, el fondo del océano con brillos celestes. */
+
+[data-estilo="belugacalc"] {
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    --beluga-curva: cubic-bezier(0.33, 1, 0.68, 1);
+    --beluga-bola: #62b9ff;
+    --beluga-riel: 0px;
+    --beluga-serifa: Cambria, Georgia, serif;
+}
+
+[data-estilo="belugacalc"][data-theme="light"] {
+    /* Su fondo de bienvenida: degradado de agua y un brillo cian. */
+    --beluga-mica:
+        radial-gradient(40rem 28rem at 20% 10%, rgb(56 216 247 / 0.18), transparent 70%),
+        linear-gradient(135deg, #f8fafc 0%, #f0f9ff 40%, #e0f2fe 80%, #bae6fd 100%);
+    --beluga-cristal: rgb(248 250 252 / 0.72);
+    --beluga-tarjeta: #ffffff;
+    --beluga-tarjeta-suave: rgb(255 255 255 / 0.82);
+    --beluga-fila: #f8fafc;
+    --beluga-linea: #e2e8f0;
+    --beluga-cielo: #0369a1;
+    --beluga-cielo-suave: #e0f2fe;
+    --beluga-sombra: 0 10px 45px rgb(0 30 80 / 0.08);
+    --beluga-riel-fondo: #063d89;
+    --beluga-ola: rgb(255 255 255 / 0.55);
+    --beluga-formula: rgb(2 101 151 / 0.3);
+    --beluga-marco: linear-gradient(160deg, #e0f2fe, #bae6fd);
+    --beluga-corchete: #0284c7;
+}
+
+[data-estilo="belugacalc"][data-theme="dark"] {
+    --beluga-mica:
+        radial-gradient(40rem 28rem at 20% 8%, rgb(98 185 255 / 0.14), transparent 70%),
+        linear-gradient(135deg, #061426 0%, #07182b 45%, #08223f 80%, #0a2c52 100%);
+    --beluga-cristal: rgb(7 24 43 / 0.72);
+    --beluga-tarjeta: #0f243d;
+    --beluga-tarjeta-suave: rgb(15 36 61 / 0.82);
+    --beluga-fila: #0b1d33;
+    --beluga-linea: #1f3a5a;
+    --beluga-cielo: #9dd3ff;
+    --beluga-cielo-suave: #12345a;
+    --beluga-sombra: 0 12px 45px rgb(0 8 20 / 0.45);
+    --beluga-riel-fondo: #04284a;
+    --beluga-ola: rgb(98 185 255 / 0.07);
+    --beluga-formula: rgb(157 211 255 / 0.22);
+    --beluga-marco: linear-gradient(160deg, #12345a, #0b3b6e);
+    --beluga-corchete: #62b9ff;
+}
+
+[data-estilo="belugacalc"] body {
+    background: var(--beluga-mica);
+    background-attachment: fixed;
+}
+
+[data-estilo="belugacalc"] .app-layout {
+    overflow-x: clip;
+}
+
+/* —— Cabecera de cristal (el desenfoque vive en un pseudoelemento: así el riel fijo sigue
+   anclado a la ventana y no a la cabecera) —— */
+
+[data-estilo="belugacalc"] .app-header {
+    border-bottom-color: var(--beluga-linea);
+    background: transparent;
+}
+
+[data-estilo="belugacalc"] .app-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--beluga-cristal);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    backdrop-filter: blur(20px) saturate(1.5);
+}
+
+[data-estilo="belugacalc"] .app-header :is(.navigation-toggle, .theme-toggle, .options-toggle, .historial) {
+    border-color: var(--beluga-linea);
+    background: var(--beluga-tarjeta-suave);
+}
+
+[data-estilo="belugacalc"] .app-name {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* —— Riel: la píldora marina de BelugaCalc —— */
+
+@media (min-width: 1024px) {
+    [data-estilo="belugacalc"] {
+        --beluga-riel: 5rem;
+    }
+
+    [data-estilo="belugacalc"] .app-header {
+        padding-left: calc(var(--beluga-riel) + 1rem);
+    }
+
+    [data-estilo="belugacalc"] .app-layout {
+        padding-left: var(--beluga-riel);
+    }
+
+    [data-estilo="belugacalc"].js .app-sidebar {
+        left: var(--beluga-riel);
+    }
+
+    [data-estilo="belugacalc"] .homenaje-areas {
+        --paso: 3.55rem;
+        --arriba: 5.25rem;
+        /* Centro del enlace activo; la muesca de 104 px se centra en él. */
+        --muesca-y: calc(var(--arriba) + var(--activo, 0) * var(--paso) + 1.5rem - 3.25rem);
+        position: fixed;
+        top: 0.75rem;
+        bottom: 0.75rem;
+        left: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        width: 4.25rem;
+        padding: var(--arriba) 0 0.75rem;
+        overflow: hidden;
+        border-radius: 1.9rem;
+        color: #ffffff;
+        filter: drop-shadow(0 12px 24px rgb(2 14 30 / 0.22));
+        view-transition-name: beluga-riel;
+        transition: width 0.22s cubic-bezier(0.45, 0, 0.55, 1), box-shadow 0.22s;
+    }
+
+    /* La píldora se pinta en un pseudoelemento: la muesca en S muerde solo el fondo, alrededor
+       de la bola activa, sin recortar la bola ni los iconos. */
+    [data-estilo="belugacalc"] .homenaje-areas::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        background: var(--beluga-riel-fondo);
+    }
+
+    [data-estilo="belugacalc"] .homenaje-areas:has(.areas-enlace[aria-current])::before {
+        -webkit-mask:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 104'%3E%3Cpath d='M60 0C58 16 0 24 0 52S58 88 60 104Z'/%3E%3C/svg%3E") no-repeat right 0 top var(--muesca-y) / 3.75rem 6.5rem,
+            linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 104'%3E%3Cpath d='M60 0C58 16 0 24 0 52S58 88 60 104Z'/%3E%3C/svg%3E") no-repeat right 0 top var(--muesca-y) / 3.75rem 6.5rem,
+            linear-gradient(#000 0 0);
+        mask-composite: exclude;
+    }
+
+    /* Desplegada, muestra los nombres; la muesca se retira. */
+    [data-estilo="belugacalc"] .homenaje-areas:is(:hover, :focus-within) {
+        width: 14.4rem;
+        filter: drop-shadow(12px 0 28px rgb(2 14 30 / 0.35));
+    }
+
+    [data-estilo="belugacalc"] .homenaje-areas:is(:hover, :focus-within):has(.areas-enlace[aria-current])::before {
+        -webkit-mask: none;
+        mask: none;
+    }
+
+    [data-estilo="belugacalc"] .homenaje-areas ul {
+        display: grid;
+        gap: calc(var(--paso) - 3rem);
+    }
+
+    [data-estilo="belugacalc"] .areas-enlace {
+        display: grid;
+        grid-template-columns: 4.25rem minmax(0, 1fr);
+        align-items: center;
+        min-height: 3rem;
+        color: #ffffff;
+        font-size: 0.92rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    [data-estilo="belugacalc"] .areas-icono {
+        justify-self: center;
+    }
+
+    [data-estilo="belugacalc"] .areas-enlace:focus-visible {
+        outline-color: var(--beluga-bola);
+        outline-offset: -3px;
+    }
+
+    [data-estilo="belugacalc"] .areas-nombre {
+        opacity: 0;
+        transition: opacity 0.12s;
+    }
+
+    [data-estilo="belugacalc"] .homenaje-areas:is(:hover, :focus-within) .areas-nombre {
+        opacity: 1;
+        transition-delay: 0.1s;
+    }
+
+    /* El nombre activo, en celeste y seminegrita, como en su barra. */
+    [data-estilo="belugacalc"] .areas-enlace[aria-current] .areas-nombre {
+        color: var(--beluga-bola);
+        font-weight: 600;
+    }
+
+    [data-estilo="belugacalc"] .areas-mascota {
+        display: block;
+        width: 2.8rem;
+        height: 2.8rem;
+        margin: auto auto 0 0.72rem;
+        padding: 0.15rem;
+        border-radius: 50%;
+        background: #e0f2fe;
+    }
+}
+
+[data-estilo="belugacalc"] .areas-icono {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+[data-estilo="belugacalc"] .areas-enlace:hover .areas-icono {
+    background: rgb(255 255 255 / 0.12);
+}
+
+/* La bola celeste del módulo activo con el icono oscuro (≈ 8:1). */
+[data-estilo="belugacalc"] .areas-enlace[aria-current] .areas-icono {
+    background: var(--beluga-bola);
+    color: #1a1c29;
+    view-transition-name: beluga-bola;
+}
+
+/* En pantallas estrechas el riel es una barra inferior, salvo en las herramientas, donde
+   abajo vive el teclado matemático. */
+@media (max-width: 1023.98px) {
+    [data-estilo="belugacalc"] body:not([data-vista="herramienta"]) .homenaje-areas {
+        position: fixed;
+        inset: auto 0.6rem 0.6rem;
+        display: block;
+        padding: 0.35rem;
+        border-radius: 1.6rem;
+        background: var(--beluga-riel-fondo);
+        color: #ffffff;
+        box-shadow: 0 12px 32px rgb(2 14 30 / 0.35);
+    }
+
+    [data-estilo="belugacalc"] body:not([data-vista="herramienta"]) .app-content {
+        padding-bottom: 6rem;
+    }
+
+    [data-estilo="belugacalc"] .homenaje-areas ul {
+        display: flex;
+        justify-content: space-around;
+    }
+
+    [data-estilo="belugacalc"] .areas-enlace {
+        display: grid;
+        justify-items: center;
+        gap: 0.1rem;
+        padding: 0.2rem 0.3rem;
+        border-radius: 1.2rem;
+        color: #ffffff;
+        font-size: 0.66rem;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    [data-estilo="belugacalc"] .areas-enlace:focus-visible {
+        outline-color: var(--beluga-bola);
+    }
+
+    [data-estilo="belugacalc"] .areas-nombre {
+        max-width: 4.5rem;
+        line-height: 1.1;
+    }
+}
+
+/* —— Controles suaves al estilo Fluent —— */
+
+[data-estilo="belugacalc"] .btn,
+[data-estilo="belugacalc"] .search-submit {
+    border-radius: 6px;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+
+[data-estilo="belugacalc"] .btn-primary,
+[data-estilo="belugacalc"] .search-submit {
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-bottom-color: rgb(0 0 0 / 0.28);
+    background: var(--color-brand);
+    color: var(--color-brand-text);
+    box-shadow: 0 1px 2px rgb(4 51 90 / 0.18);
+}
+
+[data-estilo="belugacalc"] :is(.btn-primary, .search-submit):not(:disabled):hover {
+    background: var(--color-brand-strong);
+}
+
+[data-estilo="belugacalc"] :is(.btn, .search-submit):not(:disabled):active {
+    transform: scale(0.98);
+}
+
+[data-estilo="belugacalc"] .btn-secondary {
+    border-color: var(--beluga-linea);
+    background: var(--beluga-tarjeta-suave);
+}
+
+/* Campos con la línea de acento inferior de Fluent al enfocarlos (el contorno de foco sigue). */
+[data-estilo="belugacalc"] :is(.field-input, .matrix-input, .search-input, .field-select, textarea):focus {
+    box-shadow: inset 0 -2px 0 var(--color-brand);
+}
+
+/* —— Inicio: la tarjeta de bienvenida —— */
+
+[data-estilo="belugacalc"] .home-hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(100%, 40rem);
+    max-width: none;
+    margin: 2.25rem auto 0;
+    padding: 2.6rem clamp(1.25rem, 5vw, 3rem) 2.4rem;
+    text-align: center;
+}
+
+/* La tarjeta es un pseudoelemento: así las olas pueden quedar detrás de ella. */
+[data-estilo="belugacalc"] .home-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border: 1px solid var(--beluga-linea);
+    border-radius: 32px;
+    background: var(--beluga-tarjeta);
+    box-shadow: var(--beluga-sombra);
+}
+
+[data-estilo="belugacalc"] .home-hero-texto,
+[data-estilo="belugacalc"] .portada[data-homenaje="belugacalc"] {
+    display: contents;
+}
+
+[data-estilo="belugacalc"] .portada[data-homenaje="belugacalc"] .portada-dedicatoria { order: 1; }
+[data-estilo="belugacalc"] .beluga-marco { order: 2; }
+[data-estilo="belugacalc"] .home-marca { order: 3; }
+[data-estilo="belugacalc"] .home-lead { order: 4; }
+[data-estilo="belugacalc"] .home-proposito { order: 5; }
+[data-estilo="belugacalc"] .home-hero .search { order: 6; }
+[data-estilo="belugacalc"] .home-retomar { order: 7; align-self: center; }
+
+/* La dedicatoria es el sobretítulo de la tarjeta, como su «ÁLGEBRA LINEAL». */
+[data-estilo="belugacalc"] .portada[data-homenaje="belugacalc"] .portada-dedicatoria {
+    margin: 0;
+    color: var(--beluga-cielo);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+[data-estilo="belugacalc"] .portada-texto b {
+    font-weight: 800;
+}
+
+/* La mascota, enmarcada por corchetes de matriz. */
+.beluga-marco {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 14rem;
+    height: 11.5rem;
+    margin: 1.1rem 0 1.4rem;
+    border-radius: 20px;
+    background: var(--beluga-marco);
+}
+
+.beluga-marco::before,
+.beluga-marco::after {
+    content: "";
+    position: absolute;
+    top: -0.45rem;
+    bottom: -0.45rem;
+    width: 1.1rem;
+    border: 0.34rem solid var(--beluga-corchete);
+    border-radius: 0.65rem;
+}
+
+.beluga-marco::before {
+    left: -0.45rem;
+    border-right: 0;
+}
+
+.beluga-marco::after {
+    right: -0.45rem;
+    border-left: 0;
+}
+
+[data-estilo="belugacalc"] .beluga-mascota {
+    width: 78%;
+}
+
+[data-estilo="belugacalc"] .home-marca {
+    justify-content: center;
+}
+
+[data-estilo="belugacalc"] .home-hero .home-title {
+    font-size: clamp(2.2rem, 5vw, 2.9rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+[data-estilo="belugacalc"] .home-hero .home-lead {
+    margin-top: 0.25rem;
+    font-size: 1.1rem;
+}
+
+[data-estilo="belugacalc"] .home-proposito {
+    max-width: 30rem;
+    margin-inline: auto;
+    line-height: 1.6;
+}
+
+[data-estilo="belugacalc"] .home-hero .search {
+    width: 100%;
+    margin-top: 1.6rem;
+}
+
+[data-estilo="belugacalc"] .home-hero .search-label {
+    display: block;
+}
+
+/* Su botón «Comenzar»: una píldora azul cielo. */
+[data-estilo="belugacalc"] .search-large .search-submit {
+    border-radius: 24px;
+}
+
+[data-estilo="belugacalc"] .search-large .search-input {
+    border-radius: 12px;
+}
+
+/* Olas claras y fórmulas en cursiva alrededor de la tarjeta, a todo el ancho. */
+.beluga-fondo {
+    position: absolute;
+    top: -2.25rem;
+    bottom: -3rem;
+    left: calc(50% - 50vw);
+    z-index: -2;
+    width: 100vw;
+    pointer-events: none;
+}
+
+.beluga-olas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.beluga-ola {
+    fill: var(--beluga-ola);
+}
+
+.beluga-formula {
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    color: var(--beluga-formula);
+    font: italic 1rem var(--beluga-serifa);
+    white-space: nowrap;
+}
+
+/* —— Inicio: el menú de módulos dentro de su tarjeta grande —— */
+
+[data-estilo="belugacalc"] .home-catalog {
+    max-width: 1100px;
+    margin: 3rem auto 0;
+    padding: 1.75rem clamp(1rem, 3vw, 2rem) 2rem;
+    border: 1px solid var(--beluga-linea);
+    border-radius: 32px;
+    background: var(--beluga-tarjeta-suave);
+    box-shadow: var(--beluga-sombra);
+}
+
+[data-estilo="belugacalc"] .home-section-heading {
+    justify-content: center;
+    text-align: center;
+}
+
+[data-estilo="belugacalc"] .home-section-heading h2 {
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+
+[data-estilo="belugacalc"] .canales {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+    margin-top: 1.3rem;
+}
+
+[data-estilo="belugacalc"] .canal {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto;
+    align-items: center;
+    column-gap: 1.25rem;
+    padding: 1rem 1.4rem 1rem 1.1rem;
+    border: 1.5px solid var(--beluga-linea);
+    border-radius: 18px;
+    background: var(--beluga-fila);
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+[data-estilo="belugacalc"] .canal > * {
+    margin: 0;
+}
+
+[data-estilo="belugacalc"] .canal:not(.es-pronto):hover {
+    border-color: var(--beluga-corchete);
+    background: var(--beluga-tarjeta);
+    box-shadow: none;
+}
+
+[data-estilo="belugacalc"] .canal:not(.es-pronto):active {
+    transform: scale(0.995);
+}
+
+/* Su chip de módulo, entre corchetes y en monoespaciada: «[ Ax = b ]». */
+[data-estilo="belugacalc"] .canal-chip {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    justify-self: stretch;
+    padding: 0.55rem 0.4rem;
+    border: 0;
+    border-radius: 10px;
+    background: var(--beluga-cielo-suave);
+    color: var(--beluga-cielo);
+    font: 800 0.78rem var(--font-math);
+    text-align: center;
+}
+
+[data-estilo="belugacalc"] .canal-chip::before { content: "[ " / ""; }
+[data-estilo="belugacalc"] .canal-chip::after { content: " ]" / ""; }
+
+[data-estilo="belugacalc"] .canal-nombre {
+    grid-column: 2;
+    font-size: 1.08rem;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+
+[data-estilo="belugacalc"] .canal-descripcion {
+    grid-column: 2;
+    margin-top: 0.15rem;
+}
+
+[data-estilo="belugacalc"] .canal-temas {
+    grid-column: 2;
+    margin-top: 0.5rem;
+    padding: 0;
+}
+
+[data-estilo="belugacalc"] .canal-temas span {
+    border-radius: 6px;
+}
+
+[data-estilo="belugacalc"] .canal:not(.es-pronto)::after {
+    content: "Abrir módulo →" / "";
+    grid-column: 3;
+    grid-row: 1 / 4;
+    color: var(--beluga-cielo);
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: transform 0.2s var(--beluga-curva);
+}
+
+[data-estilo="belugacalc"] .canal:not(.es-pronto):hover::after {
+    transform: translateX(4px);
+}
+
+[data-estilo="belugacalc"] .canal.es-pronto {
+    background: transparent;
+}
+
+/* —— Área y herramienta: tarjetas claras e indicadores que se deslizan —— */
+
+[data-estilo="belugacalc"] :is(.panel, .indice, .destacado, .area-header) {
+    border-color: var(--beluga-linea);
+    border-radius: 20px;
+    background: var(--beluga-tarjeta-suave);
+    box-shadow: var(--beluga-sombra);
+}
+
+[data-estilo="belugacalc"] .area-header {
+    margin-bottom: 1.25rem;
+    padding: 1.4rem 1.7rem;
+    border: 1px solid var(--beluga-linea);
+}
+
+[data-estilo="belugacalc"] :is(.area-title, .tool-title) {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* Selección de Fluent: un trazo vertical a la izquierda del elemento activo. */
+[data-estilo="belugacalc"] :is(.indice-item.elegida, .nav-link[aria-current="page"]) {
+    position: relative;
+    background: var(--beluga-cielo-suave);
+    color: var(--color-text);
+    box-shadow: none;
+}
+
+[data-estilo="belugacalc"] :is(.indice-item.elegida, .nav-link[aria-current="page"])::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 3px;
+    height: 1.1rem;
+    border-radius: 3px;
+    background: var(--color-brand);
+    transform: translateY(-50%);
+}
+
+/* Herramientas hermanas: el indicador viaja de una a otra al cambiar de página. */
+[data-estilo="belugacalc"] .rail {
+    border-color: var(--beluga-linea);
+    border-radius: 18px;
+    background: var(--beluga-tarjeta-suave);
+}
+
+[data-estilo="belugacalc"] .rail-enlace {
+    position: relative;
+    border-radius: 10px;
+}
+
+[data-estilo="belugacalc"] .rail-enlace[aria-current="page"] {
+    background: var(--beluga-cielo-suave);
+    color: var(--color-text);
+    box-shadow: none;
+    font-weight: 600;
+}
+
+[data-estilo="belugacalc"] .rail-enlace[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    right: 25%;
+    bottom: 0;
+    left: 25%;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--color-brand);
+    view-transition-name: beluga-pestana;
+}
+
+@media (min-width: 1100px) {
+    [data-estilo="belugacalc"] .rail-enlace[aria-current="page"]::after {
+        top: 50%;
+        right: auto;
+        bottom: auto;
+        left: 0;
+        width: 3px;
+        height: 1.1rem;
+        transform: translateY(-50%);
+    }
+}
+
+/* El cajón «Menú» es de cristal. */
+[data-estilo="belugacalc"].js .app-sidebar {
+    border-right-color: var(--beluga-linea);
+    background: var(--beluga-cristal);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    backdrop-filter: blur(24px) saturate(1.4);
+}
+
+/* —— Movimiento —— */
+
+@media (prefers-reduced-motion: no-preference) {
+    /* Entrada de página de Fluent: sube desde abajo y frena con suavidad. */
+    [data-estilo="belugacalc"] .app-content {
+        animation: beluga-entrar 0.34s cubic-bezier(0.1, 0.9, 0.2, 1) both;
+    }
+
+    [data-estilo="belugacalc"] .canal {
+        animation: beluga-entrar 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) backwards;
+    }
+
+    [data-estilo="belugacalc"] .canal:nth-child(2) { animation-delay: 40ms; }
+    [data-estilo="belugacalc"] .canal:nth-child(3) { animation-delay: 80ms; }
+    [data-estilo="belugacalc"] .canal:nth-child(4) { animation-delay: 120ms; }
+    [data-estilo="belugacalc"] .canal:nth-child(n + 5) { animation-delay: 160ms; }
+
+    /* La bola baja de un módulo a otro en 220 ms con frenado cúbico, como su muesca;
+       la píldora (con la muesca nueva) se funde a la vez. */
+    ::view-transition-group(beluga-bola),
+    ::view-transition-group(beluga-pestana) {
+        animation-duration: 0.22s;
+        animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    ::view-transition-group(beluga-riel) {
+        animation-duration: 0.22s;
+    }
+
+    /* La mascota flota y las fórmulas derivan despacio. */
+    [data-estilo="belugacalc"] .beluga-mascota {
+        animation: beluga-flotar 5s ease-in-out infinite;
+    }
+
+    [data-estilo="belugacalc"] .beluga-formula {
+        animation: beluga-derivar 9s ease-in-out infinite alternate;
+    }
+
+    [data-estilo="belugacalc"] .beluga-formula:nth-child(2n) { animation-delay: -4s; }
+
+    /* Al elegir BelugaCalc, la aplicación entra desde el lado del riel. */
+    [data-cambio-estilo][data-estilo="belugacalc"]::view-transition-new(root) {
+        animation: beluga-deslizar 0.45s cubic-bezier(0.1, 0.9, 0.2, 1) both;
+    }
+
+    [data-cambio-estilo][data-estilo="belugacalc"]::view-transition-old(root) {
+        animation: beluga-retirar 0.3s ease both;
+    }
+}
+
+@keyframes beluga-entrar {
+    from { opacity: 0; transform: translateY(28px); }
+}
+
+@keyframes beluga-flotar {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-8px) rotate(1.5deg); }
+}
+
+@keyframes beluga-derivar {
+    to { transform: translate(10px, -8px); }
+}
+
+@keyframes beluga-deslizar {
+    from { opacity: 0; transform: translateX(-48px); }
+}
+
+@keyframes beluga-retirar {
+    to { opacity: 0; transform: scale(0.98); }
+}
+
+/* —— Pantallas estrechas —— */
+
+@media (max-width: 900px) {
+    .beluga-formula {
+        display: none;
+    }
+}
+
+@media (max-width: 760px) {
+    [data-estilo="belugacalc"] .home-hero {
+        margin-top: 1rem;
+    }
+
+    [data-estilo="belugacalc"] .beluga-marco {
+        width: 9.5rem;
+        height: 8rem;
+    }
+
+    [data-estilo="belugacalc"] .canal {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+        row-gap: 0.2rem;
+    }
+
+    [data-estilo="belugacalc"] .canal-chip,
+    [data-estilo="belugacalc"] .canal-nombre,
+    [data-estilo="belugacalc"] .canal-descripcion,
+    [data-estilo="belugacalc"] .canal-temas,
+    [data-estilo="belugacalc"] .canal:not(.es-pronto)::after {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    [data-estilo="belugacalc"] .canal-chip {
+        justify-self: start;
+        padding-inline: 0.7rem;
+        margin-bottom: 0.4rem;
+    }
+
+    [data-estilo="belugacalc"] .canal:not(.es-pronto)::after {
+        margin-top: 0.5rem;
+    }
+}

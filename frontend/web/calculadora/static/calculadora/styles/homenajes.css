@@ -1,11 +1,12 @@
 /* Temas homenaje: ChocoLab, BelugaCalc y HeyAlgb, los proyectos hermanos de PyGebra.
-   Son estilos como Minimalista (misma estructura, sin la habitación de Estudio): solo
-   redefinen tokens y unos pocos detalles de navegación, así cada herramienta, tabla y
-   gráfica los hereda sin tocar su plantilla. El tema claro u oscuro sigue aparte.
-   Paletas abstraídas de cada proyecto; texto ≥ 4.5:1 y bordes de campo ≥ 3:1
-   (verificación en docs/temas-homenaje.md). Logotipos: ver ese mismo documento. */
+   Por un momento, otra calculadora; siempre PyGebra. Este archivo reúne lo común: los tokens
+   claro/oscuro de cada tema (texto ≥ 4.5:1, bordes de campo y foco ≥ 3:1; verificación en
+   docs/temas-homenaje.md), las piezas compartidas y el gesto al cambiar de estilo.
+   La composición, la navegación y el movimiento propios de cada uno viven en
+   homenaje-chocolab.css, homenaje-belugacalc.css y homenaje-heyalgb.css.
+   Los formularios y resultados matemáticos conservan su estructura en todos. */
 
-/* —— ChocoLab: crema, cacao y cobre. Superficies cálidas, radios suaves y sombra leve. —— */
+/* —— Tokens —— */
 
 [data-estilo="chocolab"][data-theme="light"] {
     --color-bg: #f8f5f0;
@@ -68,13 +69,6 @@
     --color-shadow-strong: rgb(0 0 0 / 0.45);
     --homenaje-detalle: #d4a177;
 }
-
-[data-estilo="chocolab"] {
-    --radius-md: 12px;
-    --radius-lg: 16px;
-}
-
-/* —— BelugaCalc: azul marino, celeste y fondo hielo. Barra marina y cápsula activa. —— */
 
 [data-estilo="belugacalc"][data-theme="light"] {
     --color-bg: #f4f8fb;
@@ -139,67 +133,6 @@
     --homenaje-capsula: #62b9ff;
     --homenaje-capsula-texto: #04182c;
 }
-
-[data-estilo="belugacalc"] {
-    --radius-md: 10px;
-    --radius-lg: 14px;
-}
-
-/* La barra superior es marina en ambos temas, como la barra de BelugaCalc. */
-[data-estilo="belugacalc"] .app-header {
-    border-bottom-color: var(--homenaje-barra-borde);
-    background: var(--homenaje-barra);
-    color: #ffffff;
-}
-
-[data-estilo="belugacalc"] .app-header .app-brand,
-[data-estilo="belugacalc"] .app-header .app-mark,
-[data-estilo="belugacalc"] .app-header .historial-boton {
-    color: #ffffff;
-}
-
-[data-estilo="belugacalc"] .app-header :is(.historial, .theme-toggle-icons) {
-    border-color: rgb(255 255 255 / 0.4);
-    background: transparent;
-}
-
-[data-estilo="belugacalc"] .app-header :is(.navigation-toggle, .theme-toggle, .options-toggle) {
-    border-color: rgb(255 255 255 / 0.4);
-    background: transparent;
-    color: #ffffff;
-}
-
-[data-estilo="belugacalc"] .app-header :is(.navigation-toggle, .theme-toggle, .options-toggle, .historial-boton):not(:disabled):hover {
-    background: rgb(255 255 255 / 0.12);
-}
-
-/* El panel de opciones vive en la cabecera: recupera el color de texto de la página. */
-[data-estilo="belugacalc"] .app-header .opciones {
-    color: var(--color-text);
-}
-
-[data-estilo="belugacalc"] .app-header :focus-visible {
-    outline-color: var(--homenaje-capsula);
-}
-
-[data-estilo="belugacalc"] .app-header .opciones :focus-visible {
-    outline-color: var(--color-focus);
-}
-
-/* Módulo activo: cápsula celeste con texto oscuro (≈ 7.9:1), sin barra lateral. */
-[data-estilo="belugacalc"] .nav-link[aria-current="page"],
-[data-estilo="belugacalc"] .rail-enlace[aria-current="page"] {
-    border-radius: var(--radius-pill);
-    background: var(--homenaje-capsula);
-    color: var(--homenaje-capsula-texto);
-    box-shadow: none;
-}
-
-[data-estilo="belugacalc"] .nav-link[aria-current="page"] .nav-link-icon {
-    color: currentColor;
-}
-
-/* —— HeyAlgb: negro, granate y rojo. Esquinas rectas, bordes firmes y franja roja. —— */
 
 [data-estilo="heyalgb"][data-theme="light"] {
     --color-bg: #f6f4f4;
@@ -266,71 +199,50 @@
     --homenaje-franja: #fe0000;
 }
 
-[data-estilo="heyalgb"] {
-    --radius-sm: 2px;
-    --radius-md: 2px;
-    --radius-lg: 3px;
-    --font-display: "Bahnschrift", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
-}
+/* —— Piezas compartidas: ocultas salvo en su tema —— */
 
-/* Franja roja bajo la cabecera, como el encabezado granate de HeyAlgb. */
-[data-estilo="heyalgb"] .app-header {
-    border-bottom: 3px solid var(--homenaje-franja);
-}
-
-[data-estilo="heyalgb"] :is(.historial, .historial-boton) {
-    border-radius: var(--radius-sm);
-}
-
-[data-estilo="heyalgb"] .nav-link[aria-current="page"],
-[data-estilo="heyalgb"] .rail-enlace[aria-current="page"] {
-    background: var(--color-brand);
-    color: var(--color-brand-text);
-    box-shadow: none;
-}
-
-[data-estilo="heyalgb"] .nav-link[aria-current="page"] .nav-link-icon {
-    color: currentColor;
-}
-
-[data-estilo="heyalgb"] .btn-primary {
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
-/* —— Firma «En honor a…» —— */
-
-.homenaje-firma {
+.homenaje-areas,
+.portada,
+.areas-mascota {
     display: none;
 }
 
-[data-estilo="chocolab"] .homenaje-firma[data-homenaje="chocolab"],
-[data-estilo="belugacalc"] .homenaje-firma[data-homenaje="belugacalc"],
-[data-estilo="heyalgb"] .homenaje-firma[data-homenaje="heyalgb"] {
+.homenaje-areas ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.areas-enlace {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    width: fit-content;
-    margin: 1rem 0 0;
-    padding: 0.3rem 0.85rem 0.3rem 0.3rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-raised);
-    color: var(--color-muted);
-    font-size: var(--text-sm);
+    color: inherit;
+    text-decoration: none;
 }
 
-.homenaje-firma b {
-    color: var(--color-text);
+.areas-icono svg {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
 }
 
-/* Ficha del logotipo: fondo propio para que el original se lea igual de día y de noche. */
+.portada-logo,
+.portada img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* En Opciones, cada tema homenaje lleva el logotipo de su equipo junto a la dedicatoria. */
 .homenaje-logo {
-    display: inline-grid;
+    display: grid;
     place-items: center;
     flex: none;
-    width: 2.25rem;
-    height: 2.25rem;
+    align-self: center;
+    margin-left: auto;
+    width: 2.4rem;
+    height: 2.4rem;
     overflow: hidden;
     border-radius: 50%;
 }
@@ -342,47 +254,52 @@
     object-fit: contain;
 }
 
-.homenaje-logo[data-homenaje="chocolab"],
-.homenaje-firma[data-homenaje="chocolab"] .homenaje-logo {
-    width: 5.5rem;
-    padding: 0 0.45rem;
+.homenaje-logo[data-homenaje="chocolab"] {
+    width: 4.6rem;
+    padding: 0 0.35rem;
     border-radius: var(--radius-pill);
     background: #fffdf9;
 }
 
-.homenaje-logo[data-homenaje="belugacalc"],
-.homenaje-firma[data-homenaje="belugacalc"] .homenaje-logo {
+.homenaje-logo[data-homenaje="belugacalc"] {
     padding: 0.1rem;
     background: #e2f0fd;
 }
 
-.homenaje-logo[data-homenaje="heyalgb"],
-.homenaje-firma[data-homenaje="heyalgb"] .homenaje-logo {
+.homenaje-logo[data-homenaje="heyalgb"] {
     padding: 0.3rem;
     border-radius: 2px;
     background: #8f0000;
 }
 
-[data-estilo="heyalgb"] .homenaje-firma[data-homenaje="heyalgb"] {
-    border-radius: var(--radius-sm);
-    box-shadow: inset 3px 0 0 var(--homenaje-franja);
-}
-
-/* En Opciones, el logotipo acompaña a la descripción al final de cada tema homenaje. */
-.opcion > .homenaje-logo {
-    align-self: center;
-    margin-left: auto;
-    width: 1.9rem;
-    height: 1.9rem;
-}
-
-.opcion > .homenaje-logo[data-homenaje="chocolab"] {
-    width: 3.6rem;
-    padding: 0 0.3rem;
-}
-
 @media (forced-colors: active) {
-    .homenaje-logo {
+    .homenaje-logo,
+    .portada img {
         forced-color-adjust: none;
     }
+}
+
+/* —— Cambio de estilo: cada ambiente entra con su gesto desde la opción elegida —— */
+
+/* Solo durante el cambio la página entera viaja como captura (opciones.js). */
+[data-cambio-estilo] {
+    view-transition-name: root;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    [data-cambio-estilo]::view-transition-group(root) {
+        animation-duration: 0.45s;
+    }
+
+    [data-cambio-estilo]::view-transition-old(root) {
+        animation: none;
+    }
+
+    [data-cambio-estilo]::view-transition-new(root) {
+        animation: homenaje-fundido 0.3s ease both;
+    }
+}
+
+@keyframes homenaje-fundido {
+    from { opacity: 0; }
 }

@@ -1,0 +1,32 @@
+{% load static %}
+{% comment %}Navegación por áreas de los temas homenaje (oculta en Estudio y Minimalista). Un solo marcado, tres
+presentaciones: pastillas en la cabecera de ChocoLab, riel lateral animado en BelugaCalc y pestañas
+angulares en HeyAlgb. El cajón «Menú» sigue llevando a todas las herramientas.{% endcomment %}
+<nav class="homenaje-areas" aria-label="Áreas"{% if indice_area is not None %} style="--activo: {{ indice_area }}"{% endif %}>
+    <ul>
+        <li><a class="areas-enlace" href="{% url 'calculadora:inicio' %}"{% if en_inicio %} aria-current="page"{% endif %}>
+            <span class="areas-icono" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M4 11.2 12 4l8 7.2V20h-5.5v-5.2h-5V20H4z"/></svg></span>
+            <span class="areas-nombre">Inicio</span>
+        </a></li>
+        {% for area, categorias in arbol_navegacion %}{% if area.disponible %}
+        <li><a class="areas-enlace" href="{{ area.ruta }}"{% if area.id == area_actual_id %} aria-current="{% if herramienta_actual %}true{% else %}page{% endif %}"{% endif %}>
+            <span class="areas-icono" aria-hidden="true">
+                {% if area.id == "algebra-lineal" %}
+                <svg viewBox="0 0 24 24" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M7 4H4.5v16H7M17 4h2.5v16H17"/><circle cx="9.5" cy="9" r="1.4" fill="currentColor"/><circle cx="14.5" cy="9" r="1.4" fill="currentColor"/><circle cx="9.5" cy="15" r="1.4" fill="currentColor"/><circle cx="14.5" cy="15" r="1.4" fill="currentColor"/></svg>
+                {% elif area.id == "sistemas-numericos" %}
+                <svg viewBox="0 0 24 24" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M5 6v12M10 6v12"/><rect x="13" y="6" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                {% elif area.id == "metodos-numericos" %}
+                <svg viewBox="0 0 24 24" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M3 13h18M4 19c5 0 6-12 16-12"/><circle cx="10.6" cy="13" r="2" fill="currentColor"/></svg>
+                {% elif area.id == "conjuntos" %}
+                <svg viewBox="0 0 24 24" focusable="false"><circle cx="9" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                {% else %}
+                <svg viewBox="0 0 24 24" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 4c-2.5 0-3 2-3.6 8S11 20 8 20"/></svg>
+                {% endif %}
+            </span>
+            <span class="areas-nombre">{{ area.nombre }}</span>
+        </a></li>
+        {% endif %}{% endfor %}
+    </ul>
+    {# La mascota de BelugaCalc acompaña al riel, como la barra de su aplicación. #}
+    <img class="areas-mascota" src="{% static 'calculadora/homenajes/belugacalc.png' %}" alt="" width="500" height="500" loading="lazy" decoding="async">
+</nav>

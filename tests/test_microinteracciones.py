@@ -15,8 +15,10 @@ STYLES = STATIC / "styles"
 
 def funcionales():
     """Hojas de la interfaz funcional. estudio.css es el ambiente opcional de Estudio
-    (cámara, luces, gestos): sus propias reglas están en tests/test_estudio.py."""
-    return [p for p in STYLES.glob("*.css") if p.name != "estudio.css"]
+    (cámara, luces, gestos): sus propias reglas están en tests/test_estudio.py. Los temas
+    homenaje (homenajes.css y homenaje-*.css) son ambientes opcionales del mismo tipo: sus
+    reglas de movimiento están en tests/test_temas_homenaje.py."""
+    return [p for p in STYLES.glob("*.css") if p.name != "estudio.css" and not p.name.startswith("homenaje")]
 
 
 def leer(nombre):

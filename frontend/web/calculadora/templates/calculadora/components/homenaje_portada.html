@@ -1,0 +1,90 @@
+{% load static %}
+{% comment %}Portadas de los temas homenaje en Inicio: solo se ve la del estilo activo (homenaje-*.css). Las
+ilustraciones son originales de PyGebra (SVG decorativo); los logotipos son de cada equipo, usados con su
+permiso (procedencia en docs/temas-homenaje.md). La dedicatoria es texto real; el logotipo, decorativo.{% endcomment %}
+
+{# ChocoLab: una lámina de laboratorio. f(x) = x³ − x − 2 con un paso de Newton desde x₀ = 2. #}
+<figure class="portada" data-homenaje="chocolab">
+    <div class="choco-lamina" aria-hidden="true">
+        <svg class="choco-grafica" viewBox="0 0 420 300" focusable="false">
+            <path class="choco-eje" d="M20 167.7H400M160 285V15"/>
+            <path class="choco-tangente" d="M285 264.3L390 1.8"/>
+            <path class="choco-curva" pathLength="1" d="M20 243.7L26.3 237.1L32.7 231.2L39 225.9L45.3 221.4L51.7 217.5L58 214.1L64.3 211.3L70.7 209.1L77 207.3L83.3 206L89.7 205.1L96 204.6L102.3 204.4L108.7 204.6L115 205L121.3 205.7L127.7 206.6L134 207.7L140.3 208.9L146.7 210.2L153 211.6L159.3 213L165.7 214.5L172 215.9L178.3 217.2L184.7 218.4L191 219.6L197.3 220.5L203.7 221.2L210 221.7L216.3 221.9L222.7 221.8L229 221.4L235.3 220.6L241.7 219.4L248 217.7L254.3 215.5L260.7 212.9L267 209.7L273.3 205.9L279.7 201.4L286 196.4L292.3 190.6L298.7 184.1L305 176.8L311.3 168.8L317.7 159.9L324 150.2L330.3 139.6L336.7 128L343 115.5L349.3 102L355.7 87.4L362 71.8L368.3 55L374.7 37.1L381 18.1"/>
+            <path class="choco-guia" d="M360 76.8V167.7"/>
+            <circle class="choco-punto" cx="360" cy="76.8" r="6"/>
+            <circle class="choco-punto choco-punto-2" cx="323.6" cy="167.7" r="5"/>
+            <circle class="choco-raiz" cx="312.1" cy="167.7" r="7"/>
+            <text class="choco-rotulo" x="368" y="72">x₀</text>
+            <text class="choco-rotulo" x="318" y="190">x₁</text>
+        </svg>
+        <span class="choco-anotacion">f(c) <span>≈</span> 0</span>
+        <svg class="choco-taza" viewBox="0 0 120 120" focusable="false">
+            <path class="choco-vapor" d="M42 44c-6-7 6-11 0-18s6-11 0-18"/>
+            <path class="choco-vapor choco-vapor-2" d="M60 44c-6-7 6-11 0-18s6-11 0-18"/>
+            <path class="choco-vapor choco-vapor-3" d="M78 44c-6-7 6-11 0-18s6-11 0-18"/>
+            <path class="choco-taza-cuerpo" d="M26 54h68v30a24 24 0 0 1-24 24H50a24 24 0 0 1-24-24z"/>
+            <path class="choco-taza-asa" d="M94 62h6a11 11 0 0 1 0 22h-7"/>
+            <path class="choco-taza-cacao" d="M30 60h60"/>
+            <text class="choco-taza-pi" x="60" y="92">π</text>
+        </svg>
+    </div>
+    <figcaption class="portada-dedicatoria">
+        <img class="portada-logo" src="{% static 'calculadora/homenajes/chocolab.png' %}" alt="" width="1206" height="389" loading="lazy" decoding="async">
+        <span class="portada-texto">En honor a <b>ChocoLab</b></span>
+    </figcaption>
+</figure>
+
+{# BelugaCalc: su bienvenida. Olas y fórmulas alrededor de una tarjeta; la mascota entre corchetes de matriz. #}
+<figure class="portada" data-homenaje="belugacalc">
+    <div class="beluga-fondo" aria-hidden="true">
+        <svg class="beluga-olas" viewBox="0 0 1200 520" preserveAspectRatio="none" focusable="false">
+            <path class="beluga-ola beluga-ola-1" d="M0 0H720C560 120 300 210 0 250Z"/>
+            <path class="beluga-ola beluga-ola-2" d="M1200 150C980 300 760 420 460 520H1200Z"/>
+            <path class="beluga-ola beluga-ola-3" d="M1200 0H980C1060 90 1130 140 1200 160Z"/>
+        </svg>
+        <span class="beluga-formula" style="--x: 3%; --y: 10%">[ a₁₁ a₁₂ ]</span>
+        <span class="beluga-formula" style="--x: 6%; --y: 22%">[ a₂₁ a₂₂ ]</span>
+        <span class="beluga-formula" style="--x: 2%; --y: 40%">det(A) ≠ 0</span>
+        <span class="beluga-formula" style="--x: 4%; --y: 56%">A⁻¹ = adj(A) / det(A)</span>
+        <span class="beluga-formula" style="--x: 76%; --y: 70%">u · v = ‖u‖ ‖v‖ cos θ</span>
+        <span class="beluga-formula" style="--x: 80%; --y: 84%">u × v = det[i, j, k]</span>
+        <span class="beluga-formula" style="--x: 82%; --y: 16%">Ax = b</span>
+    </div>
+    <span class="beluga-marco"><img class="beluga-mascota" src="{% static 'calculadora/homenajes/belugacalc.png' %}" alt="" width="500" height="500" loading="lazy" decoding="async"></span>
+    <figcaption class="portada-dedicatoria"><span class="portada-texto">En honor a <b>BelugaCalc</b></span></figcaption>
+</figure>
+
+{# HeyAlgb: cortes diagonales, trama de puntos y un estallido detrás del sello del equipo. #}
+<figure class="portada" data-homenaje="heyalgb">
+    <svg class="hey-cortes" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <defs>
+            <pattern id="hey-trama" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)">
+                <circle cx="7" cy="7" r="2.6" class="hey-trama-punto"/>
+            </pattern>
+        </defs>
+        <polygon class="hey-trama" points="420,0 1000,0 1000,600 230,600"/>
+        <polygon class="hey-losa" points="610,0 1000,0 1000,600 470,600"/>
+        <polygon class="hey-franja" points="540,0 585,0 400,600 355,600"/>
+        <polygon class="hey-esquirla" points="700,40 990,0 930,250"/>
+        <polygon class="hey-esquirla hey-esquirla-2" points="560,600 760,380 820,600"/>
+        {# Garabatos de tiza propios: matrices con llaves, cruces y una función. #}
+        <g class="hey-tiza">
+            <path d="M40 70c-14 0-14 10-14 30s-6 22-14 22c8 0 14 2 14 22s0 30 14 30M150 70c14 0 14 10 14 30s6 22 14 22c-8 0-14 2-14 22s0 30-14 30"/>
+            <path d="M60 100h18M100 100h18M60 140h18M100 140h18M60 180h18M100 180h18"/>
+            <path d="M250 40l60 70M310 40l-60 70M262 60l40 6"/>
+            <path d="M60 470c20-60 40-60 60 0s40 60 60 0M210 470l20-50 20 50M216 455h28"/>
+            <path d="M330 520l40-30M330 490l40 30"/>
+        </g>
+        <text class="hey-tiza-texto" x="70" y="380">f(x)</text>
+        <text class="hey-tiza-texto" x="260" y="250">2x+y</text>
+    </svg>
+    {# El lema como nota de recortes: cada letra en su papel. El texto real está en el lema de PyGebra. #}
+    <p class="hey-recortes" aria-hidden="true"><span>A</span><span>p</span><span>r</span><span>E</span><span>n</span><span>d</span><span>e</span> <span>r</span><span>E</span><span>s</span><span>o</span><span>L</span><span>v</span><span>i</span><span>E</span><span>n</span><span>d</span><span>o</span></p>
+    <div class="hey-sello" aria-hidden="true">
+        <svg class="hey-estallido" viewBox="0 0 200 200" focusable="false">
+            <polygon points="100,4 116,58 170,20 140,72 198,78 146,104 192,150 132,134 140,196 102,148 70,198 72,138 10,160 52,112 2,84 60,74 26,22 84,56"/>
+        </svg>
+        <span class="hey-logo"><img src="{% static 'calculadora/homenajes/heyalgb.png' %}" alt="" width="1280" height="1280" loading="lazy" decoding="async"></span>
+    </div>
+    <figcaption class="portada-dedicatoria"><span class="portada-texto">En honor a <b>HeyAlgb</b></span></figcaption>
+</figure>
