@@ -217,7 +217,7 @@ def expresiones_ruta_antigua(request):
 
 @require_http_methods(["GET", "POST"])
 def ecuaciones_matriciales(request):
-    """Resolver Ax = b: A y b conocidos; x se determina con los motores de Reducción por filas."""
+    """Resuelve Ax = b con el método directo elegido."""
     ajustar = request.method == "POST" and "ajustar" in request.POST
     form = EcuacionMatricialForm(request.POST if request.method == "POST" else None, ajustar=ajustar)
     resultado = confirmacion = None

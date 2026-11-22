@@ -51,8 +51,10 @@ class PruebasCatalogoEstudio(SimpleTestCase):
         grupos = catalogo.hermanas(catalogo.DETERMINANTES)
         self.assertEqual([c for c, _ in grupos], [catalogo.MATRICES])
         self.assertIn(catalogo.DETERMINANTES, dict(grupos)[catalogo.MATRICES])
-        self.assertEqual(catalogo.hermanas(catalogo.METODOS_CERRADOS),
-                         ((catalogo.RAICES, (catalogo.METODOS_CERRADOS, catalogo.METODOS_ABIERTOS)),))
+        self.assertEqual(catalogo.hermanas(catalogo.METODOS_CERRADOS), (
+            (catalogo.RAICES, (catalogo.METODOS_CERRADOS, catalogo.METODOS_ABIERTOS)),
+            (catalogo.SISTEMAS_ITERATIVOS, (catalogo.METODOS_ITERATIVOS,)),
+        ))
 
 
 class PruebasExploradorDeArea(SimpleTestCase):

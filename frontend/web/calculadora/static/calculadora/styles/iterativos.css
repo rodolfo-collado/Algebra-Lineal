@@ -1,0 +1,235 @@
+.iterativos-enlaces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.iterativos-enlaces .btn {
+    white-space: normal;
+}
+
+.iterativo-parametros {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+}
+
+.iterativo-parametros legend {
+    margin-block-end: var(--space-2);
+}
+
+.iterativo-parametros .field-group {
+    align-content: start;
+    min-width: 0;
+}
+
+.iterativos-diagnostico {
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-brand-soft);
+    border-inline-start: 3px solid var(--color-brand);
+    border-radius: var(--radius-sm);
+}
+
+.iterativos-diagnostico[data-dominancia="no-estricta"] {
+    background: var(--color-warning-soft);
+    border-color: var(--color-warning);
+}
+
+.iterativo-panel {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+    scroll-margin-top: var(--anchor-offset, 6rem);
+}
+
+.iterativo-estado {
+    color: var(--color-warning);
+}
+
+.iterativo-estado[data-estado="convergio"] {
+    color: var(--color-success);
+}
+
+.iterativo-resumen {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.iterativo-resumen > div {
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface-muted);
+    border-radius: var(--radius-sm);
+}
+
+.iterativo-resumen > :first-child,
+.iterativo-resumen > :last-child {
+    grid-column: 1 / -1;
+}
+
+.iterativo-resumen dt {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+}
+
+.iterativo-resumen dd {
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.iterativo-vector {
+    font-family: var(--font-math);
+}
+
+.iterativo-tabla {
+    overflow: auto;
+    max-height: 22rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.iterativo-tabla:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.iterativo-tabla caption {
+    padding: var(--space-2) var(--space-3);
+    text-align: start;
+    font-weight: 600;
+}
+
+.iterativo-tabla .procedure-table {
+    width: 100%;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.iterativo-tabla tr[aria-current] > * {
+    background: var(--color-brand-soft);
+    font-weight: 700;
+}
+
+.iterativo-selector {
+    width: fit-content;
+    margin-block: var(--space-2);
+}
+
+.iterativo-selector[hidden] {
+    display: none;
+}
+
+.iterativo-desarrollo {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--space-2);
+}
+
+.iterativo-desarrollo li {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.iterativo-despeje,
+.iterativo-sustitucion {
+    margin: 0;
+    font-family: var(--font-math);
+    font-size: var(--text-sm);
+}
+
+.iterativo-sustitucion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin-block-start: 0.45rem;
+}
+
+.iterativo-termino {
+    white-space: nowrap;
+}
+
+.iterativo-operando {
+    display: inline-block;
+    padding-inline: 0.3rem;
+    background: var(--color-surface-muted);
+    border-radius: 4px;
+}
+
+.iterativo-operando small {
+    margin-inline-start: 0.15rem;
+    color: var(--color-muted);
+    font-family: var(--font-ui);
+}
+
+.iterativo-operando[data-origen="nueva"] {
+    background: var(--color-brand-soft);
+    font-weight: 600;
+}
+
+.iterativo-operando[data-origen="nueva"] small {
+    color: var(--color-brand-strong);
+}
+
+.iterativo-grafica {
+    max-width: 40rem;
+    margin: 0;
+}
+
+.iterativo-grafica svg {
+    display: block;
+    width: 100%;
+    fill: var(--color-text);
+    font: 17px var(--font-ui);
+}
+
+.iterativo-ejes,
+.iterativo-serie {
+    fill: none;
+    stroke: var(--color-border-strong);
+    vector-effect: non-scaling-stroke;
+}
+
+.iterativo-serie {
+    stroke-width: 2;
+}
+
+.iterativo-serie-cambio { stroke: var(--color-brand); }
+.iterativo-serie-residuo { stroke: var(--color-warning); stroke-dasharray: 5 3; }
+
+.iterativo-grafica figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+}
+
+.iterativo-leyenda-cambio::before,
+.iterativo-leyenda-residuo::before {
+    content: "";
+    display: inline-block;
+    width: 1.4em;
+    margin-inline-end: 0.4em;
+    border-top: 2px solid var(--color-brand);
+    vertical-align: middle;
+}
+
+.iterativo-leyenda-residuo::before {
+    border-color: var(--color-warning);
+    border-top-style: dashed;
+}
+
+@media (max-width: 600px) {
+    .iterativo-parametros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .iterativo-parametros > :nth-child(2) { grid-column: 1 / -1; }
+    .iterativo-resumen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .iterativo-resumen > :nth-child(4) { grid-column: 1 / -1; }
+    .iterativo-desarrollo li { padding-inline: var(--space-2); }
+    .iterativo-termino { white-space: normal; }
+    .iterativo-grafica svg { font-size: 22px; }
+}
