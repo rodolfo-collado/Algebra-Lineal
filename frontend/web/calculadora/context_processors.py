@@ -1,8 +1,21 @@
 """Contexto de navegación derivado del registro central y de la ruta activa."""
 
+from functools import lru_cache
+
 from django.conf import settings
 
+from actualizador import versiones
+
 from . import catalogo, preferencias
+
+
+@lru_cache(maxsize=1)
+def _version():
+    """Versión instalada: no cambia mientras la app corre (actualizar exige reiniciarla)."""
+    try:
+        return versiones.version_instalada()
+    except (OSError, KeyError, ValueError):
+        return ""
 
 
 def navegacion(request):
@@ -32,6 +45,7 @@ def navegacion(request):
         "area_actual_id": area_actual_id,
         "indice_area": indice_area,
         "migas": catalogo.migas(herramienta),
+        "version_pygebra": _version(),
         "herramientas_relacionadas": (
             catalogo.relacionadas_disponibles(herramienta) if herramienta else ()
         ),

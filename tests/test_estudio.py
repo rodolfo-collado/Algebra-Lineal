@@ -131,10 +131,10 @@ class PruebasCanalesDelInicio(SimpleTestCase):
         self.assertNotIn("Pasa y ponte", html)
 
     def test_el_buscador_del_inicio_conserva_todo_el_catalogo(self):
-        # Cada herramienta, también las próximas, figura en el cajón y en su canal.
+        # Cada herramienta, también las próximas, figura una sola vez: en su canal de Inicio.
         documento = Documento(self.client.get("/"))
         for herramienta in catalogo.HERRAMIENTAS:
-            self.assertEqual(documento.indices.count(herramienta.indice), 2)
+            self.assertEqual(documento.indices.count(herramienta.indice), 1)
 
     def test_bisección_forma_parte_del_recorrido(self):
         inicio = self.client.get("/")

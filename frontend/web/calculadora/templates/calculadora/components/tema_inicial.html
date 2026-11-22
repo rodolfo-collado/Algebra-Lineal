@@ -63,6 +63,10 @@
             return ["minimalista", "chocolab", "belugacalc", "heyalgb"].indexOf(estilo) >= 0 ? estilo : "estudio";
         };
         root.setAttribute("data-estilo", preferencias.estilo());
+        // Riel de BelugaCalc con nombres (navigation.js): se recuerda solo durante la visita.
+        try {
+            if (sessionStorage.getItem("pygebra-riel") === "abierto") root.setAttribute("data-riel-abierto", "");
+        } catch (_) { /* Sin almacenamiento el riel empieza compacto. */ }
         // Con JavaScript la navegación es un cajón cerrado; la clase evita que asome antes de tiempo.
         root.classList.add("js");
         // Dirección del salto antes del primer pintado: las transiciones y el sonido se

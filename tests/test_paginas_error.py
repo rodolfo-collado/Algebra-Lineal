@@ -44,7 +44,7 @@ class PruebasPaginasDeError(SimpleTestCase):
         for ruta in ("/no-existe/", "/sistemas/inexistente/"):
             with self.subTest(ruta=ruta):
                 html = self.assertPaginaPyGebra(self.client.get(ruta), 404, "No encontramos esta página.")
-                self.assertIn('id="navigation-toggle"', html)
+                self.assertIn('aria-label="Áreas"', html)
                 self.assertIn("<title>Página no encontrada · PyGebra</title>", html)
 
     def test_400_por_solicitud_sospechosa(self):

@@ -76,7 +76,6 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
     def test_inicio_sidebar_tema_y_breadcrumbs(self):
         inicio = self.client.get("/")
         documento = Documento(inicio)
-        self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en("Herramientas")])
         self.assertIn(RUTA, [a["href"] for _, a in documento.enlaces if a.get("class") == "tool-link"])
         self.assertContains(inicio, "Sistemas lineales (Ax = b)")
         # El explorador de su área la presenta con su descripción.
@@ -85,9 +84,9 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
         doc = Documento(respuesta)
         self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertContains(respuesta, '<span aria-current="page">Sistemas lineales (Ax = b)</span>', html=True)
-        self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
-        self.assertTrue(doc.categorias["matrices"])
-        enlaces = [a["href"] for a in doc.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas de Álgebra lineal") if a.get("aria-current") == "page"], [RUTA])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Áreas") if a.get("aria-current")], ["/areas/algebra-lineal/"])
+        enlaces = [a["href"] for a in doc.enlaces_en("Herramientas de Álgebra lineal") if a["href"].startswith("/matrices/")]
         self.assertEqual(enlaces, [RUTA_OPERACIONES, RUTA, "/matrices/reduccion/", "/matrices/inversa/", "/matrices/determinantes/"])
         self.assertNotContains(respuesta, "Herramientas relacionadas")
 

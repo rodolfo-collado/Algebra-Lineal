@@ -51,7 +51,7 @@
     letter-spacing: -0.04em;
 }
 
-[data-estilo="chocolab"] :is(.navigation-toggle, .options-toggle, .historial) {
+[data-estilo="chocolab"] :is(.header-buscar, .options-toggle, .historial) {
     border-radius: 9px;
 }
 
@@ -61,13 +61,13 @@
     background: var(--color-surface-muted);
 }
 
-@media (min-width: 1100px) {
-    [data-estilo="chocolab"] .homenaje-areas {
+@media (min-width: 1180px) {
+    [data-estilo="chocolab"] .nav-areas {
         display: block;
         margin-inline: auto;
     }
 
-    [data-estilo="chocolab"] .homenaje-areas ul {
+    [data-estilo="chocolab"] .nav-areas ul {
         display: flex;
         gap: 0.3rem;
     }
@@ -82,7 +82,7 @@
         color: var(--color-muted);
         font-size: 0.84rem;
         font-weight: 700;
-        transition: background 0.2s, color 0.2s;
+        transition: background var(--motion), color var(--motion);
     }
 
     [data-estilo="chocolab"] .areas-enlace:hover,
@@ -180,7 +180,7 @@
     background: var(--choco-boton);
     color: var(--choco-boton-texto);
     font-weight: 800;
-    transition: transform 0.15s, background 0.2s;
+    transition: transform var(--motion-fast), background var(--motion);
 }
 
 [data-estilo="chocolab"] :is(.search-submit, .btn-primary):not(:disabled):hover {
@@ -435,7 +435,7 @@
     border-radius: 17px;
     background: var(--color-surface-raised);
     box-shadow: var(--choco-sombra);
-    transition: transform 0.17s, border-color 0.17s, box-shadow 0.17s;
+    transition: transform var(--motion), border-color var(--motion), box-shadow var(--motion);
 }
 
 [data-estilo="chocolab"] .canal > * {
@@ -518,7 +518,7 @@
     color: var(--choco-cobre);
     font-size: 1.4rem;
     line-height: 1;
-    transition: transform 0.17s;
+    transition: transform var(--motion);
 }
 
 [data-estilo="chocolab"] .canal:not(.es-pronto):hover .canal-temas::after {

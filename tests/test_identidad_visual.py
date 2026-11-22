@@ -71,7 +71,7 @@ class PruebasIdentidadVisual(SimpleTestCase):
         self.assertContains(respuesta, 'role="search"')
         self.assertContains(respuesta, "tool-link")
         self.assertNotContains(respuesta, 'data-categoria="sistemas-ecuaciones"')
-        self.assertContains(respuesta, 'data-categoria="matrices"')
+        self.assertContains(respuesta, 'href="/areas/algebra-lineal/"')
         ids = DocumentoIds(respuesta).ids
         for fragmento in ("algebra-lineal", "sistemas-numericos", "metodos-numericos"):
             self.assertIn(fragmento, ids)
@@ -86,7 +86,7 @@ class PruebasIdentidadVisual(SimpleTestCase):
             with self.subTest(ruta=ruta):
                 for termino in ("Search tools", "Steps", "Related tools", "Coming soon", "Home"):
                     self.assertNotIn(f">{termino}<", html)
-                self.assertIn("Buscar herramientas", html)
+                self.assertIn(">Buscar<", html)
         self.assertIn("Ver procedimiento", self.client.post(
             "/matrices/reduccion/", {"sistema": "x1=1", "metodo": "gauss"},
         ).content.decode("utf-8"))

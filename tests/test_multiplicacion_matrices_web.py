@@ -44,10 +44,10 @@ class PruebasCatalogoP13B(SimpleTestCase):
     def test_los_productos_no_son_herramientas_aparte(self):
         # AB y Ax se escriben en Operaciones con matrices; Sistemas lineales (Ax = b) busca x, no un producto.
         documento = Documento(self.client.get(RUTA))
-        enlaces = [a["href"] for a in documento.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
+        enlaces = [a["href"] for a in documento.enlaces_en("Herramientas de Álgebra lineal") if a["href"].startswith("/matrices/")]
         self.assertEqual(enlaces, [RUTA, "/matrices/ecuaciones/", "/matrices/reduccion/", "/matrices/inversa/",
                                    "/matrices/determinantes/"])
-        self.assertNotIn("Multiplicación de matrices", [a.get("title") for a in documento.enlaces_en("Herramientas")])
+        self.assertNotContains(self.client.get(RUTA), ">Multiplicación de matrices</a>")
 
     def test_busqueda_encuentra_los_productos(self):
         consultas = ("multiplicación de matrices", "producto de matrices", "matriz por matriz", "Ax", "matriz vector",

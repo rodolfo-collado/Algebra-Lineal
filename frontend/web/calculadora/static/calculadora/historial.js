@@ -27,9 +27,9 @@
 
     // «Retomar» en el inicio: la última herramienta abierta durante esta visita.
     const ULTIMA = "pygebra-ultima-herramienta";
-    const actual = document.querySelector('.nav-tool .nav-link[aria-current="page"]');
+    const { herramientaRuta: ruta, herramientaNombre: nombre } = document.body.dataset;
     try {
-        if (actual) sessionStorage.setItem(ULTIMA, JSON.stringify({ ruta: actual.getAttribute("href"), nombre: actual.textContent.trim() }));
+        if (ruta && nombre) sessionStorage.setItem(ULTIMA, JSON.stringify({ ruta, nombre }));
         const retomar = document.getElementById("retomar");
         const ultima = JSON.parse(sessionStorage.getItem(ULTIMA));
         if (retomar && ultima?.ruta?.startsWith("/")) {

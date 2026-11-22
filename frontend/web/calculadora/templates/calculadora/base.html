@@ -13,13 +13,11 @@
     <link rel="stylesheet" href="{% static 'calculadora/styles.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
-<body data-vista="{% block vista %}herramienta{% endblock %}"{% block body_attrs %}{% endblock %}>
+<body data-vista="{% block vista %}herramienta{% endblock %}"{% if herramienta_actual %} data-herramienta-ruta="{{ herramienta_actual.ruta }}" data-herramienta-nombre="{{ herramienta_actual.nombre }}"{% endif %}{% block body_attrs %}{% endblock %}>
     {% include "calculadora/components/escena.html" %}
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
     {% include "calculadora/components/header.html" %}
     <div class="app-layout">
-        {% include "calculadora/components/sidebar.html" %}
-        <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
         <main id="contenido" class="app-content" tabindex="-1">
             {% include "calculadora/components/breadcrumbs.html" %}
             {% block content %}{% endblock %}

@@ -55,10 +55,11 @@ class PruebasHerramientaUnica(SimpleTestCase):
         for ruta in (BISECCION, REGLA_FALSA):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
-                sidebar = html[html.index('<aside id="navegacion-principal"'):html.index("</aside>")]
-                self.assertEqual(sidebar.count(">Métodos cerrados</a>"), 1)
-                self.assertNotIn("Método de bisección", sidebar)
-                self.assertNotIn("Método de regla falsa", sidebar)
+                inicio = html.index('<nav class="rail"')
+                hermanas = html[inicio:html.index("</nav>", inicio)]
+                self.assertEqual(hermanas.count(">Métodos cerrados</a>"), 1)
+                self.assertNotIn("Método de bisección", hermanas)
+                self.assertNotIn("Método de regla falsa", hermanas)
 
     def test_selector_marca_el_metodo_actual_y_conserva_los_datos(self):
         for ruta, actual in ((BISECCION, "Bisección"), (REGLA_FALSA, "Regla falsa")):

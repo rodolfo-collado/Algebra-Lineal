@@ -175,10 +175,6 @@
     backdrop-filter: blur(14px) saturate(1.2);
 }
 
-[data-estilo="estudio"] .app-sidebar {
-    background: var(--color-surface-raised);
-}
-
 /* —— Inicio: la bienvenida deja ver la habitación —— */
 
 [data-estilo="estudio"] .home-hero {

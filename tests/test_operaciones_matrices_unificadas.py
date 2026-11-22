@@ -240,8 +240,9 @@ class PruebasCatalogoFinal(ContextoHTTP):
         enlaces = [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link" and a["href"].startswith("/matrices/")]
         self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/reduccion/", "/matrices/inversa/",
                                    "/matrices/determinantes/"])
-        menu = [a["href"] for a in Documento(inicio).enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(menu, enlaces)
+        hermanas = [a["href"] for a in Documento(self.client.get(RUTA)).enlaces_en("Herramientas de Álgebra lineal")
+                    if a["href"].startswith("/matrices/")]
+        self.assertEqual(hermanas, enlaces)
         pagina = self.client.get(RUTA)
         documento = Documento(pagina)
         self.assertEqual([a["href"] for a in documento.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])

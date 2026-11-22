@@ -61,20 +61,14 @@ class TemasHomenajeTests(SimpleTestCase):
             self.assertNotRegex(fuera, r"\banimation\s*:", estilo)
             # Cada tema entra con su gesto propio al elegirlo en Opciones.
             self.assertIn(f'[data-cambio-estilo][data-estilo="{estilo}"]::view-transition-new(root)', movimiento)
-        # Como Estudio, quedan fuera del contrato de microinteracciones; este es el suyo:
-        # transiciones breves (≤ 0.3 s) y solo sobre propiedades que no recolocan el contenido
-        # (width solo en el riel de BelugaCalc, que se despliega por encima de la página).
-        permitidas = {"background", "border-color", "color", "box-shadow", "opacity", "transform", "filter", "width"}
+        # Sus transiciones cumplen el contrato común (test_microinteracciones). Las animaciones
+        # sin fin son solo de ambiente, sobre ilustraciones decorativas de la portada o del riel.
+        decorativas = {".choco-vapor", ".beluga-mascota", ".beluga-formula", ".hey-estallido"}
         for archivo in sorted((STATIC / "styles").glob("homenaje*.css")):
             css = re.sub(r"/\*.*?\*/", "", archivo.read_text(encoding="utf-8"), flags=re.S)
-            for valor in re.findall(r"\btransition\s*:\s*([^;{}]+);", css):
-                for parte in re.split(r",(?![^()]*\))", valor):
-                    propiedad, duracion = parte.split()[:2]
-                    with self.subTest(archivo=archivo.name, transicion=parte.strip()):
-                        self.assertIn(propiedad, permitidas)
-                        self.assertLessEqual(float(duracion.rstrip("s")), 0.3)
-            if "width" in " ".join(re.findall(r"\btransition\s*:\s*([^;{}]+);", css)):
-                self.assertEqual(archivo.name, "homenaje-belugacalc.css")
+            for selector, cuerpo in re.findall(r"([^{}]+)\{([^{}]*\binfinite\b[^{}]*)\}", css):
+                with self.subTest(archivo=archivo.name, selector=selector.strip()):
+                    self.assertTrue(any(d in selector for d in decorativas))
         opciones = (STATIC / "opciones.js").read_text(encoding="utf-8")
         self.assertIn('matchMedia("(prefers-reduced-motion: reduce)").matches', opciones)
         self.assertIn("document.startViewTransition", opciones)
@@ -88,15 +82,15 @@ class TemasHomenajeTests(SimpleTestCase):
             self.assertIn(f"calculadora/homenajes/{estilo}.png", portada)
             # Las ilustraciones son decorativas; la dedicatoria es texto que se lee.
             self.assertNotRegex(portada, r"<figcaption[^>]*aria-hidden")
-            self.assertIn(f"En honor a {nombre} ·", html)
+            self.assertIn(f"<b>{nombre}</b><small>En honor a {nombre}</small>", html)
             self.assertIn(f"calculadora/homenajes/{estilo}.png", html)
         # La identidad de PyGebra no cambia: mismo título y símbolo.
         self.assertIn('<h1 class="home-title">PyGebra</h1>', html)
 
     def test_la_navegacion_por_areas_marca_donde_esta(self):
         def actual(html):
-            nav = re.search(r'<nav class="homenaje-areas"[^>]*>(.*?)</nav>', html, re.S).group(1)
-            return re.findall(r'href="([^"]+)" aria-current="(\w+)"', nav)
+            nav = re.search(r'<nav class="nav-areas"[^>]*>(.*?)</nav>', html, re.S).group(1)
+            return re.findall(r'href="([^"]+)"[^>]*aria-current="(\w+)"', nav)
 
         self.assertEqual(actual(self.client.get("/").content.decode("utf-8")), [("/", "page")])
         self.assertEqual(actual(self.client.get("/areas/algebra-lineal/").content.decode("utf-8")),
@@ -109,7 +103,7 @@ class TemasHomenajeTests(SimpleTestCase):
         for ruta in ("/", "/areas/sistemas-numericos/", "/areas/conjuntos/", "/matrices/ecuaciones/",
                      "/metodos-numericos/metodos-cerrados/biseccion/"):
             html = self.client.get(ruta).content.decode("utf-8")
-            nav = re.search(r'<nav class="homenaje-areas"[^>]*style="--activo: (\d+)"[^>]*>(.*?)</nav>', html, re.S)
+            nav = re.search(r'<nav class="nav-areas"[^>]*style="--activo: (\d+)"[^>]*>(.*?)</nav>', html, re.S)
             enlaces = re.findall(r"<li><a[^>]*>", nav.group(2))
             activo = [i for i, enlace in enumerate(enlaces) if "aria-current" in enlace]
             self.assertEqual(activo, [int(nav.group(1))], ruta)

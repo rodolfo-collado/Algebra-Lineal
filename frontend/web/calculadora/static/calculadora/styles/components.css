@@ -110,7 +110,7 @@
 }
 
 /* Un mismo feedback para acciones, teclas y controles de estructura/navegación. */
-:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .options-toggle, .historial-boton, .sidebar-close, .search-submit) {
+:is(.btn, .math-key, .stepper-btn, .header-buscar, .theme-toggle, .options-toggle, .historial-boton, .search-submit) {
     transition:
         background-color var(--motion-fast),
         border-color var(--motion-fast),
@@ -119,20 +119,20 @@
         transform var(--motion-fast);
 }
 
-:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .options-toggle, .historial-boton, .sidebar-close, .search-submit):disabled {
+:is(.btn, .math-key, .stepper-btn, .header-buscar, .theme-toggle, .options-toggle, .historial-boton, .search-submit):disabled {
     opacity: 0.55;
     cursor: not-allowed;
     box-shadow: none;
 }
 
 /* El relieve confirma la pulsación también en táctil y con movimiento reducido. */
-:is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .options-toggle, .historial-boton, .sidebar-close, .search-submit):not(:disabled):active {
+:is(.btn, .math-key, .stepper-btn, .header-buscar, .theme-toggle, .options-toggle, .historial-boton, .search-submit):not(:disabled):active {
     border-color: var(--color-brand);
     box-shadow: inset 0 0 0 1px currentColor;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    :is(.btn, .math-key, .stepper-btn, .navigation-toggle, .theme-toggle, .options-toggle, .historial-boton, .sidebar-close, .search-submit):not(:disabled):active {
+    :is(.btn, .math-key, .stepper-btn, .header-buscar, .theme-toggle, .options-toggle, .historial-boton, .search-submit):not(:disabled):active {
         transform: translateY(1px);
     }
 

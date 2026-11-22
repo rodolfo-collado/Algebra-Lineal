@@ -1,40 +1,62 @@
 {% load static %}
-{% comment %}Opciones de presentación: el estilo (Estudio, Minimalista o un tema homenaje) es independiente del tema claro u oscuro, que sigue en su propio botón. Popover nativo: se cierra con Esc o al pulsar fuera. Sin JavaScript no hace nada, así que nace oculto como el botón de tema.{% endcomment %}
+{% comment %}Opciones: Apariencia a la vista y el resto en secciones plegables nativas (details), para recorrerlas rápido.
+El estilo (Estudio, Minimalista o un tema homenaje) es independiente del tema claro u oscuro, que sigue en su propio
+botón de la cabecera. Popover nativo: se cierra con Esc o al pulsar fuera. Sin JavaScript no hace nada, así que nace
+oculto como el botón de tema.{% endcomment %}
 <button type="button" class="options-toggle" id="opciones-toggle" popovertarget="opciones" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
     <span class="options-toggle-text">Opciones</span>
 </button>
 <div class="opciones" id="opciones" popover aria-labelledby="opciones-titulo">
     <h2 class="opciones-titulo" id="opciones-titulo">Opciones</h2>
-    <fieldset class="opciones-grupo">
-        <legend>Estilo</legend>
-        <label class="opcion"><input type="radio" name="estilo" value="estudio"> <span><b>Estudio</b><small>Una habitación con sus detalles</small></span></label>
-        <label class="opcion"><input type="radio" name="estilo" value="minimalista"> <span><b>Minimalista</b><small>Solo lo esencial, sin ilustraciones</small></span></label>
-    </fieldset>
-    {# Mismo grupo de radios (name="estilo"): son estilos como los anteriores, con los colores de cada equipo. #}
-    <fieldset class="opciones-grupo">
-        <legend>Temas homenaje</legend>
-        <label class="opcion"><input type="radio" name="estilo" value="chocolab"> <span><b>ChocoLab</b><small>En honor a ChocoLab · crema, cacao y cobre</small></span><span class="homenaje-logo" data-homenaje="chocolab" aria-hidden="true"><img src="{% static 'calculadora/homenajes/chocolab.png' %}" alt="" width="1206" height="389" loading="lazy" decoding="async"></span></label>
-        <label class="opcion"><input type="radio" name="estilo" value="belugacalc"> <span><b>BelugaCalc</b><small>En honor a BelugaCalc · azul marino, celeste y hielo</small></span><span class="homenaje-logo" data-homenaje="belugacalc" aria-hidden="true"><img src="{% static 'calculadora/homenajes/belugacalc.png' %}" alt="" width="500" height="500" loading="lazy" decoding="async"></span></label>
-        <label class="opcion"><input type="radio" name="estilo" value="heyalgb"> <span><b>HeyAlgb</b><small>En honor a HeyAlgb · negro, granate y rojo</small></span><span class="homenaje-logo" data-homenaje="heyalgb" aria-hidden="true"><img src="{% static 'calculadora/homenajes/heyalgb.png' %}" alt="" width="1280" height="1280" loading="lazy" decoding="async"></span></label>
-    </fieldset>
-    <fieldset class="opciones-grupo">
-        <legend>Efectos de sonido</legend>
-        <label class="opcion"><input type="radio" name="sonido" value="off"> <span><b>Sin efectos</b><small>Todo funciona igual sin audio</small></span></label>
-        <label class="opcion"><input type="radio" name="sonido" value="on"> <span><b>Con efectos</b><small>Notas breves al navegar y explorar</small></span></label>
-        <label class="volumen"><span>Volumen</span><input type="range" id="volumen" name="volumen" min="10" max="100" step="10" value="50"></label>
-    </fieldset>
-    <fieldset class="opciones-grupo" id="musica-grupo" hidden>
-        <legend>Música ambiental</legend>
-        <select class="field-select" id="musica-pieza" name="musica-pieza" aria-label="Pieza" autocomplete="off"></select>
-        <div class="musica-controles">
-            <button type="button" class="btn btn-secondary musica-salto" id="musica-anterior" aria-label="Pieza anterior" title="Pieza anterior"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6 5h2.4v14H6zM20 5.5v13L9.5 12z"/></svg></button>
-            <button type="button" class="btn btn-secondary" id="musica-toggle">Reproducir</button>
-            <button type="button" class="btn btn-secondary musica-salto" id="musica-siguiente" aria-label="Pieza siguiente" title="Pieza siguiente"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M15.6 5H18v14h-2.4zM4 5.5v13L14.5 12z"/></svg></button>
+    {# Un solo grupo de radios (name="estilo"): las flechas recorren los cinco estilos. #}
+    <fieldset class="opciones-grupo opciones-apariencia">
+        <legend>Apariencia</legend>
+        <div class="estilos">
+            <label class="estilo-ficha"><input type="radio" name="estilo" value="estudio"><span class="estilo-muestra" data-muestra="estudio" aria-hidden="true"></span><b>Estudio</b><small>Una habitación con sus detalles</small></label>
+            <label class="estilo-ficha"><input type="radio" name="estilo" value="minimalista"><span class="estilo-muestra" data-muestra="minimalista" aria-hidden="true"></span><b>Minimalista</b><small>Solo lo esencial</small></label>
+            <label class="estilo-ficha"><input type="radio" name="estilo" value="chocolab"><span class="estilo-muestra" data-muestra="chocolab" aria-hidden="true"><span class="homenaje-logo" data-homenaje="chocolab"><img src="{% static 'calculadora/homenajes/chocolab.png' %}" alt="" width="1206" height="389" loading="lazy" decoding="async"></span></span><b>ChocoLab</b><small>En honor a ChocoLab</small></label>
+            <label class="estilo-ficha"><input type="radio" name="estilo" value="belugacalc"><span class="estilo-muestra" data-muestra="belugacalc" aria-hidden="true"><span class="homenaje-logo" data-homenaje="belugacalc"><img src="{% static 'calculadora/homenajes/belugacalc.png' %}" alt="" width="500" height="500" loading="lazy" decoding="async"></span></span><b>BelugaCalc</b><small>En honor a BelugaCalc</small></label>
+            <label class="estilo-ficha"><input type="radio" name="estilo" value="heyalgb"><span class="estilo-muestra" data-muestra="heyalgb" aria-hidden="true"><span class="homenaje-logo" data-homenaje="heyalgb"><img src="{% static 'calculadora/homenajes/heyalgb.png' %}" alt="" width="1280" height="1280" loading="lazy" decoding="async"></span></span><b>HeyAlgb</b><small>En honor a HeyAlgb</small></label>
         </div>
-        <p class="opciones-ayuda" id="musica-ahora"></p>
-        <label class="volumen"><span>Volumen</span><input type="range" id="musica-volumen" name="musica-volumen" min="10" max="100" step="10" value="40"></label>
-        <p class="opciones-ayuda">Original de PyGebra. Se genera en tu equipo y cada visita empieza en silencio.</p>
+        <p class="opciones-nota">Claro u oscuro: botón Tema de la cabecera.</p>
     </fieldset>
-    <p class="opciones-nota">El tema claro u oscuro se cambia con el botón Tema.</p>
+
+    <details class="opciones-seccion">
+        <summary>Sonido y música</summary>
+        <fieldset class="opciones-grupo">
+            <legend>Efectos de sonido</legend>
+            <label class="opcion"><input type="radio" name="sonido" value="off"> <span><b>Sin efectos</b><small>Todo funciona igual sin audio</small></span></label>
+            <label class="opcion"><input type="radio" name="sonido" value="on"> <span><b>Con efectos</b><small>Notas breves al navegar y explorar</small></span></label>
+            <label class="volumen"><span>Volumen</span><input type="range" id="volumen" name="volumen" min="10" max="100" step="10" value="50"></label>
+        </fieldset>
+        <fieldset class="opciones-grupo" id="musica-grupo" hidden>
+            <legend>Música ambiental</legend>
+            <select class="field-select" id="musica-pieza" name="musica-pieza" aria-label="Pieza" autocomplete="off"></select>
+            <div class="musica-controles">
+                <button type="button" class="btn btn-secondary musica-salto" id="musica-anterior" aria-label="Pieza anterior" title="Pieza anterior"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6 5h2.4v14H6zM20 5.5v13L9.5 12z"/></svg></button>
+                <button type="button" class="btn btn-secondary" id="musica-toggle">Reproducir</button>
+                <button type="button" class="btn btn-secondary musica-salto" id="musica-siguiente" aria-label="Pieza siguiente" title="Pieza siguiente"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M15.6 5H18v14h-2.4zM4 5.5v13L14.5 12z"/></svg></button>
+            </div>
+            <p class="opciones-ayuda" id="musica-ahora"></p>
+            <label class="volumen"><span>Volumen</span><input type="range" id="musica-volumen" name="musica-volumen" min="10" max="100" step="10" value="40"></label>
+            <p class="opciones-ayuda">Original de PyGebra. Se genera en tu equipo y cada visita empieza en silencio.</p>
+        </fieldset>
+    </details>
+
+    <details class="opciones-seccion">
+        <summary>Acerca de PyGebra</summary>
+        <div class="opciones-acerca">
+            <p><b>PyGebra {{ version_pygebra }}</b>. Aprende resolviendo: matemáticas con su procedimiento paso a paso.</p>
+            <p>Los temas homenaje llevan los logotipos de ChocoLab, BelugaCalc y HeyAlgb, usados con permiso de sus equipos. Ilustraciones, sonidos y música son originales de PyGebra.</p>
+        </div>
+    </details>
+
+    {% if escritorio %}
+        {# Solo la app de escritorio se actualiza a sí misma: la sección lleva a su página. #}
+        <a class="opciones-seccion opciones-enlace" href="{% url 'calculadora:actualizaciones' %}"{% if pagina_actualizaciones %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 4a8 8 0 0 1 7.4 5H17v2h6V5h-2v2.3A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8zm8 8a8 8 0 0 1-15.4 3H7v-2H1v6h2v-2.3A10 10 0 0 0 22 12h-2z"/></svg>
+            <span>Actualizaciones</span>
+        </a>
+    {% endif %}
 </div>
