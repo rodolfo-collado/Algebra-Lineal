@@ -387,6 +387,7 @@ METODOS_ITERATIVOS = Herramienta(
     invitacion="Resuelve con Jacobi o Gauss-Seidel y sigue las sustituciones de cada vuelta.",
     puntos=("Jacobi utiliza el vector de la iteración anterior",
             "Gauss-Seidel reutiliza las componentes recién calculadas"),
+    curiosidad="En Gauss-Seidel, cambiar el orden de los despejes puede cambiar las aproximaciones de cada vuelta.",
 )
 
 HERRAMIENTAS = (
