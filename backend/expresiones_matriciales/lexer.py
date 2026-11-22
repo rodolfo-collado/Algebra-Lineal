@@ -18,7 +18,8 @@ class Token:
     fin: int
 
 
-_OPERADORES = {"+": "mas", "-": "menos", "*": "por", "(": "izq", ")": "der"}
+# «·» es el punto de producto que usa la presentación; equivale a «*».
+_OPERADORES = {"+": "mas", "-": "menos", "*": "por", "·": "por", "(": "izq", ")": "der"}
 TRASPUESTA = "ᵀ"
 
 

@@ -87,7 +87,7 @@ class PruebasCatalogo(SimpleTestCase):
         herramienta = catalogo.MATRIZ_INVERSA
         self.assertEqual(
             catalogo.herramientas_de(catalogo.MATRICES),
-            (catalogo.OPERACIONES_MATRICES, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, herramienta,
+            (catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS, herramienta,
              catalogo.DETERMINANTES),
         )
         self.assertEqual((herramienta.id, herramienta.nombre), ("matriz-inversa", "Matriz inversa"))
@@ -103,7 +103,7 @@ class PruebasCatalogo(SimpleTestCase):
         visibles = f"{herramienta.nombre} {herramienta.descripcion} {herramienta.invitacion}"
         for formula in ("ad − bc", "ad-bc", "1/(", "⁻¹", "[A | I]", "determinante"):
             self.assertNotIn(formula, visibles)
-        self.assertIn("la matriz inversa", catalogo.MATRICES.descripcion)
+        self.assertIn("inversa", catalogo.MATRICES.descripcion)
 
     def test_inicio_sidebar_tema_y_breadcrumbs(self):
         inicio = Documento(self.client.get("/"))
@@ -116,7 +116,7 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
         self.assertTrue(doc.categorias["matrices"])
         enlaces = [a["href"] for a in doc.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/", RUTA,
+        self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/reduccion/", RUTA,
                                    "/matrices/determinantes/"])
 
     def test_buscador_encuentra_la_inversa_sin_quitar_prioridades(self):
@@ -223,9 +223,10 @@ class PruebasResultado(SimpleTestCase):
             with self.subTest(metodo=metodo):
                 html, doc, contenido = self.calcular(PROFESOR_2X2, metodo)
                 self.assertEqual(doc.tablas[TABLA_INVERSA], INVERSA_2X2)
-                self.assertIn(f"Matriz inversa · {titulo} Inversa de A (2×2)", contenido)
+                # La respuesta primero: ¿es invertible?, con el orden y el método en el antetítulo.
+                self.assertIn(f"Matriz inversa · 2×2 · {titulo} A es invertible", contenido)
                 _, resultado = partes(html)
-                self.assertTrue(resultado.endswith("A⁻¹ = Copiar -3 2 5/2 -3/2"))
+                self.assertIn("A⁻¹ = Copiar -3 2 5/2 -3/2", resultado)
 
     def test_profesor_3x3_por_gauss_jordan(self):
         html, doc, contenido = self.calcular(PROFESOR_3X3)
@@ -293,8 +294,10 @@ class PruebasResultado(SimpleTestCase):
             self.assertIn(etapa, procedimiento)
             self.assertNotIn(etapa, resultado)
         self.assertIn("[A | I]", procedimiento)
+        # Fuera de «También puedes explorar», que enlaza a Sistemas lineales (Ax = b).
+        propio = texto(html)[:texto(html).index("También puedes explorar")]
         for ajeno in ("sistema", "Sistema", "ecuaci", "clasificaci", "Clasificaci", "[A | b]", "Sustitución", "Columnas pivote"):
-            self.assertNotIn(ajeno, texto(html))
+            self.assertNotIn(ajeno, propio)
 
     def test_el_separador_se_conserva_en_todas_las_matrices_del_procedimiento(self):
         for a in (PROFESOR_2X2, PROFESOR_3X3, SINGULAR, [[4]]):
@@ -327,7 +330,7 @@ class PruebasResultado(SimpleTestCase):
                 procedimiento, _ = partes(html)
                 self.assertNotIn("Resultado", procedimiento)
                 self.assertEqual(contenido.count("Resultado"), 1)
-                self.assertLess(contenido.index("Ver procedimiento"), contenido.index("Resultado"))
+                self.assertLess(contenido.index("Resultado"), contenido.index("Ver procedimiento"))
                 ids = re.findall(r'id="([^"]+)"', html)
                 self.assertEqual(len(ids), len(set(ids)))
 
@@ -367,7 +370,8 @@ class PruebasVerificacion(SimpleTestCase):
         doc = Contenido(html)
         checkbox = doc.campos["verificar"]
         self.assertEqual(checkbox["type"], "checkbox")
-        self.assertNotIn("checked", checkbox)
+        # Activada por defecto: la comprobación forma parte de la respuesta.
+        self.assertIn("checked", checkbox)
         self.assertNotIn("required", checkbox)
         self.assertEqual(" ".join(doc.labels[checkbox["id"]].split()), "Verificar el resultado")
         ayuda = checkbox["aria-describedby"].split()
@@ -422,19 +426,47 @@ class PruebasVerificacion(SimpleTestCase):
                 self.assertEqual(producto.call_count, 2)
                 self.assertTrue(all(llamada.args == ("producto",) for llamada in producto.call_args_list))
                 self.assertEqual(doc.tablas[TABLA_INVERSA], inversa)
-                for tabla in (TABLA_A_INVERSA, TABLA_INVERSA_A, TABLA_IDENTIDAD):
+                # Los productos son tablas propias calculadas, no una identidad dibujada.
+                self.assertNotIn(TABLA_IDENTIDAD, doc.tablas)
+                for tabla in (TABLA_A_INVERSA, TABLA_INVERSA_A):
                     self.assertEqual(doc.tablas[tabla], identidad_texto(len(a)))
-                contenido = texto(html)
-                self.assertIn("A · A⁻¹", contenido)
-                self.assertIn("A⁻¹ · A", contenido)
-                for etiqueta, formula in (("Comprobación de A por su inversa", "A · A⁻¹"),
-                                           ("Comprobación de la inversa por A", "A⁻¹ · A")):
-                    region = elemento_html(html, html.index(f'aria-label="{etiqueta}"'), "div")
+                self.assertEqual(doc.tablas["Inversa de A usada en la comprobación"], inversa)
+                for formula in ("A · A⁻¹", "A⁻¹ · A"):
+                    region = elemento_html(html, html.index(f'aria-label="Producto {formula} calculado"'), "div")
                     region_texto = " ".join(unescape(strip_tags(re.sub(r">\s*<", "> <", region))).split())
                     celdas = " ".join(valor for fila in identidad_texto(len(a)) for valor in fila)
                     self.assertEqual(region_texto, f"{formula} = {celdas} = I")
-                self.assertIn("Ambos productos son la matriz identidad.", contenido)
+                contenido = texto(html)
+                self.assertIn(f"A · A⁻¹ = I y A⁻¹ · A = I. Ambos productos se calcularon con A y la inversa obtenida; "
+                              f"sus {len(a) ** 2} entradas coinciden exactamente con las de I.", contenido)
+                self.assertEqual(contenido.count("✓ ") + contenido.endswith("✓"), 2 * len(a) ** 2 + 1)
                 self.assertIn("checked", doc.campos["verificar"])
+
+    def test_cada_entrada_muestra_la_fila_por_columna_realmente_multiplicada(self):
+        # 2×2 no trivial con fracciones: los productos parciales se leen en la página.
+        html, _ = self.calcular([["1/2", -1], [3, "-2/3"]], "gauss_jordan")
+        contenido = texto(html)
+        for linea in ("(AA⁻¹)₁₁ = (1/2)·(-1/4) + (-1)·(-9/8) = 1 = I(1, 1) ✓",
+                      "(AA⁻¹)₁₂ = (1/2)·(3/8) + (-1)·(3/16) = 0 = I(1, 2) ✓",
+                      "(A⁻¹A)₂₁ = (-9/8)·(1/2) + (3/16)·3 = 0 = I(2, 1) ✓",
+                      "(A⁻¹A)₂₂ = (-9/8)·(-1) + (3/16)·(-2/3) = 1 = I(2, 2) ✓"):
+            self.assertIn(linea, contenido)
+        # 3×3: cada entrada usa la fila de A y la columna de A⁻¹ calculada (9 por producto).
+        html, _ = self.calcular(PROFESOR_3X3, "gauss_jordan")
+        lineas = re.findall(r"\(AA⁻¹\)[₁₂₃]{2} = [^✓]+✓", texto(html))
+        self.assertEqual(len(lineas), 9)
+        self.assertEqual(len(re.findall(r"\(A⁻¹A\)[₁₂₃]{2} = [^✓]+✓", texto(html))), 9)
+
+    def test_los_productos_nacen_abiertos_hasta_cuatro_y_plegados_despues(self):
+        for orden, abierto in ((2, True), (4, True), (5, False)):
+            with self.subTest(orden=orden):
+                a = [[2 if i == j else (1 if j == i + 1 else 0) for j in range(orden)] for i in range(orden)]
+                html, _ = self.calcular(a, "gauss_jordan")
+                for clave in ("a_por_inversa", "inversa_por_a"):
+                    etiqueta = re.search(rf'<details[^>]*id="{clave}"[^>]*>', html).group(0)
+                    self.assertEqual(" open" in etiqueta, abierto)
+                # Las entradas fila por columna se piden siempre bajo demanda.
+                self.assertNotRegex(html, r'<details class="disclosure inverse-entries"[^>]* open')
 
     def test_se_verifica_la_misma_inversa_calculada_una_sola_vez(self):
         for metodo in ("gauss_jordan", "directo_2x2"):
@@ -468,29 +500,33 @@ class PruebasVerificacion(SimpleTestCase):
                     patch(MOTOR_PRODUCTO, side_effect=AssertionError("multiplicó una singular")) as producto, \
                     patch(f"{SERVICIO}.verificar_inversa", side_effect=AssertionError("verificó una singular")) as verificar:
                 html, doc = self.calcular(SINGULAR, metodo)
-                procedimiento, resultado = partes(html)
+                _, resultado = partes(html)
+                self.assertIn("A no es invertible", texto(html))
                 self.assertIn("La matriz no tiene inversa.", resultado)
+                self.assertIn("det(A) = 0", resultado)
                 self.assertIn("Verificación no disponible: A no tiene inversa.", resultado)
                 self.assertNotIn("✓", resultado)
-                self.assertIn("No se puede realizar la verificación porque A no tiene inversa.", procedimiento)
+                self.assertNotIn('id="inverse-verification-title"', html)
                 for tabla in (TABLA_INVERSA, TABLA_A_INVERSA, TABLA_INVERSA_A, TABLA_IDENTIDAD):
                     self.assertNotIn(tabla, doc.tablas)
                 producto.assert_not_called()
                 verificar.assert_not_called()
 
-    def test_verificacion_en_el_procedimiento_antes_del_resultado_unico(self):
+    def test_verificacion_tras_el_resultado_y_antes_del_procedimiento(self):
         for metodo, ultimo_paso in (("gauss_jordan", "3 · Matriz final"),
                                     ("directo_2x2", "4 · Multiplicar por 1/(ad − bc)")):
             with self.subTest(metodo=metodo):
                 html, _ = self.calcular(PROFESOR_2X2, metodo)
                 comprobar_estructura(self, html)
                 procedimiento, resultado = partes(html)
-                self.assertLess(procedimiento.index(ultimo_paso), procedimiento.index("Verificación"))
-                self.assertIn("A · A⁻¹", procedimiento)
-                self.assertIn("A⁻¹ · A", procedimiento)
+                self.assertIn(ultimo_paso, procedimiento)
+                self.assertNotIn("Verificación", procedimiento)
                 self.assertNotIn("Resultado", procedimiento)
                 self.assertIn("Verificación: A·A⁻¹ = A⁻¹·A = I ✓", resultado)
-                self.assertTrue(resultado.endswith("A⁻¹ = Copiar -3 2 5/2 -3/2"))
+                self.assertIn("A⁻¹ = Copiar -3 2 5/2 -3/2", resultado)
+                # Resultado → verificación → procedimiento.
+                self.assertLess(html.index("panel-final"), html.index('id="inverse-verification-title"'))
+                self.assertLess(html.index('id="inverse-verification-title"'), html.index('id="procedimiento"'))
                 self.assertEqual(len(re.findall(rf'<table[^>]*aria-label="{TABLA_INVERSA}"', html)), 1)
                 self.assertEqual(texto(html).count("Resultado"), 1)
                 self.assertRegex(html, r'<h[3-6][^>]*id="inverse-verification-title"[^>]*>Verificación</h[3-6]>')
@@ -500,19 +536,18 @@ class PruebasVerificacion(SimpleTestCase):
     def test_verificacion_respeta_la_presentacion_exacta_decimal(self):
         html, _ = self.calcular(PROFESOR_3X3)
         self.assertIn("data-numeric-controls hidden", html)
-        detalle = elemento_html(html, html.index('id="procedimiento"'), "details")
-        bloque = detalle[detalle.index('id="inverse-verification-title"'):]
-        # La presentación común conserva 0 y 1: solo prepara variantes si el decimal cambia.
-        self.assertEqual(ValoresHTML(bloque).valores, [])
+        bloque = elemento_html(html, html.index('id="inverse-verification-title"'), "section")
+        # Los productos (0 y 1) no cambian en decimal; A⁻¹ sí, y lleva su variante decimal.
         tablas = Contenido(bloque).tablas
-        for tabla in (TABLA_A_INVERSA, TABLA_INVERSA_A, TABLA_IDENTIDAD):
+        for tabla in (TABLA_A_INVERSA, TABLA_INVERSA_A):
             self.assertEqual(tablas[tabla], identidad_texto(3))
+        self.assertIn("-9/2", {valor["exacto"] for valor in ValoresHTML(bloque).valores})
         inversa = {valor["exacto"]: valor for valor in ValoresHTML(html).valores}
         self.assertEqual(inversa["-9/2"]["decimales"]["4"], "-4.5")
 
     def test_el_producto_no_identico_se_muestra_sin_afirmar_exito(self):
-        for orden_fallido, mensaje in ((0, "A · A⁻¹ no coincide con la matriz identidad."),
-                                       (1, "A⁻¹ · A no coincide con la matriz identidad.")):
+        for orden_fallido, mensaje in ((0, "La comprobación falla. A · A⁻¹ difiere de I en (1, 1)."),
+                                       (1, "La comprobación falla. A⁻¹ · A difiere de I en (1, 1).")):
             with self.subTest(orden_fallido=orden_fallido):
                 numero_llamada = 0
 
@@ -530,12 +565,13 @@ class PruebasVerificacion(SimpleTestCase):
                                       else (TABLA_INVERSA_A, TABLA_A_INVERSA))
                 self.assertEqual(doc.tablas[tabla_fallida], [["1/3", "0"], ["0", "1"]])
                 self.assertEqual(doc.tablas[otra], identidad_texto(2))
-                procedimiento, resultado = partes(html)
-                self.assertIn(mensaje, procedimiento)
+                _, resultado = partes(html)
+                verificacion = " ".join(strip_tags(elemento_html(html, html.index('id="inverse-verification-title"'), "section")).split())
+                self.assertIn(mensaje, verificacion)
+                self.assertIn("≠ 1, la entrada (1, 1) de I", verificacion)
                 self.assertIn("≠ I", resultado)
                 self.assertNotIn("✓", resultado)
-                self.assertEqual(procedimiento.count("≠ I"), 1)
-                self.assertNotIn("Ambos productos son la matriz identidad.", procedimiento)
+                self.assertNotIn("coinciden exactamente", verificacion)
                 bloque = html[html.index('id="inverse-verification-title"'):]
                 valor = next(v for v in ValoresHTML(bloque).valores if v["exacto"] == "1/3")
                 self.assertEqual(valor["decimales"]["4"], "0.3333")

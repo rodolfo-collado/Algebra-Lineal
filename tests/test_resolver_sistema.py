@@ -48,9 +48,9 @@ def seccion_resultado(respuesta):
 class PruebasNavegacionUnificada(SimpleTestCase):
     def test_la_navegacion_no_lista_las_pseudo_herramientas(self):
         rutas = (
-            "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
+            "/matrices/reduccion/", "/matrices/operaciones/",
             "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
-            "/romanos/conversion/", "/metodos-numericos/biseccion/", "/metodos-numericos/regla-falsa/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/",
+            "/romanos/conversion/", "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/",
             "/conjuntos/cardinalidad/",
         )
         for ruta in ("/", *rutas):
@@ -76,9 +76,9 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         # Cada tema del Inicio despliega sus herramientas; ya no hay chips de acceso rápido.
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
-            ["/vectores/operaciones/", "/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/",
+            ["/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/reduccion/",
              "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/", "/romanos/conversion/",
-             "/metodos-numericos/biseccion/", "/metodos-numericos/regla-falsa/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/", "/conjuntos/cardinalidad/"],
+             "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/", "/conjuntos/cardinalidad/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")
         for consulta in ("gauss", "clasificación", "columnas pivote"):

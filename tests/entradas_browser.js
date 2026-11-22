@@ -40,19 +40,6 @@
             valor(w, '[name="filas_0"]', 1); valor(w, '[name="filas_0"]', 2);
             igual(q(w, '[name="celda_0_1_1"]').value, '11');
         }],
-        ["Vectores: dimensión, cantidad, Suma → Escalar → Suma y escalar recuperado", "/vectores/operaciones/", {}, w => {
-            click(w, '[data-agregar-vector]');
-            valor(w, '[name="v2_2"]', '8'); valor(w, '[name="v3_2"]', '9');
-            valor(w, '[name="dimension"]', 1); valor(w, '[name="vectores"]', 2);
-            valor(w, '[name="dimension"]', 3); valor(w, '[name="vectores"]', 3);
-            igual(q(w, '[name="v3_2"]').value, '9');
-            click(w, '[name="operacion"][value="escalar"]'); valor(w, '[name="escalar"]', '4');
-            click(w, '[name="operacion"][value="suma"]');
-            igual(q(w, '[name="vectores"]').value, '3');
-            igual(q(w, '[name="v2_2"]').value, '8'); igual(q(w, '[name="v3_2"]').value, '9');
-            igual(new w.FormData(q(w, 'form#vectores-form')).has('escalar'), false);
-            click(w, '[name="operacion"][value="escalar"]'); igual(q(w, '[name="escalar"]').value, '4');
-        }],
         ["Aumentada: b no cambia de significado al aumentar/reducir variables", "/matrices/reduccion/", {}, w => {
             click(w, '[name="tipo_entrada"][value="matriz"]');
             valor(w, '[name="ecuaciones"]', 2); valor(w, '[name="variables"]', 2);
@@ -90,16 +77,6 @@
             valor(w, '[name="variables"]', 3);
             igual(q(w, '[name="matriz_0_3"]').value, '2'); igual(q(w, '[name="matriz_1_3"]').value, '3');
         }],
-        ["Sin JS: Aplicar vectores conserva entradas incompletas y rechaza dimensiones inválidas", "/vectores/operaciones/", { sinJS: true }, async (w, frame) => {
-            valor(w, '[name="v1_0"]', '1/'); valor(w, '[name="dimension"]', 4);
-            w = await post(frame, '[name="ajustar"]');
-            igual(q(w, '[name="v1_0"]').value, '1/'); igual(Boolean(q(w, '[name="v2_3"]')), true);
-            valor(w, '[name="dimension"]', 11);
-            w = await post(frame, '[name="ajustar"]');
-            igual(q(w, '[name="dimension"]').value, '11');
-            igual(q(w, '[name="dimension"]').getAttribute('aria-invalid'), 'true');
-            igual(q(w, '[name="v1_0"]').value, '1/');
-        }],
         ["Sin JS: Aplicar matrices conserva valores; Agregar/Eliminar siguen operativos", "/matrices/operaciones/", { sinJS: true }, async (w, frame) => {
             igual(q(w, '[data-aplicar]').hidden, false);
             valor(w, '[name="celda_0_0_0"]', '1/'); valor(w, '[name="filas_0"]', 3);
@@ -126,8 +103,6 @@
         ['/matrices/operaciones/', 'filas_0', 'celda_0_0_0', null],
         ['/matrices/ecuaciones/', 'filas', 'celda_A_0_0', null],
         ['/matrices/inversa/', 'orden', 'celda_A_0_0', null],
-        ['/vectores/operaciones/', 'dimension', 'v1_0', null],
-        ['/vectores/operaciones/', 'vectores', 'v1_0', null],
         ['/matrices/reduccion/', 'variables', 'matriz_0_0', '[name="tipo_entrada"][value="matriz"]'],
     ];
     for (const [ruta, dimension, nombreCelda, modo] of dimensiones) {
@@ -155,7 +130,7 @@
     }
     for (const [ruta, campo] of [
         ['/matrices/operaciones/', 'celda_0_0_0'], ['/matrices/ecuaciones/', 'celda_A_0_0'],
-        ['/matrices/inversa/', 'celda_A_0_0'], ['/vectores/operaciones/', 'v1_0'],
+        ['/matrices/inversa/', 'celda_A_0_0'],
     ]) {
         casos.push([`${ruta}: Enter elige Calcular sin activar secundarios`, ruta, {}, w => {
             let submitter;

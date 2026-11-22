@@ -78,3 +78,17 @@ def antes_de_p285(html):
         bloque = re.sub(r" · Gauss(?:-Jordan)?(?=</h4>)", "", bloque)
         html = html[:fin] + bloque + html[fin:]
     return html
+
+
+def antes_de_v019(html):
+    """Solo para snapshots históricos: devuelve «Ver procedimiento» antes del panel final.
+
+    En 0.19.0 el resultado va primero; las capturas congeladas se tomaron con el
+    procedimiento delante. El contrato nuevo se prueba en test_procedimiento_plegable.
+    """
+    if 'id="procedimiento"' not in html or "panel-final" not in html:
+        return html
+    procedimiento = elemento_html(html, html.index('id="procedimiento"'), "details")
+    html = html.replace(procedimiento, "", 1)
+    final = html.rindex("<section", 0, html.index("panel-final"))
+    return html[:final] + procedimiento + html[final:]

@@ -32,7 +32,7 @@ class InversaForm(FormularioCeldas):
         error_messages={"required": "Selecciona un método.", "invalid_choice": "Selecciona un método válido."},
     )
     verificar = forms.BooleanField(
-        label="Verificar el resultado", required=False, initial=False,
+        label="Verificar el resultado", required=False, initial=True,
         help_text="Comprueba que A·A⁻¹ y A⁻¹·A producen la matriz identidad.",
         widget=forms.CheckboxInput(attrs={"aria-describedby": "inverse-verification-help"}),
     )

@@ -44,7 +44,7 @@ La precisión predeterminada es `0.0001`; solo aceptamos valores positivos igual
 o menores. Siguiendo la diapositiva 3, paramos cuando la **longitud después del
 recorte** cumple `b-a < precision`. No usamos el porcentaje como criterio de parada.
 
-El error relativo entre aproximaciones es `|(c actual − c anterior)/c actual| × 100`.
+El error absoluto aproximado entre aproximaciones es `|c actual − c anterior|`; la primera iteración no lo tiene («No aplica»).
 No es el error verdadero respecto a una raíz conocida. El código lo calcula así:
 
 ```python
@@ -65,7 +65,7 @@ Introduzco `x^4 - 5x^3 + 0.5x^2 - 11x + 10`, intervalo `[0.55,1.1]` y precisión
 | 2 | 0.6875 | 1.272476 | [0.6875, 0.825] |
 | 3 | 0.75625 | 0.131743 | [0.75625, 0.825] |
 
-En el paso 2, el error relativo es `|(.6875-.825)/.6875|×100 = 20 %`.
+En el paso 2, el error absoluto aproximado es `|.6875 − .825| = .1375`, la mitad de la longitud anterior.
 Después de **13 iteraciones**, obtenemos `c ≈ 0.763970947265625` y longitud
 restante `0.000067138671875`, menor que `0.0001`.
 

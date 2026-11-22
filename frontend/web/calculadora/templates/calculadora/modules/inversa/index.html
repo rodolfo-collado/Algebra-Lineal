@@ -67,45 +67,19 @@
 
 {% block tool_result %}
 {% if resultado %}
-    {% comment %}Entrada → procedimiento plegable del método elegido → resultado, una sola vez y al final. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+    {% comment %}Respuesta primero: ¿es invertible?, A⁻¹ (o por qué no existe) y el determinante; después, la comprobación con los productos calculados y, plegado, el procedimiento del método. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
     {% numeric_results %}
     <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
         <header class="results-heading">
-            <p class="section-kicker">Matriz inversa · {{ resultado.titulo_metodo }}</p>
-            <h2 id="results-title">{{ resultado.titulo }} ({{ resultado.forma }})</h2>
+            <p class="section-kicker">Matriz inversa · {{ resultado.forma }} · {{ resultado.titulo_metodo }}</p>
+            <h2 id="results-title">{% if resultado.funcion_adicional != "ninguna" %}{{ resultado.titulo }}{% elif resultado.invertible %}A es invertible{% else %}A no es invertible{% endif %}</h2>
         </header>
         {% include "calculadora/components/numeric_format.html" %}
-
-        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-            {% if resultado.metodo == "gauss_jordan" %}
-                {% include "calculadora/modules/inversa/_gauss_jordan.html" %}
-            {% else %}
-                {% include "calculadora/modules/inversa/_metodo_2x2.html" %}
-            {% endif %}
-            {% if resultado.verificar_solicitado %}
-                {% include "calculadora/modules/inversa/_verificacion.html" %}
-            {% endif %}
-            {% if resultado.funcion_adicional != "ninguna" %}
-                {% include "calculadora/modules/inversa/_adicional.html" %}
-            {% endif %}
-        {% enddisclosure %}
 
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
             {% comment %}El determinante explica la invertibilidad; la reducción (o la regla 2×2) construye A⁻¹. Ambos salen del mismo cálculo.{% endcomment %}
             {% if resultado.invertible %}<p class="muted inverse-reason" data-determinante>det(A) = {{ resultado.determinante }} ≠ 0: A es invertible.</p>{% endif %}
-            {% if resultado.verificar_solicitado %}
-                <p data-verificacion>
-                    {% if resultado.verificacion.verificada %}
-                        Verificación: A·A⁻¹ = A⁻¹·A = I ✓
-                    {% elif resultado.verificacion %}
-                        Verificación: {% if not resultado.verificacion.a_por_inversa_es_identidad %}A·A⁻¹ ≠ I.{% endif %}
-                        {% if not resultado.verificacion.inversa_por_a_es_identidad %}A⁻¹·A ≠ I.{% endif %}
-                    {% else %}
-                        Verificación no disponible: A no tiene inversa.
-                    {% endif %}
-                </p>
-            {% endif %}
             {% if resultado.invertible and resultado.adicional.aplicable %}
                 <div class="matrix-equation" role="region" aria-label="{{ resultado.etiqueta_final }}">
                     <span class="matrix-expression">{{ resultado.expresion_final }} =</span>
@@ -124,7 +98,32 @@
                 <p class="muted inverse-reason">{{ resultado.adicional.motivo }}</p>
             {% endif %}
             {% if not resultado.invertible %}<p class="muted inverse-reason" data-determinante>det(A) = 0: una matriz es invertible solo cuando det(A) ≠ 0.</p>{% endif %}
+            {% if resultado.verificar_solicitado %}
+                <p data-verificacion>
+                    {% if resultado.verificacion.verificada %}
+                        Verificación: A·A⁻¹ = A⁻¹·A = I ✓ (productos calculados, igualdad exacta)
+                    {% elif resultado.verificacion %}
+                        Verificación: {% if not resultado.verificacion.a_por_inversa_es_identidad %}A·A⁻¹ ≠ I.{% endif %}
+                        {% if not resultado.verificacion.inversa_por_a_es_identidad %}A⁻¹·A ≠ I.{% endif %}
+                    {% else %}
+                        Verificación no disponible: A no tiene inversa.
+                    {% endif %}
+                </p>
+            {% endif %}
         </section>
+
+        {% if resultado.verificacion %}{% include "calculadora/modules/inversa/_verificacion.html" %}{% endif %}
+
+        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+            {% if resultado.metodo == "gauss_jordan" %}
+                {% include "calculadora/modules/inversa/_gauss_jordan.html" %}
+            {% else %}
+                {% include "calculadora/modules/inversa/_metodo_2x2.html" %}
+            {% endif %}
+            {% if resultado.funcion_adicional != "ninguna" %}
+                {% include "calculadora/modules/inversa/_adicional.html" %}
+            {% endif %}
+        {% enddisclosure %}
     </section>
     {% endnumeric_results %}
 {% endif %}

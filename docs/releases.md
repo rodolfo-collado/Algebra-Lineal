@@ -241,9 +241,9 @@ Newton-Raphson y Secante en una sola herramienta, **Métodos abiertos**. Son
 capacidades nuevas compatibles: Newton conserva su algoritmo y su presentación, la
 ruta antigua de Newton redirige a la nueva y Bisección y Regla falsa no cambian. La
 preparación actualiza versión y lockfile (una línea cada uno) sin cambiar
-dependencias. Esta versión todavía no está publicada.
+dependencias. Publicada como v0.18.0.
 
-### Notas preparadas de PyGebra v0.18.0
+### Notas de PyGebra v0.18.0
 
 - **Método de la secante:** aproxima una raíz desde dos puntos iniciales x₀ y x₁, sin
   derivada ni cambio de signo. Sigue las diapositivas 18–24: fórmula como fracción
@@ -265,6 +265,53 @@ dependencias. Esta versión todavía no está publicada.
   con x₀ = 1 y x₁ = 2, y la práctica x³ − 2x − 5 con tolerancia 10⁻⁶.
 - **Buscador:** ante un empate, una palabra clave completa ordena primero
   («secante» lleva a Métodos abiertos antes que a Regla falsa).
+
+## Preparación de v0.19.0
+
+Incremento **MINOR** desde 0.18.0: reorganiza las herramientas (una sola
+**Operaciones** y **Métodos cerrados**), cambia la medida visible de Bisección y
+reordena la presentación de los resultados. Son cambios compatibles: las rutas
+anteriores redirigen o se traducen y ningún algoritmo cambia su criterio de
+parada. La preparación actualiza versión y lockfile (una línea cada uno) sin
+cambiar dependencias. Esta versión todavía no está publicada.
+
+### Notas preparadas de PyGebra v0.19.0
+
+- **Una sola herramienta de Operaciones:** matrices, vectores y escalares se
+  definen como operandos y una expresión usa solo los que escribe: `2u − 3v`,
+  `AB`, `Ax`, `(AB)ᵀ = BᵀAᵀ`… La antigua *Operaciones con vectores* ya no es una
+  entrada aparte: `/vectores/operaciones/` abre un ejemplo de vectores y su envío
+  antiguo se calcula igual en Operaciones. Los coeficientes de una combinación
+  lineal se piden como igualdad, `x1 u + x2 v = b`, con la conclusión (sí/no y
+  coeficientes) y el procedimiento de Gauss-Jordan de siempre. Ejemplos de un
+  clic cargan operandos y expresión. Las operaciones sin sentido (por ejemplo
+  sumar una matriz y un vector) se rechazan con un mensaje concreto.
+- **Navegación:** Álgebra lineal ordena Operaciones, Sistemas lineales (Ax = b)
+  —antes «Resolver Ax = b»—, Reducción por filas, Matriz inversa y
+  Determinantes. Raíces de ecuaciones queda en Métodos cerrados y Métodos
+  abiertos.
+- **Métodos cerrados:** Bisección y Regla falsa comparten herramienta, con un
+  selector como el de Métodos abiertos. Cambiar de método conserva función,
+  intervalo, precisión e iteraciones, nunca el resultado; el historial de cada
+  método no se mezcla. `/metodos-numericos/biseccion/` y
+  `/metodos-numericos/regla-falsa/` redirigen a
+  `/metodos-numericos/metodos-cerrados/…`.
+- **Bisección con error absoluto:** la tabla y el resumen muestran el error
+  absoluto aproximado |cᵢ − cᵢ₋₁| («No aplica» en la primera iteración) en lugar
+  del error relativo porcentual. La parada sigue siendo la longitud del intervalo
+  (b − a < precisión); la cota |c − raíz| ≤ b − a se explica con sus hipótesis.
+- **Resultados primero:** cada herramienta muestra primero la respuesta (raíz,
+  clasificación del sistema, si A es invertible, resultado de la expresión con su
+  tipo y dimensiones) y después, plegado, el procedimiento. En los métodos de
+  raíces, un resumen nombra iteraciones, error absoluto aproximado, residuo y
+  criterio de parada (cumplido o el motivo de terminación), y la fórmula, la
+  lectura de cada paso y la verificación viven en un único «Ver desarrollo
+  completo». El historial de la sesión queda plegado al final.
+- **Verificación real de la inversa:** activada por defecto, muestra A y A⁻¹,
+  calcula A·A⁻¹ y A⁻¹·A con el motor de productos y los compara con I entrada
+  por entrada, con igualdad exacta (fracciones). Cada entrada se puede abrir para
+  ver su fila por columna; con matrices de más de 4×4 los productos nacen
+  plegados.
 
 Estas notas describen una versión preparada, no una release publicada. El PR se
 dirige únicamente a `develop`; la promoción `develop → main`, el tag y la publicación

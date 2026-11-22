@@ -1,6 +1,6 @@
 /* Piezas que comparten Newton-Raphson y Secante en la pizarra del paso activo: valores, fracciones
    apiladas y comprobación de la tolerancia, como nodos DOM pequeños (sin un motor de fórmulas).
-   También carga los ejemplos (data-ejemplo) y lleva la función escrita al cambiar de método. */
+   También carga los ejemplos (data-ejemplo); llevar la función al otro método es de raices.js. */
 "use strict";
 window.metodosAbiertos = (() => {
     const subindice = k => String(k).replace(/\d/g, d => "₀₁₂₃₄₅₆₇₈₉"[d]);
@@ -56,14 +56,4 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         document.getElementById("grafica-estado").textContent = "Ejemplo cargado. Puedes modificarlo o resolver.";
     }));
-    // Cambiar de método conserva la función escrita: el otro método la recibe como ?funcion=…
-    const funcion = form.elements.namedItem("funcion");
-    const enlaces = [...document.querySelectorAll("[data-metodo-abierto]")];
-    const actualizar = () => enlaces.forEach(enlace => {
-        const destino = new URL(enlace.href, window.location.href);
-        destino.search = funcion.value.trim() ? new URLSearchParams({ funcion: funcion.value.trim() }) : "";
-        enlace.href = destino.pathname + destino.search;
-    });
-    funcion.addEventListener("input", actualizar);
-    actualizar();
 });

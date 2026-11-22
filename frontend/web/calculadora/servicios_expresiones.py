@@ -9,6 +9,7 @@ valor es el resultado de la página y se muestra una sola vez, al final.
 from fractions import Fraction
 
 from backend.expresiones_matriciales import Comparacion, Determinacion, Evaluacion, aplanar, evaluar
+from backend.expresiones_matriciales.combinacion import plantear as plantear_combinacion
 from backend.expresiones_matriciales.lineal import enumerar, texto_forma
 from backend.matrices import vector_columna
 
@@ -16,6 +17,7 @@ from .opciones_matrices import METODO_PREDETERMINADO
 from .presentacion_numerica import formatear_exacto
 from .servicios import formatear_matriz
 from .servicios_matrices import operando, presentar_por_entrada, presentar_producto
+from .servicios_vectores import presentar_combinacion
 
 _SIGNOS = {"resta_vector": "−", "escalar_vector": "·"}
 # Al yuxtaponerlos o nombrarlos dentro de otra operación necesitan paréntesis: (A + B)c₁.
@@ -24,6 +26,10 @@ _AGRUPAR = frozenset({"suma", "resta", "negacion"})
 
 def evaluar_expresion_web(entrada):
     metodo = entrada.get("metodo") or METODO_PREDETERMINADO
+    # x1 u + x2 v = b: las incógnitas x1, x2, … piden los coeficientes de una combinación lineal.
+    combinacion = plantear_combinacion(entrada["expresion"], entrada["simbolos"])
+    if combinacion is not None:
+        return presentar_combinacion(combinacion)
     resultado = evaluar(entrada["expresion"], entrada["simbolos"], entrada.get("nodo"))
     if isinstance(resultado, Determinacion):
         return presentar_determinacion(resultado)
@@ -103,6 +109,7 @@ def presentar(evaluacion, metodo=METODO_PREDETERMINADO, raiz=True):
     return {
         "texto": principal.texto,
         "tipo": principal.tipo,
+        "tipo_texto": tipo_texto(principal),
         "parcial": principal.id != "0",
         "dimensiones": dimensiones(principal),
         "igualdad": igualdad(principal),
@@ -159,6 +166,15 @@ def procedimiento_matricial(paso, metodo=METODO_PREDETERMINADO, simple=False):
         factor = _operando(escalar) if escalar else operando("-1", Fraction(-1), agrupar=True)
         return presentar_por_entrada(detalle, paso.texto, [_operando(matriz)], factor=factor)
     return None
+
+
+def tipo_texto(paso):
+    """«Matriz 2×3», «Vector de 3 componentes» o «Escalar»: qué es el resultado, antes de su valor."""
+    if paso.tipo == "matriz":
+        return f"Matriz {paso.filas}×{paso.columnas}"
+    if paso.tipo == "vector":
+        return f"Vector de {dimensiones(paso)}"
+    return dimensiones(paso).capitalize()
 
 
 def dimensiones(paso):

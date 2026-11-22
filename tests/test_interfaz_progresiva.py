@@ -312,7 +312,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         self.assertNotIn("open = true", script)
 
     def test_el_teclado_contextual_llega_a_todas_las_herramientas(self):
-        for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/"):
+        for ruta in ("/matrices/reduccion/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
                 teclados = Pagina(html).teclados
@@ -400,9 +400,10 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
-        orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1",
-                 "Resultado", "Clasificación", "Consistente de solución única", "Solución x₁ = 2 x₂ = 1",
-                 "Columnas pivote:", "Matriz reducida")
+        # Resultado primero; el procedimiento, plegado después.
+        orden = ("Resultado", "Clasificación", "Consistente de solución única", "Solución x₁ = 2 x₂ = 1",
+                 "Columnas pivote:", "Matriz reducida", "Ver procedimiento", "Matriz inicial",
+                 "Operaciones por filas", "Paso 1")
         posiciones = []
         for fragmento in orden:
             posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
@@ -413,9 +414,10 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         self.assertNotIn('href="#procedimiento"', html)
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertLess(html.index('id="resultado"'), html.index('id="procedimiento"'))
-        # El resultado queda después y fuera del details: se ve sin abrir el procedimiento.
+        # El resultado queda antes y fuera del details: se ve sin abrir el procedimiento.
         detalle = elemento_html(html, html.index('id="procedimiento"'), "details")
-        self.assertLess(html.index(detalle) + len(detalle), html.index('id="final-title"'))
+        self.assertNotIn('id="final-title"', detalle)
+        self.assertLess(html.index('id="final-title"'), html.index(detalle))
 
     def test_sin_procedimiento_no_hay_desplegable_y_la_matriz_final_sigue_en_el_resultado(self):
         respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "pivotes"]})
@@ -431,10 +433,10 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         html = respuesta.content.decode("utf-8")
         # El título «Gauss y Gauss-Jordan» va antes; el orden se mide desde el desplegable.
         texto = seccion_resultado(respuesta)
-        texto = texto[texto.index("Ver procedimiento"):]
-        orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas",
-                 "Gauss-Jordan", "Resultado", "Clasificación", "Solución x₁ = 2 x₂ = 1",
-                 "Columnas pivote:", "Matriz escalonada", "Matriz reducida")
+        texto = texto[texto.index("Resultado"):]
+        orden = ("Resultado", "Clasificación", "Solución x₁ = 2 x₂ = 1",
+                 "Columnas pivote:", "Matriz escalonada", "Matriz reducida", "Ver procedimiento",
+                 "Matriz inicial", "Gauss", "Operaciones por filas", "Gauss-Jordan")
         posiciones = []
         for fragmento in orden:
             posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
@@ -459,7 +461,7 @@ class PruebasExplorar(SimpleTestCase):
         for respuesta in (
             self.client.get("/matrices/reduccion/"),
             self.client.post("/matrices/reduccion/", {"sistema": "x1+=1", "metodo": "gauss"}),
-            self.client.get("/vectores/operaciones/"),
+            self.client.get("/matrices/operaciones/"),
             self.client.get("/"),
         ):
             self.assertNotContains(respuesta, "También puedes explorar")

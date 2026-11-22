@@ -34,7 +34,7 @@ class PruebasProcedimientoLU(SimpleTestCase):
         estructura = Estructura(html)
         self.assertFalse(estructura.principal()["open"])
         self.assertEqual(estructura.paneles_finales, [{"dentro": 0}])
-        self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
+        self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
         return html, Contenido(html), texto_resultado(html)
 
     def test_ejemplo_muestra_l_u_y_las_dos_reducciones_completas(self):

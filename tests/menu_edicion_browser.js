@@ -62,7 +62,7 @@
         try { accionPrueba(); } finally { w.Math.random = original; }
     };
     const inversa = "/matrices/inversa/", operaciones = "/matrices/operaciones/", reduccion = "/matrices/reduccion/";
-    const axb = "/matrices/ecuaciones/", determinantes = "/matrices/determinantes/", vectores = "/vectores/operaciones/";
+    const axb = "/matrices/ecuaciones/", determinantes = "/matrices/determinantes/";
     const romanos = "/romanos/conversion/";
     const COMANDOS = ["Toda la matriz", "Fila actual", "Columna actual", "Diagonal principal", "Diagonal secundaria",
         "Triangular superior", "Triangular inferior"];
@@ -84,8 +84,6 @@
         [axb, null, '[name="celda_b_0_0"]', true],
         [axb, null, '[name="filas"]', false],
         [determinantes, null, '[name="celda_A_0_0"]', true],
-        [vectores, null, '[name="v1_0"]', true],
-        [vectores, null, '[name="dimension"]', false],
         [romanos, null, '[name="numero"]', true],
         [romanos, null, '[name="direccion"]', false],
     ]) caso(`Alcance: ${selector} ${abre ? "abre el menú de edición" : "deja el menú del navegador"} (${ruta})`, ruta, w => {
@@ -134,10 +132,8 @@
     for (const [ruta, preparar, selector, esperado] of [
         [axb, null, '[name="celda_b_0_0"]', "Vector b"],
         [inversa, w => { q(w, "#aplicaciones").open = true; q(w, '[name="funcion_adicional"][value="vector"]').click(); }, '[name="celda_b_0_0"]', "Vector b"],
-        [vectores, null, '[name="v2_1"]', "Vector v2"],
         [operaciones, w => cambiar(w, '[name="tipo_1"]', "vector"), '[name="celda_1_0_0"]', "Vector B"],
         [operaciones, w => cambiar(w, '[name="tipo_1"]', "escalar"), '[name="celda_1_0_0"]', "Escalar B"],
-        [vectores, w => q(w, '[name="operacion"][value="escalar"]').click(), '[name="escalar"]', "Escalar k"],
         [romanos, null, '[name="numero"]', "Número arábigo"],
         [romanos, w => q(w, '[name="direccion"][value="romano_a_decimal"]').click(), '[name="numero"]', "Número romano"],
     ]) caso(`${esperado}: solo Rellenar y, con valores, Limpiar (${ruta})`, ruta, w => {
@@ -156,7 +152,6 @@
         [reduccion, w => modo(w, "matriz"), '[name="matriz_2_3"]'],
         [operaciones, null, '[name="celda_0_1_1"]'],
         [operaciones, w => cambiar(w, '[name="tipo_1"]', "vector"), '[name="celda_1_0_0"]'],
-        [vectores, null, '[name="v1_0"]'],
     ]) caso(`Rellenar: enteros de −9 a 9 solo en esa entrada, mismas dimensiones y Deshacer (${selector}, ${ruta})`, ruta, w => {
         preparar?.(w);
         const input = q(w, selector), grupo = celdasDe(input);
@@ -212,7 +207,6 @@
         [axb, null, ['[name="celda_A_0_0"]', '[name="celda_b_0_0"]']],
         [reduccion, w => modo(w, "matriz"), ['[name="matriz_0_0"]']],
         [operaciones, w => valor(w, '[name="expresion"]', "A + B"), ['[name="celda_0_0_0"]', '[name="celda_1_0_0"]']],
-        [vectores, null, ['[name="v1_0"]', '[name="v2_0"]']],
     ]) caso(`Rellenar: el servidor acepta los valores generados (${ruta})`, ruta, async (w, frame) => {
         preparar?.(w);
         for (const selector of selectores) rellenar(w, q(w, selector));
@@ -230,7 +224,6 @@
         [inversa, null, '[name="celda_A_0_1"]'],
         [operaciones, null, '[name="celda_1_0_0"]'],
         [reduccion, w => modo(w, "matriz"), '[name="matriz_1_1"]'],
-        [vectores, null, '[name="v2_0"]'],
     ]) caso(`Limpiar: vacía solo esa entrada, conserva dimensiones y opciones y se deshace (${ruta})`, ruta, w => {
         preparar?.(w);
         todos(w, "input.matrix-input").forEach((c, i) => { c.value = String(i % 9 + 1); });

@@ -23,7 +23,7 @@
     const casos = [];
     const entradas = {
         reduccion: '[name="matriz_0_0"]', axb: '[name="celda_A_0_0"]', inversa: '[name="celda_A_0_0"]',
-        operaciones: '[name="celda_0_0_0"]', vectores: '[name="v1_0"]', bases: '[name="numero"]', romanos: '[name="numero"]',
+        operaciones: '[name="celda_0_0_0"]', vectores: '[name="celda_0_0_0"]', bases: '[name="numero"]', romanos: '[name="numero"]',
     };
     for (const [nombre, selector] of Object.entries(entradas)) {
         casos.push([`${nombre}: vigente → entrada anterior → nuevo POST vigente`, nombre, async (w, frame) => {
@@ -112,8 +112,11 @@
         assert(w.getComputedStyle(summary).position === "sticky" && Math.abs(rect.top - header.bottom) <= 1, "Summary sigue bajo cabecera");
         assert(w.getComputedStyle(summary).backgroundColor !== "rgba(0, 0, 0, 0)", "Fondo sólido");
         summary.click(); await turno(w);
+        // Resultado primero: al plegar desde abajo queda a la vista el summary, con el resultado antes.
         const final = q(w, ".panel-final").getBoundingClientRect();
-        assert(!detalle.open && final.top >= header.bottom && final.top < w.innerHeight, "Plegar acerca Resultado");
+        const plegado = summary.getBoundingClientRect();
+        assert(!detalle.open && plegado.top >= header.bottom - 1 && plegado.bottom <= w.innerHeight, "Plegar deja el summary a la vista");
+        assert(final.bottom <= plegado.top, "El resultado queda antes del procedimiento");
     }]);
     casos.push(["Cambios estructurales y opciones también desactualizan", "operaciones", async (w) => {
         q(w, "[data-agregar]").click(); await turno(w);
@@ -127,8 +130,6 @@
         ["inversa", '[data-dimension="orden"] [data-paso="1"]', null, "click"],
         ["operaciones", '[name="metodo"][value="columnas"]', null, "click"],
         ["operaciones", '[name="expresion"]', "A+B", "input"],
-        ["vectores", '[data-agregar-vector]', null, "click"],
-        ["vectores", '[name="operacion"][value="resta"]', null, "click"],
         ["bases", '[name="base_origen"]', "8", "change"],
         ["bases", '[name="bases_destino"][value="16"]', null, "click"],
         ["romanos", '[name="direccion"][value="romano_a_decimal"]', null, "click"],

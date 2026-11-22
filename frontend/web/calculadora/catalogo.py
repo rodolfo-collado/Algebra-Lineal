@@ -149,13 +149,11 @@ CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos, sus operac
 METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones reales.", "f(c) ≈ 0")
 AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, METODOS_NUMERICOS, CONJUNTOS, CALCULO)
 
-VECTORES = Categoria(
-    "vectores", "Vectores", ALGEBRA_LINEAL,
-    "Operaciones con vectores y combinaciones lineales.", "u + v",
-)
+# Una sola sección de Álgebra lineal: operaciones (también con vectores), sistemas lineales,
+# reducción por filas, la matriz inversa y determinantes trabajan con las mismas matrices.
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
-    "Operaciones con matrices, sistemas de ecuaciones, reducción por filas, la ecuación matricial Ax = b y la matriz inversa.", "[ A ]",
+    "Operaciones con matrices, vectores y escalares, sistemas lineales Ax = b, reducción por filas, la matriz inversa y determinantes.", "[ A ]",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -171,7 +169,7 @@ CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos e intervalos", CON
                             "Operaciones, relaciones, diagramas de Venn, intervalos y cardinalidad.", "{ a, b }")
 RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS,
                    "Búsqueda de raíces en un intervalo (métodos cerrados) o desde puntos iniciales (métodos abiertos).", "[a, b]")
-CATEGORIAS = (VECTORES, MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, CONJUNTOS_FINITOS, LIMITES)
+CATEGORIAS = (MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, CONJUNTOS_FINITOS, LIMITES)
 
 
 # Reducción por filas de [A | b]: método a elegir (o comparar los dos) y
@@ -196,27 +194,6 @@ REDUCCION_FILAS = Herramienta(
     invitacion="Parte de un sistema escrito o una matriz aumentada y sigue la reducción.",
     puntos=('Desde ecuaciones o desde la matriz aumentada', 'Pivotes, variables libres y tipo de solución'),
     curiosidad="Las operaciones elementales no cambian las soluciones: solo reescriben el sistema de una forma más fácil de leer.",
-)
-
-# Única herramienta de la categoría: la operación (suma, resta, escalar o
-# combinación lineal) se elige dentro, igual que el método en Reducción por filas.
-OPERACIONES_VECTORES = Herramienta(
-    id="operaciones-vectores",
-    nombre="Operaciones con vectores",
-    categoria=VECTORES,
-    descripcion="Opera con vectores o encuentra los coeficientes de una combinación lineal.",
-    estado="disponible",
-    route_name="calculadora:operaciones-vectores",
-    palabras_clave=(
-        "vector", "vectores", "suma de vectores", "resta de vectores", "escalar",
-        "multiplicación por escalar", "producto por escalar", "combinación lineal",
-        "combinacion lineal", "coeficientes", "ecuación vectorial", "span", "generado",
-        "conjunto generado", "dimensión", "componentes", "rn", "sumar", "restar", "multiplicar",
-    ),
-    relacionadas=("ecuaciones-matriciales", "operaciones-matrices"),
-    invitacion="Suma o resta vectores y encuentra coeficientes de una combinación lineal.",
-    puntos=('Suma, resta y multiplicación por escalar', 'Coeficientes de una combinación lineal'),
-    curiosidad="Dos vectores no paralelos del plano generan todo ℝ²: cualquier punto es combinación lineal de ellos.",
 )
 
 CONVERSION_BASES = Herramienta(
@@ -258,33 +235,36 @@ CONVERSION_ROMANOS = Herramienta(
     curiosidad="La numeración romana no tiene símbolo para el cero; por eso la conversión empieza en 1.",
 )
 
-# Una sola herramienta para operaciones simples y compuestas (P26.6): A + B, 2A, AB,
-# Ax, Aᵀ o A(B + C) - 2D usan el mismo motor de expresiones. Cómo se explican los
-# productos se elige dentro. En Ax el vector x es conocido y solo se calcula el
-# producto. Absorbió a Expresiones matriciales: sus palabras clave siguen llevando aquí.
+# Una sola herramienta de operaciones algebraicas: matrices, vectores y escalares en una
+# expresión que usa solo los operandos que se escriben (A + B, 2u − v, AB, Ax, Aᵀ…).
+# Absorbió a Expresiones matriciales (P26.6) y a Operaciones con vectores; sus palabras
+# clave siguen llevando aquí. x₁u + x₂v = b halla los coeficientes de una combinación lineal.
 OPERACIONES_MATRICES = Herramienta(
-    id="operaciones-matrices", nombre="Operaciones con matrices", categoria=MATRICES,
-    descripcion="Realiza y combina operaciones con matrices, vectores y escalares paso a paso.",
+    id="operaciones-matrices", nombre="Operaciones", categoria=MATRICES,
+    descripcion="Combina matrices, vectores y escalares en una expresión y obtén el resultado paso a paso.",
     estado="disponible", route_name="calculadora:operaciones-matrices",
-    palabras_clave=("matriz", "matrices", "suma", "resta", "escalar", "traspuesta",
+    palabras_clave=("operaciones", "matriz", "matrices", "suma", "resta", "escalar", "traspuesta",
                     "transpuesta", "aᵀ", "a^t", "filas", "columnas", "rectangular", "fracciones",
                     "multiplicación de matrices", "producto de matrices", "matriz por matriz",
                     "ax", "matriz por vector", "fila por columna", "regla fila-vector",
-                    "producto punto", "combinación lineal", "expresión", "expresiones",
-                    "expresiones matriciales", "componer", "combinar", "paréntesis",
+                    "producto punto", "combinación lineal", "combinacion lineal", "coeficientes",
+                    "expresión", "expresiones", "expresiones matriciales", "componer", "combinar", "paréntesis",
                     "multiplicación implícita", "igualdad", "2a", "ab", "au",
                     "matriz desconocida", "vector simbólico", "expresión lineal",
-                    "multiplicar", "sumar", "restar", "transponer", "trasponer"),
-    relacionadas=("ecuaciones-matriciales", "operaciones-vectores", "matriz-inversa"),
-    invitacion="Combina operaciones con matrices, vectores y escalares.",
-    puntos=('Suma, producto, escalares y traspuesta', 'Expresiones con varios operandos'),
+                    "multiplicar", "sumar", "restar", "transponer", "trasponer",
+                    "vector", "vectores", "suma de vectores", "resta de vectores",
+                    "multiplicación por escalar", "producto por escalar", "ecuación vectorial", "span",
+                    "generado", "conjunto generado", "componentes", "rn"),
+    relacionadas=("ecuaciones-matriciales", "matriz-inversa"),
+    invitacion="Combina matrices, vectores y escalares en una expresión.",
+    puntos=('Suma, producto, escalares y traspuesta', 'Vectores y coeficientes de una combinación lineal'),
     curiosidad="El producto de matrices no es conmutativo: en general AB ≠ BA. Pruébalo con dos matrices 2 × 2.",
 )
 
-# En Resolver Ax = b, x es la incógnita. Se reutilizan los motores de sistemas
-# (Gauss, Gauss-Jordan o ambos) sobre la matriz aumentada [A | b].
+# Un sistema lineal escrito como Ax = b: A y b conocidos, x es la incógnita. Se reutilizan
+# los motores de sistemas (Gauss, Gauss-Jordan, LU o Cramer) sobre [A | b].
 ECUACIONES_MATRICIALES = Herramienta(
-    id="ecuaciones-matriciales", nombre="Resolver Ax = b", categoria=MATRICES,
+    id="ecuaciones-matriciales", nombre="Sistemas lineales (Ax = b)", categoria=MATRICES,
     descripcion="Si ya tienes A y b, encuentra x en Ax = b mediante reducción por filas, LU o Regla de Cramer.",
     estado="disponible", route_name="calculadora:ecuaciones-matriciales",
     palabras_clave=("ecuación matricial", "ecuaciones matriciales", "ax=b", "ax = b", "resolver ax=b",
@@ -293,7 +273,7 @@ ECUACIONES_MATRICIALES = Herramienta(
                     "inconsistente", "resolver sistema", "sistema de ecuaciones", "sistemas de ecuaciones",
                     "cramer", "regla de cramer",
                     "sistema lineal", "sistemas lineales", "ecuaciones lineales"),
-    relacionadas=("reduccion-filas", "operaciones-matrices", "operaciones-vectores"),
+    relacionadas=("reduccion-filas", "operaciones-matrices"),
     invitacion="Si ya tienes A y b, encuentra x en Ax = b.",
     puntos=('Reducción por filas, LU o Regla de Cramer', 'Detecta si no hay solución o hay infinitas'),
     curiosidad="Ax = b tiene solución exactamente cuando b es combinación lineal de las columnas de A.",
@@ -363,27 +343,21 @@ CARDINALIDAD_CONJUNTOS = Herramienta(
     curiosidad="En |A ∪ B ∪ C| la región común se suma tres veces, se resta tres y se suma una más: cuenta exactamente una vez.",
 )
 
-BISECCION = Herramienta(
-    id="biseccion", nombre="Método de bisección", categoria=RAICES,
-    descripcion="Aproxima una raíz real y explora cómo se reduce el intervalo en una gráfica interactiva.",
+# Bisección y Regla falsa son una sola herramienta, como Métodos abiertos: comparten
+# función, intervalo, gráfica y zona de estudio; el método se elige dentro y cada uno
+# conserva su ruta (la de Bisección es la de la herramienta) y su criterio de parada.
+METODOS_CERRADOS = Herramienta(
+    id="metodos-cerrados", nombre="Métodos cerrados", categoria=RAICES,
+    descripcion="Aproxima una raíz dentro de un intervalo con cambio de signo: punto medio con Bisección o recta secante con Regla falsa.",
     estado="disponible", route_name="calculadora:biseccion",
-    palabras_clave=("bisección", "raíz", "raíces", "función", "intervalo", "punto medio", "gráfica", "bolzano"),
-    relacionadas=("regla-falsa", "metodos-abiertos"),
-    invitacion="Busca una raíz de f(x) mediante bisección.",
-    puntos=('Gráfica interactiva del intervalo', 'Tabla de iteraciones paso a paso'),
-    curiosidad="Cada iteración reduce el intervalo a la mitad: tras 10 pasos mide menos de una milésima del original.",
-)
-
-REGLA_FALSA = Herramienta(
-    id="regla-falsa", nombre="Método de regla falsa", categoria=RAICES,
-    descripcion="Aproxima una raíz real con rectas secantes y sigue en la gráfica cómo cada corte con el eje x se acerca a ella.",
-    estado="disponible", route_name="calculadora:regla-falsa",
-    palabras_clave=("regla falsa", "falsa posición", "regula falsi", "interpolación lineal", "raíz", "raíces",
-                    "función", "intervalo", "gráfica", "error absoluto"),
-    relacionadas=("biseccion", "metodos-abiertos"),
-    invitacion="Busca una raíz de f(x) mediante regla falsa.",
-    puntos=('Recta secante de cada iteración en la gráfica', 'Error absoluto y motivo de parada explicados'),
-    curiosidad="Se llama «falsa» porque una recta sustituye a la curva: su corte con el eje x es una posición falsa de la raíz, que cada paso corrige.",
+    palabras_clave=("métodos cerrados", "método cerrado", "bisección", "biseccion", "punto medio", "bolzano",
+                    "regla falsa", "falsa posición", "regula falsi", "interpolación lineal", "intervalo",
+                    "raíz", "raíces", "función", "gráfica", "error absoluto"),
+    relacionadas=("metodos-abiertos",),
+    invitacion="Elige Bisección o Regla falsa y sigue cómo se reduce el intervalo.",
+    puntos=("Bisección: punto medio, hasta que el intervalo mida menos que la precisión",
+            "Regla falsa: corte de la recta secante, con error absoluto confirmado"),
+    curiosidad="Cada iteración de bisección reduce el intervalo a la mitad: tras 10 pasos mide menos de una milésima del original.",
 )
 
 # Newton-Raphson y Secante son una sola herramienta: comparten función, gráfica y zona de estudio,
@@ -394,23 +368,21 @@ METODOS_ABIERTOS = Herramienta(
     estado="disponible", route_name="calculadora:newton-raphson",
     palabras_clave=("métodos abiertos", "método abierto", "newton", "raphson", "newton-raphson", "derivada", "tangente",
                     "secante", "método de la secante", "dos puntos", "punto inicial", "raíz", "raíces", "gráfica"),
-    relacionadas=("biseccion", "regla-falsa"),
+    relacionadas=("metodos-cerrados",),
     invitacion="Elige Newton-Raphson o Secante y sigue cada aproximación en la gráfica.",
     puntos=("Newton-Raphson: tangente desde x₀ con derivada automática", "Secante: recta por x₀ y x₁, sin derivada"),
     curiosidad="La secante sustituye la derivada por la pendiente entre dos puntos: no necesita f′(x) y aun así suele converger casi tan rápido como Newton.",
 )
 
 HERRAMIENTAS = (
-    OPERACIONES_VECTORES,
     OPERACIONES_MATRICES,
-    REDUCCION_FILAS,
     ECUACIONES_MATRICIALES,
+    REDUCCION_FILAS,
     MATRIZ_INVERSA,
     DETERMINANTES,
     CONVERSION_BASES,
     CONVERSION_ROMANOS,
-    BISECCION,
-    REGLA_FALSA,
+    METODOS_CERRADOS,
     METODOS_ABIERTOS,
     RELACIONES_CONJUNTOS,
     CARDINALIDAD_CONJUNTOS,
@@ -420,7 +392,10 @@ HERRAMIENTAS = (
 )
 
 _POR_ID = {herramienta.id: herramienta for herramienta in HERRAMIENTAS}
-_ALIAS_RUTAS = {"calculadora:sistemas": REDUCCION_FILAS, "calculadora:secante": METODOS_ABIERTOS}
+_ALIAS_RUTAS = {
+    "calculadora:sistemas": REDUCCION_FILAS, "calculadora:secante": METODOS_ABIERTOS,
+    "calculadora:regla-falsa": METODOS_CERRADOS, "calculadora:operaciones-vectores": OPERACIONES_MATRICES,
+}
 
 
 def herramienta_por_id(id_herramienta: str) -> Herramienta | None:
@@ -490,7 +465,8 @@ def herramienta_por_ruta(resolver_match) -> Herramienta | None:
     if resolver_match is None:
         return None
     # Alias de ruta, nunca una segunda herramienta en el catálogo: los POST históricos de
-    # /sistemas/ y el método de la secante, que vive dentro de Métodos abiertos.
+    # /sistemas/ y /vectores/operaciones/, y los métodos que viven dentro de otra herramienta
+    # (Secante en Métodos abiertos, Regla falsa en Métodos cerrados).
     if resolver_match.view_name in _ALIAS_RUTAS:
         return _ALIAS_RUTAS[resolver_match.view_name]
     for herramienta in HERRAMIENTAS:

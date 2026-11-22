@@ -116,16 +116,15 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
         </div>
     </section>
 {% if resultado %}
-    <section id="raices-historial" class="panel raices-historial" aria-labelledby="historial-titulo" hidden>
-        <h3 id="historial-titulo" class="panel-title">Historial de esta sesión</h3>
-        <p class="field-help">Ejecuciones de esta pestaña, agrupadas por función. «Ver» recupera una con su gráfica y su recorrido.</p>
-        <div id="raices-historial-tabla" class="table-wrap"></div>
-    </section>
     {% if resultado.residuo is not None and resultado.clasificacion != "no_aplicable" %}
-    {% disclosure titulo="Procedimiento detallado" id="procedimiento-raices" clase="disclosure-procedure" %}
-        {% block procedimiento %}{% endblock %}
+    {# Un único acceso secundario: fórmula, lectura completa del paso activo y verificación, sin repetir el resumen. #}
+    {% disclosure titulo="Ver desarrollo completo" id="desarrollo-raices" clase="disclosure-procedure" detalle="Fórmula, lectura de cada paso y verificación" %}
+        <section class="raices-desarrollo" aria-labelledby="formula-titulo">
+            <h4 id="formula-titulo">Fórmula y criterio</h4>
+            {% block procedimiento %}{% endblock %}
+        </section>
         {% if resultado.iteraciones %}
-        <section class="raices-lectura" aria-labelledby="lectura-titulo">
+        <section class="raices-lectura raices-desarrollo" aria-labelledby="lectura-titulo">
             <h4 id="lectura-titulo">Lectura completa de la iteración activa</h4>
             {% block lectura_iteracion %}
             <div id="iteracion-lectura">
@@ -134,9 +133,19 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
             {% endblock %}
         </section>
         {% endif %}
+        <section class="raices-desarrollo" aria-labelledby="verificacion-titulo" id="verificacion-raices">
+            <h4 id="verificacion-titulo">Verificación</h4>
+            {% block verificacion %}{% endblock %}
+        </section>
     {% enddisclosure %}
-    {% block verificacion %}{% endblock %}
     {% endif %}
+    {# El historial acompaña sin desplazar el resultado: plegado y al final. #}
+    <div id="raices-historial" class="raices-historial" hidden>
+    {% disclosure titulo="Historial de esta sesión" id="raices-historial-desplegable" %}
+        <p class="field-help">Ejecuciones de esta pestaña, agrupadas por función. «Ver» recupera una con su gráfica y su recorrido.</p>
+        <div id="raices-historial-tabla" class="table-wrap"></div>
+    {% enddisclosure %}
+    </div>
 </section>
 {% endif %}
 {% endblock %}

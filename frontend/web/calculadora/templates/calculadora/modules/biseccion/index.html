@@ -1,26 +1,39 @@
 {% extends "calculadora/modules/raices/base.html" %}
 {% load static componentes raices %}
+{% block title %}Bisección · {{ herramienta_actual.nombre }} · PyGebra{% endblock %}
+{% block selector_metodo %}{% include "calculadora/modules/raices/metodos_cerrados.html" with metodo="biseccion" %}{% endblock %}
 
 {% block entrada_titulo %}Entrada de bisección{% endblock %}
-{% block ayuda_tolerancia %}Por defecto 0.0001. Admite valores positivos menores. Se aplica a la longitud del intervalo, no al porcentaje de error.{% endblock %}
+{% block ayuda_tolerancia %}Por defecto 0.0001. Admite valores positivos menores. Se aplica a la longitud del intervalo, no al cambio entre aproximaciones.{% endblock %}
 {% block accion %}Resolver por bisección{% endblock %}
 
 {% block resumen %}
         <p class="raices-raiz">c ≈ <span>{{ resultado.c|numero_raices:"x" }}</span></p>
         <p class="raices-estado">{{ resultado.mensaje }}</p>
-        <p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · f(c) <span data-raices-relacion>=</span> {{ resultado.fc|numero_raices:"f" }}</p>
+        {# Cuatro medidas distintas, con su nombre: la longitud decide la parada; el cambio y el residuo no. #}
+        <dl class="raices-ficha">
+            <div><dt>Iteraciones</dt><dd>{{ resultado.iteraciones|length }}</dd></div>
+            <div><dt>Error absoluto aproximado <span class="raices-formula">|cᵢ − cᵢ₋₁|</span></dt>
+                <dd>{% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices:"error" }}{% else %}No aplica: no hay una aproximación anterior{% endif %}</dd></div>
+            <div><dt>Residuo <span class="raices-formula">|f(c)|</span></dt><dd>{{ resultado.residuo|numero_raices:"f" }}</dd></div>
+            <div data-cumple="{% if resultado.convergio %}true{% else %}false{% endif %}"><dt>Criterio de parada <span class="raices-formula">b − a &lt; precisión</span></dt>
+                <dd>{% if resultado.estado == "exacta" %}Cumplido: f(c) = 0 en aritmética de máquina
+                    {% else %}<span>{{ resultado.longitud|numero_raices:"tolerancia" }} {% if resultado.longitud < resultado.precision %}&lt;{% else %}≥{% endif %} {{ resultado.precision|numero_raices:"tolerancia" }}</span> · {% if resultado.convergio %}cumplido{% elif resultado.estado == "limite" %}no cumplido: se agotaron las iteraciones{% else %}no cumplido: límite de los números de máquina{% endif %}{% endif %}</dd></div>
+        </dl>
+        {% if resultado.estado == "longitud" %}<p class="raices-garantia">Garantía: f es continua y cambia de signo en el intervalo final [{{ resultado.a|numero_raices:"x" }}; {{ resultado.b|numero_raices:"x" }}], que contiene a c; por eso |c − raíz| ≤ {{ resultado.longitud|numero_raices:"tolerancia" }}.</p>
+        {% elif not resultado.convergio %}<p class="raices-garantia">Sin garantía: el intervalo todavía no cumple la precisión. No se demostró que falte una raíz.</p>{% endif %}
 {% endblock %}
 
 {% block tabla %}
             <table class="procedure-table raices-tabla">
                 <caption>Una fila por iteración, sin redondeo intermedio</caption>
-                <thead><tr><th scope="col">i</th><th scope="col">a</th><th scope="col">b</th><th scope="col">c</th><th scope="col">f(a)</th><th scope="col">f(b)</th><th scope="col">f(c)</th><th scope="col">Longitud restante</th><th scope="col">Error relativo (%)</th></tr></thead>
+                <thead><tr><th scope="col">i</th><th scope="col">a</th><th scope="col">b</th><th scope="col">c</th><th scope="col">f(a)</th><th scope="col">f(b)</th><th scope="col">f(c)</th><th scope="col">Longitud b − a <small>criterio</small></th><th scope="col">|cᵢ − cᵢ₋₁| <small>error absoluto</small></th></tr></thead>
                 <tbody>
                 {% for fila in resultado.iteraciones %}
                     <tr data-iteracion="{{ fila.i }}" tabindex="-1" data-raices-grupo aria-label="Iteración {{ fila.i }}">
                         <th scope="row">{{ fila.i }}</th><td>{{ fila.a|numero_raices:"x" }}</td><td>{{ fila.b|numero_raices:"x" }}</td><td>{{ fila.c|numero_raices:"x" }}</td>
                         <td>{{ fila.fa|numero_raices:"f" }}</td><td>{{ fila.fb|numero_raices:"f" }}</td><td>{{ fila.fc|numero_raices:"f" }}</td><td>{{ fila.longitud|numero_raices:"longitud" }}</td>
-                        <td>{% if fila.error_relativo is not None %}{{ fila.error_relativo|numero_raices:"error" }} %{% else %}No definido{% endif %}</td>
+                        <td>{% if fila.error_absoluto is not None %}{{ fila.error_absoluto|numero_raices:"error" }}{% else %}No aplica{% endif %}</td>
                     </tr>
                 {% empty %}<tr><td colspan="9">Raíz en un extremo: no se necesitan iteraciones.</td></tr>{% endfor %}
                 </tbody>
@@ -28,45 +41,29 @@
 {% endblock %}
 
 {% block procedimiento %}
-        <p>c = a + (b − a)/2. Se conserva el subintervalo con cambio de signo hasta que su longitud sea menor que la precisión.</p>
-        <p class="field-help">Error relativo = |(c actual − c anterior)/c actual| × 100. No se define en la primera iteración ni cuando c = 0. No es el criterio de parada.</p>
+        <p>c = a + (b − a)/2. Se conserva el subintervalo con cambio de signo hasta que su longitud b − a sea menor que la precisión.</p>
+        <p class="field-help">Error absoluto aproximado = |cᵢ − cᵢ₋₁|: cuánto se movió el punto medio respecto de la iteración anterior. No aplica en la primera iteración, no es la distancia a la raíz y no decide cuándo termina el método.</p>
 {% endblock %}
 
 {% block verificacion %}
-    {% disclosure titulo="Verificación" id="verificacion-raices" %}
         <div class="raices-verificaciones" data-raices-grupo>
         {% include "calculadora/modules/raices/existencia.html" %}
-        <section aria-labelledby="verificacion-precision">
-            <h4 id="verificacion-precision">¿Se alcanzó la precisión solicitada?</h4>
-            <p><strong>Condición:</strong> longitud restante estrictamente menor que la precisión, o cero calculado.</p>
+        <section aria-labelledby="verificacion-medidas">
+            <h5 id="verificacion-medidas">Cuatro medidas que no deben confundirse</h5>
             <dl>
-                <dt>Intervalo final</dt><dd>[{{ resultado.a|numero_raices }}; {{ resultado.b|numero_raices }}]</dd>
-                <dt>Longitud b − a:</dt><dd>{{ resultado.longitud|numero_raices }}</dd>
-                <dt>Precisión solicitada</dt><dd>{{ resultado.precision|numero_raices }}</dd>
+                <dt>Cambio entre aproximaciones</dt><dd>{% if resultado.error_absoluto is not None %}|cᵢ − cᵢ₋₁| = {{ resultado.error_absoluto|numero_raices }}{% else %}No aplica: no hubo dos aproximaciones.{% endif %} Compara dos puntos medios; no decide la parada.</dd>
+                <dt>Longitud del intervalo</dt><dd>b − a = {{ resultado.longitud|numero_raices }} en [{{ resultado.a|numero_raices }}; {{ resultado.b|numero_raices }}]. Es la medida del criterio de parada.</dd>
+                <dt>Residuo</dt><dd>|f(c)| = {{ resultado.residuo|numero_raices }}: altura de la función en c, no una distancia en x. Puede no ser cero aunque el intervalo sea pequeño.</dd>
+                <dt>Criterio de parada</dt><dd>b − a &lt; {{ resultado.precision|numero_raices }}, o f(c) = 0 calculado.</dd>
             </dl>
-            <p class="raices-comprobacion">{{ resultado.longitud|numero_raices }} {% if resultado.longitud < resultado.precision %}&lt;{% else %}≥{% endif %} {{ resultado.precision|numero_raices }}</p>
-            <p class="raices-conclusion"><strong>Conclusión:</strong>
-                {% if resultado.estado == "exacta" %}{% if resultado.iteraciones %}El punto medio da cero{% else %}El extremo da cero{% endif %} en aritmética de máquina; no necesitamos seguir dividiendo.
-                {% elif resultado.estado == "longitud" %}Se alcanzó la precisión: el intervalo es suficientemente pequeño.
-                {% elif resultado.estado == "limite" %}Se agotó el máximo de iteraciones; no se alcanzó la precisión.
-                {% else %}La máquina ya no puede representar otro punto entre los extremos; no se alcanzó la precisión.{% endif %}
+            <p class="raices-conclusion"><strong>Cota del error:</strong>
+                {% if resultado.estado == "exacta" %}f(c) = 0 con los números de máquina. El redondeo puede influir: esto no demuestra que el error matemático sea exactamente cero.
+                {% elif resultado.estado == "longitud" %}con f continua en el intervalo inicial y signos opuestos en los extremos finales (los conserva cada paso), hay una raíz en [a; b] final. c es uno de esos extremos, así que su distancia a esa raíz no supera b − a = {{ resultado.longitud|numero_raices }}. Esta cota no es el cambio |cᵢ − cᵢ₋₁|.
+                {% else %}el intervalo todavía no cumple la precisión; no afirmamos haber conseguido la aproximación solicitada.{% endif %}
             </p>
-        </section>
-        <section aria-labelledby="verificacion-residuo">
-            <h4 id="verificacion-residuo">¿Por qué f(c) no tiene que ser exactamente cero?</h4>
-            <p><strong>Condición:</strong> el residuo y la longitud miden cosas diferentes.</p>
-            <dl><dt>Evaluación final f(c)</dt><dd>{{ resultado.fc|numero_raices }}</dd></dl>
-            <p class="raices-conclusion"><strong>Conclusión:</strong>
-                {% if resultado.estado == "exacta" %}Aquí sí obtuvimos cero con los números de máquina. El redondeo puede influir: esto no demuestra que el error matemático sea exactamente cero.
-                {% else %}La precisión mide el ancho del intervalo en x; f(c) mide la altura de la función y puede ser distinto de cero.{% endif %}
-            </p>
-            {% if resultado.estado == "longitud" %}<p>Bajo las condiciones de continuidad y signos comprobadas y la precisión de máquina, la distancia de c a una raíz del intervalo final no supera {{ resultado.longitud|numero_raices }}.</p>
-            {% elif not resultado.convergio %}<p>El intervalo todavía no cumple la precisión; no afirmamos haber conseguido la aproximación solicitada.</p>{% endif %}
-            <p class="field-help">El error relativo compara dos aproximaciones sucesivas; no decide cuándo termina este método.</p>
         </section>
         </div>
         <p class="field-help">Usamos números de máquina y comprobaciones conservadoras. Puede haber más de una raíz en el intervalo.</p>
-    {% enddisclosure %}
 {% endblock %}
 
 {% block metodo_js %}<script src="{% static 'calculadora/biseccion.js' %}" defer></script>{% endblock %}

@@ -10,22 +10,17 @@ from django.test import SimpleTestCase
 
 
 class PruebasDimensionesSinJS(SimpleTestCase):
-    def test_aplicar_vectores_rechaza_dimensiones_y_cantidades_fuera_de_rango(self):
-        for campo, valor, mensaje in (
-            ("dimension", "11", "La dimensión máxima admitida es 10"),
-            ("dimension", "0", "al menos una componente"),
-            ("dimension", "", "Indica la dimensión"),
-            ("vectores", "51", "hasta 50 vectores"),
-            ("vectores", "1", "al menos"),
-        ):
+    def test_aplicar_vectores_fuera_de_rango_no_calcula_ni_rompe(self):
+        # La ruta antigua de vectores se traduce a Operaciones: una estructura imposible no se
+        # dibuja ni se calcula (Operaciones aplica sus propios topes de dimensión y operandos).
+        for campo, valor in (("dimension", "11"), ("dimension", "0"), ("dimension", ""),
+                             ("vectores", "51"), ("vectores", "x")):
             with self.subTest(campo=campo, valor=valor):
                 respuesta = self.client.post("/vectores/operaciones/", {
                     "operacion": "suma", "dimension": "3", "vectores": "2",
                     "ajustar": "1", "v1_0": "1/", campo: valor,
                 })
-                self.assertContains(respuesta, mensaje)
-                self.assertContains(respuesta, 'aria-invalid="true"')
-                self.assertContains(respuesta, 'value="1/"')
+                self.assertEqual(respuesta.status_code, 200)
                 self.assertNotContains(respuesta, 'id="resultado"')
 
     def test_aplicar_vectores_conserva_entradas_incompletas_sin_calcular(self):
@@ -33,7 +28,8 @@ class PruebasDimensionesSinJS(SimpleTestCase):
             "operacion": "suma", "dimension": "4", "vectores": "3",
             "ajustar": "1", "v1_0": "1/", "v2_2": "-",
         })
-        self.assertContains(respuesta, 'name="v3_3"')
+        # v3 es el tercer operando de Operaciones; su cuarta componente es la celda 2_3_0.
+        self.assertContains(respuesta, 'name="celda_2_3_0"')
         self.assertContains(respuesta, 'value="1/"')
         self.assertContains(respuesta, 'value="-"')
         self.assertNotContains(respuesta, 'aria-invalid="true"')
