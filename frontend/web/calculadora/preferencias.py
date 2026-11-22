@@ -26,7 +26,7 @@ VALORES = {
     "pygebra-precision-decimal": ("2", "4", "6", "8"),
     # Decimales visibles de los métodos de raíces: solo lectura, nunca cambia un cálculo.
     "pygebra-raices-decimales": ("4", "6", "8", "12", "16", "completa"),
-    "pygebra-estilo": ("estudio", "minimalista"),
+    "pygebra-estilo": ("estudio", "minimalista", "chocolab", "belugacalc", "heyalgb"),
     "pygebra-sonido": ("off", "on"),
     "pygebra-volumen": tuple(str(nivel) for nivel in range(10, 101, 10)),
     # El volumen y lo elegido: la música no se recuerda encendida, cada visita empieza en silencio.

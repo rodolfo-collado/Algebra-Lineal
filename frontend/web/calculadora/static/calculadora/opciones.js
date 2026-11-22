@@ -84,8 +84,7 @@
     // Una página restaurada del historial (bfcache) refleja lo elegido en otra página.
     window.addEventListener("pageshow", (event) => {
         if (!event.persisted) return;
-        const estilo = preferencias.leer("pygebra-estilo") === "minimalista" ? "minimalista" : "estudio";
-        root.setAttribute("data-estilo", estilo);
+        root.setAttribute("data-estilo", preferencias.estilo());
         window.Sonido.configurar({
             activo: preferencias.leer("pygebra-sonido") === "on",
             volumen: Number(preferencias.leer("pygebra-volumen") || 50) / 100,

@@ -221,14 +221,14 @@ class PruebasEstiloYSonido(SimpleTestCase):
 
     def test_estilo_independiente_del_tema_y_guardado_como_preferencia(self):
         inicial = (APP / "templates" / "calculadora" / "components" / "tema_inicial.html").read_text(encoding="utf-8")
-        self.assertIn('preferencias.leer("pygebra-estilo") === "minimalista" ? "minimalista" : "estudio"', inicial)
-        self.assertEqual(preferencias.VALORES["pygebra-estilo"], ("estudio", "minimalista"))
+        self.assertIn('["minimalista", "chocolab", "belugacalc", "heyalgb"].indexOf(estilo) >= 0 ? estilo : "estudio"', inicial)
+        self.assertEqual(preferencias.VALORES["pygebra-estilo"], ("estudio", "minimalista", "chocolab", "belugacalc", "heyalgb"))
         self.assertEqual(preferencias.VALORES["pygebra-sonido"], ("off", "on"))
         self.assertEqual(preferencias.VALORES["pygebra-volumen"], tuple(str(n) for n in range(10, 101, 10)))
         html = self.client.get("/").content.decode("utf-8")
         # El servidor no decide el estilo: sin JavaScript no hay data-estilo (forma sobria).
         self.assertNotIn("data-estilo=", re.search(r"<html[^>]*>", html).group(0))
-        for valor in ("estudio", "minimalista", "off", "on"):
+        for valor in ("estudio", "minimalista", "chocolab", "belugacalc", "heyalgb", "off", "on"):
             self.assertIn(f'value="{valor}"', html)
 
     def test_los_estilos_de_estudio_solo_viven_en_estudio(self):

@@ -1,0 +1,388 @@
+/* Temas homenaje: ChocoLab, BelugaCalc y HeyAlgb, los proyectos hermanos de PyGebra.
+   Son estilos como Minimalista (misma estructura, sin la habitación de Estudio): solo
+   redefinen tokens y unos pocos detalles de navegación, así cada herramienta, tabla y
+   gráfica los hereda sin tocar su plantilla. El tema claro u oscuro sigue aparte.
+   Paletas abstraídas de cada proyecto; texto ≥ 4.5:1 y bordes de campo ≥ 3:1
+   (verificación en docs/temas-homenaje.md). Logotipos: ver ese mismo documento. */
+
+/* —— ChocoLab: crema, cacao y cobre. Superficies cálidas, radios suaves y sombra leve. —— */
+
+[data-estilo="chocolab"][data-theme="light"] {
+    --color-bg: #f8f5f0;
+    --color-bg-accent: #f1eae1;
+    --color-surface: #fcf9f4;
+    --color-surface-raised: #fffdf9;
+    --color-surface-muted: #f1eae1;
+    --color-mark: #382417;
+    --color-text: #382417;
+    --color-muted: #6e5949;
+    --color-border: #e8ddd1;
+    --color-border-strong: #b49a85;
+    --color-border-input: #957765;
+    --color-brand: #6c3b28;
+    --color-brand-strong: #4b2b1c;
+    --color-brand-soft: #f4e8dc;
+    --color-brand-text: #fff8ee;
+    --color-accent: #5a3a28;
+    --color-accent-soft: #f1eae1;
+    --color-success: #22704f;
+    --color-success-soft: #e2f0e7;
+    --color-danger: #a03a33;
+    --color-danger-soft: #f8e7e3;
+    --color-aug: #f1eae1;
+    --color-aug-strong: #4b2b1c;
+    --color-pivot: rgb(180 116 76 / 0.16);
+    --color-focus: #b4744c;
+    --color-shadow: rgb(68 39 22 / 0.06);
+    --color-shadow-strong: rgb(68 39 22 / 0.16);
+    --homenaje-detalle: #b4744c;
+}
+
+[data-estilo="chocolab"][data-theme="dark"] {
+    --color-bg: #171310;
+    --color-bg-accent: #1c1713;
+    --color-surface: #1d1713;
+    --color-surface-raised: #211a16;
+    --color-surface-muted: #2b221d;
+    --color-mark: #f5e9db;
+    --color-text: #f5e9db;
+    --color-muted: #b8a395;
+    --color-border: #443328;
+    --color-border-strong: #6d5444;
+    --color-border-input: #8c705d;
+    --color-brand: #d4a177;
+    --color-brand-strong: #e3b990;
+    --color-brand-soft: #3a2c24;
+    --color-brand-text: #1d130c;
+    --color-accent: #e0c2a6;
+    --color-accent-soft: #2b221d;
+    --color-success: #8bc8a7;
+    --color-success-soft: #1e2e25;
+    --color-danger: #f08e85;
+    --color-danger-soft: #3a221e;
+    --color-aug: #2b221d;
+    --color-aug-strong: #e0c2a6;
+    --color-pivot: rgb(212 161 119 / 0.18);
+    --color-focus: #e3b990;
+    --color-shadow: rgb(0 0 0 / 0.28);
+    --color-shadow-strong: rgb(0 0 0 / 0.45);
+    --homenaje-detalle: #d4a177;
+}
+
+[data-estilo="chocolab"] {
+    --radius-md: 12px;
+    --radius-lg: 16px;
+}
+
+/* —— BelugaCalc: azul marino, celeste y fondo hielo. Barra marina y cápsula activa. —— */
+
+[data-estilo="belugacalc"][data-theme="light"] {
+    --color-bg: #f4f8fb;
+    --color-bg-accent: #eaf2f9;
+    --color-surface: #f8fafc;
+    --color-surface-raised: #ffffff;
+    --color-surface-muted: #e9f1f8;
+    --color-mark: #04335a;
+    --color-text: #0e2236;
+    --color-muted: #4a5e72;
+    --color-border: #d5e1ec;
+    --color-border-strong: #97adc2;
+    --color-border-input: #7a8fa4;
+    --color-brand: #063d89;
+    --color-brand-strong: #04335a;
+    --color-brand-soft: #e2f0fd;
+    --color-brand-text: #ffffff;
+    --color-accent: #1a3a5c;
+    --color-accent-soft: #e9f1f8;
+    --color-aug: #e9f1f8;
+    --color-aug-strong: #04335a;
+    --color-pivot: rgb(98 185 255 / 0.22);
+    --color-focus: #063d89;
+    --color-shadow: rgb(4 51 90 / 0.05);
+    --color-shadow-strong: rgb(4 51 90 / 0.16);
+    --homenaje-barra: #063d89;
+    --homenaje-barra-borde: #04335a;
+    --homenaje-capsula: #62b9ff;
+    --homenaje-capsula-texto: #1a1c29;
+}
+
+[data-estilo="belugacalc"][data-theme="dark"] {
+    --color-bg: #07182b;
+    --color-bg-accent: #0a1e35;
+    --color-surface: #0b1d33;
+    --color-surface-raised: #0f243d;
+    --color-surface-muted: #15304f;
+    --color-mark: #e8f2fb;
+    --color-text: #e8f2fb;
+    --color-muted: #a9bfd4;
+    --color-border: #1f3a5a;
+    --color-border-strong: #4b6a8c;
+    --color-border-input: #6f8db0;
+    --color-brand: #62b9ff;
+    --color-brand-strong: #9dd3ff;
+    --color-brand-soft: #12345a;
+    --color-brand-text: #04182c;
+    --color-accent: #cfe3f7;
+    --color-accent-soft: #15304f;
+    --color-success-soft: #13302a;
+    --color-warning-soft: #2d2818;
+    --color-danger-soft: #3a1f2a;
+    --color-aug: #15304f;
+    --color-aug-strong: #cfe3f7;
+    --color-pivot: rgb(98 185 255 / 0.2);
+    --color-focus: #62b9ff;
+    --color-shadow: rgb(0 8 20 / 0.35);
+    --color-shadow-strong: rgb(0 8 20 / 0.55);
+    --color-backdrop: rgb(2 10 22 / 0.6);
+    --homenaje-barra: #04284a;
+    --homenaje-barra-borde: #1f3a5a;
+    --homenaje-capsula: #62b9ff;
+    --homenaje-capsula-texto: #04182c;
+}
+
+[data-estilo="belugacalc"] {
+    --radius-md: 10px;
+    --radius-lg: 14px;
+}
+
+/* La barra superior es marina en ambos temas, como la barra de BelugaCalc. */
+[data-estilo="belugacalc"] .app-header {
+    border-bottom-color: var(--homenaje-barra-borde);
+    background: var(--homenaje-barra);
+    color: #ffffff;
+}
+
+[data-estilo="belugacalc"] .app-header .app-brand,
+[data-estilo="belugacalc"] .app-header .app-mark,
+[data-estilo="belugacalc"] .app-header .historial-boton {
+    color: #ffffff;
+}
+
+[data-estilo="belugacalc"] .app-header :is(.historial, .theme-toggle-icons) {
+    border-color: rgb(255 255 255 / 0.4);
+    background: transparent;
+}
+
+[data-estilo="belugacalc"] .app-header :is(.navigation-toggle, .theme-toggle, .options-toggle) {
+    border-color: rgb(255 255 255 / 0.4);
+    background: transparent;
+    color: #ffffff;
+}
+
+[data-estilo="belugacalc"] .app-header :is(.navigation-toggle, .theme-toggle, .options-toggle, .historial-boton):not(:disabled):hover {
+    background: rgb(255 255 255 / 0.12);
+}
+
+/* El panel de opciones vive en la cabecera: recupera el color de texto de la página. */
+[data-estilo="belugacalc"] .app-header .opciones {
+    color: var(--color-text);
+}
+
+[data-estilo="belugacalc"] .app-header :focus-visible {
+    outline-color: var(--homenaje-capsula);
+}
+
+[data-estilo="belugacalc"] .app-header .opciones :focus-visible {
+    outline-color: var(--color-focus);
+}
+
+/* Módulo activo: cápsula celeste con texto oscuro (≈ 7.9:1), sin barra lateral. */
+[data-estilo="belugacalc"] .nav-link[aria-current="page"],
+[data-estilo="belugacalc"] .rail-enlace[aria-current="page"] {
+    border-radius: var(--radius-pill);
+    background: var(--homenaje-capsula);
+    color: var(--homenaje-capsula-texto);
+    box-shadow: none;
+}
+
+[data-estilo="belugacalc"] .nav-link[aria-current="page"] .nav-link-icon {
+    color: currentColor;
+}
+
+/* —— HeyAlgb: negro, granate y rojo. Esquinas rectas, bordes firmes y franja roja. —— */
+
+[data-estilo="heyalgb"][data-theme="light"] {
+    --color-bg: #f6f4f4;
+    --color-bg-accent: #efebeb;
+    --color-surface: #fbfafa;
+    --color-surface-raised: #ffffff;
+    --color-surface-muted: #f0eaea;
+    --color-mark: #060606;
+    --color-text: #0d0d0d;
+    --color-muted: #574949;
+    --color-border: #ddd2d2;
+    --color-border-strong: #a08a8a;
+    --color-border-input: #857070;
+    --color-brand: #8f0000;
+    --color-brand-strong: #4d0000;
+    --color-brand-soft: #f8e5e5;
+    --color-brand-text: #ffffff;
+    --color-accent: #4d0000;
+    --color-accent-soft: #f0eaea;
+    /* El error no se confunde con el acento: carmín más frío y siempre con su texto. */
+    --color-danger: #9b1544;
+    --color-danger-soft: #f8e4ec;
+    --color-danger-border: #dca8bc;
+    --color-aug: #f0eaea;
+    --color-aug-strong: #4d0000;
+    --color-pivot: rgb(254 0 0 / 0.1);
+    --color-focus: #e00000;
+    --color-shadow: rgb(0 0 0 / 0.05);
+    --color-shadow-strong: rgb(0 0 0 / 0.16);
+    --homenaje-franja: #fe0000;
+}
+
+[data-estilo="heyalgb"][data-theme="dark"] {
+    --color-bg: #060606;
+    --color-bg-accent: #0d0d0d;
+    --color-surface: #0e0e0e;
+    --color-surface-raised: #141414;
+    --color-surface-muted: #1d1d1d;
+    --color-mark: #ffffff;
+    --color-text: #f5f5f5;
+    --color-muted: #b9b0b0;
+    --color-border: #3a1414;
+    --color-border-strong: #6e3030;
+    --color-border-input: #8c7a7a;
+    --color-brand: #ff3b3b;
+    --color-brand-strong: #ff6b6b;
+    --color-brand-soft: #2e0606;
+    --color-brand-text: #060606;
+    --color-accent: #ffd6d6;
+    --color-accent-soft: #1d1d1d;
+    --color-success-soft: #14261d;
+    --color-warning: #ffcc00;
+    --color-warning-soft: #2a2408;
+    --color-danger: #ff8fb1;
+    --color-danger-soft: #33121f;
+    --color-danger-border: #7a2c47;
+    --color-aug: #1d1d1d;
+    --color-aug-strong: #ffd6d6;
+    --color-pivot: rgb(254 0 0 / 0.18);
+    --color-focus: #ff3b3b;
+    --color-shadow: rgb(0 0 0 / 0.5);
+    --color-shadow-strong: rgb(0 0 0 / 0.7);
+    --color-backdrop: rgb(0 0 0 / 0.7);
+    --homenaje-franja: #fe0000;
+}
+
+[data-estilo="heyalgb"] {
+    --radius-sm: 2px;
+    --radius-md: 2px;
+    --radius-lg: 3px;
+    --font-display: "Bahnschrift", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+}
+
+/* Franja roja bajo la cabecera, como el encabezado granate de HeyAlgb. */
+[data-estilo="heyalgb"] .app-header {
+    border-bottom: 3px solid var(--homenaje-franja);
+}
+
+[data-estilo="heyalgb"] :is(.historial, .historial-boton) {
+    border-radius: var(--radius-sm);
+}
+
+[data-estilo="heyalgb"] .nav-link[aria-current="page"],
+[data-estilo="heyalgb"] .rail-enlace[aria-current="page"] {
+    background: var(--color-brand);
+    color: var(--color-brand-text);
+    box-shadow: none;
+}
+
+[data-estilo="heyalgb"] .nav-link[aria-current="page"] .nav-link-icon {
+    color: currentColor;
+}
+
+[data-estilo="heyalgb"] .btn-primary {
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* —— Firma «En honor a…» —— */
+
+.homenaje-firma {
+    display: none;
+}
+
+[data-estilo="chocolab"] .homenaje-firma[data-homenaje="chocolab"],
+[data-estilo="belugacalc"] .homenaje-firma[data-homenaje="belugacalc"],
+[data-estilo="heyalgb"] .homenaje-firma[data-homenaje="heyalgb"] {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    margin: 1rem 0 0;
+    padding: 0.3rem 0.85rem 0.3rem 0.3rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+}
+
+.homenaje-firma b {
+    color: var(--color-text);
+}
+
+/* Ficha del logotipo: fondo propio para que el original se lea igual de día y de noche. */
+.homenaje-logo {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    overflow: hidden;
+    border-radius: 50%;
+}
+
+.homenaje-logo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.homenaje-logo[data-homenaje="chocolab"],
+.homenaje-firma[data-homenaje="chocolab"] .homenaje-logo {
+    width: 5.5rem;
+    padding: 0 0.45rem;
+    border-radius: var(--radius-pill);
+    background: #fffdf9;
+}
+
+.homenaje-logo[data-homenaje="belugacalc"],
+.homenaje-firma[data-homenaje="belugacalc"] .homenaje-logo {
+    padding: 0.1rem;
+    background: #e2f0fd;
+}
+
+.homenaje-logo[data-homenaje="heyalgb"],
+.homenaje-firma[data-homenaje="heyalgb"] .homenaje-logo {
+    padding: 0.3rem;
+    border-radius: 2px;
+    background: #8f0000;
+}
+
+[data-estilo="heyalgb"] .homenaje-firma[data-homenaje="heyalgb"] {
+    border-radius: var(--radius-sm);
+    box-shadow: inset 3px 0 0 var(--homenaje-franja);
+}
+
+/* En Opciones, el logotipo acompaña a la descripción al final de cada tema homenaje. */
+.opcion > .homenaje-logo {
+    align-self: center;
+    margin-left: auto;
+    width: 1.9rem;
+    height: 1.9rem;
+}
+
+.opcion > .homenaje-logo[data-homenaje="chocolab"] {
+    width: 3.6rem;
+    padding: 0 0.3rem;
+}
+
+@media (forced-colors: active) {
+    .homenaje-logo {
+        forced-color-adjust: none;
+    }
+}

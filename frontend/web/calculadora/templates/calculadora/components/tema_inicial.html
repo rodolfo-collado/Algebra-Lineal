@@ -55,9 +55,14 @@
             : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         root.setAttribute("data-theme", theme);
         root.style.colorScheme = theme;
-        // El estilo es independiente del tema: Estudio salvo que se haya elegido Minimalista.
+        // El estilo es independiente del tema: Estudio salvo que se haya elegido otro válido
+        // (Minimalista o un tema homenaje; la misma lista que preferencias.py).
         // Sin JavaScript no hay data-estilo y la interfaz queda en su forma más sobria.
-        root.setAttribute("data-estilo", preferencias.leer("pygebra-estilo") === "minimalista" ? "minimalista" : "estudio");
+        preferencias.estilo = function () {
+            var estilo = preferencias.leer("pygebra-estilo");
+            return ["minimalista", "chocolab", "belugacalc", "heyalgb"].indexOf(estilo) >= 0 ? estilo : "estudio";
+        };
+        root.setAttribute("data-estilo", preferencias.estilo());
         // Con JavaScript la navegación es un cajón cerrado; la clase evita que asome antes de tiempo.
         root.classList.add("js");
         // Dirección del salto antes del primer pintado: las transiciones y el sonido se

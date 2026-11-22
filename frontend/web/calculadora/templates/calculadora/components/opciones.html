@@ -1,4 +1,5 @@
-{% comment %}Opciones de presentación: el estilo (Estudio o Minimalista) es independiente del tema claro u oscuro, que sigue en su propio botón. Popover nativo: se cierra con Esc o al pulsar fuera. Sin JavaScript no hace nada, así que nace oculto como el botón de tema.{% endcomment %}
+{% load static %}
+{% comment %}Opciones de presentación: el estilo (Estudio, Minimalista o un tema homenaje) es independiente del tema claro u oscuro, que sigue en su propio botón. Popover nativo: se cierra con Esc o al pulsar fuera. Sin JavaScript no hace nada, así que nace oculto como el botón de tema.{% endcomment %}
 <button type="button" class="options-toggle" id="opciones-toggle" popovertarget="opciones" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
     <span class="options-toggle-text">Opciones</span>
@@ -9,6 +10,13 @@
         <legend>Estilo</legend>
         <label class="opcion"><input type="radio" name="estilo" value="estudio"> <span><b>Estudio</b><small>Una habitación con sus detalles</small></span></label>
         <label class="opcion"><input type="radio" name="estilo" value="minimalista"> <span><b>Minimalista</b><small>Solo lo esencial, sin ilustraciones</small></span></label>
+    </fieldset>
+    {# Mismo grupo de radios (name="estilo"): son estilos como los anteriores, con los colores de cada equipo. #}
+    <fieldset class="opciones-grupo">
+        <legend>Temas homenaje</legend>
+        <label class="opcion"><input type="radio" name="estilo" value="chocolab"> <span><b>ChocoLab</b><small>En honor a ChocoLab · crema, cacao y cobre</small></span><span class="homenaje-logo" data-homenaje="chocolab" aria-hidden="true"><img src="{% static 'calculadora/homenajes/chocolab.png' %}" alt="" width="1206" height="389" loading="lazy" decoding="async"></span></label>
+        <label class="opcion"><input type="radio" name="estilo" value="belugacalc"> <span><b>BelugaCalc</b><small>En honor a BelugaCalc · azul marino, celeste y hielo</small></span><span class="homenaje-logo" data-homenaje="belugacalc" aria-hidden="true"><img src="{% static 'calculadora/homenajes/belugacalc.png' %}" alt="" width="500" height="500" loading="lazy" decoding="async"></span></label>
+        <label class="opcion"><input type="radio" name="estilo" value="heyalgb"> <span><b>HeyAlgb</b><small>En honor a HeyAlgb · negro, granate y rojo</small></span><span class="homenaje-logo" data-homenaje="heyalgb" aria-hidden="true"><img src="{% static 'calculadora/homenajes/heyalgb.png' %}" alt="" width="1280" height="1280" loading="lazy" decoding="async"></span></label>
     </fieldset>
     <fieldset class="opciones-grupo">
         <legend>Efectos de sonido</legend>

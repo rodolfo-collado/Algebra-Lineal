@@ -1,5 +1,6 @@
 /* Entrada del sistema visual. Orden: tokens → base → shell → components → modules →
-   navegacion (áreas, explorador y mesa) → estudio (la habitación, solo en ese estilo). */
+   navegacion (áreas, explorador y mesa) → estudio (la habitación, solo en ese estilo) →
+   homenajes (ChocoLab, BelugaCalc y HeyAlgb: tokens y detalles sobre la forma sobria). */
 @import url("styles/tokens.css");
 @import url("styles/base.css");
 @import url("styles/shell.css");
@@ -7,3 +8,4 @@
 @import url("styles/modules.css");
 @import url("styles/navegacion.css");
 @import url("styles/estudio.css");
+@import url("styles/homenajes.css");
