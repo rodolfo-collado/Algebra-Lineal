@@ -129,9 +129,9 @@ planteamiento y conclusión de la combinación lineal).
 
 ```text
 templates/calculadora/
-├── base.html                 # header, cajón de navegación, breadcrumbs y contenido
+├── base.html                 # header (áreas, Buscar, Tema, Opciones), breadcrumbs y contenido
 ├── layouts/herramienta.html  # estructura común de una herramienta
-├── components/               # cajón, buscador, breadcrumbs, relacionadas, explorar, teclado, matrices, vectores, formato numérico
+├── components/               # áreas, opciones, buscador, breadcrumbs, relacionadas, explorar, teclado, matrices, vectores, formato numérico
 ├── pages/                    # inicio.html y _area.html (un área plegable con sus temas)
 ├── modules/sistemas/         # index.html y parciales del procedimiento y el resultado
 ├── modules/vectores/         # index.html, fila de entrada, operación y combinación lineal

@@ -1,8 +1,8 @@
 # Temas homenaje
 
 PyGebra incluye tres estilos en honor a los proyectos hermanos del curso:
-**ChocoLab**, **BelugaCalc** y **HeyAlgb**. Se eligen en **Opciones → Temas
-homenaje**, junto a Estudio y Minimalista, y cada uno tiene variante clara y oscura con
+**ChocoLab**, **BelugaCalc** y **HeyAlgb**. Se eligen en **Opciones → Apariencia**,
+junto a Estudio y Minimalista, y cada uno tiene variante clara y oscura con
 personalidad propia.
 
 La idea: al activar uno, por un momento parece que se usa otra calculadora, pero la
@@ -18,7 +18,7 @@ los formularios, el teclado matemático y la lectura de resultados.
 | Valores del estilo | `preferencias.py`, `tema_inicial.html` | `pygebra-estilo` admite `chocolab`, `belugacalc` y `heyalgb`. `preferencias.estilo()` valida la misma lista antes del primer pintado y `opciones.js` la reutiliza al volver del historial. |
 | Tokens y piezas comunes | `styles/homenajes.css` | Colores claro/oscuro de cada tema sobre los tokens de `tokens.css`, los logotipos de Opciones y el gesto de cambio de estilo. |
 | Composición y movimiento | `styles/homenaje-chocolab.css`, `homenaje-belugacalc.css`, `homenaje-heyalgb.css` | Portada, catálogo, navegación, cabecera, área, mesa de trabajo y animaciones de cada tema. |
-| Navegación por áreas | `components/homenaje_areas.html` | Un solo marcado dentro de la cabecera (oculto en Estudio y Minimalista): pastillas en ChocoLab, riel lateral en BelugaCalc y pestañas angulares en HeyAlgb. `context_processors.navegacion` aporta `en_inicio`, `area_actual_id` e `indice_area`. |
+| Navegación por áreas | `components/nav_areas.html` | La navegación global de PyGebra, compartida por los cinco estilos y sacada del catálogo: enlaces sobrios en Estudio y Minimalista, pastillas en ChocoLab, riel lateral en BelugaCalc y pestañas angulares en HeyAlgb. `context_processors.navegacion` aporta `en_inicio`, `area_actual_id` e `indice_area`. Ver [Shell y navegación](interfaz.md#shell-y-navegación). |
 | Portadas | `components/homenaje_portada.html` | Ilustración original y dedicatoria «En honor a…» con el logotipo del equipo; solo se ve la del estilo activo. |
 | Cambio de estilo | `opciones.js` | `cambiarEstilo()` usa `document.startViewTransition` desde la opción elegida. Con movimiento reducido o sin View Transitions el cambio es inmediato. |
 
@@ -62,14 +62,19 @@ Referencia: [juliosevillag04/chocolab-prueba1](https://github.com/juliosevillag0
 Referencia: [Mirai1602/BelugaTeam](https://github.com/Mirai1602/BelugaTeam)
 (`ui/main_window.py`: `PillSidebar`, `BackgroundWaves`, bienvenida y menú de módulos).
 
-- **Riel lateral:** una píldora marina `#063D89` flotante (radio 30, a 12 px de los
-  bordes). El área activa es una **bola celeste** `#62B9FF` con icono `#1A1C29`, encajada
+- **Riel lateral:** una píldora marina `#063D89` flotante (radio 30) **bajo la cabecera**:
+  nunca cubre la marca PyGebra ni sus botones. El área activa es una **bola celeste** `#62B9FF` con icono `#1A1C29`, encajada
   en una **muesca en S** del borde derecho. La muesca usa las mismas curvas de su
   `paintEvent` (104 px de alto) y se dibuja con una máscara CSS en un pseudoelemento,
   así nunca recorta la bola ni los iconos.
-- **Despliegue:** al pasar el cursor o al tabular, el riel crece de 68 a 230 px
-  (0.22 s), aparecen los nombres y la muesca se retira. El nombre activo queda en
-  celeste y seminegrita, como en su barra. La mascota acompaña al pie del riel.
+- **Despliegue:** su botón ☰ (arriba, como el de su barra) muestra los nombres: el riel
+  pasa de 68 a 232 px y **aparta el contenido** en vez de taparlo, así formularios, títulos
+  y migas siguen a la vista. Funciona con ratón y teclado (`aria-expanded`), se recuerda
+  durante la visita (`sessionStorage`, `pygebra-riel`) y la muesca se retira mientras hay
+  nombres. Compacto, cada icono tiene su nombre para lectores de pantalla y su ayuda
+  emergente. El nombre activo queda en celeste y seminegrita, como en su barra.
+- **Mascota:** acompaña al pie del riel. Es decorativa por ahora; un PR dedicado la
+  convertirá en acceso a la ayuda de PyGebra.
 - **Barra inferior en pantallas estrechas:** en Inicio y en las áreas el riel se vuelve
   una barra inferior. En las herramientas no aparece, porque abajo vive el teclado
   matemático.
@@ -83,10 +88,10 @@ Referencia: [Mirai1602/BelugaTeam](https://github.com/Mirai1602/BelugaTeam)
 - **Catálogo:** su menú de módulos dentro de una tarjeta grande de radio 32. Las áreas
   son **filas** con chip monoespaciado «[ Ax = b ]» y «Abrir módulo →». En hover la fila
   se aclara y su borde se vuelve azul cielo.
-- **Fluent:** cabecera y cajón de cristal (desenfoque), botones de radio 6 con borde
-  inferior de elevación y pulsación al 98 %. Los campos enfocados muestran la línea de
-  acento inferior de Fluent, sin perder el contorno de foco. La selección del índice y
-  del cajón es un trazo vertical de 3 px.
+- **Fluent:** cabecera de cristal (desenfoque), botones de radio 6 con borde inferior de
+  elevación y pulsación al 98 %. Los campos enfocados muestran la línea de acento inferior
+  de Fluent, sin perder el contorno de foco. La selección del índice y de las hermanas es
+  un trazo vertical de 3 px.
 - **Claro / oscuro:** de día, agua clara (`#F8FAFC → #BAE6FD`) con brillo cian. De
   noche, el fondo del océano: navy profundo, tarjeta `#0F243D` y brillos celestes.
 
@@ -128,13 +133,20 @@ Todas viven dentro de `@media (prefers-reduced-motion: no-preference)`; una prue
 comprueba que no hay `animation:` fuera de ese bloque. Ninguna bloquea la interacción:
 los velos de transición usan `pointer-events: none`.
 
+Las **transiciones** de los temas cumplen el contrato común de
+`tests/test_microinteracciones.py` (solo propiedades visuales, con `--motion` o
+`--motion-fast`). Sus **animaciones** de ambiente, como las de Estudio, tienen contrato
+propio en `tests/test_temas_homenaje.py`: solo con movimiento permitido, un gesto por
+tema al elegirlo y bucles únicamente sobre ilustraciones decorativas (vapor, mascota,
+fórmulas, estallido).
+
 | Momento | ChocoLab | BelugaCalc | HeyAlgb |
 |---|---|---|---|
 | Elegir el tema en Opciones (View Transition del mismo documento) | El ambiente se **derrama** en círculo desde la opción elegida (0.7 s) | La aplicación entra **desde el lado del riel** mientras la anterior se aparta (0.45 s) | **Corte diagonal** que barre la pantalla (0.34 s) |
 | Llegar a otra página | Su entrada original: sube 8 px desde media opacidad (0.32 s) | Entrada de Fluent desde 28 px abajo con frenado (0.34 s). La **bola celeste viaja** al área nueva y el subrayado de la hermana activa se desliza (View Transitions entre documentos, 0.22 s, frenado cúbico como su muesca) | Golpe lateral inclinado (0.22 s) y su **barrido**: una banda roja con filo blanco cruza en diagonal y descubre la página de izquierda a derecha (0.3 s) |
 | Portada | La curva se traza sola, aparecen x₀, x₁ y la raíz, y la taza humea | La mascota flota y las fórmulas derivan | Titular, lema y dedicatoria entran «estampados»; el estallido gira despacio |
 | Catálogo | Módulos en cascada (60 ms); hover: sube 4 px | Filas en cascada (40 ms); hover: flecha y borde; pulsación al 99.5 % | Placas en cascada desde la izquierda (50 ms); hover y foco: salto instantáneo de 15 px |
-| Navegación | Pastillas con fondo al pasar | Riel que se despliega (0.22 s) y retira la muesca | Pestañas con sombra dura; botones que saltan 2 px |
+| Navegación | Pastillas con fondo al pasar | ☰ muestra los nombres y aparta el contenido; la bola cambia de área entre páginas | Pestañas con sombra dura; botones que saltan 2 px |
 
 ## Verificación de contraste
 
@@ -238,8 +250,8 @@ ninguna fuente.
 
 ## Capturas
 
-Están en `docs/capturas/temas-homenaje/`. Se tomaron con Edge headless a 1280 px y
-390 px, en claro y oscuro:
+Están en `docs/capturas/temas-homenaje/`. Se tomaron con Edge headless a 1280, 390 y
+320 px, en claro y oscuro:
 
 - `inicio-escritorio.png` e `inicio-390.png`: las portadas.
 - `sin-color.png`: las mismas portadas en escala de grises. Sin color, las tres se
@@ -247,20 +259,33 @@ Están en `docs/capturas/temas-homenaje/`. Se tomaron con Edge headless a 1280 p
   con riel y muesca, y cartel diagonal con sello.
 - `area-escritorio.png`, `herramienta-escritorio.png`, `resultado-escritorio.png` y
   `resultado-390.png`: un área, Sistemas lineales (Ax = b) y su resultado.
-- `navegacion.png`: el riel desplegado de BelugaCalc y el cajón de ChocoLab y HeyAlgb.
+- `navegacion.png`: la navegación de cada tema (pastillas, riel con nombres, pestañas).
+- `estudio-minimalista-herramienta.png` y `estudio-minimalista-390.png`: la navegación
+  por áreas en los estilos propios de PyGebra.
 - `error-foco.png`, `grafica.png` y `opciones.png`: un error junto a su celda con el
-  foco visible, la gráfica de Bisección y el selector de temas.
+  foco visible, la gráfica de Bisección y el panel de Opciones.
 - `cambio-de-estilo.png`: el gesto de cada tema a mitad de la transición al elegirlo
   desde Minimalista.
+- `antes-despues-*.png`: selector, navegación, Opciones, riel de BelugaCalc y 320 px,
+  antes y después de la tercera iteración.
+
+## Verificación en la app de escritorio (WebView2)
+
+Con el ejecutable de `build_windows.ps1 -Target App`, conectado por CDP:
+
+- View Transitions disponibles y activas.
+- En los cinco estilos, el radio marcado, `data-estilo`, `localStorage` y el archivo de
+  preferencias coinciden.
+- Sin cajón y con Actualizaciones dentro de Opciones.
+- El riel con nombres no cubre marca, título ni migas, y no hay desborde.
+- La máscara de la muesca se aplica.
+- Métodos iterativos se abre en el tema.
 
 ## Pendientes
 
 - Confirmar con HeyAlgb la autoría de su logotipo, que su propio inventario marca como
   pendiente.
-- Revisar en la app de escritorio (WebView2) la muesca con máscara y las View
-  Transitions entre documentos. En Edge funcionan; WebView2 comparte motor, pero no se
-  ha probado en el ejecutable.
-- Reconciliar con #133 (Jacobi y Gauss-Seidel) cuando se integre en `develop`: sus
-  vistas heredan los tokens, pero conviene revisar sus tablas en los tres temas.
+- La mascota de BelugaCalc será el acceso a la ayuda de PyGebra en un PR dedicado.
 - Aplicar la estética de los temas a la página de actualizaciones y a las de error
-  (hoy heredan colores y cabecera, no composición).
+  (hoy heredan colores, cabecera y navegación, no composición).
+- Probar la navegación con lector de pantalla real (NVDA) y en pantallas táctiles.
