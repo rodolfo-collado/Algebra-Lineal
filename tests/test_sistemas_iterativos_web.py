@@ -1,13 +1,17 @@
 import json
 import re
-from unittest.mock import patch
 
 from django.test import SimpleTestCase
 from django.test.utils import setup_test_environment, teardown_test_environment
+from django.urls import resolve, reverse
 
 from frontend.web.calculadora import catalogo
-from tests.test_ecuaciones_matriciales_web import RUTA, datos_ecuacion
+from tests.test_ecuaciones_matriciales_web import RUTA as RUTA_DIRECTOS, datos_ecuacion
+from tests.test_navegacion import Documento
 from tests.test_sistemas_iterativos import CLASE_A, CLASE_B, PRACTICA_A, PRACTICA_B
+
+
+RUTA = "/metodos-numericos/metodos-iterativos/"
 
 
 class SistemasIterativosWebTest(SimpleTestCase):
@@ -17,9 +21,52 @@ class SistemasIterativosWebTest(SimpleTestCase):
         setup_test_environment()
         cls.addClassCleanup(teardown_test_environment)
 
+    def test_ruta_area_migas_y_navegacion_entre_familias(self):
+        self.assertEqual(reverse("calculadora:metodos-iterativos"), RUTA)
+        self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.METODOS_ITERATIVOS)
+        area = "/areas/metodos-numericos/"
+        familias = (catalogo.METODOS_CERRADOS, catalogo.METODOS_ABIERTOS, catalogo.METODOS_ITERATIVOS)
+        for ruta in (area, *[familia.ruta for familia in familias]):
+            with self.subTest(ruta=ruta):
+                pagina = self.client.get(ruta)
+                for familia in familias:
+                    self.assertContains(pagina, f'href="{familia.ruta}"')
+        respuesta = self.client.get(RUTA)
+        migas = Documento(respuesta).enlaces_en("Ruta de navegación")
+        self.assertEqual([miga["href"] for miga in migas], ["/", area, f"{area}#sistemas-lineales"])
+        self.assertContains(respuesta, f'href="{RUTA}" aria-current="page"')
+        self.assertEqual(respuesta.context["form"]["metodo"].value(), "jacobi")
+        self.assertNotContains(respuesta, "metodo_determinante")
+
+    def test_ax_b_enlaza_a_iterativos_y_solo_acepta_metodos_directos(self):
+        respuesta = self.client.get(RUTA_DIRECTOS)
+        self.assertContains(respuesta, f'<a class="text-link" href="{RUTA}">Métodos iterativos</a>', html=True)
+        self.assertNotContains(respuesta, 'name="inicial_iterativo"')
+        self.assertNotContains(respuesta, 'value="jacobi"')
+        directa = self.client.post(RUTA_DIRECTOS, datos_ecuacion([[2]], [4], "gauss_jordan"))
+        self.assertContains(directa, "Solución única")
+        intento = self.client.post(RUTA_DIRECTOS, datos_ecuacion([[2]], [4], "jacobi"))
+        self.assertContains(intento, "Selecciona un método válido.")
+        self.assertNotContains(intento, 'id="resultado"')
+
+    def test_aplicar_sin_javascript_reconstruye_la_matriz_y_conserva_opciones(self):
+        respuesta = self.client.post(RUTA, {
+            "ajustar": "1", "filas": "3", "columnas": "3", "metodo": "gauss_seidel",
+            "celda_A_0_0": "5", "inicial_iterativo": "1 2 3",
+            "tolerancia_iterativa": "0.0002", "max_iteraciones": "3",
+        })
+        form = respuesta.context["form"]
+        self.assertEqual(form["celda_A_0_0"].value(), "5")
+        self.assertEqual(form["celda_A_2_2"].value(), "")
+        self.assertEqual(form["metodo"].value(), "gauss_seidel")
+        self.assertEqual(form["inicial_iterativo"].value(), "1 2 3")
+        self.assertEqual(form["tolerancia_iterativa"].value(), "0.0002")
+        self.assertEqual(form["max_iteraciones"].value(), "3")
+        self.assertNotContains(respuesta, 'id="resultado"')
+
     def test_catalogo_y_ejemplos_preparan_ax_b_sin_resolver(self):
         for consulta in ("Jacobi", "Gauss-Seidel", "Gauss Seidel"):
-            self.assertIn(catalogo.ECUACIONES_MATRICIALES, catalogo.buscar_herramientas(consulta))
+            self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.METODOS_ITERATIVOS,))
         for slug, a, b, limite in (
             ("clase", CLASE_A, CLASE_B, 100),
             ("diapositiva-28", PRACTICA_A, PRACTICA_B, 3),
@@ -36,11 +83,8 @@ class SistemasIterativosWebTest(SimpleTestCase):
                     self.assertEqual(form[f"celda_b_{i}_0"].value(), str(b[i]))
                 self.assertNotContains(respuesta, 'id="resultado"')
 
-    def test_comparar_deja_intactos_los_motores_directos_y_muestra_ambos(self):
-        with patch("frontend.web.calculadora.views.confirmar_ecuacion") as confirmar:
-            respuesta = self.client.post(RUTA, datos_ecuacion(CLASE_A, CLASE_B, "comparar_iterativos"))
-        confirmar.assert_not_called()
-        self.assertIsNone(respuesta.context["resultado"])
+    def test_comparar_muestra_ambos_metodos_en_un_resultado(self):
+        respuesta = self.client.post(RUTA, datos_ecuacion(CLASE_A, CLASE_B, "comparar_iterativos"))
         jacobi, seidel = respuesta.context["iterativos"]
         self.assertEqual((jacobi["final"]["k"], seidel["final"]["k"]), (15, 6))
         self.assertContains(respuesta, 'data-estado="convergio"', count=2)

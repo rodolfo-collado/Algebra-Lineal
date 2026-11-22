@@ -8,10 +8,6 @@
     white-space: normal;
 }
 
-.iterativos-eleccion {
-    margin-block-start: var(--space-2);
-}
-
 .iterativo-parametros {
     display: grid;
     grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));

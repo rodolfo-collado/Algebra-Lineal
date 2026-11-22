@@ -146,7 +146,7 @@ SISTEMAS_NUMERICOS = Area(
 )
 CALCULO = Area("calculo", "Cálculo", "Límites y contenidos posteriores del curso.", "lím")
 CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos, sus operaciones y su cardinalidad.", "A ∩ B")
-METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones reales.", "f(c) ≈ 0")
+METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones y soluciones de sistemas lineales.", "f(c) ≈ 0")
 AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, METODOS_NUMERICOS, CONJUNTOS, CALCULO)
 
 # Una sola sección de Álgebra lineal: operaciones (también con vectores), sistemas lineales,
@@ -169,7 +169,11 @@ CONJUNTOS_FINITOS = Categoria("conjuntos-finitos", "Conjuntos e intervalos", CON
                             "Operaciones, relaciones, diagramas de Venn, intervalos y cardinalidad.", "{ a, b }")
 RAICES = Categoria("raices", "Raíces de ecuaciones", METODOS_NUMERICOS,
                    "Búsqueda de raíces en un intervalo (métodos cerrados) o desde puntos iniciales (métodos abiertos).", "[a, b]")
-CATEGORIAS = (MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, CONJUNTOS_FINITOS, LIMITES)
+SISTEMAS_ITERATIVOS = Categoria(
+    "sistemas-lineales", "Sistemas lineales", METODOS_NUMERICOS,
+    "Aproximaciones sucesivas de la solución de Ax = b.", "Ax",
+)
+CATEGORIAS = (MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, SISTEMAS_ITERATIVOS, CONJUNTOS_FINITOS, LIMITES)
 
 
 # Reducción por filas de [A | b]: método a elegir (o comparar los dos) y
@@ -265,18 +269,17 @@ OPERACIONES_MATRICES = Herramienta(
 # los motores de sistemas (Gauss, Gauss-Jordan, LU o Cramer) sobre [A | b].
 ECUACIONES_MATRICIALES = Herramienta(
     id="ecuaciones-matriciales", nombre="Sistemas lineales (Ax = b)", categoria=MATRICES,
-    descripcion="Si ya tienes A y b, encuentra x en Ax = b con métodos directos o con Jacobi y Gauss-Seidel.",
+    descripcion="Si ya tienes A y b, encuentra x en Ax = b mediante reducción por filas, LU o Regla de Cramer.",
     estado="disponible", route_name="calculadora:ecuaciones-matriciales",
     palabras_clave=("ecuación matricial", "ecuaciones matriciales", "ax=b", "ax = b", "resolver ax=b",
                     "matriz aumentada", "sistema equivalente", "vector b", "incógnita x",
                     "combinación lineal", "conjunto generado", "solución única", "soluciones infinitas",
                     "inconsistente", "resolver sistema", "sistema de ecuaciones", "sistemas de ecuaciones",
                     "cramer", "regla de cramer",
-                    "sistema lineal", "sistemas lineales", "ecuaciones lineales", "jacobi",
-                    "gauss-seidel", "gauss seidel", "métodos iterativos"),
+                    "sistema lineal", "sistemas lineales", "ecuaciones lineales"),
     relacionadas=("reduccion-filas", "operaciones-matrices"),
     invitacion="Si ya tienes A y b, encuentra x en Ax = b.",
-    puntos=('Reducción por filas, LU, Cramer, Jacobi y Gauss-Seidel', 'Comprobación y procedimiento de cada método'),
+    puntos=('Reducción por filas, LU o Regla de Cramer', 'Detecta si no hay solución o hay infinitas'),
     curiosidad="Ax = b tiene solución exactamente cuando b es combinación lineal de las columnas de A.",
 )
 
@@ -375,6 +378,17 @@ METODOS_ABIERTOS = Herramienta(
     curiosidad="La secante sustituye la derivada por la pendiente entre dos puntos: no necesita f′(x) y aun así suele converger casi tan rápido como Newton.",
 )
 
+METODOS_ITERATIVOS = Herramienta(
+    id="metodos-iterativos", nombre="Métodos iterativos", categoria=SISTEMAS_ITERATIVOS,
+    descripcion="Aproxima la solución de un sistema lineal cuadrado Ax = b con Jacobi o Gauss-Seidel.",
+    estado="disponible", route_name="calculadora:metodos-iterativos",
+    palabras_clave=("métodos iterativos", "método iterativo", "jacobi", "gauss-seidel", "gauss seidel",
+                    "dominancia diagonal", "residuo", "aproximación"),
+    invitacion="Resuelve con Jacobi o Gauss-Seidel y sigue las sustituciones de cada vuelta.",
+    puntos=("Jacobi utiliza el vector de la iteración anterior",
+            "Gauss-Seidel reutiliza las componentes recién calculadas"),
+)
+
 HERRAMIENTAS = (
     OPERACIONES_MATRICES,
     ECUACIONES_MATRICIALES,
@@ -385,6 +399,7 @@ HERRAMIENTAS = (
     CONVERSION_ROMANOS,
     METODOS_CERRADOS,
     METODOS_ABIERTOS,
+    METODOS_ITERATIVOS,
     RELACIONES_CONJUNTOS,
     CARDINALIDAD_CONJUNTOS,
     Herramienta("limites-funciones", "Límites de funciones", LIMITES,

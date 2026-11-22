@@ -6,12 +6,14 @@ from . import views
 from .views_raices import (cerrados_ruta_antigua, explorar_funcion, newton_raphson_ruta_antigua, resolver_biseccion,
                            resolver_newton_raphson, resolver_regla_falsa, resolver_secante)
 from .views_conjuntos import relaciones_conjuntos, cardinalidades_conjuntos
+from .views_iterativos import metodos_iterativos
 
 
 app_name = "calculadora"
 
 
 urlpatterns = [
+    path("metodos-numericos/metodos-iterativos/", metodos_iterativos, name="metodos-iterativos"),
     # Métodos abiertos: una herramienta con un método por ruta; la gráfica de Newton añade f′(x).
     path("metodos-numericos/metodos-abiertos/newton-raphson/", resolver_newton_raphson, name="newton-raphson"),
     path("metodos-numericos/metodos-abiertos/newton-raphson/grafica/", explorar_funcion, {"derivar": True}, name="newton-raphson-grafica"),

@@ -5,8 +5,9 @@ from math import ceil, floor, log10
 
 from backend.sistemas_iterativos import METODOS, resolver_iterativo
 
-from .opciones_ecuaciones import COMPARAR_ITERATIVOS
 from .servicios_ecuaciones import incognitas
+
+COMPARAR_ITERATIVOS = "comparar_iterativos"
 
 # Word §1 y diapositiva 9. La práctica de la diapositiva 28 compara tres vueltas.
 EJEMPLOS = {

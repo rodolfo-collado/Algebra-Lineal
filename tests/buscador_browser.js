@@ -26,7 +26,7 @@
     const casos = [
         ["GET tiene todo el universo, métodos de Gauss visibles y un recuento estático", "/?q=gauss", w => {
             igual(todos(w, "#catalogo-inicio [data-herramienta]").length, universo(w));
-            igual(ids(w), ["reduccion-filas", "ecuaciones-matriciales"]);
+            igual(ids(w), ["reduccion-filas", "metodos-iterativos"]);
             igual(q(w, "[data-busqueda-servidor]").hidden, false);
             todos(w, ".search-status").forEach(n => igual(n.textContent, ""));
             todos(w, "form[data-buscador]").forEach(n => igual(n.querySelectorAll('[aria-live="polite"]').length, 1));
@@ -34,7 +34,7 @@
         ["gauss → inversa → vectores → límites no envía GET ni duplica filas", "/?q=gauss", w => {
             const documento = w.document;
             for (const [texto, esperado] of [["inversa", ["matriz-inversa"]],
-                ["Gauss-Seidel", ["ecuaciones-matriciales"]], ["vectores", ["operaciones-matrices"]], ["límites", ["limites-funciones"]]]) {
+                ["Gauss-Seidel", ["metodos-iterativos"]], ["vectores", ["operaciones-matrices"]], ["límites", ["limites-funciones"]]]) {
                 valor(w, texto); igual(ids(w), esperado);
                 igual(w.document, documento); igual(w.location.search, "?q=gauss");
                 igual(q(w, "[data-busqueda-servidor]").hidden, true);
@@ -44,7 +44,7 @@
         }],
         ["Editar y volver al GET restaura heading y vacía live", "/?q=gauss", w => {
             valor(w, "inversa"); igual(q(w, "#buscador-inicio-estado").textContent.includes("inversa"), true);
-            valor(w, "gauss"); igual(ids(w), ["reduccion-filas", "ecuaciones-matriciales"]);
+            valor(w, "gauss"); igual(ids(w), ["reduccion-filas", "metodos-iterativos"]);
             igual(q(w, "[data-busqueda-servidor]").hidden, false);
             igual(q(w, "#buscador-inicio-estado").textContent, "");
             valor(w, " gauss"); igual(q(w, "[data-busqueda-servidor]").hidden, true);
@@ -59,7 +59,7 @@
             igual(link.getClientRects().length > 0, true);
             const carga = new Promise(r => { frame.onload = () => r(frame.contentWindow); });
             link.click(); w = await carga; await turno(w);
-            igual(w.location.search, "?q=gauss"); igual(ids(w), ["reduccion-filas", "ecuaciones-matriciales"]);
+            igual(w.location.search, "?q=gauss"); igual(ids(w), ["reduccion-filas", "metodos-iterativos"]);
         }],
         ["Live vacío oculta heading, anuncia una vez y ofrece enlaces", "/?q=gauss", w => {
             valor(w, "zzz"); igual(ids(w), []);

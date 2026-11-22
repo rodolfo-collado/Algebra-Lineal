@@ -1,0 +1,38 @@
+{% extends "calculadora/layouts/sistema_matricial.html" %}
+{% load static componentes %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'calculadora/styles/iterativos.css' %}">
+{% endblock %}
+
+{% block axb_antes %}
+        <fieldset class="choice-fieldset">
+            <legend>{{ form.metodo.label }}</legend>
+            <div class="segmented">
+                {% for radio in form.metodo %}<label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+            </div>
+            {{ form.metodo.errors }}
+        </fieldset>
+        {% disclosure titulo="Ejemplos de Jacobi y Gauss-Seidel" id="ejemplos-iterativos" %}
+            <div class="iterativos-enlaces">
+                <a class="btn btn-secondary" href="{{ herramienta_actual.ruta }}?ejemplo=clase">Ejemplo de clase · (1, 2, −1, 1)</a>
+                <a class="btn btn-secondary" href="{{ herramienta_actual.ruta }}?ejemplo=diapositiva-28">Práctica de la diapositiva 28 · 3 iteraciones</a>
+            </div>
+        {% enddisclosure %}
+{% endblock %}
+
+{% block axb_forma %}A debe ser cuadrada y su diagonal debe contener coeficientes distintos de cero.{% endblock %}
+
+{% block axb_opciones %}
+        <section class="workspace-section">
+            {% include "calculadora/modules/iterativos/_opciones.html" %}
+        </section>
+{% endblock %}
+
+{% block tool_result %}
+    {% if iterativos %}{% include "calculadora/modules/iterativos/_resultado.html" %}{% endif %}
+{% endblock %}
+
+{% block axb_js %}
+    {% if iterativos %}<script src="{% static 'calculadora/sistemas_iterativos.js' %}" defer></script>{% endif %}
+{% endblock %}

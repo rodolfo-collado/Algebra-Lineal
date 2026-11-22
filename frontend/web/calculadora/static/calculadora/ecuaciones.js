@@ -17,16 +17,9 @@
     const SUBINDICES = "₀₁₂₃₄₅₆₇₈₉";
     const cramer = root.querySelector('[name="metodo"][value="cramer"]');
     const metodosDeterminantes = root.querySelector("[data-cramer-methods]");
-    const parametrosIterativos = root.querySelector("[data-iterativo-parametros]");
-    const ayudaDirectos = root.querySelector("[data-ayuda-directos]");
-    const ayudaIterativos = root.querySelector("[data-ayuda-iterativos]");
 
     function actualizarMetodos() {
-        const esIterativo = Boolean(root.querySelector("[data-iterativo-metodo] input:checked"));
-        parametrosIterativos.hidden = !esIterativo;
-        parametrosIterativos.disabled = !esIterativo;
-        ayudaIterativos.hidden = !esIterativo;
-        ayudaDirectos.hidden = esIterativo;
+        if (!cramer) return;
         if (!Object.keys(dimensiones).every(nombre => dimensionValida(campo(nombre)))) return;
         const m = Number(campo("filas").value);
         const n = Number(campo("columnas").value);

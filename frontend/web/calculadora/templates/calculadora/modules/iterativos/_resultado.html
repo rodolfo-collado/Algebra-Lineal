@@ -80,7 +80,7 @@
 
             {% if r.grafica %}
                 {% disclosure titulo="Ver evolución del cambio y el residuo" nivel=4 %}
-                    {% include "calculadora/modules/ecuaciones/_grafica_iterativa.html" with grafica=r.grafica only %}
+                    {% include "calculadora/modules/iterativos/_grafica.html" with grafica=r.grafica only %}
                 {% enddisclosure %}
             {% endif %}
         </section>

@@ -50,7 +50,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         rutas = (
             "/matrices/reduccion/", "/matrices/operaciones/",
             "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
-            "/romanos/conversion/", "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/",
+            "/romanos/conversion/", "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/metodos-numericos/metodos-iterativos/", "/conjuntos/relaciones/",
             "/conjuntos/cardinalidad/",
         )
         for ruta in ("/", *rutas):
@@ -78,7 +78,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
             ["/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/reduccion/",
              "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/", "/romanos/conversion/",
-             "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/", "/conjuntos/cardinalidad/"],
+             "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/metodos-numericos/metodos-iterativos/", "/conjuntos/relaciones/", "/conjuntos/cardinalidad/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")
         self.assertContains(self.client.get("/", {"q": "gauss"}), "2 herramientas coinciden")

@@ -184,7 +184,7 @@ class PruebasBuscador(SimpleTestCase):
             with self.subTest(consulta=consulta):
                 self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.REDUCCION_FILAS,))
         self.assertEqual(catalogo.buscar_herramientas("Gauss"),
-                         (catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES))
+                         (catalogo.REDUCCION_FILAS, catalogo.METODOS_ITERATIVOS))
         # «inconsistente» también describe Ax = b (P14); Reducción por filas conserva el primer lugar.
         self.assertEqual(
             catalogo.buscar_herramientas("inconsistente"), (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS),
@@ -255,9 +255,11 @@ class PruebasBuscador(SimpleTestCase):
                     self.assertEqual(catalogo.buscar_herramientas(variante)[0].id, esperado)
 
     def test_sistemas_y_proximas(self):
-        for consulta in ("sistema de ecuaciones", "sistema lineal", "sistemas lineales", "ecuaciones lineales"):
-            self.assertEqual(catalogo.buscar_herramientas(consulta),
-                             (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS))
+        directos = (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS)
+        for consulta in ("sistema de ecuaciones", "ecuaciones lineales"):
+            self.assertEqual(catalogo.buscar_herramientas(consulta), directos)
+        for consulta in ("sistema lineal", "sistemas lineales"):
+            self.assertEqual(catalogo.buscar_herramientas(consulta), (*directos, catalogo.METODOS_ITERATIVOS))
         limites, = catalogo.buscar_herramientas("LÍMITES")
         self.assertEqual(limites.id, "limites-funciones")
         self.assertEqual(limites.estado, "proximamente")
