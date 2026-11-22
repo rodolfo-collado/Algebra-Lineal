@@ -8,7 +8,7 @@
   vectores, operaciones con matrices (simples y compuestas), conversión de bases y ejemplos para interpretar resultados.
 - [Algoritmos](algoritmos.md): implementación manual, aritmética exacta,
   procedimientos estructurados y conexiones entre Ax, combinaciones y sistemas.
-- [Jacobi y Gauss-Seidel](sistemas-iterativos.md) · despejes, ejemplos de clase y verificación en Ax = b.
+- [Jacobi y Gauss-Seidel](sistemas-iterativos.md) · despejes, ejemplos de clase y verificación en Métodos iterativos.
 - [Instalación Windows](instalacion-windows.md): requisitos, uso y desinstalación;
   también construcción y verificación del paquete para mantenedores.
 

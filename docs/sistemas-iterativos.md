@@ -1,9 +1,14 @@
 # Jacobi y Gauss-Seidel en Ax = b
 
-En **Matrices → Sistemas lineales (Ax = b)**, ingresa la matriz cuadrada A y el
-vector b. Puedes elegir **Jacobi**, **Gauss-Seidel** o **Comparar Jacobi y
-Gauss-Seidel**. La comparación parte del mismo vector inicial para ambos
-métodos. Si dejas vacío el vector inicial, PyGebra usa ceros.
+Abre **Métodos numéricos → Sistemas lineales → Métodos iterativos** e ingresa
+la matriz cuadrada A y el vector b. Puedes elegir **Jacobi**, **Gauss-Seidel** o
+**Comparar ambos**. La comparación parte del mismo vector inicial para los dos
+métodos. Si dejas el vector inicial vacío, PyGebra usa ceros.
+
+**Métodos cerrados** y **Métodos abiertos** buscan raíces de funciones.
+**Métodos iterativos** aproxima las componentes de la solución de un sistema
+lineal. Desde **Matrices → Sistemas lineales (Ax = b)** puedes abrir la
+herramienta mediante el enlace que acompaña a los métodos directos.
 
 ## Cómo se calcula
 
@@ -76,22 +81,29 @@ comprobar las filas corregidas. También cubren los dos criterios de parada,
 la falta de dominancia y de convergencia, diagonal nula, entradas inválidas,
 desbordamiento y la correspondencia entre la tabla, los operandos y el resultado.
 
-- Pruebas focalizadas del motor y la vista. 18 correctas.
-- Suite completa de Python. 2.065 pruebas correctas. También pasaron la
+- Pruebas focalizadas. 178 correctas sobre el motor, la ruta nueva, la
+  navegación, la búsqueda, los formularios y los métodos directos.
+  La comprobación adicional del catálogo de Estudio y la ruta dio 37 correctas.
+  El archivo del motor y sus pruebas matemáticas coinciden byte por byte con
+  los de la revisión anterior del PR.
+- Suite completa de Python. 2.068 pruebas correctas. También pasaron la
   verificación del lockfile, Django, compilación, sintaxis de JavaScript y
   `git diff --check`.
 - Runners de navegador del proyecto. Buscador 21/21, edición de entradas
   350/350 y presentación de resultados 111/111.
-- Edge 158 con Playwright. Flujo en escritorio a 1366 px, móvil a 390 y 320 px
-  y colores forzados. Se ejercitaron toque, teclado, foco, desplazamiento local
-  de la tabla, plegado de la gráfica y consistencia del desarrollo. Se comprobó
-  la primera sustitución sin JavaScript y el ajuste de etiquetas de la gráfica
-  con residuos muy pequeños a 320 px.
+- Edge 158 con Playwright. Escritorio a 1366 px y móvil a 390 px en ambos
+  temas, además de colores forzados. Se comprobaron las tres familias,
+  el enlace desde Ax = b, el selector, el foco, la tabla y las sustituciones.
+  Sin JavaScript se comprobó el enlace del área, **Aplicar** para cambiar
+  dimensiones, el cálculo y la primera sustitución. Se ejercitó también la
+  gráfica con residuos muy pequeños a 320 px.
 - axe-core 4.14.1. Sin hallazgos en las reglas automatizadas de WCAG A/AA
-  ejecutadas en los cuatro perfiles de navegador. La prueba móvil se hizo
+  ejecutadas en los cinco perfiles de navegador. La prueba móvil se hizo
   por emulación. Quedan pendientes el lector de pantalla y el paquete
   instalado de Windows/WebView2.
 
+[Familias de Métodos numéricos](capturas/iterativos/00-familias-metodos-numericos.jpg) ·
 [Resultado en escritorio](capturas/iterativos/01-clase-escritorio.jpg) ·
 [Gauss-Seidel, iteración 2 y gráfica](capturas/iterativos/02-gauss-seidel-iteracion-2.jpg) ·
-[Práctica en móvil](capturas/iterativos/03-practica-movil.jpg)
+[Resultado de práctica en móvil](capturas/iterativos/03-practica-movil.jpg) ·
+[Formulario en móvil](capturas/iterativos/04-formulario-movil.jpg)
