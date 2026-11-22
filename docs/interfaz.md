@@ -21,9 +21,10 @@ plantillas Django, CSS propio y JavaScript mínimo, todos locales.
   `#7DCFC6` en oscuro, reservado para acciones, enlaces, selección y foco.
 - [Identidad visual](identidad-visual.md) documenta la geometría y sus derivados.
 
-El **estilo** (Estudio o Minimalista, en Opciones) y el **tema** claro u oscuro (botón
-Tema) son decisiones independientes: cualquier estilo funciona de día y de noche.
-Estudio es el predeterminado; ver [Estudio](#estudio).
+El **estilo** (Estudio, Minimalista o uno de los temas homenaje, en Opciones) y el
+**tema** claro u oscuro (botón Tema) son decisiones independientes: cualquier estilo
+funciona de día y de noche. Estudio es el predeterminado; ver [Estudio](#estudio) y
+[Temas homenaje](temas-homenaje.md) (ChocoLab, BelugaCalc y HeyAlgb).
 
 El tema claro u oscuro se guarda en `localStorage` (`pygebra-tema`). Se lee
 primero esta clave; si falta, se recupera y migra `algebra-lineal-tema`.
@@ -66,8 +67,10 @@ static/calculadora/
     ├── modules.css         # formularios y resultados de sistemas, bases, vectores y matrices
     ├── navegacion.css      # historial, Opciones, canales del inicio, explorador de área y
     │                       # mesa de trabajo (estructura común a Estudio y Minimalista)
-    └── estudio.css         # estilo Estudio: tokens día/noche, habitación, dioramas, gestos
-                            # y transiciones; nada de esto aplica en Minimalista
+    ├── estudio.css         # estilo Estudio: tokens día/noche, habitación, dioramas, gestos
+    │                       # y transiciones; nada de esto aplica en Minimalista
+    └── homenajes.css       # temas homenaje: tokens claro/oscuro, detalles de navegación
+                            # y firma «En honor a …» sobre la forma de Minimalista
 ```
 
 Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-raised`,
