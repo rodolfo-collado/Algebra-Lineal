@@ -7,59 +7,26 @@
 
 {% block content %}
     {% comment %}
-        Amanecer sobre el plano: el horizonte de un plano cartesiano es la barra de la descarga y un
-        círculo unitario sube con ella. El servidor pinta el estado actual; actualizaciones.js lo
+        Amanecer sobre el plano: el horizonte de un plano en perspectiva es la barra de la descarga
+        y un disco de luz sale entre crestas (sumas de senos); sus franjas se cierran con el
+        porcentaje real hasta completarlo. El servidor pinta el estado actual; actualizaciones.js lo
         mantiene al día sin recargar. Cada texto alternativo lleva en data-para los estados en los
         que se muestra (actualizaciones.css elige uno), así que todo el texto vive en esta plantilla.
         Ilustración original de PyGebra, sin recursos externos.
     {% endcomment %}
     <section class="lanzador" data-actualizador data-estado="{{ actualizacion.estado }}" aria-labelledby="lanzador-titulo">
         <div class="lanzador-cielo" aria-hidden="true">
-            <svg class="lanzador-sol" viewBox="-100 -100 200 200" focusable="false">
-                <defs>
-                    <radialGradient id="lanzador-halo" r=".5">
-                        <stop offset=".45" stop-color="currentColor" stop-opacity=".32"/>
-                        <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
-                    </radialGradient>
-                    <linearGradient id="lanzador-disco" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" style="stop-color: var(--color-surface-raised)"/>
-                        <stop offset="1" style="stop-color: var(--lz-disco-bajo)"/>
-                    </linearGradient>
-                </defs>
-                <circle r="100" fill="url(#lanzador-halo)"/>
-                <circle class="lanzador-marcas" r="70" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="1.2 11.017" opacity=".5"/>
-                <circle r="58" fill="url(#lanzador-disco)" stroke="currentColor" stroke-width="1.5"/>
-                <path class="lanzador-guia" d="M-58 0H58M0-58V58"/>
-                <circle class="lanzador-guia" r="29" fill="none" stroke-dasharray="2 3"/>
-                <g class="lanzador-vector">
-                    <path d="M0 0L36 -36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                    <path d="M44-44L28-38L38-28Z" fill="currentColor"/>
-                    <circle r="3.5" fill="currentColor"/>
-                </g>
-            </svg>
-            {# Poliedros en alambre: aristas ocultas punteadas, una cara apenas teñida. #}
-            <svg class="lanzador-solido lanzador-cubo" viewBox="0 0 100 92" focusable="false">
-                <path d="M8 34L36 12H90L62 34Z" class="lanzador-cara"/>
-                <path d="M8 34H62V86H8ZM62 34L90 12V64L62 86M8 34L36 12H90"/>
-                <path d="M36 12V64H90M36 64L8 86" class="lanzador-oculta"/>
-            </svg>
-            <svg class="lanzador-solido lanzador-octaedro" viewBox="0 0 100 100" focusable="false">
-                <path d="M50 4L14 52L56 62Z" class="lanzador-cara"/>
-                <path d="M50 4L14 52L50 96L56 62L86 48L50 4L56 62L14 52M86 48L50 96"/>
-                <path d="M50 4L44 40L14 52M44 40L86 48M44 40L50 96" class="lanzador-oculta"/>
-            </svg>
-            <svg class="lanzador-solido lanzador-tetraedro" viewBox="0 0 100 92" focusable="false">
-                <path d="M50 6L10 84L88 76Z" class="lanzador-cara"/>
-                <path d="M50 6L10 84L88 76Z"/>
-                <path d="M50 6L62 54L10 84M62 54L88 76" class="lanzador-oculta"/>
+            <div class="lanzador-sol"><span class="lanzador-halo"></span><span class="lanzador-disco"></span></div>
+            {# Crestas: sumas de senos con un valle donde sale la luz; las lejanas llevan curvas de nivel. #}
+            <svg class="lanzador-crestas" viewBox="0 0 1000 160" preserveAspectRatio="none" focusable="false">
+                <path class="lanzador-lejos" d="M0 65.1L10 63.1L20 62.1L30 62.4L40 63.6L50 65.6L60 68L70 70.6L80 72.9L90 74.7L100 75.9L110 76.3L120 76L130 75.1L140 73.9L150 72.7L160 71.7L170 71.1L180 71.1L190 71.5L200 72.4L210 73.6L220 74.7L230 75.5L240 75.8L250 75.4L260 74.2L270 72.3L280 69.9L290 67.1L300 64.5L310 62.2L320 60.7L330 60.1L340 60.7L350 62.4L360 65.1L370 68.6L380 72.5L390 76.7L400 80.8L410 84.4L420 87.6L430 90.1L440 92.2L450 94L460 95.7L470 97.5L480 99.7L490 102.5L500 105.7L510 109.5L520 113.6L530 117.7L540 121.7L550 125.1L560 127.8L570 129.6L580 130.4L590 130.3L600 129.5L610 128.4L620 127.2L630 126.3L640 126L650 126.6L660 128.1L670 130.4L680 133.4L690 136.8L700 140.3L710 143.4L720 145.8L730 147.3L740 147.7L750 147L760 145.3L770 142.8L780 139.9L790 136.7L800 133.6L810 130.9L820 128.6L830 126.7L840 125.2L850 123.8L860 122.4L870 120.6L880 118.2L890 115.1L900 111.2L910 106.6L920 101.5L930 96.1L940 90.7L950 85.6L960 81L970 77.2L980 74.1L990 71.8L1000 70.2V160H0Z"/>
+                <path class="lanzador-niveles" d="M0 81.1L20 78.1L40 79.6L60 84L80 88.9L100 91.9L120 92L140 89.9L160 87.7L180 87.1L200 88.4L220 90.7L240 91.8L260 90.2L280 85.9L300 80.5L320 76.7L340 76.7L360 81.1L380 88.5L400 96.8L420 103.6L440 108.2L460 111.7L480 115.7L500 121.7L520 129.6L540 137.7L560 143.8L580 146.4L600 145.5L620 143.2L640 142L660 144.1L680 149.4L700 156.3L720 160L740 160L760 160L780 155.9L800 149.6L820 144.6L840 141.2L860 138.4L880 134.2L900 127.2L920 117.5L940 106.7L960 97L980 90.1L1000 86.2M0 97.1L20 94.1L40 95.6L60 100L80 104.9L100 107.9L120 108L140 105.9L160 103.7L180 103.1L200 104.4L220 106.7L240 107.8L260 106.2L280 101.9L300 96.5L320 92.7L340 92.7L360 97.1L380 104.5L400 112.8L420 119.6L440 124.2L460 127.7L480 131.7L500 137.7L520 145.6L540 153.7L560 159.8L580 160L600 160L620 159.2L640 158L660 160L680 160L700 160L720 160L740 160L760 160L780 160L800 160L820 160L840 157.2L860 154.4L880 150.2L900 143.2L920 133.5L940 122.7L960 113L980 106.1L1000 102.2"/>
+                <path class="lanzador-cerca" d="M0 115.1L20 114.5L40 115.7L60 119L80 124.3L100 130.7L120 137.4L140 143.2L160 147.3L180 149.1L200 148.6L220 146.3L240 142.9L260 139.4L280 136.5L300 134.8L320 134.4L340 134.8L360 135.4L380 135.5L400 134.3L420 131.6L440 127.5L460 122.7L480 118L500 114.6L520 113.4L540 114.9L560 119.4L580 126.4L600 135L620 144.1L640 152.7L660 156L680 156L700 156L720 156L740 156L760 156L780 156L800 156L820 156L840 156L860 156L880 156L900 156L920 156L940 150L960 140.7L980 131.8L1000 124.3V160H0Z"/>
             </svg>
         </div>
         <div class="lanzador-suelo" aria-hidden="true">
-            {# Paralelas del plano que fugan hacia el sol (x = 760 de 1000) y líneas de profundidad. #}
-            <svg viewBox="0 0 1000 300" preserveAspectRatio="none" focusable="false">
-                <path class="lanzador-reja" d="M10 0L-3740 300M40 0L-3560 300M70 0L-3380 300M100 0L-3200 300M130 0L-3020 300M160 0L-2840 300M190 0L-2660 300M220 0L-2480 300M250 0L-2300 300M280 0L-2120 300M310 0L-1940 300M340 0L-1760 300M370 0L-1580 300M400 0L-1400 300M430 0L-1220 300M460 0L-1040 300M490 0L-860 300M520 0L-680 300M550 0L-500 300M580 0L-320 300M610 0L-140 300M640 0L40 300M670 0L220 300M700 0L400 300M730 0L580 300M790 0L940 300M820 0L1120 300M850 0L1300 300M880 0L1480 300M910 0L1660 300M940 0L1840 300M970 0L2020 300M1000 0L2200 300M-3100 300H4100M-3100 235.1H4100M-3100 180H4100M-3100 134.6H4100M-3100 96.5H4100M-3100 64.1H4100M-3100 37.3H4100M-3100 15H4100" vector-effect="non-scaling-stroke"/>
-                <path class="lanzador-eje" d="M760 0V300" vector-effect="non-scaling-stroke"/>
-            </svg>
+            <div class="lanzador-plano"><span class="lanzador-reja"></span></div>
+            <span class="lanzador-reflejo"></span>
         </div>
 
         <header class="lanzador-barra">

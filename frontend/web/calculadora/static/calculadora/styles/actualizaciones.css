@@ -1,23 +1,32 @@
 /* Actualizaciones (solo escritorio): «Amanecer sobre el plano».
-   Un plano cartesiano en perspectiva cuyo horizonte es la barra de la descarga; un círculo
-   unitario sube con ella y unos poliedros flotan en el cielo. Todo se deriva de los tokens del
-   tema activo, así que funciona en claro, en oscuro y en cada estilo. Se carga solo en esta
-   página. Es un ambiente decorativo: sus bucles tienen contrato propio
+   Un paisaje matemático: un plano en perspectiva hasta el horizonte, crestas que son sumas de
+   senos con sus curvas de nivel y un disco de luz que sale entre ellas. El horizonte es la barra
+   de la descarga y la luz de toda la escena crece con el porcentaje real. Todo se deriva de los
+   tokens del tema activo, así que funciona en claro, en oscuro y en cada estilo. Se carga solo
+   en esta página. Es un ambiente decorativo: sus bucles tienen contrato propio
    (tests/test_actualizaciones_escena.py) y desaparecen con movimiento reducido (base.css). */
 
 .lanzador {
     --lz-acento: var(--color-brand);
+    /* De día: la lejanía se aclara hacia el cielo y el disco es del color de PyGebra. */
     --lz-cielo-alto: var(--color-bg);
-    --lz-cielo-bajo: color-mix(in srgb, var(--color-brand) 16%, var(--color-bg));
-    --lz-suelo-alto: color-mix(in srgb, var(--color-brand) 24%, var(--color-bg));
-    --lz-suelo-bajo: color-mix(in srgb, var(--color-brand) 5%, var(--color-bg));
+    --lz-cielo-bajo: color-mix(in srgb, var(--color-brand) 12%, var(--color-bg));
+    --lz-lejos: color-mix(in srgb, var(--color-brand) 21%, var(--color-bg));
+    --lz-cerca: color-mix(in srgb, var(--color-brand) 34%, var(--color-bg));
+    --lz-suelo-alto: color-mix(in srgb, var(--color-brand) 14%, var(--color-bg));
+    --lz-suelo-bajo: color-mix(in srgb, var(--color-brand) 24%, var(--color-bg));
     --lz-reja: color-mix(in srgb, var(--color-brand) 42%, transparent);
-    --lz-trazo: color-mix(in srgb, var(--color-text) 58%, transparent);
-    --lz-disco-bajo: color-mix(in srgb, var(--color-brand) 32%, var(--color-surface-raised));
+    --lz-sol-alto: white;
+    --lz-sol-bajo: color-mix(in srgb, var(--color-brand) 24%, white);
+    --lz-brillo: white;
+    /* El halo es más verde que el disco: las franjas se ven por lo que hay detrás. */
+    --lz-halo: color-mix(in srgb, var(--color-brand) 46%, transparent);
     --lz-margen: clamp(1.15rem, 4.5cqi, 2.75rem);
-    /* --p: fracción descargada (la pone actualizaciones.js). --sol: altura del círculo, 0 a 1. */
+    /* --p: fracción descargada (la pone actualizaciones.js). --sol: altura y luz, 0 a 1.
+       --lleno: cuánto se completa el disco, 0 a 1. */
     --p: 0;
     --sol: 0.3;
+    --lleno: 0;
     position: relative;
     isolation: isolate;
     container-type: inline-size;
@@ -33,6 +42,20 @@
     background: var(--lz-suelo-bajo);
     color: var(--color-text);
     box-shadow: var(--shadow-md);
+}
+
+/* De noche: crestas en silueta, suelo oscuro y un disco que brilla. */
+[data-theme="dark"] .lanzador {
+    --lz-cielo-bajo: color-mix(in srgb, var(--color-brand) 20%, var(--color-bg));
+    --lz-lejos: color-mix(in srgb, var(--color-brand) 11%, var(--color-bg));
+    --lz-cerca: color-mix(in srgb, black 32%, var(--color-bg));
+    --lz-suelo-alto: color-mix(in srgb, var(--color-brand) 15%, var(--color-bg));
+    --lz-suelo-bajo: color-mix(in srgb, black 28%, var(--color-bg));
+    --lz-reja: color-mix(in srgb, var(--color-brand) 46%, transparent);
+    --lz-sol-alto: color-mix(in srgb, var(--color-brand) 22%, white);
+    --lz-sol-bajo: var(--color-brand);
+    --lz-brillo: var(--color-brand);
+    --lz-halo: color-mix(in srgb, var(--color-brand) 60%, transparent);
 }
 
 /* Cada estado muestra solo sus textos (data-para en la plantilla). */
@@ -54,18 +77,18 @@
     display: var(--mostrar, block);
 }
 
-/* Altura del círculo: asoma al empezar, sube con la descarga y queda arriba al terminar. */
+/* La luz asoma al empezar, sube con la descarga y queda arriba al terminar. */
 .lanzador[data-estado="buscando"] { --sol: 0.36; }
-.lanzador[data-estado="actualizado"] { --sol: 0.86; }
-.lanzador[data-estado="disponible"] { --sol: 0.44; }
-.lanzador[data-estado="descargando"] { --sol: calc(0.44 + 0.48 * var(--p)); }
-.lanzador[data-estado="verificando"] { --sol: 0.92; }
-.lanzador:is([data-estado="listo"], [data-estado="instalando"]) { --sol: 1; }
+.lanzador[data-estado="actualizado"] { --sol: 0.9; --lleno: 1; }
+.lanzador[data-estado="disponible"] { --sol: 0.46; }
+.lanzador[data-estado="descargando"] { --sol: calc(0.46 + 0.46 * var(--p)); --lleno: var(--p); }
+.lanzador[data-estado="verificando"] { --sol: 0.94; --lleno: 1; }
+.lanzador:is([data-estado="listo"], [data-estado="instalando"]) { --sol: 1; --lleno: 1; }
 
 /* Un fallo se pone el sol y tiñe la línea; el título y el mensaje dicen qué pasó. */
 .lanzador:is([data-estado="error_conexion"], [data-estado="checksum_invalido"], [data-estado="error"]) {
     --lz-acento: var(--color-danger);
-    --sol: 0.14;
+    --sol: 0.12;
 }
 
 /* —— Escena (aria-hidden) —— */
@@ -75,9 +98,7 @@
     position: relative;
     z-index: -1;
     overflow: hidden;
-    background:
-        radial-gradient(ellipse 36% 58% at 76% 100%, color-mix(in srgb, var(--lz-acento) 22%, transparent), transparent 72%),
-        linear-gradient(var(--lz-cielo-alto) 18%, var(--lz-cielo-bajo));
+    background: linear-gradient(var(--lz-cielo-alto) 15%, var(--lz-cielo-bajo));
 }
 
 /* De noche asoman unas pocas estrellas fijas. */
@@ -92,103 +113,132 @@
         radial-gradient(circle at 23% 6%, currentColor 0.7px, transparent 1.4px),
         radial-gradient(circle at 41% 11%, currentColor 0.9px, transparent 1.7px),
         radial-gradient(circle at 63% 5%, currentColor 0.7px, transparent 1.4px),
-        radial-gradient(circle at 72% 22%, currentColor 0.8px, transparent 1.6px),
+        radial-gradient(circle at 57% 24%, currentColor 0.8px, transparent 1.6px),
         radial-gradient(circle at 95% 30%, currentColor 0.7px, transparent 1.4px),
-        radial-gradient(circle at 81% 4%, currentColor 0.9px, transparent 1.7px),
-        radial-gradient(circle at 54% 30%, currentColor 0.6px, transparent 1.3px);
+        radial-gradient(circle at 88% 9%, currentColor 0.9px, transparent 1.7px),
+        radial-gradient(circle at 34% 28%, currentColor 0.6px, transparent 1.3px);
 }
 
 [data-theme="dark"] .lanzador-cielo::before {
     opacity: 0.55;
 }
 
+/* Un velo del color de la página detrás del texto: se lee sin cajas. */
+.lanzador-cielo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 62% 85% at 0% 55%, color-mix(in srgb, var(--color-bg) 80%, transparent), transparent 75%);
+}
+
 .lanzador-sol {
     position: absolute;
     left: 76%;
     bottom: 0;
-    width: clamp(12rem, 34cqi, 24rem);
-    height: auto;
-    color: var(--lz-acento);
-    /* El disco (radio 58 de 100) se apoya en el horizonte con --sol = 1 y se oculta con 0. */
-    transform: translate(-50%, calc(79% - var(--sol) * 58%));
-    transition: transform var(--motion), color var(--motion);
-}
-
-/* Al terminar bien, el vector apunta hacia arriba (90°). */
-.lanzador-vector {
-    transform: rotate(0deg);
+    width: clamp(8rem, 22cqi, 16rem);
+    aspect-ratio: 1;
+    /* Con --sol = 1 el disco entero queda sobre el horizonte; con 0, casi oculto. */
+    transform: translate(-50%, calc((1 - var(--sol)) * 82%));
     transition: transform var(--motion);
 }
 
-.lanzador:is([data-estado="listo"], [data-estado="actualizado"]) .lanzador-vector {
-    transform: rotate(-45deg);
-}
-
-.lanzador-guia {
-    fill: none;
-    stroke: var(--color-text);
-    stroke-width: 0.8;
-    opacity: 0.28;
-}
-
-.lanzador-solido {
+.lanzador-halo {
     position: absolute;
-    width: clamp(3.25rem, 8.5cqi, 6rem);
-    height: auto;
-    overflow: visible;
-    fill: none;
-    stroke: var(--lz-trazo);
-    stroke-width: 1.6;
-    stroke-linejoin: round;
+    inset: -60%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, var(--lz-halo) 30%, color-mix(in srgb, var(--lz-acento) 22%, transparent) 55%, transparent);
+    opacity: calc(0.3 + 0.7 * var(--sol));
+    transition: opacity var(--motion);
 }
 
-.lanzador-solido path {
+/* El disco es una partición en franjas horizontales que se cierran con la descarga real:
+   al terminar es un disco entero (el área se completa). */
+.lanzador-disco {
+    --franja: clamp(0.65rem, 1.9cqi, 1.05rem);
+    --hueco: calc((1 - var(--lleno)) * var(--franja) * 0.6);
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(var(--lz-sol-alto) 8%, var(--lz-sol-bajo) 96%);
+    -webkit-mask:
+        linear-gradient(#000 0 42%, transparent 42%),
+        repeating-linear-gradient(#000 0 calc(var(--franja) - var(--hueco)), transparent 0 var(--franja));
+    mask:
+        linear-gradient(#000 0 42%, transparent 42%),
+        repeating-linear-gradient(#000 0 calc(var(--franja) - var(--hueco)), transparent 0 var(--franja));
+}
+
+.lanzador-crestas {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: clamp(4.5rem, 14cqi, 9.5rem);
+}
+
+.lanzador-lejos {
+    fill: var(--lz-lejos);
+    stroke: var(--lz-acento);
+    stroke-width: 1.5;
+    stroke-opacity: calc(0.2 + 0.6 * var(--sol));
     vector-effect: non-scaling-stroke;
 }
 
-.lanzador-solido .lanzador-cara {
-    fill: color-mix(in srgb, var(--lz-acento) 16%, transparent);
-    stroke: none;
+.lanzador-niveles {
+    fill: none;
+    stroke: var(--lz-acento);
+    stroke-width: 1;
+    stroke-opacity: 0.22;
+    vector-effect: non-scaling-stroke;
 }
 
-.lanzador-oculta {
-    stroke-dasharray: 3 4;
-    opacity: 0.55;
+.lanzador-cerca {
+    fill: var(--lz-cerca);
 }
-
-.lanzador-cubo { left: 47%; top: 15%; }
-.lanzador-octaedro { left: 89%; top: 9%; width: clamp(2.6rem, 6cqi, 4.5rem); }
-.lanzador-tetraedro { left: 57%; top: 60%; width: clamp(2.2rem, 5cqi, 3.75rem); }
 
 .lanzador-suelo {
     grid-area: 4 / 1 / 5 / 2;
     position: relative;
     z-index: -1;
-    background:
-        radial-gradient(ellipse 22% 80% at 76% 0%, color-mix(in srgb, var(--lz-acento) 18%, transparent), transparent 80%),
-        linear-gradient(var(--lz-suelo-alto), var(--lz-suelo-bajo));
+    overflow: hidden;
+    background: linear-gradient(var(--lz-suelo-alto), var(--lz-suelo-bajo));
 }
 
-.lanzador-suelo svg {
+/* El plano con perspectiva real: sus paralelas fugan hacia la luz. */
+.lanzador-plano {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    -webkit-mask-image: linear-gradient(#000 5%, transparent 96%);
-    mask-image: linear-gradient(#000 5%, transparent 96%);
+    perspective: 20rem;
+    perspective-origin: 76% 0;
+    -webkit-mask-image: linear-gradient(transparent 4%, #000 34%, #000 64%, transparent);
+    mask-image: linear-gradient(transparent 4%, #000 34%, #000 64%, transparent);
 }
 
 .lanzador-reja {
-    fill: none;
-    stroke: var(--lz-reja);
-    stroke-width: 1;
+    position: absolute;
+    left: -70%;
+    right: -70%;
+    top: -3rem;
+    height: 21rem;
+    transform-origin: 50% 3rem;
+    transform: rotateX(80deg);
+    background-image:
+        linear-gradient(90deg, var(--lz-reja) 1px, transparent 1px),
+        linear-gradient(var(--lz-reja) 1px, transparent 1px);
+    background-size: 4.5rem 3rem;
 }
 
-.lanzador-eje {
-    fill: none;
-    stroke: var(--lz-acento);
-    stroke-width: 1.5;
-    opacity: 0.6;
+/* El reflejo de la luz en el plano, más intenso cuanto más alta está. */
+.lanzador-reflejo {
+    position: absolute;
+    top: 0;
+    left: 76%;
+    width: clamp(7rem, 20cqi, 15rem);
+    height: 100%;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse 50% 100% at 50% 0, color-mix(in srgb, var(--lz-brillo) 55%, transparent), transparent 80%);
+    opacity: calc(0.15 + 0.75 * var(--sol));
+    transition: opacity var(--motion);
 }
 
 /* —— Contenido —— */
@@ -249,23 +299,28 @@
     justify-items: start;
     gap: 0.8rem;
     max-width: min(35rem, 54cqi);
-    padding: 2rem var(--lz-margen) 2.5rem;
+    padding: 1.75rem var(--lz-margen) 2rem;
 }
 
+/* La versión nueva como etiqueta: de dónde a dónde. */
 .lanzador-salto {
     --mostrar: flex;
     align-items: center;
     gap: 0.55rem;
     margin: 0;
+    padding: 0.2rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--color-brand) 45%, transparent);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
     color: var(--color-brand);
     font-family: var(--font-math);
-    font-size: 0.88rem;
+    font-size: 0.86rem;
     font-weight: 600;
     letter-spacing: 0.03em;
 }
 
 .lanzador-salto svg {
-    width: 1.6rem;
+    width: 1.5rem;
     height: auto;
 }
 
@@ -282,7 +337,7 @@
 .lanzador-porcentaje {
     margin: 0.1rem 0 0;
     font-family: "Bahnschrift", var(--font-display);
-    font-size: clamp(3.5rem, 10cqi, 6rem);
+    font-size: clamp(3.25rem, 9cqi, 5.5rem);
     font-weight: 300;
     line-height: 0.9;
     letter-spacing: -0.03em;
@@ -319,13 +374,26 @@
     z-index: 1;
 }
 
+/* Bruma luminosa sobre el horizonte, donde sale la luz. */
+.lanzador-horizonte::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: -2.5rem;
+    height: 5rem;
+    background: radial-gradient(ellipse 34% 50% at 76% 50%, color-mix(in srgb, var(--lz-brillo) 50%, transparent), transparent 75%);
+    opacity: var(--sol);
+    transition: opacity var(--motion);
+    pointer-events: none;
+}
+
 .lanzador-linea {
     position: absolute;
     inset-inline: 0;
     top: -2px;
     height: 4px;
     overflow: hidden;
-    background: color-mix(in srgb, var(--color-text) 16%, transparent);
+    background: color-mix(in srgb, var(--color-text) 18%, transparent);
 }
 
 .lanzador-relleno {
@@ -334,6 +402,7 @@
     transform-origin: 0 50%;
     transform: scaleX(var(--p));
     background: linear-gradient(90deg, color-mix(in srgb, var(--lz-acento) 30%, transparent), var(--lz-acento) 70%);
+    box-shadow: 0 0 12px var(--lz-acento);
     transition: transform var(--motion);
 }
 
@@ -370,16 +439,19 @@
     background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-danger) 60%, transparent) 0 12px, transparent 12px 20px);
 }
 
-/* —— Ruta y acción —— */
+/* —— Ruta y acción, sobre el suelo —— */
 
 .lanzador-dock {
     grid-area: 4 / 1;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    align-content: flex-end;
     justify-content: space-between;
     gap: 1.25rem 2rem;
-    padding: 2.25rem var(--lz-margen) 2.2rem;
+    /* El suelo ocupa una parte real del escenario: la ruta y el botón descansan al fondo. */
+    min-height: clamp(7.5rem, 32dvh - 3rem, 19rem);
+    padding: 2rem var(--lz-margen) 2rem;
 }
 
 .lanzador-ruta {
@@ -523,11 +595,15 @@
 }
 
 /* Ventanas bajas (la mínima mide 560 px): menos aire para que el botón quede a la vista.
-   Va antes de las reglas estrechas para que la franja del círculo siga reservada allí. */
+   Va antes de las reglas estrechas para que la franja del disco siga reservada allí. */
 @media (max-height: 40rem) {
     .lanzador-heroe {
         gap: 0.6rem;
         padding-block: 1.25rem 1.5rem;
+    }
+
+    .lanzador-porcentaje {
+        font-size: clamp(3rem, 7cqi, 4.5rem);
     }
 
     .lanzador-dock {
@@ -536,12 +612,6 @@
 }
 
 /* —— Ventanas estrechas —— */
-
-/* La ventana mínima de escritorio (760 px) conserva texto y círculo lado a lado. */
-@container (max-width: 47.5rem) {
-    .lanzador-octaedro { left: 53%; top: 60%; }
-    .lanzador-tetraedro { display: none; }
-}
 
 /* Ruta y botón en dos filas; el botón ocupa todo el ancho. */
 @container (max-width: 40rem) {
@@ -555,21 +625,23 @@
     }
 }
 
-/* Una columna: el texto arriba y, bajo él, una franja libre para el círculo y un poliedro. */
+/* Una columna: el texto arriba y, bajo él, una franja libre para el disco. */
 @container (max-width: 36rem) {
     .lanzador-heroe {
         align-self: start;
         max-width: none;
-        padding-bottom: calc(min(38cqi, 15rem) * 0.7 + 1rem);
+        padding-bottom: calc(min(30cqi, 12rem) * 0.8 + 1rem);
     }
 
     .lanzador-sol {
-        left: 78%;
-        width: clamp(9rem, 38cqi, 15rem);
+        left: 74%;
+        width: clamp(7rem, 30cqi, 12rem);
     }
 
-    .lanzador-cubo { display: none; }
-    .lanzador-octaedro { left: var(--lz-margen); top: auto; bottom: 1.5rem; }
+    .lanzador-reflejo,
+    .lanzador-horizonte::before {
+        left: 74%;
+    }
 
     .lanzador-titulo {
         padding-left: 0.75rem;
@@ -594,17 +666,14 @@
 /* —— Movimiento (base.css lo cancela todo con movimiento reducido) —— */
 
 @media (prefers-reduced-motion: no-preference) {
-    /* Ambiente: los poliedros flotan y la corona de marcas gira muy despacio. */
-    .lanzador-solido { animation: lanzador-flotar 11s ease-in-out infinite alternate; }
-    .lanzador-octaedro { animation-duration: 13s; animation-direction: alternate-reverse; }
-    .lanzador-tetraedro { animation-duration: 9s; }
-    .lanzador-marcas { animation: lanzador-girar 120s linear infinite; }
+    /* Ambiente: el plano avanza muy despacio hacia quien mira y la luz respira. */
+    .lanzador-reja { animation: lanzador-avanzar 14s linear infinite; }
+    .lanzador-halo { animation: lanzador-respirar 7s ease-in-out infinite alternate; }
 
-    /* Espera sin porcentaje: el vector gira en sentido positivo y un destello recorre el horizonte. */
-    .lanzador:is([data-estado="buscando"], [data-estado="verificando"], [data-estado="instalando"]) .lanzador-vector {
-        animation: lanzador-girar 2.6s linear infinite;
-    }
+    /* Durante la descarga el viaje se acelera (la velocidad no representa ningún dato). */
+    .lanzador[data-estado="descargando"] .lanzador-reja { animation-duration: 1.6s; }
 
+    /* Espera sin porcentaje: un destello recorre el horizonte. */
     .lanzador:is([data-estado="buscando"], [data-estado="verificando"]) .lanzador-linea::after {
         opacity: 1;
         animation: lanzador-barrer 1.8s ease-in-out infinite;
@@ -615,14 +684,14 @@
     }
 }
 
-@keyframes lanzador-flotar {
-    from { transform: translateY(-5px); }
-    to { transform: translateY(6px); }
+@keyframes lanzador-avanzar {
+    from { transform: rotateX(80deg) translateY(0); }
+    to { transform: rotateX(80deg) translateY(3rem); }
 }
 
-/* Negativo en pantalla (y hacia abajo) es el sentido antihorario: el positivo de los ángulos. */
-@keyframes lanzador-girar {
-    to { transform: rotate(-360deg); }
+@keyframes lanzador-respirar {
+    from { transform: scale(0.96); }
+    to { transform: scale(1.04); }
 }
 
 @keyframes lanzador-barrer {
