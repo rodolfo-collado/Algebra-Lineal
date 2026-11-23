@@ -3,7 +3,8 @@
 [Índice de documentación](README.md) · [Portada](../README.md)
 
 Las herramientas de Álgebra lineal, Sistemas numéricos, Métodos numéricos
-y Conjuntos se pueden usar desde la web, la aplicación Windows y la consola.
+y Conjuntos están disponibles en la web local y en la aplicación de escritorio.
+`develop` también incluye la consola interactiva para recorrer las cuatro áreas.
 
 **Método de bisección** permite buscar una raíz de una función real y recorrer
 sus iteraciones en una gráfica interactiva offline. Véase [Bisección](biseccion.md).
@@ -14,7 +15,7 @@ Véase [Conjuntos](conjuntos.md).
 ## Terminal
 
 Inicia con `uv run --locked python main.py`. El menú `/` abre las herramientas
-de cálculo con el mismo analizador de entradas que usa la web. El chat guía
+de cálculo, que comparten el motor matemático con la interfaz visual. El chat guía
 la resolución, y el historial conserva el procedimiento, las tablas y las
 gráficas asociadas. Consulta la [guía de ejecución](ejecucion.md#aplicación-de-terminal)
 para ver los atajos y el formato de pegado.

@@ -39,27 +39,36 @@ puedes eliminarlo a mano para volver a los valores iniciales.
 ## Actualizar PyGebra
 
 En la app de escritorio, abre **Opciones → Actualizaciones** y pulsa
-**Buscar actualizaciones**. PyGebra solo usa Internet en ese momento; nunca
-comprueba nada al abrirse. El flujo es:
+**Buscar actualizaciones**. La consulta se inicia al pulsar el botón.
 
-1. Consulta la release estable más reciente de GitHub (una sola llamada a la API;
-   drafts y prereleases se ignoran) y la compara con la versión instalada.
-2. Si hay una versión más nueva, la muestra y espera a que pulses **Descargar**.
-3. Descarga `SHA256SUMS.txt` y después `PyGebra-Setup-<versión>.exe` de esa misma
-   release a `%TEMP%\PyGebra-actualizacion`, comprobando el tamaño publicado.
-4. Calcula el SHA-256 del instalador y lo compara con el publicado. Si no
-   coincide, si falta la entrada o si la descarga se corta, borra la carpeta y no
-   ejecuta nada.
-5. Con **Instalar y reiniciar PyGebra** vuelve a verificar el SHA-256, abre el
-   instalador (`/SILENT /ACTUALIZAR=1`) y se cierra.
-6. El instalador espera a que PyGebra termine, elimina la carpeta `_internal`
-   anterior, copia la nueva versión en la misma carpeta (mismo AppId y AUMID,
-   sin accesos ni entradas duplicadas) y vuelve a abrir PyGebra.
+1. PyGebra compara tu versión con la última publicación estable de GitHub.
+2. Si hay una versión más reciente, selecciona el botón de descarga. PyGebra
+   descarga el instalador y `SHA256SUMS.txt`, y comprueba que el hash del EXE
+   coincide con el publicado.
+3. Cuando aparezca **Instalar y reiniciar PyGebra**, pulsa el botón para continuar.
+   La aplicación vuelve a comprobar el SHA-256, abre el instalador y se cierra.
+4. El instalador actualiza la misma instalación, conserva las preferencias y
+   vuelve a abrir PyGebra.
 
-Si no hay conexión o algo falla, PyGebra muestra un mensaje y sigue funcionando;
-la instalación actual no cambia hasta que se ejecuta un instalador verificado.
-El checksum garantiza que el archivo es el publicado en la release, pero no es
-una firma digital (ver [releases](releases.md#verificar-una-descarga)).
+La [versión pública](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
+es v0.19.0. En la versión v0.20.0 integrada en `develop`, la nueva pantalla
+indica en qué paso está la actualización (buscar, descargar, verificar o
+instalar) y muestra el avance real durante la descarga. Usa una escena clara u
+oscura según el tema elegido y respeta la preferencia de movimiento reducido.
+
+[![Pantalla Actualizaciones de PyGebra v0.20.0 en tema oscuro, lista para iniciar la búsqueda.](capturas/actualizaciones/inicial-oscuro.webp)](capturas/actualizaciones/inicial-oscuro.webp)
+
+Si hay un error de conexión o la verificación falla, el actualizador muestra
+un mensaje y PyGebra sigue disponible. Puedes volver a buscar o usar el
+instalador de GitHub tras [verificar su SHA-256](releases.md#verificar-una-descarga).
+
+### Distribución y verificación
+
+Desde v0.20.0, cada intento usa una carpeta `PyGebra-actualizacion-*` bajo
+`%TEMP%`. Un fallo de descarga descarta los archivos de ese intento. Cuando
+se cierra PyGebra, la limpieza espera si el instalador aún necesita el EXE.
+El instalador se inicia con `/SILENT /ACTUALIZAR=1`, espera a que cierre
+PyGebra, reemplaza `_internal` y mantiene el mismo AppId y AUMID.
 
 CI conserva builds temporales; el workflow de [releases](releases.md) publica
 la distribución estable al promover a `main`, tras validar el candidato y superar

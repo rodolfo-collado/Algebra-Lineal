@@ -337,17 +337,34 @@ v0.19.0.
 
 ## Preparación de v0.20.0
 
-Incremento **MINOR** desde v0.19.0. Incorpora la consola interactiva de PyGebra
-del PR #131, junto con la portada del PR #137 y las correcciones de concurrencia
-del actualizador del PR #138.
+Incremento **MINOR** integrado en `develop`, pendiente de publicación mediante
+el [PR de promoción #140](https://github.com/Collado-Labs/Algebra-Lineal/pull/140).
+La [última descarga pública](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
+sigue siendo v0.19.0.
 
-- La consola abre las herramientas con `/`, conserva un historial local y
-  presenta resultados, procedimientos, tablas y gráficas sin abrir un navegador.
-- Vectores y matrices se validan mientras se escriben. `F2` conserva el borrador
-  y señala el campo con error para corregirlo antes de continuar.
-- El catálogo de terminal incluye Bisección, Regla falsa, Newton-Raphson,
-  Secante, Jacobi y Gauss-Seidel. El asistente de vectores se conserva en la
-  terminal y comparte el cálculo con la herramienta web de Operaciones.
+- **Consola interactiva** ([#131](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)).
+  El menú `/` recorre las cuatro áreas matemáticas. La consola guía los ejercicios,
+  valida matrices y vectores mientras se escriben y conserva el borrador si hay un
+  error. El historial local permite volver a consultar resultados, procedimientos,
+  tablas navegables y gráficas. Consulta la
+  [guía de terminal](ejecucion.md#aplicación-de-terminal).
+- **Portada del proyecto** ([#137](https://github.com/Collado-Labs/Algebra-Lineal/pull/137)).
+  El README presenta las cuatro áreas con capturas de sus herramientas, la galería
+  de temas y los enlaces de descarga, documentación y contribución.
+- **Concurrencia del actualizador** ([#138](https://github.com/Collado-Labs/Algebra-Lineal/pull/138)).
+  Cada intento usa su propia carpeta temporal. Las solicitudes simultáneas de
+  instalación en una misma instancia se coordinan para lanzar el instalador una
+  sola vez. Al cerrar, se limpian las descargas abandonadas. Si el instalador
+  todavía usa el archivo, la limpieza se difiere.
+- **Pantalla de actualizaciones** ([#139](https://github.com/Collado-Labs/Algebra-Lineal/pull/139)).
+  La vista de escritorio muestra la versión instalada, la versión ofrecida y el
+  estado de cada paso. La escena cambia entre tema claro y oscuro, y el progreso
+  refleja el porcentaje real de descarga. El flujo conserva la comprobación
+  SHA-256 antes de instalar. Consulta
+  [Actualizar PyGebra](instalacion-windows.md#actualizar-pygebra).
+
+La investigación del fallo de validación TLS en algunos entornos Windows sigue
+abierta.
 
 ## Flujo de integración y entrega
 
