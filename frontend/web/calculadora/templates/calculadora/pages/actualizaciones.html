@@ -8,9 +8,9 @@
 {% block content %}
     {% comment %}
         Amanecer sobre el plano: el horizonte de un plano en perspectiva es la barra de la descarga
-        y un disco de luz sale entre crestas (sumas de senos); sus franjas se cierran con el
-        porcentaje real hasta completarlo. El servidor pinta el estado actual; actualizaciones.js lo
-        mantiene al día sin recargar. Cada texto alternativo lleva en data-para los estados en los
+        y una luz (sol de día, luna de noche) sale entre crestas que son sumas de senos; su reflejo
+        en el plano y su altura siguen al porcentaje real. El servidor pinta el estado actual;
+        actualizaciones.js lo mantiene al día sin recargar. Cada texto alternativo lleva en data-para los estados en los
         que se muestra (actualizaciones.css elige uno), así que todo el texto vive en esta plantilla.
         Ilustración original de PyGebra, sin recursos externos.
     {% endcomment %}
@@ -25,8 +25,12 @@
             </svg>
         </div>
         <div class="lanzador-suelo" aria-hidden="true">
+            {# El plano y su eje: las marcas en perspectiva llevan la vista hasta la luz. #}
             <div class="lanzador-plano"><span class="lanzador-reja"></span></div>
-            <span class="lanzador-reflejo"></span>
+            {# Reflejo de la luz en el plano: sus bandas llegan más cerca con la descarga real. #}
+            <div class="lanzador-reflejo"><svg viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false"><defs><linearGradient id="lanzador-brillo"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset=".5" stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path class="lanzador-destellos" fill="url(#lanzador-brillo)" d="M36.5 0.6H63.5V1.7H36.5ZM32.3 4H67.7V5.4H32.3ZM30.8 9.5H69.2V11.2H30.8ZM24.7 16.8H75.3V18.9H24.7ZM24.9 25.7H75V28.2H24.9ZM17.1 36.2H82.9V39H17.1ZM19.1 48.1H80.8V51.2H19.1ZM9.5 61.3H90.5V64.8H9.5ZM13.4 75.9H86.7V79.6H13.4ZM1.9 91.6H98.1V95.8H1.9Z"/></svg></div>
+            {# Solo al buscar: un sonar sobre el plano, al pie de la luz (circunferencias de nivel y un barrido). #}
+            <div class="lanzador-busqueda"><div class="lanzador-sonar"><span class="lanzador-barrido"></span><span class="lanzador-onda"></span></div></div>
         </div>
 
         <header class="lanzador-barra">

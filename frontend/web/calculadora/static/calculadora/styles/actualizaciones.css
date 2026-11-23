@@ -1,7 +1,8 @@
 /* Actualizaciones (solo escritorio): «Amanecer sobre el plano».
    Un paisaje matemático: un plano en perspectiva hasta el horizonte, crestas que son sumas de
-   senos con sus curvas de nivel y un disco de luz que sale entre ellas. El horizonte es la barra
-   de la descarga y la luz de toda la escena crece con el porcentaje real. Todo se deriva de los
+   senos con sus curvas de nivel y una luz que sale entre ellas: sol de día, luna de noche. El
+   horizonte es la barra de la descarga; la altura de la luz y su reflejo en el plano siguen al
+   porcentaje real. Todo se deriva de los
    tokens del tema activo, así que funciona en claro, en oscuro y en cada estilo. Se carga solo
    en esta página. Es un ambiente decorativo: sus bucles tienen contrato propio
    (tests/test_actualizaciones_escena.py) y desaparecen con movimiento reducido (base.css). */
@@ -19,14 +20,15 @@
     --lz-sol-alto: white;
     --lz-sol-bajo: color-mix(in srgb, var(--color-brand) 24%, white);
     --lz-brillo: white;
-    /* El halo es más verde que el disco: las franjas se ven por lo que hay detrás. */
+    /* El halo verde rodea a un sol casi blanco. */
     --lz-halo: color-mix(in srgb, var(--color-brand) 46%, transparent);
+    --lz-eje: color-mix(in srgb, var(--color-brand) 62%, transparent);
     --lz-margen: clamp(1.15rem, 4.5cqi, 2.75rem);
     /* --p: fracción descargada (la pone actualizaciones.js). --sol: altura y luz, 0 a 1.
-       --lleno: cuánto se completa el disco, 0 a 1. */
+       --reflejo: hasta dónde llega el reflejo en el plano, 0 a 1. */
     --p: 0;
     --sol: 0.3;
-    --lleno: 0;
+    --reflejo: 0.2;
     position: relative;
     isolation: isolate;
     container-type: inline-size;
@@ -56,6 +58,7 @@
     --lz-sol-bajo: var(--color-brand);
     --lz-brillo: var(--color-brand);
     --lz-halo: color-mix(in srgb, var(--color-brand) 60%, transparent);
+    --lz-eje: color-mix(in srgb, var(--color-brand) 58%, transparent);
 }
 
 /* Cada estado muestra solo sus textos (data-para en la plantilla). */
@@ -77,18 +80,20 @@
     display: var(--mostrar, block);
 }
 
-/* La luz asoma al empezar, sube con la descarga y queda arriba al terminar. */
-.lanzador[data-estado="buscando"] { --sol: 0.36; }
-.lanzador[data-estado="actualizado"] { --sol: 0.9; --lleno: 1; }
-.lanzador[data-estado="disponible"] { --sol: 0.46; }
-.lanzador[data-estado="descargando"] { --sol: calc(0.46 + 0.46 * var(--p)); --lleno: var(--p); }
-.lanzador[data-estado="verificando"] { --sol: 0.94; --lleno: 1; }
-.lanzador:is([data-estado="listo"], [data-estado="instalando"]) { --sol: 1; --lleno: 1; }
+/* La luz asoma al empezar y sube con la descarga; su reflejo se acerca a quien mira con el
+   porcentaje real y, al terminar, llega hasta el borde del plano. */
+.lanzador[data-estado="buscando"] { --sol: 0.36; --reflejo: 0.15; }
+.lanzador[data-estado="actualizado"] { --sol: 0.9; --reflejo: 1; }
+.lanzador[data-estado="disponible"] { --sol: 0.46; --reflejo: 0.3; }
+.lanzador[data-estado="descargando"] { --sol: calc(0.46 + 0.46 * var(--p)); --reflejo: calc(0.3 + 0.7 * var(--p)); }
+.lanzador[data-estado="verificando"] { --sol: 0.94; --reflejo: 1; }
+.lanzador:is([data-estado="listo"], [data-estado="instalando"]) { --sol: 1; --reflejo: 1; }
 
 /* Un fallo se pone el sol y tiñe la línea; el título y el mensaje dicen qué pasó. */
 .lanzador:is([data-estado="error_conexion"], [data-estado="checksum_invalido"], [data-estado="error"]) {
     --lz-acento: var(--color-danger);
     --sol: 0.12;
+    --reflejo: 0.08;
 }
 
 /* —— Escena (aria-hidden) —— */
@@ -151,21 +156,23 @@
     transition: opacity var(--motion);
 }
 
-/* El disco es una partición en franjas horizontales que se cierran con la descarga real:
-   al terminar es un disco entero (el área se completa). */
+/* De día, un sol casi blanco; siempre entero. */
 .lanzador-disco {
-    --franja: clamp(0.65rem, 1.9cqi, 1.05rem);
-    --hueco: calc((1 - var(--lleno)) * var(--franja) * 0.6);
     position: absolute;
     inset: 0;
     border-radius: 50%;
     background: linear-gradient(var(--lz-sol-alto) 8%, var(--lz-sol-bajo) 96%);
-    -webkit-mask:
-        linear-gradient(#000 0 42%, transparent 42%),
-        repeating-linear-gradient(#000 0 calc(var(--franja) - var(--hueco)), transparent 0 var(--franja));
-    mask:
-        linear-gradient(#000 0 42%, transparent 42%),
-        repeating-linear-gradient(#000 0 calc(var(--franja) - var(--hueco)), transparent 0 var(--franja));
+    box-shadow: 0 0 2.25rem color-mix(in srgb, var(--lz-brillo) 70%, transparent);
+}
+
+/* De noche, una luna pálida con mares suaves. */
+[data-theme="dark"] .lanzador-disco {
+    background:
+        radial-gradient(ellipse 26% 18% at 36% 34%, color-mix(in srgb, var(--color-brand) 30%, transparent), transparent),
+        radial-gradient(ellipse 16% 22% at 26% 50%, color-mix(in srgb, var(--color-brand) 24%, transparent), transparent),
+        radial-gradient(ellipse 20% 30% at 70% 58%, color-mix(in srgb, var(--color-brand) 22%, transparent), transparent),
+        radial-gradient(circle at 42% 38%, color-mix(in srgb, var(--color-brand) 8%, white), color-mix(in srgb, var(--color-brand) 34%, white));
+    box-shadow: 0 0 2.5rem color-mix(in srgb, var(--color-brand) 50%, transparent);
 }
 
 .lanzador-crestas {
@@ -210,8 +217,8 @@
     inset: 0;
     perspective: 20rem;
     perspective-origin: 76% 0;
-    -webkit-mask-image: linear-gradient(transparent 4%, #000 34%, #000 64%, transparent);
-    mask-image: linear-gradient(transparent 4%, #000 34%, #000 64%, transparent);
+    -webkit-mask-image: linear-gradient(transparent 4%, #000 34%, #000 52%, transparent 86%);
+    mask-image: linear-gradient(transparent 4%, #000 34%, #000 52%, transparent 86%);
 }
 
 .lanzador-reja {
@@ -222,23 +229,96 @@
     height: 21rem;
     transform-origin: 50% 3rem;
     transform: rotateX(80deg);
+    /* Un eje del plano con sus marcas entre las líneas de la rejilla: una celda a la izquierda de
+       la luz (que está en el 60,833 % de la reja), así fuga hacia ella sin cruzar su reflejo. */
     background-image:
+        linear-gradient(90deg, transparent calc(60.833% - 4.5rem - 1px), var(--lz-eje) 0 calc(60.833% - 4.5rem + 1px), transparent 0),
+        linear-gradient(transparent 1.5rem, var(--lz-eje) 0 calc(1.5rem + 2px), transparent 0),
         linear-gradient(90deg, var(--lz-reja) 1px, transparent 1px),
         linear-gradient(var(--lz-reja) 1px, transparent 1px);
-    background-size: 4.5rem 3rem;
+    background-size: 100% 100%, 0.7rem 3rem, 4.5rem 3rem, 4.5rem 3rem;
+    background-repeat: no-repeat, repeat-y, repeat, repeat;
+    background-position: 0 0, calc(60.833% - 4.5rem) 0, 0 0, 0 0;
 }
 
-/* El reflejo de la luz en el plano, más intenso cuanto más alta está. */
+/* El reflejo de la luz en el plano: un brillo y bandas en perspectiva que se acercan a quien
+   mira con la descarga real (--reflejo) y se avivan cuanto más alta está la luz. */
 .lanzador-reflejo {
     position: absolute;
     top: 0;
     left: 76%;
-    width: clamp(7rem, 20cqi, 15rem);
+    width: clamp(9rem, 26cqi, 19rem);
     height: 100%;
     transform: translateX(-50%);
-    background: radial-gradient(ellipse 50% 100% at 50% 0, color-mix(in srgb, var(--lz-brillo) 55%, transparent), transparent 80%);
-    opacity: calc(0.15 + 0.75 * var(--sol));
+    background: radial-gradient(ellipse 45% 90% at 50% 0, color-mix(in srgb, var(--lz-brillo) 45%, transparent), transparent 80%);
+    opacity: calc(0.3 + 0.7 * var(--sol));
     transition: opacity var(--motion);
+}
+
+.lanzador-reflejo svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    clip-path: inset(0 0 calc((1 - var(--reflejo)) * 100%) 0);
+}
+
+/* Cada banda se desvanece hacia sus extremos, como un destello de luz. */
+.lanzador-reflejo svg {
+    color: white;
+}
+
+[data-theme="dark"] .lanzador-reflejo svg {
+    color: color-mix(in srgb, var(--color-brand) 45%, white);
+}
+
+.lanzador-destellos {
+    opacity: 0.75;
+}
+
+/* La búsqueda: un sonar sobre el plano, al pie de la luz (circunferencias de nivel, un barrido y
+   una onda que se aleja). Solo existe mientras se busca; no indica ningún avance. */
+.lanzador-busqueda {
+    position: absolute;
+    inset: 0;
+    perspective: 20rem;
+    perspective-origin: 76% 0;
+    opacity: 0;
+    transition: opacity var(--motion);
+}
+
+.lanzador[data-estado="buscando"] .lanzador-busqueda {
+    opacity: 1;
+}
+
+.lanzador-sonar {
+    --r: clamp(3.25rem, 6.5cqi, 5.25rem);
+    position: absolute;
+    left: calc(76% - var(--r));
+    top: 0.75rem;
+    width: calc(2 * var(--r));
+    aspect-ratio: 1;
+    border: 1.5px solid var(--lz-eje);
+    border-radius: 50%;
+    background: repeating-radial-gradient(circle, transparent 0 calc(var(--r) / 3 - 1.5px), color-mix(in srgb, var(--lz-acento) 45%, transparent) 0 calc(var(--r) / 3));
+    /* En el plano: gira sobre el horizonte, como la rejilla. */
+    transform-origin: 50% -0.75rem;
+    transform: rotateX(80deg);
+}
+
+.lanzador-barrido,
+.lanzador-onda {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    opacity: 0;
+}
+
+.lanzador-barrido {
+    background: conic-gradient(transparent 0 280deg, color-mix(in srgb, var(--lz-acento) 55%, transparent) 360deg);
+}
+
+.lanzador-onda {
+    border: 2px solid var(--lz-acento);
 }
 
 /* —— Contenido —— */
@@ -609,6 +689,10 @@
     .lanzador-dock {
         padding-block: 1.6rem 1.5rem;
     }
+
+    .lanzador-sonar {
+        --r: clamp(2.75rem, 5.5cqi, 4rem);
+    }
 }
 
 /* —— Ventanas estrechas —— */
@@ -634,13 +718,7 @@
     }
 
     .lanzador-sol {
-        left: 74%;
         width: clamp(7rem, 30cqi, 12rem);
-    }
-
-    .lanzador-reflejo,
-    .lanzador-horizonte::before {
-        left: 74%;
     }
 
     .lanzador-titulo {
@@ -682,6 +760,19 @@
     .lanzador-ruta [data-avance="actual"] .lanzador-nodo::before {
         animation: lanzador-latir 1.6s ease-out infinite;
     }
+
+    /* Búsqueda: el barrido recorre el plano y una onda se aleja. */
+    .lanzador[data-estado="buscando"] .lanzador-barrido {
+        opacity: 1;
+        animation: lanzador-girar 2.4s linear infinite;
+    }
+
+    .lanzador[data-estado="buscando"] .lanzador-onda {
+        animation: lanzador-onda 2.4s ease-out infinite;
+    }
+
+    /* El reflejo titila apenas, como luz sobre una superficie. */
+    .lanzador-destellos { animation: lanzador-titilar 3.2s ease-in-out infinite alternate; }
 }
 
 @keyframes lanzador-avanzar {
@@ -702,4 +793,18 @@
 @keyframes lanzador-latir {
     from { transform: scale(0.8); opacity: 0.7; }
     to { transform: scale(1.35); opacity: 0; }
+}
+
+@keyframes lanzador-girar {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes lanzador-onda {
+    from { transform: scale(0.12); opacity: 0.9; }
+    to { transform: scale(1); opacity: 0; }
+}
+
+@keyframes lanzador-titilar {
+    from { opacity: 0.5; }
+    to { opacity: 0.8; }
 }
