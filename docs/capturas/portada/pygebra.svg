@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 278" width="880" height="278">
+  <title>PyGebra. Aprende resolviendo.</title>
+  <desc>Logotipo de PyGebra junto a una gráfica de la función cúbica f(x) = x³ − x − 2.</desc>
+  <!-- El símbolo oficial conserva el path de assets/brand/svg/pygebra-mark.svg. -->
+  <rect width="880" height="278" rx="20" fill="#132823"/>
+  <rect x="0.5" y="0.5" width="879" height="277" rx="19.5" fill="none" stroke="#37594f"/>
+  <path d="M608 39V244M655 39V244M702 39V244M749 39V244M796 39V244M843 39V244
+           M608 57H843M608 104H843M608 151H843M608 198H843M608 244H843"
+        fill="none" stroke="#2a453d"/>
+  <path d="M608 184H843" stroke="#79a89a"/>
+  <path d="M608.0 240.6L622.7 235.8L637.4 230.5L652.1 224.6L666.8 218.0L681.4 210.8L696.1 203.0L710.8 194.5L725.5 185.2L740.2 175.3L754.9 164.6L769.6 153.1L784.3 140.8L798.9 127.7L813.6 113.7L828.3 98.8L843.0 83.1" fill="none" stroke="#b0f1d9" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M727.4 184V244" stroke="#9dd8c6" stroke-dasharray="3 4"/>
+  <circle cx="727.4" cy="184" r="6" fill="#f9e3a9" stroke="#132823" stroke-width="2"/>
+  <text x="610" y="77" fill="#d5f0e6" font-family="Consolas, monospace" font-size="23">f(x)</text>
+  <path fill="#fff" transform="translate(50 42) scale(1.18) translate(-2 -12)"
+        d="M2 12H62V34H22V42H40V40L56 46L40 52V50H14V26H54V20H2Z"/>
+  <text x="44" y="177" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-size="98" font-weight="750">PyGebra</text>
+  <text x="50" y="234" fill="#b0f1d9" font-family="Segoe UI, Arial, sans-serif" font-size="36" font-weight="500">Aprende resolviendo.</text>
+</svg>
