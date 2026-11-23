@@ -30,7 +30,7 @@ django.setup()
 from django.test import SimpleTestCase, override_settings
 
 import desktop
-from actualizador import descarga, instalador, releases, servicio, verificacion, versiones
+from actualizador import descarga, instalador, releases, servicio, temporales, verificacion, versiones
 
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -460,10 +460,36 @@ class PruebasTemporalesWindows(ConCarpeta):
             time.sleep(0.05)
         self.assertFalse(carpeta.exists(), str(carpeta))
 
+    def test_auxiliar_no_bloquea_la_raiz_temporal(self):
+        intento = self.carpeta / "intento"
+        intento.mkdir()
+        popen = subprocess.Popen
+
+        def pausar_despues_de_borrar(args, **kwargs):
+            args[-1] += "; [Console]::WriteLine('borrado'); [Console]::ReadLine() | Out-Null"
+            kwargs.update(stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            return popen(args, **kwargs)
+
+        with popen([sys.executable, "-c", "pass"]) as app:
+            app.wait(timeout=10)
+            with patch.object(temporales.subprocess, "Popen", pausar_despues_de_borrar):
+                auxiliar = temporales._borrar_al_salir(intento, app.pid)
+            with auxiliar, ThreadPoolExecutor(max_workers=1) as hilos:
+                try:
+                    marca = hilos.submit(auxiliar.stdout.readline).result(timeout=10)
+                    self.assertEqual(marca.strip(), b"borrado")
+                    self.assertIsNone(auxiliar.poll())
+                    self.assertFalse(intento.exists())
+                    self.carpeta.rmdir()
+                finally:
+                    auxiliar.terminate()
+
     def test_cerrar_mientras_el_hilo_tiene_abierto_un_parcial(self):
         self.ejecutar_app('''
 import io
+import sys
 import threading
+from pathlib import Path
 from tests.test_actualizador import INSTALADOR, red_con_release, servicio
 
 pausada = threading.Event()
@@ -479,6 +505,8 @@ app = servicio.Actualizador(abrir=red_con_release("99.0.0", instalador=DescargaP
 app.buscar()
 app.descargar()
 assert pausada.wait(5)
+parcial, = Path(sys.argv[1]).glob("PyGebra-actualizacion-*/*.part")
+assert parcial.name == "PyGebra-Setup-99.0.0.exe.part"
 ''')
         for carpeta in self.carpeta.glob("PyGebra-actualizacion-*"):
             self.esperar_limpieza(carpeta)

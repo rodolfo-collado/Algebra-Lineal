@@ -17,10 +17,11 @@ def _borrar_al_salir(carpeta, pid):
         "Remove-Item -LiteralPath $env:PYGEBRA_DESCARGA_TEMPORAL -Recurse -Force -ErrorAction Stop"
     )
     powershell = Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
-    subprocess.Popen(
+    return subprocess.Popen(
         [str(powershell), "-NoProfile", "-NonInteractive", "-Command", comando],
         env={**os.environ, "PYGEBRA_DESCARGA_TEMPORAL": str(carpeta)},
-        cwd=carpeta.parent,
+        # Windows retiene el directorio de trabajo hasta que sale el auxiliar.
+        cwd=powershell.parent,
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         # Windows PowerShell puede salir sin ejecutar -Command con DETACHED_PROCESS.
         creationflags=subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP,
