@@ -284,7 +284,8 @@ Las dependencias conservan las versiones de v0.18.0.
   antiguo se calcula igual en Operaciones. Los coeficientes de una combinación
   lineal se piden como igualdad, `x1 u + x2 v = b`, con la conclusión (sí/no y
   coeficientes) y el procedimiento de Gauss-Jordan de siempre. Ejemplos de un
-  clic cargan operandos y expresión. Las operaciones sin sentido (por ejemplo
+  clic cargan operandos y expresión. Sus enlaces se ajustan al ancho de la
+  pantalla. Las operaciones incompatibles (por ejemplo
   sumar una matriz y un vector) se rechazan con un mensaje concreto.
 - **Navegación y Opciones:** el catálogo, los enlaces por área, las migas y las
   herramientas relacionadas permiten cambiar de pantalla. Buscar lleva al
