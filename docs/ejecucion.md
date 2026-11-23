@@ -191,6 +191,6 @@ principales del proyecto desde el código fuente.
 | Falta PyInstaller para el build o las pruebas de empaquetado | Incluye el grupo `dev` con `uv sync --locked --group dev`. |
 
 Para construir y probar el instalador de distribución, siguen siendo necesarios
-Windows, PowerShell 5.1 o posterior, Inno Setup 6.3 o posterior y el grupo de
-dependencias `dev`. El proceso está documentado en
-[Instalación Windows](instalacion-windows.md#construir-el-instalador).
+Windows, PowerShell 5.1 o posterior y el grupo de dependencias `dev`.
+Consulta [Construir el instalador](instalacion-windows.md#construir-el-instalador)
+para ver el requisito de Inno Setup y el proceso de empaquetado.

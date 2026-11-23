@@ -337,10 +337,9 @@ v0.19.0.
 
 ## Preparación de v0.20.0
 
-Incremento **MINOR** integrado en `develop`, pendiente de publicación mediante
-el [PR de promoción #140](https://github.com/Collado-Labs/Algebra-Lineal/pull/140).
-La [última descarga pública](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
-sigue siendo v0.19.0.
+Incremento **MINOR** desde v0.19.0.
+[PR de promoción #140](https://github.com/Collado-Labs/Algebra-Lineal/pull/140) ·
+[Consultar la última versión publicada](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest).
 
 - **Consola interactiva** ([#131](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)).
   El menú `/` recorre las cuatro áreas matemáticas. La consola guía los ejercicios,
@@ -363,8 +362,12 @@ sigue siendo v0.19.0.
   SHA-256 antes de instalar. Consulta
   [Actualizar PyGebra](instalacion-windows.md#actualizar-pygebra).
 
-La investigación del fallo de validación TLS en algunos entornos Windows sigue
-abierta.
+- **Certificados HTTPS en Windows** ([#141](https://github.com/Collado-Labs/Algebra-Lineal/pull/141)).
+  El actualizador usa `truststore` para validar con CryptoAPI la cadena del
+  certificado y el nombre del servidor al consultar GitHub y descargar archivos.
+  Esto permite que Windows obtenga raíces bajo demanda, incluso en una
+  instalación limpia. La comprobación SHA-256 del instalador sigue siendo parte
+  del flujo de actualización.
 
 ## Flujo de integración y entrega
 

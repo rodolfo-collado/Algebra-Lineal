@@ -50,11 +50,10 @@ En la app de escritorio, abre **Opciones → Actualizaciones** y pulsa
 4. El instalador actualiza la misma instalación, conserva las preferencias y
    vuelve a abrir PyGebra.
 
-La [versión pública](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
-es v0.19.0. En la versión v0.20.0 integrada en `develop`, la nueva pantalla
-indica en qué paso está la actualización (buscar, descargar, verificar o
-instalar) y muestra el avance real durante la descarga. Usa una escena clara u
-oscura según el tema elegido y respeta la preferencia de movimiento reducido.
+A partir de v0.20.0, la pantalla indica en qué paso está la actualización
+(buscar, descargar, verificar o instalar) y muestra el avance real durante la
+descarga. Usa una escena clara u oscura según el tema elegido y respeta la
+preferencia de movimiento reducido.
 
 [![Pantalla Actualizaciones de PyGebra v0.20.0 en tema oscuro, lista para iniciar la búsqueda.](capturas/actualizaciones/inicial-oscuro.webp)](capturas/actualizaciones/inicial-oscuro.webp)
 
@@ -63,6 +62,12 @@ un mensaje y PyGebra sigue disponible. Puedes volver a buscar o usar el
 instalador de GitHub tras [verificar su SHA-256](releases.md#verificar-una-descarga).
 
 ### Distribución y verificación
+
+Desde v0.20.0, el actualizador valida los certificados HTTPS con la API de
+certificados de Windows (CryptoAPI). Windows puede obtener los certificados
+raíz que falten al validar la consulta a GitHub y las descargas. PyGebra
+comprueba también el nombre del servidor y verifica por separado el SHA-256
+del instalador.
 
 Desde v0.20.0, cada intento usa una carpeta `PyGebra-actualizacion-*` bajo
 `%TEMP%`. Un fallo de descarga descarta los archivos de ese intento. Cuando
@@ -94,9 +99,11 @@ se añade ahí, y `tests/test_desktop.py` comprueba que las librerías de
 responde `500` aunque la suite pase.
 
 En una PC de desarrollo Windows con Python x64, instala **uv** e
-[Inno Setup 6.3 o posterior](https://jrsoftware.org/isdl.php). Inno Setup convierte
+[Inno Setup 6.6.0 o posterior](https://jrsoftware.org/isdl.php). Inno Setup convierte
 la carpeta construida en un instalador con accesos directos y desinstalador.
-CI utiliza Inno Setup 6.7.3. PowerShell 5.1 o posterior es suficiente.
+La versión 6.6.0 introduce `WizardStyle=modern dynamic windows11`, que el
+instalador usa para seguir el tema de Windows. CI valida la distribución con
+Inno Setup 6.7.3. PowerShell 5.1 o posterior es suficiente.
 
 Desde la raíz, un solo comando genera la distribución completa:
 

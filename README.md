@@ -45,16 +45,14 @@ oscuro y se eligen en **Opciones → Apariencia**.
 
 ## Consola interactiva
 
-La consola interactiva ya está integrada en `develop` para v0.20.0. Abre el
+La consola interactiva se incorporó a PyGebra en v0.20.0. Abre el
 catálogo con `/`, valida vectores y matrices mientras escribes, muestra
 tablas y gráficas navegables y guarda los ejercicios en un historial local.
 [Ejecuta la consola desde el código fuente](docs/ejecucion.md#aplicación-de-terminal).
-La [última descarga pública](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
-es v0.19.0.
 
-[![Consola de PyGebra con el resultado y la gráfica de bisección para x² − 2 en el intervalo [1, 2]. A la derecha se abre el menú de Métodos numéricos.](docs/capturas/portada/consola-biseccion.webp)](docs/capturas/portada/consola-biseccion.webp)
+[![Pantalla de bienvenida de la consola de PyGebra con su logotipo, el historial de ejercicios, el panel de chat y el atajo / para abrir el menú.](docs/capturas/portada/consola-bienvenida.webp)](docs/capturas/portada/consola-bienvenida.webp)
 
-*Bisección de x² − 2 en la consola de PyGebra.*
+[Ver un ejemplo de bisección en la consola](docs/capturas/portada/consola-biseccion.webp).
 
 ## Formas de usar el proyecto
 
