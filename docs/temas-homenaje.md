@@ -143,10 +143,62 @@ fórmulas, estallido).
 | Momento | ChocoLab | BelugaCalc | HeyAlgb |
 |---|---|---|---|
 | Elegir el tema en Opciones (View Transition del mismo documento) | El ambiente se **derrama** en círculo desde la opción elegida (0.7 s) | La aplicación entra **desde el lado del riel** mientras la anterior se aparta (0.45 s) | **Corte diagonal** que barre la pantalla (0.34 s) |
-| Llegar a otra página | Su entrada original: sube 8 px desde media opacidad (0.32 s) | Entrada de Fluent desde 28 px abajo con frenado (0.34 s). La **bola celeste viaja** al área nueva y el subrayado de la hermana activa se desliza (View Transitions entre documentos, 0.22 s, frenado cúbico como su muesca) | Golpe lateral inclinado (0.22 s) y su **barrido**: una banda roja con filo blanco cruza en diagonal y descubre la página de izquierda a derecha (0.3 s) |
+| Llegar a otra página | La página aparece desde media opacidad y la cabecera sube 8 px (0.32 s) | La página aparece y la cabecera entra con la subida de Fluent, 20 px con frenado (0.34 s). La **bola celeste y su muesca viajan** del área anterior a la nueva (animación CSS de 0.22 s, frenado cúbico); en la web, el subrayado de la hermana activa se desliza | **Corte en capas**: una hoja inclinada con filo blanco (negro de día), franja roja y banda negra cruza en diagonal y descubre la página; detrás queda el papel del cartel y la sigue un eco rojo fino (0.28 s). La cabecera da un golpe lateral inclinado (0.22 s). Al volver atrás, todo cruza en sentido contrario |
 | Portada | La curva se traza sola, aparecen x₀, x₁ y la raíz, y la taza humea | La mascota flota y las fórmulas derivan | Titular, lema y dedicatoria entran «estampados»; el estallido gira despacio |
-| Catálogo | Módulos en cascada (60 ms); hover: sube 4 px | Filas en cascada (40 ms); hover: flecha y borde; pulsación al 99.5 % | Placas en cascada desde la izquierda (50 ms); hover y foco: salto instantáneo de 15 px |
+| Catálogo | Módulos en cascada (40 ms); hover: sube 4 px | Filas en cascada (30 ms); hover: flecha y borde; pulsación al 99.5 % | Placas en cascada desde la izquierda (30 ms); hover y foco: salto instantáneo de 15 px |
 | Navegación | Pastillas con fondo al pasar | ☰ muestra los nombres y aparta el contenido; la bola cambia de área entre páginas | Pestañas con sombra dura; botones que saltan 2 px |
+
+Las entradas nunca parten de opacidad 0 y el contenedor de la página solo cambia su
+opacidad: los desplazamientos van en las cabeceras, para no mover el teclado matemático
+fijo. Las capas del corte de HeyAlgb no reciben el puntero.
+
+![Corte de HeyAlgb, fotograma a fotograma](capturas/temas-homenaje/transicion-heyalgb.png)
+
+`transicion-heyalgb.png`: el corte a 0, 40, 80, 120, 180 y 280 ms, al avanzar y al
+volver, en oscuro y en claro. Desde el primer fotograma se ve la página nueva; hacia los
+100 ms está casi entera.
+
+## Fluidez al cambiar de pantalla
+
+Al pasar de Inicio a un área o herramienta, y al volver, se notaba una pausa. Se midió
+del clic a que la página nueva se ve (primer fotograma) y a que termina su entrada, con
+Playwright por CDP sobre el ejecutable (WebView2) y en Edge.
+
+**Causa.** No era la carga: el servidor responde en ~8 ms, CSS y JS salen de caché y el
+DOM está listo a los ~38 ms. En **WebView2**, la sola activación de las View Transitions
+entre documentos (`@view-transition { navigation: auto }` de `estudio.css`) retiene el
+primer pintado de cada página ~300 ms, aunque no haya elementos con nombre ni animación
+de grupo (experimento controlado: 359 ms con ella, 55 ms sin ella). En Edge, con el
+mismo motor (157.0.4341.60), cuesta ~10 ms. Se sumaban entradas que partían de opacidad
+0 y cascadas con retrasos largos. El cambio de estilo desde Opciones (View Transition
+del mismo documento) no tenía el problema: su primer fotograma llega en ~22 ms.
+
+**Correcciones.**
+
+- La app de escritorio desactiva las View Transitions entre documentos (`base.html`,
+  solo con `escritorio`); la web las conserva.
+- La bola y la muesca de BelugaCalc viajan con una animación CSS de la página nueva:
+  `--activo` es una propiedad registrada (`@property`) y `tema_inicial.html` recuerda en
+  `sessionStorage` el índice del área anterior. Funciona igual en la web y en WebView2.
+- Las entradas parten de media opacidad y las cascadas se acortaron (30–40 ms por paso).
+- HeyAlgb sustituye la banda opaca por el corte en capas, que descubre la página desde
+  el primer fotograma.
+
+**Mediciones en WebView2** (mediana de navegaciones repetidas Inicio ⇄ área ⇄
+herramienta, en ms):
+
+| Estilo | Clic → página visible, antes | Después | Clic → entrada terminada, antes | Después |
+|---|---|---|---|---|
+| Estudio | 349 | 44 | 626 | 231 |
+| Minimalista | 344 | 32 | 361 | 46 |
+| ChocoLab | 353 | 40 | 692 | 379 |
+| BelugaCalc | 347 | 37 | 703 | 396 |
+| HeyAlgb | 354 | 42 | 662 | 331 |
+
+Al volver atrás la entrada terminada bajó igual (HeyAlgb 740 → 334 ms, BelugaCalc 805 →
+455). Con movimiento reducido la página se ve a los ~35 ms y queda quieta a los ~50 ms.
+En Edge la página nueva se ve a los 47–68 ms. Las ráfagas de clics seguidos siempre
+terminan en el destino final. WebView2 no usa bfcache: volver atrás recarga la página.
 
 ## Verificación de contraste
 
@@ -273,7 +325,8 @@ Están en `docs/capturas/temas-homenaje/`. Se tomaron con Edge headless a 1280, 
 
 Con el ejecutable de `build_windows.ps1 -Target App`, conectado por CDP:
 
-- View Transitions disponibles y activas.
+- View Transitions del mismo documento disponibles (cambio de estilo); las de entre
+  documentos, desactivadas a propósito (ver «Fluidez al cambiar de pantalla»).
 - En los cinco estilos, el radio marcado, `data-estilo`, `localStorage` y el archivo de
   preferencias coinciden.
 - Sin cajón y con Actualizaciones dentro de Opciones.
