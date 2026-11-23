@@ -56,8 +56,10 @@ cuando tengan propósitos distintos.
 
 ## Entorno de trabajo
 
-Consulta [Desarrollo](docs/desarrollo.md) para preparar el entorno con
-`uv sync --locked`, ejecutar terminal/Django/escritorio y añadir herramientas.
+El [índice de documentación](docs/README.md) reúne las guías de uso, aprendizaje,
+mantenimiento e historial. Para contribuir, empieza en [Desarrollo](docs/desarrollo.md)
+con `uv sync --locked`. La [guía de ejecución](docs/ejecucion.md) detalla los
+puntos de entrada para consola, Django y escritorio.
 
 ## Dependencias
 
@@ -82,7 +84,10 @@ uv remove <dependencia>
 ## Antes de abrir un PR
 
 Ejecuta las [verificaciones de Pruebas](docs/pruebas.md): lockfile, suite,
-Django, compilación y `git diff --check`. Si cambias packaging, realiza también
+Django, compilación y `git diff --check`. Si editas documentación, ejecuta
+`uv run --locked python -m unittest tests.test_documentacion` y revisa cómo
+GitHub muestra los enlaces, las imágenes y los bloques de código. Si cambias el
+empaquetado, realiza también
 el [build y smoke Windows](docs/instalacion-windows.md).
 
 ## Integración continua

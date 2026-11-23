@@ -2,10 +2,9 @@
 
 [Índice de documentación](README.md) · [Portada](../README.md)
 
-Esta guía explica cómo ejecutar PyGebra desde el código fuente y qué se necesita
-para disponer de todas sus funciones. La consola crea su historial local al
-abrir. No hace falta instalar un servidor de base de datos, ejecutar migraciones
-ni crear un archivo `.env`.
+Esta guía sigue la rama `develop`. Para usar el instalador publicado, consulta
+[Instalación Windows](instalacion-windows.md). Las interfaces funcionan con
+datos locales, sin servidor de base de datos, migraciones ni archivo `.env`.
 
 ## Requisitos comunes
 
@@ -23,18 +22,15 @@ Desde una terminal, sitúate en la raíz del proyecto y prepara el entorno:
 ```bash
 git clone https://github.com/Collado-Labs/Algebra-Lineal.git
 cd Algebra-Lineal
+git switch develop
 uv sync --locked
 ```
 
 `--locked` obliga a usar las versiones exactas registradas en `uv.lock`; esto
 evita que una actualización de una dependencia cambie el comportamiento del
-proyecto. El comando crea `.venv/` y deja instalados Django, pywebview,
-Waitress, Textual y colorama. Para ejecutar la suite completa de pruebas o construir el
-instalador, añade las dependencias de desarrollo:
-
-```bash
-uv sync --locked --group dev
-```
+proyecto. El comando crea `.venv/` y deja instaladas las dependencias de
+ejecución y el grupo de desarrollo `dev`, que uv incluye por defecto.
+[Desarrollo](desarrollo.md#dependencias) describe qué usa cada interfaz.
 
 No es necesario activar `.venv/`: los comandos `uv run` la seleccionan de
 forma automática.
@@ -49,8 +45,8 @@ uv run --locked python manage.py runserver
 ```
 
 Abre [http://127.0.0.1:8000/](http://127.0.0.1:8000/) en un navegador moderno.
-La página de inicio debe mostrar **PyGebra** y las secciones de sistemas,
-vectores, matrices y sistemas numéricos. Mientras la terminal siga ocupada, el
+La página de inicio muestra **PyGebra** y cuatro áreas: Álgebra lineal,
+Sistemas numéricos, Métodos numéricos y Conjuntos. Mientras la terminal siga ocupada, el
 servidor está funcionando; deténlo con `Ctrl+C`.
 
 El servidor de Django escucha solo en tu equipo. No requiere configurar una
@@ -65,8 +61,9 @@ En ese caso abre `http://127.0.0.1:8001/`.
 
 ## Aplicación de terminal
 
-Abre una terminal con Unicode y color en Arch Linux o Windows Terminal en
-Windows. Desde la raíz del repositorio:
+Usa un emulador con Unicode y color, como Windows Terminal en Windows.
+La consola interactiva de v0.20.0 se ejecuta desde `develop` con estos comandos
+en la raíz del repositorio:
 
 ```bash
 uv sync --locked
@@ -117,6 +114,9 @@ copiar su ruta absoluta. La consola guarda el historial y los ajustes en
 es `${XDG_DATA_HOME:-~/.local/share}/PyGebra/`. En Windows corresponde a
 `%LOCALAPPDATA%\PyGebra\`.
 
+En `/ajustes` puedes cambiar el tema, la convención decimal y el espaciado
+del procedimiento. La consola guarda estas preferencias junto al historial.
+
 El menú anterior de matrices también está disponible con
 `uv run --locked python main.py --clasico`. En ese modo puedes salir con la
 opción `9`.
@@ -138,7 +138,8 @@ uv run --locked python desktop.py
 ```
 
 PyGebra inicia un servidor local Waitress en `127.0.0.1` y muestra su contenido
-con pywebview. Al cerrar la ventana, el servidor se detiene. En Linux o macOS
+con pywebview. **Opciones → Actualizaciones** abre el
+[actualizador de escritorio](instalacion-windows.md#actualizar-pygebra). Al cerrar la ventana, el servidor se detiene. En Linux o macOS
 la interfaz web es la vía compatible y recomendada para tener todas las
 funciones visuales.
 
@@ -187,9 +188,9 @@ principales del proyecto desde el código fuente.
 | El navegador no abre la página | Comprueba que `runserver` sigue activo y usa exactamente la dirección que muestra la terminal. |
 | El puerto 8000 está ocupado | Inicia Django con otro puerto, por ejemplo `runserver 8001`. |
 | La ventana de Windows informa que falta WebView2 | Instala o actualiza WebView2 Runtime y vuelve a abrir `desktop.py`. |
-| Las pruebas necesitan PyInstaller | Ejecuta `uv sync --locked --group dev` antes de correrlas. |
+| Falta PyInstaller para el build o las pruebas de empaquetado | Incluye el grupo `dev` con `uv sync --locked --group dev`. |
 
 Para construir y probar el instalador de distribución, siguen siendo necesarios
-Windows, PowerShell 5.1 o posterior, Inno Setup 6.3 o posterior y el grupo de
-dependencias `dev`. El proceso está documentado en
-[Instalación Windows](instalacion-windows.md#construir-el-instalador).
+Windows, PowerShell 5.1 o posterior y el grupo de dependencias `dev`.
+Consulta [Construir el instalador](instalacion-windows.md#construir-el-instalador)
+para ver el requisito de Inno Setup y el proceso de empaquetado.

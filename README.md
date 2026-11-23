@@ -13,7 +13,7 @@ de Ingeniería en Sistemas.
 [![Arquitectura de Windows admitida por el instalador](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2FCollado-Labs%2FAlgebra-Lineal%2Fdevelop%2Finstaller%2FAlgebraLineal.iss&search=ArchitecturesAllowed%3D%28%5Ba-z0-9%5D%2B%3F%29%28%3F%3Acompatible%29%3F%5Cr%3F%5Cn&replace=%241&label=Windows&color=334e70)](docs/instalacion-windows.md)
 
 **[Descargar para Windows](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)** ·
-[Documentación](docs/README.md) · [Desarrollo local](#desarrollo-rápido) ·
+[Documentación](docs/README.md) · [Wiki](https://github.com/Collado-Labs/Algebra-Lineal/wiki) · [Desarrollo local](#desarrollo-rápido) ·
 [Contribuir](CONTRIBUTING.md)
 
 ## Qué puedes resolver
@@ -45,13 +45,14 @@ oscuro y se eligen en **Opciones → Apariencia**.
 
 ## Consola interactiva
 
-La consola de PyGebra abre un catálogo con `/`, valida los vectores y matrices
-mientras escribes, muestra gráficas y tablas navegables y guarda los ejercicios
-en un historial local. Para arrancarla, sigue la [guía de ejecución](docs/ejecucion.md#aplicación-de-terminal).
+La consola interactiva se incorporó a PyGebra en v0.20.0. Abre el
+catálogo con `/`, valida vectores y matrices mientras escribes, muestra
+tablas y gráficas navegables y guarda los ejercicios en un historial local.
+[Ejecuta la consola desde el código fuente](docs/ejecucion.md#aplicación-de-terminal).
 
-[![Vista previa de la consola durante el desarrollo. Bisección de x² menos 2, con intervalo, raíz aproximada y gráfica en la terminal.](docs/capturas/portada/terminal-pr131.webp)](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)
+[![Pantalla de bienvenida de la consola de PyGebra con su logotipo, el historial de ejercicios, el panel de chat y el atajo / para abrir el menú.](docs/capturas/portada/consola-bienvenida.webp)](docs/capturas/portada/consola-bienvenida.webp)
 
-*Vista previa de Bisección en la consola.*
+[Ver un ejemplo de bisección en la consola](docs/capturas/portada/consola-biseccion.webp).
 
 ## Formas de usar el proyecto
 
