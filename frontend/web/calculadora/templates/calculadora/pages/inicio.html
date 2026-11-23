@@ -17,6 +17,7 @@
             {# historial.js lo enlaza con la última herramienta abierta durante esta visita. #}
             <a class="btn btn-secondary home-retomar" id="retomar" href="{% url 'calculadora:inicio' %}" hidden></a>
         </div>
+        {% include "calculadora/components/homenaje_portada.html" %}
     </header>
 
     <section id="resultados-busqueda" class="home-catalog" aria-label="Resultados de búsqueda y áreas"

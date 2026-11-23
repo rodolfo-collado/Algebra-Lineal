@@ -45,7 +45,7 @@
     cursor: default;
 }
 
-/* —— Opciones: estilo y sonido —— */
+/* —— Opciones: Apariencia a la vista; sonido, música, acerca de y actualizaciones plegados —— */
 
 .options-toggle[hidden] {
     display: none;
@@ -60,10 +60,10 @@
 .opciones {
     position: fixed;
     inset: calc(var(--header-height) + 0.4rem) 1rem auto auto;
-    width: min(20rem, calc(100vw - 2rem));
+    width: min(23rem, calc(100vw - 2rem));
     max-height: calc(100svh - var(--header-height) - 1rem);
     margin: 0;
-    padding: 0.4rem 1rem 1rem;
+    padding: 0.4rem 0.9rem 0.9rem;
     overflow-y: auto;
     overscroll-behavior: contain;
     border: 1px solid var(--color-border);
@@ -82,7 +82,7 @@
 .opciones-grupo {
     display: grid;
     gap: 0.4rem;
-    margin: 0.8rem 0 0;
+    margin: 0.7rem 0 0;
     padding: 0;
     border: 0;
 }
@@ -96,11 +96,101 @@
     text-transform: uppercase;
 }
 
+/* Los cinco estilos en fichas: los dos de PyGebra arriba y los tres homenajes debajo. */
+.estilos {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.4rem;
+}
+
+.estilo-ficha {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 0.05rem;
+    grid-column: span 3;
+    min-width: 0;
+    padding: 0.4rem 0.45rem 0.45rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.estilo-ficha:nth-child(n + 3) {
+    grid-column: span 2;
+}
+
+/* El radio cubre la ficha: un clic en cualquier punto la elige y las flechas la recorren. */
+.estilo-ficha input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.estilo-ficha:hover {
+    border-color: var(--color-border-strong);
+}
+
+.estilo-ficha:has(input:checked) {
+    border-color: var(--color-brand);
+    background: var(--color-brand-soft);
+    box-shadow: inset 0 0 0 1px var(--color-brand);
+}
+
+.estilo-ficha:has(input:focus-visible) {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.estilo-ficha b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.estilo-ficha small {
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    line-height: 1.25;
+}
+
+/* Muestra de cada estilo: colores fijos, iguales en claro y oscuro, para reconocerlo. */
+.estilo-muestra {
+    display: grid;
+    place-items: center;
+    height: 2.3rem;
+    margin-bottom: 0.3rem;
+    overflow: hidden;
+    border: 1px solid rgb(0 0 0 / 0.12);
+    border-radius: calc(var(--radius-md) - 3px);
+}
+
+.estilo-muestra[data-muestra="estudio"] { background: linear-gradient(120deg, #f6f1e7 0 48%, #12152b 52%); }
+.estilo-muestra[data-muestra="minimalista"] { background: linear-gradient(90deg, #ffffff 0 72%, #1a6560 72%); }
+.estilo-muestra[data-muestra="chocolab"] { background: linear-gradient(90deg, #f1eae1 0 80%, #b4744c 80%); }
+.estilo-muestra[data-muestra="belugacalc"] { background: linear-gradient(90deg, #063d89 0 26%, #e0f2fe 26%); }
+.estilo-muestra[data-muestra="heyalgb"] { background: linear-gradient(115deg, #060606 0 58%, #fe0000 58%); }
+
+.estilo-muestra .homenaje-logo {
+    margin: 0;
+}
+
+.opciones-nota {
+    margin: 0.2rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+}
+
 .opcion {
     display: flex;
     align-items: flex-start;
     gap: 0.6rem;
-    padding: 0.6rem 0.75rem;
+    padding: 0.5rem 0.7rem;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     cursor: pointer;
@@ -123,6 +213,71 @@
 .opcion small {
     color: var(--color-muted);
     font-size: 0.8rem;
+}
+
+/* Secciones plegables: una línea cada una mientras están cerradas. */
+.opciones-seccion {
+    display: block;
+    margin-top: 0.7rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.opciones-seccion > summary,
+.opciones-enlace {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.5rem;
+    padding: 0 0.35rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.opciones-seccion > summary {
+    justify-content: space-between;
+    list-style: none;
+}
+
+.opciones-seccion > summary::-webkit-details-marker {
+    display: none;
+}
+
+.opciones-seccion > summary::after {
+    content: "›" / "";
+    color: var(--color-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.opciones-seccion[open] > summary::after {
+    transform: rotate(90deg);
+}
+
+.opciones-seccion > summary:hover,
+.opciones-enlace:hover {
+    background: var(--color-surface-muted);
+}
+
+.opciones-enlace svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: none;
+    color: var(--color-brand);
+}
+
+.opciones-acerca p {
+    margin: 0.4rem 0 0;
+    padding-inline: 0.35rem;
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.opciones-acerca b {
+    color: var(--color-text);
 }
 
 .musica-controles {
@@ -165,10 +320,83 @@
     opacity: 0.45;
 }
 
-.opciones-nota {
-    margin: 0.9rem 0 0;
+/* —— Navegación por áreas en la cabecera (nav_areas.html) ——
+   Base sobria para Estudio y Minimalista; cada tema homenaje le da su propia forma. Se
+   muestra cuando cabe junto a la marca y los botones; en pantallas menores bastan las migas,
+   la fila de hermanas, «Buscar» y la marca que vuelve a Inicio. */
+
+.nav-areas,
+.areas-plegar,
+.areas-icono,
+.areas-mascota {
+    display: none;
+}
+
+.nav-areas ul {
+    display: flex;
+    gap: 0.1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.areas-enlace {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     color: var(--color-muted);
-    font-size: 0.8rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: color var(--motion-fast), background var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.areas-enlace:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+}
+
+/* Dónde se está: el área de la página o de la herramienta, subrayada con el acento. */
+.areas-enlace[aria-current] {
+    color: var(--color-text);
+    box-shadow: inset 0 -2px 0 var(--color-brand);
+}
+
+.areas-icono svg {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* Estudio: la tipografía de la habitación y un punto de luz en el área actual. */
+[data-estilo="estudio"] .areas-enlace {
+    font-family: var(--font-display);
+}
+
+[data-estilo="estudio"] .areas-enlace[aria-current]::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-brand);
+    box-shadow: 0 0 0 3px var(--color-brand-soft);
+}
+
+@media (min-width: 1240px) {
+    .nav-areas {
+        display: block;
+        min-width: 0;
+        margin-inline: auto;
+    }
+}
+
+/* «Buscar» de la cabecera: un enlace con forma de botón hacia el buscador de Inicio. */
+.header-buscar {
+    color: var(--color-text);
+    text-decoration: none;
 }
 
 /* —— Inicio: bienvenida —— */

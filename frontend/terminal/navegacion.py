@@ -20,8 +20,13 @@ def _herramientas(area):
         if herramienta.id == "metodos-abiertos":
             yield Comando("newton-raphson", "Newton-Raphson")
             yield Comando("secante", "Secante")
+        elif herramienta.id == "metodos-cerrados":
+            yield Comando("biseccion", "Método de bisección")
+            yield Comando("regla-falsa", "Regla falsa")
         else:
             yield Comando(herramienta.id, herramienta.nombre)
+            if herramienta.id == "operaciones-matrices":
+                yield Comando("operaciones-vectores", "Operaciones con vectores")
 
 
 RAIZ = Comando("", "PyGebra", (

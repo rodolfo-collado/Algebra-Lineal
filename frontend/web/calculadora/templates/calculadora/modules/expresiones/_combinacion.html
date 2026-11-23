@@ -1,5 +1,45 @@
 {% load componentes numeros %}
-{% comment %}Combinación lineal: primero, plegados, el planteamiento, el sistema equivalente, Gauss-Jordan (reutilizado de Resolver un sistema, con las mismas incógnitas, que se muestran x₁, x₂, …) y la lectura de la matriz; después, la conclusión (sí/no y con qué coeficientes) una sola vez.{% endcomment %}
+{% comment %}x1 u + x2 v = b en Operaciones: primero la conclusión (sí/no y con qué coeficientes) y la igualdad que la comprueba; después, plegados, el planteamiento, el sistema equivalente, Gauss-Jordan (el de Reducción por filas, con incógnitas x₁, x₂, …) y la lectura de la matriz.{% endcomment %}
+
+
+<section class="panel panel-final" aria-labelledby="combination-result-title">
+    <h3 id="combination-result-title" class="panel-title">Resultado</h3>
+    <div class="classification combination-verdict" data-kind="{{ resultado.clasificacion_clave }}">
+        <span class="classification-icon" aria-hidden="true"></span>
+        <div>
+            <p class="classification-value">{{ resultado.conclusion }}</p>
+            <p class="muted combination-detail">{{ resultado.detalle }}</p>
+        </div>
+    </div>
+
+    {% if resultado.coeficientes %}
+        <div class="final-block solution">
+            <h4 class="final-label">Coeficientes</h4>
+            <ul class="equations solution-list coefficient-list">
+                {% for incognita, valor in resultado.coeficientes %}
+                    <li><code>{{ incognita|incognitas }} = {{ valor }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% elif resultado.clasificacion_clave == "infinitas" %}
+        <div class="final-block solution">
+            <h4 class="final-label">Solución general</h4>
+            <ul class="equations solution-list coefficient-list">
+                {% for linea in resultado.solucion_general %}
+                    <li><code>{{ linea|incognitas }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if resultado.igualdad %}
+        <div class="final-block">
+            <h4 class="final-label">{{ resultado.objetivo.nombre }} como combinación lineal</h4>
+            {% if resultado.ejemplo %}<p class="muted combination-example">{{ resultado.ejemplo|incognitas }}</p>{% endif %}
+            <p class="combination-equality"><code>{{ resultado.igualdad }}</code></p>
+        </div>
+    {% endif %}
+</section>
 {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
     <div class="procedure-stage">
         <h4 class="stage-title">1 · Planteamiento</h4>
@@ -41,42 +81,3 @@
         {% endif %}
     </div>
 {% enddisclosure %}
-
-<section class="panel panel-final" aria-labelledby="combination-result-title">
-    <h3 id="combination-result-title" class="panel-title">Resultado</h3>
-    <div class="classification combination-verdict" data-kind="{{ resultado.clasificacion_clave }}">
-        <span class="classification-icon" aria-hidden="true"></span>
-        <div>
-            <p class="classification-value">{{ resultado.conclusion }}</p>
-            <p class="muted combination-detail">{{ resultado.detalle }}</p>
-        </div>
-    </div>
-
-    {% if resultado.coeficientes %}
-        <div class="final-block solution">
-            <h4 class="final-label">Coeficientes</h4>
-            <ul class="equations solution-list coefficient-list">
-                {% for incognita, valor in resultado.coeficientes %}
-                    <li><code>{{ incognita|incognitas }} = {{ valor }}</code></li>
-                {% endfor %}
-            </ul>
-        </div>
-    {% elif resultado.clasificacion_clave == "infinitas" %}
-        <div class="final-block solution">
-            <h4 class="final-label">Solución general</h4>
-            <ul class="equations solution-list coefficient-list">
-                {% for linea in resultado.solucion_general %}
-                    <li><code>{{ linea|incognitas }}</code></li>
-                {% endfor %}
-            </ul>
-        </div>
-    {% endif %}
-
-    {% if resultado.igualdad %}
-        <div class="final-block">
-            <h4 class="final-label">{{ resultado.objetivo.nombre }} como combinación lineal</h4>
-            {% if resultado.ejemplo %}<p class="muted combination-example">{{ resultado.ejemplo|incognitas }}</p>{% endif %}
-            <p class="combination-equality"><code>{{ resultado.igualdad }}</code></p>
-        </div>
-    {% endif %}
-</section>

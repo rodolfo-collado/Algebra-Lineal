@@ -58,11 +58,11 @@ class PruebasCatalogo(SimpleTestCase):
         self.assertIsNone(catalogo.herramienta_por_id("expresiones-matriciales"))
         self.assertEqual(
             catalogo.herramientas_de(catalogo.MATRICES),
-            (herramienta, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA,
+            (herramienta, catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS, catalogo.MATRIZ_INVERSA,
              catalogo.DETERMINANTES),
         )
         # UI-17 añade inversa desde operaciones, sin sugerir resolver Ax=b por inversión.
-        self.assertEqual(set(herramienta.relacionadas), {"ecuaciones-matriciales", "operaciones-vectores", "matriz-inversa"})
+        self.assertEqual(set(herramienta.relacionadas), {"ecuaciones-matriciales", "matriz-inversa"})
         respuesta = self.client.get("/")
         self.assertContains(respuesta, f'href="{RUTA}"')
         self.assertNotContains(respuesta, f'href="{ANTIGUA}"')
@@ -76,7 +76,7 @@ class PruebasPagina(SimpleTestCase):
         respuesta = self.client.get(RUTA)
         self.assertContains(respuesta, '>Operandos</h3>')
         self.assertContains(respuesta, '>Agregar operando</button>')
-        self.assertContains(respuesta, 'Define las matrices, vectores y escalares que usarás en la expresión.')
+        self.assertContains(respuesta, 'Define las matrices, vectores y escalares; la expresión usa solo los que escribas.')
         self.assertContains(respuesta, 'data-operandos="#symbol-list"')
         for texto in ('Símbolos', 'Agregar símbolo', 'Eliminar símbolo'):
             self.assertNotContains(respuesta, texto)
@@ -166,7 +166,7 @@ class PruebasCalculo(SimpleTestCase):
                 texto = str(Texto(html))
                 for fragmento in fragmentos:
                     self.assertIn(fragmento, texto)
-                self.assertLess(html.index('id="procedimiento"'), html.index("panel-final"))
+                self.assertLess(html.index("panel-final"), html.index('id="procedimiento"'))
                 self.assertIn('name="nodo" value="0.1"', html)
 
     def test_subexpresion_por_el_identificador_del_nodo(self):
@@ -282,8 +282,9 @@ class PruebasIgualdadWeb(SimpleTestCase):
         self.assertNotIn("Verdadero", texto)
         self.assertNotIn("demostr", texto)
         # El procedimiento de cada lado va plegado antes; los dos valores y el veredicto forman el resultado.
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="lado-izquierdo-title"'))
-        self.assertLess(html.index('id="lado-derecho-title"'), html.index("panel-final"))
+        self.assertLess(html.index('id="lado-izquierdo-title"'), html.index('id="procedimiento"'))
+        # El veredicto primero; después, el valor de cada lado.
+        self.assertLess(html.index("panel-final"), html.index('id="lado-izquierdo-title"'))
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertEqual(html.count('id="numeric-mode"'), 1)
         self.assertIn('name="nodo" value="izq:0.1"', html)

@@ -22,8 +22,15 @@ class BiseccionTests(unittest.TestCase):
         for fila, c in zip(r["iteraciones"], esperados):
             self.assertAlmostEqual(fila["c"], c, places=14)
             self.assertAlmostEqual(fila["fc"], c**4 - 5*c**3 + .5*c**2 - 11*c + 10)
-        self.assertIsNone(r["iteraciones"][0]["error_relativo"])
-        self.assertAlmostEqual(r["iteraciones"][1]["error_relativo"], 20)
+        # Error absoluto aproximado |cᵢ − cᵢ₋₁|: no existe en la primera iteración y, en bisección,
+        # es exactamente la mitad de la longitud anterior (el nuevo punto medio dista eso del previo).
+        self.assertIsNone(r["iteraciones"][0]["error_absoluto"])
+        for anterior, fila in zip(r["iteraciones"], r["iteraciones"][1:]):
+            self.assertEqual(fila["error_absoluto"], abs(fila["c"] - anterior["c"]))
+            self.assertAlmostEqual(fila["error_absoluto"], anterior["longitud"] / 2, places=15)
+        self.assertAlmostEqual(r["iteraciones"][1]["error_absoluto"], .1375, places=15)
+        self.assertEqual(r["error_absoluto"], r["iteraciones"][-1]["error_absoluto"])
+        self.assertNotIn("error_relativo", r["iteraciones"][1])
         self.assertLess(r["longitud"], .0001)
         self.assertGreater(abs(r["fc"]), .0001)  # El residuo no es la longitud.
         self.assertAlmostEqual(r["fc"], -.000669776157657509)
@@ -96,11 +103,30 @@ class BiseccionTests(unittest.TestCase):
         r = biseccion(FuncionReal("x-.0001234567"), 0, .0002)
         self.assertEqual(len(r["iteraciones"]), 2)
 
-    def test_error_relativo_no_definido_cuando_una_aproximacion_es_cero(self):
+    def test_error_absoluto_definido_aunque_una_aproximacion_sea_cero(self):
+        # El error relativo se indefinía con c = 0; el absoluto no divide y sigue definido.
         r = biseccion(FuncionReal("x+.2"), -1, 3)
         self.assertEqual(r["iteraciones"][1]["c"], 0)
-        self.assertIsNone(r["iteraciones"][1]["error_relativo"])
+        self.assertEqual(r["iteraciones"][1]["error_absoluto"], 1)
         self.assertTrue(r["convergio"])
+
+    def test_criterio_de_parada_sigue_siendo_la_longitud(self):
+        # Con precisión 0.0001 el último cambio |cᵢ − cᵢ₋₁| ya es menor que la precisión antes de
+        # parar: si el cambio decidiera, se pararía una iteración antes. Para la longitud, no.
+        r = biseccion(FuncionReal("x^3-x-2"), 1, 2, .0001)
+        self.assertEqual(r["estado"], "longitud")
+        self.assertEqual(len(r["iteraciones"]), 14)
+        self.assertLess(r["longitud"], .0001)
+        penultima = r["iteraciones"][-2]
+        self.assertGreaterEqual(penultima["longitud"], .0001)
+        self.assertLess(r["error_absoluto"], .0001)
+        # Al terminar, c es extremo del intervalo final: su longitud acota |c − raíz|.
+        self.assertIn(r["c"], (r["a"], r["b"]))
+
+    def test_raiz_en_un_extremo_no_inventa_error(self):
+        r = biseccion(FuncionReal("x-1"), 1, 2)
+        self.assertEqual(r["iteraciones"], [])
+        self.assertIsNone(r["error_absoluto"])
 
 
 class FuncionesRealesTests(unittest.TestCase):

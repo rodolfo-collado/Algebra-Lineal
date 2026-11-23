@@ -65,7 +65,8 @@ class PruebasCramerWeb(SimpleTestCase):
         calculos = [d for d in estructura.details if "Ver cálculo de" in d["summary"]]
         self.assertEqual([d["summary"].strip() for d in calculos], ["Ver cálculo de D", "Ver cálculo de D₁", "Ver cálculo de D₂"])
         self.assertTrue(all(d["nivel"] == 1 and not d["open"] for d in calculos))
-        procedimiento, final = html.split('id="procedimiento"', 1)[1].split('class="panel panel-final"', 1)
+        # Resultado primero: el panel final y, después, el procedimiento.
+        final, procedimiento = html.split('class="panel panel-final"', 1)[1].split('id="procedimiento"', 1)
         self.assertNotIn('aria-label="Vector solución x"', procedimiento)
         self.assertEqual(len(re.findall(r'<table[^>]*aria-label="Vector solución x"', final)), 1)
         self.assertNotIn('class="equations solution-list"', final)

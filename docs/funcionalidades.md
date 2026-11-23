@@ -215,45 +215,30 @@ esté orientado a resolver sistemas.
 
 ## Vectores
 
-En **Operaciones con vectores** (`/vectores/operaciones/`) la operación se
-elige dentro, igual que el método en Reducción por filas. La dimensión `n`
-no está fijada, así que cada vector se escribe como una fila de
-celdas, `v1 = ( [ ] [ ] [ ] )`, y los botones **+/−** agregan o quitan
-componentes (de 1 a 10). No hay campos `x`, `y`, `z` ni sintaxis de listas.
-Los vectores se llaman `v1`, `v2`, `v3`, … en todas las operaciones (`k·v1` en
-la multiplicación por escalar): agregar uno nunca renombra a los anteriores.
-Las componentes admiten enteros, fracciones y decimales con punto; una coma
-decimal (`0,5`) se rechaza con la sugerencia de escribir `0.5`.
+Desde 0.19.0 los vectores se operan en **Operaciones** (`/matrices/operaciones/`),
+la misma herramienta de matrices y escalares: cada vector es un operando de tipo
+**Vector** y la expresión usa solo los operandos que se escriben (`u + v`, `2u − 3v`,
+`A(u + v)`…). No hay operaciones implícitas: sumar una matriz y un vector, o vectores
+de distinta dimensión, se rechaza con un mensaje que nombra ambos operandos.
 
-- **Suma** y **resta** operan componente a componente y exigen la misma
-  dimensión: `(1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)`.
-- **Multiplicación por escalar** multiplica cada componente por `k`:
-  `3(1, -2, 4) = (3·1, 3·(-2), 3·4) = (3, -6, 12)`.
-- **Combinación lineal** pregunta si `b` es combinación lineal de `v1 … vk`
-  (de 1 a 6 vectores, con **+/− vector**). No hay un segundo algoritmo de
-  eliminación: `x1·v1 + … + xk·vk = b` se escribe como la matriz aumentada
-  `[v1 v2 … vk | b]` —cada generador es una columna y `b` la columna
-  aumentada— y se resuelve con el Gauss-Jordan de `backend/sistemas.py`. La
-  clasificación del sistema decide la respuesta:
-  - solución única: **sí**, y se muestran `x₁, x₂, …` y la igualdad
-    `(3, 4) = 3(1, 0) + 4(0, 1)`;
-  - soluciones infinitas: **sí**, con la solución general en función de los
-    coeficientes libres y una combinación concreta (libres en cero);
-  - inconsistente: **no**, porque el sistema asociado no tiene solución.
+**Combinación lineal.** `x1 u + x2 v + … = b` (con `u, v, …, b` vectores definidos y
+`x1, x2, …` sin definir) pregunta si `b` es combinación lineal de los generadores. No
+hay un segundo algoritmo: la igualdad se lee con el parser de expresiones
+(`backend/expresiones_matriciales/combinacion.py`), se escribe como la matriz
+aumentada `[u v … | b]` y se resuelve con el Gauss-Jordan de `backend/sistemas.py`
+(`backend/vectores.evaluar_combinacion_lineal`). La respuesta va primero: **sí** con
+`x₁, x₂, …` y la igualdad `(3, 4) = 3(1, 0) + 4(0, 1)`; **sí** con la solución general
+si hay infinitas; o **no** si el sistema asociado es inconsistente. El planteamiento,
+el sistema equivalente, las operaciones por filas y la lectura de la matriz quedan
+en «Ver procedimiento». Una igualdad mal planteada (coeficientes desordenados, un
+término restado, una matriz como generador) explica la forma esperada.
 
-El procedimiento, plegado bajo «Ver procedimiento», habla el lenguaje del
-ejercicio —los coeficientes son las incógnitas `x₁, x₂, …`—: planteamiento,
-sistema equivalente, matriz aumentada, operaciones por filas, matriz reducida
-y lectura de la matriz; la conclusión y los coeficientes solo aparecen en el
-resultado. En suma, resta y escalar el desarrollo es una sola cadena,
-`v1 + v2 = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)`.
-Todo se calcula con `fractions.Fraction`: `(1/2, 2/3) + (1/2, 1/3) = (1, 1)`.
-
-El núcleo vive en `backend/vectores.py` (listas, ciclos y `Fraction`, sin
-librerías externas). El formulario reconstruye la estructura esperada
-(dimensión y cantidad de vectores) y la compara con lo recibido, así que un
-POST con celdas de más, de menos o con otros nombres se rechaza; las
-dimensiones incompatibles se detectan antes de intentar resolver.
+**Compatibilidad.** `/vectores/operaciones/` redirige (301) al ejemplo de vectores de
+Operaciones (`?operacion=combinacion` abre el de coeficientes). Un POST con el contrato
+anterior (`operacion`, `dimension`, `vectores`, `v1_0`, …, `b_0`, `escalar`) se
+traduce a operandos `v1, v2, …, b, k` y a la expresión equivalente (`v1 + v2`,
+`v1 - v2`, `k v1` o `x1 v1 + x2 v2 = b`) y se calcula allí mismo. Como en Operaciones,
+caben 50 operandos: una combinación admite hasta 49 generadores más `b`.
 
 ## Sistemas numéricos
 
@@ -642,7 +627,7 @@ inversas o determinantes simbólicos, polinomios, división por variables ni un
 sistema algebraico general. Un nombre que no esté definido sigue siendo un
 error, no una incógnita.
 
-### Resolver Ax = b
+### Sistemas lineales (Ax = b)
 
 En `Ax` el vector x es conocido y solo se calcula el producto. Buscar x es
 otra herramienta de la categoría Matrices: **Resolver Ax = b**

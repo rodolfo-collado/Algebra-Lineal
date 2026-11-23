@@ -135,7 +135,6 @@ class PruebasCatalogoMatrices(SimpleTestCase):
     def test_inicio_sidebar_y_tema(self):
         respuesta = self.client.get("/")
         documento = Documento(respuesta)
-        self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en("Herramientas")])
         # El tema vive en el explorador de su área; el inicio enlaza a esa área.
         self.assertContains(respuesta, 'href="/areas/algebra-lineal/"')
         self.assertContains(self.client.get("/areas/algebra-lineal/"), '<p class="indice-tema" id="matrices">')
@@ -151,8 +150,8 @@ class PruebasCatalogoMatrices(SimpleTestCase):
         respuesta = self.client.get(RUTA)
         doc = Documento(respuesta)
         self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
-        self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
-        self.assertTrue(doc.categorias["matrices"])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas de Álgebra lineal") if a.get("aria-current") == "page"], [RUTA])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Áreas") if a.get("aria-current")], ["/areas/algebra-lineal/"])
 
     def test_las_seis_operaciones_son_expresiones_de_una_sola_herramienta(self):
         # P13B añadió AB y Ax a la misma herramienta; P26.6 las escribe como expresiones del mismo formulario.
@@ -278,7 +277,7 @@ class PruebasResultadosMatrices(SimpleTestCase):
         r = self.client.post(RUTA, datos_matrices())
         html = r.content.decode()
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
 
     def test_el_motor_delega_la_matematica(self):
         with patch("backend.expresiones_matriciales.evaluador.resolver_operacion_matrices", wraps=resolver_operacion_matrices) as resolver:

@@ -2,23 +2,31 @@
 
 from dataclasses import replace
 
+from django import forms
+from django.template.loader import render_to_string
+
 from backend.expresiones_matriciales.lexer import tokenizar
 from backend.expresiones_matriciales.lineal import analizar_lineal
 from backend.expresiones_matriciales.parser import analizar_entrada, nombre_valido
-from backend.operandos import ARIDAD_VECTORES, exigir_aridad, nombre_matriz
+from backend.operandos import ARIDAD_VECTORES, OPERANDOS_MAXIMOS, exigir_aridad, nombre_matriz
 from backend.parser_sistemas import convertir_a_numero, parsear_sistema
 from backend.presupuesto_sistemas import validar_dimensiones
-from frontend.web.calculadora.forms import SistemaForm, VectoresForm
+from backend.sistemas_iterativos import ITERACIONES_MAXIMAS
+from backend.vectores import nombres_generadores
+from frontend.web.calculadora.forms import SistemaForm
 from frontend.web.calculadora.forms_determinantes import (
     DeterminantesForm, metodo_disponible, metodo_sugerido, opciones_expansion,
 )
 from frontend.web.calculadora.forms_ecuaciones import EcuacionMatricialForm
 from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm, TIPOS
 from frontend.web.calculadora.forms_inversa import InversaForm
+from frontend.web.calculadora.forms_iterativos import SistemasIterativosForm
 from frontend.web.calculadora.forms_matrices import campo_dimension
 from frontend.web.calculadora.opciones_matrices import DIMENSION_MAXIMA
 from frontend.web.calculadora.servicios_determinantes import firmar_matriz
+from frontend.web.calculadora.servicios_vectores import presentar_combinacion
 
+from .adaptador import ProcedimientoHTML
 from .dialogos import Campo, ErrorEntrada, campo
 
 
@@ -154,8 +162,28 @@ def reduccion(datos):
     )
 
 
+class FormularioVectores(forms.Form):
+    operacion = forms.ChoiceField(label="Operación", initial="suma", choices=(
+        ("suma", "Suma"), ("resta", "Resta"), ("escalar", "Multiplicación por escalar"),
+        ("combinacion", "Combinación lineal"),
+    ))
+    dimension = campo_dimension("Dimensión")
+    vectores = forms.IntegerField(label="Número de vectores", initial=2, required=False, max_value=OPERANDOS_MAXIMOS)
+    escalar = forms.CharField(label="Escalar", required=False)
+
+
+def _estructura_vectores(datos):
+    operacion = datos.get("operacion", "suma")
+    dimension = int(datos.get("dimension") or 3)
+    cantidad = 1 if operacion == "escalar" else int(datos.get("vectores") or 2)
+    nombres = nombres_generadores(cantidad)
+    if operacion == "combinacion":
+        nombres.append("b")
+    return dimension, nombres
+
+
 def vectores(datos):
-    form = VectoresForm(datos, ajustar=True)
+    form = FormularioVectores()
     operacion = datos.get("operacion", "suma")
     if operacion == "combinacion":
         form.fields["vectores"].required = True
@@ -167,10 +195,27 @@ def vectores(datos):
 
     cantidad = () if operacion == "escalar" else (campo(form, "vectores", verificar=validar_cantidad),)
     escalar = (campo(form, "escalar", ayuda="Ejemplo: -3/2.", verificar=_numero),) if operacion == "escalar" else ()
-    estructura = form.estructura()
-    entradas = tuple(_bloque("@" + f["nombre"], f"Componentes de {f['nombre']}", vector=True,
-                            componentes=estructura["dimension"]) for f in estructura["filas"])
-    return (campo(form, "operacion"), campo(form, "dimension"), *cantidad, *escalar, *entradas)
+    dimension, nombres = _estructura_vectores(datos)
+    entradas = tuple(_bloque("@" + nombre, f"Componentes de {nombre}", vector=True, componentes=dimension)
+                     for nombre in nombres)
+    return (campo(form, "operacion"), campo(form, "dimension", inicial="3"), *cantidad, *escalar, *entradas)
+
+
+def combinacion_vectores_maxima(entrada):
+    """Conserva 50 generadores en la consola: el formulario unificado cuenta b como otro operando."""
+    dimension, nombres = _estructura_vectores(entrada)
+    vectores = [(nombre, [convertir_a_numero(entrada[f"{nombre}_{i}"], limitar_entrada=True)
+                          for i in range(dimension)]) for nombre in nombres]
+    incognitas = [f"x{i}" for i in range(1, len(nombres))]
+    texto = " + ".join(f"{x} {v}" for x, v in zip(incognitas, nombres)) + " = b"
+    resultado = presentar_combinacion({
+        "generadores": vectores[:-1], "objetivo": vectores[-1], "incognitas": incognitas, "texto": texto,
+    })
+    html = render_to_string("calculadora/modules/expresiones/_combinacion.html", {"resultado": resultado})
+    parser = ProcedimientoHTML()
+    parser.feed(f'<section id="resultado"><h2>Combinación lineal</h2>{html}</section>')
+    parser.close()
+    return tuple(parser.bloques)
 
 
 def ecuaciones(datos):
@@ -191,6 +236,38 @@ def ecuaciones(datos):
         ))
         campos.append(campo_det)
     return tuple(campos)
+
+
+def iterativos(datos):
+    orden = _orden(datos)
+    form = SistemasIterativosForm(initial={"filas": orden or 2, "columnas": orden or 2})
+
+    def validar_inicial(texto, decimal):
+        if texto:
+            _validar_vector(texto, decimal, "inicial_iterativo", orden or None, False)
+
+    def validar_tolerancia(texto, decimal):
+        if texto and convertir_a_numero(_normalizar(texto, decimal), limitar_entrada=True) <= 0:
+            raise ValueError("La tolerancia debe ser positiva.")
+
+    def validar_iteraciones(texto, _decimal):
+        if not texto:
+            return
+        try:
+            if 1 <= int(texto) <= ITERACIONES_MAXIMAS:
+                return
+        except ValueError:
+            pass
+        raise ValueError(f"Escribe un entero de 1 a {ITERACIONES_MAXIMAS}.")
+
+    return (
+        _bloque("@A", "Matriz cuadrada A", cuadrada=True),
+        _bloque("@b", "Vector b", vector=True, componentes=orden or None),
+        campo(form, "metodo"),
+        campo(form, "inicial_iterativo", ayuda="Opcional. Vacío: vector de ceros.", verificar=validar_inicial),
+        campo(form, "tolerancia_iterativa", verificar=validar_tolerancia),
+        campo(form, "max_iteraciones", verificar=validar_iteraciones),
+    )
 
 
 def inversa(datos):
@@ -280,13 +357,12 @@ def preparar_algebra(herramienta, datos, decimal):
             salida["sistema"] = salida["sistema"].replace(",", ".")
         salida["mostrar_definido"] = "si"
     elif herramienta == "operaciones-vectores":
-        form = VectoresForm(salida)
-        for fila in form.estructura()["filas"]:
-            nombre = fila["nombre"]
+        dimension, nombres = _estructura_vectores(datos)
+        for nombre in nombres:
             vector = _vector(datos["@" + nombre])
-            _comprobar_cantidad(vector, "@" + nombre, len(fila["componentes"]))
-            for componente, valor in zip(fila["componentes"], vector):
-                salida[componente["campo"]] = _normalizar(valor, decimal)
+            _comprobar_cantidad(vector, "@" + nombre, dimension)
+            for indice, valor in enumerate(vector):
+                salida[f"{nombre}_{indice}"] = _normalizar(valor, decimal)
         if decimal == "," and "escalar" in salida:
             salida["escalar"] = salida["escalar"].replace(",", ".")
     elif herramienta == "operaciones-matrices":
@@ -314,7 +390,7 @@ def preparar_algebra(herramienta, datos, decimal):
         matriz = _matriz(datos["@A"])
         alto, ancho = _dimensiones(matriz, "@A", cuadrada=herramienta != "ecuaciones-matriciales")
         _escribir_grid(salida, matriz, "celda_A", decimal)
-        if herramienta == "ecuaciones-matriciales":
+        if herramienta in {"ecuaciones-matriciales", "metodos-iterativos"}:
             salida.update(filas=alto, columnas=ancho)
         else:
             salida["orden"] = alto
@@ -328,6 +404,9 @@ def preparar_algebra(herramienta, datos, decimal):
             _escribir_grid(salida, b, "celda_B", decimal)
         if herramienta == "determinantes":
             salida["eleccion"] = firmar_matriz({k: str(v) for k, v in salida.items()})
+        elif herramienta == "metodos-iterativos":
+            salida["inicial_iterativo"] = " ".join(_vector(_normalizar(datos.get("inicial_iterativo", ""), decimal)))
+            salida["tolerancia_iterativa"] = _normalizar(datos.get("tolerancia_iterativa", ""), decimal)
     return salida
 
 
@@ -346,6 +425,7 @@ DIALOGOS_ALGEBRA = {
     "reduccion-filas": reduccion,
     "operaciones-vectores": vectores,
     "ecuaciones-matriciales": ecuaciones,
+    "metodos-iterativos": iterativos,
     "matriz-inversa": inversa,
     "determinantes": determinantes,
     "operaciones-matrices": expresiones,

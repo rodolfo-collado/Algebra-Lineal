@@ -16,13 +16,15 @@ from textual.theme import Theme
 from textual.widgets import Collapsible, Input, Static, TextArea
 from textual.widgets._collapsible import CollapsibleTitle
 
+from backend.operandos import OPERANDOS_MAXIMOS
+from frontend.web.calculadora.opciones_matrices import datos_operacion_vectorial
 from frontend.web.calculadora.teclados import (
     PERFIL_EXPRESION, PERFIL_FUNCION_REAL, PERFIL_LINEAL, PERFIL_LITERAL_CONJUNTOS,
     PERFIL_NUMERICO, PERFIL_REGIONES_CONJUNTOS, PERFIL_RELACION_CONJUNTOS, PERFIL_SISTEMA,
 )
 
-from .adaptador import Linea, Tabla, ejecutar, procedimiento
-from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra
+from .adaptador import Linea, Tabla, ejecutar, procedimiento, trazar_backend
+from .algebra import DIALOGOS_ALGEBRA, campo_de_error, combinacion_vectores_maxima, preparar_algebra
 from .conjuntos import (
     DIALOGOS_CONJUNTOS, GraficaConjuntos, cardinalidad, preparar_conjuntos, relaciones,
     representacion, resolver_conjuntos,
@@ -701,11 +703,21 @@ class PyGebra(App):
     @work(thread=True, group="calculo")
     def procesar(self, version, herramienta, datos, decimal, depurar, firma):
         try:
+            ruta = herramienta
             entrada = datos
             if herramienta in DIALOGOS_ALGEBRA:
                 entrada = preparar_algebra(herramienta, datos, decimal)
             elif herramienta in DIALOGOS_RAICES:
                 entrada = preparar_raices(datos, decimal)
+            if herramienta == "operaciones-vectores":
+                if entrada["operacion"] == "combinacion" and int(entrada["vectores"]) == OPERANDOS_MAXIMOS:
+                    bloques, archivos = trazar_backend(lambda: combinacion_vectores_maxima(entrada), depurar)
+                    if decimal == ",":
+                        bloques = tuple(self._con_coma(b) for b in bloques)
+                    self.call_from_thread(self.recibir_calculo, version, bloques=bloques, archivos=archivos)
+                    return
+                entrada = datos_operacion_vectorial(entrada)
+                ruta = "operaciones-matrices"
             if firma is not None:
                 entrada["confirmacion"] = firma
             if herramienta in DIALOGOS_CONJUNTOS:
@@ -713,7 +725,7 @@ class PyGebra(App):
                 respuesta, archivos = resolver_conjuntos(herramienta, entrada, depurar,
                                                         azar=datos.get("@modo") == "azar")
             else:
-                respuesta, archivos = ejecutar(herramienta, entrada, depurar)
+                respuesta, archivos = ejecutar(ruta, entrada, depurar)
         except ErrorEntrada as error:
             self.call_from_thread(self.recibir_calculo, version, str(error), (error.campo,))
             return

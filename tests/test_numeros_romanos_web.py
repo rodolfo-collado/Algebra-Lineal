@@ -107,9 +107,9 @@ class PruebasRegistro(SimpleTestCase):
             ["/", "/areas/sistemas-numericos/", "/areas/sistemas-numericos/#numeracion-romana"],
         )
         self.assertContains(respuesta, '<span aria-current="page">Conversión de números romanos</span>', html=True)
-        activos = [a["href"] for a in documento.enlaces_en("Herramientas") if a.get("aria-current") == "page"]
+        activos = [a["href"] for a in documento.enlaces_en("Herramientas de Sistemas numéricos") if a.get("aria-current") == "page"]
         self.assertEqual(activos, [RUTA])
-        self.assertEqual([c for c, abierta in documento.categorias.items() if abierta], ["numeracion-romana"])
+        self.assertEqual([a["href"] for a in documento.enlaces_en("Áreas") if a.get("aria-current")], ["/areas/sistemas-numericos/"])
         self.assertContains(respuesta, "Conversión de números romanos · PyGebra")
 
 
@@ -196,7 +196,7 @@ class PruebasConversionWeb(SimpleTestCase):
                 self.assertFalse(procedimiento["open"])
                 self.assertEqual(procedimiento["encabezado"], "h3")
                 self.assertEqual(len(estructura.details), 1)
-                self.assertLess(estructura.indice("details", id="procedimiento"), estructura.indice("panel-final"))
+                self.assertLess(estructura.indice("panel-final"), estructura.indice("details", id="procedimiento"))
 
     def test_procedimiento_decimal_a_romano_agrupado(self):
         texto = procedimiento_de(self.convertir("decimal_a_romano", "1963"))

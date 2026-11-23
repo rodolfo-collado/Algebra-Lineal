@@ -178,7 +178,7 @@ class PruebasRutaHistorica(ContextoHTTP):
         final = self.client.get(ANTIGUA, follow=True)
         self.assertEqual(final.redirect_chain, [(RUTA, 301)])
         self.assertEqual(final.context["herramienta_actual"], catalogo.OPERACIONES_MATRICES)
-        self.assertContains(final, "Operaciones con matrices · PyGebra")
+        self.assertContains(final, "Operaciones · PyGebra")
 
     def test_post_conserva_el_cuerpo_con_308_y_da_el_mismo_resultado(self):
         ejemplo = [matriz("A", [[2, 5], [3, 1]]), {"nombre": "u", "tipo": "vector", "valor": [4, -1]},
@@ -225,10 +225,10 @@ class PruebasCatalogoFinal(ContextoHTTP):
     def test_matrices_tiene_cuatro_herramientas_en_orden(self):
         self.assertEqual(
             [h.nombre for h in catalogo.herramientas_de(catalogo.MATRICES)],
-            ["Operaciones con matrices", "Reducción por filas", "Resolver Ax = b", "Matriz inversa", "Determinantes"],
+            ["Operaciones", "Sistemas lineales (Ax = b)", "Reducción por filas", "Matriz inversa", "Determinantes"],
         )
         herramienta = catalogo.OPERACIONES_MATRICES
-        self.assertEqual(herramienta.descripcion, "Realiza y combina operaciones con matrices, vectores y escalares paso a paso.")
+        self.assertEqual(herramienta.descripcion, "Combina matrices, vectores y escalares en una expresión y obtén el resultado paso a paso.")
         self.assertNotIn("expresiones matriciales", catalogo.MATRICES.descripcion.lower())
         self.assertNotIn("expresiones-matriciales", {r for h in catalogo.HERRAMIENTAS for r in h.relacionadas})
 
@@ -238,15 +238,16 @@ class PruebasCatalogoFinal(ContextoHTTP):
         area = self.client.get("/areas/algebra-lineal/").content.decode()
         self.assertIn(f'href="{RUTA}"', elemento_html(area, area.index('aria-labelledby="matrices"') + 1, "ul"))
         enlaces = [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link" and a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/", "/matrices/inversa/",
+        self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/reduccion/", "/matrices/inversa/",
                                    "/matrices/determinantes/"])
-        menu = [a["href"] for a in Documento(inicio).enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(menu, enlaces)
+        hermanas = [a["href"] for a in Documento(self.client.get(RUTA)).enlaces_en("Herramientas de Álgebra lineal")
+                    if a["href"].startswith("/matrices/")]
+        self.assertEqual(hermanas, enlaces)
         pagina = self.client.get(RUTA)
         documento = Documento(pagina)
         self.assertEqual([a["href"] for a in documento.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
-        self.assertContains(pagina, '<span aria-current="page">Operaciones con matrices</span>', html=True)
-        self.assertContains(pagina, "Realiza y combina operaciones con matrices, vectores y escalares paso a paso.")
+        self.assertContains(pagina, '<span aria-current="page">Operaciones</span>', html=True)
+        self.assertContains(pagina, "Combina matrices, vectores y escalares en una expresión y obtén el resultado paso a paso.")
 
     def test_busquedas_historicas_llevan_a_operaciones_con_y_sin_javascript(self):
         for consulta in ("expresiones matriciales", "expresión", "expresiones", "matrices", "suma", "resta", "producto",
@@ -367,7 +368,7 @@ class PruebasIgualdadYSubexpresiones(SimpleTestCase):
     def test_calcular_solo_una_parte_con_traspuestas_en_medio(self):
         html = self.client.post(RUTA, datos_simbolos("A(A + B)ᵀ", self.SIMBOLOS, nodo="0.1")).content.decode()
         texto = " ".join(strip_tags(html).split())
-        self.assertIn("Subexpresión · 2×2", texto)
+        self.assertIn("Subexpresión · Matriz 2×2", texto)
         self.assertEqual(Contenido(html).tablas["Resultado"], [["1", "4"], ["3", "4"]])
         html = self.client.post(RUTA, datos_simbolos("A(A + B)ᵀ", self.SIMBOLOS, nodo="0.1.0")).content.decode()
         self.assertEqual(Contenido(html).tablas["Resultado"], [["1", "3"], ["4", "4"]])

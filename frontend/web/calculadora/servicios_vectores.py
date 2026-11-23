@@ -1,30 +1,19 @@
-"""Presentación de las operaciones con vectores para la interfaz web.
+"""Presentación de x1 u + … + xk w = b en Operaciones: ¿es b combinación lineal y con qué coeficientes?
 
-No calcula nada: llama a `backend.vectores` y convierte los valores exactos
-en textos listos para la plantilla (vectores como «(1, 2, 3)», el desarrollo
-componente a componente y, en la combinación lineal, el planteamiento, el
-sistema equivalente y la conclusión en el lenguaje del ejercicio).
+No calcula nada: llama a `backend.vectores` y convierte los valores exactos en textos
+listos para la plantilla (vectores como «(1, 2, 3)», el planteamiento, el sistema
+equivalente y la conclusión en el lenguaje del ejercicio). Sumas, restas y escalares
+con vectores los evalúa el motor de expresiones, como cualquier otra operación.
 """
 
 from fractions import Fraction
 
 from .presentacion_numerica import formatear_exacto
-from backend.vectores import (
-    NOMBRE_COEFICIENTE,
-    evaluar_combinacion_lineal,
-    multiplicar_escalar,
-    operar_vectores as calcular_vectores,
-)
+from backend.vectores import NOMBRE_COEFICIENTE, evaluar_combinacion_lineal
 
-from .opciones_vectores import NOMBRE_ESCALAR, NOMBRE_OBJETIVO
 from .servicios import adaptar_pasos, clave_clasificacion, formatear_matriz
 
-TITULOS = {
-    "suma": "Suma de vectores",
-    "resta": "Resta de vectores",
-    "escalar": "Multiplicación de un vector por un escalar",
-    "combinacion": "Combinación lineal",
-}
+TITULO_COMBINACION = "Combinación lineal"
 
 
 def numero(valor):
@@ -40,56 +29,8 @@ def texto_vector(vector):
     return f"({', '.join(componentes(vector))})"
 
 
-def _con_parentesis(valor, tambien_fracciones=False):
-    """Un operando negativo (o fraccionario, si se pide) se encierra para no confundir signos."""
-    fraccion = Fraction(valor)
-    texto = formatear_exacto(fraccion)
-    if fraccion < 0 or (tambien_fracciones and fraccion.denominator != 1):
-        return f"({texto})"
-    return texto
-
-
-def desarrollo_escalar(escalar, u):
-    factor = _con_parentesis(escalar, tambien_fracciones=True)
-    return [f"{factor}·{_con_parentesis(a, tambien_fracciones=True)}" for a in u]
-
-
 def _entrada(nombre, vector):
     return {"nombre": nombre, "componentes": componentes(vector), "texto": texto_vector(vector)}
-
-
-def _operacion_componente_a_componente(entrada):
-    operacion = entrada["operacion"]
-    vectores = entrada["vectores"]
-
-    if operacion == "escalar":
-        [(nombre, vector)] = vectores.items()
-        escalar = entrada["escalar"]
-        resultado = multiplicar_escalar(escalar, vector)
-        desarrollo = desarrollo_escalar(escalar, vector)
-        expresion = f"{NOMBRE_ESCALAR}·{nombre}"
-        sustitucion = f"{_con_parentesis(escalar, tambien_fracciones=True)}·{texto_vector(vector)}"
-    else:
-        coleccion = list(vectores.values())
-        resultado = calcular_vectores(operacion, coleccion)
-        simbolo = "+" if operacion == "suma" else "−"
-        expresion = f" {simbolo} ".join(vectores)
-        sustitucion = f" {simbolo} ".join(texto_vector(v) for v in coleccion)
-        signo = "+" if operacion == "suma" else "-"
-        desarrollo = [f" {signo} ".join(numero(c) if i == 0 else _con_parentesis(c)
-                      for i, c in enumerate(componentes)) for componentes in zip(*coleccion)]
-
-    return {
-        "operacion": operacion,
-        "titulo": TITULOS[operacion],
-        "dimension": entrada["dimension"],
-        "expresion": expresion,
-        # «v1 + v2 = (1, 2, 3) + (4, 5, 6) = (1 + 4, 2 + 5, 3 + 6) = (5, 7, 9)», una igualdad por línea.
-        "sustitucion": sustitucion,
-        "desarrollo": f"({', '.join(desarrollo)})",
-        "resultado": componentes(resultado),
-        "resultado_texto": texto_vector(resultado),
-    }
 
 
 def termino_combinacion(coeficiente, vector_texto, primero):
@@ -113,7 +54,7 @@ def igualdad_combinacion(coeficientes, generadores, objetivo):
     return f"{texto_vector(objetivo)} = {terminos}"
 
 
-def planteamiento(nombres, generadores, objetivo):
+def planteamiento(generadores, objetivo):
     """x1(1, 0) + x2(0, 1) = (3, 4)."""
     terminos = " + ".join(
         f"{NOMBRE_COEFICIENTE}{indice}{texto_vector(vector)}"
@@ -128,13 +69,14 @@ def enumerar(nombres):
     return f"{', '.join(nombres[:-1])} y {nombres[-1]}"
 
 
-def _combinacion_lineal(entrada):
-    nombres = [nombre for nombre in entrada["nombres"] if nombre != NOMBRE_OBJETIVO]
-    generadores = [entrada["vectores"][nombre] for nombre in nombres]
-    objetivo = entrada["vectores"][NOMBRE_OBJETIVO]
+def presentar_combinacion(plan):
+    """x1 u + … + xk w = b (de `backend.expresiones_matriciales.combinacion.plantear`) lista para la plantilla."""
+    nombres = [nombre for nombre, _ in plan["generadores"]]
+    generadores = [valor for _, valor in plan["generadores"]]
+    nombre_objetivo, objetivo = plan["objetivo"]
     evaluacion = evaluar_combinacion_lineal(generadores, objetivo)
 
-    incognitas = [f"{NOMBRE_COEFICIENTE}{indice}" for indice in range(1, len(nombres) + 1)]
+    incognitas = plan["incognitas"]
     clave = clave_clasificacion(evaluacion["clasificacion"])
     lista_nombres = enumerar(nombres)
 
@@ -152,13 +94,13 @@ def _combinacion_lineal(entrada):
         )
 
     if clave == "unica":
-        conclusion = f"Sí: {NOMBRE_OBJETIVO} es combinación lineal de {lista_nombres}."
+        conclusion = f"Sí: {nombre_objetivo} es combinación lineal de {lista_nombres}."
         detalle = "Existe una única combinación."
     elif clave == "infinitas":
-        conclusion = f"Sí: {NOMBRE_OBJETIVO} es combinación lineal de {lista_nombres}."
+        conclusion = f"Sí: {nombre_objetivo} es combinación lineal de {lista_nombres}."
         detalle = "Existen infinitas combinaciones posibles."
     else:
-        conclusion = f"No: {NOMBRE_OBJETIVO} no es combinación lineal de {lista_nombres}."
+        conclusion = f"No: {nombre_objetivo} no es combinación lineal de {lista_nombres}."
         detalle = "El sistema asociado no tiene solución."
 
     libres = [f"{NOMBRE_COEFICIENTE}{indice}" for indice in evaluacion["variables_libres"]]
@@ -168,14 +110,16 @@ def _combinacion_lineal(entrada):
         ejemplo = f"Por ejemplo, con {ceros} = 0:"
 
     return {
+        "modo": "combinacion",
         "operacion": "combinacion",
-        "titulo": TITULOS["combinacion"],
-        "dimension": entrada["dimension"],
+        "texto": plan["texto"],
+        "titulo": TITULO_COMBINACION,
+        "dimension": len(objetivo),
         "generadores": [_entrada(nombre, vector) for nombre, vector in zip(nombres, generadores)],
-        "objetivo": _entrada(NOMBRE_OBJETIVO, objetivo),
+        "objetivo": _entrada(nombre_objetivo, objetivo),
         "nombres_generadores": lista_nombres,
         "incognitas": enumerar(incognitas),
-        "planteamiento": planteamiento(nombres, generadores, objetivo),
+        "planteamiento": planteamiento(generadores, objetivo),
         "ecuaciones": evaluacion["ecuaciones"],
         "matriz_aumentada": formatear_matriz(evaluacion["matriz_aumentada"]),
         "pasos": adaptar_pasos(evaluacion["pasos"]),
@@ -192,10 +136,3 @@ def _combinacion_lineal(entrada):
         "ejemplo": ejemplo,
         "igualdad": igualdad,
     }
-
-
-def operar_vectores(entrada):
-    """Resuelve la entrada ya validada por el formulario y la deja lista para la plantilla."""
-    if entrada["operacion"] == "combinacion":
-        return _combinacion_lineal(entrada)
-    return _operacion_componente_a_componente(entrada)

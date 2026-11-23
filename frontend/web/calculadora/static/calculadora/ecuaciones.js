@@ -19,6 +19,7 @@
     const metodosDeterminantes = root.querySelector("[data-cramer-methods]");
 
     function actualizarMetodos() {
+        if (!cramer) return;
         if (!Object.keys(dimensiones).every(nombre => dimensionValida(campo(nombre)))) return;
         const m = Number(campo("filas").value);
         const n = Number(campo("columnas").value);

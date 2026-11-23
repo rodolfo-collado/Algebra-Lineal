@@ -26,8 +26,15 @@ def _datos_raices(nombre, form, resultado):
     return datos
 
 
+def _iniciales(request, campos):
+    """Lo que el selector de método trae en la consulta (?funcion=…&a=…): valores iniciales, nunca un resultado."""
+    return {campo: request.GET[campo][:512] for campo in campos if request.GET.get(campo)}
+
+
 def _resolver(request, formulario, metodo, nombre):
-    form = formulario(request.POST if request.method == "POST" else None)
+    """Métodos cerrados. Al cambiar de método llegan función, intervalo y ajustes; el cálculo, no."""
+    form = formulario(request.POST if request.method == "POST" else None,
+                      initial=_iniciales(request, ("funcion", "a", "b", "precision", "max_iteraciones")))
     resultado = verificacion = None
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
@@ -92,8 +99,7 @@ def _resolver_abierto(request, formulario, nombre, calcular, puntos):
     """Métodos abiertos: el mismo esqueleto que los cerrados, con puntos iniciales en vez de intervalo.
 
     Al cambiar de método llega ?funcion=…: la función escrita se conserva, nunca el resultado."""
-    form = formulario(request.POST if request.method == "POST" else None,
-                      initial={"funcion": request.GET.get("funcion", "")[:512]})
+    form = formulario(request.POST if request.method == "POST" else None, initial=_iniciales(request, ("funcion",)))
     resultado = None
     if request.method == "POST" and form.is_valid():
         try:
@@ -123,10 +129,20 @@ def resolver_secante(request):
         f, d["x0"], d["x1"], d["precision"], d["max_iteraciones"]), ("x0", "x1"))
 
 
-def newton_raphson_ruta_antigua(request, grafica=False):
-    """Newton-Raphson pasó a Métodos abiertos. GET usa 301 y conserva la consulta; POST usa 308
-    para que el navegador reenvíe el mismo cuerpo, que el formulario entiende tal cual."""
-    destino = reverse("calculadora:newton-raphson-grafica" if grafica else "calculadora:newton-raphson")
+def _redirigir(request, nombre):
+    destino = reverse(f"calculadora:{nombre}")
     if request.GET:
         destino = f"{destino}?{request.GET.urlencode()}"
     return HttpResponsePermanentRedirect(destino, preserve_request=request.method == "POST")
+
+
+def cerrados_ruta_antigua(request, destino):
+    """Bisección y Regla falsa pasaron a Métodos cerrados: GET 301 con la consulta y POST 308,
+    que reenvía el mismo cuerpo al formulario, idéntico al anterior."""
+    return _redirigir(request, destino)
+
+
+def newton_raphson_ruta_antigua(request, grafica=False):
+    """Newton-Raphson pasó a Métodos abiertos. GET usa 301 y conserva la consulta; POST usa 308
+    para que el navegador reenvíe el mismo cuerpo, que el formulario entiende tal cual."""
+    return _redirigir(request, "newton-raphson-grafica" if grafica else "newton-raphson")

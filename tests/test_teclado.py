@@ -39,12 +39,12 @@ STATIC = RAIZ / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 
 # Cada herramienta declara solo los perfiles que usa; el registro no cambia por pantalla.
 HERRAMIENTAS = {
-    "/metodos-numericos/biseccion/": {"funcion-real"},
-    "/metodos-numericos/regla-falsa/": {"funcion-real"},
+    "/metodos-numericos/metodos-cerrados/biseccion/": {"funcion-real"},
+    "/metodos-numericos/metodos-cerrados/regla-falsa/": {"funcion-real"},
     "/matrices/reduccion/": {"sistema", "numerico"},
-    "/vectores/operaciones/": {"numerico"},
     "/matrices/operaciones/": {"numerico", "expresion", "lineal"},
     "/matrices/ecuaciones/": {"numerico"},
+    "/metodos-numericos/metodos-iterativos/": {"numerico"},
     "/matrices/inversa/": {"numerico"},
     "/matrices/determinantes/": {"numerico"},
     "/bases/conversion/": {"base-2", "base-8", "base-10", "base-16"},
@@ -52,15 +52,11 @@ HERRAMIENTAS = {
 
 # Contrato HTTP de cada formulario: el teclado no agrega controles de envío.
 CONTROLES = {
-    "/metodos-numericos/biseccion/": {"csrfmiddlewaretoken", "funcion", "a", "b", "precision", "max_iteraciones"},
-    "/metodos-numericos/regla-falsa/": {"csrfmiddlewaretoken", "funcion", "a", "b", "precision", "max_iteraciones"},
+    "/metodos-numericos/metodos-cerrados/biseccion/": {"csrfmiddlewaretoken", "funcion", "a", "b", "precision", "max_iteraciones"},
+    "/metodos-numericos/metodos-cerrados/regla-falsa/": {"csrfmiddlewaretoken", "funcion", "a", "b", "precision", "max_iteraciones"},
     "/matrices/reduccion/": {
         "csrfmiddlewaretoken", "ecuaciones", "metodo", "mostrar", "mostrar_definido", "sistema",
         "tipo_entrada", "variables",
-    },
-    "/vectores/operaciones/": {
-        "ajustar", "csrfmiddlewaretoken", "dimension", "operacion", "v1_0", "v1_1", "v1_2", "v2_0", "v2_1",
-        "v2_2", "vectores",
     },
     # P26.6: Operaciones con matrices usa el formulario de símbolos (antes Expresiones) y suma la
     # presentación de los productos. El contrato anterior de operación + celdas_A/B ya no existe.
@@ -73,6 +69,11 @@ CONTROLES = {
     "/matrices/ecuaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",
         "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo", "metodo_determinante",
+    },
+    "/metodos-numericos/metodos-iterativos/": {
+        "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",
+        "celda_b_1_0", "columnas", "csrfmiddlewaretoken", "filas", "metodo",
+        "inicial_iterativo", "tolerancia_iterativa", "max_iteraciones",
     },
     # «confirmacion» solo aparece en el aviso de un cálculo largo, nunca en el GET.
     "/matrices/inversa/": {
@@ -295,7 +296,7 @@ class PruebasRegistro(unittest.TestCase):
         self.assertEqual(convertir_a_numero(menos + "1" + fraccion + "2"), Fraction(-1, 2))
 
     def test_perfiles_expresion_y_lineal_reutilizan_teclas_y_sintaxis(self):
-        self.assertEqual([t.insercion for t in PERFIL_EXPRESION.teclas], ["()", "ᵀ", "+", "-", "=", "/"])
+        self.assertEqual([t.insercion for t in PERFIL_EXPRESION.teclas], ["()", "ᵀ", "+", "-", "·", "=", "/"])
         self.assertEqual([g.nombre for g in PERFIL_EXPRESION.grupos], ["Notación", "Operadores"])
         self.assertEqual(PERFIL_EXPRESION.teclas[0].retroceso, 1)
         self.assertEqual([t.insercion for t in PERFIL_LINEAL.teclas], [f"x{i}" for i in range(1, 7)] + ["+", "-", "/"])
@@ -419,7 +420,6 @@ class PruebasTecladoEnPantalla(SimpleTestCase):
             ("/matrices/ecuaciones/", "data-equation-entry", "", "ecuacion-form"),
             ("/matrices/inversa/", "data-inverse-entry", "", "inversa-form"),
             ("/matrices/determinantes/", "data-determinant-entry", "", "determinantes-form"),
-            ("/vectores/operaciones/", "id", "vector-list", "vectores-form"),
         ):
             with self.subTest(ruta=ruta):
                 elemento = next(e for e in self.pagina(ruta).elementos if atributo in e and (e[atributo] or "") == valor)

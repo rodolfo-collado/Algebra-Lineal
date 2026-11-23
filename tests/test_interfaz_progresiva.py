@@ -143,72 +143,60 @@ def texto_plano(html):
     return " ".join(strip_tags(html).split())
 
 
-class PruebasMenuBajoDemanda(SimpleTestCase):
-    def test_el_menu_nace_cerrado_y_un_solo_boton_lo_controla(self):
+class PruebasNavegacionSinCajon(SimpleTestCase):
+    """El cajón global se retiró: la navegación usa áreas, migas, hermanas e Inicio."""
+
+    def test_sin_cajon_ni_boton_menu_ni_preferencias_viejas(self):
         for ruta in ("/", "/matrices/reduccion/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
                 html = respuesta.content.decode("utf-8")
                 documento = Documento(respuesta)
-                boton = next(c for c in documento.controles if c.get("id") == "navigation-toggle")
-                self.assertEqual(boton["type"], "button")
-                self.assertEqual(boton["aria-expanded"], "false")
-                self.assertEqual(boton["aria-controls"], "navegacion-principal")
-                # Sin JavaScript la navegación se ve en flujo; el botón solo aparece con el script.
-                self.assertIn("hidden", boton)
-                self.assertIn("sidebar-backdrop", documento.ids)
-                cerrar = next(c for c in documento.controles if c.get("id") == "sidebar-close")
-                self.assertEqual(cerrar["type"], "button")
-                # Ya no hay una columna permanente ni una preferencia guardada para ella.
+                for retirado in ("navigation-toggle", "navegacion-principal", "sidebar-backdrop", "sidebar-close"):
+                    self.assertNotIn(retirado, documento.ids)
+                self.assertNotIn("data-drawer", html)
                 self.assertNotIn("data-menu", html)
-                self.assertNotIn('"algebra-lineal-menu"', html)
                 self.assertContains(respuesta, 'root.classList.add("js")')
+                # El único control de la navegación (riel de BelugaCalc) nace oculto sin JavaScript.
+                plegar = next(c for c in documento.controles if c.get("id") == "areas-plegar")
+                self.assertEqual((plegar["type"], plegar["aria-expanded"], plegar["aria-controls"]),
+                                 ("button", "false", "nav-areas"))
+                self.assertIn("hidden", plegar)
 
-    def test_navigation_js_abre_cierra_con_escape_y_fondo_y_devuelve_el_foco(self):
+    def test_navigation_js_conserva_anclas_hermanas_y_riel(self):
         script = (STATIC / "navigation.js").read_text(encoding="utf-8")
         for contrato in (
-            'button.setAttribute("aria-expanded", String(abierto))',
-            'root.toggleAttribute("data-drawer", abierto)',
-            "sidebar.hidden = !abierto",
-            "main.inert = abierto",
-            'event.key === "Escape" && abierto',
-            'backdrop.addEventListener("click", cerrar)',
-            'closeButton.addEventListener("click", cerrar)',
-            "button.focus()",
-            "primero.focus()",
             'window.addEventListener("hashchange", revelarDestino)',
+            '.rail [aria-current="page"]',
+            'plegar.setAttribute("aria-expanded"',
+            'root.toggleAttribute("data-riel-abierto", abierto)',
+            'sessionStorage.setItem("pygebra-riel"',
         ):
             self.assertIn(contrato, script)
-        # El cajón se comporta igual en cualquier ancho: no hay modo columna ni preferencia guardada.
-        self.assertNotIn("max-width: 880px", script)
-        self.assertNotIn("algebra-lineal-menu\"", script)
-        self.assertNotIn("data-menu", script)
+        for retirado in ("sidebar", "data-drawer", "main.inert", "localStorage.setItem"):
+            self.assertNotIn(retirado, script)
 
-    def test_el_css_esconde_el_cajon_cerrado_sin_dejar_hueco(self):
-        shell = (STATIC / "styles" / "shell.css").read_text(encoding="utf-8")
-        self.assertRegex(shell, r"\.js \.app-sidebar \{[^}]*position: fixed;[^}]*display: none;")
-        # Abierto es una columna: el pie de funciones de la app queda abajo.
-        self.assertRegex(shell, r"\.js\[data-drawer\] \.app-sidebar \{\s*display: flex;\s*flex-direction: column;")
-        self.assertNotIn("data-menu", shell)
-        self.assertNotIn("grid-template-columns: var(--nav-width)", shell)
+    def test_el_css_no_conserva_el_cajon(self):
+        css = "\n".join(p.read_text(encoding="utf-8") for p in (STATIC / "styles").glob("*.css"))
+        for retirado in (".app-sidebar", "data-drawer", ".sidebar-backdrop", ".navigation-toggle"):
+            self.assertNotIn(retirado, css)
         tokens = (STATIC / "styles" / "tokens.css").read_text(encoding="utf-8")
-        self.assertIn("--nav-width", tokens)
         self.assertIn("--content-max", tokens)
 
-    def test_el_cajon_conserva_rutas_estado_activo_y_buscador_tambien_tras_resolver(self):
-        paginas = [(h.ruta, self.client.get(h.ruta), h.ruta) for h in disponibles()]
-        paginas.append(("/", self.client.get("/"), "/"))
-        paginas.append(("/sistemas/ (POST)", self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss"}), "/matrices/reduccion/"))
-        for nombre, respuesta, activa in paginas:
+    def test_cada_pagina_lleva_a_inicio_a_su_area_y_a_sus_hermanas_tambien_tras_resolver(self):
+        paginas = [(h.ruta, self.client.get(h.ruta), h) for h in disponibles()]
+        paginas.append(("/sistemas/ (POST)", self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss"}),
+                        catalogo.REDUCCION_FILAS))
+        for nombre, respuesta, herramienta in paginas:
             with self.subTest(pagina=nombre):
                 documento = Documento(respuesta)
-                enlaces = documento.enlaces_en("Herramientas")
-                self.assertEqual({a["href"] for a in enlaces}, {"/", *(h.ruta for h in disponibles())})
-                self.assertEqual([a["href"] for a in enlaces if a.get("aria-current") == "page"], [activa])
-                formularios = [f for f in documento.formularios if f.get("role") == "search"]
-                self.assertTrue(any(f.get("data-buscador") == "arbol-herramientas" for f in formularios))
+                areas = {a["href"] for a in documento.enlaces_en("Áreas")}
+                self.assertEqual(areas, {"/", *(a.ruta for a in catalogo.AREAS if a.disponible)})
+                self.assertIn(herramienta.area.ruta, [a["href"] for a in documento.enlaces_en("Ruta de navegación")])
+                self.assertContains(respuesta, 'href="/#buscador-inicio"')
                 for area in catalogo.AREAS:
-                    self.assertContains(respuesta, area.nombre)
+                    if area.disponible:
+                        self.assertContains(respuesta, area.nombre)
 
 
 class PruebasInicioPorTemas(SimpleTestCase):
@@ -312,7 +300,7 @@ class PruebasFormularioProgresivo(SimpleTestCase):
         self.assertNotIn("open = true", script)
 
     def test_el_teclado_contextual_llega_a_todas_las_herramientas(self):
-        for ruta in ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/"):
+        for ruta in ("/matrices/reduccion/", "/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/"):
             with self.subTest(ruta=ruta):
                 html = self.client.get(ruta).content.decode("utf-8")
                 teclados = Pagina(html).teclados
@@ -400,9 +388,10 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss_jordan", "mostrar_definido": "1", "mostrar": TODOS})
         html = respuesta.content.decode("utf-8")
         texto = seccion_resultado(respuesta)
-        orden = ("Ver procedimiento", "Matriz inicial", "Operaciones por filas", "Paso 1",
-                 "Resultado", "Clasificación", "Consistente de solución única", "Solución x₁ = 2 x₂ = 1",
-                 "Columnas pivote:", "Matriz reducida")
+        # Resultado primero; el procedimiento, plegado después.
+        orden = ("Resultado", "Clasificación", "Consistente de solución única", "Solución x₁ = 2 x₂ = 1",
+                 "Columnas pivote:", "Matriz reducida", "Ver procedimiento", "Matriz inicial",
+                 "Operaciones por filas", "Paso 1")
         posiciones = []
         for fragmento in orden:
             posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
@@ -413,9 +402,10 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         self.assertNotIn('href="#procedimiento"', html)
         self.assertEqual(html.count('id="procedimiento"'), 1)
         self.assertLess(html.index('id="resultado"'), html.index('id="procedimiento"'))
-        # El resultado queda después y fuera del details: se ve sin abrir el procedimiento.
+        # El resultado queda antes y fuera del details: se ve sin abrir el procedimiento.
         detalle = elemento_html(html, html.index('id="procedimiento"'), "details")
-        self.assertLess(html.index(detalle) + len(detalle), html.index('id="final-title"'))
+        self.assertNotIn('id="final-title"', detalle)
+        self.assertLess(html.index('id="final-title"'), html.index(detalle))
 
     def test_sin_procedimiento_no_hay_desplegable_y_la_matriz_final_sigue_en_el_resultado(self):
         respuesta = self.client.post("/matrices/reduccion/", {"sistema": UNICA, "metodo": "gauss", "mostrar_definido": "1", "mostrar": ["clasificacion", "pivotes"]})
@@ -431,10 +421,10 @@ class PruebasProcedimientoPlegable(SimpleTestCase):
         html = respuesta.content.decode("utf-8")
         # El título «Gauss y Gauss-Jordan» va antes; el orden se mide desde el desplegable.
         texto = seccion_resultado(respuesta)
-        texto = texto[texto.index("Ver procedimiento"):]
-        orden = ("Ver procedimiento", "Matriz inicial", "Gauss", "Operaciones por filas",
-                 "Gauss-Jordan", "Resultado", "Clasificación", "Solución x₁ = 2 x₂ = 1",
-                 "Columnas pivote:", "Matriz escalonada", "Matriz reducida")
+        texto = texto[texto.index("Resultado"):]
+        orden = ("Resultado", "Clasificación", "Solución x₁ = 2 x₂ = 1",
+                 "Columnas pivote:", "Matriz escalonada", "Matriz reducida", "Ver procedimiento",
+                 "Matriz inicial", "Gauss", "Operaciones por filas", "Gauss-Jordan")
         posiciones = []
         for fragmento in orden:
             posiciones.append(texto.index(fragmento, posiciones[-1] + 1 if posiciones else 0))
@@ -459,7 +449,7 @@ class PruebasExplorar(SimpleTestCase):
         for respuesta in (
             self.client.get("/matrices/reduccion/"),
             self.client.post("/matrices/reduccion/", {"sistema": "x1+=1", "metodo": "gauss"}),
-            self.client.get("/vectores/operaciones/"),
+            self.client.get("/matrices/operaciones/"),
             self.client.get("/"),
         ):
             self.assertNotContains(respuesta, "También puedes explorar")
@@ -571,7 +561,7 @@ class PruebasAccesibilidadProgresiva(SimpleTestCase):
             with self.subTest(ruta=ruta):
                 self.assertEqual(html.count("<details"), html.count("</details>"))
                 self.assertEqual(html.count("<summary"), html.count("</summary>"))
-                self.assertIn('aria-expanded="false" aria-controls="navegacion-principal"', html)
+                self.assertIn('aria-expanded="false" aria-controls="nav-areas"', html)
 
     def test_el_foco_visible_cubre_summary_y_el_texto_sigue_en_espanol(self):
         base = (STATIC / "styles" / "base.css").read_text(encoding="utf-8")

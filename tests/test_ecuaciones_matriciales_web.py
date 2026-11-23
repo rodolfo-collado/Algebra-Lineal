@@ -1,4 +1,4 @@
-"""Contratos web de P14: Resolver Ax = b como segunda herramienta de Matrices, estructura, resultado y seguridad."""
+"""Contratos web de P14: Sistemas lineales (Ax = b) como segunda herramienta de Matrices, estructura, resultado y seguridad."""
 
 import os
 import re
@@ -61,14 +61,14 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
     def test_ax_b_es_una_herramienta_de_matrices_con_ruta_propia(self):
         self.assertEqual(
             catalogo.herramientas_de(catalogo.MATRICES),
-            (catalogo.OPERACIONES_MATRICES, catalogo.REDUCCION_FILAS, catalogo.ECUACIONES_MATRICIALES, catalogo.MATRIZ_INVERSA,
+            (catalogo.OPERACIONES_MATRICES, catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS, catalogo.MATRIZ_INVERSA,
              catalogo.DETERMINANTES),
         )
         self.assertTrue(catalogo.ECUACIONES_MATRICIALES.disponible)
-        self.assertEqual(catalogo.ECUACIONES_MATRICIALES.nombre, "Resolver Ax = b")
+        self.assertEqual(catalogo.ECUACIONES_MATRICIALES.nombre, "Sistemas lineales (Ax = b)")
         self.assertEqual(reverse("calculadora:ecuaciones-matriciales"), RUTA)
         self.assertEqual(catalogo.herramienta_por_ruta(resolve(RUTA)), catalogo.ECUACIONES_MATRICIALES)
-        self.assertEqual(catalogo.ECUACIONES_MATRICIALES.relacionadas, ("reduccion-filas", "operaciones-matrices", "operaciones-vectores"))
+        self.assertEqual(catalogo.ECUACIONES_MATRICIALES.relacionadas, ("reduccion-filas", "operaciones-matrices"))
         # Operaciones con matrices sigue igual: Ax con x conocido no cambia de significado.
         self.assertEqual(catalogo.OPERACIONES_MATRICES.ruta, RUTA_OPERACIONES)
         self.assertIn("ax", catalogo.OPERACIONES_MATRICES.palabras_clave)
@@ -76,19 +76,18 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
     def test_inicio_sidebar_tema_y_breadcrumbs(self):
         inicio = self.client.get("/")
         documento = Documento(inicio)
-        self.assertIn(RUTA, [a["href"] for a in documento.enlaces_en("Herramientas")])
         self.assertIn(RUTA, [a["href"] for _, a in documento.enlaces if a.get("class") == "tool-link"])
-        self.assertContains(inicio, "Resolver Ax = b")
+        self.assertContains(inicio, "Sistemas lineales (Ax = b)")
         # El explorador de su área la presenta con su descripción.
         self.assertContains(self.client.get("/areas/algebra-lineal/"), catalogo.ECUACIONES_MATRICIALES.descripcion)
         respuesta = self.client.get(RUTA)
         doc = Documento(respuesta)
         self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
-        self.assertContains(respuesta, '<span aria-current="page">Resolver Ax = b</span>', html=True)
-        self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
-        self.assertTrue(doc.categorias["matrices"])
-        enlaces = [a["href"] for a in doc.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
-        self.assertEqual(enlaces, [RUTA_OPERACIONES, "/matrices/reduccion/", RUTA, "/matrices/inversa/", "/matrices/determinantes/"])
+        self.assertContains(respuesta, '<span aria-current="page">Sistemas lineales (Ax = b)</span>', html=True)
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas de Álgebra lineal") if a.get("aria-current") == "page"], [RUTA])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Áreas") if a.get("aria-current")], ["/areas/algebra-lineal/"])
+        enlaces = [a["href"] for a in doc.enlaces_en("Herramientas de Álgebra lineal") if a["href"].startswith("/matrices/")]
+        self.assertEqual(enlaces, [RUTA_OPERACIONES, RUTA, "/matrices/reduccion/", "/matrices/inversa/", "/matrices/determinantes/"])
         self.assertNotContains(respuesta, "Herramientas relacionadas")
 
     def test_busqueda_por_ecuacion_matricial_y_conceptos(self):
@@ -100,7 +99,7 @@ class PruebasCatalogoEcuaciones(SimpleTestCase):
                 self.assertIn(catalogo.ECUACIONES_MATRICIALES, catalogo.buscar_herramientas(consulta))
                 self.assertContains(self.client.get("/", {"q": consulta}), f'href="{RUTA}"')
         # Reducción por filas conserva sus palabras; «resolver» prioriza el nombre de Ax = b.
-        self.assertEqual(catalogo.buscar_herramientas("inconsistente")[0], catalogo.REDUCCION_FILAS)
+        self.assertEqual(catalogo.buscar_herramientas("inconsistente")[:2], (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS))
         self.assertEqual(catalogo.buscar_herramientas("resolver")[0], catalogo.ECUACIONES_MATRICIALES)
         for consulta in ("gauss", "pivote", "binario", "traspuesta"):
             self.assertNotIn(catalogo.ECUACIONES_MATRICIALES, catalogo.buscar_herramientas(consulta))
@@ -212,7 +211,7 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         self.assertIn("b es combinación lineal de las columnas de A de una única manera.", texto)
         self.assertIn("b = 3a₁ + 2a₂", texto)
         self.assertIn('data-kind="unica"', html)
-        self.assertIn("Ecuación matricial · Gauss-Jordan", texto)
+        self.assertIn("Sistema lineal Ax = b · A (2×2) · x (2) = b (2) · Gauss-Jordan Solución única", texto)
 
     def test_solucion_unica_rectangular_tres_por_dos(self):
         html, doc, texto = self.resolver(datos_ecuacion(*UNICA_RECTANGULAR, metodo="gauss"))
@@ -263,9 +262,9 @@ class PruebasResultadosEcuacion(SimpleTestCase):
         html, doc, texto = self.resolver(datos_ecuacion(*UNICA))
         # Primero, un «Ver procedimiento» cerrado con las equivalencias y la eliminación; después, el resultado.
         self.assertLess(html.index('id="results-title"'), html.index('id="procedimiento"'))
-        self.assertLess(html.index('id="procedimiento"'), html.index('id="final-title"'))
+        self.assertLess(html.index('id="final-title"'), html.index('id="procedimiento"'))
         self.assertLess(texto.index("Ver procedimiento"), texto.index("1 · Ecuación matricial"))
-        self.assertLess(texto.index("Eliminación por Gauss-Jordan"), texto.index("Resultado Ax = b"))
+        self.assertLess(texto.index("Resultado Ax = b"), texto.index("Eliminación por Gauss-Jordan"))
         for etapa in ("1 · Ecuación matricial", "2 · Ecuación vectorial", "3 · Sistema equivalente", "4 · Matriz aumentada"):
             self.assertIn(etapa, texto)
         self.assertLess(texto.index("1 · Ecuación matricial"), texto.index("2 · Ecuación vectorial"))

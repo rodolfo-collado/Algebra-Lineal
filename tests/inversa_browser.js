@@ -91,7 +91,7 @@
             w = await post(frame);
             igual(cantidad(w, '.panel-final'), 1);
             igual([...w.document.querySelectorAll('.panel-final td')].map(td => td.textContent.trim()), ['5', '-3']);
-            igual(q(w, '#procedimiento').compareDocumentPosition(q(w, '.panel-final')) & 4, 4);
+            igual(q(w, '.panel-final').compareDocumentPosition(q(w, '#procedimiento')) & 4, 4);
             valor(w, '[name="celda_b_0_0"]', 4);
             igual(q(w, '#resultado').hidden, false);
             igual(q(w, '#resultado').dataset.resultado, 'desactualizado');

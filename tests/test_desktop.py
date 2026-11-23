@@ -563,11 +563,10 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertIn("algebra-lineal-tema", respuesta.read().decode("utf-8"))
 
             for recurso, marca in (
-                ("navigation.js", "navegacion-principal"),
+                ("navigation.js", "areas-plegar"),
                 ("buscador.js", "data-buscador"),
                 ("teclado.js", "data-insercion"),
                 ("conversion.js", "data-conversion-bases"),
-                ("vectores.js", "data-vectores"),
             ):
                 with cliente_http.open(
                     f"{url}static/calculadora/{recurso}",
@@ -643,11 +642,12 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             self.assertIn("D₁₆", conversion)
             self.assertNotIn("15₈", conversion)
 
-            # Operaciones con vectores: la combinación lineal reutiliza Gauss-Jordan por la misma pila.
+            # La antigua Operaciones con vectores redirige a Operaciones y su POST se calcula allí:
+            # la combinación lineal reutiliza Gauss-Jordan por la misma pila.
             url_vectores = f"{url}vectores/operaciones/"
             with cliente_http.open(url_vectores, timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
-                self.assertIn("Operaciones con vectores", respuesta.read().decode("utf-8"))
+                self.assertIn("Operaciones · PyGebra", respuesta.read().decode("utf-8"))
             solicitud = Request(
                 url_vectores,
                 data=urlencode(
@@ -677,7 +677,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
 
             url_matrices = f"{url}matrices/operaciones/"
             with cliente_http.open(url_matrices, timeout=3.0) as respuesta:
-                self.assertIn("Operaciones con matrices", respuesta.read().decode("utf-8"))
+                self.assertIn("Operaciones", respuesta.read().decode("utf-8"))
             for operacion, esperado in (
                 ("suma", [["2", "4", "6"], ["8", "10", "12"]]),
                 ("resta", [["0", "0", "0"], ["0", "0", "0"]]),
@@ -720,7 +720,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
             with cliente_http.open(url_ecuaciones, timeout=3.0) as respuesta:
                 self.assertEqual(respuesta.status, 200)
                 pagina = respuesta.read().decode("utf-8")
-            self.assertIn("Resolver Ax = b", pagina)
+            self.assertIn("Sistemas lineales (Ax = b)", pagina)
             self.assertIn('aria-label="Vector incógnita x, no editable"', pagina)
             for datos, x, textos in (
                 (datos_ecuacion(a=[[2, 0], [0, 3]], b=[1, 1], metodo="comparar"), [["1/2"], ["1/3"]],

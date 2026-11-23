@@ -220,8 +220,8 @@ class PruebasWorkflowRelease(unittest.TestCase):
         self.assertRegex(self.comprobar, r"needs:\s*validar")
         self.assertIn("uses: ./.github/workflows/ci.yml", self.comprobar)
         self.assertRegex(self.publicar, r"needs:\s*\[\s*validar\s*,\s*comprobar\s*\]")
-        for forbidden in ("always()", "continue-on-error"):
-            self.assertNotIn(forbidden, self.release + self.ci)
+        self.assertNotIn("always()", self.release)
+        self.assertNotIn("continue-on-error", self.release + self.ci)
         self.assertNotIn("--method POST", self.validar + self.comprobar)
         self.assertLess(self.publicar.index('git/tags"'), self.publicar.index('git/refs"'))
         self.assertLess(self.publicar.index('git/refs"'), self.publicar.index('gh release create'))
@@ -231,7 +231,7 @@ class PruebasWorkflowRelease(unittest.TestCase):
     def test_checkout_y_assets_anclados_al_sha_del_evento(self):
         self.assertIn("ref: ${{ github.sha }}", self.validar)
         self.assertIn("fetch-depth: 0", self.validar)
-        self.assertEqual(self.ci.count("ref: ${{ github.sha }}"), 2)
+        self.assertEqual(self.ci.count("ref: ${{ github.sha }}"), 3)
         self.assertIn("needs.validar.outputs.commit", self.publicar)
         self.assertIn("needs.validar.outputs.tag", self.publicar)
         self.assertIn('-f object="$COMMIT"', self.publicar)
@@ -245,7 +245,7 @@ class PruebasWorkflowRelease(unittest.TestCase):
         self.assertRegex(bloque(self.release, "permissions"), r"contents:\s*read")
         self.assertRegex(bloque(self.ci, "permissions"), r"contents:\s*read")
         self.assertNotIn("actions/checkout@", self.publicar)
-        self.assertEqual((self.validar + self.ci).count("persist-credentials: false"), 3)
+        self.assertEqual((self.validar + self.ci).count("persist-credentials: false"), 4)
         self.assertNotIn("pull_request_target", self.release + self.ci)
 
     def test_ci_cubre_develop_y_pr_main_sin_duplicar_push_main(self):
@@ -260,12 +260,27 @@ class PruebasWorkflowRelease(unittest.TestCase):
                         "uv run --locked python manage.py check",
                         "uv run --locked python -m compileall -q actualizador backend frontend tests main.py manage.py desktop.py"):
             self.assertIn(command, self.ci)
-        windows = bloque(bloque(self.ci, "jobs"), "windows")
-        self.assertIn("python -m unittest discover -v", windows)
+        jobs = bloque(self.ci, "jobs")
+        python = bloque(jobs, "windows_python")
+        windows = bloque(jobs, "windows")
+        resultado = bloque(jobs, "windows_resultado")
+        self.assertIn("uv run --locked python -m unittest discover -v", python)
+        for job in (python, windows):
+            self.assertIn("runs-on: windows-2025", job)
+            self.assertNotRegex(job, r"(?m)^    needs:")
+        self.assertIn("name: Distribución de Windows", resultado)
+        self.assertIn("needs: [windows_python, windows]", resultado)
+        self.assertIn("if: ${{ always() }}", resultado)
+        self.assertIn("PRUEBAS: ${{ needs.windows_python.result }}", resultado)
+        self.assertIn("DISTRIBUCION: ${{ needs.windows.result }}", resultado)
+        self.assertIn('[[ "$PRUEBAS" == success && "$DISTRIBUCION" == success ]]', resultado)
         self.assertLess(windows.index("scripts\\build_windows.ps1"), windows.index("scripts\\test_windows_distribution.ps1"))
+        self.assertIn(r"-IsccPath (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe')", windows)
         self.assertIn("-InstallerPath $installers[0].FullName", windows)
         self.assertIn("if ($installers.Count -ne 1)", windows)
         self.assertIn("dist/installer/PyGebra-Setup-*.exe", windows)
+        self.assertEqual(jobs.count("name: algebra-lineal-windows"), 1)
+        self.assertIn("name: algebra-lineal-windows", windows)
 
     def test_actions_fijadas_a_sha(self):
         for workflow in (self.ci, self.release):

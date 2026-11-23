@@ -1,0 +1,9 @@
+{% comment %}Selector de Métodos cerrados: un enlace por método (cada uno con su ruta, su formulario y su
+resultado). Con JavaScript, el enlace lleva la función, el intervalo y los ajustes escritos; nunca el resultado.{% endcomment %}
+<nav class="metodos-abiertos" aria-label="Método cerrado">
+    <span class="metodos-abiertos-titulo" aria-hidden="true">Método</span>
+    <div class="segmented">
+        <a class="segment" href="{% url 'calculadora:biseccion' %}" data-conservar="funcion a b precision max_iteraciones"{% if metodo == "biseccion" %} aria-current="page"{% endif %}>Bisección <small>punto medio · [a, b]</small></a>
+        <a class="segment" href="{% url 'calculadora:regla-falsa' %}" data-conservar="funcion a b precision max_iteraciones"{% if metodo == "regla_falsa" %} aria-current="page"{% endif %}>Regla falsa <small>recta secante · [a, b]</small></a>
+    </div>
+</nav>

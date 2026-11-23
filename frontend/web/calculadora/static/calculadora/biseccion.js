@@ -27,7 +27,10 @@
             decision: p.fc === 0
                 ? `f(c) = 0 en aritmética de máquina: encontramos una raíz calculada. Ambos extremos pasan a c; no descartamos otra mitad ni seguimos dividiendo.`
                 : decision,
-            intervalo: `Nuevo intervalo: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}], longitud ${n(p.longitud)}.`,
+            // Tres medidas con su nombre: la longitud decide la parada; el cambio |cᵢ − cᵢ₋₁| no.
+            intervalo: `Nuevo intervalo: [${n(p.nuevo_a)}; ${n(p.nuevo_b)}], longitud ${n(p.longitud)} (criterio de parada). `
+                + (p.error_absoluto === null ? "Error absoluto |cᵢ − cᵢ₋₁|: no aplica en la primera iteración."
+                    : `Error absoluto |cᵢ − cᵢ₋₁| ${formato([p.error_absoluto]).r(p.error_absoluto)}.`),
             puntos: { x: [p.a, p.c, p.b], y: [p.fa, p.fc, p.fb], text: ["a", "c (punto medio)", "b"],
                 size: [9, 13, 9], symbol: ["circle", "diamond", "circle"] },
             // Del punto medio sobre el eje hasta f(c): ahí se lee el signo que decide la mitad.

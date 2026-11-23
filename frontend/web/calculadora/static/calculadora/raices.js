@@ -556,10 +556,28 @@
         seccion.querySelector(".field-help").textContent =
             `Agrupadas por función. ${metodo.historial.criterio} «Ver» recupera una ejecución con su recorrido.`;
         $("raices-historial-tabla").replaceChildren(tabla);
+        seccion.querySelector(".disclosure-title").textContent = `Historial de esta sesión (${registros.length})`;
         seccion.hidden = false;
     }
 
     // ---- Eventos ----
+    // Cambiar de método conserva lo escrito que el otro método entiende (data-conservar), nunca el
+    // resultado: el enlace lleva esos campos en la consulta y el servidor los usa como valores iniciales.
+    const enlacesMetodo = [...document.querySelectorAll("[data-conservar]")];
+    function actualizarEnlaces() {
+        enlacesMetodo.forEach(enlace => {
+            const consulta = new URLSearchParams();
+            for (const nombre of enlace.dataset.conservar.split(" ")) {
+                const valor = campo(nombre)?.value.trim();
+                if (valor) consulta.set(nombre, valor);
+            }
+            const destino = new URL(enlace.href, window.location.href);
+            destino.search = consulta.toString();
+            enlace.href = destino.pathname + destino.search;
+        });
+    }
+    form.addEventListener("input", actualizarEnlaces);
+    actualizarEnlaces();
     campo("funcion").addEventListener("input", previsualizar);
     extremos.forEach(n => campo(n).addEventListener("input", sincronizarExtremos));
     elegir.forEach(boton => boton.addEventListener("click", () => {

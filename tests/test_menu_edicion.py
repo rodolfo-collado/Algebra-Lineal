@@ -25,7 +25,7 @@ from frontend.web.calculadora.servicios_romanos import numeracion_romana
 
 STATIC = Path(__file__).resolve().parents[1] / "frontend" / "web" / "calculadora" / "static" / "calculadora"
 CON_ENTRADAS = ("/matrices/operaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/matrices/ecuaciones/",
-                "/matrices/reduccion/", "/vectores/operaciones/", "/romanos/conversion/")
+                "/matrices/reduccion/", "/romanos/conversion/")
 COMANDOS = ["toda", "fila", "columna", "principal", "secundaria", "superior", "inferior"]
 # Mismo intervalo que menu_edicion.js: enteros pequeños para probar procedimientos.
 ENTEROS = [str(valor) for valor in range(-9, 10)]

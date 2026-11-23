@@ -1,0 +1,935 @@
+/* HeyAlgb: una experiencia gráfica intensa. Reinterpreta su portada de cortes y su panel de
+   módulos: negro, granate y rojo; paneles angulares con sombra dura; titulares condensados
+   inclinados; etiquetas superpuestas y movimientos rápidos en diagonal. Gráficos originales
+   (cortes, trama de puntos y estallido), sin recursos de terceros.
+   De noche, un escenario negro con losas granate; de día, un fanzine de papel, tinta y rojo.
+   Los títulos de herramientas no se pasan a mayúsculas: cambiaría la notación (Ax = b). */
+
+[data-estilo="heyalgb"] {
+    --radius-sm: 2px;
+    --radius-md: 2px;
+    --radius-lg: 3px;
+    --hey-titular: Impact, Haettenschweiler, "Arial Narrow Bold", "Bahnschrift Condensed", sans-serif;
+    --hey-etiqueta: "Bahnschrift SemiBold Condensed", "Bahnschrift", "Arial Narrow", sans-serif;
+    --hey-rojo: #fe0000;
+    --hey-granate: #8f0000;
+    --hey-vino: #4d0000;
+    --hey-rapido: cubic-bezier(0.2, 0.9, 0.1, 1);
+    /* Impact solo en los titulares de cartel (no tiene negrita real); el resto, Bahnschrift. */
+    --font-display: "Bahnschrift", "Segoe UI", system-ui, sans-serif;
+}
+
+[data-estilo="heyalgb"][data-theme="dark"] {
+    --hey-tinta: #ffffff;
+    --hey-papel: #060606;
+    --hey-panel: #111111;
+    --hey-sombra: #8f0000;
+    --hey-trama-punto: rgb(254 0 0 / 0.28);
+    --hey-losa: #8f0000;
+    --hey-franja: #4d0000;
+    --hey-esquirla: #060606;
+    --hey-fondo: repeating-linear-gradient(-58deg, rgb(255 255 255 / 0.018) 0 2px, transparent 2px 18px);
+    --hey-placa: #bfbfbf;
+    --hey-placa-texto: #060606;
+    --hey-placa-apagada: #6b6b6b;
+    --hey-respaldo: #ffffff;
+    --hey-tiza: rgb(255 255 255 / 0.13);
+}
+
+[data-estilo="heyalgb"][data-theme="light"] {
+    --hey-tinta: #060606;
+    --hey-papel: #f6f4f4;
+    --hey-panel: #ffffff;
+    --hey-sombra: #060606;
+    --hey-trama-punto: rgb(6 6 6 / 0.22);
+    --hey-losa: #fe0000;
+    --hey-franja: #060606;
+    --hey-esquirla: #8f0000;
+    /* Papel de fanzine: una trama de puntos muy tenue. */
+    --hey-fondo: radial-gradient(circle, rgb(6 6 6 / 0.05) 1.2px, transparent 1.6px) 0 0 / 12px 12px;
+    --hey-placa: #060606;
+    --hey-placa-texto: #ffffff;
+    --hey-placa-apagada: #6b6b6b;
+    --hey-respaldo: #060606;
+    --hey-tiza: rgb(6 6 6 / 0.14);
+}
+
+[data-estilo="heyalgb"] body {
+    background: var(--hey-fondo), var(--color-bg);
+}
+
+/* El cartel desborda el ancho del contenido; la página nunca se desplaza en horizontal. */
+[data-estilo="heyalgb"] .app-layout {
+    overflow-x: clip;
+}
+
+/* —— Cabecera: barra negra, marca sobre una losa granate y franja roja —— */
+
+[data-estilo="heyalgb"] .app-header {
+    border-bottom: 3px solid var(--hey-rojo);
+    background: var(--hey-papel);
+}
+
+[data-theme="light"][data-estilo="heyalgb"] .app-header {
+    background: #ffffff;
+}
+
+[data-estilo="heyalgb"] .app-brand {
+    position: relative;
+    isolation: isolate;
+    padding: 0.3rem 1.6rem 0.3rem 0.75rem;
+    color: #ffffff;
+}
+
+[data-estilo="heyalgb"] .app-brand::before {
+    content: "";
+    position: absolute;
+    inset: -0.1rem 0;
+    z-index: -1;
+    background: var(--hey-granate);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 1rem) 100%, 0 100%);
+}
+
+[data-estilo="heyalgb"] .app-brand .app-mark {
+    color: #ffffff;
+}
+
+[data-estilo="heyalgb"] .app-name {
+    font: 400 1.35rem var(--hey-titular);
+    letter-spacing: 0.02em;
+}
+
+[data-estilo="heyalgb"] :is(.header-buscar, .theme-toggle, .options-toggle, .historial, .historial-boton) {
+    border-width: 2px;
+    border-radius: 2px;
+}
+
+[data-estilo="heyalgb"] :is(.header-buscar, .theme-toggle, .options-toggle) {
+    border-color: var(--hey-tinta);
+    font-family: var(--hey-etiqueta);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: transform var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+[data-estilo="heyalgb"] :is(.header-buscar, .theme-toggle, .options-toggle):hover {
+    box-shadow: 3px 3px 0 var(--hey-rojo);
+    transform: translate(-2px, -2px);
+}
+
+/* Áreas como pestañas en paralelogramo; la activa es un bloque rojo con sombra dura. */
+@media (min-width: 1200px) {
+    [data-estilo="heyalgb"] .header-start {
+        flex: none;
+    }
+
+    /* Con las pestañas a la vista, los botones se quedan en icono (el nombre sigue para lectores). */
+    [data-estilo="heyalgb"] :is(.header-buscar-text, .theme-toggle-text, .options-toggle-text) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    [data-estilo="heyalgb"] .nav-areas {
+        display: block;
+        margin-inline: auto;
+    }
+
+    [data-estilo="heyalgb"] .nav-areas ul {
+        display: flex;
+        gap: 0.2rem;
+    }
+
+    [data-estilo="heyalgb"] .areas-icono {
+        display: none;
+    }
+
+    [data-estilo="heyalgb"] .areas-enlace {
+        position: relative;
+        isolation: isolate;
+        padding: 0.5rem 0.8rem;
+        color: var(--hey-tinta);
+        font: 700 0.88rem var(--hey-etiqueta);
+        white-space: nowrap;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        transition: transform var(--motion-fast);
+    }
+
+    [data-estilo="heyalgb"] .areas-enlace::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        transform: skewX(-14deg);
+        transition: background var(--motion-fast), box-shadow var(--motion-fast);
+    }
+
+    [data-estilo="heyalgb"] .areas-enlace:hover::before {
+        background: var(--color-surface-muted);
+    }
+
+    [data-estilo="heyalgb"] .areas-enlace[aria-current] {
+        color: var(--color-brand-text);
+        transform: rotate(-2deg);
+    }
+
+    [data-estilo="heyalgb"] .areas-enlace[aria-current]::before {
+        background: var(--color-brand);
+        box-shadow: 4px 4px 0 var(--hey-tinta);
+    }
+}
+
+/* —— Inicio: un cartel. Cortes diagonales a sangre, titular enorme y el sello del equipo —— */
+
+[data-estilo="heyalgb"] .home-hero {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    grid-template-areas:
+        "marca sello"
+        "lema sello"
+        "proposito sello"
+        "buscar dedicatoria"
+        "retomar retomar";
+    align-items: center;
+    justify-items: start;
+    column-gap: 2rem;
+    max-width: 1240px;
+    min-height: min(36rem, 82svh);
+    margin: -1.5rem auto 0;
+    padding: 3rem 0 3.5rem;
+}
+
+[data-estilo="heyalgb"] .portada[data-homenaje="heyalgb"],
+[data-estilo="heyalgb"] .home-hero-texto {
+    display: contents;
+}
+
+[data-estilo="heyalgb"] .home-marca { grid-area: marca; }
+[data-estilo="heyalgb"] .hey-recortes { grid-area: lema; }
+[data-estilo="heyalgb"] .home-proposito { grid-area: proposito; }
+[data-estilo="heyalgb"] .home-hero .search { grid-area: buscar; }
+[data-estilo="heyalgb"] .home-retomar { grid-area: retomar; }
+[data-estilo="heyalgb"] .hey-sello { grid-area: sello; justify-self: center; }
+
+/* Los cortes ocupan todo el ancho de la ventana detrás del cartel y terminan en diagonal. */
+.hey-cortes {
+    clip-path: polygon(0 0, 100% 0, 100% 86%, 0 100%);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50% - 50vw);
+    z-index: -1;
+    width: 100vw;
+    height: 100%;
+}
+
+.hey-trama { fill: url(#hey-trama); }
+
+/* Garabatos de tiza originales, como el pizarrón de fondo de su portada. */
+.hey-tiza {
+    fill: none;
+    stroke: var(--hey-tiza);
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.hey-tiza-texto {
+    fill: var(--hey-tiza);
+    font: 64px "Segoe Print", "Bradley Hand", cursive;
+}
+.hey-trama-punto { fill: var(--hey-trama-punto); }
+.hey-losa { fill: var(--hey-losa); }
+.hey-franja { fill: var(--hey-franja); }
+.hey-esquirla { fill: var(--hey-esquirla); }
+
+[data-estilo="heyalgb"] .home-marca {
+    gap: 1rem;
+    transform: rotate(-4deg);
+    transform-origin: left center;
+}
+
+/* El símbolo de PyGebra en un recorte blanco. */
+[data-estilo="heyalgb"] .home-lockup {
+    --color-mark: #060606;
+    padding: 0.55rem 0.6rem 0.45rem;
+    background: #ffffff;
+    color: #060606;
+    box-shadow: 5px 5px 0 var(--hey-rojo);
+    transform: rotate(-3deg);
+}
+
+[data-estilo="heyalgb"] .home-lockup .app-mark {
+    width: clamp(2.6rem, 5vw, 3.6rem);
+}
+
+[data-estilo="heyalgb"] .home-hero .home-title {
+    color: var(--hey-tinta);
+    font: 400 clamp(4rem, 10vw, 7.5rem) / 0.9 var(--hey-titular);
+    letter-spacing: 0.01em;
+    text-shadow: 6px 6px 0 var(--hey-rojo);
+    transform: skewX(-8deg);
+}
+
+/* El lema como nota de recortes, la técnica de su portada: cada letra en su papel, con
+   tipografías del sistema, giro y caja distintos. El texto real sigue en el lema (oculto a
+   la vista, no a los lectores de pantalla). */
+[data-estilo="heyalgb"] .home-hero .home-lead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.hey-recortes {
+    display: none;
+}
+
+[data-estilo="heyalgb"] .hey-recortes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.18rem 0.12rem;
+    margin: 1.5rem 0 0;
+    font-size: clamp(1.2rem, 2.1vw, 1.65rem);
+    line-height: 1;
+}
+
+.hey-recortes span {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.02em;
+    padding: 0.12em 0.14em 0.08em;
+    background: #f2f2f2;
+    color: #111111;
+    font-family: Impact, sans-serif;
+    transform: rotate(var(--giro, -4deg)) scale(var(--escala, 1));
+    translate: 0 var(--alto, 0);
+}
+
+.hey-recortes span:nth-child(3n + 2) {
+    background: #252525;
+    color: #ffffff;
+    box-shadow: inset 0 0 0 2px #ffffff;
+}
+
+.hey-recortes span:nth-child(3n) {
+    background: #e3101b;
+    color: #ffffff;
+}
+
+.hey-recortes span:nth-child(5n + 2) { font-family: Georgia, serif; font-weight: 700; }
+.hey-recortes span:nth-child(5n + 3) { font-family: "Arial Black", sans-serif; }
+.hey-recortes span:nth-child(5n + 4) { font-family: "Courier New", monospace; font-weight: 700; }
+.hey-recortes span:nth-child(5n) { font-family: Cambria, serif; font-style: italic; }
+.hey-recortes span:nth-child(4n + 1) { --giro: -9deg; --escala: 1.08; }
+.hey-recortes span:nth-child(4n + 2) { --giro: 6deg; --escala: 0.92; --alto: 2px; }
+.hey-recortes span:nth-child(4n + 3) { --giro: -3deg; --escala: 1.12; --alto: -2px; }
+.hey-recortes span:nth-child(4n) { --giro: 10deg; --escala: 0.96; }
+
+/* Entre «Aprende» y «resolviendo». */
+.hey-recortes span:nth-child(7) {
+    margin-right: 0.55em;
+}
+
+/* El propósito, un recorte de papel blanco con su sombra dura (en ambos temas). */
+[data-estilo="heyalgb"] .home-proposito {
+    max-width: 30rem;
+    margin: 1.6rem 0 0;
+    padding: 0.9rem 1.1rem;
+    border: 3px solid #060606;
+    background: #ffffff;
+    color: #1d1d1d;
+    font-size: 1rem;
+    line-height: 1.55;
+    box-shadow: 8px 8px 0 var(--hey-sombra);
+    transform: rotate(1deg);
+}
+
+[data-estilo="heyalgb"] .home-hero .search {
+    width: min(100%, 34rem);
+    margin-top: 2.2rem;
+}
+
+[data-estilo="heyalgb"] .search-label {
+    display: inline-block;
+    padding: 0.1rem 0.7rem;
+    background: var(--hey-tinta);
+    color: var(--hey-papel);
+    font: 400 1.1rem var(--hey-titular);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transform: skewX(-10deg);
+}
+
+[data-estilo="heyalgb"] .search-input {
+    border: 3px solid var(--hey-tinta);
+    border-radius: 0;
+}
+
+[data-estilo="heyalgb"] .search-submit,
+[data-estilo="heyalgb"] .btn-primary {
+    border: 0;
+    border-radius: 0;
+    background: var(--color-brand);
+    color: var(--color-brand-text);
+    font-family: var(--hey-titular);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    box-shadow: 5px 5px 0 var(--hey-tinta);
+    transition: transform var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+[data-estilo="heyalgb"] .search-submit {
+    text-transform: uppercase;
+}
+
+[data-estilo="heyalgb"] :is(.search-submit, .btn-primary):not(:disabled):hover {
+    background: var(--color-brand);
+    box-shadow: 8px 8px 0 var(--hey-tinta);
+    transform: translate(-3px, -3px);
+}
+
+[data-estilo="heyalgb"] :is(.search-submit, .btn-primary):not(:disabled):active {
+    box-shadow: 1px 1px 0 var(--hey-tinta);
+    transform: translate(3px, 3px);
+}
+
+[data-estilo="heyalgb"] .btn-secondary {
+    border: 2px solid var(--hey-tinta);
+}
+
+/* El sello: estallido rojo, el logotipo en un recorte negro y la dedicatoria superpuesta. */
+.hey-sello {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: min(100%, 25rem);
+    aspect-ratio: 1;
+}
+
+.hey-estallido {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: var(--hey-rojo);
+    filter: drop-shadow(10px 10px 0 #060606);
+}
+
+[data-theme="dark"] .hey-estallido {
+    fill: #fe0000;
+    filter: drop-shadow(10px 10px 0 #4d0000);
+}
+
+/* De día la losa ya es roja: el estallido se vuelve papel con su sombra de tinta. */
+[data-theme="light"] .hey-estallido {
+    fill: #ffffff;
+}
+
+.hey-logo {
+    position: relative;
+    width: 56%;
+    padding: 6%;
+    border: 5px solid #ffffff;
+    background: #060606;
+    box-shadow: 10px 10px 0 #060606;
+    transform: rotate(7deg);
+}
+
+.hey-logo img {
+    width: 100%;
+}
+
+[data-estilo="heyalgb"] .portada[data-homenaje="heyalgb"] .portada-dedicatoria {
+    position: relative;
+    z-index: 1;
+    grid-area: dedicatoria;
+    justify-self: center;
+    align-self: start;
+    margin-top: -3rem;
+    padding: 0.45rem 1.25rem 0.35rem;
+    background: #ffffff;
+    color: #060606;
+    font: 400 clamp(1.1rem, 2vw, 1.45rem) var(--hey-titular);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 6px 6px 0 var(--hey-rojo);
+    transform: rotate(-5deg) skewX(-10deg);
+}
+
+[data-estilo="heyalgb"] .portada-texto b {
+    color: #c00000;
+    font-weight: 400;
+}
+
+/* —— Inicio: módulos en paneles angulares escalonados, con número enorme en contorno —— */
+
+[data-estilo="heyalgb"] .home-catalog {
+    max-width: 1240px;
+    margin-inline: auto;
+}
+
+[data-estilo="heyalgb"] .home-section-heading {
+    margin: 2.5rem 0 1.5rem;
+}
+
+[data-estilo="heyalgb"] .home-section-heading h2 {
+    padding: 0.2rem 1.1rem 0.1rem;
+    background: var(--hey-tinta);
+    color: var(--hey-papel);
+    font: 400 clamp(1.6rem, 3vw, 2.2rem) var(--hey-titular);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    box-shadow: 6px 6px 0 var(--hey-rojo);
+    transform: skewX(-10deg) rotate(-1.5deg);
+}
+
+[data-estilo="heyalgb"] .home-section-heading p {
+    margin-left: 1rem;
+    font-family: var(--hey-etiqueta);
+    font-size: 1rem;
+}
+
+/* Cada área es una placa trapezoidal con su insignia numerada, como el menú de su portada.
+   Al pasar o enfocar, la placa salta a la derecha sobre un respaldo y una franja roja. */
+[data-estilo="heyalgb"] .canales {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.35rem;
+    max-width: 62rem;
+    padding: 0.75rem 2rem 2rem 0;
+    counter-reset: modulo;
+}
+
+[data-estilo="heyalgb"] .canal {
+    counter-increment: modulo;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: 4.6rem minmax(0, 1fr);
+    column-gap: 1.2rem;
+    align-items: center;
+    overflow: visible;
+    min-height: 0;
+    margin-left: calc(var(--escalon, 0) * 1.6rem);
+    padding: 0.95rem 4rem 1rem 1rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--hey-placa-texto);
+}
+
+[data-estilo="heyalgb"] .canal:nth-child(2) { --escalon: 1; }
+[data-estilo="heyalgb"] .canal:nth-child(3) { --escalon: 2; }
+[data-estilo="heyalgb"] .canal:nth-child(4) { --escalon: 3; }
+[data-estilo="heyalgb"] .canal:nth-child(5) { --escalon: 4; }
+
+[data-estilo="heyalgb"] .canal::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--hey-placa);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 2.6rem) 100%, 0 100%);
+}
+
+/* La insignia de cinco lados con el número. */
+[data-estilo="heyalgb"] .canal::after {
+    content: counter(modulo) / "";
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    display: grid;
+    place-items: center;
+    width: 4.2rem;
+    height: 4.2rem;
+    background: #ffffff;
+    color: #060606;
+    font: 400 2.3rem/1 var(--hey-titular);
+    clip-path: polygon(10% 0, 100% 8%, 90% 100%, 0 90%, 3% 34%);
+}
+
+[data-theme="light"][data-estilo="heyalgb"] .canal::after {
+    background: #e3101b;
+    color: #ffffff;
+}
+
+[data-estilo="heyalgb"] .canal:not(.es-pronto):is(:hover, :focus-within) {
+    border-color: transparent;
+    box-shadow: none;
+    filter: drop-shadow(0 -5px 0 #e3101b) drop-shadow(-14px 10px 0 var(--hey-respaldo));
+    transform: translateX(15px);
+}
+
+[data-estilo="heyalgb"] .canal:not(.es-pronto):is(:hover, :focus-within)::before {
+    background: #ff1724;
+}
+
+[data-estilo="heyalgb"] .canal:not(.es-pronto):is(:hover, :focus-within)::after {
+    background: #060606;
+    color: #ffffff;
+}
+
+[data-estilo="heyalgb"] .canal:not(.es-pronto):is(:hover, :focus-within) :is(.canal-nombre, .canal-descripcion) {
+    color: #060606;
+}
+
+[data-estilo="heyalgb"] .canal > * {
+    grid-column: 2;
+    margin: 0;
+}
+
+[data-estilo="heyalgb"] .canal-chip {
+    position: absolute;
+    top: -0.75rem;
+    right: 4.2rem;
+    padding: 0.25rem 0.6rem;
+    border: 0;
+    border-radius: 0;
+    background: #060606;
+    color: #ffffff;
+    box-shadow: 3px 3px 0 #e3101b;
+    transform: skewX(-10deg) rotate(-3deg);
+}
+
+[data-estilo="heyalgb"] .canal-nombre {
+    color: inherit;
+    font: 400 clamp(1.7rem, 3vw, 2.3rem) / 1 var(--hey-titular);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+[data-estilo="heyalgb"] .canal-descripcion {
+    margin-top: 0.3rem;
+    color: inherit;
+}
+
+[data-estilo="heyalgb"] .canal-temas {
+    margin-top: 0.55rem;
+    padding: 0;
+}
+
+[data-estilo="heyalgb"] .canal-temas span {
+    border-radius: 0;
+    background: #060606;
+    color: #ffffff;
+    font: 700 0.78rem var(--hey-etiqueta);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transform: skewX(-10deg);
+}
+
+[data-theme="light"][data-estilo="heyalgb"] .canal-temas span {
+    background: #e3101b;
+}
+
+[data-estilo="heyalgb"] .canal.es-pronto {
+    padding-bottom: 1rem;
+    background: transparent;
+}
+
+[data-estilo="heyalgb"] .canal.es-pronto::before {
+    background: var(--hey-placa-apagada);
+}
+
+/* —— Área y herramienta: titulares de cartel y paneles con esquina roja —— */
+
+[data-estilo="heyalgb"] .area-header {
+    position: relative;
+    margin: 0.5rem 0 1.75rem;
+}
+
+[data-estilo="heyalgb"] .area-title {
+    justify-self: start;
+    padding: 0.15rem 1.2rem 0.05rem;
+    background: var(--hey-tinta);
+    color: var(--hey-papel);
+    font: 400 clamp(2.4rem, 5vw, 3.6rem) / 1.05 var(--hey-titular);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    box-shadow: 8px 8px 0 var(--hey-rojo);
+    transform: skewX(-8deg) rotate(-1.5deg);
+}
+
+[data-estilo="heyalgb"] .area-lead {
+    margin-top: 0.9rem;
+}
+
+[data-estilo="heyalgb"] .destacado-titulo {
+    font-family: var(--hey-titular);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    text-shadow: 3px 3px 0 var(--hey-rojo);
+}
+
+[data-estilo="heyalgb"] .tool-title {
+    font: 400 clamp(2rem, 4vw, 2.8rem) / 1.05 var(--hey-titular);
+    letter-spacing: 0.015em;
+}
+
+/* Un tajo rojo bajo el título de cada herramienta. */
+[data-estilo="heyalgb"] .tool-title::after {
+    content: "";
+    display: block;
+    width: 5.5rem;
+    height: 0.45rem;
+    margin-top: 0.45rem;
+    background: var(--hey-rojo);
+    transform: skewX(-30deg);
+}
+
+[data-estilo="heyalgb"] :is(.panel, .indice, .destacado, .rail) {
+    position: relative;
+    border: 2px solid var(--hey-tinta);
+    border-radius: 0;
+    background: var(--hey-panel);
+    box-shadow: 6px 6px 0 var(--hey-sombra);
+}
+
+/* La esquina superior derecha, un triángulo rojo. */
+[data-estilo="heyalgb"] :is(.panel, .destacado)::after {
+    content: "";
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    border-top: 1.4rem solid var(--hey-rojo);
+    border-left: 1.4rem solid transparent;
+    pointer-events: none;
+}
+
+[data-estilo="heyalgb"] :is(.indice-item.elegida, .rail-enlace[aria-current="page"]) {
+    background: var(--color-brand);
+    color: var(--color-brand-text);
+    box-shadow: 4px 4px 0 var(--hey-tinta);
+    transform: skewX(-6deg);
+}
+
+[data-estilo="heyalgb"] :is(.indice-item.elegida, .rail-enlace[aria-current="page"]) .indice-ir {
+    color: currentColor;
+}
+
+[data-estilo="heyalgb"] :is(.indice-tema, .rail-titulo) {
+    color: var(--color-text);
+    font-family: var(--hey-etiqueta);
+    letter-spacing: 0.1em;
+}
+
+/* —— Movimiento: rápido y en diagonal ——
+   Al llegar a una pantalla, un corte en diagonal la descubre: la hoja lleva un filo, una
+   franja roja, un tajo de papel y una banda, y lo que falta por descubrir es el papel del
+   cartel (no un velo oscuro). Filo y banda van en la tinta que contrasta con ese papel:
+   blanca de noche y negra de día, para que rojo, negro y blanco se lean en ambos. Un eco rojo fino sigue la misma diagonal. La pantalla nueva
+   ya se ve en su primer cuarto, la mitad hacia los 80 ms y casi entera a los ~160 ms; las
+   franjas cruzan a ritmo casi constante para que se lean y frenan al salir (480 ms). Al
+   volver atrás el corte cruza en sentido contrario. Las capas no reciben el puntero: se
+   puede leer y pulsar desde el primer fotograma. El contenedor de la página solo cambia
+   su opacidad; los desplazamientos van en las cabeceras (el teclado fijo no se mueve). */
+
+[data-estilo="heyalgb"] {
+    /* Inclinación común de todo el corte (16°): desfase horizontal entre arriba y abajo. */
+    --hey-corte-desfase: calc(140vh * 0.287);
+    /* Desde el borde que descubre: filo, franja roja (la dominante), tajo de papel y banda. */
+    --hey-franjas: var(--hey-tinta) 0 0.5vw, #e3101b 0.5vw 3vw, transparent 3vw 3.6vw,
+        var(--hey-tinta) 3.6vw 5.4vw, transparent 5.4vw;
+}
+
+[data-estilo="heyalgb"][data-theme="dark"] {
+    --hey-tinta: #ffffff;
+}
+
+[data-estilo="heyalgb"][data-theme="light"] {
+    --hey-tinta: #060606;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    [data-estilo="heyalgb"][data-llegada] .app-content {
+        animation: hey-aparecer 0.18s ease-out both;
+    }
+
+    [data-estilo="heyalgb"][data-llegada] :is(.tool-header, .area-header, .breadcrumbs, .home-marca) {
+        animation: hey-golpe 0.22s var(--hey-rapido) both;
+    }
+
+    [data-estilo="heyalgb"][data-llegada][data-dir="atras"] :is(.tool-header, .area-header, .breadcrumbs, .home-marca) {
+        animation-name: hey-golpe-atras;
+    }
+
+    /* La hoja y el papel que falta descubrir: una sola pieza inclinada que sale de la pantalla. */
+    [data-estilo="heyalgb"][data-llegada] body::after,
+    [data-estilo="heyalgb"][data-llegada] body::before {
+        content: "";
+        position: fixed;
+        top: -20vh;
+        bottom: -20vh;
+        z-index: 60;
+        pointer-events: none;
+        will-change: transform;
+    }
+
+    [data-estilo="heyalgb"][data-llegada] body::after {
+        left: 0;
+        width: 260vw;
+        background:
+            linear-gradient(90deg, var(--hey-franjas)),
+            var(--hey-fondo, none),
+            var(--hey-papel);
+        animation: hey-cortar 0.48s cubic-bezier(0.3, 0.45, 0.25, 1) both;
+    }
+
+    /* El eco: una astilla roja que sigue a la hoja por el lado ya descubierto. */
+    [data-estilo="heyalgb"][data-llegada] body::before {
+        left: 0;
+        z-index: 61;
+        width: 1.1vw;
+        background: #e3101b;
+        animation: hey-eco 0.48s cubic-bezier(0.3, 0.45, 0.25, 1) both;
+    }
+
+    [data-estilo="heyalgb"][data-llegada][data-dir="atras"] body::after {
+        right: 0;
+        left: auto;
+        background:
+            linear-gradient(270deg, var(--hey-franjas)),
+            var(--hey-fondo, none),
+            var(--hey-papel);
+        animation-name: hey-cortar-atras;
+    }
+
+    [data-estilo="heyalgb"][data-llegada][data-dir="atras"] body::before {
+        right: 0;
+        left: auto;
+        animation-name: hey-eco-atras;
+    }
+
+    [data-estilo="heyalgb"] .canal {
+        animation: hey-entrar 0.24s var(--hey-rapido) backwards;
+    }
+
+    [data-estilo="heyalgb"] .canal:nth-child(2) { animation-delay: 30ms; }
+    [data-estilo="heyalgb"] .canal:nth-child(3) { animation-delay: 60ms; }
+    [data-estilo="heyalgb"] .canal:nth-child(n + 4) { animation-delay: 90ms; }
+
+    [data-estilo="heyalgb"] .home-title,
+    [data-estilo="heyalgb"] .portada-dedicatoria {
+        animation: hey-sello 0.22s var(--hey-rapido) backwards;
+    }
+
+    [data-estilo="heyalgb"] .portada-dedicatoria { animation-delay: 60ms; }
+
+    [data-estilo="heyalgb"] .hey-estallido {
+        animation: hey-girar 40s linear infinite;
+    }
+
+    /* Al elegir HeyAlgb, el cartel entra con un corte diagonal. */
+    [data-cambio-estilo][data-estilo="heyalgb"]::view-transition-new(root) {
+        animation: hey-corte 0.34s cubic-bezier(0.8, 0, 0.2, 1) both;
+    }
+}
+
+@keyframes hey-aparecer {
+    from { opacity: 0.55; }
+}
+
+@keyframes hey-golpe {
+    from { opacity: 0.4; transform: translateX(-16px) skewX(-6deg); }
+}
+
+@keyframes hey-golpe-atras {
+    from { opacity: 0.4; transform: translateX(16px) skewX(-6deg); }
+}
+
+@keyframes hey-cortar {
+    from { transform: translateX(24vw) skewX(-16deg); }
+    to { transform: translateX(calc(100vw + var(--hey-corte-desfase))) skewX(-16deg); }
+}
+
+@keyframes hey-cortar-atras {
+    from { transform: translateX(-24vw) skewX(-16deg); }
+    to { transform: translateX(calc(-100vw - var(--hey-corte-desfase))) skewX(-16deg); }
+}
+
+@keyframes hey-eco {
+    from { transform: translateX(14vw) skewX(-16deg); }
+    to { transform: translateX(calc(92vw + var(--hey-corte-desfase))) skewX(-16deg); }
+}
+
+@keyframes hey-eco-atras {
+    from { transform: translateX(-14vw) skewX(-16deg); }
+    to { transform: translateX(calc(-92vw - var(--hey-corte-desfase))) skewX(-16deg); }
+}
+
+@keyframes hey-entrar {
+    from { opacity: 0.3; transform: translateX(-28px); }
+}
+
+@keyframes hey-sello {
+    from { opacity: 0.5; scale: 1.15; }
+}
+
+@keyframes hey-girar {
+    to { rotate: 360deg; }
+}
+
+@keyframes hey-corte {
+    from { clip-path: polygon(0 0, 0 0, -30% 100%, -30% 100%); }
+    to { clip-path: polygon(0 0, 130% 0, 100% 100%, -30% 100%); }
+}
+
+/* —— Pantallas estrechas —— */
+
+@media (max-width: 900px) {
+    [data-estilo="heyalgb"] .home-hero {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "marca" "lema" "proposito" "buscar" "sello" "dedicatoria" "retomar";
+        min-height: 0;
+        padding-top: 2.5rem;
+    }
+
+    [data-estilo="heyalgb"] .hey-sello {
+        width: min(80%, 19rem);
+    }
+
+    /* En una columna, los cortes acompañan solo al sello: el texto queda sobre papel. */
+    [data-estilo="heyalgb"] .hey-cortes {
+        top: auto;
+        height: 48%;
+        clip-path: polygon(0 14%, 100% 0, 100% 88%, 0 100%);
+    }
+
+    [data-estilo="heyalgb"] .canales {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    [data-estilo="heyalgb"] .canal:nth-child(n) {
+        --escalon: 0;
+    }
+}
+
+@media (max-width: 540px) {
+    [data-estilo="heyalgb"] .home-hero .home-title {
+        font-size: 3.6rem;
+        text-shadow: 4px 4px 0 var(--hey-rojo);
+    }
+
+    [data-estilo="heyalgb"] .hey-recortes {
+        font-size: 1.05rem;
+    }
+
+    [data-estilo="heyalgb"] .canal {
+        grid-template-columns: 3.2rem minmax(0, 1fr);
+        column-gap: 0.85rem;
+        padding-right: 2.8rem;
+    }
+
+    [data-estilo="heyalgb"] .canal::after {
+        width: 3rem;
+        height: 3rem;
+        font-size: 1.7rem;
+    }
+}

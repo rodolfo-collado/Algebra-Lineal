@@ -22,6 +22,7 @@ from frontend.terminal.historial import Historial
 from frontend.terminal.interfaz import PyGebra
 from frontend.terminal.navegacion import HERRAMIENTAS
 from frontend.terminal.raices import curva
+from backend.operandos import OPERANDOS_MAXIMOS
 
 
 class HerramientasTerminalTests(unittest.TestCase):
@@ -249,6 +250,41 @@ class ConsolaInteractivaTests(unittest.IsolatedAsyncioTestCase):
             await teclas.pause()
             self.assertIsNotNone(app.ultimo_ejercicio)
             self.assertIn("Elige extremos", str(app.query_one("#aviso").content))
+
+    async def test_comparar_jacobi_y_gauss_seidel_muestra_sus_tablas(self):
+        app = PyGebra(self.historial)
+        async with app.run_test(size=(124, 35)) as teclas:
+            app.abrir_herramienta(HERRAMIENTAS["metodos-iterativos"])
+            editor = app.query_one("#editor", TextArea)
+            editor.load_text("4 1\n2 3")
+            await teclas.press("f2")
+            editor.load_text("1 2")
+            await teclas.press("f2", "down", "down", "enter", "enter", "enter", "enter")
+            await app.workers.wait_for_complete()
+            await teclas.pause()
+            ejercicio = app.ultimo_ejercicio
+            self.assertEqual(ejercicio.datos["metodo"], "comparar_iterativos")
+            tablas = [bloque.titulo for bloque in ejercicio.bloques if isinstance(bloque, Tabla)]
+            self.assertIn("Iteraciones de Jacobi", tablas)
+            self.assertIn("Iteraciones de Gauss-Seidel", tablas)
+
+    async def test_combinacion_admite_el_maximo_de_generadores_mas_el_objetivo(self):
+        app = PyGebra(self.historial)
+        datos = {f"@v{i}": "1 0" if i % 2 else "0 1" for i in range(1, OPERANDOS_MAXIMOS + 1)}
+        datos.update(operacion="combinacion", dimension="2", vectores=str(OPERANDOS_MAXIMOS))
+        datos["@b"] = "3 4"
+        async with app.run_test(size=(124, 35)) as teclas:
+            app.debugging = True
+            app.abrir_herramienta(HERRAMIENTAS["operaciones-vectores"], datos)
+            app.paso = len(app.campos()) - 1
+            app.mostrar_paso()
+            self.assertEqual(app.campo_actual().id, "@b")
+            await teclas.press("f2")
+            await app.workers.wait_for_complete()
+            await teclas.pause()
+            ejercicio = app.ultimo_ejercicio
+            self.assertTrue(any(isinstance(b, str) and "b es combinación lineal" in b for b in ejercicio.bloques))
+            self.assertTrue(any(Path(a).name == "vectores.py" for a in ejercicio.archivos))
 
     async def test_chat_esta_abajo_del_panel_ancho_y_f7_conserva_el_borrador(self):
         app = PyGebra(self.historial)

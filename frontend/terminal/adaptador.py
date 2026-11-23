@@ -257,10 +257,15 @@ def _consulta(datos):
 
 def ejecutar(herramienta, datos, depurar=False):
     """Devuelve el contexto y los archivos ejecutados durante esta operación."""
-    if not depurar:
-        return peticion(herramienta, datos), ()
     # Carga el enrutador antes de trazar para excluir los imports de arranque.
-    reverse(f"calculadora:{herramienta}")
+    if depurar:
+        reverse(f"calculadora:{herramienta}")
+    return trazar_backend(lambda: peticion(herramienta, datos), depurar)
+
+
+def trazar_backend(accion, depurar):
+    if not depurar:
+        return accion(), ()
     archivos = {}
 
     def trazar(frame, evento, argumento):
@@ -272,10 +277,10 @@ def ejecutar(herramienta, datos, depurar=False):
     anterior = sys.getprofile()
     sys.setprofile(trazar)
     try:
-        respuesta = peticion(herramienta, datos)
+        resultado = accion()
     finally:
         sys.setprofile(anterior)
-    return respuesta, tuple(archivos)
+    return resultado, tuple(archivos)
 
 
 def procedimiento(respuesta, id_resultado="resultado"):

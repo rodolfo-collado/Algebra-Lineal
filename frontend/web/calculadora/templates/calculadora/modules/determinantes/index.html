@@ -69,9 +69,6 @@
         </header>
         {% include "calculadora/components/numeric_format.html" %}
 
-        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-            {% include "calculadora/modules/determinantes/_procedimiento.html" %}
-        {% enddisclosure %}
 
         <section class="panel panel-final" aria-labelledby="final-title">
             <h3 id="final-title" class="panel-title">Resultado</h3>
@@ -94,6 +91,9 @@
                 <p class="muted">Usa Reducción por filas, que permite intercambios{% if resultado.matriz|length <= 6 %}, o Cofactores, que no necesita pivotes{% endif %}, para calcular det(A).</p>
             {% endif %}
         </section>
+        {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+            {% include "calculadora/modules/determinantes/_procedimiento.html" %}
+        {% enddisclosure %}
     </section>
     {% endnumeric_results %}
 {% endif %}
