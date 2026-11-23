@@ -23,8 +23,9 @@ def funcionales():
 def sin_ambientes():
     """Para las animaciones: fuera quedan los ambientes opcionales, cuyas animaciones
     decorativas (vapor, mascota, estallido…) tienen contrato propio en test_estudio.py y
-    test_temas_homenaje.py. Sus transiciones siguen en funcionales()."""
-    return [p for p in funcionales() if not p.name.startswith("homenaje")]
+    test_temas_homenaje.py; la escena de Actualizaciones, en test_actualizaciones_escena.py.
+    Sus transiciones siguen en funcionales()."""
+    return [p for p in funcionales() if not p.name.startswith("homenaje") and p.name != "actualizaciones.css"]
 
 
 def leer(nombre):
