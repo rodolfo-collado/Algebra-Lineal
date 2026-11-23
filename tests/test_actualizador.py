@@ -8,6 +8,7 @@ import hashlib
 import io
 import json
 import os
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -144,6 +145,56 @@ class ConCarpeta(unittest.TestCase):
         directorio = tempfile.TemporaryDirectory()
         self.addCleanup(directorio.cleanup)
         self.carpeta = Path(directorio.name)
+
+
+class PruebasConexion(ConCarpeta):
+    def test_flujo_en_windows_usa_tls_nativo_en_las_tres_peticiones(self):
+        pyproject = self.carpeta / "pyproject.toml"
+        pyproject.write_text('[project]\nversion = "1.0.0"\n', encoding="utf-8")
+        red = red_con_release("1.1.0")
+        modulo = Mock()
+        modulo.SSLContext.side_effect = ssl.SSLContext
+        actualizador = servicio.Actualizador(
+            pyproject=pyproject, carpeta=self.carpeta, en_segundo_plano=lambda tarea: tarea()
+        )
+        self.addCleanup(actualizador._descartar_descarga)
+
+        def abrir(peticion, *, timeout, context):
+            self.assertEqual(timeout, releases.TIMEOUT_SEGUNDOS)
+            self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+            self.assertTrue(context.check_hostname)
+            return red(peticion, timeout)
+
+        with patch("actualizador.conexion.sys.platform", "win32"), \
+                patch.dict(sys.modules, {"truststore": modulo}), \
+                patch("actualizador.conexion.urlopen", side_effect=abrir):
+            self.assertEqual(actualizador.buscar()["estado"], servicio.DISPONIBLE)
+            self.assertEqual(actualizador.descargar()["estado"], servicio.LISTO)
+        self.assertEqual(red.pedidas, [API, f"{BASE}/v1.1.0/SHA256SUMS.txt",
+                                      f"{BASE}/v1.1.0/PyGebra-Setup-1.1.0.exe"])
+        self.assertEqual(modulo.SSLContext.call_count, 3)
+        for llamada in modulo.SSLContext.call_args_list:
+            self.assertEqual(llamada.args, (ssl.PROTOCOL_TLS_CLIENT,))
+
+    def test_rechazo_tls_se_reporta_sin_reintentar(self):
+        error = URLError(ssl.SSLCertVerificationError("certificado no válido"))
+        modulo = Mock()
+        with patch("actualizador.conexion.sys.platform", "win32"), \
+                patch.dict(sys.modules, {"truststore": modulo}), \
+                patch("actualizador.conexion.urlopen", side_effect=error) as abrir:
+            with self.assertRaises(releases.ErrorConexion) as fallo:
+                releases.consultar_ultima()
+            self.assertIs(fallo.exception.__cause__, error)
+            abrir.assert_called_once()
+
+    def test_fuera_de_windows_usa_urllib_sin_truststore(self):
+        destino = self.carpeta / "setup.exe"
+        with patch("actualizador.conexion.sys.platform", "linux"), \
+                patch.dict(sys.modules, {"truststore": None}), \
+                patch("actualizador.conexion.urlopen", return_value=io.BytesIO(INSTALADOR)) as abrir:
+            descarga.descargar(U, destino, len(INSTALADOR))
+        self.assertEqual(destino.read_bytes(), INSTALADOR)
+        self.assertEqual(abrir.call_args.kwargs, {"timeout": releases.TIMEOUT_SEGUNDOS})
 
 
 class PruebasDescarga(ConCarpeta):
