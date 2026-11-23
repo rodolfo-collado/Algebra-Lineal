@@ -722,8 +722,9 @@
 
 /* —— Movimiento: rápido y en diagonal ——
    Al llegar a una pantalla, un corte en diagonal la descubre: la hoja lleva un filo, una
-   franja roja y una banda negra paralelas, y lo que falta por descubrir es el papel del
-   cartel (no un velo oscuro). Un eco rojo fino sigue la misma diagonal. La pantalla nueva
+   franja roja, un tajo de papel y una banda, y lo que falta por descubrir es el papel del
+   cartel (no un velo oscuro). Filo y banda van en la tinta que contrasta con ese papel:
+   blanca de noche y negra de día, para que rojo, negro y blanco se lean en ambos. Un eco rojo fino sigue la misma diagonal. La pantalla nueva
    ya se ve en su primer cuarto, la mitad hacia los 80 ms y casi entera a los ~160 ms; las
    franjas cruzan a ritmo casi constante para que se lean y frenan al salir (480 ms). Al
    volver atrás el corte cruza en sentido contrario. Las capas no reciben el puntero: se
@@ -733,16 +734,17 @@
 [data-estilo="heyalgb"] {
     /* Inclinación común de todo el corte (16°): desfase horizontal entre arriba y abajo. */
     --hey-corte-desfase: calc(140vh * 0.287);
+    /* Desde el borde que descubre: filo, franja roja (la dominante), tajo de papel y banda. */
+    --hey-franjas: var(--hey-tinta) 0 0.5vw, #e3101b 0.5vw 3vw, transparent 3vw 3.6vw,
+        var(--hey-tinta) 3.6vw 5.4vw, transparent 5.4vw;
 }
 
 [data-estilo="heyalgb"][data-theme="dark"] {
-    --hey-filo: #ffffff;
-    --hey-banda: #060606;
+    --hey-tinta: #ffffff;
 }
 
 [data-estilo="heyalgb"][data-theme="light"] {
-    --hey-filo: #060606;
-    --hey-banda: #060606;
+    --hey-tinta: #060606;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -774,8 +776,7 @@
         left: 0;
         width: 260vw;
         background:
-            linear-gradient(90deg, var(--hey-filo) 0 0.45vw, #e3101b 0.45vw 2.4vw,
-                var(--hey-banda) 2.4vw 5.6vw, transparent 5.6vw),
+            linear-gradient(90deg, var(--hey-franjas)),
             var(--hey-fondo, none),
             var(--hey-papel);
         animation: hey-cortar 0.48s cubic-bezier(0.3, 0.45, 0.25, 1) both;
@@ -794,8 +795,7 @@
         right: 0;
         left: auto;
         background:
-            linear-gradient(270deg, var(--hey-filo) 0 0.45vw, #e3101b 0.45vw 2.4vw,
-                var(--hey-banda) 2.4vw 5.6vw, transparent 5.6vw),
+            linear-gradient(270deg, var(--hey-franjas)),
             var(--hey-fondo, none),
             var(--hey-papel);
         animation-name: hey-cortar-atras;
