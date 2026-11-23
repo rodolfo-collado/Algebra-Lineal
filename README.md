@@ -76,8 +76,8 @@ Consulta las [herramientas y ejemplos](docs/funcionalidades.md).
 
 Descarga **PyGebra-Setup-\<versión\>.exe** desde
 [GitHub Releases](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest),
-ejecútalo y abre PyGebra desde el menú Inicio. El instalador incluye Python y
-las dependencias. La aplicación funciona sin conexión una vez instalada.
+ejecuta el instalador. Abre **PyGebra** desde el menú Inicio. El instalador
+incluye Python y las dependencias. La aplicación funciona sin conexión una vez instalada.
 
 Requiere Windows 10 1809 o posterior, o Windows 11, con soporte para
 aplicaciones x64. Si falta WebView2, su instalación requiere Internet.
