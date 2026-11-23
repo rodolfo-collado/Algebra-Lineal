@@ -335,6 +335,40 @@ La publicación se activa al aprobar y fusionar la promoción
 la exportación a PDF, el instalador visual y los tutoriales quedan fuera de
 v0.19.0.
 
+## Preparación de v0.20.0
+
+Incremento **MINOR** desde v0.19.0.
+[PR de promoción #140](https://github.com/Collado-Labs/Algebra-Lineal/pull/140) ·
+[Consultar la última versión publicada](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest).
+
+- **Consola interactiva** ([#131](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)).
+  El menú `/` recorre las cuatro áreas matemáticas. La consola guía los ejercicios,
+  valida matrices y vectores mientras se escriben y conserva el borrador si hay un
+  error. El historial local permite volver a consultar resultados, procedimientos,
+  tablas navegables y gráficas. Consulta la
+  [guía de terminal](ejecucion.md#aplicación-de-terminal).
+- **Portada del proyecto** ([#137](https://github.com/Collado-Labs/Algebra-Lineal/pull/137)).
+  El README presenta las cuatro áreas con capturas de sus herramientas, la galería
+  de temas y los enlaces de descarga, documentación y contribución.
+- **Concurrencia del actualizador** ([#138](https://github.com/Collado-Labs/Algebra-Lineal/pull/138)).
+  Cada intento usa su propia carpeta temporal. Las solicitudes simultáneas de
+  instalación en una misma instancia se coordinan para lanzar el instalador una
+  sola vez. Al cerrar, se limpian las descargas abandonadas. Si el instalador
+  todavía usa el archivo, la limpieza se difiere.
+- **Pantalla de actualizaciones** ([#139](https://github.com/Collado-Labs/Algebra-Lineal/pull/139)).
+  La vista de escritorio muestra la versión instalada, la versión ofrecida y el
+  estado de cada paso. La escena cambia entre tema claro y oscuro, y el progreso
+  refleja el porcentaje real de descarga. El flujo conserva la comprobación
+  SHA-256 antes de instalar. Consulta
+  [Actualizar PyGebra](instalacion-windows.md#actualizar-pygebra).
+
+- **Certificados HTTPS en Windows** ([#141](https://github.com/Collado-Labs/Algebra-Lineal/pull/141)).
+  El actualizador usa `truststore` para validar con CryptoAPI la cadena del
+  certificado y el nombre del servidor al consultar GitHub y descargar archivos.
+  Esto permite que Windows obtenga raíces bajo demanda, incluso en una
+  instalación limpia. La comprobación SHA-256 del instalador sigue siendo parte
+  del flujo de actualización.
+
 ## Flujo de integración y entrega
 
 ```mermaid

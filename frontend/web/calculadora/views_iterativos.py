@@ -1,6 +1,6 @@
 """Vista de métodos iterativos para Ax = b."""
 
-from django.shortcuts import render
+from django.template.response import TemplateResponse
 from django.views.decorators.http import require_http_methods
 
 from .forms_iterativos import SistemasIterativosForm
@@ -26,6 +26,6 @@ def metodos_iterativos(request):
             except ValueError as error:
                 form.add_error(None, str(error))
 
-    return render(request, "calculadora/modules/iterativos/index.html", {
+    return TemplateResponse(request, "calculadora/modules/iterativos/index.html", {
         "form": form, "iterativos": resultados, "perfiles_teclado": perfiles_para("numerico"),
     })

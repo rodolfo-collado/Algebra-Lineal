@@ -3,8 +3,9 @@
 import os
 from http.client import HTTPException
 from urllib.error import URLError
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
+from .conexion import abrir_https
 from .releases import CABECERAS, TIMEOUT_SEGUNDOS
 
 
@@ -15,7 +16,7 @@ class DescargaFallida(Exception):
     """La descarga se interrumpió, no coincide con el tamaño publicado o no se pudo guardar."""
 
 
-def descargar(url, destino, tamano, abrir=urlopen, progreso=None):
+def descargar(url, destino, tamano, abrir=abrir_https, progreso=None):
     """Guarda exactamente ``tamano`` bytes en ``destino``; si falla no deja nada."""
     parcial = destino.with_name(destino.name + ".part")
     recibidos = 0

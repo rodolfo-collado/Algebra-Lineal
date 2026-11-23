@@ -7,9 +7,15 @@ Desde la raíz del repositorio:
 ```bash
 uv lock --check
 uv sync --locked
-uv run python -m unittest discover -v
-uv run python manage.py check
+uv run --locked python -m unittest discover -v
+uv run --locked python manage.py check
+uv run --locked python -m compileall -q actualizador backend frontend tests main.py manage.py desktop.py
+git diff --check
 ```
+
+Para cambios en Markdown, `uv run --locked python -m unittest tests.test_documentacion`
+comprueba rutas relativas, imágenes, anclas y cierre de los bloques de código.
+Revisa en GitHub los recursos y fragmentos que cambiaste.
 
 ## Secante y Métodos abiertos, versión 0.18.0 (2026-11-12)
 

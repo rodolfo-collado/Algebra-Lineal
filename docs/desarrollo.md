@@ -8,11 +8,18 @@
   para instalarlo en tu sistema.
 - Python >= 3.13; el entorno de referencia usa 3.13, fijado en `.python-version`.
   `uv` lo descarga por ti si todavía no lo tienes.
-- `colorama`, usada solo para dar color a la terminal.
-- `Django`, usado únicamente como capa de presentación web.
-- `waitress`, usado como servidor WSGI local de la aplicación desktop.
-- `pywebview`, usado para mostrar Django en una ventana nativa.
-- `PyInstaller`, disponible como dependencia de desarrollo para generar Windows.
+
+## Dependencias
+
+- **Django** sirve la interfaz visual y aporta formularios y validación que
+  reutiliza la consola.
+- **Waitress** y **pywebview** sirven la aplicación en la máquina local y abren
+  la ventana de escritorio de Windows mediante WebView2.
+- **Textual** construye la consola interactiva. **Matplotlib** y **textual-image**
+  permiten mostrar gráficas en terminales compatibles. **plotext** ofrece una
+  gráfica de texto como alternativa. **colorama** da color al menú clásico.
+- **PyInstaller** está en el grupo `dev` y empaqueta la aplicación Windows.
+  **Inno Setup** se instala aparte para [construir el instalador](instalacion-windows.md#construir-el-instalador).
 
 Los cálculos y la interpretación de los sistemas siguen apoyándose en nuestra
 implementación del backend y en la biblioteca estándar (`random`, `fractions` y
@@ -38,15 +45,17 @@ Desde la raíz del repositorio:
 ### Terminal
 
 ```bash
-uv run python main.py
+uv run --locked python main.py
 ```
 
-Para salir, elige la opción `9` del menú.
+Escribe `/` para abrir el menú y pulsa `Ctrl+Q` para salir. La
+[guía de terminal](ejecucion.md#aplicación-de-terminal) incluye los atajos
+y explica cómo iniciar el menú clásico.
 
 ### Django
 
 ```bash
-uv run python manage.py runserver
+uv run --locked python manage.py runserver
 ```
 
 Abre <http://127.0.0.1:8000/>. Es el servidor de desarrollo, no el que usa el
@@ -55,7 +64,7 @@ instalador. El recorrido por herramientas está en [Funcionalidades](funcionalid
 ### Escritorio en Windows
 
 ```bash
-uv run python desktop.py
+uv run --locked python desktop.py
 ```
 
 El launcher inicia Waitress en loopback y abre pywebview. Consulta

@@ -2,10 +2,10 @@
 
 [Índice de documentación](README.md) · [Portada](../README.md)
 
-El cálculo vive en `backend/`; las interfaces lo consumen sin duplicarlo.
-La terminal llama directamente al backend. Las vistas Django validan formularios
-y usan `servicios*.py` como adaptadores de presentación; no hay una capa de
-servicios independiente compartida por todas las interfaces.
+El cálculo vive en `backend/`. Las vistas Django validan formularios y usan
+`servicios*.py` para adaptar los resultados a HTML. La consola interactiva
+usa el mismo catálogo y reutiliza formularios y servicios de Django donde
+corresponde. El menú clásico llama directamente al backend.
 
 ```mermaid
 flowchart TD
@@ -17,6 +17,7 @@ flowchart TD
     W --> J[Django · frontend/web]
     R --> J
     J --> F[Formularios y vistas]
+    T --> F
     F --> S[servicios*.py · adaptación de presentación]
     S --> B[backend · cálculo e interpretación]
     T --> B
@@ -28,10 +29,11 @@ flowchart TD
 | Ruta | Responsabilidad |
 | --- | --- |
 | `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, matriz inversa, bases, numeración romana y presupuestos de entrada y de costo. |
-| `frontend/terminal/` | `menu.py` coordina; `opciones.py` ejecuta opciones; `entradas.py` lee; `salida.py` presenta; `consola.py` maneja color, pausas y limpieza. |
+| `frontend/terminal/` | `interfaz.py` coordina la consola Textual, `navegacion.py` expone el catálogo, `adaptador.py` organiza procedimientos y `historial.py` guarda ejercicios y ajustes en SQLite. `menu.py` es el menú clásico. |
 | `frontend/web/algebra_web/` | Configuración Django, rutas raíz y entradas WSGI/ASGI. |
 | `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, exploraciones, templates y recursos locales. |
 | `desktop.py` | Servidor local y ciclo de vida de la ventana nativa. |
+| `actualizador/` | Consulta de releases, descarga y verificación SHA-256, preparación del instalador y limpieza de archivos temporales. |
 | `AlgebraLineal.spec` | PyInstaller: Python, dependencias, templates, recursos e icono en una carpeta `onedir`, sin consola (`windowed`). |
 | `installer/AlgebraLineal.iss` | Inno Setup: empaqueta esa carpeta, accesos directos, prerrequisito WebView2 y desinstalación. |
 | `scripts/` | Build Windows, smoke de distribución, validación del candidato de release, sincronización del símbolo del header y benchmark del presupuesto computacional. |

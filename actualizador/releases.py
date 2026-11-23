@@ -9,8 +9,9 @@ del JSON, para que solo se descargue desde ``github.com/<repositorio>/releases``
 import json
 from dataclasses import dataclass
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
+from .conexion import abrir_https
 from .versiones import parsear
 
 
@@ -84,7 +85,7 @@ def interpretar(datos):
     return Release(tag[1:], assets)
 
 
-def consultar_ultima(abrir=urlopen):
+def consultar_ultima(abrir=abrir_https):
     """Consulta la release marcada como más reciente; None si no hay ninguna estable."""
     peticion = Request(
         API_ULTIMA_RELEASE,

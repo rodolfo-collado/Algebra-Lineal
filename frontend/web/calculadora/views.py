@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import render
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
@@ -113,7 +114,7 @@ def sistemas(request):
             request.GET, inicial["ecuaciones"], inicial["variables"]
         )
 
-    return render(
+    return TemplateResponse(
         request,
         "calculadora/modules/sistemas/index.html",
         {
@@ -181,7 +182,7 @@ def operaciones_matrices(request, datos=None):
                     resultado = evaluar_expresion_web(entrada)
             except ValueError as error:
                 form.add_error("expresion", str(error))
-    return render(request, "calculadora/modules/expresiones/index.html", {
+    return TemplateResponse(request, "calculadora/modules/expresiones/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
         "plantillas": [(identificador, rotulo) for identificador, rotulo, _, _ in PLANTILLAS],
         "perfiles_teclado": perfiles_para("numerico", "expresion", "lineal"),
@@ -233,7 +234,7 @@ def ecuaciones_matriciales(request):
                     resultado = resolver_ecuacion_web(entrada)
             except ValueError as error:
                 form.add_error(None, str(error))
-    return render(request, "calculadora/modules/ecuaciones/index.html", {
+    return TemplateResponse(request, "calculadora/modules/ecuaciones/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
         "ayuda_metodos": AYUDA_METODOS_ECUACION,
         # El procedimiento reutiliza los bloques de Reducción por filas, todos visibles.
@@ -269,7 +270,7 @@ def matriz_inversa(request):
                 except ValueError as error:
                     form.grupo_error = "inverse-matrix"
                     form.add_error(None, str(error))
-    return render(request, "calculadora/modules/inversa/index.html", {
+    return TemplateResponse(request, "calculadora/modules/inversa/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
         "perfiles_teclado": perfiles_para("numerico"),
     })
@@ -312,7 +313,7 @@ def determinantes(request):
             except ValueError as error:
                 form.grupo_error = "determinant-matrix"
                 form.add_error(None, str(error))
-    return render(request, "calculadora/modules/determinantes/index.html", {
+    return TemplateResponse(request, "calculadora/modules/determinantes/index.html", {
         "form": form, "resultado": resultado, "confirmacion": confirmacion,
         "recomendacion": recomendacion, "eleccion": eleccion, "aviso_eleccion": aviso_eleccion,
         "perfiles_teclado": perfiles_para("numerico"),
@@ -348,7 +349,7 @@ def conversion_bases(request):
     if base_entrada not in PERFILES_BASE:
         base_entrada = 10
 
-    return render(
+    return TemplateResponse(
         request,
         "calculadora/modules/bases/index.html",
         {
@@ -383,7 +384,7 @@ def conversion_romanos(request):
             )
         except ValueError as error:
             form.add_error("numero", str(error))
-    return render(request, "calculadora/modules/romanos/index.html", {
+    return TemplateResponse(request, "calculadora/modules/romanos/index.html", {
         "form": form, "resultado": resultado, "numeracion_romana": numeracion_romana(),
     })
 
