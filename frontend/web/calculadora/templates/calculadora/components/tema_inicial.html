@@ -55,9 +55,18 @@
             : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         root.setAttribute("data-theme", theme);
         root.style.colorScheme = theme;
-        // El estilo es independiente del tema: Estudio salvo que se haya elegido Minimalista.
+        // El estilo es independiente del tema: Estudio salvo que se haya elegido otro válido
+        // (Minimalista o un tema homenaje; la misma lista que preferencias.py).
         // Sin JavaScript no hay data-estilo y la interfaz queda en su forma más sobria.
-        root.setAttribute("data-estilo", preferencias.leer("pygebra-estilo") === "minimalista" ? "minimalista" : "estudio");
+        preferencias.estilo = function () {
+            var estilo = preferencias.leer("pygebra-estilo");
+            return ["minimalista", "chocolab", "belugacalc", "heyalgb"].indexOf(estilo) >= 0 ? estilo : "estudio";
+        };
+        root.setAttribute("data-estilo", preferencias.estilo());
+        // Riel de BelugaCalc con nombres (navigation.js): se recuerda solo durante la visita.
+        try {
+            if (sessionStorage.getItem("pygebra-riel") === "abierto") root.setAttribute("data-riel-abierto", "");
+        } catch (_) { /* Sin almacenamiento el riel empieza compacto. */ }
         // Con JavaScript la navegación es un cajón cerrado; la clase evita que asome antes de tiempo.
         root.classList.add("js");
         // Dirección del salto antes del primer pintado: las transiciones y el sonido se
@@ -81,13 +90,26 @@
                 root.style.setProperty("--filtro-desde", camaraPrevia.filter);
                 root.setAttribute("data-camara-previa", "");
             }
+            // Riel de BelugaCalc: la bola y su muesca viajan desde el área anterior con una
+            // animación CSS (sin capturar la página): solo hace falta saber de dónde vienen.
+            var areaPrevia = sessionStorage.getItem("pygebra-area-indice");
+            if (root.hasAttribute("data-llegada") && /^\d+$/.test(areaPrevia || "")) {
+                root.style.setProperty("--activo-previo", areaPrevia);
+                root.setAttribute("data-area-previa", "");
+            }
             // @starting-style usa el primer pintado; después no debe repetirse al cambiar de estilo.
             window.addEventListener("pageshow", function () {
                 requestAnimationFrame(function () { requestAnimationFrame(function () { root.removeAttribute("data-camara-previa"); }); });
+                // El viaje de la bola dura lo que su animación; después no se repite al cambiar de estilo.
+                setTimeout(function () { root.removeAttribute("data-area-previa"); }, 400);
             });
             window.addEventListener("pagehide", function () {
                 try {
                     sessionStorage.setItem("pygebra-nivel", String(nivel));
+                    var areas = document.querySelector(".nav-areas");
+                    var indice = areas ? areas.style.getPropertyValue("--activo-actual").trim() : "";
+                    if (indice) sessionStorage.setItem("pygebra-area-indice", indice);
+                    else sessionStorage.removeItem("pygebra-area-indice");
                     var camara = document.querySelector(".escena-camara");
                     if (camara && root.getAttribute("data-estilo") === "estudio") {
                         var estilo = getComputedStyle(camara);

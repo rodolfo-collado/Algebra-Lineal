@@ -694,7 +694,7 @@ de todas las cadenas de hasta cuatro símbolos, solo se acepten las canónicas.
 También comprueba las minúsculas, los rechazos (0, negativos, 4000, fracciones,
 IIII, VV, IC, IL, VX, IIV, XM, MMMM, IVIV, símbolos ajenos, espacios internos y
 longitud) antes de volver a convertir y el procedimiento de 1963 ↔ MCMLXIII.
-En la web: ruta, catálogo, Inicio, búsqueda, breadcrumbs, cajón, un único
+En la web: ruta, catálogo, Inicio, búsqueda, breadcrumbs, áreas y hermanas, un único
 resultado con «Ver procedimiento» plegado, límites, contrato HTTP estricto
 (campos ajenos o repetidos y dirección manipulada) y contenido escapado, sin
 traceback ni HTTP 500. La página dice Arábigo → romano y Romano → arábigo, y
@@ -875,9 +875,9 @@ Abrir `http://127.0.0.1:8882/__pruebas/`. El runner sirve la app real con
 de preferencias temporal. Sus 25 casos cubren Alt+←/→ sobre GET y sobre un
 resultado POST (vuelve desde la caché, con los datos calculados y sin reenvío),
 Alt+← desde una celda, Ctrl/Shift/AltGr/IME sin navegar y la web sin
-interceptar Alt+flecha ni el menú contextual; `pageshow` restaurado (cajón,
-`inert`, foco, tema, Exacto/Decimal y precisión sin stale ni anuncio repetido,
-junto a la espera de P27.4); categorías del Menú solo en `sessionStorage`;
+interceptar Alt+flecha ni el menú contextual; `pageshow` restaurado (estilo y riel,
+radio marcado coincidente, tema, Exacto/Decimal y precisión sin stale ni anuncio repetido,
+junto a la espera de P27.4); estado del riel solo en `sessionStorage`;
 preferencias en el archivo propio y su vuelta en un arranque nuevo; y las
 páginas 404, 400, 403, CSRF y 500 a 1280, 744 y 390 px sin desborde, con
 «Ir al inicio» enfocable. Si la pestaña está oculta, espera con temporizador.
@@ -1003,7 +1003,7 @@ uv run --locked python -m tests.entrada_edicion_browser
 ```
 
 Abrir `http://127.0.0.1:8889/__pruebas/`. Incluye gestos en las cuatro herramientas,
-texto dentro del input, navegación P27, Escape del teclado/buscador/cajón,
+texto dentro del input, navegación P27, Escape del teclado y de Opciones,
 siete comandos sobre A, matrices rectangulares, A/b, API, dimensiones,
 reemplazos, bajas/reindexado, tipos excluidos, B adicional de inversa, resultado
 vigente, edición con teclado matemático y POST sin persistencia. Comprueba

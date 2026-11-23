@@ -257,7 +257,7 @@ class PruebasSenalDeEscritorio(EnEscritorio):
         # pero sigue sin haber barra de direcciones ni botones de navegador.
         header = (TEMPLATES / "calculadora" / "components" / "header.html").read_text(encoding="utf-8")
         botones = re.findall(r'<button[^>]*id="([^"]+)"', header)
-        self.assertEqual(botones, ["historial-atras", "historial-adelante", "navigation-toggle", "theme-toggle"])
+        self.assertEqual(botones, ["historial-atras", "historial-adelante", "theme-toggle"])
         html = self.html("/matrices/reduccion/")
         self.assertIn('aria-label="Atrás"', html)
         self.assertIn('aria-label="Adelante"', html)
@@ -269,7 +269,7 @@ class PruebasSenalDeEscritorio(EnEscritorio):
 class PruebasHistorialYRestauracion(SimpleTestCase):
     def test_alt_flechas_solo_en_escritorio_y_sin_pila_propia(self):
         script = (STATIC / "navigation.js").read_text(encoding="utf-8")
-        bloque = script[script.index('if (root.hasAttribute("data-desktop"))'):script.index("if (!button || !sidebar) return;")]
+        bloque = script[script.index('if (root.hasAttribute("data-desktop"))'):script.index('const plegar = document.getElementById("areas-plegar")')]
         for contrato in ("event.altKey", "event.ctrlKey", "event.metaKey", "event.shiftKey",
                          "event.isComposing", "event.defaultPrevented", '"ArrowLeft") history.back()',
                          '"ArrowRight") history.forward()', "event.preventDefault()"):
@@ -281,16 +281,19 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
     def test_las_cuadriculas_dejan_alt_flechas_al_historial(self):
         compartido = (STATIC / "entradas.js").read_text(encoding="utf-8")
         self.assertIn("event.altKey", compartido)
-        for nombre in ("matriz.js", "vectores.js", "ecuaciones.js", "expresiones.js", "inversa.js"):
+        for nombre in ("matriz.js", "ecuaciones.js", "expresiones.js", "inversa.js"):
             with self.subTest(script=nombre):
                 self.assertIn("window.entradasSeguras.flechaDeCelda(event)", (STATIC / nombre).read_text(encoding="utf-8"))
 
-    def test_pageshow_restaurado_cierra_menu_y_resincroniza_preferencias(self):
+    def test_pageshow_restaurado_resincroniza_riel_estilo_y_preferencias(self):
         navegacion = (STATIC / "navigation.js").read_text(encoding="utf-8")
         restaurar = navegacion[navegacion.index('window.addEventListener("pageshow"'):]
-        for contrato in ("event.persisted", "abierto = false", "aplicar()", "sidebar.contains(document.activeElement)", "button.focus()"):
+        for contrato in ("event.persisted", 'sessionStorage.getItem("pygebra-riel")', "sincronizar()"):
             with self.subTest(contrato=contrato):
                 self.assertIn(contrato, restaurar)
+        opciones = (STATIC / "opciones.js").read_text(encoding="utf-8")
+        restaurar = opciones[opciones.index('window.addEventListener("pageshow"'):]
+        self.assertIn('root.setAttribute("data-estilo", preferencias.estilo())', restaurar)
         self.assertIn("if (event.persisted) applyTheme(storedTheme() || systemTheme())", (STATIC / "tema.js").read_text(encoding="utf-8"))
         numeros = (STATIC / "numeros.js").read_text(encoding="utf-8")
         self.assertIn("if (event.persisted) sincronizar()", numeros)
@@ -301,11 +304,11 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
     def test_feedback_conserva_su_restauracion_de_espera(self):
         self.assertIn('window.addEventListener("pageshow", () => {', (STATIC / "feedback.js").read_text(encoding="utf-8"))
 
-    def test_categorias_del_menu_solo_durante_la_ejecucion(self):
+    def test_estado_del_riel_solo_durante_la_ejecucion(self):
         script = (STATIC / "navigation.js").read_text(encoding="utf-8")
-        self.assertIn("sessionStorage.getItem(clave)", script)
-        self.assertIn("sessionStorage.setItem(clave, valor)", script)
-        self.assertIn("localStorage.removeItem(STORAGE_SECCIONES)", script)
+        self.assertIn('sessionStorage.setItem("pygebra-riel"', script)
+        # Las copias del cajón retirado se limpian; nada nuevo va a localStorage.
+        self.assertIn('localStorage.removeItem("algebra-lineal-menu-secciones")', script)
         self.assertNotIn("localStorage.setItem", script)
         self.assertNotIn("localStorage.getItem", script)
 

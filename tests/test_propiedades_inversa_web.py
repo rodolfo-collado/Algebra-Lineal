@@ -146,7 +146,7 @@ class PruebasPresentacionPropiedades(SimpleTestCase):
                     self.assertEqual(html.count('class="panel panel-final"'), 1)
                     self.assertEqual(html.count('id="final-title"'), 1)
                     comprobar_estructura(self, html)
-                    self.assertLess(html.index('id="procedimiento"'), html.index('class="panel panel-final"'))
+                    self.assertLess(html.index('class="panel panel-final"'), html.index('id="procedimiento"'))
 
     def test_propiedades_3x3_sin_selector_de_metodo(self):
         for funcion in FUNCIONES:
@@ -190,7 +190,8 @@ class PruebasPresentacionPropiedades(SimpleTestCase):
         for funcion in FUNCIONES[1:]:
             with self.subTest(funcion=funcion):
                 html = self.post(entrada(funcion, verificar=True))
-                self.assertIn("Ambos productos son la matriz identidad.", html)
+                self.assertIn("Ambos productos se calcularon con A y la inversa obtenida", html)
+                # La verificación de A⁻¹ va con el resultado; la función adicional, en el procedimiento.
                 self.assertLess(html.index('id="inverse-verification-title"'), html.index('id="inverse-additional-start"'))
 
     def test_singular_a_es_condicion_matematica_en_todos_los_modos(self):

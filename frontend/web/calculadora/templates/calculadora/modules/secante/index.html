@@ -28,7 +28,13 @@
 {% block resumen %}
 <p class="raices-raiz">x ≈ <span>{{ resultado.x|numero_raices:"x" }}</span></p>
 <p class="raices-estado">{{ resultado.mensaje }}</p>
-<p class="muted">{{ resultado.iteraciones|length }} iteraci{{ resultado.iteraciones|length|pluralize:"ón,ones" }} · Residuo |f(x)| <span data-raices-relacion>=</span> {{ resultado.residuo|numero_raices:"f" }}</p>
+<dl class="raices-ficha">
+<div><dt>Iteraciones</dt><dd>{{ resultado.iteraciones|length }}</dd></div>
+<div><dt>Error absoluto aproximado <span class="raices-formula">|xₙ₊₁ − xₙ|</span></dt><dd>{% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices:"tolerancia" }}{% else %}No aplica: no hubo una actualización{% endif %}</dd></div>
+<div><dt>Residuo <span class="raices-formula">|f(x)|</span></dt><dd>{{ resultado.residuo|numero_raices:"tolerancia" }}</dd></div>
+<div data-cumple="{% if resultado.convergio %}true{% else %}false{% endif %}"><dt>Criterio de parada <span class="raices-formula">cambio y residuo ≤ tolerancia</span></dt><dd>{% if resultado.estado == "exacta" %}Cumplido: f(x) = 0 en aritmética de máquina{% elif resultado.convergio %}Cumplido: ambos ≤ {{ resultado.tolerancia|numero_raices:"tolerancia" }}{% else %}No cumplido{% endif %}</dd></div>
+</dl>
+<p class="raices-garantia">Sin cota garantizada: un método abierto no conserva un intervalo con cambio de signo, así que el cambio y el residuo no acotan |x − raíz|.</p>
 {% endblock %}
 {% block tabla %}
 {# Diapositiva 23: iteración, x anterior, x actual y nueva aproximación; después, las dos medidas de parada. #}
@@ -61,16 +67,14 @@
 <p>x siguiente = x actual − f(x actual)·(x actual − x anterior) / [f(x actual) − f(x anterior)]. La recta secante que une (x anterior, f(x anterior)) y (x actual, f(x actual)) corta el eje x en esa siguiente aproximación; después, x anterior ← x actual y x actual ← x siguiente.</p>
 {% endblock %}
 {% block verificacion %}
-{% disclosure titulo="Verificación" id="verificacion-raices" %}
 <div data-raices-grupo>
 <p>Evaluación final independiente: f(x) <span data-raices-relacion>=</span> {{ resultado.fx|numero_raices }}.</p>
 <p>Residuo |f(x)| <span data-raices-relacion>=</span> {{ resultado.residuo|numero_raices }}. Tolerancia <span data-raices-relacion>=</span> {{ resultado.tolerancia|numero_raices }}.</p>
-<p>Cambio absoluto: {% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices }}{% else %}No disponible: no hubo una actualización.{% endif %}</p>
+<p>Cambio absoluto: {% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices }}{% else %}No aplica: no hubo una actualización.{% endif %}</p>
 <p class="raices-conclusion">{{ resultado.mensaje }}</p>
 <p>El residuo mide la altura de la curva; el cambio compara dos aproximaciones. Ninguno es el error verdadero |x − raíz|. La secante no exige cambio de signo ni conserva un intervalo que encierre la raíz, así que no da una cota garantizada de distancia.</p>
 <p>Un cero calculado depende de la aritmética de máquina. La convergencia depende de x₀, x₁ y del comportamiento de la función. La gráfica es un muestreo y puede omitir detalles.</p>
 </div>
-{% enddisclosure %}
 {% endblock %}
 {% block metodo_js %}<script src="{% static 'calculadora/metodos_abiertos.js' %}" defer></script>
 <script src="{% static 'calculadora/secante.js' %}" defer></script>{% endblock %}

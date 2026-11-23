@@ -71,7 +71,11 @@ comprueba el dock y repite un salto con movimiento reducido.
 viaje CSS de la cámara y el fundido de contenido. En la base el límite lo imponía
 `ViewTransition.finished` (campo `transicion`). No es el tiempo total desde el clic
 ni el tiempo del servidor; los gestos internos de los objetos del diorama siguen
-siendo independientes. Se registran TTFB y DOMContentLoaded
+siendo independientes. Al partir de `pagereveal`, no ve los ~300 ms que WebView2
+retenía el primer pintado mientras hubo View Transitions entre documentos; desde
+la cuarta iteración de los temas homenaje la app de escritorio las desactiva
+(medición del clic en `docs/temas-homenaje.md`, «Fluidez al cambiar de pantalla»).
+Se registran TTFB y DOMContentLoaded
 aparte. `huecosRAF` estima intervalos perdidos respecto a 60 Hz durante el segundo
 de llegada: incluye la pausa inicial de captura y no equivale al contador de
 fotogramas descartados por la GPU. Las tareas largas son entradas de al menos 50 ms

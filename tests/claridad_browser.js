@@ -22,7 +22,7 @@
         await new Promise(resolve => setTimeout(resolve, 40));
     };
     const cabe = w => cierto(w.document.documentElement.scrollWidth <= w.document.documentElement.clientWidth + 1, "Desborde de página");
-    const herramientas = ["/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
+    const herramientas = ["/matrices/reduccion/", "/matrices/operaciones/",
         "/matrices/ecuaciones/", "/matrices/inversa/", "/bases/conversion/", "/romanos/conversion/"];
     const casos = [];
     const caso = (nombre, ruta, test, sinJS = false) => casos.push({ nombre, ruta, test, sinJS });
@@ -30,7 +30,7 @@
     caso("UI-07: Inicio nombra cada área en su canal con sus herramientas dentro", "/", w => {
         igual(todos(w, "details.topic").length, 0, "Sin temas plegables");
         igual(q(w, "#algebra-lineal .canal-enlace").textContent, "Álgebra lineal");
-        cierto(q(w, '#algebra-lineal a.tool-link[href="/vectores/operaciones/"]'), "La herramienta viaja con su canal para el buscador");
+        cierto(q(w, '#algebra-lineal a.tool-link[href="/matrices/operaciones/"]'), "La herramienta viaja con su canal para el buscador");
     });
     caso("UI-21: el filtro en vivo restaura los canales al limpiar", "/", w => {
         const estado = () => todos(w, "#catalogo-inicio .canal").map(c => `${c.id}:${c.hidden}`);
@@ -113,41 +113,17 @@
         cierto(q(w, ".panel-final").textContent.includes("11010"), "1A₁₆ = 11010₂");
         igual([q(w, "#id_base_origen").value, q(w, "#id_numero").value], ["16", "1A"]);
     });
-    caso("UI-42: v1, v2 desde el principio; agregar y quitar no renombran", "/vectores/operaciones/", w => {
-        const filas = () => todos(w, ".vector-row[data-vector]").map(f => f.dataset.vector);
-        const estado = () => q(w, "[data-estado-vectores]").textContent;
-        igual(filas(), ["v1", "v2"]);
-        igual(q(w, '[data-vector="v1"]').getAttribute("aria-label"), "Vector v1");
-        igual(q(w, '[name="v1_0"]').getAttribute("aria-label"), "Componente 1 de v1");
-        valor(w, '[name="v1_0"]', "1"); valor(w, '[name="v2_0"]', "2");
-        q(w, "[data-agregar-vector]").click();
-        igual([filas(), estado(), w.document.activeElement.name], [["v1", "v2", "v3"], "Se agregó el vector v3.", "v3_0"]);
-        q(w, "[data-agregar-vector]").click();
-        igual([filas(), estado()], [["v1", "v2", "v3", "v4"], "Se agregó el vector v4."]);
-        igual([q(w, '[name="v1_0"]').value, q(w, '[name="v2_0"]').value], ["1", "2"]);
-        q(w, '[aria-label="Quitar vector v4"]').click();
-        igual([filas(), estado()], [["v1", "v2", "v3"], "Se eliminó el vector v4."]);
-        q(w, '[name="operacion"][value="escalar"]').click();
-        igual([filas(), q(w, '[name="v1_0"]').value], [["v1"], "1"]);
-        q(w, '[name="operacion"][value="combinacion"]').click();
-        igual(filas()[0], "v1"); igual(filas().at(-1), "b");
-        q(w, '[name="operacion"][value="suma"]').click();
-        valor(w, "#id_dimension", 10);
-        igual(todos(w, '.vector-row[data-vector="v1"] input').length, 10);
-        igual(q(w, '[name="v3_9"]').getAttribute("aria-label"), "Componente 10 de v3");
-    });
-    caso("UI-42: ayudas con decimales y resultado sin kicker repetido", "/vectores/operaciones/", async (w, frame) => {
-        cierto(q(w, ".vector-help:not([data-operacion-hint-fields])").textContent.includes("decimales con punto"), "Ayuda de Vectores");
-        valor(w, '[name="v1_0"]', "0.5"); valor(w, '[name="v1_1"]', "1"); valor(w, '[name="v1_2"]', "1/2");
-        valor(w, '[name="v2_0"]', "1"); valor(w, '[name="v2_1"]', "2"); valor(w, '[name="v2_2"]', "3");
+    caso("UI-42: la ruta de vectores abre Operaciones y el resultado nombra su tipo", "/vectores/operaciones/", async (w, frame) => {
+        cierto(todos(w, ".field-help").some(p => p.textContent.includes("decimales con punto")), "Ayuda con decimales");
+        valor(w, '[name="celda_0_0_0"]', "0.5"); valor(w, '[name="celda_0_2_0"]', "1/2");
         w = await new Promise(resolve => { frame.onload = () => resolve(frame.contentWindow); q(w, "[data-calculo]").click(); });
-        igual(q(w, "#resultado .section-kicker"), null);
-        cierto(q(w, ".panel-final").textContent.includes("v1 + v2"), "Expresión v1 + v2");
+        igual(q(w, "#resultado .section-kicker").textContent.trim(), "Expresión · Vector de 3 componentes");
+        cierto(q(w, ".panel-final").textContent.includes("u + v"), "Expresión u + v");
     });
     for (const ruta of ["/matrices/ecuaciones/", "/matrices/inversa/"]) caso(`UI-42: ayuda numérica de ${ruta}`, ruta, w => {
         cierto(todos(w, ".field-help").some(p => /enteros, fracciones como 1\/2 o decimales con punto/.test(p.textContent)), "Ayuda con decimales");
     });
-    for (const tema of ["light", "dark"]) for (const ruta of ["/bases/conversion/", "/romanos/conversion/", "/matrices/reduccion/", "/vectores/operaciones/"]) {
+    for (const tema of ["light", "dark"]) for (const ruta of ["/bases/conversion/", "/romanos/conversion/", "/matrices/reduccion/", "/matrices/operaciones/"]) {
         caso(`Responsive 390×650 ${tema}: ${ruta}`, ruta, async (w, frame) => {
             await tamano(frame, 390, 650);
             w.document.documentElement.dataset.theme = tema;

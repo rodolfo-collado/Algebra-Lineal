@@ -23,7 +23,7 @@ class NewtonWebTests(SimpleTestCase):
         self.assertEqual(reverse("calculadora:newton-raphson"), RUTA)
         self.assertTrue(catalogo.METODOS_ABIERTOS.disponible)
         self.assertEqual(catalogo.METODOS_ABIERTOS.ruta, RUTA)
-        for ruta in ["/", "/?q=newton", "/areas/metodos-numericos/", catalogo.BISECCION.ruta, catalogo.REGLA_FALSA.ruta]:
+        for ruta in ["/", "/?q=newton", "/areas/metodos-numericos/", catalogo.METODOS_CERRADOS.ruta, "/metodos-numericos/metodos-cerrados/regla-falsa/"]:
             self.assertContains(self.client.get(ruta), f'href="{RUTA}"')
 
     def test_resultado_geometria_y_tabla(self):
@@ -90,7 +90,7 @@ class NewtonWebTests(SimpleTestCase):
         incompleta = self.client.post(RUTA + "grafica/", {"funcion": "x^"})
         self.assertEqual(incompleta.status_code, 400)
         self.assertNotIn("derivada", incompleta.json())
-        for ruta in (catalogo.BISECCION.ruta, catalogo.REGLA_FALSA.ruta):
+        for ruta in (catalogo.METODOS_CERRADOS.ruta, "/metodos-numericos/metodos-cerrados/regla-falsa/"):
             self.assertNotIn("derivada", self.client.post(ruta + "grafica/", {"funcion": "x^2"}).json())
         self.assertEqual(self.client.get(RUTA + "grafica/").status_code, 405)
         self.assertEqual(Client(enforce_csrf_checks=True).post(RUTA + "grafica/", {"funcion": "x"}).status_code, 403)
@@ -115,7 +115,7 @@ class NewtonWebTests(SimpleTestCase):
         for cambios, tono in [({}, "exito"), ({"max_iteraciones": "1"}, "aviso"), ({"x0": "0"}, "info")]:
             with self.subTest(tono=tono):
                 self.assertContains(self.client.post(RUTA, datos(**cambios)), f'data-tono="{tono}"', count=1)
-        bis = "/metodos-numericos/biseccion/"
+        bis = "/metodos-numericos/metodos-cerrados/biseccion/"
         for funcion, a, clasificacion in [("x²+1", "-1", "sin_raices_demostrado"), ("x²", "-1", "no_aplicable")]:
             r = self.client.post(bis, {"funcion": funcion, "a": a, "b": "1"})
             self.assertEqual(resultado_html(r)["clasificacion"], clasificacion)

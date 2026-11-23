@@ -91,7 +91,7 @@ LINEALES = GrupoTeclas("Operaciones", (MAS, MENOS, FRACCION))
 EXPRESIONES = GrupoTeclas("Notación", (
     Tecla("( )", "()", "Paréntesis", 1), Tecla("ᵀ", "ᵀ", "Traspuesta"),
 ))
-OPERADORES_EXPRESION = GrupoTeclas("Operadores", (MAS, MENOS, IGUAL, FRACCION))
+OPERADORES_EXPRESION = GrupoTeclas("Operadores", (MAS, MENOS, Tecla("·", "·", "Multiplicar"), IGUAL, FRACCION))
 VALORES = GrupoTeclas("Valores", (MENOS, FRACCION))
 SEPARADOR = GrupoTeclas("Separador", (Tecla(".", ".", "Punto decimal"),))
 SIGNO = GrupoTeclas("Signo", (MENOS,))

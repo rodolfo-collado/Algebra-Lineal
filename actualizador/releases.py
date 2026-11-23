@@ -14,7 +14,7 @@ from urllib.request import Request, urlopen
 from .versiones import parsear
 
 
-REPOSITORIO = "rodolfo-collado/Algebra-Lineal"
+REPOSITORIO = "Collado-Labs/Algebra-Lineal"
 API_ULTIMA_RELEASE = f"https://api.github.com/repos/{REPOSITORIO}/releases/latest"
 CHECKSUMS = "SHA256SUMS.txt"
 TIMEOUT_SEGUNDOS = 15

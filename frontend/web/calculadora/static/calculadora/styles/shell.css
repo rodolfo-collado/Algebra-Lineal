@@ -66,7 +66,7 @@
 
 /* —— Botones del header —— */
 
-.navigation-toggle,
+.header-buscar,
 .theme-toggle,
 .options-toggle {
     display: inline-flex;
@@ -83,23 +83,21 @@
     cursor: pointer;
 }
 
-.navigation-toggle:not(:disabled):hover,
+.header-buscar:hover,
 .theme-toggle:not(:disabled):hover,
-.options-toggle:not(:disabled):hover,
-.sidebar-close:not(:disabled):hover {
+.options-toggle:not(:disabled):hover {
     border-color: var(--color-brand);
     background: var(--color-brand-soft);
 }
 
-.navigation-toggle[hidden],
 .theme-toggle[hidden] {
     display: none;
 }
 
-.navigation-toggle-icon {
+.header-buscar svg {
     display: block;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.2rem;
+    height: 1.2rem;
     flex: none;
 }
 
@@ -138,267 +136,6 @@
     padding: 1.5rem 0 3rem;
 }
 
-/* —— Cajón de navegación —— */
-
-/* Sin JavaScript la navegación queda visible en flujo, antes del contenido. */
-.app-sidebar {
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-surface);
-}
-
-/* Con JavaScript es un cajón sobre el contenido: cerrado no ocupa espacio. */
-.js .app-sidebar {
-    position: fixed;
-    top: var(--header-height);
-    bottom: 0;
-    left: 0;
-    z-index: 28;
-    display: none;
-    width: min(var(--nav-width), 90vw);
-    overflow-y: auto;
-    border-right: 1px solid var(--color-border);
-    border-bottom: 0;
-    box-shadow: var(--shadow-lg);
-}
-
-/* Columna: el pie de funciones de la app queda abajo aunque haya pocas áreas abiertas. */
-.js[data-drawer] .app-sidebar {
-    display: flex;
-    flex-direction: column;
-}
-
-.app-sidebar[hidden] {
-    display: none;
-}
-
-.sidebar-top {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.85rem 0.75rem 0.25rem;
-}
-
-.sidebar-top .search {
-    flex: 1;
-    min-width: 0;
-}
-
-.sidebar-close {
-    flex: none;
-    min-height: 2.25rem;
-    padding: 0.3rem 0.65rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-surface-raised);
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.sidebar-close[hidden] {
-    display: none;
-}
-
-.sidebar-nav {
-    padding: 0.35rem 0.6rem 1.25rem;
-}
-
-.sidebar-footer {
-    margin-top: auto;
-    padding: 0.6rem 0.6rem 0.85rem;
-    border-top: 1px solid var(--color-border);
-}
-
-.nav-link {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    min-height: 2.25rem;
-    padding: 0.45rem 0.6rem;
-    border-radius: var(--radius-sm);
-    color: var(--color-text);
-    font-size: 0.88rem;
-    line-height: 1.25;
-    transition: background var(--motion-fast), color var(--motion-fast);
-}
-
-.nav-link:hover {
-    background: var(--color-surface-muted);
-}
-
-.nav-link-icon {
-    width: 1.05rem;
-    height: 1.05rem;
-    flex: none;
-    color: var(--color-brand);
-}
-
-.nav-link[aria-current="page"] {
-    background: var(--color-brand-soft);
-    box-shadow: inset 3px 0 0 var(--color-brand);
-    font-weight: 700;
-}
-
-.nav-area {
-    margin-top: 0.9rem;
-}
-
-.nav-area[hidden] {
-    display: none;
-}
-
-/* Cada área es un details: título plegable con el mismo chevrón que sus categorías. */
-.nav-area-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 2.25rem;
-    padding: 0.4rem 0.6rem;
-    border-radius: var(--radius-sm);
-    color: var(--color-text);
-    font-size: 0.9rem;
-    font-weight: 650;
-    list-style: none;
-    cursor: pointer;
-    user-select: none;
-    transition: background var(--motion-fast);
-}
-
-.nav-area-title::-webkit-details-marker {
-    display: none;
-}
-
-.nav-area-title:hover {
-    background: var(--color-surface-muted);
-}
-
-.nav-area[open] > .nav-area-title {
-    margin-bottom: 0.25rem;
-}
-
-.nav-area[open] > .nav-area-title .nav-chevron {
-    transform: rotate(90deg);
-}
-
-.nav-category[hidden] {
-    display: none;
-}
-
-.nav-category-summary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 2.25rem;
-    padding: 0.4rem 0.6rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.88rem;
-    font-weight: 600;
-    list-style: none;
-    cursor: pointer;
-    user-select: none;
-    transition: background var(--motion-fast);
-}
-
-.nav-category-summary::-webkit-details-marker {
-    display: none;
-}
-
-.nav-category-summary:hover {
-    background: var(--color-surface-muted);
-}
-
-.nav-category-icon {
-    display: grid;
-    place-items: center;
-    width: 1.2rem;
-    height: 1.2rem;
-    flex: none;
-    color: var(--color-brand);
-}
-
-.nav-category-icon svg {
-    width: 1.05rem;
-    height: 1.05rem;
-}
-
-.nav-category-name {
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-
-.nav-chevron {
-    width: 0.9rem;
-    height: 0.9rem;
-    flex: none;
-    margin-left: auto;
-    color: var(--color-muted);
-    transition: transform var(--motion-fast);
-}
-
-.nav-category[open] > .nav-category-summary .nav-chevron {
-    transform: rotate(90deg);
-}
-
-.nav-badge {
-    flex: none;
-    padding: 0.08rem 0.42rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-raised);
-    color: var(--color-muted);
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
-.nav-category-summary .nav-badge {
-    margin-left: auto;
-}
-
-.nav-category-summary .nav-badge + .nav-chevron {
-    margin-left: 0;
-}
-
-.nav-tools {
-    margin: 0.1rem 0 0.4rem 1.15rem;
-    padding: 0 0 0 0.55rem;
-    border-left: 1px solid var(--color-border);
-    list-style: none;
-}
-
-.nav-tool[hidden] {
-    display: none;
-}
-
-.nav-tool .nav-link {
-    min-height: 2.1rem;
-    padding: 0.4rem 0.55rem;
-    font-size: 0.85rem;
-}
-
-.nav-link-upcoming {
-    justify-content: space-between;
-    color: var(--color-muted);
-    cursor: default;
-}
-
-.nav-link-upcoming:hover {
-    background: transparent;
-}
-
-.sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 25;
-    background: var(--color-backdrop);
-}
-
-.sidebar-backdrop[hidden] {
-    display: none;
-}
-
 /* —— Breadcrumbs —— */
 
 .breadcrumbs ol {
@@ -431,20 +168,6 @@
     font-weight: 600;
 }
 
-/* En pantallas anchas basta el botón Menú del header para cerrar el cajón. */
-@media (min-width: 881px) {
-    .sidebar-close {
-        display: none;
-    }
-}
-
-/* En pantallas estrechas el cajón cubre casi todo: la página no se desplaza detrás. */
-@media (max-width: 880px) {
-    html[data-drawer] {
-        overflow: hidden;
-    }
-}
-
 @media (max-width: 480px) {
     .app-header {
         padding-inline: 0.6rem;
@@ -452,8 +175,9 @@
     }
 
     /* El texto sigue existiendo para lectores de pantalla; solo se retira de la vista. */
-    .navigation-toggle-text,
+    .header-buscar-text,
     .theme-toggle-text,
+    .options-toggle-text,
     .app-brand-text {
         position: absolute;
         width: 1px;
@@ -463,8 +187,9 @@
         white-space: nowrap;
     }
 
-    .navigation-toggle,
-    .theme-toggle {
+    .header-buscar,
+    .theme-toggle,
+    .options-toggle {
         padding-inline: 0.55rem;
     }
 

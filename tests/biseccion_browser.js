@@ -181,7 +181,8 @@
             ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "No duplica aproximaciones");
         }],
         ["«=» para valores exactos y «≈» para redondeados, sin «= ≈», en ambos estilos", async (w, frame) => {
-            const leer = w => q(w, "#resultado .results-heading .muted").textContent.replace(/\s+/g, " ");
+            // El residuo |f(c)| del resumen: «≈» delante si se redondea; el valor completo, sin símbolo.
+            const leer = w => "f(c) " + q(w, ".raices-ficha > div:nth-child(3) dd").textContent.replace(/\s+/g, " ").trim();
             const decimales = (w, valor) => { const s = q(w, "#raices-decimales"); s.value = valor; s.dispatchEvent(new w.Event("change", { bubbles: true })); };
             for (const estilo of ["estudio", "minimalista"]) {
                 w.document.documentElement.setAttribute("data-estilo", estilo);
@@ -193,9 +194,10 @@
                 for (const precision of ["4", "6", "16"]) {
                     decimales(w, precision);
                     ok(/f\(c\) ≈ -?\d/.test(leer(w)), `${estilo}, ${precision}: f(c) redondeado usa ≈: ${leer(w)}`);
+                    ok(!/=\s*≈/.test(leer(w)), `${estilo}, ${precision}: sin «= ≈»`);
                 }
                 decimales(w, "completa");
-                ok(/f\(c\) = -?\d/.test(leer(w)), `${estilo}: el valor completo vuelve a «=»: ${leer(w)}`);
+                ok(/f\(c\) -?\d/.test(leer(w)), `${estilo}: el valor completo se lee sin «≈»: ${leer(w)}`);
                 ok(!/=\s*≈|≈\s*=|≈\s*≈/.test(q(w, "#resultado").textContent + q(w, ".raices-recorrido").textContent), `${estilo}: sin símbolos dobles`);
                 ok(/f\(c\) [=≈] /.test(q(w, "#paso-signos").textContent) && !/[=≈] [=≈]/.test(q(w, "#paso-signos").textContent), "El paso usa un solo símbolo");
                 ok(/a \(izquierdo\) = 1 /.test(q(w, "#paso-valores").textContent.replace(/\s+/g, " ")) || q(w, "#iteracion-raices").value !== "1", "Un extremo exacto conserva «=»");
@@ -205,7 +207,7 @@
                 ok(JSON.parse(q(w, "#datos-raices").textContent).resultado.fc === 0, "El caso exacto necesita f(c) = 0");
                 for (const precision of ["4", "completa"]) {
                     decimales(w, precision);
-                    ok(leer(w).includes("f(c) = 0"), `${estilo}, ${precision}: igualdad exacta: ${leer(w)}`);
+                    ok(leer(w) === "f(c) 0", `${estilo}, ${precision}: residuo exacto, sin «≈»: ${leer(w)}`);
                 }
                 ok(q(w, "#paso-signos").textContent.includes("f(c) = 0 (cero)"), "El paso también escribe f(c) = 0");
             }
@@ -243,7 +245,7 @@
             // Singular y plural: una raíz exacta tras una iteración.
             valor(w, "funcion", "x-1.5"); valor(w, "a", "1"); valor(w, "b", "2");
             w = await post(frame); await esperar(() => listaGrafica(w));
-            ok(/^1 iteración ·/.test(q(w, "#resultado .results-heading .muted").textContent.trim()), "Una iteración, en singular");
+            ok(q(w, ".raices-ficha dd").textContent.trim() === "1", "Una iteración en el resumen");
             ok(grafica(w).data[1].customdata[1][0] === "= 1.5", "c exacto en la gráfica: = 1.5");
             w.document.documentElement.setAttribute("data-estilo", "estudio");
         }],
@@ -253,7 +255,8 @@
             const selector = q(w, "#raices-decimales");
             for (const precision of ["4", "6", "8", "12", "16", "completa"]) {
                 selector.value = precision; selector.dispatchEvent(new w.Event("change", { bubbles: true }));
-                const valores = [...w.document.querySelectorAll(".raices-comprobacion [data-raices-numero]")];
+                // Longitud y precisión del criterio de parada, en el resumen.
+                const valores = [...w.document.querySelectorAll(".raices-ficha [data-cumple] [data-raices-numero]")];
                 ok(valores.length === 2 && valores[0].textContent !== valores[1].textContent, "La longitud y la tolerancia siguen siendo distintas");
                 ok(!/≈\s*≈/.test(q(w, "#resultado").textContent), "Sin doble aproximación");
             }
@@ -279,7 +282,7 @@
             ok(grafica(w).data[2].x[0] === lista(w)[0].c && grafica(w).data[2].y[1] === lista(w)[0].fc, "Punto medio sobre el eje y su altura");
             ok(q(w, "#iteracion-reproducir").getAttribute("aria-label") === "Reproducir", "Comienza en pausa");
             ok(q(w, "#paso-breve").textContent.includes("Punto medio"), "Explicación breve del paso");
-            ok(!q(w, "#procedimiento-raices").open, "Detalle cerrado");
+            ok(!q(w, "#desarrollo-raices").open, "Detalle cerrado");
             ok(w.document.activeElement === q(w, "#resultado"), "Foco en el resultado");
         }],
         ["Cursor, foco y deslizador reutilizan pasos sin peticiones", async (w, frame) => {
@@ -504,7 +507,7 @@
         const frame = document.createElement("iframe"); frame.title = nombre; frame.style.cssText = "width:100%;height:700px";
         document.body.append(frame);
         try {
-            await new Promise(resolve => { frame.onload = resolve; frame.src = "/metodos-numericos/biseccion/"; });
+            await new Promise(resolve => { frame.onload = resolve; frame.src = "/metodos-numericos/metodos-cerrados/biseccion/"; });
             await esperar(() => !!q(frame.contentWindow, "#raices-form"));
             await probar(frame.contentWindow, frame);
             item.textContent = `OK: ${nombre}`; aprobados++;

@@ -49,10 +49,12 @@ class PruebasCatalogoEstudio(SimpleTestCase):
 
     def test_hermanas_agrupa_las_disponibles_del_area(self):
         grupos = catalogo.hermanas(catalogo.DETERMINANTES)
-        self.assertEqual([c for c, _ in grupos], [catalogo.VECTORES, catalogo.MATRICES])
+        self.assertEqual([c for c, _ in grupos], [catalogo.MATRICES])
         self.assertIn(catalogo.DETERMINANTES, dict(grupos)[catalogo.MATRICES])
-        self.assertEqual(catalogo.hermanas(catalogo.BISECCION),
-                         ((catalogo.RAICES, (catalogo.BISECCION, catalogo.REGLA_FALSA, catalogo.METODOS_ABIERTOS)),))
+        self.assertEqual(catalogo.hermanas(catalogo.METODOS_CERRADOS), (
+            (catalogo.RAICES, (catalogo.METODOS_CERRADOS, catalogo.METODOS_ABIERTOS)),
+            (catalogo.SISTEMAS_ITERATIVOS, (catalogo.METODOS_ITERATIVOS,)),
+        ))
 
 
 class PruebasExploradorDeArea(SimpleTestCase):
@@ -75,7 +77,7 @@ class PruebasExploradorDeArea(SimpleTestCase):
     def test_sin_javascript_el_panel_muestra_la_primera_y_el_resto_espera(self):
         html = self.client.get("/areas/algebra-lineal/").content.decode("utf-8")
         cuerpos = re.findall(r'<div class="destacado-cuerpo" data-id="([^"]+)"[^>]*?( hidden)?>', html)
-        self.assertEqual(cuerpos[0], ("operaciones-vectores", ""))
+        self.assertEqual(cuerpos[0], ("operaciones-matrices", ""))
         self.assertTrue(all(oculto for _, oculto in cuerpos[1:]))
         self.assertEqual(len(cuerpos), sum(1 for h in disponibles() if h.area == catalogo.ALGEBRA_LINEAL))
         # Abrir es siempre un enlace real a la herramienta.
@@ -105,7 +107,7 @@ class PruebasExploradorDeArea(SimpleTestCase):
     def test_migas_de_area_y_de_herramienta(self):
         area = Documento(self.client.get("/areas/sistemas-numericos/"))
         self.assertEqual([a["href"] for a in area.enlaces_en("Ruta de navegación")], ["/"])
-        herramienta = Documento(self.client.get(catalogo.BISECCION.ruta))
+        herramienta = Documento(self.client.get(catalogo.METODOS_CERRADOS.ruta))
         self.assertEqual([a["href"] for a in herramienta.enlaces_en("Ruta de navegación")],
                          ["/", "/areas/metodos-numericos/", "/areas/metodos-numericos/#raices"])
 
@@ -129,17 +131,17 @@ class PruebasCanalesDelInicio(SimpleTestCase):
         self.assertNotIn("Pasa y ponte", html)
 
     def test_el_buscador_del_inicio_conserva_todo_el_catalogo(self):
-        # Cada herramienta, también las próximas, figura en el cajón y en su canal.
+        # Cada herramienta, también las próximas, figura una sola vez: en su canal de Inicio.
         documento = Documento(self.client.get("/"))
         for herramienta in catalogo.HERRAMIENTAS:
-            self.assertEqual(documento.indices.count(herramienta.indice), 2)
+            self.assertEqual(documento.indices.count(herramienta.indice), 1)
 
     def test_bisección_forma_parte_del_recorrido(self):
         inicio = self.client.get("/")
         self.assertContains(inicio, 'href="/areas/metodos-numericos/"')
         area = self.client.get("/areas/metodos-numericos/")
-        self.assertContains(area, f'href="{catalogo.BISECCION.ruta}"')
-        self.assertContains(area, "Gráfica interactiva del intervalo")
+        self.assertContains(area, f'href="{catalogo.METODOS_CERRADOS.ruta}"')
+        self.assertContains(area, "Bisección: punto medio, hasta que el intervalo mida menos que la precisión")
 
 
 class PruebasMesaDeTrabajo(SimpleTestCase):
@@ -221,14 +223,14 @@ class PruebasEstiloYSonido(SimpleTestCase):
 
     def test_estilo_independiente_del_tema_y_guardado_como_preferencia(self):
         inicial = (APP / "templates" / "calculadora" / "components" / "tema_inicial.html").read_text(encoding="utf-8")
-        self.assertIn('preferencias.leer("pygebra-estilo") === "minimalista" ? "minimalista" : "estudio"', inicial)
-        self.assertEqual(preferencias.VALORES["pygebra-estilo"], ("estudio", "minimalista"))
+        self.assertIn('["minimalista", "chocolab", "belugacalc", "heyalgb"].indexOf(estilo) >= 0 ? estilo : "estudio"', inicial)
+        self.assertEqual(preferencias.VALORES["pygebra-estilo"], ("estudio", "minimalista", "chocolab", "belugacalc", "heyalgb"))
         self.assertEqual(preferencias.VALORES["pygebra-sonido"], ("off", "on"))
         self.assertEqual(preferencias.VALORES["pygebra-volumen"], tuple(str(n) for n in range(10, 101, 10)))
         html = self.client.get("/").content.decode("utf-8")
         # El servidor no decide el estilo: sin JavaScript no hay data-estilo (forma sobria).
         self.assertNotIn("data-estilo=", re.search(r"<html[^>]*>", html).group(0))
-        for valor in ("estudio", "minimalista", "off", "on"):
+        for valor in ("estudio", "minimalista", "chocolab", "belugacalc", "heyalgb", "off", "on"):
             self.assertIn(f'value="{valor}"', html)
 
     def test_los_estilos_de_estudio_solo_viven_en_estudio(self):
@@ -290,7 +292,7 @@ class PruebasEstiloYSonido(SimpleTestCase):
         self.assertLess(html.index("calculadora/musica.js"), html.index("calculadora/opciones.js"))
 
     def test_la_escena_es_decorativa_y_sus_ids_no_chocan(self):
-        for ruta in ("/", "/areas/algebra-lineal/", catalogo.BISECCION.ruta):
+        for ruta in ("/", "/areas/algebra-lineal/", catalogo.METODOS_CERRADOS.ruta):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
                 self.assertContains(respuesta, '<div class="escena" aria-hidden="true">')

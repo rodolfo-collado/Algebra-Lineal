@@ -57,7 +57,7 @@
             ok([...w.document.querySelectorAll(".regla-falsa-paso h5")].map(n => n.textContent).join("|") ===
                 "Aproximación|Signos|Actualización del intervalo|Error|Decisión", "Cinco bloques visibles");
             ok([...w.document.querySelectorAll(".raices-tabla thead th")].map(n => n.textContent).join("|") ===
-                "i|a|b|xr|f(a)|f(b)|f(xr)|Error absoluto Ea|xr sustituye a", "Orden de columnas");
+                "i|a|b|xr|f(a)|f(b)|f(xr)|Ea = |xrᵢ − xrᵢ₋₁| error absoluto|xr sustituye a", "Orden de columnas");
             for (const p of resultado.iteraciones) {
                 const celdas = q(w, `[data-iteracion="${p.i}"]`).cells;
                 const valores = [...celdas].slice(1, 7).map(c => Number(c.querySelector("[data-raices-numero]").dataset.raicesNumero));
@@ -67,7 +67,7 @@
             let peticiones = 0;
             const fetchOriginal = w.fetch;
             w.fetch = (...args) => { peticiones++; return fetchOriginal(...args); };
-            q(w, "#procedimiento-raices").open = true;
+            q(w, "#desarrollo-raices").open = true;
             for (const p of resultado.iteraciones) {
                 q(w, `[data-iteracion="${p.i}"]`).focus();
                 await esperar(() => g.data[1].x[1] === p.xr);
@@ -215,7 +215,7 @@
         const frame = document.createElement("iframe"); frame.title = nombre; frame.style.cssText = "width:100%;height:700px";
         document.body.append(frame);
         try {
-            await new Promise(resolve => { frame.onload = resolve; frame.src = "/metodos-numericos/regla-falsa/"; });
+            await new Promise(resolve => { frame.onload = resolve; frame.src = "/metodos-numericos/metodos-cerrados/regla-falsa/"; });
             await probar(frame.contentWindow, frame);
             item.textContent = `OK: ${nombre}`; aprobados++;
         } catch (e) { item.textContent = `FALLO: ${nombre}: ${e.message}`; }

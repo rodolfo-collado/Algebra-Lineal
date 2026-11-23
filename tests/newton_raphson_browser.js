@@ -42,7 +42,7 @@
             ok(q(w,"#paso-breve").textContent.includes("x₁ = 1.5 − (−0.125)/(5.75)"),"Sustitución de la diapositiva 14");
             ok(!q(w,"#resultado").textContent.includes("= ≈"),"Sin igualdad falsa al redondear");
             const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
-            q(w,"#procedimiento-raices").open=true;
+            q(w,"#desarrollo-raices").open=true;
             for(const p of r.iteraciones){
                 q(w,`[data-iteracion="${p.i}"]`).focus();
                 await esperar(()=>g(w).data[1].x[0]===p.xn);

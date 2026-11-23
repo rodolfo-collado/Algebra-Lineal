@@ -78,7 +78,7 @@ class PruebasConversionBasesWeb(SimpleTestCase):
         self.assertContains(self.client.get("/"), self.ruta)
 
         documento = Documento(self.client.get("/"))
-        hrefs = [attrs.get("href") for attrs in documento.enlaces_en("Herramientas")]
+        hrefs = [attrs.get("href") for _, attrs in documento.enlaces if attrs.get("class") == "tool-link"]
         self.assertIn(self.ruta, hrefs)
 
         for consulta in ("sistemas numéricos", "conversión", "binario", "hexadecimal"):

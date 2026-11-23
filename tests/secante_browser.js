@@ -23,7 +23,7 @@
     const enRecta = (p, x, y) => Math.abs(p.factual + (p.factual-p.fanterior)/(p.actual-p.anterior)*(x-p.actual) - y) <= 1e-9*Math.max(1,Math.abs(y));
     const casos = [
         ["Gráfica antes de resolver y selección de x₀ y x₁ en la curva", async w=>{
-            ok(q(w,'[aria-current="page"][data-metodo-abierto]').textContent.startsWith("Secante"),"Secante activa en el selector");
+            ok(q(w,'[aria-current="page"][data-conservar]').textContent.startsWith("Secante"),"Secante activa en el selector");
             valor(w,"funcion","x³-x-2"); await esperar(()=>lista(w));
             ok(!q(w,"#resultado"),"No calcula al explorar");
             q(w,'[data-elegir-extremo="x0"]').click();
@@ -48,7 +48,7 @@
             ok(JSON.stringify(qa(w,".raices-tabla thead th").map(t=>t.textContent))===JSON.stringify(["n","xₙ₋₁ anterior","xₙ actual","xₙ₊₁ nueva","|xₙ₊₁ − xₙ| cambio","|f(xₙ₊₁)| residuo"]),"Columnas de clase y de parada");
             ok(q(w,"#iteracion-anterior").disabled,"No hay paso antes de la iteración 1");
             const original=w.fetch;w.fetch=(...a)=>{peticiones++;return original(...a);};
-            q(w,"#procedimiento-raices").open=true;
+            q(w,"#desarrollo-raices").open=true;
             for(const p of r.iteraciones){
                 q(w,`[data-iteracion="${p.i}"]`).focus();
                 await esperar(()=>g(w).data[1].x.join()===[p.anterior,p.actual,p.siguiente].join(),"Puntos de la iteración "+p.i);
@@ -111,16 +111,16 @@
         ["Cambiar de método conserva la función y nunca el resultado", async(w,frame)=>{
             w.sessionStorage.clear();
             w=await resolver(frame);
-            const enlace=q(w,`[data-metodo-abierto][href^="${NEWTON}"]`);
+            const enlace=q(w,`[data-conservar][href^="${NEWTON}"]`);
             ok(new URL(enlace.href).searchParams.get("funcion")==="x³-x-2","El enlace lleva la función");
             await navegar(frame,()=>enlace.click());w=frame.contentWindow;
             ok(w.location.pathname===NEWTON&&q(w,'[name="funcion"]').value==="x³-x-2","Newton recibe la función");
             ok(!q(w,"#resultado")&&!q(w,"#iteracion-raices"),"Newton empieza sin resultado");
-            ok(q(w,'[aria-current="page"][data-metodo-abierto]').textContent.startsWith("Newton"),"Newton activo");
+            ok(q(w,'[aria-current="page"][data-conservar]').textContent.startsWith("Newton"),"Newton activo");
             await esperar(()=>lista(w)&&q(w,"#raices-derivada").textContent==="f′(x) = 3x² − 1","Gráfica y derivada de Newton");
             ok(!g(w).layout.shapes[1].visible,"Newton solo tiene x₀");
             valor(w,"funcion","cos(x) - x");
-            await navegar(frame,()=>q(w,`[data-metodo-abierto][href^="${RUTA}"]`).click());w=frame.contentWindow;
+            await navegar(frame,()=>q(w,`[data-conservar][href^="${RUTA}"]`).click());w=frame.contentWindow;
             ok(q(w,'[name="funcion"]').value==="cos(x) - x"&&q(w,'[name="x0"]').value===""&&!q(w,"#resultado"),"Secante recibe la función sin puntos ni resultado");
             await esperar(()=>lista(w));
             ok(w.sessionStorage.getItem("pygebra-raices-historial-secante")&&!w.sessionStorage.getItem("pygebra-raices-historial-newton_raphson"),"Historiales separados por método");

@@ -348,14 +348,12 @@ class PruebasPaginaEscritorio(SimpleTestCase):
         self.assertEqual(self.client.get("/actualizaciones/estado/").json()["estado"],
                          servicio.ACTUALIZADOR.estado()["estado"])
 
-    def test_el_menu_enlaza_actualizaciones(self):
+    def test_opciones_enlaza_actualizaciones(self):
         html = self.client.get("/").content.decode()
-        # Función de la app: al pie del cajón, fuera del árbol de áreas matemáticas.
-        areas = html.index('id="arbol-herramientas"')
-        pie = html.index('<nav class="sidebar-footer" aria-label="Aplicación">')
-        self.assertLess(html.index("</nav>", areas), pie)
-        self.assertLess(pie, html.index('href="/actualizaciones/"'))
-
+        # Función de la app: en Opciones, después de las secciones de preferencias.
+        opciones = html.index('id="opciones" popover')
+        self.assertLess(opciones, html.index('class="opciones-seccion opciones-enlace" href="/actualizaciones/"'))
+        self.assertLess(html.index("Acerca de PyGebra"), html.index('href="/actualizaciones/"'))
 
 class PruebasPaginaWeb(SimpleTestCase):
     @override_settings(DESKTOP_MODE=False)

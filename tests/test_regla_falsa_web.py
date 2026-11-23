@@ -13,7 +13,7 @@ from tests.test_biseccion_web import resultado_html
 from tests.test_teclado import Pagina
 
 
-RUTA = "/metodos-numericos/regla-falsa/"
+RUTA = "/metodos-numericos/metodos-cerrados/regla-falsa/"
 
 
 def datos(**cambios):
@@ -26,7 +26,7 @@ class ReglaFalsaWebTests(SimpleTestCase):
         for titulo in ("Aproximación", "Signos", "Actualización del intervalo", "Error", "Decisión"):
             self.assertContains(r, f"<h5>{titulo}</h5>", count=1, html=True)
         self.assertContains(r, 'id="paso-error"', count=1)
-        b = self.client.post("/metodos-numericos/biseccion/", datos())
+        b = self.client.post("/metodos-numericos/metodos-cerrados/biseccion/", datos())
         self.assertNotContains(b, 'id="paso-error"')
         for respuesta in (r, b):
             self.assertContains(respuesta, 'id="paso-breve"', count=1)
@@ -50,26 +50,27 @@ class ReglaFalsaWebTests(SimpleTestCase):
         self.assertContains(r, "no con un porcentaje")
 
     def test_catalogo_busqueda_area_y_herramientas_hermanas(self):
+        # Regla falsa vive en Métodos cerrados: su ruta es un método de esa herramienta.
         self.assertEqual(reverse("calculadora:regla-falsa"), RUTA)
         self.assertEqual(reverse("calculadora:regla-falsa-grafica"), RUTA+"grafica/")
-        h = catalogo.herramienta_por_id("regla-falsa")
-        self.assertTrue(h.disponible)
-        for ruta in ("/", "/?q=falsa", "/areas/metodos-numericos/", catalogo.BISECCION.ruta):
-            self.assertContains(self.client.get(ruta), f'href="{RUTA}"')
-        self.assertContains(self.client.get(RUTA), f'href="{catalogo.BISECCION.ruta}"')
-        self.assertContains(self.client.get("/areas/metodos-numericos/"), "x² − 4 en [1, 3] ⟶ xr ≈ 2")
+        self.assertIsNone(catalogo.herramienta_por_id("regla-falsa"))
+        self.assertEqual(catalogo.buscar_herramientas("falsa"), (catalogo.METODOS_CERRADOS,))
+        self.assertContains(self.client.get(RUTA), 'aria-current="page">Métodos cerrados</a>')
+        self.assertContains(self.client.get(catalogo.METODOS_CERRADOS.ruta), f'href="{RUTA}"')
+        self.assertContains(self.client.get(RUTA), f'href="{catalogo.METODOS_CERRADOS.ruta}"')
+        self.assertContains(self.client.get("/areas/metodos-numericos/"), "x² − 2 en [1, 2] ⟶ c ≈ 1.4142")
 
     def test_resultado_y_tabla_coinciden_con_backend_sin_javascript(self):
         r = self.client.post(RUTA, datos())
         esperado = regla_falsa(FuncionReal("x^2-2"), 1, 2)
         self.assertEqual(resultado_html(r), esperado)
         self.assertContains(r, "data-iteracion=", count=len(esperado["iteraciones"]))
-        for texto in ("xr", "recta secante", "Error absoluto Ea", "No disponible",
+        for texto in ("xr", "recta secante", "Ea = |xrᵢ − xrᵢ₋₁|", "No aplica",
                       "Residuo", "Error absoluto verdadero", "punto de prueba",
                       "Su longitud acota"):
             self.assertContains(r, texto)
         self.assertContains(r, 'id="resultado"', count=1)
-        self.assertContains(r, "f(xr) <span data-raices-relacion>=</span>", count=1)
+        self.assertContains(r, '<dt>Residuo <span class="raices-formula">|f(xr)|</span></dt>', count=1)
         self.assertNotContains(r, "data-respuesta-errores")
 
     def test_explicaciones_de_cada_estado_no_prometen_una_raiz_no_verificada(self):
@@ -134,7 +135,7 @@ class ReglaFalsaWebTests(SimpleTestCase):
             for valores in [{"funcion": "x²+1"}, {"funcion": "1/x", "a": "-1", "b": "1"}]:
                 r = self.client.post(RUTA+"grafica/", valores)
                 self.assertEqual(r.status_code, 200)
-                self.assertEqual(r.json(), self.client.post(catalogo.BISECCION.ruta+"grafica/", valores).json())
+                self.assertEqual(r.json(), self.client.post(catalogo.METODOS_CERRADOS.ruta+"grafica/", valores).json())
                 self.assertEqual(len(r.json()["x"]), 801)
                 if valores["funcion"] == "1/x":
                     self.assertIn(None, r.json()["y"])

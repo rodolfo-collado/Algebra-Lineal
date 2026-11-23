@@ -22,7 +22,7 @@ from tests.test_vectores_web import combinacion, datos_vectores
 
 RAIZ = Path(__file__).resolve().parents[1]
 ESTATICOS = RAIZ / "frontend/web/calculadora/static/calculadora"
-HERRAMIENTAS = ("/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
+HERRAMIENTAS = ("/matrices/reduccion/", "/matrices/operaciones/",
                 "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
                 "/romanos/conversion/")
 
@@ -106,7 +106,7 @@ class PruebasEntrada(SimpleTestCase):
         self.assertIn("11010₂", seccion_resultado(respuesta))
 
     def test_ui42_ayudas_numericas_nombran_decimales_con_punto(self):
-        for ruta in ("/vectores/operaciones/", "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/"):
+        for ruta in ("/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/"):
             with self.subTest(ruta=ruta):
                 self.assertContains(self.client.get(ruta), "Escribe enteros, fracciones como <code>1/2</code> o decimales con punto")
         texto = "Completa todas las celdas con enteros, fracciones o decimales con punto."
@@ -124,15 +124,13 @@ class PruebasEntrada(SimpleTestCase):
                 convertir_a_numero(texto, limitar_entrada=True)
             self.assertEqual(str(error.exception), f"'{texto}' no es un número válido.")
 
-    def test_ui42_vectores_v1_v2_y_resultado_sin_kicker_repetido(self):
-        html = self.client.get("/vectores/operaciones/").content.decode("utf-8")
-        self.assertEqual(re.findall(r'data-vector="(\w+)"', html), ["v1", "v2"])
+    def test_ui42_vectores_de_la_ruta_antigua_conservan_nombres_y_resultado(self):
+        # La antigua Operaciones con vectores calcula en Operaciones con los mismos nombres v1, v2, v3.
         respuesta = self.client.post("/vectores/operaciones/", datos_vectores("suma", vectores=3, v1=[1], v2=[2], v3=["0.5"]))
-        self.assertIn("Resultado v1 + v2 + v3 = (7/2)", seccion_resultado(respuesta))
-        for respuesta in (respuesta, self.client.post("/vectores/operaciones/", combinacion([[1, 0], [0, 1]], [3, 4]))):
-            resultado = respuesta.content.decode("utf-8")
-            encabezado = re.search(r'<header class="results-heading">(.*?)</header>', resultado, re.S).group(1)
-            self.assertNotIn("section-kicker", encabezado)
+        self.assertIn("Resultado v1 + v2 + v3 = [7/2]", seccion_resultado(respuesta))
+        self.assertEqual(re.findall(r'name="nombre_\d+"[^>]*value="(\w+)"', respuesta.content.decode("utf-8"))[:3], ["v1", "v2", "v3"])
+        combinada = self.client.post("/vectores/operaciones/", combinacion([[1, 0], [0, 1]], [3, 4]))
+        self.assertIn("Sí: b es combinación lineal de v1 y v2.", seccion_resultado(combinada))
 
     def test_ui43_el_campo_dice_ecuaciones_y_el_selector_sistema_de_ecuaciones(self):
         html = self.client.get("/matrices/reduccion/").content.decode("utf-8")

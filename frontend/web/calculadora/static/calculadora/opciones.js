@@ -24,9 +24,36 @@
         ahora.textContent = `${continua ? `Ahora: ${actual.nombre}. ` : ""}${actual.descripcion}.`;
     }
 
+    // Cambiar de estilo es cambiar de ambiente: cada estilo entra con su propio gesto
+    // (homenajes.css) desde la opción elegida. Sin View Transitions o con movimiento
+    // reducido el cambio es inmediato; nunca bloquea la página.
+    // startViewTransition aplica data-estilo un fotograma después: por eso los radios se
+    // sincronizan con la preferencia guardada (preferencias.estilo()), nunca con el DOM.
+    let ultimaTransicion = null;
+    function cambiarEstilo(estilo, origen) {
+        const aplicar = () => root.setAttribute("data-estilo", estilo);
+        if (!document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            aplicar();
+            return;
+        }
+        const caja = origen.closest(".estilo-ficha")?.getBoundingClientRect();
+        if (caja) {
+            root.style.setProperty("--cambio-x", `${Math.round(caja.left + caja.width / 2)}px`);
+            root.style.setProperty("--cambio-y", `${Math.round(caja.top + caja.height / 2)}px`);
+        }
+        root.setAttribute("data-cambio-estilo", "");
+        // Un cambio rápido salta la transición anterior (su callback sigue aplicándose en
+        // orden); solo la última retira la marca.
+        const transicion = ultimaTransicion = document.startViewTransition(aplicar);
+        transicion.ready.catch(() => {});
+        transicion.finished.catch(() => {}).finally(() => {
+            if (ultimaTransicion === transicion) root.removeAttribute("data-cambio-estilo");
+        });
+    }
+
     function sincronizar() {
         const actuales = {
-            estilo: root.getAttribute("data-estilo"),
+            estilo: preferencias.estilo(),
             sonido: preferencias.leer("pygebra-sonido") === "on" ? "on" : "off",
         };
         panel.querySelectorAll('input[type="radio"]').forEach((radio) => {
@@ -69,7 +96,7 @@
         }
         preferencias.guardar(`pygebra-${name}`, value);
         if (name === "estilo") {
-            root.setAttribute("data-estilo", value);
+            cambiarEstilo(value, event.target);
             window.Sonido.tocar("tic");
         } else {
             window.Sonido.configurar({ activo: value === "on" });
@@ -84,8 +111,7 @@
     // Una página restaurada del historial (bfcache) refleja lo elegido en otra página.
     window.addEventListener("pageshow", (event) => {
         if (!event.persisted) return;
-        const estilo = preferencias.leer("pygebra-estilo") === "minimalista" ? "minimalista" : "estudio";
-        root.setAttribute("data-estilo", estilo);
+        root.setAttribute("data-estilo", preferencias.estilo());
         window.Sonido.configurar({
             activo: preferencias.leer("pygebra-sonido") === "on",
             volumen: Number(preferencias.leer("pygebra-volumen") || 50) / 100,

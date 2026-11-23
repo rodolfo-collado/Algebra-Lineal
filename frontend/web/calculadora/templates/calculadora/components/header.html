@@ -16,15 +16,15 @@
             </span>
         </a>
     </div>
+    {% include "calculadora/components/nav_areas.html" %}
     <div class="header-actions">
-        <button type="button" id="navigation-toggle" class="navigation-toggle"
-                aria-expanded="false" aria-controls="navegacion-principal" hidden>
-            <svg class="navigation-toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor"
-                      stroke-width="2" stroke-linecap="round"></path>
-            </svg>
-            <span class="navigation-toggle-text">Menú</span>
-        </button>
+        {# Buscar lleva al buscador de Inicio, la única lista completa de herramientas. #}
+        {% if not en_inicio %}
+            <a class="header-buscar" href="{% url 'calculadora:inicio' %}#buscador-inicio">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <span class="header-buscar-text">Buscar</span>
+            </a>
+        {% endif %}
 
         <button
             type="button"

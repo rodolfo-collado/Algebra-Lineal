@@ -209,7 +209,8 @@ class PruebasPresentacionBloques(SimpleTestCase):
                 html = render_to_string("calculadora/modules/sistemas/index.html", contexto)
                 tablas = TablasAumentadas(html).tablas
                 self.assertEqual(len(tablas), 2 * len(resultado["pasos"]) + 2)
-                self.assertEqual(tablas[0]["etiqueta"], "Matriz inicial")
-                self.assertEqual(tablas[-1]["etiqueta"], "Matriz reducida")
+                # Resultado primero: la matriz reducida del panel final y, después, el procedimiento.
+                self.assertEqual(tablas[0]["etiqueta"], "Matriz reducida")
+                self.assertEqual(tablas[1]["etiqueta"], "Matriz inicial")
                 for tabla in tablas:
                     self.comprobar_corte(tabla, 2, 2)

@@ -16,7 +16,7 @@ from django.test.utils import setup_test_environment, teardown_test_environment
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.forms import SistemaForm
 from frontend.web.calculadora.opciones_sistemas import METODOS, metodos_a_resolver
-from tests.ayudas import antes_de_p2711, antes_de_p285, elemento_html
+from tests.ayudas import antes_de_p2711, antes_de_p285, antes_de_v019, elemento_html
 from tests.test_navegacion import Documento
 from tests.test_resolver_sistema import seccion_resultado
 from tests.test_web import datos_matriz
@@ -66,8 +66,8 @@ class PruebasCatalogoReduccion(ContextoHTTP):
         self.assertNotIn("sistemas-ecuaciones", Documento(inicio).ids)
         pagina = self.client.get(RUTA)
         documento = Documento(pagina)
-        self.assertEqual([c for c, abierta in documento.categorias.items() if abierta], ["matrices"])
-        self.assertNotIn("sistemas-ecuaciones", documento.categorias)
+        self.assertEqual([a["href"] for a in documento.enlaces_en("Áreas") if a.get("aria-current")], ["/areas/algebra-lineal/"])
+        self.assertNotIn("sistemas-ecuaciones", documento.ids)
         self.assertEqual([a["href"] for a in documento.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertContains(pagina, '<span aria-current="page">Reducción por filas</span>', html=True)
         self.assertContains(pagina, 'action="/matrices/reduccion/#resultado"')
@@ -178,6 +178,6 @@ class PruebasEquivalenciaP264(ContextoHTTP):
                             esperados.append(esperado)
                         self.assertEqual(actual, esperados)
                         # Se deshacen solo los cambios deliberados de presentación P27.11/P28.5.
-                        respuesta.content = antes_de_p2711(antes_de_p285(respuesta.content.decode("utf-8"))).encode()
+                        respuesta.content = antes_de_p2711(antes_de_p285(antes_de_v019(respuesta.content.decode("utf-8")))).encode()
                         texto = seccion_resultado(respuesta)
                         self.assertEqual(hashlib.sha256(texto.encode()).hexdigest(), caso["texto_sha256"][metodo][entrada])

@@ -2,8 +2,8 @@
 
 [Índice](README.md) · [Arquitectura](arquitectura.md) · [Pruebas](pruebas.md)
 
-Disponible en **Métodos numéricos → Raíces de ecuaciones → Método de bisección**,
-en `/metodos-numericos/biseccion/`, tanto en Django como en Windows sin Internet.
+Disponible en **Métodos numéricos → Raíces de ecuaciones → Métodos cerrados → Bisección**,
+en `/metodos-numericos/metodos-cerrados/biseccion/`, tanto en Django como en Windows sin Internet.
 Comparte la exploración, el teclado y la presentación con [Regla falsa](regla-falsa.md);
 cada método conserva su algoritmo y su criterio de parada.
 
@@ -105,7 +105,7 @@ Se mantiene el orden de las diapositivas:
    entre los extremos, informar **sin convergencia**.
 7. Volver a evaluar `f(c)` independientemente antes de devolver el resultado.
 
-La longitud restante y el error relativo porcentual son medidas diferentes.
+La longitud restante y el error absoluto aproximado |cᵢ − cᵢ₋₁| son medidas diferentes: la primera decide la parada; el segundo compara dos puntos medios, no existe en la primera iteración («No aplica») y no es la distancia a la raíz. Desde 0.19.0 sustituye al error relativo porcentual que mostraban la tabla y el resumen.
 El segundo es `abs((c_n-c_anterior)/c_n)*100`; no está definido en la primera
 iteración, si `c_n=0`, o si su valor excede el rango numérico. Nunca decide la
 parada. El residuo `f(c)` también se presenta por separado: no tiene las unidades

@@ -123,7 +123,7 @@
 
 {% block tool_result %}
     {% if resultados %}
-        {% comment %}Entrada → procedimiento plegable → resultado. El procedimiento conserva matriz inicial, operaciones, sistema resultante y sustitución; el panel final muestra clasificación, solución, pivotes y la matriz final copiable por método. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
+        {% comment %}Entrada → resultado → procedimiento plegable. El procedimiento conserva matriz inicial, operaciones, sistema resultante y sustitución; el panel final muestra clasificación, solución, pivotes y la matriz final copiable por método. numeric_results prepara la vista exacta/decimal sin recalcular.{% endcomment %}
         {% numeric_results %}
         <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
             <header class="results-heading">
@@ -133,6 +133,30 @@
             </header>
             {% include "calculadora/components/numeric_format.html" %}
 
+            <section class="panel panel-final" aria-labelledby="final-title">
+                <h3 id="final-title" class="panel-title">Resultado</h3>
+                {% if "clasificacion" in mostrar %}
+                    {% include "calculadora/modules/sistemas/_clasificacion.html" %}
+                {% endif %}
+                {% include "calculadora/modules/sistemas/_solucion.html" %}
+                {% if "pivotes" in mostrar %}
+                    {% comment %}Las columnas pivote son la lectura directa de la matriz final y coinciden entre métodos: se toman del primer resultado.{% endcomment %}
+                    <div class="final-block">
+                        {% include "calculadora/modules/sistemas/_pivotes.html" with metodos=resultados en_resultado=True %}
+                    </div>
+                {% endif %}
+                {% comment %}P28.5: la matriz final siempre está en Resultado, una por método; los pasos permanecen explicativos.{% endcomment %}
+                {% for resultado in resultados %}
+                    {% if "pivotes" in mostrar %}
+                        {% include "calculadora/modules/sistemas/_matriz_final.html" with con_metodo=comparando copiable=True columnas_pivote=resultado.columnas_pivote %}
+                    {% else %}
+                        {% include "calculadora/modules/sistemas/_matriz_final.html" with con_metodo=comparando copiable=True %}
+                    {% endif %}
+                    {% if "procedimiento" not in mostrar %}
+                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" with con_metodo=comparando sin_matriz=True %}
+                    {% endif %}
+                {% endfor %}
+            </section>
             {% if "procedimiento" in mostrar %}
                 {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
                     {% if resultado.reescritas %}
@@ -163,31 +187,6 @@
                     {% endfor %}
                 {% enddisclosure %}
             {% endif %}
-
-            <section class="panel panel-final" aria-labelledby="final-title">
-                <h3 id="final-title" class="panel-title">Resultado</h3>
-                {% if "clasificacion" in mostrar %}
-                    {% include "calculadora/modules/sistemas/_clasificacion.html" %}
-                {% endif %}
-                {% include "calculadora/modules/sistemas/_solucion.html" %}
-                {% if "pivotes" in mostrar %}
-                    {% comment %}Las columnas pivote son la lectura directa de la matriz final y coinciden entre métodos: se toman del primer resultado.{% endcomment %}
-                    <div class="final-block">
-                        {% include "calculadora/modules/sistemas/_pivotes.html" with metodos=resultados en_resultado=True %}
-                    </div>
-                {% endif %}
-                {% comment %}P28.5: la matriz final siempre está en Resultado, una por método; los pasos permanecen explicativos.{% endcomment %}
-                {% for resultado in resultados %}
-                    {% if "pivotes" in mostrar %}
-                        {% include "calculadora/modules/sistemas/_matriz_final.html" with con_metodo=comparando copiable=True columnas_pivote=resultado.columnas_pivote %}
-                    {% else %}
-                        {% include "calculadora/modules/sistemas/_matriz_final.html" with con_metodo=comparando copiable=True %}
-                    {% endif %}
-                    {% if "procedimiento" not in mostrar %}
-                        {% include "calculadora/modules/sistemas/_bloques_metodo.html" with con_metodo=comparando sin_matriz=True %}
-                    {% endif %}
-                {% endfor %}
-            </section>
         </section>
         {% endnumeric_results %}
     {% endif %}

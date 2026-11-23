@@ -34,7 +34,6 @@
     const operaciones = "/matrices/operaciones/";
     const reduccion = "/matrices/reduccion/";
     const axb = "/matrices/ecuaciones/";
-    const vectores = "/vectores/operaciones/";
     const A = '[data-matriz="A"] input.matrix-input';
     const modo = (w, tipo) => q(w, `[name="tipo_entrada"][value="${tipo}"]`).click();
     const casos = [];
@@ -111,11 +110,6 @@
         igual(pegar(w, input, "\n-11/13\r\n\n"), false); igual(input.value, "anterior");
         igual(q(w, '[data-estado-pegado]'), null);
     });
-    caso("Paste P27.11: columna de Vectores con salto de más", vectores, w => {
-        pegar(w, q(w, '[name="v1_1"]'), "\n-11/13\n3.14\n");
-        igual([q(w, '[name="v1_1"]').value, q(w, '[name="v2_1"]').value], ["-11/13", "3.14"]);
-        igual(q(w, '[data-estado-pegado]').textContent, "2 celdas pegadas.");
-    });
     caso("Paste: maxlength real de vector lineal, también después de reconstruir", operaciones, w => {
         const tipo = q(w, '[name="tipo_0"]'); tipo.value = "vector_lineal";
         tipo.dispatchEvent(new w.Event("change", { bubbles: true }));
@@ -161,13 +155,6 @@
         q(w, '[data-agregar]').click();
         pegar(w, q(w, '[name="celda_2_0_0"]'), "-1\t1/2\n3.14\t100");
         igual(q(w, '[name="celda_2_1_1"]').value, "100");
-    });
-    caso("Paste: Vectores según filas/componentes visibles", vectores, w => {
-        pegar(w, q(w, '[name="v1_0"]'), "1\t2\t3\n4\t5\t6");
-        igual(todos(w, '#vector-list input[data-cell]').map(c => c.value), ["1", "2", "3", "4", "5", "6"]);
-        pegar(w, q(w, '[name="v1_1"]'), "-11/13\n3.14");
-        igual([q(w, '[name="v1_1"]').value, q(w, '[name="v2_1"]').value], ["-11/13", "3.14"]);
-        igual(q(w, '[data-estado-pegado]').textContent, "2 celdas pegadas.");
     });
     caso("Paste: resultado visible → stale compartido, teclado/foco y errores numéricos", inversa, async (w, frame) => {
         pegar(w, q(w, A), "1\t0\n0\t1"); w = await post(frame);
@@ -472,11 +459,6 @@
         q(w, '[name="funcion_adicional"][value="vector"]').click(); await turno(w);
         igual(w.seleccionMatricial.activa(), null); igual(w.seleccionMatricial.obtener(q(w, '[data-matriz="b"] table')), null);
     });
-    caso("P28.1 sin selección en Vectores", vectores, w => {
-        igual(w.seleccionMatricial, undefined); abrirMenu(w, q(w, '[name="v1_0"]'));
-        igual(menuVisible(w).some(i => i.dataset.seleccionar), false); igual(q(w, "[data-seleccion-menu]").hidden, true);
-        key(w, w.document.activeElement, "Escape");
-    });
     for (const theme of ["light", "dark"]) for (const ruta of [inversa, operaciones, axb, reduccion]) {
         for (const [ancho, alto] of [[1280, 650], [744, 521], [320, 650]]) {
             caso(`P28.1 menú/selección/foco ${theme} ${ancho}×${alto}: ${ruta}`, ruta, async (w, frame) => {
@@ -567,16 +549,12 @@
         igual(w.document.activeElement === input, true); igual(q(w, "[data-resultado]").dataset.resultado, "desactualizado");
         input.value = "1"; w = await post(frame); igual(seleccion(w), []);
     });
-    caso("P28.1 Escape respetado por buscador y cajón", inversa, w => {
-        elegir(w, "toda"); q(w, "#navigation-toggle").click();
-        const buscar = q(w, '.app-sidebar input[type="search"]'); buscar.value = "matriz";
-        buscar.dispatchEvent(new w.Event("input", {bubbles:true})); buscar.focus();
+    caso("P28.1 Escape cierra Opciones sin perder la selección de la cuadrícula", inversa, w => {
+        elegir(w, "toda"); q(w, "#opciones-toggle").click();
+        igual(q(w, "#opciones").matches(":popover-open"), true);
         igual(w.seleccionMatricial.activa() !== null, true);
-        igual(key(w, buscar, "Escape"), true); igual(buscar.value, "matriz");
-        igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "true");
-        igual(key(w, buscar, "Escape"), true); igual(buscar.value, "");
-        igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "true");
-        key(w, buscar, "Escape"); igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "false");
+        q(w, "#opciones").hidePopover();
+        igual(w.seleccionMatricial.activa() !== null, true);
     });
     const copiar = (w, destino = w.document.activeElement, preparar = () => {}) => {
         const data = new w.DataTransfer();
@@ -1159,10 +1137,6 @@
         const g=matriz(w,1),input=filas(w,g)[0][0],antes=valores(w,g);
         pegar(w,input,"1\t2\n3\t4"); aplicaciones.open=false;
         restaurar(w,antes,g); igual(aplicaciones.open,true); igual(w.document.activeElement===input,true);
-    });
-    caso("P28.4 P27 Vectores usa la misma aplicación atómica", vectores, w => {
-        const g = q(w, '#vector-list'), antes = valores(w, g);
-        pegar(w, filas(w, g)[0][0], "1\t2"); restaurar(w, antes, g);
     });
     caso("P28.4 vacío sobre selección restaura literales exactos", inversa, w => {
         const f = filas(w); ["1/2", "", "3.14", "-2"].forEach((v, i) => { f.flat()[i].value = v; });

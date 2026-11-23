@@ -14,6 +14,7 @@ import django
 django.setup()
 
 from django.test import Client, SimpleTestCase
+from django.urls import resolve
 from django.utils.html import strip_tags
 
 from frontend.web.calculadora import catalogo
@@ -48,25 +49,32 @@ def seccion_resultado(respuesta):
 class PruebasNavegacionUnificada(SimpleTestCase):
     def test_la_navegacion_no_lista_las_pseudo_herramientas(self):
         rutas = (
-            "/matrices/reduccion/", "/vectores/operaciones/", "/matrices/operaciones/",
+            "/matrices/reduccion/", "/matrices/operaciones/",
             "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
-            "/romanos/conversion/", "/metodos-numericos/biseccion/", "/metodos-numericos/regla-falsa/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/",
+            "/romanos/conversion/", "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/metodos-numericos/metodos-iterativos/", "/conjuntos/relaciones/",
             "/conjuntos/cardinalidad/",
         )
         for ruta in ("/", *rutas):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
                 documento = Documento(respuesta)
-                enlaces = {a["href"] for a in documento.enlaces_en("Herramientas")}
-                self.assertEqual(enlaces, {"/", *rutas})
+                # Inicio enumera todas las herramientas; cada una, las de su área.
+                if ruta == "/":
+                    enlaces = {a["href"] for _, a in documento.enlaces if a.get("class") == "tool-link"}
+                    self.assertTrue(set(rutas) <= enlaces)
+                else:
+                    area = catalogo.herramienta_por_ruta(resolve(ruta)).area
+                    enlaces = {a["href"] for a in documento.enlaces_en(f"Herramientas de {area.nombre}")}
+                    self.assertTrue(enlaces <= set(rutas))
                 html = respuesta.content.decode("utf-8")
                 for antigua in RUTAS_ANTIGUAS:
                     self.assertNotIn(f"/sistemas/{antigua}/", html)
                 # Ni en la barra lateral ni en el catalogo de Inicio; en el formulario
                 # de sistemas "Gauss-Jordan" y "Columnas pivote" siguen siendo opciones.
-                sidebar = html[html.index('<aside id="navegacion-principal"'):html.index("</aside>")]
+                navegacion = "".join(html[i:html.index("</nav>", i)] for i in
+                                     (html.find('<nav class="nav-areas"'), html.find('<nav class="rail"')) if i >= 0)
                 for nombre in PSEUDO_HERRAMIENTAS:
-                    self.assertNotIn(nombre, sidebar)
+                    self.assertNotIn(nombre, navegacion)
                     if ruta == "/":
                         self.assertNotIn(f">{nombre}<", html)
 
@@ -76,12 +84,13 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         # Cada tema del Inicio despliega sus herramientas; ya no hay chips de acceso rápido.
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
-            ["/vectores/operaciones/", "/matrices/operaciones/", "/matrices/reduccion/", "/matrices/ecuaciones/",
+            ["/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/reduccion/",
              "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/", "/romanos/conversion/",
-             "/metodos-numericos/biseccion/", "/metodos-numericos/regla-falsa/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/conjuntos/relaciones/", "/conjuntos/cardinalidad/"],
+             "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/metodos-numericos/metodos-iterativos/", "/conjuntos/relaciones/", "/conjuntos/cardinalidad/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")
-        for consulta in ("gauss", "clasificación", "columnas pivote"):
+        self.assertContains(self.client.get("/", {"q": "gauss"}), "2 herramientas coinciden")
+        for consulta in ("clasificación", "columnas pivote"):
             with self.subTest(consulta=consulta):
                 respuesta = self.client.get("/", {"q": consulta})
                 self.assertContains(respuesta, "1 herramienta coincide")
