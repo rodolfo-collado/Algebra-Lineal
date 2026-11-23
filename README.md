@@ -1,77 +1,58 @@
-<p align="center">
-  <img src="assets/brand/svg/pygebra-mark-black.svg" alt="Símbolo de PyGebra" width="80">
-</p>
+<h1 align="center">
+  <img src="docs/capturas/portada/pygebra.svg" alt="PyGebra. Aprende resolviendo." width="880">
+</h1>
 
-# PyGebra
+PyGebra es una **calculadora educativa** para resolver sistemas y matrices,
+convertir números, explorar métodos numéricos y trabajar con conjuntos.
+Muestra el resultado y los pasos para obtenerlo. Desarrollada por estudiantes
+de Ingeniería en Sistemas.
 
-**Aprende resolviendo.** Una calculadora educativa que muestra el camino hasta
-el resultado y ayuda a conectar sistemas, matrices y vectores.
+[![CI en develop](https://github.com/Collado-Labs/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Collado-Labs/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Adevelop)
+[![Última versión publicada](https://img.shields.io/github/v/release/Collado-Labs/Algebra-Lineal?label=versi%C3%B3n&sort=semver&color=19645a)](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
+[![Versión de Python requerida](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FCollado-Labs%2FAlgebra-Lineal%2Fdevelop%2Fpyproject.toml&logo=python&logoColor=white&label=Python&color=365b95)](pyproject.toml)
+[![Arquitectura de Windows admitida por el instalador](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2FCollado-Labs%2FAlgebra-Lineal%2Fdevelop%2Finstaller%2FAlgebraLineal.iss&search=ArchitecturesAllowed%3D%28%5Ba-z0-9%5D%2B%3F%29%28%3F%3Acompatible%29%3F%5Cr%3F%5Cn&replace=%241&label=Windows&color=334e70)](docs/instalacion-windows.md)
 
-[![CI](https://github.com/Collado-Labs/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Collado-Labs/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Adevelop)
-[![Última release](https://img.shields.io/github/v/release/Collado-Labs/Algebra-Lineal?label=release)](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
-![Python >= 3.13](https://img.shields.io/badge/Python-%E2%89%A5%203.13-3776AB?logo=python&logoColor=white)
-![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4)
+**[Descargar para Windows](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)** ·
+[Documentación](docs/README.md) · [Desarrollo local](#desarrollo-rápido) ·
+[Contribuir](CONTRIBUTING.md)
 
-[Capacidades](#capacidades) · [Instalación](#instalación-en-windows) ·
-[Desarrollo](#desarrollo-rápido) · [Documentación](docs/README.md) · [Contribuir](CONTRIBUTING.md)
+## Qué puedes resolver
 
-PyGebra permite seguir las operaciones, comparar métodos y entender por qué un
-sistema tiene solución única, infinitas soluciones o ninguna. Conserva los
-racionales como fracciones y permite mostrar resultados exactos o decimales
-(2, 4, 6 u 8 posiciones), sin recalcular. Los algoritmos se implementan
-manualmente con Python estándar. Una vez instalado, funciona sin Internet.
+De una matriz factorizada a una intersección de conjuntos, cada herramienta
+muestra el cálculo en la forma que mejor ayuda a seguirlo.
 
-## Capacidades
+<picture>
+  <source media="(max-width: 700px)" srcset="docs/capturas/portada/modulos-movil.webp">
+  <img src="docs/capturas/portada/modulos.webp" alt="Cuatro capturas de PyGebra: factorización LU de una matriz, conversión a tres bases, gráfica del residuo de Gauss-Seidel e intersección de tres conjuntos en un diagrama de Venn." width="880">
+</picture>
 
-### Álgebra lineal
+- **[Álgebra lineal](docs/funcionalidades.md#operaciones-matriciales-y-ax--b).** Trabaja con matrices y vectores, reduce por filas, resuelve $Ax = b$ y comprueba inversas y determinantes.
+- **[Sistemas numéricos](docs/funcionalidades.md#sistemas-numéricos).** Convierte entre binario, octal, decimal y hexadecimal, y entre números arábigos y romanos.
+- **[Métodos numéricos](docs/sistemas-iterativos.md).** Explora métodos de raíces con gráficas y compara Jacobi y Gauss-Seidel con tablas e iteraciones.
+- **[Conjuntos](docs/conjuntos.md).** Explora operaciones, intervalos y cardinalidad con diagramas de Venn editables.
 
-- **Operaciones:** matrices, vectores y escalares en una expresión que usa solo los
-  operandos escritos: suma, resta, escalar, traspuesta, productos `AB` y `Ax`,
-  expresiones combinadas e igualdades, con ejemplos de un clic. `x1 u + x2 v = b`
-  comprueba si b es combinación lineal y halla sus coeficientes. También determina
-  una matriz desconocida en `Ax = b` con un vector simbólico.
-- **Reducción por filas:** Gauss, Gauss-Jordan o comparación de ambos, desde
-  ecuaciones o una matriz aumentada; muestra pivotes, variables libres y solución.
-- **Sistemas lineales (Ax = b):** clasifica el sistema y encuentra x con A y b conocidos, también para matrices
-  rectangulares, y explica la relación con el sistema lineal. Para A cuadrada
-  ofrece LU y Regla de Cramer, con un método elegible para sus determinantes.
-- **Matriz inversa:** Gauss-Jordan o regla directa para 2×2; dice primero si A es
-  invertible, explica cuándo no existe y verifica `A·A⁻¹ = I` y `A⁻¹·A = I`
-  calculando ambos productos entrada por entrada.
-- **Propiedades y aplicación de la inversa:** `(A⁻¹)⁻¹ = A`,
-  `(AB)⁻¹ = B⁻¹A⁻¹`, `(Aᵀ)⁻¹ = (A⁻¹)ᵀ` y `x = A⁻¹b`.
-  Esta aplicación requiere A invertible; **Sistemas lineales (Ax = b)** sigue siendo la
-  herramienta general para hallar x.
+## Cinco estilos de interfaz
 
-Consulta [Funcionalidades](docs/funcionalidades.md) y
-[Matriz inversa](docs/matriz-inversa.md) para entradas, ejemplos y procedimientos.
-Los cálculos largos piden confirmación según el
-[presupuesto computacional](docs/presupuesto-computacional.md).
+**Estudio** acompaña el procedimiento paso a paso. **Minimalista** reduce la
+interfaz a lo esencial. Los estilos homenaje **ChocoLab**, **BelugaCalc** y
+**HeyAlgb** cambian la apariencia y la navegación. Los cinco tienen tema claro y
+oscuro y se eligen en **Opciones → Apariencia**.
 
-### Sistemas numéricos
+[![Capturas de los estilos homenaje ChocoLab, BelugaCalc y HeyAlgb.](docs/capturas/portada/estilos-homenaje.webp)](docs/temas-homenaje.md)
 
-- Conversión entre binario, octal, decimal y hexadecimal, incluidos negativos,
-  a uno o varios destinos, con divisiones sucesivas y expansión posicional.
-- Conversión entre números arábigos y romanos, del 1 al 3999, en ambos sentidos.
+[Estudio y Minimalista en claro y oscuro](docs/capturas/temas-homenaje/estudio-minimalista-herramienta.png) ·
+[Galería y créditos de los temas homenaje](docs/temas-homenaje.md)
 
-### Métodos numéricos
+## Consola interactiva · En desarrollo
 
-- **Métodos cerrados:** [Bisección](docs/biseccion.md) manual (parada por longitud
-  del intervalo, con error absoluto aproximado |cᵢ − cᵢ₋₁|) y [Regla falsa](docs/regla-falsa.md)
-  con secantes y confirmación de cercanía por signos, en una sola herramienta con gráfica
-  interactiva offline, recorrido reproducible e historial. Precisión predeterminada `0.0001`.
-- **Métodos abiertos:** [Newton-Raphson](docs/newton-raphson.md) y [Secante](docs/secante.md).
-- **Métodos iterativos** · [Jacobi y Gauss-Seidel](docs/sistemas-iterativos.md) para sistemas lineales
-  cuadrados Ax = b, con comparación, tabla de iteraciones y sustituciones.
+Rodolfo Collado está desarrollando una nueva interfaz de terminal en
+el [PR #131](https://github.com/Collado-Labs/Algebra-Lineal/pull/131). El prototipo
+abre un catálogo con `/`, muestra gráficas y tablas navegables y guarda los
+ejercicios en un historial local.
 
-### Conjuntos
+[![Vista de resultados del prototipo de Rodolfo Collado. Bisección de x² menos 2, con intervalo, raíz aproximada y gráfica en la terminal.](docs/capturas/portada/terminal-pr131.webp)](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)
 
-- [Operaciones con conjuntos y Cardinalidad e inclusión-exclusión](docs/conjuntos.md):
-  conjuntos finitos y anidados, potencia, producto cartesiano, intervalos en la recta
-  real, diagramas de Venn editables por regiones (elementos o cantidades), tarjetas
-  con las operaciones habituales y conteo por regiones, con procedimiento paso a paso.
-
-Cálculo figura como **Próximamente**.
+*Bisección en la vista de resultados de la consola en desarrollo.*
 
 ## Formas de usar el proyecto
 
@@ -86,58 +67,42 @@ teclado matemático contextual.
 
 ## Instalación en Windows
 
-Descarga el instalador desde la
-**[última versión estable](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)**.
-Todas las versiones publicadas están en
-[GitHub Releases](https://github.com/Collado-Labs/Algebra-Lineal/releases).
+Descarga **PyGebra-Setup-\<versión\>.exe** desde
+[GitHub Releases](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest) y
+ejecuta el instalador. Abre **PyGebra** desde el menú Inicio. El instalador incluye
+Python y las dependencias. La aplicación funciona sin conexión una vez instalada.
 
-1. Descarga `PyGebra-Setup-<version>.exe`.
-2. Ejecuta el instalador y elige si deseas un acceso directo en el escritorio.
-3. Abre **PyGebra** desde el menú Inicio o el acceso directo del escritorio.
+Requiere Windows 10 1809 o posterior, o Windows 11, con soporte para
+aplicaciones x64. Si falta WebView2, su instalación requiere Internet.
+El instalador no tiene firma digital.
 
-**No necesitas Python instalado.** El paquete incluye el runtime y las
-dependencias, se instala para tu usuario y no requiere permisos de administrador.
-
-Se admite Windows 10 1809 o posterior / Windows 11, compatible con aplicaciones
-x64. Si falta WebView2, su instalación requiere Internet; después PyGebra funciona
-sin conexión. El paquete no está firmado digitalmente.
-
-Consulta [Instalación Windows](docs/instalacion-windows.md) para requisitos,
-instalación sin conexión y desinstalación, y
-[Releases](docs/releases.md#verificar-una-descarga) para verificar el SHA-256.
-Los artifacts de Actions son builds temporales para revisión.
+[Requisitos e instalación](docs/instalacion-windows.md) ·
+[Verificar la descarga con SHA-256](docs/releases.md#verificar-una-descarga)
 
 ## Desarrollo rápido
 
-Necesitas Git y [uv](https://docs.astral.sh/uv/), que prepara el entorno Python
-y sus dependencias desde el archivo de versiones bloqueadas.
+El motor matemático está en **Python**. **Django** sirve la interfaz y
+**pywebview** la abre en Windows con **WebView2**. **PyInstaller** e **Inno Setup**
+empaquetan la aplicación y **GitHub Actions** verifica y publica las versiones.
+
+Con Git y [uv](https://docs.astral.sh/uv/) instalados:
 
 ```bash
 git clone https://github.com/Collado-Labs/Algebra-Lineal.git
 cd Algebra-Lineal
+git switch develop
 uv sync --locked
-uv run python manage.py runserver
+uv run --locked python manage.py runserver
 ```
 
-Abre <http://127.0.0.1:8000/>. Se requiere Python >= 3.13; uv puede instalar
-la versión indicada en `.python-version`. Consulta [Desarrollo](docs/desarrollo.md)
-para el entorno y [Guía de ejecución](docs/ejecucion.md) para terminal y escritorio.
+Abre <http://127.0.0.1:8000/>. uv puede instalar la versión indicada en
+`.python-version`.
 
-## Documentación
-
-El [índice de documentación](docs/README.md) reúne las guías de uso,
-algoritmos, arquitectura, interfaz, pruebas y distribución.
-
-- [Funcionalidades](docs/funcionalidades.md): entradas, ejemplos y resultados.
-- [Matriz inversa](docs/matriz-inversa.md): métodos, verificación, propiedades y aplicación.
-- [Pruebas](docs/pruebas.md): verificaciones locales, CI y smoke Windows.
-- [Releases](docs/releases.md): versión, promoción a main y publicación automática.
+[Ejecutar desde el código fuente](docs/ejecucion.md) ·
+[Arquitectura](docs/arquitectura.md) · [Pruebas](docs/pruebas.md)
 
 ## Contribuir
 
-Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para las convenciones y reglas de
-implementación. Crea tu rama desde `develop` y abre un PR hacia esa rama.
-
-Las versiones se preparan antes del PR `develop → main`. Su merge autoriza la
-publicación: GitHub Actions valida el candidato, ejecuta CI y crea automáticamente
-el tag y la release cuando todas las comprobaciones pasan.
+Parte de **develop** y abre tu PR hacia esa rama. La
+[guía de contribución](CONTRIBUTING.md) explica el flujo, las verificaciones y los
+criterios que conservan los procedimientos matemáticos.
