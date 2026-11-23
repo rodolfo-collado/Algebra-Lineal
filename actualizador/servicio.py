@@ -11,9 +11,9 @@ import subprocess
 import tempfile
 import threading
 from pathlib import Path
-from urllib.request import urlopen
 
 from . import descarga, instalador, releases, temporales, verificacion, versiones
+from .conexion import abrir_https
 
 
 INICIAL = "inicial"
@@ -62,7 +62,7 @@ def _en_hilo(funcion):
 
 
 class Actualizador:
-    def __init__(self, *, abrir=urlopen, popen=subprocess.Popen, carpeta=CARPETA,
+    def __init__(self, *, abrir=abrir_https, popen=subprocess.Popen, carpeta=CARPETA,
                  pyproject=versiones.PYPROJECT, en_segundo_plano=_en_hilo):
         self._abrir = abrir
         self._popen = popen
