@@ -43,16 +43,15 @@ oscuro y se eligen en **Opciones → Apariencia**.
 [Estudio y Minimalista en claro y oscuro](docs/capturas/temas-homenaje/estudio-minimalista-herramienta.png) ·
 [Galería y créditos de los temas homenaje](docs/temas-homenaje.md)
 
-## Consola interactiva · En desarrollo
+## Consola interactiva
 
-Rodolfo Collado está desarrollando una nueva interfaz de terminal en
-el [PR #131](https://github.com/Collado-Labs/Algebra-Lineal/pull/131). El prototipo
-abre un catálogo con `/`, muestra gráficas y tablas navegables y guarda los
-ejercicios en un historial local.
+La consola de PyGebra abre un catálogo con `/`, valida los vectores y matrices
+mientras escribes, muestra gráficas y tablas navegables y guarda los ejercicios
+en un historial local. Para arrancarla, sigue la [guía de ejecución](docs/ejecucion.md#aplicación-de-terminal).
 
-[![Vista de resultados del prototipo de Rodolfo Collado. Bisección de x² menos 2, con intervalo, raíz aproximada y gráfica en la terminal.](docs/capturas/portada/terminal-pr131.webp)](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)
+[![Vista previa de la consola durante el desarrollo. Bisección de x² menos 2, con intervalo, raíz aproximada y gráfica en la terminal.](docs/capturas/portada/terminal-pr131.webp)](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)
 
-*Bisección en la vista de resultados de la consola en desarrollo.*
+*Vista previa de Bisección en la consola.*
 
 ## Formas de usar el proyecto
 
@@ -60,7 +59,7 @@ ejercicios en un historial local.
 | --- | --- |
 | Escritorio Windows | Herramientas visuales en una ventana local. |
 | Django en desarrollo | La misma interfaz desde el navegador local. |
-| Terminal | Matrices y sistemas por Gauss y Gauss-Jordan. |
+| Terminal | Álgebra lineal, sistemas numéricos, métodos numéricos y conjuntos desde el menú `/`. |
 
 La interfaz visual incluye tema claro/oscuro, búsqueda de herramientas y
 teclado matemático contextual.

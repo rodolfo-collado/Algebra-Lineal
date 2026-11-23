@@ -335,6 +335,20 @@ La publicación se activa al aprobar y fusionar la promoción
 la exportación a PDF, el instalador visual y los tutoriales quedan fuera de
 v0.19.0.
 
+## Preparación de v0.20.0
+
+Incremento **MINOR** desde v0.19.0. Incorpora la consola interactiva de PyGebra
+del PR #131, junto con la portada del PR #137 y las correcciones de concurrencia
+del actualizador del PR #138.
+
+- La consola abre las herramientas con `/`, conserva un historial local y
+  presenta resultados, procedimientos, tablas y gráficas sin abrir un navegador.
+- Vectores y matrices se validan mientras se escriben. `F2` conserva el borrador
+  y señala el campo con error para corregirlo antes de continuar.
+- El catálogo de terminal incluye Bisección, Regla falsa, Newton-Raphson,
+  Secante, Jacobi y Gauss-Seidel. El asistente de vectores se conserva en la
+  terminal y comparte el cálculo con la herramienta web de Operaciones.
+
 ## Flujo de integración y entrega
 
 ```mermaid
