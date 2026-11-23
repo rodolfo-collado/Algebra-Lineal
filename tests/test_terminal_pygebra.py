@@ -93,6 +93,25 @@ class ConsolaInteractivaTests(unittest.IsolatedAsyncioTestCase):
         temporal = self.enterContext(TemporaryDirectory())
         self.historial = Historial(Path(temporal) / "consola.sqlite3")
 
+    async def test_menu_adapta_las_descripciones_y_la_ayuda_al_espacio(self):
+        app = PyGebra(self.historial)
+        async with app.run_test(size=(145, 39)) as teclas:
+            await teclas.press("slash", "down")
+            menu = app.query_one("#menu")
+            detalle = app.query_one("#detalle-menu")
+            pregunta = app.query_one("#pregunta")
+            self.assertRegex(str(menu.content), r"▌\s+/historial\s+Ir a los ejercicios")
+            self.assertFalse(detalle.display)
+            self.assertFalse(pregunta.display)
+
+            await teclas.resize_terminal(35, 22)
+            await teclas.pause()
+            self.assertNotIn("Ir a los ejercicios", str(menu.content))
+            self.assertTrue(detalle.display)
+            self.assertEqual(str(detalle.content), "Ir a los ejercicios")
+            await teclas.press("escape")
+            self.assertTrue(pregunta.display)
+
     async def test_navega_redimensiona_copia_y_recupera_el_historial(self):
         app = PyGebra(self.historial)
         async with app.run_test(size=(124, 35)) as teclas:
@@ -154,13 +173,71 @@ class ConsolaInteractivaTests(unittest.IsolatedAsyncioTestCase):
         app = PyGebra(self.historial)
         async with app.run_test(size=(70, 38)) as teclas:
             app.abrir_herramienta(HERRAMIENTAS["determinantes"])
-            app.query_one("#editor", TextArea).load_text("1\t2\n3\t4")
+            editor = app.query_one("#editor", TextArea)
+            aviso = app.query_one("#aviso")
+            editor.load_text("1\t2\n3")
+            await teclas.pause()
+            self.assertIn("fila 2 tiene 1 celda", str(aviso.content))
+            await teclas.press("f2")
+            self.assertEqual(app.campo_actual().id, "@A")
+
+            editor.load_text("1\t2\n3\tX")
+            await teclas.pause()
+            self.assertIn("Fila 2, columna 2", str(aviso.content))
+            editor.load_text("1\t2\n3\t4")
+            await teclas.pause()
+            self.assertFalse(aviso.display)
             await teclas.press("f2", "enter")
             await app.workers.wait_for_complete()
             await teclas.pause()
             self.assertIn("det(A) = -2", " ".join(
                 b for b in app.ultimo_ejercicio.bloques if isinstance(b, str)
             ))
+
+    async def test_cada_vector_se_valida_antes_de_confirmar_con_f2(self):
+        app = PyGebra(self.historial)
+        async with app.run_test(size=(70, 38)) as teclas:
+            app.decimal = ","
+            app.abrir_herramienta(HERRAMIENTAS["operaciones-vectores"])
+            await teclas.press("enter", "enter")  # Suma en dimensión 3.
+            aviso = app.query_one("#aviso")
+            app.entrada.value = "1"
+            await teclas.pause()
+            self.assertIn("al menos 2 operandos", str(aviso.content))
+            await teclas.press("enter")
+            self.assertEqual(app.campo_actual().id, "vectores")
+            app.entrada.value = "5"
+            await teclas.press("enter")
+
+            editor = app.query_one("#editor", TextArea)
+            await teclas.press("f2")
+            self.assertIn("Hay 0", str(aviso.content))
+            incorrectos = (
+                ("1 x 3", "Componente 2 de v1"),
+                ("1 2", "Escribe 3 componentes para v2. Hay 2"),
+                ("1 2 1/0", "Componente 3 de v3"),
+            )
+            for indice in range(1, 6):
+                campo = f"@v{indice}"
+                self.assertEqual(app.campo_actual().id, campo)
+                if indice <= len(incorrectos):
+                    texto, mensaje = incorrectos[indice - 1]
+                    editor.load_text(texto)
+                    await teclas.pause()
+                    self.assertTrue(aviso.display)
+                    self.assertIn(mensaje, str(aviso.content))
+                    await teclas.press("f2")
+                    self.assertEqual(app.campo_actual().id, campo)
+                    self.assertIs(app.focused, editor)
+                    self.assertEqual(editor.text, texto)
+                    self.assertNotIn(campo, app.datos)
+                editor.load_text("1,5\t-1/2\n3")
+                await teclas.pause()
+                self.assertFalse(aviso.display)
+                await teclas.press("f2")
+            await app.workers.wait_for_complete()
+            await teclas.pause()
+            self.assertEqual(app.ultimo_ejercicio.datos["@v5"], "1,5\t-1/2\n3")
 
     async def test_metodo_no_aplicable_muestra_un_aviso_bajo_la_entrada(self):
         app = PyGebra(self.historial)

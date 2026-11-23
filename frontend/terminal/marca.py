@@ -76,7 +76,6 @@ class Escala:
     alto: int
     desplazamientos: tuple[tuple[int, int], ...]
     separacion: int
-    terminal_alto: int
 
     @property
     def columnas(self):
@@ -90,12 +89,7 @@ class Escala:
         return (alto_glifo + 1) // 2
 
 
-_ESCALAS = (
-    Escala(28, 24, ((6, 4), (3, 2)), 5, 44),
-    Escala(19, 17, ((6, 4), (3, 2)), 4, 33),
-    Escala(14, 12, ((4, 3), (2, 1)), 3, 26),
-    Escala(11, 10, ((4, 3), (2, 1)), 2, 23),
-)
+_COMPACTA = Escala(6, 5, ((1, 1), (1, 0)), 1)
 
 
 def _mezclar(color, fondo, proporcion):
@@ -190,17 +184,11 @@ def _dibujar(escala, claro):
 
 
 def logotipo(ancho, alto, *, claro=False):
-    """Escoge la escala que cabe y deja márgenes simétricos para centrarla."""
-    for escala in _ESCALAS:
-        if ancho >= escala.columnas + 4 and alto >= escala.terminal_alto:
-            marca = _dibujar(escala, claro)
-            lineas = marca.split(allow_blank=True)
-            for linea in lineas:
-                linea.align("center", ancho)
-            return Text("\n", no_wrap=True, overflow="crop", end="").join(lineas)
+    """Devuelve la marca compacta para el encabezado de la terminal."""
+    if ancho >= _COMPACTA.columnas + 6 and alto >= 23:
+        return _dibujar(_COMPACTA, claro).copy()
 
     marca = Text(overflow="crop", no_wrap=True, end="")
     for letra, color in zip("PYGEBRA", _CLARO if claro else _PASTEL):
         marca.append(letra, f"bold {color}")
-    marca.align("center", ancho)
     return marca

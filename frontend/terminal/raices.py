@@ -25,10 +25,32 @@ def _dialogo(formulario):
     def preguntas(datos):
         form = formulario()
         puntos = tuple(n for n in form.fields if n in {"a", "b", "x0", "x1"})
+
+        def validar_funcion(texto, decimal):
+            texto = preparar_raices({"funcion": texto}, decimal)["funcion"]
+            try:
+                FuncionReal(texto)
+            except ValueError as error:
+                raise ValueError(mensaje_previsualizacion(error, texto)) from error
+
+        def validar_b(valor, decimal):
+            anterior = _punto(preparar_raices(datos, decimal), "a")
+            if anterior is not None and valor <= anterior:
+                raise ValueError("El extremo b debe ser mayor que a.")
+
+        def validar_x1(valor, decimal):
+            if valor == _punto(preparar_raices(datos, decimal), "x0"):
+                raise ValueError("x₁ debe ser distinto de x₀: la secante necesita dos puntos.")
+
+        def validar_precision(valor, _decimal):
+            if valor is not None and valor <= 0:
+                raise ValueError(f"La {form.magnitud} debe ser positiva.")
+
+        validar_punto = {"b": validar_b, "x1": validar_x1}
         return (
-            campo(form, "funcion", ayuda="Ejemplos: x^2 - 2, 2x + 1 o sin(x)."),
-            *(campo(form, n) for n in puntos),
-            campo(form, "precision"),
+            campo(form, "funcion", ayuda="Ejemplos: x^2 - 2, 2x + 1 o sin(x).", verificar=validar_funcion),
+            *(campo(form, n, verificar=validar_punto.get(n)) for n in puntos),
+            campo(form, "precision", verificar=validar_precision),
             campo(form, "max_iteraciones"),
         )
     return preguntas

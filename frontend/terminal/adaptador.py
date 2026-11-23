@@ -40,7 +40,7 @@ class Linea(str):
             return cls(texto, "resultado")
         if texto == "Ver procedimiento":
             return cls("Procedimiento", "seccion")
-        if texto in {"Procedimiento detallado", "Cómo se obtuvo", "Verificación"}:
+        if texto in {"Procedimiento", "Procedimiento detallado", "Cómo se obtuvo", "Verificación"}:
             return cls(texto, "seccion")
         if texto in _TITULOS_AVISO:
             return cls(texto, "aviso")

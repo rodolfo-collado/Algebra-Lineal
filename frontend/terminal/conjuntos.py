@@ -6,8 +6,11 @@ import math
 from rich.text import Text
 from textual.widgets import Static
 
+from backend.conjuntos.literales import analizar_literal, validar_nombre
+from backend.conjuntos.parser import analizar_expresion
+from backend.conjuntos.presupuesto import Presupuesto
 from frontend.web.calculadora.forms_conjuntos import (
-    CardinalidadesForm, ConjuntosForm, EJEMPLOS, GUIA, PLANTILLAS, inicial_editor, rellenar,
+    CardinalidadesForm, ConjuntosForm, EJEMPLOS, GUIA, PLANTILLAS, inicial_editor, leer_region, rellenar,
 )
 
 from .adaptador import ejecutar
@@ -46,6 +49,21 @@ def _definiciones(texto):
     return filas
 
 
+def _validar_definiciones(texto, _decimal):
+    presupuesto = Presupuesto()
+    nombres = set()
+    for nombre, literal in _definiciones(texto):
+        validar_nombre(nombre)
+        if nombre in nombres:
+            raise ValueError(f"El nombre «{nombre}» ya está definido. Usa nombres únicos.")
+        nombres.add(nombre)
+        presupuesto.texto(nombre)
+        try:
+            analizar_literal(literal, presupuesto=presupuesto)
+        except ValueError as error:
+            raise ValueError(f"{nombre}: {error}") from error
+
+
 def _opciones_regiones(datos):
     return {
         "cantidad": 0,
@@ -61,9 +79,9 @@ def relaciones(datos):
     nombres = []
     if modo == "definiciones":
         campos.append(Campo("@definiciones", "Definiciones", ayuda=(
-            "Una definición por línea. Ejemplos: A = {1, 2}; I = intervalo(0, 2, cerrado, abierto). "
+            "Una definición por línea. Ejemplos: A = {1, 2} o I = intervalo(0, 2, cerrado, abierto). "
             "Deja vacío para operar con literales en la expresión."
-        ), multilinea=True))
+        ), multilinea=True, verificar=_validar_definiciones))
         try:
             nombres = [n for n, _ in _definiciones(datos.get("@definiciones", ""))]
         except ErrorEntrada:
@@ -80,7 +98,8 @@ def relaciones(datos):
         nombres = [n.strip() for n in opciones["venn_nombres"].split(",")]
         if modo == "regiones":
             regiones = ConjuntosForm({**opciones, "accion": "editar_regiones"}).regiones
-            campos.extend(campo(r.form, r.name, ayuda="Ejemplo: 1, 2, \"rojo\". Vacío: ∅.") for r in regiones)
+            campos.extend(campo(r.form, r.name, ayuda="Ejemplo: 1, 2, \"rojo\". Vacío: ∅.",
+                                verificar=lambda texto, _: leer_region(texto, Presupuesto())) for r in regiones)
     campos.append(_PLANTILLA)
     plantilla = datos.get("@plantilla", "personalizada")
     inicial = ""
@@ -90,8 +109,13 @@ def relaciones(datos):
         inicial = EJEMPLOS[datos.get("@ejemplo", "venn")][2]
     elif modo in {"regiones", "azar"}:
         inicial = " ∪ ".join(nombres)
+
+    def validar_expresion(texto, _decimal):
+        if texto or modo not in {"regiones", "azar"}:
+            analizar_expresion(texto)
+
     campos.extend((
-        campo(form, "expresion", inicial=inicial, ayuda=_AYUDA_EXPRESION),
+        campo(form, "expresion", inicial=inicial, ayuda=_AYUDA_EXPRESION, verificar=validar_expresion),
         campo(form, "punto", ayuda="Opcional, para consultar pertenencia a un intervalo. Ejemplo: 1/2."),
     ))
     return tuple(campos)
@@ -99,12 +123,17 @@ def relaciones(datos):
 
 def cardinalidad(datos):
     form = CardinalidadesForm(initial=datos)
+
+    def validar_region(valor, _decimal):
+        if valor is None:
+            raise ValueError("Indica esta cardinalidad, incluso si es cero.")
+
     return (
         campo(form, "numero", inicial="2"),
         campo(form, "modo", inicial="regiones"),
-        *(campo(form, region.name, ayuda=region.descripcion) for region in form.regiones),
+        *(campo(form, region.name, ayuda=region.descripcion, verificar=validar_region) for region in form.regiones),
         campo(form, "universo"),
-        campo(form, "expresion", inicial=form.atajos[0],
+        campo(form, "expresion", inicial=form.atajos[0], verificar=lambda texto, _: analizar_expresion(texto),
               ayuda="Ejemplos: " + " · ".join(form.atajos[:3])),
     )
 

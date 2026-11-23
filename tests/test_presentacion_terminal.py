@@ -79,3 +79,29 @@ class HistorialDesplazableTests(unittest.IsolatedAsyncioTestCase):
             await teclas.press("pagedown")
             await teclas.pause()
             self.assertGreater(panel.scroll_y, 0)
+
+    async def test_resultado_romano_legado_se_muestra_antes_de_sus_pasos(self):
+        raiz = self.enterContext(TemporaryDirectory())
+        historial = Historial(Path(raiz) / "historial.sqlite3")
+        historial.abrir()
+        tabla = Tabla("", ("Parte", "Romano"), (("100", "C"), ("50", "L")))
+        bloques = ("Arábigo → romano", "Procedimiento", "150 = 100 + 50", tabla,
+                   "Las partes se escriben una tras otra, de mayor a menor:", "150 = CL",
+                   "Resultado", "150", "= CL Romano")
+        historial.agregar(Ejercicio("conversion-romanos", "Conversión romana · 150", {}, bloques))
+
+        app = PyGebra(historial)
+        async with app.run_test(size=(145, 39)) as teclas:
+            ficha = app.query_one(Ficha)
+            titulo = ficha.query_one("CollapsibleTitle")
+            self.assertRegex(titulo.label.plain, r"^Conversión romana\s{2,}150$")
+            titulo.focus()
+            await teclas.press("enter")
+            self.assertIs(app.focused, titulo)
+            self.assertIn("[Enter] Plegar", str(app.query_one("#teclas").content))
+            textos = [str(bloque.content) for bloque in ficha.query(".bloque")]
+            self.assertEqual(textos[1:4], ["Resultado   150 = CL", "Procedimiento", "150 = 100 + 50"])
+            self.assertNotIn("150 = CL", textos)
+            self.assertEqual(textos[-1], "Las partes se escriben una tras otra, de mayor a menor.")
+            await teclas.press("f7")
+            self.assertIs(app.focused, app.entrada)

@@ -9,10 +9,12 @@ from rich.text import Text
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.color import Color
 from textual.containers import Container, VerticalScroll
-from textual.events import Resize
+from textual.events import DescendantFocus, Resize
 from textual.theme import Theme
-from textual.widgets import Input, Static, TextArea
+from textual.widgets import Collapsible, Input, Static, TextArea
+from textual.widgets._collapsible import CollapsibleTitle
 
 from frontend.web.calculadora.teclados import (
     PERFIL_EXPRESION, PERFIL_FUNCION_REAL, PERFIL_LINEAL, PERFIL_LITERAL_CONJUNTOS,
@@ -20,12 +22,12 @@ from frontend.web.calculadora.teclados import (
 )
 
 from .adaptador import Linea, Tabla, ejecutar, procedimiento
-from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra, validar_cantidad_matricial
+from .algebra import DIALOGOS_ALGEBRA, campo_de_error, preparar_algebra
 from .conjuntos import (
     DIALOGOS_CONJUNTOS, GraficaConjuntos, cardinalidad, preparar_conjuntos, relaciones,
     representacion, resolver_conjuntos,
 )
-from .componentes import EntradaComando, Ficha, Paleta
+from .componentes import ArchivosBackend, EntradaComando, Ficha, MenuOpciones, Paleta, TablaInteractiva
 from .dialogos import Campo, DIALOGOS, ErrorEntrada
 
 from .graficas import Grafica
@@ -70,6 +72,7 @@ class PyGebra(App):
         self.paso = 0
         self.seleccion = set()
         self.confirmacion = None
+        self._borrador = ""
         self.ultimo_ejercicio = None
         self.ultimo_resultado = None
         self._reloj_grafica = None
@@ -105,7 +108,7 @@ class PyGebra(App):
                     yield Static("Escribe / para elegir una herramienta.", id="pregunta", markup=False)
                     yield Static(id="ayuda", markup=False, classes="vacio")
                 with Container(id="redaccion"):
-                    yield Static(id="menu", markup=False)
+                    yield MenuOpciones(id="menu", markup=False)
                     yield Static(id="detalle-menu", markup=False, classes="vacio")
                     yield EntradaComando(placeholder="Escribe /", id="entrada")
                     yield TextArea(id="editor", show_line_numbers=False)
@@ -160,8 +163,11 @@ class PyGebra(App):
         maximo = 6 if self.screen.has_class("ancha") else 4 if self.size.height >= 32 else 3
         inicio = min(max(0, seleccion - maximo + 1), max(0, len(opciones) - maximo))
         tema = self.current_theme
-        activa = Style(color=tema.background if self.theme == "pygebra" else "#ffffff",
-                       bgcolor=tema.secondary, bold=True)
+        fondo_activo = Color.parse(tema.background).blend(Color.parse(tema.secondary), 0.20).hex
+        activa = Style(bgcolor=fondo_activo)
+        ancho_comando = max((1 + cell_len(opcion.id) for opcion in opciones), default=0) if comandos else 0
+        ancho_descripcion = ancho - ancho_comando - 6  # Marcador y separación entre columnas.
+        en_columnas = comandos and ancho_descripcion >= 15
         texto = Text()
         for indice, opcion in enumerate(opciones[inicio:inicio + maximo], inicio):
             if indice > inicio:
@@ -173,13 +179,19 @@ class PyGebra(App):
                 clave, etiqueta = opcion
                 if self.campo_actual().multiple:
                     etiqueta = ("✓  " if clave in self.seleccion else "○  ") + etiqueta
-            linea = Text(("▌  " if elegida else "   ") + etiqueta)
+            linea = Text.assemble(("▌  ", tema.secondary) if elegida else "   ")
+            linea.append(etiqueta, tema.primary if comandos else None)
+            if en_columnas:
+                linea.pad_right(ancho_comando - cell_len(etiqueta) + 3)
+                descripcion = Text(opcion.descripcion_corta or opcion.titulo, style="dim")
+                descripcion.truncate(ancho_descripcion, overflow="ellipsis")
+                linea.append_text(descripcion)
             linea.truncate(ancho, overflow="ellipsis")
             if elegida:
-                linea.pad_right(max(0, ancho - cell_len(linea.plain)))
+                linea.pad_right(ancho - linea.cell_len)
                 linea.stylize(activa)
             texto.append(linea)
-        return texto
+        return texto, en_columnas
 
     def _ruta_chat(self, ruta):
         tema = self.current_theme
@@ -198,14 +210,27 @@ class PyGebra(App):
         opciones = nav.opciones(self.entrada.value) if self.entrada.value.startswith("/") else ()
         menu = self.query_one("#menu", Static)
         menu.display = self.entrada.value.startswith("/")
-        menu.update(self._lista_opciones(opciones, nav.indice, comandos=True) if opciones else "Sin coincidencias")
-        descripcion = opciones[nav.indice].titulo if opciones and nav.indice < len(opciones) else ""
+        self.query_one("#pregunta").display = not menu.display
+        lista, en_columnas = self._lista_opciones(opciones, nav.indice, comandos=True)
+        menu.update(lista or "Sin coincidencias")
+        descripcion = opciones[nav.indice].titulo if not en_columnas and nav.indice < len(opciones) else ""
         self.detalle_chat("#detalle-menu", descripcion)
         ruta = ("Chat",) if len(nav.ruta) == 1 else ("Chat", *(c.titulo for c in nav.ruta[1:]))
         self._ruta_chat(ruta)
-        teclas = ("↑↓ Elegir · ← Atrás · → Volver · Enter Abrir" if menu.display
-                  else "/ Menú · F4 Repetir · Ctrl+Q Salir")
-        self.mostrar_teclas(teclas)
+        if not self.entrada.has_focus:
+            return
+        if menu.display:
+            teclas = ["Enter Abrir"] if opciones else []
+            if len(opciones) > 1:
+                teclas.append("↑↓ Elegir")
+            if len(nav.ruta) > 1:
+                teclas.append("← Atrás")
+            if nav.ruta[-1].id in nav.ultimo:
+                teclas.append("→ Volver")
+            self.mostrar_teclas(" · ".join((*teclas, "Esc Cerrar")))
+        else:
+            repetir = " · F4 Repetir" if self.ultimo_ejercicio and self.ultimo_ejercicio.comando in HERRAMIENTAS else ""
+            self.mostrar_teclas(f"/ Menú{repetir} · Ctrl+Q Salir")
 
     @on(Input.Changed, "#entrada")
     def cambio_comando(self, evento):
@@ -213,10 +238,8 @@ class PyGebra(App):
             if evento.value != "/":
                 self.navegacion.indice = 0
             self.actualizar_menu()
-        elif self.comando.id in DIALOGOS_RAICES and self.campo_actual().id in _CAMPOS_VISTA:
-            self.programar_grafica()
-        elif self.comando.id in DIALOGOS_CONJUNTOS and self.campo_actual().id in {"expresion", "punto"}:
-            self.programar_grafica()
+        elif evento.value == self.entrada.value:
+            self._cambio_borrador(evento.value, multilinea=False)
 
     def action_mover_menu(self, salto):
         if self.comando is not None:
@@ -243,7 +266,7 @@ class PyGebra(App):
         self.screen.remove_class("lectura")
         self._calculo += 1
         self._resolviendo = False
-        self._revision_grafica += 1
+        self._invalidar_previsualizacion()
         self.query_one("#grafica-viva", Grafica).mostrar(None)
         self.query_one("#diagrama-vivo", GraficaConjuntos).mostrar(None)
         self.comando = None
@@ -258,7 +281,7 @@ class PyGebra(App):
         self.entrada.placeholder = "Escribe /"
         self.entrada.focus()
         self.estado("Escribe / para elegir una herramienta.")
-        self.avisar("")
+        self._aviso_formato("")
         self.entrada.clear()
         self.actualizar_menu()
 
@@ -345,6 +368,8 @@ class PyGebra(App):
         campos = self.campos()
         campo = campos[self.paso]
         valor = self.datos.get(campo.id, campo.inicial)
+        self._borrador = "" if campo.opciones else valor
+        self._aviso_formato("")
         claves = [clave for clave, _ in campo.opciones]
         self.seleccion = set(valor) if campo.multiple else set()
         self.navegacion.indice = claves.index(valor) if valor in claves else 0
@@ -366,6 +391,7 @@ class PyGebra(App):
             respuestas.append(resumen[:90], f"bold {self.current_theme.primary}")
         self.detalle_chat("#respuestas", respuestas)
         self.detalle_chat("#paso", f"Paso {self.paso + 1} de {len(campos)}")
+        self.query_one("#pregunta").display = True
         self.estado(campo.titulo)
         self.detalle_chat("#ayuda", campo.ayuda)
         self.call_after_refresh(self.query_one("#conversacion", VerticalScroll).scroll_end, animate=False)
@@ -381,14 +407,18 @@ class PyGebra(App):
         else:
             self.entrada.focus()
         self.actualizar_opciones()
-        if self.comando.id in _VISUALES:
+        if self._validar_borrador() and self.comando.id in _VISUALES:
             self.programar_grafica()
 
-    def programar_grafica(self):
+    def _invalidar_previsualizacion(self):
         self._revision_grafica += 1
-        revision = self._revision_grafica
         if self._reloj_grafica is not None:
             self._reloj_grafica.stop()
+            self._reloj_grafica = None
+
+    def programar_grafica(self):
+        self._invalidar_previsualizacion()
+        revision = self._revision_grafica
         herramienta = self.comando.id
         datos = self.datos_activos()
         clave = self.campo_actual().id
@@ -437,10 +467,40 @@ class PyGebra(App):
             self.avisar(aviso + (" Se conserva la última gráfica válida." if aviso and anterior else ""))
 
     @on(TextArea.Changed, "#editor")
-    def cambio_multilinea(self):
-        if (self.comando and self.comando.id in DIALOGOS_CONJUNTOS
-                and self.campo_actual().id == "expresion"):
+    def cambio_multilinea(self, evento):
+        self._cambio_borrador(evento.text_area.text, multilinea=True)
+
+    def _cambio_borrador(self, texto, *, multilinea):
+        if self.comando is None or self._resolviendo or texto == self._borrador:
+            return
+        campo = self.campo_actual()
+        if campo.opciones or campo.multilinea != multilinea:
+            return
+        self._borrador = texto
+        if not self._validar_borrador():
+            return
+        if (self.comando.id in DIALOGOS_RAICES and campo.id in _CAMPOS_VISTA
+                or self.comando.id in DIALOGOS_CONJUNTOS and campo.id in {"expresion", "punto"}):
             self.programar_grafica()
+
+    def _validar_borrador(self):
+        texto = self._borrador.strip()
+        if texto:
+            try:
+                self.campo_actual().validar(texto, self.decimal)
+            except ErrorEntrada as error:
+                self._aviso_formato(str(error))
+                return False
+        self._aviso_formato("")
+        return True
+
+    def _aviso_formato(self, mensaje):
+        self.query_one("#redaccion").set_class(bool(mensaje), "formato-invalido")
+        if mensaje:
+            self._invalidar_previsualizacion()
+        self.avisar(mensaje)
+        if mensaje:
+            self.call_after_refresh(self.query_one("#aviso").scroll_visible, animate=False)
 
     def mostrar_teclas(self, texto):
         if "F7 " not in texto:
@@ -454,6 +514,35 @@ class PyGebra(App):
             leyenda.append(f" {significado}" if significado else "")
         self.query_one("#teclas", Static).update(leyenda)
 
+    def on_descendant_focus(self, evento: DescendantFocus):
+        foco = evento.widget
+        if foco is not self.focused:
+            return
+        resultados = self.query_one("#resultados")
+        if foco is resultados or resultados in foco.ancestors:
+            self._teclas_resultados(foco)
+        elif isinstance(foco, (EntradaComando, TextArea)):
+            self.actualizar_menu()
+
+    @on(Collapsible.Expanded)
+    @on(Collapsible.Collapsed)
+    def _actualizar_teclas_ficha(self, evento):
+        foco = self.focused
+        if isinstance(foco, CollapsibleTitle) and foco.parent is evento.collapsible:
+            self._teclas_resultados(foco)
+
+    def _teclas_resultados(self, foco):
+        if isinstance(foco, CollapsibleTitle):
+            accion = "Abrir" if foco.collapsed else "Plegar"
+            teclas = f"Enter {accion} · Tab Cambiar foco"
+        elif isinstance(foco, TablaInteractiva):
+            teclas = "Ctrl+C Celda · Ctrl+R Fila · Ctrl+T Tabla · Tab Cambiar foco"
+        elif isinstance(foco, ArchivosBackend):
+            teclas = "↑↓ Elegir archivo · Enter Mostrar carpeta · Ctrl+C Copiar ruta"
+        else:
+            teclas = "↑↓ Desplazar · RePág/AvPág Página"
+        self.mostrar_teclas(f"F7 Chat · {teclas}")
+
     def action_cambiar_panel(self):
         resultados = self.query_one("#resultados", VerticalScroll)
         foco = self.focused
@@ -465,14 +554,16 @@ class PyGebra(App):
         else:
             self.screen.set_class(not self.screen.has_class("ancha"), "lectura")
             resultados.focus(scroll_visible=False)
-            self.mostrar_teclas("F7 Chat · ↑↓ Desplazar · RePág/AvPág Página")
 
     def actualizar_opciones(self):
         campo = self.campo_actual()
         menu = self.query_one("#menu", Static)
         menu.display = bool(campo.opciones)
-        menu.update(self._lista_opciones(campo.opciones, self.navegacion.indice))
+        lista, _ = self._lista_opciones(campo.opciones, self.navegacion.indice)
+        menu.update(lista)
         self.detalle_chat("#detalle-menu", "")
+        if not isinstance(self.focused, (EntradaComando, TextArea)):
+            return
         teclas = ("F2 Confirmar · Enter Nueva línea" if campo.multilinea else
                   "↑↓ Elegir · Espacio Marcar · Enter Confirmar" if campo.multiple else
                   "↑↓ Elegir · Enter Confirmar" if campo.opciones else "Enter Confirmar")
@@ -565,7 +656,12 @@ class PyGebra(App):
             valor = campo.opciones[self.navegacion.indice][0]
         else:
             valor = texto.strip()
-        self.avisar("")
+        try:
+            valor = campo.validar(valor, self.decimal)
+        except ErrorEntrada as error:
+            self._aviso_formato(str(error))
+            return
+        self._aviso_formato("")
         if self.confirmacion:
             if valor == "cancelar":
                 self.action_paso_anterior()
@@ -575,12 +671,6 @@ class PyGebra(App):
             self.paso = len(self.campos()) - 1
             self.resolver(firma)
             return
-        if self.comando.id == "operaciones-matrices" and campo.id == "cantidad":
-            try:
-                valor = validar_cantidad_matricial(valor)
-            except ErrorEntrada as error:
-                self.avisar(str(error))
-                return
         if campo.id in {"@plantilla", "@ejemplo"} and self.datos.get(campo.id) != valor:
             self.datos.pop("expresion", None)
         self.datos[campo.id] = valor
@@ -604,7 +694,7 @@ class PyGebra(App):
     def resolver(self, firma=None):
         self._calculo += 1
         self._resolviendo = True
-        self._revision_grafica += 1
+        self._invalidar_previsualizacion()
         self.estado("Calculando…")
         self.procesar(self._calculo, self.comando.id, self.datos_activos(), self.decimal, self.debugging, firma)
 

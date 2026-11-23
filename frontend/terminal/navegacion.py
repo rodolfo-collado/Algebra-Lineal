@@ -10,6 +10,7 @@ class Comando:
     id: str
     titulo: str
     hijos: tuple["Comando", ...] = ()
+    descripcion_corta: str = ""
 
 
 def _herramientas(area):
@@ -34,7 +35,7 @@ RAIZ = Comando("", "PyGebra", (
         Comando("convencion-decimal", "Alternar entre punto y coma decimal"),
         Comando("densidad", "Alternar el espaciado del procedimiento"),
     )),
-    Comando("debugging", "Activar o desactivar la traza del backend"),
+    Comando("debugging", "Activar o desactivar la traza del backend", descripcion_corta="Traza del backend"),
 ))
 
 

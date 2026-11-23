@@ -6,10 +6,10 @@ Screen {
 #marca {
     width: 1fr;
     height: auto;
-    padding: 1 0 1 0;
-    content-align: center middle;
+    padding: 1 3 0 3;
+    content-align: left top;
 }
-.muy-corta #marca { padding: 0; }
+.muy-corta #marca { padding: 0 3; }
 
 #cuerpo {
     height: 1fr;
@@ -27,11 +27,10 @@ Screen {
     border: round $panel;
     background: $background;
 }
-#resultados:focus { border: round $primary 65%; }
+#resultados:focus-within { border: round $secondary 55%; }
 #titulo-historial {
     height: auto;
-    margin: 1 0;
-    padding: 0 1;
+    margin: 0 0 1 0;
     border-bottom: solid $panel;
 }
 #vacio {
@@ -47,9 +46,10 @@ Screen {
     scrollbar-size: 1 1;
     padding: 0 1;
     background: $surface;
-    border: round $secondary 40%;
+    border: round $panel;
     margin-top: 1;
 }
+#chat:focus-within { border: round $secondary 55%; }
 .ancha #cuerpo { layout: horizontal; }
 .ancha #resultados { width: 2fr; }
 .ancha #chat {
@@ -68,7 +68,6 @@ Screen {
     padding: 0 1;
     border-bottom: solid $panel;
 }
-.ancha #migas { padding-top: 1; }
 
 #espacio-chat { display: none; }
 .ancha #espacio-chat { display: block; height: 1fr; }
@@ -94,18 +93,19 @@ Screen {
 #menu {
     height: auto;
     padding: 0 1;
-    background: $panel 75%;
+    background: $background;
     color: $foreground;
+    text-wrap: nowrap;
 }
 #detalle-menu {
     height: auto;
     max-height: 2;
     color: $secondary;
     padding: 0 1;
-    background: $panel 75%;
+    background: $background;
     text-style: italic;
 }
-.muy-corta #detalle-menu { display: none; }
+.muy-corta #detalle-menu { max-height: 1; text-wrap: nowrap; text-overflow: ellipsis; }
 
 #entrada, #editor {
     padding: 0 1;
@@ -119,6 +119,7 @@ Screen {
     border: round $primary 80%;
     background: $background;
 }
+.formato-invalido #entrada:focus, .formato-invalido #editor:focus { border: round $error; }
 .corta #editor { height: 4; }
 .muy-corta #entrada, .muy-corta #entrada:focus { height: 1; border: none; }
 

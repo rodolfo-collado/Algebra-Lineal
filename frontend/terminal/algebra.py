@@ -2,10 +2,12 @@
 
 from dataclasses import replace
 
-from django.core.exceptions import ValidationError
-
-from backend.operandos import nombre_matriz
-from backend.presupuesto_sistemas import dimensiones_admitidas
+from backend.expresiones_matriciales.lexer import tokenizar
+from backend.expresiones_matriciales.lineal import analizar_lineal
+from backend.expresiones_matriciales.parser import analizar_entrada, nombre_valido
+from backend.operandos import ARIDAD_VECTORES, exigir_aridad, nombre_matriz
+from backend.parser_sistemas import convertir_a_numero, parsear_sistema
+from backend.presupuesto_sistemas import validar_dimensiones
 from frontend.web.calculadora.forms import SistemaForm, VectoresForm
 from frontend.web.calculadora.forms_determinantes import (
     DeterminantesForm, metodo_disponible, metodo_sugerido, opciones_expansion,
@@ -13,6 +15,7 @@ from frontend.web.calculadora.forms_determinantes import (
 from frontend.web.calculadora.forms_ecuaciones import EcuacionMatricialForm
 from frontend.web.calculadora.forms_expresiones import ExpresionMatricialForm, TIPOS
 from frontend.web.calculadora.forms_inversa import InversaForm
+from frontend.web.calculadora.forms_matrices import campo_dimension
 from frontend.web.calculadora.opciones_matrices import DIMENSION_MAXIMA
 from frontend.web.calculadora.servicios_determinantes import firmar_matriz
 
@@ -38,18 +41,43 @@ def _vector(texto):
     return tuple(c for fila in _matriz(texto) for c in fila)
 
 
+def _normalizar(texto, decimal):
+    return texto.replace(",", ".") if decimal == "," else texto
+
+
+def _numero(texto, decimal):
+    if not texto:
+        raise ValueError("Falta un número.")
+    convertir_a_numero(_normalizar(texto, decimal), limitar_entrada=True)
+
+
 def _escribir_grid(datos, filas, clave, decimal):
     for i, fila in enumerate(filas):
         for j, valor in enumerate(fila):
-            datos[f"{clave}_{i}_{j}"] = valor.replace(",", ".") if decimal == "," else valor
+            datos[f"{clave}_{i}_{j}"] = _normalizar(valor, decimal)
 
 
-def _dimensiones(filas, nombre, limite=DIMENSION_MAXIMA):
-    if not filas or not filas[0] or any(len(f) != len(filas[0]) for f in filas):
-        raise ErrorEntrada(nombre, "Escribe una matriz rectangular con el mismo número de celdas en cada fila.")
+def _dimensiones(filas, nombre, *, cuadrada=False, forma=None):
+    if not filas or not filas[0]:
+        raise ErrorEntrada(nombre, "Escribe al menos una fila con números.")
     alto, ancho = len(filas), len(filas[0])
-    if limite is not None and max(alto, ancho) > limite:
-        raise ErrorEntrada(nombre, f"La matriz admite hasta {limite} filas y {limite} columnas.")
+    for indice, fila in enumerate(filas[1:], 2):
+        if len(fila) != ancho:
+            celdas = "celda" if len(fila) == 1 else "celdas"
+            raise ErrorEntrada(nombre, f"La fila {indice} tiene {len(fila)} {celdas}. Debe tener {ancho}, como la primera fila.")
+    if nombre == "@matriz":
+        if ancho < 2:
+            raise ErrorEntrada(nombre, "Incluye las columnas de coeficientes y una última columna de términos independientes.")
+        try:
+            validar_dimensiones(alto, ancho - 1)
+        except ValueError as error:
+            raise ErrorEntrada(nombre, str(error)) from error
+    elif max(alto, ancho) > DIMENSION_MAXIMA:
+        raise ErrorEntrada(nombre, f"La matriz admite hasta {DIMENSION_MAXIMA} filas y {DIMENSION_MAXIMA} columnas.")
+    if cuadrada and alto != ancho:
+        raise ErrorEntrada(nombre, "A debe ser cuadrada. Escribe tantas filas como columnas.")
+    if forma is not None and (alto, ancho) != forma:
+        raise ErrorEntrada(nombre, f"{nombre.removeprefix('@')} debe tener tamaño {forma[0]}×{forma[1]}.")
     return alto, ancho
 
 
@@ -58,14 +86,59 @@ def _orden(datos):
     return len(filas) if len(filas) <= DIMENSION_MAXIMA else 0
 
 
-def _bloque(nombre, titulo, *, vector=False, lineal=False):
+def _comprobar_cantidad(vector, nombre, componentes):
+    if componentes is not None and len(vector) != componentes:
+        etiqueta = nombre.removeprefix("@")
+        unidad = "componente" if componentes == 1 else "componentes"
+        raise ErrorEntrada(nombre, f"Escribe {componentes} {unidad} para {etiqueta}. Hay {len(vector)}.")
+
+
+def _validar_vector(texto, decimal, nombre, componentes, lineal):
+    vector = _filas(texto) if lineal else _vector(texto)
+    if len(vector) > (componentes if componentes is not None else DIMENSION_MAXIMA):
+        _comprobar_cantidad(vector, nombre, componentes)
+        raise ValueError(f"El vector admite hasta {DIMENSION_MAXIMA} componentes.")
+    for indice, valor in enumerate(vector, 1):
+        try:
+            if lineal:
+                analizar_lineal(_normalizar(valor, decimal))
+            else:
+                _numero(valor, decimal)
+        except ValueError as error:
+            raise ValueError(f"Componente {indice} de {nombre.removeprefix('@')}: {error}") from error
+    _comprobar_cantidad(vector, nombre, componentes)
+    if not vector:
+        raise ValueError("Escribe al menos una componente.")
+
+
+def _validar_matriz(texto, decimal, nombre, cuadrada, forma):
+    filas = _matriz(texto)
+    _dimensiones(filas, nombre, cuadrada=cuadrada, forma=forma)
+    for i, fila in enumerate(filas, 1):
+        for j, valor in enumerate(fila, 1):
+            try:
+                _numero(valor, decimal)
+            except ValueError as error:
+                raise ValueError(f"Fila {i}, columna {j}: {error}") from error
+
+
+def _bloque(nombre, titulo, *, vector=False, lineal=False, componentes=None, cuadrada=False, forma=None):
     if lineal:
         ayuda = "Una expresión por línea, por ejemplo 3x1 - 2x2."
     elif vector:
         ayuda = "Componentes separados por espacios, tabulaciones o saltos de línea."
     else:
         ayuda = "Separa las celdas con espacios o tabulaciones y las filas con Enter o ;."
-    return Campo(nombre, titulo, ayuda=ayuda, multilinea=True)
+
+    def verificar(texto, decimal):
+        if vector or lineal:
+            _validar_vector(texto, decimal, nombre, componentes, lineal)
+        else:
+            _validar_matriz(texto, decimal, nombre, cuadrada, forma)
+
+    if componentes is not None:
+        ayuda = f"Dimensión: {componentes}. {ayuda}"
+    return Campo(nombre, titulo, ayuda=ayuda, multilinea=True, verificar=verificar)
 
 
 def reduccion(datos):
@@ -74,7 +147,8 @@ def reduccion(datos):
     return (
         campo(form, "tipo_entrada"),
         _bloque("@matriz", "Matriz aumentada [A | b]") if matriz else
-        campo(form, "sistema", ayuda="Separa ecuaciones con Enter o ;. Ejemplo: x1+2x2=4; 2x1+5x2=9."),
+        campo(form, "sistema", ayuda="Separa ecuaciones con Enter o ;. Ejemplo: x1+2x2=4; 2x1+5x2=9.",
+              verificar=lambda texto, decimal: parsear_sistema(_normalizar(texto, decimal), limitar_entrada=True)),
         campo(form, "metodo"),
         campo(form, "mostrar"),
     )
@@ -83,10 +157,19 @@ def reduccion(datos):
 def vectores(datos):
     form = VectoresForm(datos, ajustar=True)
     operacion = datos.get("operacion", "suma")
-    cantidad = () if operacion == "escalar" else (campo(form, "vectores"),)
-    escalar = (campo(form, "escalar", ayuda="Ejemplo: -3/2."),) if operacion == "escalar" else ()
-    entradas = tuple(_bloque("@" + f["nombre"], f"Componentes de {f['nombre']}", vector=True)
-                     for f in form.estructura()["filas"])
+    if operacion == "combinacion":
+        form.fields["vectores"].required = True
+        form.fields["vectores"].error_messages["required"] = "Indica cuántos vectores generadores hay."
+
+    def validar_cantidad(cantidad, _decimal):
+        if cantidad is not None:
+            exigir_aridad(cantidad, ARIDAD_VECTORES[operacion])
+
+    cantidad = () if operacion == "escalar" else (campo(form, "vectores", verificar=validar_cantidad),)
+    escalar = (campo(form, "escalar", ayuda="Ejemplo: -3/2.", verificar=_numero),) if operacion == "escalar" else ()
+    estructura = form.estructura()
+    entradas = tuple(_bloque("@" + f["nombre"], f"Componentes de {f['nombre']}", vector=True,
+                            componentes=estructura["dimension"]) for f in estructura["filas"])
     return (campo(form, "operacion"), campo(form, "dimension"), *cantidad, *escalar, *entradas)
 
 
@@ -99,7 +182,7 @@ def ecuaciones(datos):
     form = EcuacionMatricialForm(initial={"filas": alto or 2, "columnas": ancho or 2})
     campos = [
         _bloque("@A", "Matriz A"),
-        _bloque("@b", "Vector b", vector=True),
+        _bloque("@b", "Vector b", vector=True, componentes=alto or None),
         campo(form, "metodo", omitir=() if cuadrada else ("lu", "cramer")),
     ]
     if datos.get("metodo") == "cramer":
@@ -112,20 +195,21 @@ def ecuaciones(datos):
 
 def inversa(datos):
     form = InversaForm()
-    campos = [_bloque("@A", "Matriz cuadrada A")]
-    if _orden(datos) == 2:
+    orden = _orden(datos)
+    campos = [_bloque("@A", "Matriz cuadrada A", cuadrada=True)]
+    if orden == 2:
         campos.append(campo(form, "metodo"))
     campos.extend((campo(form, "verificar"), campo(form, "funcion_adicional")))
     if datos.get("funcion_adicional") == "producto":
-        campos.append(_bloque("@B", "Matriz B"))
+        campos.append(_bloque("@B", "Matriz B", forma=(orden, orden) if orden else None))
     if datos.get("funcion_adicional") == "vector":
-        campos.append(_bloque("@b", "Vector b", vector=True))
+        campos.append(_bloque("@b", "Vector b", vector=True, componentes=orden or None))
     return tuple(campos)
 
 
 def determinantes(datos):
     orden = _orden(datos)
-    campos = [_bloque("@A", "Matriz cuadrada A")]
+    campos = [_bloque("@A", "Matriz cuadrada A", cuadrada=True)]
     if orden > 1:
         form = DeterminantesForm(initial={"orden": orden})
         campos.append(campo(form, "metodo", inicial=metodo_sugerido(orden)))
@@ -134,26 +218,49 @@ def determinantes(datos):
     return tuple(campos)
 
 
+def _validar_expresion(texto, _decimal):
+    if not texto:
+        raise ValueError("Escribe una expresión.")
+    # Los operandos todavía no se han declarado; aquí solo se comprueba la sintaxis.
+    nombres = {t.valor for t in tokenizar(texto) if t.tipo == "nombre"}
+    analizar_entrada(texto, nombres)
+
+
+def _verificar_nombre(datos, indice):
+    def verificar(nombre, _decimal):
+        if not nombre_valido(nombre):
+            raise ValueError("Usa una letra seguida de letras o dígitos, como A, u o k.")
+        if any(nombre == datos.get(f"nombre_{i}") for i in range(indice)):
+            raise ValueError(f"El operando {nombre} está repetido.")
+    return verificar
+
+
+def _dimension_simbolica(nombre, titulo):
+    control = campo_dimension(titulo)
+    return Campo(nombre, titulo, inicial="2", verificar=lambda texto, _: str(control.clean(texto)))
+
+
 def expresiones(datos):
     form = ExpresionMatricialForm(initial={"cantidad": 0})
     cantidad = min(form.fields["cantidad"].max_value, int(datos.get("cantidad") or 0))
     campos = [
-        campo(form, "expresion", ayuda="Ejemplos: A(B+C), 2A, A^T, Ax=b."),
+        campo(form, "expresion", ayuda="Ejemplos: A(B+C), 2A, A^T, Ax=b.", verificar=_validar_expresion),
         replace(campo(form, "cantidad"), titulo="Cantidad de operandos"),
     ]
     for i in range(cantidad):
         tipo = datos.get(f"tipo_{i}", "matriz")
         simbolo = datos.get(f"nombre_{i}", nombre_matriz(i))
         campos.extend((
-            Campo(f"nombre_{i}", f"Nombre del operando {i + 1}", inicial=nombre_matriz(i)),
+            Campo(f"nombre_{i}", f"Nombre del operando {i + 1}", inicial=nombre_matriz(i),
+                  verificar=_verificar_nombre(datos, i)),
             Campo(f"tipo_{i}", f"Tipo de {simbolo}", tuple(opcion for _, grupo in TIPOS for opcion in grupo), "matriz"),
         ))
         if tipo in {"matriz_desconocida", "vector_simbolico"}:
-            campos.append(Campo(f"filas_{i}", f"Filas o componentes de {simbolo}", inicial="2"))
+            campos.append(_dimension_simbolica(f"filas_{i}", f"Filas o componentes de {simbolo}"))
             if tipo == "matriz_desconocida":
-                campos.append(Campo(f"columnas_{i}", f"Columnas de {simbolo}", inicial="2"))
+                campos.append(_dimension_simbolica(f"columnas_{i}", f"Columnas de {simbolo}"))
         elif tipo == "escalar":
-            campos.append(Campo(f"@operando_{i}", f"Valor de {simbolo}"))
+            campos.append(Campo(f"@operando_{i}", f"Valor de {simbolo}", verificar=_numero))
         else:
             campos.append(_bloque(f"@operando_{i}", f"Valores de {simbolo}", vector=tipo == "vector",
                                   lineal=tipo == "vector_lineal"))
@@ -161,22 +268,12 @@ def expresiones(datos):
     return tuple(campos)
 
 
-def validar_cantidad_matricial(texto):
-    control = ExpresionMatricialForm.base_fields["cantidad"]
-    try:
-        return str(control.clean(texto))
-    except ValidationError as error:
-        raise ErrorEntrada("cantidad", error.messages[0]) from error
-
-
 def preparar_algebra(herramienta, datos, decimal):
     salida = {k: v for k, v in datos.items() if not k.startswith("@")}
     if herramienta == "reduccion-filas":
         if datos["tipo_entrada"] == "matriz":
             matriz = _matriz(datos["@matriz"])
-            m, n = _dimensiones(matriz, "@matriz", limite=None)
-            if not dimensiones_admitidas(m, n - 1):
-                raise ErrorEntrada("@matriz", "Incluye las columnas de coeficientes y una última columna de términos independientes.")
+            m, n = _dimensiones(matriz, "@matriz")
             salida.update(ecuaciones=m, variables=n - 1)
             _escribir_grid(salida, matriz, "matriz", decimal)
         elif decimal == ",":
@@ -187,10 +284,9 @@ def preparar_algebra(herramienta, datos, decimal):
         for fila in form.estructura()["filas"]:
             nombre = fila["nombre"]
             vector = _vector(datos["@" + nombre])
-            if len(vector) != len(fila["componentes"]):
-                raise ErrorEntrada("@" + nombre, f"Escribe {len(fila['componentes'])} componentes para {nombre}.")
+            _comprobar_cantidad(vector, "@" + nombre, len(fila["componentes"]))
             for componente, valor in zip(fila["componentes"], vector):
-                salida[componente["campo"]] = valor.replace(",", ".") if decimal == "," else valor
+                salida[componente["campo"]] = _normalizar(valor, decimal)
         if decimal == "," and "escalar" in salida:
             salida["escalar"] = salida["escalar"].replace(",", ".")
     elif herramienta == "operaciones-matrices":
@@ -216,23 +312,19 @@ def preparar_algebra(herramienta, datos, decimal):
             _escribir_grid(salida, matriz, f"celda_{i}", decimal)
     else:
         matriz = _matriz(datos["@A"])
-        alto, ancho = _dimensiones(matriz, "@A")
+        alto, ancho = _dimensiones(matriz, "@A", cuadrada=herramienta != "ecuaciones-matriciales")
         _escribir_grid(salida, matriz, "celda_A", decimal)
         if herramienta == "ecuaciones-matriciales":
             salida.update(filas=alto, columnas=ancho)
         else:
-            if alto != ancho:
-                raise ErrorEntrada("@A", "A debe ser cuadrada. Escribe tantas filas como columnas.")
             salida["orden"] = alto
         if "@b" in datos:
             vector = _vector(datos["@b"])
-            if len(vector) != alto:
-                raise ErrorEntrada("@b", f"Escribe {alto} componentes para el vector b.")
+            _comprobar_cantidad(vector, "@b", alto)
             _escribir_grid(salida, tuple((v,) for v in vector), "celda_b", decimal)
         if "@B" in datos:
             b = _matriz(datos["@B"])
-            if _dimensiones(b, "@B") != (alto, ancho):
-                raise ErrorEntrada("@B", f"B debe tener tamaño {alto}×{ancho}.")
+            _dimensiones(b, "@B", forma=(alto, ancho))
             _escribir_grid(salida, b, "celda_B", decimal)
         if herramienta == "determinantes":
             salida["eleccion"] = firmar_matriz({k: str(v) for k, v in salida.items()})

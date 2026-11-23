@@ -6,11 +6,13 @@ from pathlib import Path
 import re
 import subprocess
 
+from rich.cells import cell_len
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Container
+from textual.content import Content
 from textual.screen import ModalScreen
 from textual.widgets import Collapsible, DataTable, Input, OptionList, Static
 
@@ -43,27 +45,29 @@ class EntradaComando(Input):
             super().action_cursor_right(select)
 
 
+class MenuOpciones(Static):
+    def on_resize(self):
+        self.app.actualizar_menu()
+
+
 class TablaInteractiva(DataTable):
     DEFAULT_CSS = """
     TablaInteractiva {
         width: auto;
-        min-width: 20;
         max-width: 100%;
         height: auto;
         max-height: 15;
-        border: round $primary 45%;
         margin-bottom: 1;
         background: $background;
         scrollbar-size: 1 1;
 
         & > .datatable--header {
-            background: $primary 15%;
+            background: $panel;
             color: $primary;
             text-style: bold;
         }
         & > .datatable--even-row { background: $surface; }
         & > .datatable--odd-row { background: $background; }
-        &:focus { border: round $primary; }
     }
     """
 
@@ -101,13 +105,9 @@ class TablaInteractiva(DataTable):
 
     def on_focus(self):
         self.show_cursor = True
-        self.app.query_one("#teclas", Static).update(
-            "Ctrl+C Celda · Ctrl+R Fila · Ctrl+T Tabla · Tab Cambiar foco"
-        )
 
     def on_blur(self):
         self.show_cursor = False
-        self.app.actualizar_menu()
 
 
 class ArchivosBackend(OptionList):
@@ -135,52 +135,50 @@ class ArchivosBackend(OptionList):
         except OSError:
             self.app.notify("Usa Ctrl+C para copiar la ruta.")
 
-    def on_focus(self):
-        self.app.mostrar_teclas("↑↓ Elegir archivo · Enter Mostrar carpeta · Ctrl+C Copiar ruta")
-
-    def on_blur(self):
-        self.app.actualizar_menu()
-
 
 class Ficha(Collapsible):
     DEFAULT_CSS = """
     Ficha.ejercicio {
         background: $background;
         padding: 0;
-        border: round $secondary 36%;
-        margin-bottom: 1;
+        border: none;
 
-        &:focus-within { border: round $secondary 65%; background-tint: $foreground 0%; }
+        &:focus-within { background-tint: $foreground 0%; }
         & > CollapsibleTitle {
             width: 1fr;
-            padding: 1 2;
-            color: $secondary;
+            height: 1;
+            padding: 0 1;
+            border-left: vkey $background;
+            color: $foreground;
             background: $surface;
             text-style: bold;
+            text-wrap: nowrap;
+            text-overflow: ellipsis;
         }
-        &.-collapsed > CollapsibleTitle { padding: 0 2; }
-        & > CollapsibleTitle:focus { color: $background; background: $secondary; }
-        & > Contents { padding: 1 2 0 2; }
+        &.-collapsed > CollapsibleTitle { background: transparent; text-style: none; }
+        & > CollapsibleTitle:focus {
+            color: $foreground;
+            border-left: vkey $secondary;
+            background: $secondary 20%;
+        }
+        & > Contents { padding: 1 2; }
 
         .bloque { height: auto; width: 1fr; margin-bottom: 1; }
         .bloque-titulo { color: $secondary; text-style: bold; }
         .bloque-seccion {
             color: $primary;
-            background: $primary 11%;
-            border-left: thick $primary;
-            padding: 0 1;
-            margin-top: 1;
+            border-bottom: solid $panel;
             text-style: bold;
         }
         .bloque-paso { color: $secondary; text-style: bold; }
         .bloque-nota { color: $foreground 82%; text-style: italic; }
         .bloque-formula { color: $primary; padding-left: 1; }
         .bloque-resultado {
+            width: auto;
+            max-width: 100%;
             color: $accent;
             background: $accent 13%;
-            border-left: thick $accent;
             padding: 0 1;
-            margin-top: 1;
             text-style: bold;
         }
         .bloque-valor, .bloque-exito { color: $accent; text-style: bold; }
@@ -193,11 +191,10 @@ class Ficha(Collapsible):
         }
         .bloque-leyenda { color: $primary; margin-bottom: 0; }
         .bloque-grafica { margin: 0 0 1 0; }
-        .bloque-archivos { background: $surface; border-top: hkey $secondary 40%; margin-bottom: 1; }
+        .bloque-archivos { background: $background; border: none; padding: 0; margin-top: 1; }
     }
-    .holgada Ficha.ejercicio .bloque-seccion, .holgada Ficha.ejercicio .bloque-resultado { margin-top: 2; }
-    .corta Ficha.ejercicio > CollapsibleTitle { padding: 0 1; }
-    .corta Ficha.ejercicio > Contents { padding: 1 1 0 1; }
+    .holgada Ficha.ejercicio .bloque-seccion, .holgada Ficha.ejercicio .bloque-resultado { margin-top: 1; }
+    .corta Ficha.ejercicio > Contents { padding: 1; }
     """
 
     def __init__(self, registro, **kwargs):
@@ -205,12 +202,55 @@ class Ficha(Collapsible):
         self.cargada = False
         super().__init__(title=registro.titulo, classes="ejercicio", **kwargs)
 
+    def on_resize(self):
+        titulo = self.query_one("CollapsibleTitle")
+        ancho = self.size.width - titulo.styles.gutter.width - 2  # Flecha y espacio.
+        nombre, _, entrada = self.title.partition(" · ")
+        if not entrada or ancho < 19:
+            titulo.label = Content(self.title)
+            return
+
+        linea = Text(nombre)
+        resumen = Text(entrada)
+        limite_entrada = max(ancho - linea.cell_len - 2, ancho // 3)
+        resumen.truncate(limite_entrada, overflow="ellipsis")
+        linea.truncate(ancho - resumen.cell_len - 2, overflow="ellipsis")
+        linea.pad_right(ancho - linea.cell_len - resumen.cell_len)
+        titulo.label = Content.assemble(linea.plain, (resumen.plain, "$primary"))
+
+    @staticmethod
+    def _resumen_romano(bloques):
+        """Reúne el origen y el valor de los registros de conversión en una línea."""
+        corte = next((i for i, bloque in enumerate(bloques[:-2]) if bloque == "Resultado"), None)
+        if corte is None:
+            return bloques
+        origen, destino = bloques[corte + 1:corte + 3]
+        if not isinstance(origen, Linea) or not isinstance(destino, Linea):
+            return bloques
+        numeral = r"(?:[0-9]+|[IVXLCDM]+)"
+        valor = re.fullmatch(rf"= ({numeral})(?: Romano| Arábigo)?", destino)
+        if not re.fullmatch(numeral, origen) or valor is None:
+            return bloques
+
+        igualdad = f"{origen} = {valor[1]}"
+        inicio = next((i for i, bloque in enumerate(bloques[:corte])
+                       if isinstance(bloque, Linea) and bloque.estilo == "seccion"), corte)
+        procedimiento = bloques[inicio:corte] + bloques[corte + 3:]
+        explicacion = "Las partes se escriben una tras otra, de mayor a menor"
+        return (
+            *bloques[:inicio], Linea(f"Resultado   {igualdad}", "resultado"),
+            *(Linea(explicacion + ".", "nota") if bloque == explicacion + ":" else bloque
+              for bloque in procedimiento if bloque != igualdad),
+        )
+
     async def cargar(self):
         if self.cargada:
             return
         self.cargada = True
         widgets = []
         bloques = tuple(b if isinstance(b, (Linea, Tabla)) else Linea.legada(b) for b in self.registro.bloques)
+        if self.registro.comando == "conversion-romanos":
+            bloques = self._resumen_romano(bloques)
         grafica = self.registro.grafica
         if grafica is not None:
             if self.registro.comando in DIALOGOS_CONJUNTOS:
