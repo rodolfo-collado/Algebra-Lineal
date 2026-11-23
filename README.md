@@ -2,49 +2,34 @@
   <img src="docs/capturas/portada/pygebra.svg" alt="PyGebra. Aprende resolviendo." width="880">
 </h1>
 
-Calculadora educativa de **álgebra lineal, métodos numéricos y conjuntos**.
-Escribe un ejercicio y sigue las operaciones que llevan a su resultado, desde una
-reducción por filas hasta la tangente de Newton. Desarrollada por estudiantes de
-Ingeniería en Sistemas.
+PyGebra es una **calculadora educativa** para resolver sistemas y matrices,
+convertir números, explorar métodos numéricos y trabajar con conjuntos.
+Muestra el resultado y los pasos para obtenerlo. Desarrollada por estudiantes
+de Ingeniería en Sistemas.
+
+[![CI en develop](https://github.com/Collado-Labs/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Collado-Labs/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Adevelop)
+[![Última versión publicada](https://img.shields.io/github/v/release/Collado-Labs/Algebra-Lineal?label=versi%C3%B3n&sort=semver&color=19645a)](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
+[![Versión de Python requerida](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FCollado-Labs%2FAlgebra-Lineal%2Fdevelop%2Fpyproject.toml&logo=python&logoColor=white&label=Python&color=365b95)](pyproject.toml)
+[![Arquitectura de Windows admitida por el instalador](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2FCollado-Labs%2FAlgebra-Lineal%2Fdevelop%2Finstaller%2FAlgebraLineal.iss&search=ArchitecturesAllowed%3D%28%5Ba-z0-9%5D%2B%3F%29%28%3F%3Acompatible%29%3F%5Cr%3F%5Cn&replace=%241&label=Windows&color=334e70)](docs/instalacion-windows.md)
 
 **[Descargar para Windows](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)** ·
 [Documentación](docs/README.md) · [Desarrollo local](#desarrollo-rápido) ·
 [Contribuir](CONTRIBUTING.md)
 
-## Una raíz, paso a paso
+## Qué puedes resolver
 
-Partimos de $f(x) = x^3 - x - 2$ y $x_0 = 1.5$. El **método de Newton-Raphson**
-muestra la derivada, la tangente y la sustitución de cada paso. En la primera
-iteración, $x_1 \approx 1.521739$. La tabla y el reproductor permiten volver
-a ese paso y seguir cómo cambia la aproximación.
+De una matriz factorizada a una intersección de conjuntos, cada herramienta
+muestra el cálculo en la forma que mejor ayuda a seguirlo.
 
-[![PyGebra en Estudio: gráfica y tangente, tabla de aproximaciones, fórmula y sustitución de la primera iteración de Newton.](docs/capturas/portada/newton-estudio.webp)](docs/capturas/raices/09-newton-sustitucion-estudio-1280.jpg)
+<picture>
+  <source media="(max-width: 700px)" srcset="docs/capturas/portada/modulos-movil.webp">
+  <img src="docs/capturas/portada/modulos.webp" alt="Cuatro capturas de PyGebra: factorización LU de una matriz, conversión a tres bases, gráfica del residuo de Gauss-Seidel e intersección de tres conjuntos en un diagrama de Venn." width="880">
+</picture>
 
-[Guía de Newton-Raphson](docs/newton-raphson.md) ·
-[Secante en WebView2 (v0.18.0)](docs/capturas/raices/18-secante-webview2.jpg)
-
-## Formas de usar el proyecto
-
-| Interfaz | Uso |
-| --- | --- |
-| Escritorio Windows | Herramientas visuales en una ventana local. |
-| Django en desarrollo | La misma interfaz desde el navegador local. |
-| Terminal | Matrices y sistemas por Gauss y Gauss-Jordan. |
-
-La interfaz visual incluye tema claro/oscuro, búsqueda de herramientas y
-teclado matemático contextual.
-
-### Consola interactiva · En desarrollo
-
-Rodolfo Collado está desarrollando una nueva interfaz de terminal en
-el [PR #131](https://github.com/Collado-Labs/Algebra-Lineal/pull/131). El prototipo
-abre un catálogo con «/», muestra resultados, gráficas y tablas navegables, y
-guarda ejercicios en un historial local. Su paleta pastel y sus paneles adaptables
-están pensados para trabajar con el teclado.
-
-[![Prototipo de la consola interactiva de PyGebra en tema oscuro con paneles de entrada y resultados.](docs/capturas/portada/terminal-pr131.webp)](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)
-
-*El mismo ejercicio de Newton-Raphson resuelto en el prototipo del PR #131.*
+- **[Álgebra lineal](docs/funcionalidades.md#operaciones-matriciales-y-ax--b).** Trabaja con matrices y vectores, reduce por filas, resuelve $Ax = b$ y comprueba inversas y determinantes.
+- **[Sistemas numéricos](docs/funcionalidades.md#sistemas-numéricos).** Convierte entre binario, octal, decimal y hexadecimal, y entre números arábigos y romanos.
+- **[Métodos numéricos](docs/sistemas-iterativos.md).** Explora métodos de raíces con gráficas y compara Jacobi y Gauss-Seidel con tablas e iteraciones.
+- **[Conjuntos](docs/conjuntos.md).** Explora operaciones, intervalos y cardinalidad con diagramas de Venn editables.
 
 ## Cinco estilos de interfaz
 
@@ -58,26 +43,34 @@ oscuro y se eligen en **Opciones → Apariencia**.
 [Estudio y Minimalista en claro y oscuro](docs/capturas/temas-homenaje/estudio-minimalista-herramienta.png) ·
 [Galería y créditos de los temas homenaje](docs/temas-homenaje.md)
 
-## Qué puedes resolver
+## Consola interactiva · En desarrollo
 
-- **Álgebra lineal.** Opera con matrices y vectores, compara Gauss con Gauss-Jordan y
-  resuelve $Ax = b$. Calcula determinantes e inversas y comprueba los resultados.
-- **Métodos numéricos.** Busca raíces con Bisección, Regla falsa, Newton-Raphson
-  y Secante. Compara Jacobi y Gauss-Seidel con tablas y sustituciones.
-- **Sistemas numéricos.** Convierte entre bases 2, 8, 10 y 16, y entre números
-  arábigos y romanos.
-- **Conjuntos.** Trabaja con operaciones, intervalos, cardinalidad y diagramas
-  de Venn editables.
+Rodolfo Collado está desarrollando una nueva interfaz de terminal en
+el [PR #131](https://github.com/Collado-Labs/Algebra-Lineal/pull/131). El prototipo
+abre un catálogo con `/`, muestra gráficas y tablas navegables y guarda los
+ejercicios en un historial local.
 
-En álgebra lineal puedes alternar entre fracciones exactas y decimales.
-Consulta las [herramientas y ejemplos](docs/funcionalidades.md).
+[![Vista de resultados del prototipo de Rodolfo Collado. Bisección de x² menos 2, con intervalo, raíz aproximada y gráfica en la terminal.](docs/capturas/portada/terminal-pr131.webp)](https://github.com/Collado-Labs/Algebra-Lineal/pull/131)
+
+*Bisección en la vista de resultados de la consola en desarrollo.*
+
+## Formas de usar el proyecto
+
+| Interfaz | Uso |
+| --- | --- |
+| Escritorio Windows | Herramientas visuales en una ventana local. |
+| Django en desarrollo | La misma interfaz desde el navegador local. |
+| Terminal | Matrices y sistemas por Gauss y Gauss-Jordan. |
+
+La interfaz visual incluye tema claro/oscuro, búsqueda de herramientas y
+teclado matemático contextual.
 
 ## Instalación en Windows
 
 Descarga **PyGebra-Setup-\<versión\>.exe** desde
-[GitHub Releases](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest),
-ejecuta el instalador. Abre **PyGebra** desde el menú Inicio. El instalador
-incluye Python y las dependencias. La aplicación funciona sin conexión una vez instalada.
+[GitHub Releases](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest) y
+ejecuta el instalador. Abre **PyGebra** desde el menú Inicio. El instalador incluye
+Python y las dependencias. La aplicación funciona sin conexión una vez instalada.
 
 Requiere Windows 10 1809 o posterior, o Windows 11, con soporte para
 aplicaciones x64. Si falta WebView2, su instalación requiere Internet.
@@ -88,9 +81,9 @@ El instalador no tiene firma digital.
 
 ## Desarrollo rápido
 
-El motor matemático está en **Python**. La interfaz visual se ejecuta con
-**Django** y en Windows se abre en una ventana **WebView2** mediante
-**pywebview**. La distribución usa **PyInstaller** e **Inno Setup**.
+El motor matemático está en **Python**. **Django** sirve la interfaz y
+**pywebview** la abre en Windows con **WebView2**. **PyInstaller** e **Inno Setup**
+empaquetan la aplicación y **GitHub Actions** verifica y publica las versiones.
 
 Con Git y [uv](https://docs.astral.sh/uv/) instalados:
 
@@ -102,7 +95,7 @@ uv sync --locked
 uv run --locked python manage.py runserver
 ```
 
-Abre <http://127.0.0.1:8000/>. uv puede instalar la versión de Python indicada en
+Abre <http://127.0.0.1:8000/>. uv puede instalar la versión indicada en
 `.python-version`.
 
 [Ejecutar desde el código fuente](docs/ejecucion.md) ·
@@ -110,6 +103,6 @@ Abre <http://127.0.0.1:8000/>. uv puede instalar la versión de Python indicada 
 
 ## Contribuir
 
-Parte de **develop** y abre el PR hacia esa rama. La
+Parte de **develop** y abre tu PR hacia esa rama. La
 [guía de contribución](CONTRIBUTING.md) explica el flujo, las verificaciones y los
 criterios que conservan los procedimientos matemáticos.
