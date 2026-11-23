@@ -8,9 +8,14 @@ import hashlib
 import io
 import json
 import os
+import subprocess
+import sys
 import tempfile
+import threading
+import time
 import tomllib
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from http.client import IncompleteRead
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -220,6 +225,10 @@ class PruebasFlujo(ConCarpeta):
         actualizador.cerrar_aplicacion = Mock()
         return actualizador
 
+    def instalador_descargado(self):
+        ruta, = self.descargas.rglob("*.exe")
+        return ruta
+
     def test_misma_version_no_descarga_nada(self):
         red = red_con_release("1.0.0")
         actualizador = self.actualizador(red)
@@ -247,9 +256,10 @@ class PruebasFlujo(ConCarpeta):
         self.popen.assert_not_called()
         self.assertEqual(actualizador.descargar()["estado"], servicio.LISTO)
         self.popen.assert_not_called()
+        ruta = self.instalador_descargado()
         estado = actualizador.instalar()
         self.assertEqual(estado["estado"], servicio.INSTALANDO)
-        ruta = self.descargas / "PyGebra-Setup-1.1.0.exe"
+        self.assertEqual(ruta.name, "PyGebra-Setup-1.1.0.exe")
         self.assertEqual(self.popen.call_args.args[0][0], str(ruta))
         self.assertEqual(ruta.read_bytes(), INSTALADOR)
         actualizador.cerrar_aplicacion.assert_called_once()
@@ -269,12 +279,17 @@ class PruebasFlujo(ConCarpeta):
         self.assertEqual(red.pedidas, [API])
 
     def test_descarga_interrumpida(self):
-        actualizador = self.actualizador(red_con_release("1.1.0", instalador=Cortada(INSTALADOR)))
+        red = red_con_release("1.1.0", instalador=Cortada(INSTALADOR))
+        actualizador = self.actualizador(red)
         actualizador.buscar()
         self.assertEqual(actualizador.descargar()["estado"], servicio.ERROR_CONEXION)
-        self.assertFalse(self.descargas.exists())
+        self.assertEqual(list(self.descargas.iterdir()), [])
         self.assertEqual(actualizador.instalar()["estado"], servicio.ERROR_CONEXION)
         self.popen.assert_not_called()
+        red.rutas[f"{BASE}/v1.1.0/PyGebra-Setup-1.1.0.exe"] = INSTALADOR
+        self.assertEqual(actualizador.buscar()["estado"], servicio.DISPONIBLE)
+        self.assertEqual(actualizador.descargar()["estado"], servicio.LISTO)
+        self.assertEqual(self.instalador_descargado().read_bytes(), INSTALADOR)
 
     def test_checksum_incorrecto_descarta_y_no_ejecuta(self):
         red = red_con_release("1.1.0", checksums=sumas("1.1.0", b"otro contenido"))
@@ -283,7 +298,7 @@ class PruebasFlujo(ConCarpeta):
         estado = actualizador.descargar()
         self.assertEqual(estado["estado"], servicio.CHECKSUM_INVALIDO)
         self.assertIn("No se instaló nada", estado["mensaje"])
-        self.assertFalse(self.descargas.exists())
+        self.assertEqual(list(self.descargas.iterdir()), [])
         actualizador.instalar()
         self.popen.assert_not_called()
         actualizador.cerrar_aplicacion.assert_not_called()
@@ -300,18 +315,55 @@ class PruebasFlujo(ConCarpeta):
         actualizador = self.actualizador(red_con_release("1.1.0"))
         actualizador.buscar()
         actualizador.descargar()
-        (self.descargas / "PyGebra-Setup-1.1.0.exe").write_bytes(b"alterado")
+        self.instalador_descargado().write_bytes(b"alterado")
         self.assertEqual(actualizador.instalar()["estado"], servicio.CHECKSUM_INVALIDO)
         self.popen.assert_not_called()
-        self.assertFalse(self.descargas.exists())
+        self.assertEqual(list(self.descargas.iterdir()), [])
 
     def test_error_al_lanzar_no_rompe_la_app(self):
         actualizador = self.actualizador(red_con_release("1.1.0"))
         actualizador.buscar()
         actualizador.descargar()
+        primer_intento = self.instalador_descargado().parent
         self.popen.side_effect = OSError("bloqueado")
         self.assertEqual(actualizador.instalar()["estado"], servicio.ERROR)
         actualizador.cerrar_aplicacion.assert_not_called()
+        self.assertEqual(list(self.descargas.iterdir()), [])
+        self.popen.reset_mock(side_effect=True)
+        self.assertEqual(actualizador.buscar()["estado"], servicio.DISPONIBLE)
+        self.assertEqual(actualizador.descargar()["estado"], servicio.LISTO)
+        self.assertNotEqual(self.instalador_descargado().parent, primer_intento)
+        self.assertEqual(actualizador.instalar()["estado"], servicio.INSTALANDO)
+        self.popen.assert_called_once()
+        actualizador.cerrar_aplicacion.assert_called_once()
+
+    def test_fallo_al_iniciar_hilo_limpia_y_permite_reintentar(self):
+        actualizador = self.actualizador(red_con_release("1.1.0"))
+        actualizador.buscar()
+        with patch.object(actualizador, "_en_segundo_plano", side_effect=RuntimeError):
+            self.assertEqual(actualizador.descargar()["estado"], servicio.ERROR)
+        self.assertEqual(list(self.descargas.iterdir()), [])
+        self.assertEqual(actualizador.buscar()["estado"], servicio.DISPONIBLE)
+        self.assertEqual(actualizador.descargar()["estado"], servicio.LISTO)
+
+    def test_buscar_otra_version_y_fallar_solo_limpian_el_intento_propio(self):
+        red_a = red_con_release("1.1.0")
+        a = self.actualizador(red_a)
+        b = self.actualizador(red_con_release("1.1.0"))
+        a.buscar()
+        self.assertEqual(a.descargar()["estado"], servicio.LISTO)
+        ruta_a = self.instalador_descargado()
+        b.buscar()
+        self.assertEqual(b.descargar()["estado"], servicio.LISTO)
+        ruta_b, = set(self.descargas.rglob("*.exe")) - {ruta_a}
+
+        red_a.rutas = red_con_release("1.2.0", instalador=Cortada(INSTALADOR)).rutas
+        self.assertEqual(a.buscar()["version_disponible"], "1.2.0")
+        self.assertFalse(ruta_a.parent.exists())
+        self.assertEqual(a.descargar()["estado"], servicio.ERROR_CONEXION)
+        self.assertEqual(list(self.descargas.iterdir()), [ruta_b.parent])
+        self.assertEqual(ruta_b.read_bytes(), INSTALADOR)
+        self.assertEqual(b.estado()["estado"], servicio.LISTO)
 
     def test_progreso_durante_la_descarga(self):
         actualizador = self.actualizador(red_con_release("1.1.0"))
@@ -323,6 +375,160 @@ class PruebasFlujo(ConCarpeta):
         self.assertEqual({e["estado"] for e in vistos}, {servicio.DESCARGANDO})
         self.assertEqual(vistos[-1]["progreso"], 100)
         self.assertEqual(vistos[-1]["mensaje"], "Descargando PyGebra 1.1.0…")
+
+    def test_descargas_simultaneas_de_la_misma_version_se_aislan(self):
+        version = "1.1.0"
+        url = f"{BASE}/v{version}/PyGebra-Setup-{version}.exe"
+        otro_instalador = b"N" + INSTALADOR[1:]
+        red_a = red_con_release(version)
+        red_b = red_con_release(version, instalador=otro_instalador,
+                                checksums=sumas(version, otro_instalador))
+        descarga_pausada = threading.Event()
+        continuar = threading.Event()
+
+        def abrir_a(peticion, timeout):
+            if peticion.full_url == url:
+                descarga_pausada.set()
+                self.assertTrue(continuar.wait(5))
+            return red_a(peticion, timeout)
+
+        a = self.actualizador(abrir_a)
+        b = self.actualizador(red_b)
+        a.buscar()
+        b.buscar()
+        with ThreadPoolExecutor(max_workers=1) as hilos:
+            primera = hilos.submit(a.descargar)
+            try:
+                self.assertTrue(descarga_pausada.wait(5))
+                self.assertEqual(b.descargar()["estado"], servicio.LISTO)
+                ruta_b, = self.descargas.rglob("*.exe")
+                self.assertEqual(ruta_b.read_bytes(), otro_instalador)
+            finally:
+                continuar.set()
+            self.assertEqual(primera.result(timeout=5)["estado"], servicio.LISTO)
+
+        self.assertEqual(ruta_b.read_bytes(), otro_instalador)
+        self.assertCountEqual([ruta.read_bytes() for ruta in self.descargas.rglob("*.exe")],
+                              [INSTALADOR, otro_instalador])
+
+    def test_peticion_concurrente_no_lanza_dos_instaladores(self):
+        actualizador = self.actualizador(red_con_release("1.1.0"))
+        actualizador.buscar()
+        actualizador.descargar()
+        primer_lanzamiento = threading.Event()
+        continuar = threading.Event()
+
+        def popen_pausado(*args, **kwargs):
+            if not primer_lanzamiento.is_set():
+                primer_lanzamiento.set()
+                self.assertTrue(continuar.wait(5))
+
+        self.popen.side_effect = popen_pausado
+        with ThreadPoolExecutor(max_workers=2) as hilos:
+            primera = hilos.submit(actualizador.instalar)
+            try:
+                self.assertTrue(primer_lanzamiento.wait(5))
+                segunda = hilos.submit(actualizador.instalar)
+                self.assertEqual(segunda.result(timeout=5)["estado"], servicio.INSTALANDO)
+                self.assertEqual(actualizador.buscar()["estado"], servicio.INSTALANDO)
+            finally:
+                continuar.set()
+            self.assertEqual(primera.result(timeout=5)["estado"], servicio.INSTALANDO)
+
+        self.popen.assert_called_once()
+        actualizador.cerrar_aplicacion.assert_called_once()
+
+
+@unittest.skipUnless(sys.platform == "win32", "Comprueba la limpieza de archivos abiertos en Windows")
+class PruebasTemporalesWindows(ConCarpeta):
+    def setUp(self):
+        super().setUp()
+        self.carpeta = self.carpeta / "PyGebra temporal & [á]"
+        self.carpeta.mkdir()
+
+    def ejecutar_app(self, codigo, *args):
+        # Cada app de prueba sale normalmente con un %TEMP% privado.
+        subprocess.run(
+            [sys.executable, "-c", codigo, str(self.carpeta), *args],
+            cwd=RAIZ, check=True, timeout=20,
+            env={**os.environ, "TEMP": str(self.carpeta), "TMP": str(self.carpeta)},
+        )
+
+    def esperar_limpieza(self, carpeta):
+        limite = time.monotonic() + 15
+        while carpeta.exists() and time.monotonic() < limite:
+            time.sleep(0.05)
+        self.assertFalse(carpeta.exists(), str(carpeta))
+
+    def test_cerrar_mientras_el_hilo_tiene_abierto_un_parcial(self):
+        self.ejecutar_app('''
+import io
+import threading
+from tests.test_actualizador import INSTALADOR, red_con_release, servicio
+
+pausada = threading.Event()
+
+class DescargaPausada(io.BytesIO):
+    def read(self, *args):
+        if self.tell():
+            pausada.set()
+            threading.Event().wait()
+        return super().read(*args)
+
+app = servicio.Actualizador(abrir=red_con_release("99.0.0", instalador=DescargaPausada(INSTALADOR)))
+app.buscar()
+app.descargar()
+assert pausada.wait(5)
+''')
+        for carpeta in self.carpeta.glob("PyGebra-actualizacion-*"):
+            self.esperar_limpieza(carpeta)
+
+    def test_cerrar_con_descarga_lista_la_descarta(self):
+        self.ejecutar_app('''
+from tests.test_actualizador import red_con_release, servicio
+
+app = servicio.Actualizador(abrir=red_con_release("99.0.0"),
+                            en_segundo_plano=lambda funcion: funcion())
+app.buscar()
+assert app.descargar()["estado"] == servicio.LISTO
+''')
+        self.assertEqual(list(self.carpeta.iterdir()), [])
+
+    def test_el_instalador_ficticio_conserva_la_descarga_hasta_terminar(self):
+        instalador_ficticio = '''
+import sys
+import time
+from pathlib import Path
+
+archivo = Path(sys.argv[1])
+prueba = Path(sys.argv[2])
+limite = time.monotonic() + 15
+while not (prueba / "continuar").exists() and time.monotonic() < limite:
+    time.sleep(0.05)
+(prueba / "leido").write_bytes(archivo.read_bytes())
+'''
+        self.ejecutar_app('''
+import subprocess
+import sys
+from tests.test_actualizador import red_con_release, servicio
+
+def lanzar(args, **kwargs):
+    return subprocess.Popen([sys.executable, "-c", sys.argv[2], args[0], sys.argv[1]], **kwargs)
+
+app = servicio.Actualizador(abrir=red_con_release("99.0.0"), popen=lanzar,
+                            en_segundo_plano=lambda funcion: funcion())
+app.buscar()
+assert app.descargar()["estado"] == servicio.LISTO
+assert app.instalar()["estado"] == servicio.INSTALANDO
+''', instalador_ficticio)
+        try:
+            carpeta, = self.carpeta.glob("PyGebra-actualizacion-*")
+            ruta = carpeta / "PyGebra-Setup-99.0.0.exe"
+            self.assertEqual(ruta.read_bytes(), INSTALADOR)
+        finally:
+            (self.carpeta / "continuar").touch()
+        self.esperar_limpieza(carpeta)
+        self.assertEqual((self.carpeta / "leido").read_bytes(), INSTALADOR)
 
 
 @override_settings(DESKTOP_MODE=True)

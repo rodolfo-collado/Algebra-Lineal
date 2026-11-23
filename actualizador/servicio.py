@@ -7,14 +7,13 @@ cierre PyGebra. La instalación actual no se toca hasta lanzar un instalador
 completo y verificado.
 """
 
-import shutil
 import subprocess
 import tempfile
 import threading
 from pathlib import Path
 from urllib.request import urlopen
 
-from . import descarga, instalador, releases, verificacion, versiones
+from . import descarga, instalador, releases, temporales, verificacion, versiones
 
 
 INICIAL = "inicial"
@@ -54,8 +53,8 @@ MENSAJES = {
     ERROR: "No se pudo completar la actualización. Inténtalo de nuevo más tarde.",
 }
 
-# %TEMP% es por usuario en Windows; cada descarga empieza con la carpeta vacía.
-CARPETA = Path(tempfile.gettempdir()) / "PyGebra-actualizacion"
+# Cada intento crea su propio directorio bajo %TEMP%.
+CARPETA = Path(tempfile.gettempdir())
 
 
 def _en_hilo(funcion):
@@ -75,6 +74,7 @@ class Actualizador:
         self._release = None
         self._progreso = None
         self._descargado = None
+        self._temporal = None
         # La app de escritorio lo fija para cerrarse tras lanzar el instalador.
         self.cerrar_aplicacion = None
 
@@ -103,11 +103,18 @@ class Actualizador:
             self._estado, self._release, self._progreso = estado, release, None
             return self._resumen()
 
+    def _descartar_descarga(self):
+        # Se llama mientras la operación que posee la descarga sigue reservada.
+        if self._temporal is not None:
+            self._temporal.descartar()
+            self._temporal = self._descargado = None
+
     def buscar(self):
         with self._lock:
             if self._estado in OCUPADO:
                 return self._resumen()
-            self._estado, self._release, self._progreso, self._descargado = BUSCANDO, None, None, None
+            self._estado, self._release, self._progreso = BUSCANDO, None, None
+        self._descartar_descarga()
         try:
             instalada = versiones.version_instalada(self._pyproject)
             release = releases.consultar_ultima(self._abrir)
@@ -127,7 +134,12 @@ class Actualizador:
                 return self._resumen()
             self._estado, self._progreso = DESCARGANDO, 0
             release = self._release
-        self._en_segundo_plano(lambda: self._descargar(release))
+        try:
+            self._temporal = temporales.DescargaTemporal(self, self._carpeta)
+            self._en_segundo_plano(lambda: self._descargar(release))
+        except Exception:
+            self._descartar_descarga()
+            return self._terminar(ERROR)
         return self.estado()
 
     def _avanzar(self, recibidos, total):
@@ -136,17 +148,16 @@ class Actualizador:
 
     def _descargar(self, release):
         try:
-            shutil.rmtree(self._carpeta, ignore_errors=True)
-            self._carpeta.mkdir(parents=True, exist_ok=True)
+            carpeta = self._temporal.ruta
             # Primero el checksum: si falta la entrada no se descargan los ~25 MB.
             sumas = release.checksums
-            ruta_sumas = self._carpeta / sumas.nombre
+            ruta_sumas = carpeta / sumas.nombre
             descarga.descargar(sumas.url, ruta_sumas, sumas.tamano, self._abrir)
             setup = release.instalador
             esperado = verificacion.checksum_publicado(
                 ruta_sumas.read_text(encoding="utf-8"), setup.nombre
             )
-            ruta = self._carpeta / setup.nombre
+            ruta = carpeta / setup.nombre
             descarga.descargar(setup.url, ruta, setup.tamano, self._abrir, self._avanzar)
             with self._lock:
                 self._estado, self._progreso = VERIFICANDO, None
@@ -162,7 +173,7 @@ class Actualizador:
                 self._estado, self._descargado = LISTO, (ruta, esperado)
             return
         # Ninguna descarga inválida o a medias queda en disco.
-        shutil.rmtree(self._carpeta, ignore_errors=True)
+        self._descartar_descarga()
         self._terminar(final)
 
     def instalar(self):
@@ -170,20 +181,19 @@ class Actualizador:
             if self._estado != LISTO:
                 return self._resumen()
             ruta, esperado = self._descargado
+            self._estado = INSTALANDO
         try:
-            instalador.lanzar(ruta, esperado, self._popen)
+            self._temporal.proceso_instalador = instalador.lanzar(ruta, esperado, self._popen)
         except verificacion.ChecksumInvalido:
             final = CHECKSUM_INVALIDO
         except Exception:
             final = ERROR
         else:
-            with self._lock:
-                self._estado = INSTALANDO
-                resumen = self._resumen()
+            resumen = self.estado()
             if self.cerrar_aplicacion is not None:
                 self.cerrar_aplicacion()
             return resumen
-        shutil.rmtree(self._carpeta, ignore_errors=True)
+        self._descartar_descarga()
         return self._terminar(final)
 
 
