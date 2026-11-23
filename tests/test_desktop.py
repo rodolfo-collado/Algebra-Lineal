@@ -563,7 +563,7 @@ class PruebaSmokeWaitressDjango(unittest.TestCase):
                 self.assertIn("algebra-lineal-tema", respuesta.read().decode("utf-8"))
 
             for recurso, marca in (
-                ("navigation.js", "navegacion-principal"),
+                ("navigation.js", "areas-plegar"),
                 ("buscador.js", "data-buscador"),
                 ("teclado.js", "data-insercion"),
                 ("conversion.js", "data-conversion-bases"),

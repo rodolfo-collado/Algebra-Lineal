@@ -107,15 +107,14 @@ class PruebasCatalogo(SimpleTestCase):
 
     def test_inicio_sidebar_tema_y_breadcrumbs(self):
         inicio = Documento(self.client.get("/"))
-        self.assertIn(RUTA, [a["href"] for a in inicio.enlaces_en("Herramientas")])
         self.assertIn(RUTA, [a["href"] for _, a in inicio.enlaces if a.get("class") == "tool-link"])
         respuesta = self.client.get(RUTA)
         doc = Documento(respuesta)
         self.assertEqual([a["href"] for a in doc.enlaces_en("Ruta de navegación")], ["/", "/areas/algebra-lineal/", "/areas/algebra-lineal/#matrices"])
         self.assertContains(respuesta, '<span aria-current="page">Matriz inversa</span>', html=True)
-        self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas") if a.get("aria-current") == "page"], [RUTA])
-        self.assertTrue(doc.categorias["matrices"])
-        enlaces = [a["href"] for a in doc.enlaces_en("Herramientas") if a["href"].startswith("/matrices/")]
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Herramientas de Álgebra lineal") if a.get("aria-current") == "page"], [RUTA])
+        self.assertEqual([a["href"] for a in doc.enlaces_en("Áreas") if a.get("aria-current")], ["/areas/algebra-lineal/"])
+        enlaces = [a["href"] for a in doc.enlaces_en("Herramientas de Álgebra lineal") if a["href"].startswith("/matrices/")]
         self.assertEqual(enlaces, ["/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/reduccion/", RUTA,
                                    "/matrices/determinantes/"])
 

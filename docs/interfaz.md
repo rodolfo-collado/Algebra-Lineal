@@ -21,14 +21,15 @@ plantillas Django, CSS propio y JavaScript mínimo, todos locales.
   `#7DCFC6` en oscuro, reservado para acciones, enlaces, selección y foco.
 - [Identidad visual](identidad-visual.md) documenta la geometría y sus derivados.
 
-El **estilo** (Estudio o Minimalista, en Opciones) y el **tema** claro u oscuro (botón
-Tema) son decisiones independientes: cualquier estilo funciona de día y de noche.
-Estudio es el predeterminado; ver [Estudio](#estudio).
+El **estilo** (Estudio, Minimalista o uno de los temas homenaje, en Opciones) y el
+**tema** claro u oscuro (botón Tema) son decisiones independientes: cualquier estilo
+funciona de día y de noche. Estudio es el predeterminado; ver [Estudio](#estudio) y
+[Temas homenaje](temas-homenaje.md) (ChocoLab, BelugaCalc y HeyAlgb).
 
 El tema claro u oscuro se guarda en `localStorage` (`pygebra-tema`). Se lee
 primero esta clave; si falta, se recupera y migra `algebra-lineal-tema`.
 En la app de escritorio también se conserva entre aperturas (ver [Escritorio](#escritorio)).
-Si el almacenamiento está bloqueado, tema y menú siguen funcionando.
+Si el almacenamiento está bloqueado, tema, estilo y navegación siguen funcionando.
 Si el usuario no ha elegido, se respeta `prefers-color-scheme`. El icono del
 selector representa el tema activo: sol en claro, luna en oscuro.
 Tema anuncia la acción de cambiar al tema opuesto y solo aparece cuando JavaScript lo hace operativo.
@@ -60,14 +61,18 @@ static/calculadora/
 └── styles/
     ├── tokens.css          # colores, tipografía, radios, sombras, medidas del shell
     ├── base.css            # reset ligero, foco visible y utilidades
-    ├── shell.css           # header, cajón de navegación, breadcrumbs, layout
+    ├── shell.css           # header, breadcrumbs y layout
     ├── components.css      # herramienta, paneles, botones, buscador, relacionadas,
     │                       # explorar, desplegables, teclado, controles de estructura, matrices
     ├── modules.css         # formularios y resultados de sistemas, bases, vectores y matrices
     ├── navegacion.css      # historial, Opciones, canales del inicio, explorador de área y
     │                       # mesa de trabajo (estructura común a Estudio y Minimalista)
-    └── estudio.css         # estilo Estudio: tokens día/noche, habitación, dioramas, gestos
-                            # y transiciones; nada de esto aplica en Minimalista
+    ├── estudio.css         # estilo Estudio: tokens día/noche, habitación, dioramas, gestos
+    │                       # y transiciones; nada de esto aplica en Minimalista
+    ├── homenajes.css       # temas homenaje: tokens claro/oscuro, logotipos de Opciones y
+    │                       # el gesto al cambiar de estilo
+    └── homenaje-*.css      # ChocoLab, BelugaCalc y HeyAlgb: portada, catálogo, navegación,
+                            # cabecera y movimiento propios (ver temas-homenaje.md)
 ```
 
 Usa tokens semánticos (`--color-brand`, `--color-accent`, `--color-surface-raised`,
@@ -163,27 +168,34 @@ no evidencia ni procedimiento educativo.
 
 ## Shell y navegación
 
-`templates/calculadora/base.html` monta el header (Atrás y Adelante, marca,
-`☰ Menú`, Tema y Opciones), el cajón de navegación (`components/sidebar.html`), su fondo y el
-contenido con sus breadcrumbs (`components/breadcrumbs.html`). Todo sale del
-registro central `catalogo.py` a través de `context_processors.navegacion`,
-que también marca la herramienta activa y calcula las relacionadas.
+`templates/calculadora/base.html` monta el header (Atrás y Adelante, marca, áreas,
+Buscar, Tema y Opciones) y el contenido con sus breadcrumbs
+(`components/breadcrumbs.html`). Todo sale del registro central `catalogo.py` a
+través de `context_processors.navegacion`, que también marca el área y la
+herramienta activas y calcula las relacionadas.
 
-- El cajón es un menú bajo demanda en cualquier tamaño de pantalla: nace
-  cerrado, el botón Menú lo abre y lo cierra (`aria-expanded`), y también se
-  cierra con Escape, con un clic en el fondo o con el botón Cerrar del propio
-  cajón en pantallas estrechas. Mientras está abierto, el contenido queda
-  `inert`; al cerrarse, el foco vuelve al botón Menú. No se guarda ninguna
-  preferencia de apertura: un overlay abierto al cargar taparía el contenido.
-- Dentro, `details`/`summary` por categoría: funciona sin JavaScript y es
-  accesible con teclado. `navigation.js` recuerda las categorías abiertas solo
-  durante la ejecución (`sessionStorage`, clave `algebra-lineal-menu-secciones`):
-  un arranque nuevo parte limpio y se retira la copia en `localStorage` de
-  versiones anteriores. También abre los desplegables que contienen el
-  destino de un ancla al llegar por la URL.
-- Una página restaurada del historial (`pageshow` con `persisted`) vuelve con
-  el cajón cerrado, `data-drawer` retirado, fondo oculto, `main` sin `inert`,
-  `aria-expanded="false"` y el foco fuera del cajón (pasa al botón Menú).
+No hay cajón global: una lista completa de herramientas en un panel superpuesto
+tapaba el contenido y repetía el catálogo de Inicio. La navegación usa piezas que
+ya existían, cada una con un papel:
+
+| Pieza | Para qué | Dónde |
+|---|---|---|
+| **Áreas** (`components/nav_areas.html`) | Ir a Inicio o a cualquier área; marca el área actual (`aria-current="page"` en su página, `"true"` en sus herramientas). | Cabecera, cuando cabe junto a la marca y los botones (≥ 1240 px en Estudio y Minimalista). Cada tema homenaje le da su forma. |
+| **Buscar** (`.header-buscar`) | Llevar al buscador de Inicio (`/#buscador-inicio`), que llega enfocado. | Cabecera, en todas las páginas salvo Inicio. |
+| **Migas** | Subir a Inicio, al área y al tema de la herramienta. | Encima del contenido; en pantallas estrechas, «‹ nivel anterior». |
+| **Hermanas** (`.rail`) | Cambiar de herramienta dentro del área sin volver a Inicio; marca la actual. | Columna izquierda en escritorio; fila desplazable en móvil. |
+| **Catálogo de Inicio y página de área** | La lista completa: buscador, canales y explorador de cada área. | Inicio y `/areas/<área>/`. |
+
+- El catálogo es la única lista completa de herramientas (un solo índice de
+  búsqueda, en Inicio). Las demás páginas no repiten el índice: llevan a él.
+- En móvil la navegación no ocupa el espacio de trabajo: la marca vuelve a Inicio,
+  Buscar es un icono y quedan las migas y la fila de hermanas. Nada se fija abajo
+  en las herramientas, donde vive el teclado matemático.
+- Sin JavaScript todo son enlaces reales: áreas, migas, hermanas y catálogo.
+- `navigation.js` abre los desplegables que contienen el destino de un ancla,
+  centra la hermana actual en la fila desplazable, añade Alt+←/→ en escritorio y
+  controla el riel de BelugaCalc (ver [Temas homenaje](temas-homenaje.md)). Retira
+  las copias de `algebra-lineal-menu-secciones` que guardaba el cajón anterior.
 - El contenido ocupa una sola columna (`--content-max`): matrices grandes,
   procedimientos y comparaciones disponen de todo el ancho.
 - La cabecera es fija. `html { scroll-padding-top: cabecera + 1.5rem }` reserva su
@@ -195,9 +207,7 @@ que también marca la herramienta activa y calcula las relacionadas.
   `buscador.js` consulta el índice completo publicado por `catalogo.py`, incluidas
   las próximas, con la misma semántica y orden del servidor. Inicio conserva
   una fila por herramienta: al filtrar traslada esas filas a una lista ordenada;
-  al limpiar restaura los temas y su apertura. El cajón conserva su árbol,
-  oculta grupos sin coincidencias y abre los que coinciden; limpiar restaura
-  los grupos sin alterar la memoria de categorías.
+  al limpiar restaura los temas y su apertura.
   Se ignoran `de`, `a`, `al`, `el`, `la`, `los`, `las`, `un`, `una`, `calcular`,
   `hallar`, `método` y `pasar`. Una consulta formada solo por esos términos
   no encuentra herramientas. Las acciones útiles se declaran como palabras
@@ -206,7 +216,22 @@ que también marca la herramienta activa y calcula las relacionadas.
   resultados con contorno visible. El status live nace vacío; al editar oculta
   el encabezado/recuento anterior y anuncia solo la consulta actual. Volver al
   valor exacto restaura el estado servidor. Los vacíos ofrecen enlaces `?q=`.
-  Escape lateral con texto limpia sin cerrar el Menú; vacío puede cerrarlo.
+
+### Opciones
+
+El botón **Tema** (claro/oscuro) sigue aparte, en la cabecera. **Opciones** es un
+popover nativo (Esc o clic fuera lo cierra) con:
+
+- **Apariencia**, siempre a la vista: cinco fichas en un solo grupo de radios
+  (Estudio y Minimalista arriba; ChocoLab, BelugaCalc y HeyAlgb debajo, con su
+  logotipo y dedicatoria). Las flechas recorren los cinco estilos.
+- **Sonido y música**, **Acerca de PyGebra** (versión de `pyproject.toml` y
+  créditos) y, solo en la app de escritorio, **Actualizaciones** (enlace a su
+  página): secciones plegables (`details`) que ocupan una línea cerradas.
+
+`opciones.js` sincroniza los radios con la preferencia guardada
+(`preferencias.estilo()`), no con `data-estilo`: durante la View Transition del
+cambio de estilo el atributo se aplica un fotograma después.
 
 ### Inicio, áreas y mesa de trabajo
 
@@ -864,7 +889,7 @@ En presentación, reutiliza `.panel`, `.segmented`, `.option`, `.btn`, `.matrix`
 el teclado contextual y los tokens compartidos, y sigue el patrón Entrada →
 Procedimiento plegable → Resultado. Si muestra
 matrices, usa `components/matriz.html`; para sistemas aumentados, `matrix.html`.
-Ambos admiten `columnas_pivote`. No copies el `<head>`, header, sidebar o selector
+Ambos admiten `columnas_pivote`. No copies el `<head>`, header, navegación por áreas o selector
 de tema: extiende el layout común.
 
 En `catalogo.py`, una herramienta disponible declara también sus dos `puntos` y su
@@ -934,7 +959,7 @@ comportamiento de su navegador.
   página desde su caché, también un resultado POST, sin pedir reenvío. Los
   formularios de cálculo llevan `autocomplete="off"`: al volver muestran los
   datos que produjeron el resultado, no ediciones posteriores que lo dejarían
-  vigente por error. En navegadores con bfcache, `pageshow` restaura Menú, tema
+  vigente por error. En navegadores con bfcache, `pageshow` restaura estilo, riel, tema
   y formato numérico (secciones anteriores).
 - **Preferencias.** Entre aperturas solo se conservan `pygebra-tema`,
   `pygebra-formato-numerico`, `pygebra-precision-decimal`, `pygebra-estilo`,
@@ -944,8 +969,8 @@ comportamiento de su navegador.
   (`POST /preferencias/` con CSRF, lista blanca de claves y valores, escritura
   atómica) y las pinta como `data-pygebra-…` en `<html>`. Durante la ejecución
   manda `localStorage`. No se guardan URL, herramienta, formularios, matrices,
-  resultados, procedimientos, scroll, foco, Menú ni historial: cada arranque
-  abre Inicio con el cajón cerrado.
+  resultados, procedimientos, scroll, foco, riel ni historial: cada arranque
+  abre Inicio con el riel de BelugaCalc compacto.
 - **Clic derecho.** El menú nativo de WebView2 se filtra a Cortar, Copiar,
   Pegar y Seleccionar todo (sin Imprimir, Emoji ni «Más herramientas»); sin
   acciones de edición no aparece. Es edición real del navegador: los eventos

@@ -15,8 +15,16 @@ STYLES = STATIC / "styles"
 
 def funcionales():
     """Hojas de la interfaz funcional. estudio.css es el ambiente opcional de Estudio
-    (cámara, luces, gestos): sus propias reglas están en tests/test_estudio.py."""
+    (cámara, luces, gestos): sus propias reglas están en tests/test_estudio.py. Los temas
+    homenaje (homenajes.css y homenaje-*.css) sí cumplen estas garantías en sus transiciones."""
     return [p for p in STYLES.glob("*.css") if p.name != "estudio.css"]
+
+
+def sin_ambientes():
+    """Para las animaciones: fuera quedan los ambientes opcionales, cuyas animaciones
+    decorativas (vapor, mascota, estallido…) tienen contrato propio en test_estudio.py y
+    test_temas_homenaje.py. Sus transiciones siguen en funcionales()."""
+    return [p for p in funcionales() if not p.name.startswith("homenaje")]
 
 
 def leer(nombre):
@@ -45,7 +53,7 @@ class PruebasMicrointeracciones(unittest.TestCase):
                             self.assertRegex(parte, r"var\(--motion(?:-fast)?\)")
 
     def test_sin_animaciones_infinitas_ni_retardos(self):
-        css = "\n".join(leer(p.name) for p in funcionales())
+        css = "\n".join(leer(p.name) for p in sin_ambientes())
         self.assertNotRegex(css, r"\binfinite\b|(?:animation|transition)-delay\s*:")
         for valor in re.findall(r"\banimation\s*:\s*([^;{}]+);", css):
             if not valor.startswith("none"):
@@ -66,14 +74,14 @@ class PruebasMicrointeracciones(unittest.TestCase):
         self.assertIn("@media (prefers-reduced-motion: no-preference)", css)
         movimiento = css.split("@media (prefers-reduced-motion: no-preference)", 1)[1]
         self.assertRegex(movimiento, r":not\(:disabled\):active\s*\{\s*transform:")
-        for selector in (".btn", ".math-key", ".stepper-btn", ".navigation-toggle", ".theme-toggle", ".sidebar-close"):
+        for selector in (".btn", ".math-key", ".stepper-btn", ".header-buscar", ".theme-toggle", ".options-toggle"):
             self.assertIn(selector, movimiento)
         self.assertIn(":disabled", css)
         self.assertIn("cursor: not-allowed", css)
 
     def test_hover_de_botones_y_opciones_excluye_disabled(self):
         css = leer("components.css") + leer("shell.css") + leer("modules.css")
-        for selector in (".btn-primary", ".btn-secondary", ".math-key", ".stepper-btn", ".navigation-toggle", ".theme-toggle"):
+        for selector in (".btn-primary", ".btn-secondary", ".math-key", ".stepper-btn", ".options-toggle", ".theme-toggle"):
             self.assertIn(f"{selector}:not(:disabled):hover", css)
             self.assertNotIn(f"{selector}:hover", css)
         for selector in (".option", ".segment"):

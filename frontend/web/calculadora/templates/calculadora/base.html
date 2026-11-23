@@ -11,15 +11,21 @@
     {% if escritorio %}<meta name="csrf-token" content="{{ csrf_token }}">{% endif %}
     {% include "calculadora/components/tema_inicial.html" %}
     <link rel="stylesheet" href="{% static 'calculadora/styles.css' %}">
+    {% if escritorio %}
+        {% comment %}
+            WebView2 retiene ~300 ms el primer pintado de cada página cuando hay View Transitions entre
+            documentos (Edge, con el mismo motor, ~10 ms). En la app de escritorio la página nueva se
+            pinta enseguida; la continuidad la dan animaciones CSS que no bloquean (docs/temas-homenaje.md).
+        {% endcomment %}
+        <style>@view-transition { navigation: none; }</style>
+    {% endif %}
     {% block extra_head %}{% endblock %}
 </head>
-<body data-vista="{% block vista %}herramienta{% endblock %}"{% block body_attrs %}{% endblock %}>
+<body data-vista="{% block vista %}herramienta{% endblock %}"{% if herramienta_actual %} data-herramienta-ruta="{{ herramienta_actual.ruta }}" data-herramienta-nombre="{{ herramienta_actual.nombre }}"{% endif %}{% block body_attrs %}{% endblock %}>
     {% include "calculadora/components/escena.html" %}
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
     {% include "calculadora/components/header.html" %}
     <div class="app-layout">
-        {% include "calculadora/components/sidebar.html" %}
-        <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
         <main id="contenido" class="app-content" tabindex="-1">
             {% include "calculadora/components/breadcrumbs.html" %}
             {% block content %}{% endblock %}

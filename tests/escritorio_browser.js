@@ -39,7 +39,7 @@
     const casos = [
         ["Escritorio: Alt+←/→ recorren GET y POST sin barra de navegador ni reenvío", "/", {}, async (w, frame) => {
             igual(w.document.documentElement.hasAttribute("data-desktop"), true);
-            igual(todos(w, ".app-header button").map(b => b.id), ["historial-atras", "historial-adelante", "navigation-toggle", "theme-toggle", "opciones-toggle", "musica-anterior", "musica-toggle", "musica-siguiente"]);
+            igual(todos(w, ".app-header button").map(b => b.id), ["historial-atras", "historial-adelante", "areas-plegar", "theme-toggle", "opciones-toggle", "musica-anterior", "musica-toggle", "musica-siguiente"]);
             w = await navegar(frame, () => { w.location.href = "/matrices/reduccion/"; });
             w = await calcular(frame);
             igual(Boolean(q(w, "#resultado")), true);
@@ -78,23 +78,20 @@
             const menu = new w.MouseEvent("contextmenu", { bubbles: true, cancelable: true });
             q(w, '[name="sistema"]').dispatchEvent(menu);
             igual(menu.defaultPrevented, false);
-            igual(todos(w, ".app-header button").map(b => b.id), ["historial-atras", "historial-adelante", "navigation-toggle", "theme-toggle", "opciones-toggle", "musica-anterior", "musica-toggle", "musica-siguiente"]);
+            igual(todos(w, ".app-header button").map(b => b.id), ["historial-atras", "historial-adelante", "areas-plegar", "theme-toggle", "opciones-toggle", "musica-anterior", "musica-toggle", "musica-siguiente"]);
         }],
-        ["pageshow restaurado: cajón cerrado, main usable y foco fuera del cajón", "/matrices/inversa/", {}, async w => {
-            q(w, "#navigation-toggle").click(); await turno(w);
-            igual(w.document.documentElement.hasAttribute("data-drawer"), true);
-            igual(q(w, "#contenido").inert, true);
-            igual(w.document.activeElement.closest("#navegacion-principal") !== null, true);
+        ["pageshow restaurado: estilo y riel vigentes, radio marcado coincide", "/matrices/inversa/", {}, async w => {
+            w.localStorage.setItem("pygebra-estilo", "belugacalc"); w.sessionStorage.setItem("pygebra-riel", "abierto");
             restaurar(w); await turno(w);
-            igual(w.document.documentElement.hasAttribute("data-drawer"), false);
-            igual(q(w, "#navegacion-principal").hidden, true);
-            igual(q(w, "#sidebar-backdrop").hidden, true);
-            igual(q(w, "#contenido").inert, false);
-            igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "false");
-            igual(w.document.activeElement, q(w, "#navigation-toggle"));
-            // Escape del Menú sigue funcionando tras restaurar.
-            q(w, "#navigation-toggle").click(); tecla(w, "Escape");
-            igual(q(w, "#navegacion-principal").hidden, true);
+            igual(w.document.documentElement.dataset.estilo, "belugacalc");
+            igual(w.document.documentElement.hasAttribute("data-riel-abierto"), true);
+            igual(q(w, "#areas-plegar").getAttribute("aria-expanded"), "true");
+            q(w, "#opciones-toggle").click(); await turno(w);
+            igual(q(w, 'input[name="estilo"]:checked').value, "belugacalc");
+            w.localStorage.setItem("pygebra-estilo", "minimalista"); w.sessionStorage.setItem("pygebra-riel", "compacto");
+            restaurar(w); await turno(w);
+            igual(w.document.documentElement.dataset.estilo, "minimalista");
+            igual(w.document.documentElement.hasAttribute("data-riel-abierto"), false);
         }],
         ["pageshow restaurado: tema vigente con su estado accesible", "/", {}, async w => {
             const boton = q(w, "#theme-toggle");
@@ -123,29 +120,23 @@
             igual(valor.textContent, exacto); igual(q(w, "[data-numeric-precision]").hidden, true);
             igual(resultado.dataset.resultado, "vigente");
         }],
-        ["pageshow restaurado: espera de P27.4 y cajón se restauran juntos", "/romanos/conversion/", {}, async w => {
+        ["pageshow restaurado: la espera de P27.4 se restaura", "/romanos/conversion/", {}, async w => {
             const boton = q(w, "[data-calculo]"); q(w, '[name="numero"]').value = "4";
             boton.form.dispatchEvent(new w.SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: boton }));
-            q(w, "#navigation-toggle").click(); await turno(w);
             restaurar(w); await turno(w);
-            igual(boton.hasAttribute("aria-busy"), false); igual(q(w, "#navegacion-principal").hidden, true);
+            igual(boton.hasAttribute("aria-busy"), false);
         }],
-        ["Menú: categorías solo durante la ejecución; nada en localStorage", "/", {}, async (w, frame) => {
+        ["Riel: su estado solo durante la ejecución; el del cajón retirado se limpia", "/", {}, async (w, frame) => {
             w.localStorage.setItem("algebra-lineal-menu-secciones", '["raices"]');
+            w.localStorage.setItem("pygebra-estilo", "belugacalc");
             w = await navegar(frame, () => w.location.reload());
             igual(w.localStorage.getItem("algebra-lineal-menu-secciones"), null);
-            igual(q(w, '[data-categoria="raices"]').open, false);
-            q(w, "#navigation-toggle").click();
-            const categoria = q(w, '[data-categoria="raices"]'); categoria.open = true; await turno(w);
-            igual(JSON.parse(w.sessionStorage.getItem("algebra-lineal-menu-secciones")), ["raices"]);
+            q(w, "#areas-plegar").click();
+            igual(w.sessionStorage.getItem("pygebra-riel"), "abierto");
             w = await navegar(frame, () => w.location.reload());
-            igual(q(w, '[data-categoria="raices"]').open, true);
-            igual(q(w, "#navegacion-principal").hidden, true);
-            // Un arranque nuevo es una sesión nueva: categorías limpias, cajón cerrado.
-            w.sessionStorage.clear();
-            w = await navegar(frame, () => w.location.reload());
-            igual(q(w, '[data-categoria="raices"]').open, false);
-            igual(Object.keys(w.localStorage).filter(k => k.includes("menu")), []);
+            igual(w.document.documentElement.hasAttribute("data-riel-abierto"), true);
+            igual(w.localStorage.getItem("pygebra-riel"), null);
+            w.localStorage.setItem("pygebra-estilo", "minimalista");
         }],
         ["Escritorio: tema, formato y precisión vuelven en un arranque nuevo", "/", {}, async (w, frame) => {
             const inicial = w.document.documentElement.dataset.theme;
@@ -164,7 +155,7 @@
             w = await navegar(frame, () => { w.location.href = "/"; });
             igual(w.document.documentElement.dataset.theme, otro);
             igual(w.document.documentElement.getAttribute("data-pygebra-tema"), otro);
-            igual(q(w, "#navegacion-principal").hidden, true);
+            igual(w.document.documentElement.hasAttribute("data-riel-abierto"), false); // el riel empieza compacto
             w = await navegar(frame, () => { w.location.href = "/matrices/reduccion/"; });
             w = await calcular(frame);
             igual([q(w, "[data-numeric-mode]").value, q(w, "[data-numeric-precision]").value], ["decimal", "8"]);
@@ -215,7 +206,7 @@
                     igual(inicio.getAttribute("href"), "/"); inicio.focus(); igual(w.document.activeElement, inicio);
                     igual(/Traceback|Not Found|Forbidden|Server Error|CSRF|detalle interno/.test(w.document.body.textContent), false);
                     sinDesborde(w);
-                    if (codigo === "404") igual(Boolean(q(w, "#navigation-toggle")), true);
+                    if (codigo === "404") igual(Boolean(q(w, "#nav-areas")), true);
                 }])),
     ];
 

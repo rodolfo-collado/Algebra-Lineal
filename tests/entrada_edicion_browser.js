@@ -549,16 +549,12 @@
         igual(w.document.activeElement === input, true); igual(q(w, "[data-resultado]").dataset.resultado, "desactualizado");
         input.value = "1"; w = await post(frame); igual(seleccion(w), []);
     });
-    caso("P28.1 Escape respetado por buscador y cajón", inversa, w => {
-        elegir(w, "toda"); q(w, "#navigation-toggle").click();
-        const buscar = q(w, '.app-sidebar input[type="search"]'); buscar.value = "matriz";
-        buscar.dispatchEvent(new w.Event("input", {bubbles:true})); buscar.focus();
+    caso("P28.1 Escape cierra Opciones sin perder la selección de la cuadrícula", inversa, w => {
+        elegir(w, "toda"); q(w, "#opciones-toggle").click();
+        igual(q(w, "#opciones").matches(":popover-open"), true);
         igual(w.seleccionMatricial.activa() !== null, true);
-        igual(key(w, buscar, "Escape"), true); igual(buscar.value, "matriz");
-        igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "true");
-        igual(key(w, buscar, "Escape"), true); igual(buscar.value, "");
-        igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "true");
-        key(w, buscar, "Escape"); igual(q(w, "#navigation-toggle").getAttribute("aria-expanded"), "false");
+        q(w, "#opciones").hidePopover();
+        igual(w.seleccionMatricial.activa() !== null, true);
     });
     const copiar = (w, destino = w.document.activeElement, preparar = () => {}) => {
         const data = new w.DataTransfer();

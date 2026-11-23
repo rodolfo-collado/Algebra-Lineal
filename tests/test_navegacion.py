@@ -312,24 +312,26 @@ class PruebasBuscador(SimpleTestCase):
         self.assertContains(operaciones, catalogo.MATRIZ_INVERSA.invitacion)
         self.assertContains(operaciones, catalogo.ECUACIONES_MATRICIALES.invitacion)
 
-    def test_formulario_de_busqueda_e_indice_en_todas_las_paginas(self):
-        for ruta in ("/", "/matrices/reduccion/", "/bases/conversion/"):
+    def test_un_solo_indice_de_busqueda_en_inicio_y_acceso_desde_cada_pagina(self):
+        # El catálogo es la única lista completa: Inicio lleva el buscador y su índice; las
+        # demás páginas, un acceso «Buscar» que lleva a ese buscador (sin una segunda lista).
+        inicio = Documento(self.client.get("/"))
+        formularios = [f for f in inicio.formularios if f.get("role") == "search"]
+        self.assertEqual(len(formularios), 1)
+        self.assertEqual((formularios[0]["method"], formularios[0]["action"]), ("get", "/"))
+        self.assertIn(formularios[0]["data-buscador"], inicio.ids)
+        self.assertIn("buscador-inicio", inicio.ids)
+        for herramienta in catalogo.HERRAMIENTAS:
+            self.assertIn(herramienta.indice, inicio.indices)
+            self.assertEqual(herramienta.indice, catalogo.normalizar(herramienta.indice))
+        for ruta in ("/matrices/reduccion/", "/bases/conversion/", "/areas/algebra-lineal/"):
             with self.subTest(ruta=ruta):
                 respuesta = self.client.get(ruta)
                 documento = Documento(respuesta)
-                formularios = [f for f in documento.formularios if f.get("role") == "search"]
-                self.assertTrue(formularios)
-                for formulario in formularios:
-                    self.assertEqual(formulario["method"], "get")
-                    self.assertEqual(formulario["action"], "/")
-                    self.assertIn(formulario["data-buscador"], documento.ids)
-                self.assertTrue(any(c.get("name") == "q" and c.get("type") == "search" for c in documento.controles))
-                for herramienta in catalogo.HERRAMIENTAS:
-                    self.assertIn(herramienta.indice, documento.indices)
-                    self.assertEqual(herramienta.indice, catalogo.normalizar(herramienta.indice))
+                self.assertFalse([f for f in documento.formularios if f.get("role") == "search"])
+                self.assertFalse(documento.indices)
+                self.assertContains(respuesta, '<a class="header-buscar" href="/#buscador-inicio">')
 
-
-class PruebasNavegacion(SimpleTestCase):
     def test_inicio_es_general_sin_formulario_matematico(self):
         respuesta = self.client.get(reverse("calculadora:inicio"))
         self.assertContains(respuesta, "Inicio · PyGebra")
@@ -381,25 +383,30 @@ class PruebasNavegacion(SimpleTestCase):
             with self.subTest(ruta=ruta):
                 self.assertEqual(self.client.get(ruta).status_code, 404)
 
-    def test_sidebar_refleja_el_arbol_y_la_herramienta_activa(self):
+    def test_navegacion_por_areas_marca_area_y_herramienta_activas(self):
+        areas = {"/", *(a.ruta for a in catalogo.AREAS if a.disponible)}
         for herramienta in disponibles():
             with self.subTest(herramienta=herramienta.id):
                 respuesta = self.client.get(herramienta.ruta)
                 documento = Documento(respuesta)
-                enlaces = documento.enlaces_en("Herramientas")
-                activos = [a["href"] for a in enlaces if a.get("aria-current") == "page"]
-                self.assertEqual(activos, [herramienta.ruta])
-                self.assertEqual({a["href"] for a in enlaces}, {"/", *(h.ruta for h in disponibles())})
-                self.assertEqual(set(documento.categorias), {c.id for c in catalogo.CATEGORIAS})
-                abiertas = [id_ for id_, abierta in documento.categorias.items() if abierta]
-                self.assertEqual(abiertas, [herramienta.categoria.id])
-                for area in catalogo.AREAS:
-                    self.assertContains(respuesta, area.nombre)
-
+                enlaces = documento.enlaces_en("Áreas")
+                self.assertEqual({a["href"] for a in enlaces}, areas)
+                # En una herramienta su área es la sección actual (aria-current="true").
+                self.assertEqual([(a["href"], a["aria-current"]) for a in enlaces if a.get("aria-current")],
+                                 [(herramienta.area.ruta, "true")])
+                migas = [a["href"] for a in documento.enlaces_en("Ruta de navegación")]
+                self.assertIn(herramienta.area.ruta, migas)
+                # Las hermanas permiten cambiar de herramienta sin volver a Inicio.
+                hermanas = documento.enlaces_en(f"Herramientas de {herramienta.area.nombre}")
+                if hermanas:
+                    self.assertEqual([a["href"] for a in hermanas if a.get("aria-current") == "page"], [herramienta.ruta])
+                    self.assertEqual({a["href"] for a in hermanas},
+                                     {h.ruta for h in disponibles() if h.area == herramienta.area})
         inicio = Documento(self.client.get("/"))
-        activos = [a["href"] for a in inicio.enlaces_en("Herramientas") if a.get("aria-current") == "page"]
-        self.assertEqual(activos, ["/"])
-        self.assertFalse(any(inicio.categorias.values()))
+        self.assertEqual([a["href"] for a in inicio.enlaces_en("Áreas") if a.get("aria-current")], ["/"])
+        area = Documento(self.client.get("/areas/metodos-numericos/"))
+        self.assertEqual([(a["href"], a["aria-current"]) for a in area.enlaces_en("Áreas") if a.get("aria-current")],
+                         [("/areas/metodos-numericos/", "page")])
 
     def test_breadcrumbs_navegables_hasta_la_herramienta(self):
         respuesta = self.client.get("/matrices/reduccion/")
@@ -445,10 +452,10 @@ class PruebasNavegacion(SimpleTestCase):
 
     def test_html_inicial_permite_navegar_y_resolver_sin_javascript(self):
         inicio = self.client.get("/")
-        self.assertContains(
-            inicio,
-            '<aside id="navegacion-principal" class="app-sidebar" aria-label="Navegación principal">',
-        )
+        # Sin JavaScript se navega con enlaces reales: áreas en la cabecera y catálogo de Inicio.
+        self.assertContains(inicio, '<nav class="nav-areas" id="nav-areas" aria-label="Áreas"')
+        self.assertContains(inicio, 'href="/areas/algebra-lineal/"')
+        self.assertContains(inicio, 'class="tool-link" href="/matrices/reduccion/"')
         pagina = self.client.get("/matrices/reduccion/")
         formulario = next(f for f in Documento(pagina).formularios if f.get("id") == "sistema-form")
         self.assertEqual(formulario["method"], "post")
@@ -460,14 +467,13 @@ class PruebasNavegacion(SimpleTestCase):
         self.assertContains(pagina, 'id="system-fields" data-perfil="sistema"')
         self.assertContains(pagina, 'aria-label="Agregar una ecuación" hidden')
 
-    def test_landmarks_skip_link_y_control_de_menu(self):
+    def test_landmarks_skip_link_y_navegacion_sin_cajon(self):
         for ruta in ("/", "/matrices/reduccion/"):
             respuesta = self.client.get(ruta)
             documento = Documento(respuesta)
             self.assertContains(respuesta, 'href="#contenido"')
             self.assertContains(respuesta, '<main id="contenido"')
-            control = next(c for c in documento.controles if c.get("id") == "navigation-toggle")
-            self.assertEqual(control["type"], "button")
-            self.assertEqual(control["aria-expanded"], "false")
-            self.assertIn(control["aria-controls"], documento.ids)
-            self.assertIn("sidebar-backdrop", documento.ids)
+            self.assertContains(respuesta, 'aria-label="Áreas"')
+            # Sin cajón global: ni botón Menú, ni velo, ni una segunda lista de herramientas.
+            for retirado in ("navigation-toggle", "sidebar-backdrop", "navegacion-principal", "arbol-herramientas"):
+                self.assertNotIn(retirado, documento.ids)

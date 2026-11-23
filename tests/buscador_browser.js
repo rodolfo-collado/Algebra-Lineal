@@ -11,18 +11,15 @@
         }
     };
     const turno = w => new Promise(r => w.requestAnimationFrame(() => w.requestAnimationFrame(r)));
-    const valor = (w, texto, lateral = false) => {
-        const input = q(w, lateral ? "#buscador-lateral" : "#buscador-inicio");
+    const valor = (w, texto) => {
+        const input = q(w, "#buscador-inicio");
         input.value = texto;
         input.dispatchEvent(new w.Event("input", { bubbles: true }));
     };
     const ids = w => todos(w, "#catalogo-inicio [data-herramienta]:not([hidden])")
         .filter(n => n.getClientRects().length).map(n => n.dataset.herramienta);
-    const menu = w => q(w, "#navigation-toggle").click();
     // El universo es el catálogo publicado por Django, no un número fijo de herramientas.
     const universo = w => JSON.parse(q(w, "#datos-buscador").textContent).herramientas.length;
-    const escape = w => q(w, "#buscador-lateral").dispatchEvent(new w.KeyboardEvent(
-        "keydown", { key: "Escape", bubbles: true, cancelable: true }));
     const casos = [
         ["GET tiene todo el universo, métodos de Gauss visibles y un recuento estático", "/?q=gauss", w => {
             igual(todos(w, "#catalogo-inicio [data-herramienta]").length, universo(w));
@@ -98,36 +95,15 @@
                 igual(n, filas[i]); igual(n.closest(".canal-herramientas").hidden, true);
             });
         }],
-        ["Menú: Cálculo próximo, límites abre área y categoría", "/", w => {
-            menu(w); valor(w, "límites", true);
-            const area = q(w, "#nav-area-calculo").parentElement;
-            igual(area.hidden, false); igual(area.open, true);
-            igual(q(w, '[data-categoria="limites"]').open, true);
-            igual(q(w, "#nav-area-calculo .nav-badge").textContent, "Próximamente");
-            igual(q(w, '#arbol-herramientas [data-herramienta="limites-funciones"] .nav-badge').textContent, "Próximamente");
-            igual(q(w, "#nav-area-algebra-lineal .nav-badge"), null);
-            igual(q(w, "#nav-area-sistemas-numericos .nav-badge"), null);
+        ["Sin cajón: «Buscar» de la cabecera llega con el campo de Inicio enfocado", "/#buscador-inicio", w => {
+            igual(w.document.activeElement, q(w, "#buscador-inicio"));
+            igual(q(w, "#navigation-toggle"), null); igual(q(w, "#arbol-herramientas"), null);
+            igual(q(w, '.nav-areas [aria-current="page"]').getAttribute("href"), "/");
         }],
-        ["Escape con texto limpia sin cerrar, Escape vacío cierra", "/", w => {
-            menu(w); valor(w, "inversa", true); q(w, "#buscador-lateral").focus();
-            escape(w); igual(q(w, "#buscador-lateral").value, "");
-            igual(q(w, "#navegacion-principal").hidden, false);
-            igual(q(w, "#buscador-lateral-estado").textContent, "");
-            escape(w); igual(q(w, "#navegacion-principal").hidden, true);
-            igual(w.document.activeElement, q(w, "#navigation-toggle"));
-        }],
-        ["Menú restaura grupos y memoria sin guardar aperturas de filtro", "/matrices/inversa/", async w => {
-            menu(w); const categoria = q(w, '[data-categoria="raices"]'); categoria.open = true;
-            const area = q(w, "#nav-area-calculo").parentElement; area.open = false;
-            await turno(w);
-            const memoria = w.sessionStorage.getItem("algebra-lineal-menu-secciones");
-            igual(JSON.parse(memoria).includes("raices"), true); igual(w.localStorage.getItem("algebra-lineal-menu-secciones"), null);
-            const abiertos = todos(w, "#arbol-herramientas details").map(n => n.open);
-            valor(w, "límites", true); await turno(w);
-            igual(w.sessionStorage.getItem("algebra-lineal-menu-secciones"), memoria);
-            valor(w, "", true); await turno(w);
-            igual(todos(w, "#arbol-herramientas details").map(n => n.open), abiertos);
-            igual(w.sessionStorage.getItem("algebra-lineal-menu-secciones"), memoria);
+        ["Desde una herramienta, «Buscar» y las áreas llevan al catálogo", "/matrices/inversa/", w => {
+            igual(q(w, ".header-buscar").getAttribute("href"), "/#buscador-inicio");
+            igual(q(w, '.nav-areas [aria-current="true"]').getAttribute("href"), "/areas/algebra-lineal/");
+            igual(q(w, '.rail [aria-current="page"]').getAttribute("href"), "/matrices/inversa/");
         }],
         ["Explorador del área: una parada de Tab, flechas y panel sin guardar nada", "/areas/algebra-lineal/", w => {
             const items = todos(w, "a.indice-item");
@@ -269,9 +245,9 @@
                 limpiar(w.sessionStorage); limpiar(w.localStorage);
             }
         }],
-        ["Grupos y herramientas ocultos no se pueden enfocar", "/", w => {
-            menu(w); valor(w, "inversa", true); const input = q(w, "#buscador-lateral"); input.focus();
-            const oculto = q(w, '#arbol-herramientas [data-herramienta="conversion-bases"] a');
+        ["Herramientas ocultas por el filtro no se pueden enfocar", "/", w => {
+            valor(w, "inversa"); const input = q(w, "#buscador-inicio"); input.focus();
+            const oculto = q(w, '#catalogo-inicio [data-herramienta="conversion-bases"] a');
             igual(oculto.getClientRects().length, 0); oculto.focus(); igual(w.document.activeElement, input);
         }],
     ];

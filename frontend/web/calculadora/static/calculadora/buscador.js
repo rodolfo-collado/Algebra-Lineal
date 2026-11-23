@@ -125,4 +125,7 @@
 
     const llegada = document.querySelector("[data-busqueda-get]");
     if (llegada) llegada.focus();
+
+    // El acceso «Buscar» de la cabecera apunta a #buscador-inicio: el campo llega enfocado.
+    if (location.hash === "#buscador-inicio") document.getElementById("buscador-inicio")?.focus();
 })();

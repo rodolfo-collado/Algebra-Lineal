@@ -44,7 +44,7 @@
             }
         }]);
     }
-    casos.push(["UI-68: Tema acción, nombres y pageshow; Menú con tres trazos SVG", "/", async (w,frame) => {
+    casos.push(["UI-68: Tema acción, nombres y pageshow; Buscar con icono SVG centrado", "/matrices/inversa/", async (w,frame) => {
         const theme = q(w,"#theme-toggle");
         assert(!theme.hidden && !theme.hasAttribute("aria-pressed"),"Tema operativo sin estado contradictorio");
         for (let i=0;i<2;i++) {
@@ -57,16 +57,15 @@
         assert(!theme.hasAttribute("aria-pressed"),"pageshow mantiene semántica");
         for (const [width,height] of viewports) {
             await viewport(frame,width,height);
-            const icon = q(w,".navigation-toggle-icon");
+            const icon = q(w,".header-buscar svg");
             const path = icon.querySelector("path");
-            assert(icon.getAttribute("viewBox") === "0 0 24 24" && rect(icon).width === 24 && rect(icon).height === 24,"Icono de 24×24");
-            assert(path.getAttribute("d") === "M4 6h16M4 12h16M4 18h16" && path.getAttribute("stroke-width") === "2","Tres líneas uniformes y equidistantes");
+            assert(icon.getAttribute("viewBox") === "0 0 24 24" && Math.abs(rect(icon).width - rect(icon).height) < 0.5,"Icono cuadrado");
             for (const theme of ["light","dark"]) {
                 w.document.documentElement.dataset.theme = theme;
-                assert(style(w,path).stroke === style(w,q(w,"#navigation-toggle")).color,"Trazos heredan el color del botón");
+                assert(style(w,path).stroke === style(w,q(w,".header-buscar")).color,"Trazos heredan el color del enlace");
                 if (width > 480) {
-                    const text = rect(q(w,".navigation-toggle-text")), box = rect(icon);
-                    assert(Math.abs(box.top + box.height / 2 - text.top - text.height / 2) < 1,"Icono centrado con Menú");
+                    const text = rect(q(w,".header-buscar-text")), box = rect(icon);
+                    assert(Math.abs(box.top + box.height / 2 - text.top - text.height / 2) < 1,"Icono centrado con Buscar");
                 }
             }
             pageFits(w);
@@ -99,8 +98,8 @@
     }]);
     casos.push(["UI-68.4: sin JS, Tema oculto y navegación disponible", "/", (w) => {
         assert(q(w,"#theme-toggle").hidden && style(w,q(w,"#theme-toggle")).display === "none","Sin acción falsa");
-        assert(q(w,"#navigation-toggle").hidden,"Menú conserva mejora progresiva");
-        assert(!q(w,"#navegacion-principal").hidden,"Navegación sin JS usable");
+        assert(q(w,"#areas-plegar").hidden,"El riel conserva mejora progresiva");
+        assert(q(w,'#nav-areas a[href="/areas/algebra-lineal/"]') && q(w,'a.tool-link[href="/matrices/reduccion/"]'),"Navegación sin JS con enlaces reales");
     }, true]);
     casos.push(["UI-20: enlaces compartidos del estado vacío en ambos temas", "/?q=zzzz", async (w,frame) => {
         await viewport(frame,390,650);
