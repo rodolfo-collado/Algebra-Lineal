@@ -720,57 +720,106 @@
     letter-spacing: 0.1em;
 }
 
-/* —— Movimiento: rápido y en diagonal —— */
+/* —— Movimiento: rápido y en diagonal ——
+   Al llegar a una pantalla, un corte en diagonal la descubre: la hoja lleva un filo, una
+   franja roja y una banda negra paralelas, y lo que falta por descubrir es el papel del
+   cartel (no un velo oscuro). Un eco rojo fino sigue la misma diagonal. La pantalla nueva
+   ya se ve en su primer cuarto y casi entera a los ~100 ms; todo termina en 280 ms. Al
+   volver atrás el corte cruza en sentido contrario. Las capas no reciben el puntero: se
+   puede leer y pulsar desde el primer fotograma. El contenedor de la página solo cambia
+   su opacidad; los desplazamientos van en las cabeceras (el teclado fijo no se mueve). */
+
+[data-estilo="heyalgb"] {
+    /* Inclinación común de todo el corte (16°): desfase horizontal entre arriba y abajo. */
+    --hey-corte-desfase: calc(140vh * 0.287);
+}
+
+[data-estilo="heyalgb"][data-theme="dark"] {
+    --hey-filo: #ffffff;
+    --hey-banda: #060606;
+}
+
+[data-estilo="heyalgb"][data-theme="light"] {
+    --hey-filo: #060606;
+    --hey-banda: #060606;
+}
 
 @media (prefers-reduced-motion: no-preference) {
-    [data-estilo="heyalgb"] .app-content {
+    [data-estilo="heyalgb"][data-llegada] .app-content {
+        animation: hey-aparecer 0.18s ease-out both;
+    }
+
+    [data-estilo="heyalgb"][data-llegada] :is(.tool-header, .area-header, .breadcrumbs, .home-marca) {
         animation: hey-golpe 0.22s var(--hey-rapido) both;
     }
 
-    /* Al llegar desde otra página, su barrido: una banda roja con un filo blanco delante
-       cruza en diagonal y descubre la página (pointer-events: none, nunca bloquea). */
-    [data-estilo="heyalgb"][data-llegada] body::before,
-    [data-estilo="heyalgb"][data-llegada] body::after {
+    [data-estilo="heyalgb"][data-llegada][data-dir="atras"] :is(.tool-header, .area-header, .breadcrumbs, .home-marca) {
+        animation-name: hey-golpe-atras;
+    }
+
+    /* La hoja y el papel que falta descubrir: una sola pieza inclinada que sale de la pantalla. */
+    [data-estilo="heyalgb"][data-llegada] body::after,
+    [data-estilo="heyalgb"][data-llegada] body::before {
         content: "";
         position: fixed;
-        top: -15vh;
-        bottom: -15vh;
-        left: 0;
+        top: -20vh;
+        bottom: -20vh;
         z-index: 60;
         pointer-events: none;
-        animation: hey-barrido 0.3s cubic-bezier(0.6, 0, 0.35, 1) both;
+        will-change: transform;
     }
 
     [data-estilo="heyalgb"][data-llegada] body::after {
-        width: 135vw;
-        margin-left: -20vw;
-        background: #e3101b;
+        left: 0;
+        width: 260vw;
+        background:
+            linear-gradient(90deg, var(--hey-filo) 0 0.45vw, #e3101b 0.45vw 2.4vw,
+                var(--hey-banda) 2.4vw 5.6vw, transparent 5.6vw),
+            var(--hey-fondo, none),
+            var(--hey-papel);
+        animation: hey-cortar 0.28s cubic-bezier(0.15, 0.85, 0.25, 1) both;
     }
 
+    /* El eco: una astilla roja que sigue a la hoja por el lado ya descubierto. */
     [data-estilo="heyalgb"][data-llegada] body::before {
+        left: 0;
         z-index: 61;
-        width: 9vw;
-        margin-left: 113vw;
-        background: #ffffff;
+        width: 1.1vw;
+        background: #e3101b;
+        animation: hey-eco 0.28s cubic-bezier(0.15, 0.85, 0.25, 1) both;
+    }
+
+    [data-estilo="heyalgb"][data-llegada][data-dir="atras"] body::after {
+        right: 0;
+        left: auto;
+        background:
+            linear-gradient(270deg, var(--hey-filo) 0 0.45vw, #e3101b 0.45vw 2.4vw,
+                var(--hey-banda) 2.4vw 5.6vw, transparent 5.6vw),
+            var(--hey-fondo, none),
+            var(--hey-papel);
+        animation-name: hey-cortar-atras;
+    }
+
+    [data-estilo="heyalgb"][data-llegada][data-dir="atras"] body::before {
+        right: 0;
+        left: auto;
+        animation-name: hey-eco-atras;
     }
 
     [data-estilo="heyalgb"] .canal {
-        animation: hey-entrar 0.26s var(--hey-rapido) backwards;
+        animation: hey-entrar 0.24s var(--hey-rapido) backwards;
     }
 
-    [data-estilo="heyalgb"] .canal:nth-child(2) { animation-delay: 50ms; }
-    [data-estilo="heyalgb"] .canal:nth-child(3) { animation-delay: 100ms; }
-    [data-estilo="heyalgb"] .canal:nth-child(4) { animation-delay: 150ms; }
-    [data-estilo="heyalgb"] .canal:nth-child(n + 5) { animation-delay: 200ms; }
+    [data-estilo="heyalgb"] .canal:nth-child(2) { animation-delay: 30ms; }
+    [data-estilo="heyalgb"] .canal:nth-child(3) { animation-delay: 60ms; }
+    [data-estilo="heyalgb"] .canal:nth-child(n + 4) { animation-delay: 90ms; }
 
     [data-estilo="heyalgb"] .home-title,
-    [data-estilo="heyalgb"] .home-lead,
     [data-estilo="heyalgb"] .portada-dedicatoria {
-        animation: hey-sello 0.3s var(--hey-rapido) backwards;
+        animation: hey-sello 0.22s var(--hey-rapido) backwards;
     }
 
-    [data-estilo="heyalgb"] .home-lead { animation-delay: 80ms; }
-    [data-estilo="heyalgb"] .portada-dedicatoria { animation-delay: 160ms; }
+    [data-estilo="heyalgb"] .portada-dedicatoria { animation-delay: 60ms; }
 
     [data-estilo="heyalgb"] .hey-estallido {
         animation: hey-girar 40s linear infinite;
@@ -782,21 +831,44 @@
     }
 }
 
+@keyframes hey-aparecer {
+    from { opacity: 0.55; }
+}
+
 @keyframes hey-golpe {
-    from { opacity: 0; transform: translateX(-28px) skewX(-4deg); }
+    from { opacity: 0.4; transform: translateX(-16px) skewX(-6deg); }
+}
+
+@keyframes hey-golpe-atras {
+    from { opacity: 0.4; transform: translateX(16px) skewX(-6deg); }
+}
+
+@keyframes hey-cortar {
+    from { transform: translateX(24vw) skewX(-16deg); }
+    to { transform: translateX(calc(100vw + var(--hey-corte-desfase))) skewX(-16deg); }
+}
+
+@keyframes hey-cortar-atras {
+    from { transform: translateX(-24vw) skewX(-16deg); }
+    to { transform: translateX(calc(-100vw - var(--hey-corte-desfase))) skewX(-16deg); }
+}
+
+@keyframes hey-eco {
+    from { transform: translateX(14vw) skewX(-16deg); }
+    to { transform: translateX(calc(92vw + var(--hey-corte-desfase))) skewX(-16deg); }
+}
+
+@keyframes hey-eco-atras {
+    from { transform: translateX(-14vw) skewX(-16deg); }
+    to { transform: translateX(calc(-92vw - var(--hey-corte-desfase))) skewX(-16deg); }
 }
 
 @keyframes hey-entrar {
-    from { opacity: 0; transform: translateX(-40px); }
+    from { opacity: 0.3; transform: translateX(-28px); }
 }
 
 @keyframes hey-sello {
-    from { opacity: 0; scale: 1.25; }
-}
-
-@keyframes hey-barrido {
-    from { transform: translateX(32vw) skewX(-14deg); }
-    to { transform: translateX(140vw) skewX(-14deg); }
+    from { opacity: 0.5; scale: 1.15; }
 }
 
 @keyframes hey-girar {
