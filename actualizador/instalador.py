@@ -15,4 +15,4 @@ def lanzar(ruta, esperado, popen=subprocess.Popen):
     verificar(ruta, esperado)
     # Independiente de PyGebra: debe sobrevivir a su cierre.
     flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    popen([str(ruta), *ARGUMENTOS], cwd=str(ruta.parent), close_fds=True, creationflags=flags)
+    return popen([str(ruta), *ARGUMENTOS], cwd=str(ruta.parent), close_fds=True, creationflags=flags)
