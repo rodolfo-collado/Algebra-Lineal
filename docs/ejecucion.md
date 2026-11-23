@@ -3,9 +3,9 @@
 [Índice de documentación](README.md) · [Portada](../README.md)
 
 Esta guía explica cómo ejecutar PyGebra desde el código fuente y qué se necesita
-para disponer de todas sus funciones. El proyecto no usa base de datos ni
-variables de entorno obligatorias: no hace falta ejecutar migraciones ni crear
-un archivo `.env`.
+para disponer de todas sus funciones. La consola crea su historial local al
+abrir. No hace falta instalar un servidor de base de datos, ejecutar migraciones
+ni crear un archivo `.env`.
 
 ## Requisitos comunes
 
@@ -29,7 +29,7 @@ uv sync --locked
 `--locked` obliga a usar las versiones exactas registradas en `uv.lock`; esto
 evita que una actualización de una dependencia cambie el comportamiento del
 proyecto. El comando crea `.venv/` y deja instalados Django, pywebview,
-Waitress y colorama. Para ejecutar la suite completa de pruebas o construir el
+Waitress, Textual y colorama. Para ejecutar la suite completa de pruebas o construir el
 instalador, añade las dependencias de desarrollo:
 
 ```bash
@@ -63,19 +63,63 @@ uv run --locked python manage.py runserver 8001
 
 En ese caso abre `http://127.0.0.1:8001/`.
 
-## Alternativa: aplicación de terminal
+## Aplicación de terminal
 
-La terminal permite operar matrices y resolver sistemas con Gauss y
-Gauss-Jordan. Funciona en Windows, Linux y macOS:
+Abre una terminal con Unicode y color en Arch Linux o Windows Terminal en
+Windows. Desde la raíz del repositorio:
 
 ```bash
+uv sync --locked
 uv run --locked python main.py
 ```
 
-Sigue las opciones numeradas del menú. Para salir, selecciona la opción `9`.
-Esta modalidad no incluye los módulos visuales de vectores, conversión de
-bases ni el teclado matemático; para la experiencia completa usa la interfaz
-web local o la aplicación de escritorio de Windows.
+La consola funciona localmente. Escribe `/` para abrir el menú y entra en
+`/resolver` para elegir Álgebra lineal, Sistemas numéricos, Métodos numéricos
+o Conjuntos. Al ensanchar la ventana, el chat pasa a la derecha. En ventanas
+estrechas queda fijo debajo del historial. En el panel de resultados, el valor
+final, el procedimiento y las advertencias se distinguen por su encabezado y
+color. El espaciado compacto es el predeterminado. Usa el zoom de tu terminal
+para cambiar el tamaño de letra.
+
+| Tecla | Acción |
+| --- | --- |
+| `↑` y `↓` | Elegir un comando, método o casilla. |
+| `←` y `→` | Volver al menú padre o regresar al último submenú visitado. |
+| `Enter` | Confirmar una opción, avanzar en un campo de una línea o desplegar un ejercicio enfocado. |
+| `Espacio` | Marcar o desmarcar una casilla. En una gráfica de raíces enfocada, reproducir las iteraciones. |
+| `F2` | Confirmar una entrada de varias líneas. `Enter` añade una línea. |
+| `F3`, `F4`, `F6` | Volver a la pregunta anterior, repetir el último ejercicio o insertar un símbolo matemático. |
+| `F7` | Pasar del chat a los resultados o volver al borrador. En una ventana estrecha, amplía el espacio de lectura. |
+| `RePág`, `AvPág` | Desplazar los resultados por páginas cuando el panel tiene el foco. |
+| `Tab`, `Mayús+Tab` | Cambiar el foco entre controles. |
+| `Ctrl+C`, `Ctrl+R`, `Ctrl+T` | Copiar la celda, la fila o la tabla completa en una tabla enfocada. |
+| `Esc`, `Ctrl+Q` | Cerrar el menú o ejercicio activo, o salir de PyGebra. |
+
+Las gráficas de raíces muestran los ejes, su escala y los puntos iniciales
+del método. Si se detecta un cambio de signo entre muestras del mismo tramo,
+la gráfica marca el corte aproximado y muestra los extremos que puedes
+probar como intervalo. La consola dibuja la imagen de Matplotlib dentro de
+los emuladores que admiten gráficos compatibles y usa una vista de texto con
+escala numérica en el resto.
+
+Para pegar en PyGebra puedes usar `Ctrl+V` con el portapapeles interno o el
+atajo de pegado de tu terminal para datos de otra aplicación. Las matrices
+aceptan celdas separadas por espacios o tabulaciones y filas separadas por
+saltos de línea o punto y coma. Si hay un error de formato, aparece debajo
+del campo mientras escribes. `F2` mantiene el borrador y el foco hasta que lo
+corrijas. Los campos de una línea se confirman con `Enter`.
+
+`/historial` lleva a los ejercicios guardados. Si activas `/debugging`, el
+procedimiento incluye enlaces a los archivos del backend ejecutados. En la
+lista de archivos, pulsa `Enter` para localizar el archivo o `Ctrl+C` para
+copiar su ruta absoluta. La consola guarda el historial y los ajustes en
+`consola.sqlite3`, en el directorio local de datos de PyGebra. En Arch Linux
+es `${XDG_DATA_HOME:-~/.local/share}/PyGebra/`. En Windows corresponde a
+`%LOCALAPPDATA%\PyGebra\`.
+
+El menú anterior de matrices también está disponible con
+`uv run --locked python main.py --clasico`. En ese modo puedes salir con la
+opción `9`.
 
 ## Aplicación de escritorio (Windows)
 

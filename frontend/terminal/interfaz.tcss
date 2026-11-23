@@ -1,0 +1,152 @@
+Screen {
+    background: $background;
+    color: $foreground;
+}
+
+#marca {
+    width: 1fr;
+    height: auto;
+    padding: 1 3 0 3;
+    content-align: left top;
+}
+.muy-corta #marca { padding: 0 3; }
+
+#cuerpo {
+    height: 1fr;
+    layout: vertical;
+    padding: 0 1;
+}
+
+#resultados {
+    height: 1fr;
+    min-height: 3;
+    padding: 0 1;
+    scrollbar-size: 1 1;
+    scrollbar-color: $primary 55%;
+    scrollbar-background: $background;
+    border: round $panel;
+    background: $background;
+}
+#resultados:focus-within { border: round $secondary 55%; }
+#titulo-historial {
+    height: auto;
+    margin: 0 0 1 0;
+    border-bottom: solid $panel;
+}
+#vacio {
+    color: $foreground 74%;
+    padding: 0 1;
+}
+
+#chat {
+    height: auto;
+    max-height: 82%;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-size: 1 1;
+    padding: 0 1;
+    background: $surface;
+    border: round $panel;
+    margin-top: 1;
+}
+#chat:focus-within { border: round $secondary 55%; }
+.ancha #cuerpo { layout: horizontal; }
+.ancha #resultados { width: 2fr; }
+.ancha #chat {
+    width: 1fr;
+    height: 1fr;
+    max-height: 100%;
+    margin: 0 0 0 1;
+    padding: 0 1 1 1;
+}
+
+.lectura #conversacion, .lectura #redaccion { display: none; }
+.lectura #chat { margin-top: 0; }
+
+#migas {
+    height: auto;
+    padding: 0 1;
+    border-bottom: solid $panel;
+}
+
+#espacio-chat { display: none; }
+.ancha #espacio-chat { display: block; height: 1fr; }
+#conversacion {
+    height: auto;
+    max-height: 7;
+    padding: 0 1;
+    scrollbar-size: 1 1;
+}
+.ancha #conversacion { max-height: 14; }
+.corta #conversacion { max-height: 5; }
+.muy-corta #conversacion { max-height: 3; }
+
+.titulo { color: $secondary; text-style: bold; }
+#respuestas { height: auto; color: $foreground 91%; margin: 0 0 1 0; }
+#paso { height: auto; color: $secondary; text-style: bold; }
+#pregunta { height: auto; color: $foreground; text-style: bold; }
+#ayuda { height: auto; color: $foreground 74%; text-style: italic; }
+.corta #respuestas, #respuestas.vacio, #paso.vacio, #ayuda.vacio, #detalle-menu.vacio { display: none; }
+
+#redaccion { height: auto; margin: 1 0 0 0; }
+.muy-corta #redaccion { margin: 0; }
+#menu {
+    height: auto;
+    padding: 0 1;
+    background: $background;
+    color: $foreground;
+    text-wrap: nowrap;
+}
+#detalle-menu {
+    height: auto;
+    max-height: 2;
+    color: $secondary;
+    padding: 0 1;
+    background: $background;
+    text-style: italic;
+}
+.muy-corta #detalle-menu { max-height: 1; text-wrap: nowrap; text-overflow: ellipsis; }
+
+#entrada, #editor {
+    padding: 0 1;
+    border: round $panel;
+    background: $background;
+    color: $primary;
+}
+#entrada { height: 3; }
+#editor { display: none; height: 6; }
+#entrada:focus, #editor:focus {
+    border: round $primary 80%;
+    background: $background;
+}
+.formato-invalido #entrada:focus, .formato-invalido #editor:focus { border: round $error; }
+.corta #editor { height: 4; }
+.muy-corta #entrada, .muy-corta #entrada:focus { height: 1; border: none; }
+
+#aviso {
+    height: auto;
+    color: $error;
+    background: $error 10%;
+    border-left: thick $error;
+    padding: 0 1;
+    margin-top: 1;
+    display: none;
+}
+#teclas {
+    height: 1;
+    padding: 0 2;
+    color: $foreground 78%;
+    text-wrap: nowrap;
+}
+
+Grafica, GraficaConjuntos {
+    height: auto;
+    margin: 1 0;
+    padding: 0 1;
+}
+Grafica:focus { background: $surface; }
+ArchivosBackend { height: auto; max-height: 10; padding: 0; }
+
+Paleta { align: center middle; background: $background 70%; }
+#paleta { width: 50; max-width: 95%; height: auto; padding: 0 1; border: round $secondary; background: $surface; }
+#paleta OptionList { height: auto; max-height: 12; }
