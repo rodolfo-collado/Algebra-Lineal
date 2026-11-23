@@ -3,21 +3,121 @@
 
 {% block title %}Actualizaciones · PyGebra{% endblock %}
 
-{% block content %}
-    <header class="tool-header">
-        <h1 class="tool-title">Actualizaciones</h1>
-        <p class="tool-lead">Versión instalada: <strong>PyGebra {{ actualizacion.version_instalada|default:"desconocida" }}</strong></p>
-    </header>
+{% block extra_head %}<link rel="stylesheet" href="{% static 'calculadora/styles/actualizaciones.css' %}">{% endblock %}
 
-    {# El servidor pinta el estado actual; actualizaciones.js lo mantiene al día sin recargar. #}
-    <section class="panel actualizador" data-actualizador data-estado="{{ actualizacion.estado }}" aria-labelledby="actualizador-titulo">
-        <h2 id="actualizador-titulo" class="sr-only">Estado de la actualización</h2>
-        <p class="actualizador-mensaje" data-mensaje role="status" aria-live="polite">{{ actualizacion.mensaje }}</p>
-        <progress class="actualizador-progreso" data-progreso max="100"{% if actualizacion.progreso is not None %} value="{{ actualizacion.progreso }}"{% endif %} hidden>{{ actualizacion.progreso|default:0 }} %</progress>
-        <div class="actualizador-acciones">
-            <button type="button" class="btn btn-primary" data-accion="buscar">Buscar actualizaciones</button>
-            <button type="button" class="btn btn-primary" data-accion="descargar" hidden>Descargar actualización</button>
-            <button type="button" class="btn btn-primary" data-accion="instalar" hidden>Instalar y reiniciar PyGebra</button>
+{% block content %}
+    {% comment %}
+        Amanecer sobre el plano: el horizonte de un plano cartesiano es la barra de la descarga y un
+        círculo unitario sube con ella. El servidor pinta el estado actual; actualizaciones.js lo
+        mantiene al día sin recargar. Cada texto alternativo lleva en data-para los estados en los
+        que se muestra (actualizaciones.css elige uno), así que todo el texto vive en esta plantilla.
+        Ilustración original de PyGebra, sin recursos externos.
+    {% endcomment %}
+    <section class="lanzador" data-actualizador data-estado="{{ actualizacion.estado }}" aria-labelledby="lanzador-titulo">
+        <div class="lanzador-cielo" aria-hidden="true">
+            <svg class="lanzador-sol" viewBox="-100 -100 200 200" focusable="false">
+                <defs>
+                    <radialGradient id="lanzador-halo" r=".5">
+                        <stop offset=".45" stop-color="currentColor" stop-opacity=".32"/>
+                        <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="lanzador-disco" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" style="stop-color: var(--color-surface-raised)"/>
+                        <stop offset="1" style="stop-color: var(--lz-disco-bajo)"/>
+                    </linearGradient>
+                </defs>
+                <circle r="100" fill="url(#lanzador-halo)"/>
+                <circle class="lanzador-marcas" r="70" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="1.2 11.017" opacity=".5"/>
+                <circle r="58" fill="url(#lanzador-disco)" stroke="currentColor" stroke-width="1.5"/>
+                <path class="lanzador-guia" d="M-58 0H58M0-58V58"/>
+                <circle class="lanzador-guia" r="29" fill="none" stroke-dasharray="2 3"/>
+                <g class="lanzador-vector">
+                    <path d="M0 0L36 -36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M44-44L28-38L38-28Z" fill="currentColor"/>
+                    <circle r="3.5" fill="currentColor"/>
+                </g>
+            </svg>
+            {# Poliedros en alambre: aristas ocultas punteadas, una cara apenas teñida. #}
+            <svg class="lanzador-solido lanzador-cubo" viewBox="0 0 100 92" focusable="false">
+                <path d="M8 34L36 12H90L62 34Z" class="lanzador-cara"/>
+                <path d="M8 34H62V86H8ZM62 34L90 12V64L62 86M8 34L36 12H90"/>
+                <path d="M36 12V64H90M36 64L8 86" class="lanzador-oculta"/>
+            </svg>
+            <svg class="lanzador-solido lanzador-octaedro" viewBox="0 0 100 100" focusable="false">
+                <path d="M50 4L14 52L56 62Z" class="lanzador-cara"/>
+                <path d="M50 4L14 52L50 96L56 62L86 48L50 4L56 62L14 52M86 48L50 96"/>
+                <path d="M50 4L44 40L14 52M44 40L86 48M44 40L50 96" class="lanzador-oculta"/>
+            </svg>
+            <svg class="lanzador-solido lanzador-tetraedro" viewBox="0 0 100 92" focusable="false">
+                <path d="M50 6L10 84L88 76Z" class="lanzador-cara"/>
+                <path d="M50 6L10 84L88 76Z"/>
+                <path d="M50 6L62 54L10 84M62 54L88 76" class="lanzador-oculta"/>
+            </svg>
+        </div>
+        <div class="lanzador-suelo" aria-hidden="true">
+            {# Paralelas del plano que fugan hacia el sol (x = 760 de 1000) y líneas de profundidad. #}
+            <svg viewBox="0 0 1000 300" preserveAspectRatio="none" focusable="false">
+                <path class="lanzador-reja" d="M10 0L-3740 300M40 0L-3560 300M70 0L-3380 300M100 0L-3200 300M130 0L-3020 300M160 0L-2840 300M190 0L-2660 300M220 0L-2480 300M250 0L-2300 300M280 0L-2120 300M310 0L-1940 300M340 0L-1760 300M370 0L-1580 300M400 0L-1400 300M430 0L-1220 300M460 0L-1040 300M490 0L-860 300M520 0L-680 300M550 0L-500 300M580 0L-320 300M610 0L-140 300M640 0L40 300M670 0L220 300M700 0L400 300M730 0L580 300M790 0L940 300M820 0L1120 300M850 0L1300 300M880 0L1480 300M910 0L1660 300M940 0L1840 300M970 0L2020 300M1000 0L2200 300M-3100 300H4100M-3100 235.1H4100M-3100 180H4100M-3100 134.6H4100M-3100 96.5H4100M-3100 64.1H4100M-3100 37.3H4100M-3100 15H4100" vector-effect="non-scaling-stroke"/>
+                <path class="lanzador-eje" d="M760 0V300" vector-effect="non-scaling-stroke"/>
+            </svg>
+        </div>
+
+        <header class="lanzador-barra">
+            <p class="lanzador-marca">{% include "calculadora/components/mark.html" %}<span>PyGebra</span></p>
+            <h1 id="lanzador-titulo" class="lanzador-titulo">Actualizaciones</h1>
+            <p class="lanzador-instalada">Versión instalada: <strong>PyGebra {{ actualizacion.version_instalada|default:"desconocida" }}</strong></p>
+        </header>
+
+        <div class="lanzador-heroe">
+            <p class="lanzador-salto" data-para="disponible descargando verificando listo instalando">
+                <span class="sr-only">De la versión </span><span>{{ actualizacion.version_instalada|default:"desconocida" }}</span>
+                <svg viewBox="0 0 28 12" aria-hidden="true" focusable="false"><path d="M0 5H20V1L28 6L20 11V7H0Z" fill="currentColor"/></svg>
+                <span class="sr-only"> a la </span><span data-version-disponible>{{ actualizacion.version_disponible|default:"" }}</span>
+            </p>
+            <h2 class="lanzador-estado">
+                <span data-para="inicial">¿Hay una versión nueva?</span>
+                <span data-para="buscando">Consultando las versiones publicadas</span>
+                <span data-para="actualizado">Tienes la versión más reciente</span>
+                <span data-para="disponible">Nueva versión lista para descargar</span>
+                <span data-para="descargando">Descargando la actualización</span>
+                <span data-para="verificando">Comprobando el archivo</span>
+                <span data-para="listo">Lista para instalar</span>
+                <span data-para="instalando">Instalación en marcha</span>
+                <span data-para="error_conexion">Sin conexión con el servidor</span>
+                <span data-para="checksum_invalido">La descarga no pasó la verificación</span>
+                <span data-para="error">La actualización se detuvo</span>
+            </h2>
+            {# El único porcentaje es el que informa la descarga; el lector de pantalla lo lee en el progress. #}
+            <p class="lanzador-porcentaje" data-para="descargando" aria-hidden="true"><span data-porcentaje>{{ actualizacion.progreso|default:0 }}</span><small>%</small></p>
+            <p class="lanzador-mensaje" data-mensaje role="status" aria-live="polite">{{ actualizacion.mensaje }}</p>
+            <p class="lanzador-detalle" data-para="verificando">Se compara la huella SHA-256 del instalador con la publicada junto a la versión.</p>
+        </div>
+
+        <div class="lanzador-horizonte">
+            <div class="lanzador-linea" aria-hidden="true"><span class="lanzador-relleno"></span></div>
+            <span class="lanzador-punta" aria-hidden="true"></span>
+            <progress class="sr-only" data-progreso max="100" aria-label="Descarga de la actualización"{% if actualizacion.progreso is not None %} value="{{ actualizacion.progreso }}"{% endif %} hidden>{{ actualizacion.progreso|default:0 }} %</progress>
+        </div>
+
+        <div class="lanzador-dock">
+            <ol class="lanzador-ruta" aria-label="Pasos de la actualización">
+                <li data-paso><span class="lanzador-nodo" aria-hidden="true"></span><span>Buscar</span><span class="sr-only" data-lectura></span></li>
+                <li data-paso><span class="lanzador-nodo" aria-hidden="true"></span><span>Descargar</span><span class="sr-only" data-lectura></span></li>
+                <li data-paso><span class="lanzador-nodo" aria-hidden="true"></span><span>Verificar</span><span class="sr-only" data-lectura></span></li>
+                <li data-paso><span class="lanzador-nodo" aria-hidden="true"></span><span>Instalar</span><span class="sr-only" data-lectura></span></li>
+            </ol>
+            {# Un solo botón que cambia con el estado: el foco nunca se pierde. En curso queda aria-disabled. #}
+            <button type="button" class="btn btn-primary lanzador-accion" data-accion="buscar">
+                <span data-para="inicial">Buscar actualizaciones</span>
+                <span data-para="actualizado error_conexion checksum_invalido error">Volver a buscar</span>
+                <span data-para="buscando">Buscando…</span>
+                <span data-para="disponible">Descargar PyGebra <span data-version-disponible>{{ actualizacion.version_disponible|default:"" }}</span></span>
+                <span data-para="descargando">Descargando…</span>
+                <span data-para="verificando">Verificando…</span>
+                <span data-para="listo">Instalar y reiniciar PyGebra</span>
+                <span data-para="instalando">Abriendo el instalador…</span>
+                <svg class="lanzador-flecha" viewBox="0 0 28 12" aria-hidden="true" focusable="false"><path d="M0 5H20V1L28 6L20 11V7H0Z" fill="currentColor"/></svg>
+            </button>
         </div>
     </section>
 {% endblock %}

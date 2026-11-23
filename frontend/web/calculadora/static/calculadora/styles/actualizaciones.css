@@ -1,0 +1,636 @@
+/* Actualizaciones (solo escritorio): «Amanecer sobre el plano».
+   Un plano cartesiano en perspectiva cuyo horizonte es la barra de la descarga; un círculo
+   unitario sube con ella y unos poliedros flotan en el cielo. Todo se deriva de los tokens del
+   tema activo, así que funciona en claro, en oscuro y en cada estilo. Se carga solo en esta
+   página. Es un ambiente decorativo: sus bucles tienen contrato propio
+   (tests/test_actualizaciones_escena.py) y desaparecen con movimiento reducido (base.css). */
+
+.lanzador {
+    --lz-acento: var(--color-brand);
+    --lz-cielo-alto: var(--color-bg);
+    --lz-cielo-bajo: color-mix(in srgb, var(--color-brand) 16%, var(--color-bg));
+    --lz-suelo-alto: color-mix(in srgb, var(--color-brand) 24%, var(--color-bg));
+    --lz-suelo-bajo: color-mix(in srgb, var(--color-brand) 5%, var(--color-bg));
+    --lz-reja: color-mix(in srgb, var(--color-brand) 42%, transparent);
+    --lz-trazo: color-mix(in srgb, var(--color-text) 58%, transparent);
+    --lz-disco-bajo: color-mix(in srgb, var(--color-brand) 32%, var(--color-surface-raised));
+    --lz-margen: clamp(1.15rem, 4.5cqi, 2.75rem);
+    /* --p: fracción descargada (la pone actualizaciones.js). --sol: altura del círculo, 0 a 1. */
+    --p: 0;
+    --sol: 0.3;
+    position: relative;
+    isolation: isolate;
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    /* Barra, cielo, horizonte (sin alto: es la línea entre cielo y suelo) y suelo. */
+    grid-template-rows: auto minmax(0, 1fr) 0 auto;
+    /* Llena la ventana bajo la cabecera, también en la mínima de escritorio (760 × 560). */
+    min-height: clamp(24rem, calc(100dvh - var(--header-height) - 4.8rem), 52rem);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    background: var(--lz-suelo-bajo);
+    color: var(--color-text);
+    box-shadow: var(--shadow-md);
+}
+
+/* Cada estado muestra solo sus textos (data-para en la plantilla). */
+.lanzador [data-para] {
+    display: none;
+}
+
+.lanzador[data-estado="inicial"] [data-para~="inicial"],
+.lanzador[data-estado="buscando"] [data-para~="buscando"],
+.lanzador[data-estado="actualizado"] [data-para~="actualizado"],
+.lanzador[data-estado="disponible"] [data-para~="disponible"],
+.lanzador[data-estado="descargando"] [data-para~="descargando"],
+.lanzador[data-estado="verificando"] [data-para~="verificando"],
+.lanzador[data-estado="listo"] [data-para~="listo"],
+.lanzador[data-estado="instalando"] [data-para~="instalando"],
+.lanzador[data-estado="error_conexion"] [data-para~="error_conexion"],
+.lanzador[data-estado="checksum_invalido"] [data-para~="checksum_invalido"],
+.lanzador[data-estado="error"] [data-para~="error"] {
+    display: var(--mostrar, block);
+}
+
+/* Altura del círculo: asoma al empezar, sube con la descarga y queda arriba al terminar. */
+.lanzador[data-estado="buscando"] { --sol: 0.36; }
+.lanzador[data-estado="actualizado"] { --sol: 0.86; }
+.lanzador[data-estado="disponible"] { --sol: 0.44; }
+.lanzador[data-estado="descargando"] { --sol: calc(0.44 + 0.48 * var(--p)); }
+.lanzador[data-estado="verificando"] { --sol: 0.92; }
+.lanzador:is([data-estado="listo"], [data-estado="instalando"]) { --sol: 1; }
+
+/* Un fallo se pone el sol y tiñe la línea; el título y el mensaje dicen qué pasó. */
+.lanzador:is([data-estado="error_conexion"], [data-estado="checksum_invalido"], [data-estado="error"]) {
+    --lz-acento: var(--color-danger);
+    --sol: 0.14;
+}
+
+/* —— Escena (aria-hidden) —— */
+
+.lanzador-cielo {
+    grid-area: 1 / 1 / 3 / 2;
+    position: relative;
+    z-index: -1;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse 36% 58% at 76% 100%, color-mix(in srgb, var(--lz-acento) 22%, transparent), transparent 72%),
+        linear-gradient(var(--lz-cielo-alto) 18%, var(--lz-cielo-bajo));
+}
+
+/* De noche asoman unas pocas estrellas fijas. */
+.lanzador-cielo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    color: var(--color-text);
+    background:
+        radial-gradient(circle at 8% 14%, currentColor 0.8px, transparent 1.6px),
+        radial-gradient(circle at 23% 6%, currentColor 0.7px, transparent 1.4px),
+        radial-gradient(circle at 41% 11%, currentColor 0.9px, transparent 1.7px),
+        radial-gradient(circle at 63% 5%, currentColor 0.7px, transparent 1.4px),
+        radial-gradient(circle at 72% 22%, currentColor 0.8px, transparent 1.6px),
+        radial-gradient(circle at 95% 30%, currentColor 0.7px, transparent 1.4px),
+        radial-gradient(circle at 81% 4%, currentColor 0.9px, transparent 1.7px),
+        radial-gradient(circle at 54% 30%, currentColor 0.6px, transparent 1.3px);
+}
+
+[data-theme="dark"] .lanzador-cielo::before {
+    opacity: 0.55;
+}
+
+.lanzador-sol {
+    position: absolute;
+    left: 76%;
+    bottom: 0;
+    width: clamp(12rem, 34cqi, 24rem);
+    height: auto;
+    color: var(--lz-acento);
+    /* El disco (radio 58 de 100) se apoya en el horizonte con --sol = 1 y se oculta con 0. */
+    transform: translate(-50%, calc(79% - var(--sol) * 58%));
+    transition: transform var(--motion), color var(--motion);
+}
+
+/* Al terminar bien, el vector apunta hacia arriba (90°). */
+.lanzador-vector {
+    transform: rotate(0deg);
+    transition: transform var(--motion);
+}
+
+.lanzador:is([data-estado="listo"], [data-estado="actualizado"]) .lanzador-vector {
+    transform: rotate(-45deg);
+}
+
+.lanzador-guia {
+    fill: none;
+    stroke: var(--color-text);
+    stroke-width: 0.8;
+    opacity: 0.28;
+}
+
+.lanzador-solido {
+    position: absolute;
+    width: clamp(3.25rem, 8.5cqi, 6rem);
+    height: auto;
+    overflow: visible;
+    fill: none;
+    stroke: var(--lz-trazo);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+}
+
+.lanzador-solido path {
+    vector-effect: non-scaling-stroke;
+}
+
+.lanzador-solido .lanzador-cara {
+    fill: color-mix(in srgb, var(--lz-acento) 16%, transparent);
+    stroke: none;
+}
+
+.lanzador-oculta {
+    stroke-dasharray: 3 4;
+    opacity: 0.55;
+}
+
+.lanzador-cubo { left: 47%; top: 15%; }
+.lanzador-octaedro { left: 89%; top: 9%; width: clamp(2.6rem, 6cqi, 4.5rem); }
+.lanzador-tetraedro { left: 57%; top: 60%; width: clamp(2.2rem, 5cqi, 3.75rem); }
+
+.lanzador-suelo {
+    grid-area: 4 / 1 / 5 / 2;
+    position: relative;
+    z-index: -1;
+    background:
+        radial-gradient(ellipse 22% 80% at 76% 0%, color-mix(in srgb, var(--lz-acento) 18%, transparent), transparent 80%),
+        linear-gradient(var(--lz-suelo-alto), var(--lz-suelo-bajo));
+}
+
+.lanzador-suelo svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-mask-image: linear-gradient(#000 5%, transparent 96%);
+    mask-image: linear-gradient(#000 5%, transparent 96%);
+}
+
+.lanzador-reja {
+    fill: none;
+    stroke: var(--lz-reja);
+    stroke-width: 1;
+}
+
+.lanzador-eje {
+    fill: none;
+    stroke: var(--lz-acento);
+    stroke-width: 1.5;
+    opacity: 0.6;
+}
+
+/* —— Contenido —— */
+
+.lanzador-barra {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding: 1.1rem var(--lz-margen) 0;
+}
+
+.lanzador-marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.02rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+}
+
+.lanzador-marca .app-mark {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.lanzador-titulo {
+    margin: 0;
+    padding-left: 1rem;
+    border-left: 1px solid var(--color-border-strong);
+    color: var(--color-muted);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.lanzador-instalada {
+    margin: 0 0 0 auto;
+    padding: 0.3rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-surface-raised) 78%, transparent);
+    color: var(--color-muted);
+    font-size: 0.82rem;
+}
+
+.lanzador-instalada strong {
+    color: var(--color-text);
+    font-weight: 650;
+}
+
+.lanzador-heroe {
+    grid-area: 2 / 1;
+    align-self: center;
+    display: grid;
+    justify-items: start;
+    gap: 0.8rem;
+    max-width: min(35rem, 54cqi);
+    padding: 2rem var(--lz-margen) 2.5rem;
+}
+
+.lanzador-salto {
+    --mostrar: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    color: var(--color-brand);
+    font-family: var(--font-math);
+    font-size: 0.88rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.lanzador-salto svg {
+    width: 1.6rem;
+    height: auto;
+}
+
+.lanzador-estado {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.85rem, 4.6cqi, 3.2rem);
+    font-weight: 650;
+    line-height: 1.06;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+}
+
+.lanzador-porcentaje {
+    margin: 0.1rem 0 0;
+    font-family: "Bahnschrift", var(--font-display);
+    font-size: clamp(3.5rem, 10cqi, 6rem);
+    font-weight: 300;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+.lanzador-porcentaje small {
+    margin-left: 0.12em;
+    color: var(--color-muted);
+    font-size: 0.4em;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+.lanzador-mensaje {
+    max-width: 46ch;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 1.02rem;
+    line-height: 1.5;
+}
+
+.lanzador-detalle {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 0.88rem;
+}
+
+/* —— Horizonte: la barra de la descarga —— */
+
+.lanzador-horizonte {
+    grid-area: 3 / 1;
+    position: relative;
+    z-index: 1;
+}
+
+.lanzador-linea {
+    position: absolute;
+    inset-inline: 0;
+    top: -2px;
+    height: 4px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--color-text) 16%, transparent);
+}
+
+.lanzador-relleno {
+    position: absolute;
+    inset: 0;
+    transform-origin: 0 50%;
+    transform: scaleX(var(--p));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--lz-acento) 30%, transparent), var(--lz-acento) 70%);
+    transition: transform var(--motion);
+}
+
+/* Destello que recorre la línea mientras se busca o se verifica (solo con movimiento). */
+.lanzador-linea::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 22%;
+    opacity: 0;
+    background: linear-gradient(90deg, transparent, var(--lz-acento), transparent);
+}
+
+/* La punta de flecha avanza con la descarga: el recorrido termina avanzando. */
+.lanzador-punta {
+    position: absolute;
+    top: -8px;
+    left: 0;
+    width: 0.95rem;
+    height: 16px;
+    opacity: 0;
+    background: var(--lz-acento);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+    transform: translateX(calc(var(--p) * (100cqi - 0.95rem)));
+    transition: transform var(--motion), opacity var(--motion);
+}
+
+.lanzador[data-estado="descargando"] .lanzador-punta {
+    opacity: 1;
+}
+
+.lanzador:is([data-estado="error_conexion"], [data-estado="checksum_invalido"], [data-estado="error"]) .lanzador-linea {
+    background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-danger) 60%, transparent) 0 12px, transparent 12px 20px);
+}
+
+/* —— Ruta y acción —— */
+
+.lanzador-dock {
+    grid-area: 4 / 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    padding: 2.25rem var(--lz-margen) 2.2rem;
+}
+
+.lanzador-ruta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 1 1 18rem;
+    max-width: 36rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.lanzador-ruta li {
+    position: relative;
+    display: grid;
+    justify-items: start;
+    gap: 0.55rem;
+    color: var(--color-muted);
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+/* Tramo hasta el paso siguiente; el último termina en flecha, como el símbolo de PyGebra. */
+.lanzador-ruta li::after {
+    content: "";
+    position: absolute;
+    top: calc(0.525rem - 1px);
+    left: 1.55rem;
+    right: 0.5rem;
+    height: 2px;
+    background: color-mix(in srgb, currentColor 38%, transparent);
+}
+
+.lanzador-ruta li:last-child::after {
+    right: auto;
+    width: 2.4rem;
+    height: 10px;
+    top: calc(0.525rem - 5px);
+    clip-path: polygon(0 4px, 1.8rem 4px, 1.8rem 0, 100% 50%, 1.8rem 100%, 1.8rem 6px, 0 6px);
+}
+
+.lanzador-nodo {
+    position: relative;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 2px solid currentColor;
+    border-radius: 4px;
+}
+
+.lanzador-ruta [data-avance="siguiente"],
+.lanzador-ruta [data-avance="actual"],
+.lanzador-ruta [data-avance="hecho"] {
+    color: var(--color-text);
+}
+
+.lanzador-ruta [data-avance="siguiente"] .lanzador-nodo {
+    border-color: var(--lz-acento);
+}
+
+.lanzador-ruta :is([data-avance="actual"], [data-avance="hecho"]) .lanzador-nodo {
+    border-color: var(--lz-acento);
+    background: var(--lz-acento);
+}
+
+/* Lo recorrido queda iluminado. */
+.lanzador-ruta [data-avance="hecho"]::after {
+    background: var(--lz-acento);
+}
+
+.lanzador-ruta [data-avance="hecho"] .lanzador-nodo::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 0;
+    width: 4px;
+    height: 8px;
+    border: solid var(--color-brand-text);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* El paso en curso lleva un anillo; con movimiento, además late. */
+.lanzador-ruta [data-avance="actual"] .lanzador-nodo::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border: 2px solid var(--lz-acento);
+    border-radius: 7px;
+    opacity: 0.45;
+}
+
+.lanzador-ruta [data-avance="fallo"] {
+    color: var(--color-danger);
+}
+
+.lanzador-ruta [data-avance="fallo"] .lanzador-nodo {
+    display: grid;
+    place-items: center;
+    background: var(--color-danger);
+}
+
+.lanzador-ruta [data-avance="fallo"] .lanzador-nodo::after {
+    content: "!";
+    color: var(--color-bg);
+    font: 800 0.68rem/1 var(--font-ui);
+}
+
+.lanzador-accion {
+    min-width: 15rem;
+    min-height: 3.25rem;
+    padding: 0.7rem 1.35rem 0.7rem 1.6rem;
+    gap: 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 1.02rem;
+    box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--color-brand) 75%, transparent);
+}
+
+.lanzador-accion > span {
+    --mostrar: inline;
+}
+
+.lanzador-flecha {
+    width: 1.5rem;
+    height: auto;
+    flex: none;
+    transition: transform var(--motion-fast);
+}
+
+.lanzador-accion:not([aria-disabled="true"]):hover .lanzador-flecha {
+    transform: translateX(3px);
+}
+
+/* En curso el botón conserva el foco, pero no responde ni cambia al pasar el puntero. */
+.lanzador-accion[aria-disabled="true"] {
+    opacity: 0.78;
+    pointer-events: none;
+}
+
+.lanzador-accion[aria-disabled="true"] .lanzador-flecha {
+    display: none;
+}
+
+/* Ventanas bajas (la mínima mide 560 px): menos aire para que el botón quede a la vista.
+   Va antes de las reglas estrechas para que la franja del círculo siga reservada allí. */
+@media (max-height: 40rem) {
+    .lanzador-heroe {
+        gap: 0.6rem;
+        padding-block: 1.25rem 1.5rem;
+    }
+
+    .lanzador-dock {
+        padding-block: 1.6rem 1.5rem;
+    }
+}
+
+/* —— Ventanas estrechas —— */
+
+/* La ventana mínima de escritorio (760 px) conserva texto y círculo lado a lado. */
+@container (max-width: 47.5rem) {
+    .lanzador-octaedro { left: 53%; top: 60%; }
+    .lanzador-tetraedro { display: none; }
+}
+
+/* Ruta y botón en dos filas; el botón ocupa todo el ancho. */
+@container (max-width: 40rem) {
+    .lanzador-ruta {
+        flex-basis: 100%;
+        max-width: none;
+    }
+
+    .lanzador-accion {
+        flex: 1 1 100%;
+    }
+}
+
+/* Una columna: el texto arriba y, bajo él, una franja libre para el círculo y un poliedro. */
+@container (max-width: 36rem) {
+    .lanzador-heroe {
+        align-self: start;
+        max-width: none;
+        padding-bottom: calc(min(38cqi, 15rem) * 0.7 + 1rem);
+    }
+
+    .lanzador-sol {
+        left: 78%;
+        width: clamp(9rem, 38cqi, 15rem);
+    }
+
+    .lanzador-cubo { display: none; }
+    .lanzador-octaedro { left: var(--lz-margen); top: auto; bottom: 1.5rem; }
+
+    .lanzador-titulo {
+        padding-left: 0.75rem;
+    }
+
+    .lanzador-instalada {
+        margin-left: 0;
+    }
+
+    .lanzador-ruta li {
+        font-size: 0.78rem;
+    }
+}
+
+@media (forced-colors: active) {
+    .lanzador-linea { background: GrayText; }
+    .lanzador-relleno,
+    .lanzador-punta { background: Highlight; }
+    .lanzador-nodo { border-color: CanvasText; }
+}
+
+/* —— Movimiento (base.css lo cancela todo con movimiento reducido) —— */
+
+@media (prefers-reduced-motion: no-preference) {
+    /* Ambiente: los poliedros flotan y la corona de marcas gira muy despacio. */
+    .lanzador-solido { animation: lanzador-flotar 11s ease-in-out infinite alternate; }
+    .lanzador-octaedro { animation-duration: 13s; animation-direction: alternate-reverse; }
+    .lanzador-tetraedro { animation-duration: 9s; }
+    .lanzador-marcas { animation: lanzador-girar 120s linear infinite; }
+
+    /* Espera sin porcentaje: el vector gira en sentido positivo y un destello recorre el horizonte. */
+    .lanzador:is([data-estado="buscando"], [data-estado="verificando"], [data-estado="instalando"]) .lanzador-vector {
+        animation: lanzador-girar 2.6s linear infinite;
+    }
+
+    .lanzador:is([data-estado="buscando"], [data-estado="verificando"]) .lanzador-linea::after {
+        opacity: 1;
+        animation: lanzador-barrer 1.8s ease-in-out infinite;
+    }
+
+    .lanzador-ruta [data-avance="actual"] .lanzador-nodo::before {
+        animation: lanzador-latir 1.6s ease-out infinite;
+    }
+}
+
+@keyframes lanzador-flotar {
+    from { transform: translateY(-5px); }
+    to { transform: translateY(6px); }
+}
+
+/* Negativo en pantalla (y hacia abajo) es el sentido antihorario: el positivo de los ángulos. */
+@keyframes lanzador-girar {
+    to { transform: rotate(-360deg); }
+}
+
+@keyframes lanzador-barrer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100cqi); }
+}
+
+@keyframes lanzador-latir {
+    from { transform: scale(0.8); opacity: 0.7; }
+    to { transform: scale(1.35); opacity: 0; }
+}
