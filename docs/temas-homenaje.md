@@ -143,7 +143,7 @@ fórmulas, estallido).
 | Momento | ChocoLab | BelugaCalc | HeyAlgb |
 |---|---|---|---|
 | Elegir el tema en Opciones (View Transition del mismo documento) | El ambiente se **derrama** en círculo desde la opción elegida (0.7 s) | La aplicación entra **desde el lado del riel** mientras la anterior se aparta (0.45 s) | **Corte diagonal** que barre la pantalla (0.34 s) |
-| Llegar a otra página | La página aparece desde media opacidad y la cabecera sube 8 px (0.32 s) | La página aparece y la cabecera entra con la subida de Fluent, 20 px con frenado (0.34 s). La **bola celeste y su muesca viajan** del área anterior a la nueva (animación CSS de 0.22 s, frenado cúbico); en la web, el subrayado de la hermana activa se desliza | **Corte en capas**: una hoja inclinada con filo blanco (negro de día), franja roja y banda negra cruza en diagonal y descubre la página; detrás queda el papel del cartel y la sigue un eco rojo fino (0.28 s). La cabecera da un golpe lateral inclinado (0.22 s). Al volver atrás, todo cruza en sentido contrario |
+| Llegar a otra página | La página aparece desde media opacidad y la cabecera sube 8 px (0.32 s) | La página aparece y la cabecera entra con la subida de Fluent, 20 px con frenado (0.34 s). La **bola celeste y su muesca viajan** del área anterior a la nueva (animación CSS de 0.22 s, frenado cúbico); en la web, el subrayado de la hermana activa se desliza | **Corte en capas**: una hoja inclinada con filo blanco (negro de día), franja roja y banda negra cruza en diagonal y descubre la página; detrás queda el papel del cartel y la sigue un eco rojo fino (0.48 s: las franjas cruzan a ritmo casi constante para que se lean y frenan al salir; la mitad de la página se ve hacia los 80 ms). La cabecera da un golpe lateral inclinado (0.22 s). Al volver atrás, todo cruza en sentido contrario |
 | Portada | La curva se traza sola, aparecen x₀, x₁ y la raíz, y la taza humea | La mascota flota y las fórmulas derivan | Titular, lema y dedicatoria entran «estampados»; el estallido gira despacio |
 | Catálogo | Módulos en cascada (40 ms); hover: sube 4 px | Filas en cascada (30 ms); hover: flecha y borde; pulsación al 99.5 % | Placas en cascada desde la izquierda (30 ms); hover y foco: salto instantáneo de 15 px |
 | Navegación | Pastillas con fondo al pasar | ☰ muestra los nombres y aparta el contenido; la bola cambia de área entre páginas | Pestañas con sombra dura; botones que saltan 2 px |
@@ -154,9 +154,10 @@ fijo. Las capas del corte de HeyAlgb no reciben el puntero.
 
 ![Corte de HeyAlgb, fotograma a fotograma](capturas/temas-homenaje/transicion-heyalgb.png)
 
-`transicion-heyalgb.png`: el corte a 0, 40, 80, 120, 180 y 280 ms, al avanzar y al
-volver, en oscuro y en claro. Desde el primer fotograma se ve la página nueva; hacia los
-100 ms está casi entera.
+`transicion-heyalgb.png`: el corte a 0, 80, 160, 240, 320 y 480 ms en la app de
+escritorio (WebView2), al avanzar y al volver, en oscuro y en claro. Desde el primer
+fotograma se ve parte de la página nueva, la mitad hacia los 80 ms y casi toda hacia los
+160 ms; las capas no reciben el puntero, así que nada espera a que termine.
 
 ## Fluidez al cambiar de pantalla
 
@@ -193,10 +194,14 @@ herramienta, en ms):
 | Minimalista | 344 | 32 | 361 | 46 |
 | ChocoLab | 353 | 40 | 692 | 379 |
 | BelugaCalc | 347 | 37 | 703 | 396 |
-| HeyAlgb | 354 | 42 | 662 | 331 |
+| HeyAlgb | 354 | 33 | 662 | 515* |
 
-Al volver atrás la entrada terminada bajó igual (HeyAlgb 740 → 334 ms, BelugaCalc 805 →
-455). Con movimiento reducido la página se ve a los ~35 ms y queda quieta a los ~50 ms.
+\* Con el corte de 0.48 s (con el de 0.28 s eran 331 ms). Es la duración del propio
+corte, que no bloquea: la página se ve a los 33 ms, la mitad hacia los 80 ms, y se puede
+leer y pulsar desde el primer fotograma.
+
+Al volver atrás la entrada terminada bajó igual (BelugaCalc 805 → 455 ms; HeyAlgb, 740 →
+511 ms con su corte de 0.48 s). Con movimiento reducido la página se ve a los ~35 ms y queda quieta a los ~50 ms.
 En Edge la página nueva se ve a los 47–68 ms. Las ráfagas de clics seguidos siempre
 terminan en el destino final. WebView2 no usa bfcache: volver atrás recarga la página.
 

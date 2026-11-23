@@ -724,7 +724,8 @@
    Al llegar a una pantalla, un corte en diagonal la descubre: la hoja lleva un filo, una
    franja roja y una banda negra paralelas, y lo que falta por descubrir es el papel del
    cartel (no un velo oscuro). Un eco rojo fino sigue la misma diagonal. La pantalla nueva
-   ya se ve en su primer cuarto y casi entera a los ~100 ms; todo termina en 280 ms. Al
+   ya se ve en su primer cuarto, la mitad hacia los 80 ms y casi entera a los ~160 ms; las
+   franjas cruzan a ritmo casi constante para que se lean y frenan al salir (480 ms). Al
    volver atrás el corte cruza en sentido contrario. Las capas no reciben el puntero: se
    puede leer y pulsar desde el primer fotograma. El contenedor de la página solo cambia
    su opacidad; los desplazamientos van en las cabeceras (el teclado fijo no se mueve). */
@@ -777,7 +778,7 @@
                 var(--hey-banda) 2.4vw 5.6vw, transparent 5.6vw),
             var(--hey-fondo, none),
             var(--hey-papel);
-        animation: hey-cortar 0.28s cubic-bezier(0.15, 0.85, 0.25, 1) both;
+        animation: hey-cortar 0.48s cubic-bezier(0.3, 0.45, 0.25, 1) both;
     }
 
     /* El eco: una astilla roja que sigue a la hoja por el lado ya descubierto. */
@@ -786,7 +787,7 @@
         z-index: 61;
         width: 1.1vw;
         background: #e3101b;
-        animation: hey-eco 0.28s cubic-bezier(0.15, 0.85, 0.25, 1) both;
+        animation: hey-eco 0.48s cubic-bezier(0.3, 0.45, 0.25, 1) both;
     }
 
     [data-estilo="heyalgb"][data-llegada][data-dir="atras"] body::after {
