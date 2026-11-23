@@ -17,7 +17,7 @@ import django
 
 django.setup()
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 from frontend.web.calculadora import preferencias
 
@@ -103,10 +103,20 @@ class TemasHomenajeTests(SimpleTestCase):
         for ruta in ("/", "/areas/sistemas-numericos/", "/areas/conjuntos/", "/matrices/ecuaciones/",
                      "/metodos-numericos/metodos-cerrados/biseccion/"):
             html = self.client.get(ruta).content.decode("utf-8")
-            nav = re.search(r'<nav class="nav-areas"[^>]*style="--activo: (\d+)"[^>]*>(.*?)</nav>', html, re.S)
+            nav = re.search(r'<nav class="nav-areas"[^>]*style="--activo-actual: (\d+)"[^>]*>(.*?)</nav>', html, re.S)
             enlaces = re.findall(r"<li><a[^>]*>", nav.group(2))
             activo = [i for i, enlace in enumerate(enlaces) if "aria-current" in enlace]
             self.assertEqual(activo, [int(nav.group(1))], ruta)
+
+    def test_el_escritorio_pinta_sin_esperar_a_la_transicion_entre_paginas(self):
+        # En WebView2 la View Transition entre documentos retrasa ~300 ms el primer pintado:
+        # la app de escritorio la desactiva; la web la conserva (estudio.css).
+        desactivar = "@view-transition { navigation: none; }"
+        self.assertNotIn(desactivar, self.client.get("/").content.decode("utf-8"))
+        with override_settings(DESKTOP_MODE=True):
+            html = self.client.get("/").content.decode("utf-8")
+        self.assertIn(desactivar, html)
+        self.assertNotIn("WebView2 retiene", html)
 
     def test_cada_logotipo_tiene_credito_y_procedencia_verificable(self):
         creditos = (RAIZ / "docs" / "temas-homenaje.md").read_text(encoding="utf-8")

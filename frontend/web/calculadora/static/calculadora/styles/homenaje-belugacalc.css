@@ -115,7 +115,8 @@
         --paso: 3.55rem;
         --arriba: 3.9rem;
         /* Centro del enlace activo; la muesca de 104 px se centra en él. */
-        --muesca-y: calc(var(--arriba) + var(--activo, 0) * var(--paso) + 1.5rem - 3.25rem);
+        --activo: var(--activo-actual, 0);
+        --muesca-y: calc(var(--arriba) + var(--activo) * var(--paso) + 1.5rem - 3.25rem);
         position: fixed;
         top: calc(var(--header-height) + 0.75rem);
         bottom: 0.75rem;
@@ -129,7 +130,6 @@
         border-radius: 1.9rem;
         color: #ffffff;
         filter: drop-shadow(0 12px 24px rgb(2 14 30 / 0.22));
-        view-transition-name: beluga-riel;
     }
 
     /* La píldora se pinta en un pseudoelemento: la muesca en S muerde solo el fondo,
@@ -272,7 +272,6 @@
 [data-estilo="belugacalc"] .areas-enlace[aria-current] .areas-icono {
     background: var(--beluga-bola);
     color: #1a1c29;
-    view-transition-name: beluga-bola;
 }
 
 /* En pantallas estrechas el riel es una barra inferior, salvo en las herramientas, donde
@@ -739,6 +738,11 @@
 @media (prefers-reduced-motion: no-preference) {
     /* Entrada de página de Fluent: sube desde abajo y frena con suavidad. */
     [data-estilo="belugacalc"] .app-content {
+        animation: beluga-aparecer 0.3s ease-out both;
+    }
+
+    /* La subida de Fluent, en las cabeceras: el contenedor no se transforma (teclado fijo). */
+    [data-estilo="belugacalc"] :is(.tool-header, .area-header, .home-hero) {
         animation: beluga-entrar 0.34s cubic-bezier(0.1, 0.9, 0.2, 1) both;
     }
 
@@ -746,21 +750,27 @@
         animation: beluga-entrar 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) backwards;
     }
 
-    [data-estilo="belugacalc"] .canal:nth-child(2) { animation-delay: 40ms; }
-    [data-estilo="belugacalc"] .canal:nth-child(3) { animation-delay: 80ms; }
-    [data-estilo="belugacalc"] .canal:nth-child(4) { animation-delay: 120ms; }
-    [data-estilo="belugacalc"] .canal:nth-child(n + 5) { animation-delay: 160ms; }
+    [data-estilo="belugacalc"] .canal:nth-child(2) { animation-delay: 30ms; }
+    [data-estilo="belugacalc"] .canal:nth-child(3) { animation-delay: 60ms; }
+    [data-estilo="belugacalc"] .canal:nth-child(n + 4) { animation-delay: 90ms; }
 
-    /* La bola baja de un módulo a otro en 220 ms con frenado cúbico, como su muesca;
-       la píldora (con la muesca nueva) se funde a la vez. */
-    ::view-transition-group(beluga-bola),
+    /* La bola baja (o sube) del área anterior a la nueva en 220 ms con frenado cúbico, como
+       su muesca, que la acompaña. Es una animación de la página nueva, no una captura: no
+       retrasa el primer pintado (en WebView2 la View Transition entre documentos sí lo hacía). */
+    @media (min-width: 1024px) {
+        [data-estilo="belugacalc"][data-area-previa] .nav-areas {
+            animation: beluga-muesca 0.22s cubic-bezier(0.33, 1, 0.68, 1) both;
+        }
+
+        [data-estilo="belugacalc"][data-area-previa] .areas-enlace[aria-current] .areas-icono {
+            animation: beluga-bola 0.22s cubic-bezier(0.33, 1, 0.68, 1) both;
+        }
+    }
+
+    /* En la web, el subrayado de la hermana activa sigue viajando entre páginas. */
     ::view-transition-group(beluga-pestana) {
         animation-duration: 0.22s;
         animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
-    }
-
-    ::view-transition-group(beluga-riel) {
-        animation-duration: 0.22s;
     }
 
     /* La mascota flota y las fórmulas derivan despacio. */
@@ -784,8 +794,27 @@
     }
 }
 
+/* El índice del área es un número registrado: así la muesca puede recorrer las posiciones. */
+@property --activo {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 0;
+}
+
+@keyframes beluga-muesca {
+    from { --activo: var(--activo-previo); }
+}
+
+@keyframes beluga-bola {
+    from { translate: 0 calc((var(--activo-previo) - var(--activo-actual)) * var(--paso)); }
+}
+
+@keyframes beluga-aparecer {
+    from { opacity: 0.45; }
+}
+
 @keyframes beluga-entrar {
-    from { opacity: 0; transform: translateY(28px); }
+    from { opacity: 0.4; transform: translateY(20px); }
 }
 
 @keyframes beluga-flotar {

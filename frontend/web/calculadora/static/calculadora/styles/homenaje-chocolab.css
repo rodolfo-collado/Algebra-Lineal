@@ -592,6 +592,11 @@
 @media (prefers-reduced-motion: no-preference) {
     /* La entrada de cada vista del original: sube 8 px desde media opacidad. */
     [data-estilo="chocolab"] .app-content {
+        animation: choco-aparecer-pagina 0.32s ease both;
+    }
+
+    /* Su subida de 8 px, en las cabeceras: el contenedor no se transforma (teclado fijo). */
+    [data-estilo="chocolab"] :is(.tool-header, .area-header, .home-hero-texto) {
         animation: choco-entrar 0.32s ease both;
     }
 
@@ -618,14 +623,18 @@
         animation: choco-entrar 0.4s ease backwards;
     }
 
-    [data-estilo="chocolab"] .canal:nth-child(2) { animation-delay: 60ms; }
-    [data-estilo="chocolab"] .canal:nth-child(3) { animation-delay: 120ms; }
-    [data-estilo="chocolab"] .canal:nth-child(n + 4) { animation-delay: 180ms; }
+    [data-estilo="chocolab"] .canal:nth-child(2) { animation-delay: 40ms; }
+    [data-estilo="chocolab"] .canal:nth-child(3) { animation-delay: 80ms; }
+    [data-estilo="chocolab"] .canal:nth-child(n + 4) { animation-delay: 120ms; }
 
     /* Al elegir ChocoLab, el ambiente se derrama desde la opción como cacao caliente. */
     [data-cambio-estilo][data-estilo="chocolab"]::view-transition-new(root) {
         animation: choco-verter 0.7s cubic-bezier(0.3, 0.7, 0.2, 1) both;
     }
+}
+
+@keyframes choco-aparecer-pagina {
+    from { opacity: 0.5; }
 }
 
 @keyframes choco-entrar {

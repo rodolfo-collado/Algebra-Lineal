@@ -90,13 +90,26 @@
                 root.style.setProperty("--filtro-desde", camaraPrevia.filter);
                 root.setAttribute("data-camara-previa", "");
             }
+            // Riel de BelugaCalc: la bola y su muesca viajan desde el área anterior con una
+            // animación CSS (sin capturar la página): solo hace falta saber de dónde vienen.
+            var areaPrevia = sessionStorage.getItem("pygebra-area-indice");
+            if (root.hasAttribute("data-llegada") && /^\d+$/.test(areaPrevia || "")) {
+                root.style.setProperty("--activo-previo", areaPrevia);
+                root.setAttribute("data-area-previa", "");
+            }
             // @starting-style usa el primer pintado; después no debe repetirse al cambiar de estilo.
             window.addEventListener("pageshow", function () {
                 requestAnimationFrame(function () { requestAnimationFrame(function () { root.removeAttribute("data-camara-previa"); }); });
+                // El viaje de la bola dura lo que su animación; después no se repite al cambiar de estilo.
+                setTimeout(function () { root.removeAttribute("data-area-previa"); }, 400);
             });
             window.addEventListener("pagehide", function () {
                 try {
                     sessionStorage.setItem("pygebra-nivel", String(nivel));
+                    var areas = document.querySelector(".nav-areas");
+                    var indice = areas ? areas.style.getPropertyValue("--activo-actual").trim() : "";
+                    if (indice) sessionStorage.setItem("pygebra-area-indice", indice);
+                    else sessionStorage.removeItem("pygebra-area-indice");
                     var camara = document.querySelector(".escena-camara");
                     if (camara && root.getAttribute("data-estilo") === "estudio") {
                         var estilo = getComputedStyle(camara);

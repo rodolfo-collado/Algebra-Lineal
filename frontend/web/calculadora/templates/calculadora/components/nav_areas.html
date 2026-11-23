@@ -3,7 +3,7 @@
 Las herramientas de un área están en su página y en la fila de hermanas; las migas dicen dónde se está.
 Un solo marcado, una presentación por estilo: enlaces sobrios en Estudio y Minimalista, pastillas en
 ChocoLab, riel lateral en BelugaCalc y pestañas angulares en HeyAlgb. Sin JavaScript son enlaces normales.{% endcomment %}
-<nav class="nav-areas" id="nav-areas" aria-label="Áreas"{% if indice_area is not None %} style="--activo: {{ indice_area }}"{% endif %}>
+<nav class="nav-areas" id="nav-areas" aria-label="Áreas"{% if indice_area is not None %} style="--activo-actual: {{ indice_area }}"{% endif %}>
     {# Solo en el riel de BelugaCalc: muestra u oculta los nombres y aparta el contenido, sin taparlo. #}
     <button type="button" class="areas-plegar" id="areas-plegar" aria-expanded="false" aria-controls="nav-areas" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
