@@ -4,7 +4,7 @@
 
 ## Instalar como usuario
 
-1. Descarga `PyGebra-Setup-x.y.z.exe` desde la [última release estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest).
+1. Descarga `PyGebra-Setup-x.y.z.exe` desde la [última release estable](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest).
 2. Ejecuta el instalador: decide si quieres un acceso directo en el escritorio y
    pulsa **Instalar**.
 3. Abre **PyGebra** desde el menú Inicio o el acceso directo opcional del escritorio.
@@ -38,7 +38,7 @@ puedes eliminarlo a mano para volver a los valores iniciales.
 
 ## Actualizar PyGebra
 
-En la app de escritorio, abre **Menú → Actualizaciones** y pulsa
+En la app de escritorio, abre **Opciones → Actualizaciones** y pulsa
 **Buscar actualizaciones**. PyGebra solo usa Internet en ese momento; nunca
 comprueba nada al abrirse. El flujo es:
 

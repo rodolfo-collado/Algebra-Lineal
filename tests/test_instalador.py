@@ -213,7 +213,7 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
         self.assertEqual(setup["AppName"], "{#AppName}")
         self.assertIn('#define AppName "PyGebra"', SCRIPT_INNO.read_text(encoding="utf-8"))
         self.assertEqual(setup["AppPublisher"], "Proyecto PyGebra")
-        self.assertEqual(setup["AppPublisherURL"], "https://github.com/rodolfo-collado/Algebra-Lineal")
+        self.assertEqual(setup["AppPublisherURL"], "https://github.com/Collado-Labs/Algebra-Lineal")
         self.assertEqual(setup["AppVersion"], "{#AppVersion}")
         self.assertEqual(setup["OutputBaseFilename"], "PyGebra-Setup-{#AppVersion}")
         self.assertEqual(setup["OutputDir"], r"{#ProjectRoot}\dist\installer")

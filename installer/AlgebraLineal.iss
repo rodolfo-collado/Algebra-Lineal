@@ -17,7 +17,7 @@ AppId={{D0455B79-7F5E-4C78-9F3B-F47187E9A83A}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=Proyecto PyGebra
-AppPublisherURL=https://github.com/rodolfo-collado/Algebra-Lineal
+AppPublisherURL=https://github.com/Collado-Labs/Algebra-Lineal
 DefaultDirName={localappdata}\Programs\AlgebraLineal
 UsePreviousAppDir=yes
 ; Instalación por usuario en una carpeta fija: no se pregunta la carpeta, pero el
