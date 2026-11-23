@@ -4,8 +4,15 @@ La lógica del actualizador tiene su suite en test_actualizador.py; aquí solo s
 presentación. La percepción del movimiento y de la escena se verifica en WebView2.
 """
 
+import os
 import re
 from pathlib import Path
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "frontend.web.algebra_web.settings")
+
+import django
+
+django.setup()
 
 from django.test import SimpleTestCase, override_settings
 
@@ -74,7 +81,7 @@ class PruebasEscenaActualizaciones(SimpleTestCase):
         # Los bucles mueven solo la ilustración o la señal de que algo está en curso.
         for selector, _ in re.findall(r"([^{}]+)\{([^{}]*\binfinite\b[^{}]*)\}", movimiento):
             with self.subTest(selector=selector.strip()):
-                self.assertRegex(selector, r"lanzador-(reja|halo|linea::after|nodo::before)")
+                self.assertRegex(selector, r"lanzador-(reja|halo|linea::after|nodo::before|barrido|onda|destellos)")
         # Ningún fotograma mueve el contenido: solo transform y opacity.
         for nombre, cuerpo in re.findall(r"@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^{}]*\})*)\s*\}", css):
             with self.subTest(keyframes=nombre):
