@@ -268,12 +268,12 @@ dependencias. Publicada como v0.18.0.
 
 ## Preparación de v0.19.0
 
-Incremento **MINOR** desde 0.18.0: reorganiza las herramientas (una sola
-**Operaciones** y **Métodos cerrados**), cambia la medida visible de Bisección y
-reordena la presentación de los resultados. Son cambios compatibles: las rutas
-anteriores redirigen o se traducen y ningún algoritmo cambia su criterio de
-parada. La preparación actualiza versión y lockfile (una línea cada uno) sin
-cambiar dependencias. Esta versión todavía no está publicada.
+Incremento **MINOR** desde 0.18.0. Reúne las mejoras integradas de Operaciones,
+navegación y presentación (PR #130), la reorganización de CI para Windows
+(PR #132), Jacobi y Gauss-Seidel (PR #133) y los temas homenaje (PR #134).
+Las rutas anteriores siguen disponibles mediante redirecciones o adaptación
+del formulario. La versión de la aplicación y la de `uv.lock` son 0.19.0.
+Las dependencias conservan las versiones de v0.18.0.
 
 ### Notas preparadas de PyGebra v0.19.0
 
@@ -284,18 +284,24 @@ cambiar dependencias. Esta versión todavía no está publicada.
   antiguo se calcula igual en Operaciones. Los coeficientes de una combinación
   lineal se piden como igualdad, `x1 u + x2 v = b`, con la conclusión (sí/no y
   coeficientes) y el procedimiento de Gauss-Jordan de siempre. Ejemplos de un
-  clic cargan operandos y expresión. Las operaciones sin sentido (por ejemplo
+  clic cargan operandos y expresión. Sus enlaces se ajustan al ancho de la
+  pantalla. Las operaciones incompatibles (por ejemplo
   sumar una matriz y un vector) se rechazan con un mensaje concreto.
-- **Navegación:** Álgebra lineal ordena Operaciones, Sistemas lineales (Ax = b)
-  —antes «Resolver Ax = b»—, Reducción por filas, Matriz inversa y
-  Determinantes. Raíces de ecuaciones queda en Métodos cerrados y Métodos
-  abiertos.
+- **Navegación y Opciones:** el catálogo, los enlaces por área, las migas y las
+  herramientas relacionadas permiten cambiar de pantalla. Buscar lleva al
+  catálogo de Inicio. Álgebra lineal agrupa Operaciones, Sistemas lineales
+  (Ax = b), Reducción por filas, Matriz inversa y Determinantes. Opciones reúne
+  Apariencia, Sonido y música, Acerca de PyGebra y, en escritorio, Actualizaciones.
 - **Métodos cerrados:** Bisección y Regla falsa comparten herramienta, con un
   selector como el de Métodos abiertos. Cambiar de método conserva función,
   intervalo, precisión e iteraciones, nunca el resultado; el historial de cada
   método no se mezcla. `/metodos-numericos/biseccion/` y
   `/metodos-numericos/regla-falsa/` redirigen a
   `/metodos-numericos/metodos-cerrados/…`.
+- **Métodos abiertos:** Newton-Raphson y Secante, disponibles desde v0.18.0,
+  reciben la misma presentación de resultados y desarrollo que los métodos
+  cerrados. El selector conserva la función y cada método mantiene su propio
+  historial de resultados.
 - **Bisección con error absoluto:** la tabla y el resumen muestran el error
   absoluto aproximado |cᵢ − cᵢ₋₁| («No aplica» en la primera iteración) en lugar
   del error relativo porcentual. La parada sigue siendo la longitud del intervalo
@@ -313,9 +319,21 @@ cambiar dependencias. Esta versión todavía no está publicada.
   ver su fila por columna; con matrices de más de 4×4 los productos nacen
   plegados.
 
-Estas notas describen una versión preparada, no una release publicada. El PR se
-dirige únicamente a `develop`; la promoción `develop → main`, el tag y la publicación
-quedan pendientes de una revisión posterior y de su PR separado.
+- **Jacobi y Gauss-Seidel:** Métodos iterativos resuelve sistemas cuadrados
+  Ax = b a partir de una aproximación inicial. Permite ejecutar o comparar los
+  métodos, ajustar la tolerancia y el límite de iteraciones, y seguir la tabla,
+  las sustituciones, la gráfica y el motivo de parada. Sistemas lineales
+  conserva los métodos directos y enlaza a la nueva herramienta.
+  Véase [Métodos iterativos](sistemas-iterativos.md).
+- **Temas homenaje:** ChocoLab, BelugaCalc y HeyAlgb se eligen en Apariencia,
+  junto con Estudio y Minimalista. Cada homenaje tiene composición, navegación
+  y transiciones propias en modo claro y oscuro. Las transiciones respetan la
+  preferencia de movimiento reducido. Véanse las [capturas y créditos](temas-homenaje.md).
+
+La publicación se activa al aprobar y fusionar la promoción
+`develop → main` con **Create a merge commit**. La consola del PR #131,
+la exportación a PDF, el instalador visual y los tutoriales quedan fuera de
+v0.19.0.
 
 ## Flujo de integración y entrega
 
@@ -392,8 +410,9 @@ no invalida al candidato.
 CI conserva todas las comprobaciones:
 
 - Ubuntu: lockfile, entorno locked, suite completa, Django y compilación.
-- Windows: [build de aplicación e instalador](../scripts/build_windows.ps1),
-  suite completa y [smoke de instalación/desinstalación](../scripts/test_windows_distribution.ps1),
+- Windows: la suite completa y el empaquetado se ejecutan en paralelo.
+  El empaquetado incluye el [build de aplicación e instalador](../scripts/build_windows.ps1),
+  y el [smoke de instalación/desinstalación](../scripts/test_windows_distribution.ps1),
   con dos aperturas, accesos directos, recursos y cálculos por HTTP. Un segundo
   smoke instala la última release publicada (verificando su SHA-256) y actualiza
   encima con el candidato: sin obsoletos en `_internal`, sin accesos ni entradas
@@ -499,7 +518,7 @@ El checksum detecta diferencias con el archivo publicado. No es una firma
 digital; Windows puede mostrar un editor desconocido.
 
 La app de escritorio hace esta misma comprobación al actualizarse
-(**Menú → Actualizaciones**): consume solo releases estables, descarga
+(**Opciones → Actualizaciones**): consume solo releases estables, descarga
 `PyGebra-Setup-<versión>.exe` y `SHA256SUMS.txt` de la misma release y no ejecuta
 el instalador si el SHA-256 no coincide. Por eso cada release debe seguir
 publicando exactamente esos dos assets con esos nombres.

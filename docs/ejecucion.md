@@ -21,7 +21,7 @@ Para trabajar desde el repositorio necesitas:
 Desde una terminal, sitúate en la raíz del proyecto y prepara el entorno:
 
 ```bash
-git clone https://github.com/rodolfo-collado/Algebra-Lineal.git
+git clone https://github.com/Collado-Labs/Algebra-Lineal.git
 cd Algebra-Lineal
 uv sync --locked
 ```
@@ -109,7 +109,7 @@ un navegador (F5, Ctrl+P, Ctrl+F, F12) no están activos; para diagnosticar, eje
 con `ALGEBRA_DESKTOP_DEBUG=1`, que muestra también las herramientas de desarrollo.
 
 Para un usuario final de Windows no hace falta Git, Python ni uv: descarga
-`PyGebra-Setup-<versión>.exe` desde la [última release](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest), instálala y abre **PyGebra** desde el menú Inicio. Consulta [Instalación Windows](instalacion-windows.md) para el detalle de instalación y desinstalación.
+`PyGebra-Setup-<versión>.exe` desde la [última release](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest), instálala y abre **PyGebra** desde el menú Inicio. Consulta [Instalación Windows](instalacion-windows.md) para el detalle de instalación y desinstalación.
 
 ## Comprobar que quedó listo
 

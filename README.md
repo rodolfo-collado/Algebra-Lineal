@@ -7,8 +7,8 @@
 **Aprende resolviendo.** Una calculadora educativa que muestra el camino hasta
 el resultado y ayuda a conectar sistemas, matrices y vectores.
 
-[![CI](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/rodolfo-collado/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Adevelop)
-[![Última release](https://img.shields.io/github/v/release/rodolfo-collado/Algebra-Lineal?label=release)](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest)
+[![CI](https://github.com/Collado-Labs/Algebra-Lineal/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Collado-Labs/Algebra-Lineal/actions/workflows/ci.yml?query=branch%3Adevelop)
+[![Última release](https://img.shields.io/github/v/release/Collado-Labs/Algebra-Lineal?label=release)](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)
 ![Python >= 3.13](https://img.shields.io/badge/Python-%E2%89%A5%203.13-3776AB?logo=python&logoColor=white)
 ![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4)
 
@@ -87,9 +87,9 @@ teclado matemático contextual.
 ## Instalación en Windows
 
 Descarga el instalador desde la
-**[última versión estable](https://github.com/rodolfo-collado/Algebra-Lineal/releases/latest)**.
+**[última versión estable](https://github.com/Collado-Labs/Algebra-Lineal/releases/latest)**.
 Todas las versiones publicadas están en
-[GitHub Releases](https://github.com/rodolfo-collado/Algebra-Lineal/releases).
+[GitHub Releases](https://github.com/Collado-Labs/Algebra-Lineal/releases).
 
 1. Descarga `PyGebra-Setup-<version>.exe`.
 2. Ejecuta el instalador y elige si deseas un acceso directo en el escritorio.
@@ -113,7 +113,7 @@ Necesitas Git y [uv](https://docs.astral.sh/uv/), que prepara el entorno Python
 y sus dependencias desde el archivo de versiones bloqueadas.
 
 ```bash
-git clone https://github.com/rodolfo-collado/Algebra-Lineal.git
+git clone https://github.com/Collado-Labs/Algebra-Lineal.git
 cd Algebra-Lineal
 uv sync --locked
 uv run python manage.py runserver

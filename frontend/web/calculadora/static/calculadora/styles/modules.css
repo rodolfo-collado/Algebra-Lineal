@@ -1852,7 +1852,6 @@ textarea:focus {
     font-family: var(--font-math);
     font-size: var(--text-sm);
     text-decoration: none;
-    white-space: nowrap;
 }
 
 .plantilla:hover {
