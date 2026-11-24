@@ -369,6 +369,30 @@ Incremento **MINOR** desde v0.19.0.
   instalación limpia. La comprobación SHA-256 del instalador sigue siendo parte
   del flujo de actualización.
 
+## Preparación de v0.20.1
+
+Incremento **PATCH** desde v0.20.0: rediseña de forma compatible la herramienta
+Métodos iterativos ([#143](https://github.com/Collado-Labs/Algebra-Lineal/pull/143)).
+No cambia rutas, formularios, algoritmos, precisión interna ni criterios de parada.
+Las correcciones y refactorizaciones generales quedan para la siguiente versión.
+
+- **Jacobi y Gauss-Seidel compactos.** Un veredicto con la última aproximación, el
+  cambio y el residuo frente a ε y la dominancia diagonal; al comparar, una tabla y
+  una gráfica de residuos con las mismas condiciones iniciales.
+- **Iteraciones paso a paso.** Una sola iteración elegida sincroniza la gráfica
+  Plotly de todas las incógnitas, la sustitución en fracciones (valores anteriores
+  y nuevos diferenciados, orden de actualización de Gauss-Seidel) y la tabla, con
+  la gráfica secundaria de cambio y residuo frente a la tolerancia.
+- **Formato global.** Las aproximaciones, cambios y residuos siguen el selector
+  Exacto/Decimal y sus decimales en tablas, sustituciones y gráficas.
+- **Ejemplos y copia.** Los ejemplos se cargan desde el menú de edición de A o b,
+  como en Conjuntos; «Copiar tabla (CSV)» lleva las cifras almacenadas al
+  portapapeles.
+- **Comprobaciones.** Dominancia diagonal por filas y Ax = b con la última
+  aproximación, plegadas. Gauss-Seidel coincide bit a bit con el script de clase.
+
+Véase [Métodos iterativos](sistemas-iterativos.md).
+
 ## Flujo de integración y entrega
 
 ```mermaid

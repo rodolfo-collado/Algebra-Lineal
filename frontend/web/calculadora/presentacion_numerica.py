@@ -6,6 +6,7 @@ literales, no evalúa expresiones ni modifica índices, operadores o variables.
 """
 
 from dataclasses import dataclass
+from decimal import ROUND_HALF_EVEN, Decimal
 from fractions import Fraction
 from functools import lru_cache
 import re
@@ -78,3 +79,52 @@ def representar_texto(texto, precision=PRECISION_PREDETERMINADA):
     if aproximado:
         decimal = decimal.replace("=", "≈")
     return Representacion(texto, decimal, aproximado)
+
+
+# Por encima, el decimal llano tendría decenas de cifras: mantisa × 10ⁿ.
+FLOTANTE_LLANO_MAXIMO = 1e15
+SUPERINDICES = str.maketrans("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+def _redondear(decimal, decimales):
+    return format(decimal.quantize(Decimal(1).scaleb(-decimales), ROUND_HALF_EVEN).normalize(), "f")
+
+
+def representar_flotante(valor, distinto_de=None):
+    """Texto exacto y variantes decimales de un float para numeric_results y numeros.js.
+
+    El valor de referencia es el decimal más corto que identifica al float (repr):
+    0.1 se lee 0.1, no su expansión binaria. Devuelve (texto, variantes); variantes
+    es None cuando ninguna precisión cambia el texto. Las precisiones y el redondeo
+    son los de `representar`; un valor distinto de cero nunca se lee como 0: si
+    redondea a cero, conserva su primera cifra significativa. Con `distinto_de` (la
+    tolerancia junto a la que se lee), gana cifras hasta no leerse igual que ese valor:
+    0.0000829 frente a ε = 0.0001 se lee 0.00008, no 0.0001.
+    """
+    if valor == 0:
+        return "0", None
+    decimal, potencia = Decimal(repr(valor)), ""
+    if abs(valor) >= FLOTANTE_LLANO_MAXIMO:
+        # Mantisa y potencia de diez (−8.08 × 10³⁸); los decimales elegidos se aplican a la mantisa.
+        exponente = decimal.adjusted()
+        decimal = decimal.scaleb(-exponente)
+        potencia = f" × 10{str(exponente).translate(SUPERINDICES)}"
+    exacto = format(decimal.normalize(), "f") + potencia
+    decimales, aproximados = {}, []
+    for precision in PRECISIONES:
+        texto = representar(Fraction(decimal), precision).decimal
+        if texto == "0":
+            # 0.00004663 con 4 decimales: 0.00005, no 0.
+            texto = _redondear(decimal, -decimal.adjusted())
+        if distinto_de is not None and not potencia and valor != distinto_de:
+            referencia, cifras = Decimal(repr(float(distinto_de))), precision
+            while texto == _redondear(referencia, cifras) and cifras < 17:
+                cifras += 1
+                texto = _redondear(decimal, cifras)
+        texto += potencia
+        decimales[str(precision)] = texto
+        if texto != exacto:
+            aproximados.append(str(precision))
+    if not aproximados:
+        return exacto, None
+    return exacto, {"exacto": exacto, "decimales": decimales, "aproximados": aproximados}

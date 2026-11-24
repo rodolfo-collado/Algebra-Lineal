@@ -96,7 +96,10 @@ y Métodos abiertos (Newton-Raphson y Secante). **Métodos iterativos** tiene un
 ruta propia en la categoría Sistemas lineales de Métodos numéricos. Comparte
 con Sistemas lineales (Ax = b) el editor de A y b, la validación de celdas
 y el teclado matemático. Jacobi y Gauss-Seidel calculan en
-[`backend/sistemas_iterativos.py`](../backend/sistemas_iterativos.py).
+[`backend/sistemas_iterativos.py`](../backend/sistemas_iterativos.py); la tabla del
+resultado es la fuente de `sistemas_iterativos.js`, que sincroniza la gráfica Plotly, la
+sustitución y la fila elegida sin recalcular. Sus floats pasan por el formato global con
+`representar_flotante` (filtro `flotante`).
 
 Desde P26.6, Operaciones con matrices
 usa el motor de expresiones para operaciones simples y compuestas; la ruta

@@ -44,13 +44,57 @@ PyGebra conserva el orden ingresado, informa qué filas incumplen
 garantiza convergencia en aritmética exacta. Cuando se agota el límite o se supera
 el rango de la aritmética de máquina, se conserva la última fila finita disponible.
 
+## Lectura del resultado
+
+El resultado sigue la proximidad de Newton-Raphson: veredicto, zona de estudio y,
+plegadas, las comprobaciones.
+
+- **Veredicto.** Dice si cada método converge, no converge en el límite o supera el
+  rango numérico, con la última aproximación y los dos criterios frente a ε. Una línea
+  informa la dominancia diagonal estricta por filas. Al comparar, una tabla reúne ambos
+  métodos con las mismas condiciones (x⁽⁰⁾, ε y límite) y una gráfica superpone sus
+  residuos `‖r‖∞` en escala logarítmica con la tolerancia.
+- **Iteraciones paso a paso.** Una sola `k` por método sincroniza la gráfica de todas
+  las incógnitas (Plotly: un color y un marcador por incógnita, leyenda interactiva y
+  clic en un punto), la sustitución de esa iteración y la tabla (clic, flechas, Inicio y
+  Fin). La gráfica secundaria muestra el cambio máximo y el residuo con la línea de ε.
+  Al comparar, un selector alterna el método y conserva la `k` (acotada a sus
+  iteraciones).
+- **Sustitución.** Cada incógnita ocupa dos renglones: el despeje con superíndices
+  `x⁽ᵏ⁻¹⁾`/`x⁽ᵏ⁾` y los valores sustituidos, en fracciones apiladas. El fondo neutro marca
+  los valores anteriores y el color de marca los nuevos: en Jacobi todo procede de
+  `x⁽ᵏ⁻¹⁾` (actualización simultánea); en Gauss-Seidel las filas se numeran por orden y
+  `j < i` ya usa `x⁽ᵏ⁾`. Al señalar un valor se resalta su origen en la fila anterior o
+  en la tabla.
+- **Comprobaciones** (plegadas). `|aᵢᵢ|` frente a `Σⱼ≠ᵢ |aᵢⱼ|` por fila y `Ax = b` con la
+  última aproximación: `(Ax)ᵢ`, `bᵢ` y `rᵢ`.
+
+Los números de máquina usan el formato global **Exacto / Decimal**
+(`presentacion_numerica.representar_flotante` y el filtro `flotante`): Exacto muestra el
+decimal más corto que identifica al float almacenado; Decimal redondea a 2, 4, 6 u 8
+decimales con el mismo redondeo al par, sin exponentes y sin leer como 0 un valor que
+no lo es (0.0000466 con 4 decimales se lee 0.00005). Las sustituciones copian el texto de
+la tabla y cambian «=» por «≈» cuando el formato redondea; las etiquetas de las gráficas
+siguen el mismo formato. Nada se recalcula al cambiar de formato o de iteración.
+
+**Copiar tabla (CSV)** pone en el portapapeles la tabla con las cifras almacenadas
+(`text/plain` en CSV y una tabla HTML que las hojas de cálculo pegan por columnas). Se
+usa el portapapeles y no una descarga porque la app de escritorio (pywebview) no admite
+descargas (`ALLOW_DOWNLOADS` desactivado).
+
 ## Ejemplos de clase y correcciones
 
-Los ejemplos se cargan desde el formulario. El de clase aparece en el Word
+Los ejemplos están en el menú de edición, como en Conjuntos: clic derecho (o
+Shift+F10) sobre una celda de A o b → **Cargar ejemplo · sustituye el sistema**. Sin
+JavaScript aparecen en un bloque plegable. Hay tres: el ejemplo de clase, la práctica
+de la diapositiva 28 y un sistema sin dominancia diagonal cuyas aproximaciones crecen.
+El de clase aparece en el Word
 `Ejemplos_Paso_a_Paso_Jacobi_Gauss_Seidel.docx` y la diapositiva 9 de
 `Presentacion_Jacobi_Gauss_Seidel.pptx`. La solución exacta es `(1, 2, −1, 1)`.
 Con los valores predeterminados se obtienen 15 iteraciones por Jacobi
-(`‖r‖∞ ≈ 4.663227e−5`) y 6 por Gauss-Seidel (`‖r‖∞ ≈ 7.697313e−5`).
+(`‖r‖∞ ≈ 4.663227e−5`) y 6 por Gauss-Seidel (`‖r‖∞ ≈ 7.697313e−5`). Las
+iteraciones coinciden bit a bit con el script de referencia `jacobi_gauss_seidel.py`:
+Gauss-Seidel suma en el orden de las columnas, tomando `x⁽ᵏ⁾` en `j < i`.
 
 | Fuente | Discrepancia | Valores usados en las pruebas |
 | --- | --- | --- |
@@ -68,7 +112,8 @@ decimales. Al ampliar el límite, convergen en 11 y 5 iteraciones respectivament
 ## Verificación
 
 ```powershell
-uv run --locked python -m unittest tests.test_sistemas_iterativos tests.test_sistemas_iterativos_web -v
+uv run --locked python -m unittest tests.test_sistemas_iterativos tests.test_sistemas_iterativos_web tests.test_presentacion_numerica -v
+uv run --locked python -m tests.iterativos_browser  # http://127.0.0.1:8906/__pruebas/
 uv lock --check
 uv run --locked python -m unittest discover -v
 uv run --locked python manage.py check
@@ -77,33 +122,30 @@ git diff --check
 ```
 
 Las pruebas usan fracciones de referencia obtenidas de los despejes para
-comprobar las filas corregidas. También cubren los dos criterios de parada,
-la falta de dominancia y de convergencia, diagonal nula, entradas inválidas,
-desbordamiento y la correspondencia entre la tabla, los operandos y el resultado.
+comprobar las filas corregidas y una transcripción del script de clase para exigir
+iteraciones idénticas bit a bit. También cubren los dos criterios de parada, la falta
+de dominancia, la divergencia del ejemplo sin dominancia, el vector inicial exacto, el
+límite de iteraciones, diagonal nula, entradas inválidas, desbordamiento, el formato
+de los floats (exacto, decimales, ceros falsos, junto a ε y potencias de diez) y la
+correspondencia entre tabla, sustitución y motor.
 
-- Pruebas focalizadas. 178 correctas sobre el motor, la ruta nueva, la
-  navegación, la búsqueda, los formularios y los métodos directos.
-  La comprobación adicional del catálogo de Estudio y la ruta dio 37 correctas.
-  El archivo del motor y sus pruebas matemáticas coinciden byte por byte con
-  los de la revisión anterior del PR.
-- Suite completa de Python. 2.068 pruebas correctas. También pasaron la
-  verificación del lockfile, Django, compilación, sintaxis de JavaScript y
-  `git diff --check`.
-- Runners de navegador del proyecto. Buscador 21/21, edición de entradas
-  350/350 y presentación de resultados 111/111.
-- Edge 158 con Playwright. Escritorio a 1366 px y móvil a 390 px en ambos
-  temas, además de colores forzados. Se comprobaron las tres familias,
-  el enlace desde Ax = b, el selector, el foco, la tabla y las sustituciones.
-  Sin JavaScript se comprobó el enlace del área, **Aplicar** para cambiar
-  dimensiones, el cálculo y la primera sustitución. Se ejercitó también la
-  gráfica con residuos muy pequeños a 320 px.
-- axe-core 4.14.1. Sin hallazgos en las reglas automatizadas de WCAG A/AA
-  ejecutadas en los cinco perfiles de navegador. La prueba móvil se hizo
-  por emulación. Quedan pendientes el lector de pantalla y el paquete
-  instalado de Windows/WebView2.
+Resultados del rediseño (v0.20.1, 2026-11-23):
+
+- Suite completa de Python: 2122 pruebas correctas; `manage.py check` sin avisos.
+- `tests.iterativos_browser`: 8/8 en Edge headless y 8/8 dentro del WebView2 real del
+  ejecutable (`build_windows.ps1 -Target App`, Edge 157, ventana 1280 × 698 a 150 %).
+- Runners de las piezas compartidas: presentación de resultados 14/14 (`numeros.js`),
+  menú de edición 65/65, edición de entradas 350/350 y resultado 111/111.
+- Revisión visual en Edge: 1280, 744 y 390 px, claro y oscuro, Estudio y Minimalista,
+  sin JavaScript (tabla completa e iteración 1), Exacto y Decimal.
+
+Pendiente: lector de pantalla y táctil físico.
 
 [Familias de Métodos numéricos](capturas/iterativos/00-familias-metodos-numericos.jpg) ·
-[Resultado en escritorio](capturas/iterativos/01-clase-escritorio.jpg) ·
-[Gauss-Seidel, iteración 2 y gráfica](capturas/iterativos/02-gauss-seidel-iteracion-2.jpg) ·
-[Resultado de práctica en móvil](capturas/iterativos/03-practica-movil.jpg) ·
-[Formulario en móvil](capturas/iterativos/04-formulario-movil.jpg)
+[Comparación en escritorio](capturas/iterativos/01-clase-escritorio.jpg) ·
+[Gauss-Seidel, iteración 2, tema oscuro](capturas/iterativos/02-gauss-seidel-iteracion-2.jpg) ·
+[Práctica en móvil](capturas/iterativos/03-practica-movil.jpg) ·
+[Formulario en móvil](capturas/iterativos/04-formulario-movil.jpg) ·
+[Ejemplos en el menú de edición](capturas/iterativos/05-menu-ejemplos.jpg) ·
+[Sin dominancia diagonal](capturas/iterativos/06-sin-dominancia.jpg) ·
+[WebView2 real, Exacto](capturas/iterativos/07-webview2-escritorio.jpg)
