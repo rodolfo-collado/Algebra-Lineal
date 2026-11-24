@@ -252,3 +252,96 @@ class SistemasIterativosWebTest(SimpleTestCase):
         self.assertContains(respuesta, "x⁽0⁾")
         self.assertContains(respuesta, 'data-ultima="0"')
         self.assertNotContains(respuesta, 'class="iterativo-sustituciones"')
+
+
+# El sistema 3×3 del enunciado de v0.20.2: su solución exacta es (217/208, 59/26, −225/208);
+# (1, 2, −1, 1) es la del ejemplo de clase 4×4 del que proviene (CLASE_A, CLASE_B).
+TRES_POR_TRES = "10x1 - x2 + 2x3 = 6\n-x1 + 11x2 - x3 = 25\n2x1 - x2 + 10x3 = -11"
+CLASE_TEXTO = "10x1 - x2 + 2x3 = 6; -x1 + 11x2 - x3 + 3x4 = 25; 2x1 - x2 + 10x3 - x4 = -11; 3x2 - x3 + 8x4 = 15"
+METODOS_WEB = ("jacobi", "gauss_seidel", "comparar_iterativos")
+
+
+class IterativosDesdeEcuacionesTest(SimpleTestCase):
+    """La entrada «Sistema de ecuaciones» usa el parser de Gauss y llega a la misma entrada que A y b."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        setup_test_environment()
+        cls.addClassCleanup(teardown_test_environment)
+
+    def ecuaciones(self, texto, metodo="jacobi", **extra):
+        # Como el navegador: la cuadrícula escondida viaja también, con sus valores (aquí vacíos).
+        return self.client.post(RUTA, {"tipo_entrada": "sistema", "sistema": texto, "metodo": metodo,
+                                       "filas": "3", "columnas": "3", **extra})
+
+    def assertMismoResultado(self, texto, a, b, **extra):
+        for metodo in METODOS_WEB:
+            with self.subTest(texto=texto, metodo=metodo):
+                desde_texto = self.ecuaciones(texto, metodo, **extra)
+                self.assertEqual(desde_texto.context["form"].errors, {})
+                matricial = self.client.post(RUTA, datos_ecuacion(a, b, metodo, **extra))
+                self.assertEqual(desde_texto.context["iterativos"], matricial.context["iterativos"])
+
+    def test_sistema_del_enunciado_y_ejemplo_de_clase_como_ecuaciones(self):
+        self.assertMismoResultado(TRES_POR_TRES, [[10, -1, 2], [-1, 11, -1], [2, -1, 10]], [6, 25, -11])
+        self.assertMismoResultado(CLASE_TEXTO, CLASE_A, CLASE_B)
+        esperado = {"jacobi": (217 / 208, 59 / 26, -225 / 208), "gauss_seidel": (217 / 208, 59 / 26, -225 / 208)}
+        for m in self.ecuaciones(TRES_POR_TRES, "comparar_iterativos").context["iterativos"]["metodos"]:
+            for real, exacto in zip(m["final"]["x"], esperado[m["clave"]]):
+                self.assertAlmostEqual(real, exacto, places=4)
+        for m in self.ecuaciones(CLASE_TEXTO, "comparar_iterativos").context["iterativos"]["metodos"]:
+            for real, exacto in zip(m["final"]["x"], (1, 2, -1, 1)):
+                self.assertAlmostEqual(real, exacto, places=3)
+
+    def test_coeficientes_implicitos_negativos_decimales_desordenados_y_ausentes(self):
+        # Fila 1: desordenada, implícitos y sin x3. Fila 2: términos a ambos lados y decimal.
+        # Fila 3: sin x1, fracción, constante a la izquierda y decimal a la derecha.
+        texto = "-x2 + 4x1 = 2\nx1 + 5x2 = 6 + 0.5x3\n1/2x2 + 3x3 - 2 = 1.5"
+        a = [[4, -1, 0], [1, 5, "-1/2"], [0, "1/2", 3]]
+        self.assertMismoResultado(texto, a, [2, 6, "7/2"], inicial_iterativo="1 1 1", tolerancia_iterativa="0.00000001")
+
+    def test_la_cuadricula_escondida_no_interviene(self):
+        # Dimensiones ausentes o inválidas y celdas ajenas: solo cuenta el texto.
+        for extra in ({"filas": "", "columnas": ""}, {"filas": "99", "columnas": "x"},
+                      {"celda_A_0_0": "basura", "celda_b_0_0": "1"}):
+            with self.subTest(extra=extra):
+                respuesta = self.ecuaciones(TRES_POR_TRES, **extra)
+                self.assertContains(respuesta, 'id="resultado"')
+
+    def test_ecuaciones_invalidas_o_no_lineales_explican_el_error_junto_al_texto(self):
+        for texto, extra, mensaje in (
+            ("", {}, "Ingresa un sistema de ecuaciones."),
+            ("10x - y + 2z = 6", {}, "solo se admiten variables x1, x2, ... con coeficientes numéricos"),
+            ("x1^2 + x2 = 3; x1 + x2 = 1", {}, "eleva una variable a una potencia"),
+            ("x1x2 + x2 = 3; x1 + x2 = 1", {}, "multiplica dos variables"),
+            ("sin(x1) + x2 = 3; x1 + x2 = 1", {}, "sin(…) no forma parte de una ecuación lineal"),
+            ("2x1 + x2 = 3; x1 + 2x2", {}, "cada ecuación debe contener un único signo"),
+            ("0,5x1 = 1", {}, "Formato de sistema inválido"),
+            ("x1 + x2 = 1", {}, "El sistema tiene 1 ecuación y 2 incógnitas (x1 a x2)"),
+            ("x1 = 1; x3 = 2", {}, "El sistema tiene 2 ecuaciones y 3 incógnitas (x1 a x3)"),
+            ("x2 = 1; x1 = 2", {}, "diagonal de la fila 1 es cero"),
+            ("2x1 + x2 = 1; x1 + 2x2 = 1", {"inicial_iterativo": "1"}, "Escribe 2 componentes"),
+            ("2x1 + x2 = 1; x1 + 2x2 = 1", {"tolerancia_iterativa": "0"}, "La tolerancia debe ser positiva"),
+        ):
+            with self.subTest(texto=texto, extra=extra):
+                respuesta = self.ecuaciones(texto, **extra)
+                self.assertContains(respuesta, mensaje)
+                self.assertNotContains(respuesta, 'id="resultado"')
+                form = respuesta.context["form"]
+                self.assertEqual(form["tipo_entrada"].value(), "sistema")
+                self.assertEqual(form["sistema"].value(), texto)
+                if not extra:
+                    self.assertIn("sistema", form.errors)
+
+    def test_misma_ayuda_campo_y_teclado_que_reduccion_por_filas(self):
+        pagina = self.client.get(RUTA)
+        gauss = self.client.get(reverse("calculadora:reduccion-filas"))
+        ayuda = lambda r: re.search(r'<p id="sistema-ayuda".*?</p>', r.content.decode(), re.S)[0]
+        self.assertEqual(ayuda(pagina), ayuda(gauss))
+        self.assertEqual(str(pagina.context["form"]["sistema"]), str(gauss.context["form"]["sistema"]))
+        self.assertContains(pagina, '<fieldset id="system-fields" class="input-mode" data-perfil="sistema">')
+        self.assertIn('"sistema"', json.dumps(pagina.context["perfiles_teclado"]))
+        # La matriz sigue siendo la entrada predeterminada de v0.20.1.
+        self.assertEqual(pagina.context["form"]["tipo_entrada"].value(), "matriz")
+        self.assertRegex(pagina.content.decode(), r'<input[^>]*name="tipo_entrada"[^>]*value="matriz"[^>]*checked')

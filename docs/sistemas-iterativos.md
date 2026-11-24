@@ -5,6 +5,13 @@ la matriz cuadrada A y el vector b. Puedes elegir **Jacobi**, **Gauss-Seidel** o
 **Comparar ambos**. La comparación parte del mismo vector inicial para los dos
 métodos. Si dejas el vector inicial vacío, PyGebra usa ceros.
 
+En **Tipo de entrada → Sistema de ecuaciones** también puedes escribir el sistema,
+como en Reducción por filas y con las mismas reglas: incógnitas `x1, x2, …`,
+coeficientes implícitos, fracciones, decimales con punto y términos a ambos lados
+del `=`. Una variable que no aparece en una ecuación vale 0 en esa fila. Escribe
+tantas ecuaciones como incógnitas y en orden: la ecuación `i` forma la fila `i` de A,
+así que debe contener `xi`. El resultado es el mismo que con A y b en celdas.
+
 **Métodos cerrados** y **Métodos abiertos** buscan raíces de funciones.
 **Métodos iterativos** aproxima las componentes de la solución de un sistema
 lineal. Desde **Matrices → Sistemas lineales (Ax = b)** puedes abrir la

@@ -6,12 +6,30 @@
 {% endblock %}
 
 {% block axb_antes %}
-        <fieldset class="choice-fieldset">
-            <legend>{{ form.metodo.label }}</legend>
-            <div class="segmented">
-                {% for radio in form.metodo %}<label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
-            </div>
-            {{ form.metodo.errors }}
+        {% comment %}Método y tipo de entrada en una fila, como en Reducción por filas. El radio elegido
+        decide con CSS (:has) qué entrada se ve, también sin JavaScript; la otra conserva lo escrito.{% endcomment %}
+        <div class="choice-row">
+            <fieldset class="choice-fieldset">
+                <legend>{{ form.metodo.label }}</legend>
+                <div class="segmented">
+                    {% for radio in form.metodo %}<label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                {{ form.metodo.errors }}
+            </fieldset>
+            <fieldset class="choice-fieldset">
+                <legend>{{ form.tipo_entrada.label }}</legend>
+                <div class="segmented">
+                    {% for radio in form.tipo_entrada %}<label class="segment">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                </div>
+                <p class="field-help option-help" data-input-hint="sistema">Escribe las ecuaciones directamente.</p>
+                <p class="field-help option-help" data-input-hint="matriz">Ingresa los coeficientes en A y b.</p>
+                {{ form.tipo_entrada.errors }}
+            </fieldset>
+        </div>
+        <fieldset id="system-fields" class="input-mode" data-perfil="sistema">
+            <legend class="sr-only">Sistema de ecuaciones</legend>
+            {% include "calculadora/components/sistema_ecuaciones.html" %}
+            <p class="field-help">Tantas ecuaciones como incógnitas y en orden: la ecuación i debe contener <code>xi</code>, porque la diagonal de A no puede ser cero.</p>
         </fieldset>
         {# Con JavaScript, los ejemplos están en el menú de edición (clic derecho en A o b), como en Conjuntos. #}
         <noscript>{% disclosure titulo="Cargar un ejemplo" detalle="sustituye el sistema" id="ejemplos-sin-js" nivel=4 %}<ul>{% for clave, titulo in ejemplos %}<li><a href="?ejemplo={{ clave }}">{{ titulo }}</a></li>{% endfor %}</ul>{% enddisclosure %}</noscript>
