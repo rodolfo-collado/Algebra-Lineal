@@ -13,15 +13,11 @@
             </div>
             {{ form.metodo.errors }}
         </fieldset>
-        {% disclosure titulo="Ejemplos de Jacobi y Gauss-Seidel" id="ejemplos-iterativos" %}
-            <div class="iterativos-enlaces">
-                <a class="btn btn-secondary" href="{{ herramienta_actual.ruta }}?ejemplo=clase">Ejemplo de clase · (1, 2, −1, 1)</a>
-                <a class="btn btn-secondary" href="{{ herramienta_actual.ruta }}?ejemplo=diapositiva-28">Práctica de la diapositiva 28 · 3 iteraciones</a>
-            </div>
-        {% enddisclosure %}
+        {# Con JavaScript, los ejemplos están en el menú de edición (clic derecho en A o b), como en Conjuntos. #}
+        <noscript>{% disclosure titulo="Cargar un ejemplo" detalle="sustituye el sistema" id="ejemplos-sin-js" nivel=4 %}<ul>{% for clave, titulo in ejemplos %}<li><a href="?ejemplo={{ clave }}">{{ titulo }}</a></li>{% endfor %}</ul>{% enddisclosure %}</noscript>
 {% endblock %}
 
-{% block axb_forma %}A debe ser cuadrada y su diagonal debe contener coeficientes distintos de cero.{% endblock %}
+{% block axb_forma %}A debe ser cuadrada y su diagonal debe contener coeficientes distintos de cero. Clic derecho (o mantén pulsado) en A o b: ejemplos de clase.{% endblock %}
 
 {% block axb_opciones %}
         <section class="workspace-section">
@@ -30,9 +26,14 @@
 {% endblock %}
 
 {% block tool_result %}
-    {% if iterativos %}{% include "calculadora/modules/iterativos/_resultado.html" %}{% endif %}
+    {% if iterativos %}{% include "calculadora/modules/iterativos/_resultado.html" with r=iterativos %}{% endif %}
 {% endblock %}
 
 {% block axb_js %}
-    {% if iterativos %}<script src="{% static 'calculadora/sistemas_iterativos.js' %}" defer></script>{% endif %}
+    {% if iterativos %}
+    <script src="{% static 'calculadora/numeros.js' %}" defer></script>
+    <script src="{% static 'calculadora/vendor/plotly-basic-4.1.2.min.js' %}" defer></script>
+    <script src="{% static 'calculadora/vendor/plotly-locale-es-4.1.2.js' %}" defer></script>
+    <script src="{% static 'calculadora/sistemas_iterativos.js' %}" defer></script>
+    {% endif %}
 {% endblock %}

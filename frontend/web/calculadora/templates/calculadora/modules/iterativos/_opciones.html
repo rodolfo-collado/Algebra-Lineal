@@ -1,16 +1,18 @@
 <fieldset class="choice-fieldset iterativo-parametros" data-iterativo-parametros data-perfil="numerico">
-    <legend>Parámetros de Jacobi y Gauss-Seidel</legend>
+    <legend>Condiciones iniciales y parada</legend>
     <div class="field-group">
-        {{ form.inicial_iterativo.label_tag }}
-        <p id="ayuda-inicial-iterativo" class="field-help">Deja vacío para iniciar con ceros o escribe una componente por incógnita, separadas por espacios.</p>
-        {{ form.inicial_iterativo }}{{ form.inicial_iterativo.errors }}
+        <label for="{{ form.inicial_iterativo.id_for_label }}">Vector inicial x⁽⁰⁾</label>
+        {{ form.inicial_iterativo }}
+        <p id="ayuda-inicial-iterativo" class="field-help">Una componente por incógnita, separadas por espacios. Vacío: ceros.</p>
+        {{ form.inicial_iterativo.errors }}
     </div>
     <div class="field-group">
-        {{ form.tolerancia_iterativa.label_tag }}
+        <label for="{{ form.tolerancia_iterativa.id_for_label }}">Tolerancia ε</label>
         {{ form.tolerancia_iterativa }}{{ form.tolerancia_iterativa.errors }}
     </div>
     <div class="field-group">
         {{ form.max_iteraciones.label_tag }}
         {{ form.max_iteraciones }}{{ form.max_iteraciones.errors }}
     </div>
+    <p class="field-help iterativo-criterio">Se detiene cuando el cambio máximo ‖x⁽ᵏ⁾ − x⁽ᵏ⁻¹⁾‖∞ y el residuo ‖b − Ax⁽ᵏ⁾‖∞ son menores que ε.</p>
 </fieldset>

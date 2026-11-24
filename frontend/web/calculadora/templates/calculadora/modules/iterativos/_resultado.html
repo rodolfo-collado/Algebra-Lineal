@@ -1,88 +1,157 @@
-{% load componentes %}
-
-<section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
-    <header class="results-heading">
-        <h2 id="results-title">{% if iterativos|length > 1 %}Jacobi y Gauss-Seidel{% else %}{{ iterativos.0.metodo }}{% endif %}</h2>
-        <p class="field-help">El cambio máximo compara dos vectores consecutivos. El residuo mide cuánto falta para cumplir Ax = b. Ambos deben ser menores que {{ iterativos.0.tolerancia }}.</p>
+{% load componentes numeros %}
+{% comment %}Veredicto → (comparación) → zona de estudio → comprobaciones plegadas.
+La zona de estudio reúne la evolución de las incógnitas, la sustitución de la iteración elegida y la
+tabla: una sola k para las tres (sistemas_iterativos.js). Sin JavaScript se leen la iteración 1 y la
+tabla completa. Los números de máquina usan el filtro `flotante` y numeric_results, así que siguen
+el formato global (Exacto/Decimal) sin recalcular.{% endcomment %}
+{% numeric_results %}
+<section id="resultado" data-resultado="vigente" class="results iterativos-resultado" aria-labelledby="results-title" tabindex="-1" data-tolerancia="{{ r.tolerancia|stringformat:'r' }}">
+    <header class="results-heading iterativos-cabecera"{% if not r.comparar %} data-estado="{{ r.metodos.0.estado }}"{% endif %} data-tono="{% if r.metodos.0.estado == 'convergio' and r.metodos.1.estado|default:'convergio' == 'convergio' %}exito{% else %}aviso{% endif %}">
+        <div class="iterativos-veredicto">
+            <p class="iterativos-condiciones">{% if r.comparar %}Mismas condiciones para ambos: {% endif %}x⁽⁰⁾ = ({% for x in r.inicial %}{{ x|flotante }}{% if not forloop.last %}, {% endif %}{% endfor %}), ε = {{ r.tolerancia|flotante }}, hasta {{ r.limite }} iteraciones.</p>
+            <h2 id="results-title">{{ r.titulo }}</h2>
+            {% if not r.comparar %}{% with m=r.metodos.0 %}
+                <p class="iterativos-estado">{{ m.mensaje }}</p>
+                <p class="iterativos-solucion"><span class="sr-only">Última aproximación: </span>x⁽{{ m.final.k }}⁾ <span data-relacion>=</span> <span>({% for x in m.final.x %}{{ x|flotante }}{% if not forloop.last %}, {% endif %}{% endfor %})</span></p>
+                {% include "calculadora/modules/iterativos/_criterios.html" with m=m tolerancia=r.tolerancia only %}
+            {% endwith %}{% endif %}
+            <p class="iterativos-dominancia" data-dominancia="{% if r.filas_no_dominantes %}no-estricta{% else %}estricta{% endif %}">
+                {% if r.filas_no_dominantes %}<strong>Sin dominancia diagonal estricta</strong> en {% if r.filas_no_dominantes|length == 1 %}la fila{% else %}las filas{% endif %} {{ r.filas_no_dominantes|join:", " }}: la convergencia no está garantizada, aunque puede ocurrir.
+                {% else %}<strong>Dominancia diagonal estricta</strong> en todas las filas: ambos métodos convergen desde cualquier x⁽⁰⁾.{% endif %}
+            </p>
+        </div>
+        {% include "calculadora/components/numeric_format.html" %}
     </header>
-    {% if iterativos|length > 1 %}
-        <nav class="iterativos-enlaces" aria-label="Resultados de los métodos">
-            {% for r in iterativos %}
-                <a class="btn btn-secondary" href="#iterativo-{{ r.clave }}">{{ r.metodo }} · {{ r.final.k }} iteraciones</a>
-            {% endfor %}
-        </nav>
+
+    {% if r.comparar %}
+    <section class="panel iterativos-comparacion" aria-labelledby="comparacion-titulo">
+        <h3 id="comparacion-titulo" class="panel-title">Comparación con las mismas condiciones</h3>
+        <div class="table-wrap">
+            <table class="procedure-table iterativos-tabla-comparacion">
+                <thead><tr><th scope="col">Método</th><th scope="col">Resultado</th><th scope="col">Cambio máximo</th><th scope="col">Residuo ‖r‖∞</th><th scope="col">Última aproximación x⁽ᵏ⁾</th></tr></thead>
+                <tbody>
+                    {% for m in r.metodos %}
+                    <tr data-metodo="{{ m.clave }}" data-estado="{{ m.estado }}">
+                        <th scope="row"><span class="iterativo-metodo" data-metodo-serie="{{ m.clave }}">{{ m.metodo }}</span></th>
+                        <td class="iterativo-frase">{{ m.frase|capfirst }}</td><td>{{ m.final.cambio|flotante:r.tolerancia }}</td><td>{{ m.final.norma|flotante:r.tolerancia }}</td>
+                        <td class="iterativo-vector">({% for x in m.final.x %}{{ x|flotante }}{% if not forloop.last %}, {% endif %}{% endfor %})</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="iterativo-grafica iterativo-grafica-secundaria" data-grafica="comparacion" role="img" aria-label="Residuo ‖r‖∞ de Jacobi y Gauss-Seidel por iteración, en escala logarítmica, con la tolerancia. Los valores están en las tablas." hidden></div>
+    </section>
     {% endif %}
-    {% with filas=iterativos.0.filas_no_dominantes %}
-        {% if filas %}
-            <p class="iterativos-diagnostico" data-dominancia="no-estricta"><strong>Sin dominancia diagonal estricta.</strong> Revisa las filas {{ filas|join:", " }}. El cambio y el residuo indican si se alcanza la tolerancia.</p>
-        {% else %}
-            <p class="iterativos-diagnostico" data-dominancia="estricta"><strong>Dominancia diagonal estricta por filas.</strong> En cada fila, |aᵢᵢ| supera la suma de los valores absolutos de los demás coeficientes.</p>
-        {% endif %}
-    {% endwith %}
 
-    {% for r in iterativos %}
-        <section id="iterativo-{{ r.clave }}" class="panel iterativo-panel" data-iterativo="{{ r.clave }}" aria-labelledby="titulo-{{ r.clave }}">
-            <header>
-                <h3 id="titulo-{{ r.clave }}" class="panel-title">Resultado · {{ r.metodo }}</h3>
-                <p class="iterativo-estado" data-estado="{{ r.estado }}">{{ r.mensaje }}</p>
-            </header>
-            <dl class="iterativo-resumen">
-                <div><dt>{% if r.final.k %}Aproximación final{% else %}Vector inicial{% endif %}</dt><dd class="iterativo-vector">x ≈ ({{ r.final.x|join:", " }})</dd></div>
-                <div><dt>Iteraciones</dt><dd>{{ r.final.k }}</dd></div>
-                <div><dt>Cambio máximo</dt><dd>{{ r.final.cambio }}</dd></div>
-                <div><dt>Norma del residuo ‖r‖∞</dt><dd>{{ r.final.norma }}</dd></div>
-                <div><dt>Residuo r = b − Ax</dt><dd class="iterativo-vector">({{ r.residuo_final|join:", " }})</dd></div>
-            </dl>
+    <section class="panel iterativos-estudio" aria-labelledby="estudio-titulo">
+        <div class="iterativos-estudio-cabecera">
+            <h3 id="estudio-titulo" class="panel-title">Iteraciones paso a paso</h3>
+            {% if r.comparar %}
+            <div class="segmented iterativos-selector" role="group" aria-label="Método que se recorre" data-selector-metodo hidden>
+                {% for m in r.metodos %}<button type="button" class="segment" data-mostrar="{{ m.clave }}" aria-pressed="{{ forloop.first|yesno:'true,false' }}">{{ m.metodo }}</button>{% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% for m in r.metodos %}
+        <article class="iterativo" data-iterativo="{{ m.clave }}" data-ultima="{{ m.final.k }}" aria-labelledby="titulo-{{ m.clave }}">
+            <h4 id="titulo-{{ m.clave }}" class="iterativo-titulo sr-only">{{ m.metodo }}</h4>
+            {% if r.comparar %}<p class="iterativo-estado" data-estado="{{ m.estado }}">{{ m.metodo }}: {{ m.mensaje }}</p>{% endif %}
 
-            <div class="iterativo-tabla" role="region" tabindex="0" aria-labelledby="tabla-{{ r.clave }}">
-                <table class="procedure-table">
-                    <caption id="tabla-{{ r.clave }}">Iteraciones de {{ r.metodo }}</caption>
-                    <thead><tr><th scope="col">k</th>{% for variable in r.variables %}<th scope="col">{{ variable }}</th>{% endfor %}<th scope="col">Cambio máximo</th><th scope="col">‖r‖∞</th></tr></thead>
-                    <tbody>
-                        {% for fila in r.filas %}
-                            <tr data-iteracion="{{ fila.k }}"{% if fila.k == r.activa.k %} aria-current="true"{% endif %}>
+            <div class="iterativo-grafica" data-grafica="variables" role="img" aria-label="Evolución de {{ m.variables|join:', ' }} en cada iteración de {{ m.metodo }}. Los valores están en la tabla." hidden></div>
+
+            {% if m.final.k %}
+            <div class="iterativo-paso" aria-labelledby="paso-{{ m.clave }}">
+                <div class="iterativo-control" data-control hidden>
+                    <button type="button" class="btn btn-secondary" data-paso="-1" aria-label="Iteración anterior">‹</button>
+                    <label class="sr-only" for="k-{{ m.clave }}">Iteración k</label>
+                    <input type="range" id="k-{{ m.clave }}" min="1" max="{{ m.final.k }}" value="1" data-k>
+                    <button type="button" class="btn btn-secondary" data-paso="1" aria-label="Iteración siguiente">›</button>
+                </div>
+                <h5 id="paso-{{ m.clave }}" class="iterativo-paso-titulo" aria-live="polite">Iteración <span data-k-texto>1</span> de {{ m.final.k }}</h5>
+                {% if m.clave == "jacobi" %}
+                <p class="iterativo-regla">Actualización <strong>simultánea</strong>: todas las componentes usan <span class="iterativo-muestra" data-origen="anterior">x<sup>(<span data-k-anterior>0</span>)</sup></span>.</p>
+                {% else %}
+                <p class="iterativo-regla">Actualización <strong>secuencial</strong>: j &lt; i usa <span class="iterativo-muestra" data-origen="nuevo">x<sup>(<span data-k-nuevo>1</span>)</sup></span> recién calculado; j &gt; i, <span class="iterativo-muestra" data-origen="anterior">x<sup>(<span data-k-anterior>0</span>)</sup></span>.</p>
+                {% endif %}
+                <ol class="iterativo-sustituciones" data-orden="{% if m.clave == 'jacobi' %}simultaneo{% else %}secuencial{% endif %}">
+                    {% for d in m.despejes %}
+                    <li data-fila="{{ d.i }}">
+                        <span class="iterativo-x" data-serie="{{ forloop.counter }}">{{ d.variable }}<sup>(<span data-k-nuevo>1</span>)</sup></span>
+                        <span class="iterativo-linea"><span class="iterativo-grupo"><span class="iterativo-igual">=</span>
+                        <span class="iterativo-fraccion iterativo-despeje">
+                            <span>{{ d.independiente }}{% for t in d.terminos %} <span class="iterativo-termino">{{ t.signo }} {{ t.factor }}<span class="iterativo-muestra" data-origen="{{ t.origen }}">{{ t.variable }}<sup>(<span data-k-{{ t.origen }}>{% if t.origen == "nuevo" %}1{% else %}0{% endif %}</span>)</sup></span></span>{% endfor %}</span>
+                            <span>{{ d.diagonal }}</span>
+                        </span></span></span>
+                        <span class="iterativo-linea"><span class="iterativo-grupo"><span class="iterativo-igual">=</span>
+                        <span class="iterativo-fraccion">
+                            <span>{{ d.independiente }}{% for t in d.terminos %} <span class="iterativo-termino">{{ t.signo }} {{ t.factor }}(<span class="iterativo-valor" data-origen="{{ t.origen }}" data-columna="{{ t.j }}">{{ t.valor|flotante }}</span>)</span>{% endfor %}</span>
+                            <span>{{ d.diagonal }}</span>
+                        </span></span>
+                        <span class="iterativo-grupo"><span class="iterativo-igual" data-relacion>=</span>
+                        <strong class="iterativo-valor" data-origen="nuevo" data-columna="{{ d.i }}">{{ d.valor|flotante }}</strong></span></span>
+                    </li>
+                    {% endfor %}
+                </ol>
+                <dl class="iterativo-medidas">
+                    <div><dt>Cambio máximo</dt><dd data-medida="cambio">{{ m.filas.1.cambio|flotante }}</dd></div>
+                    <div><dt>Residuo ‖b − Ax‖∞</dt><dd data-medida="norma">{{ m.filas.1.norma|flotante }}</dd></div>
+                </dl>
+            </div>
+            {% endif %}
+
+            <div class="iterativo-grafica iterativo-grafica-secundaria" data-grafica="error" role="img" aria-label="Cambio máximo y residuo de {{ m.metodo }} por iteración, en escala logarítmica, con la tolerancia. Los valores están en la tabla." hidden></div>
+
+            <div class="iterativo-tabla">
+                <div class="iterativo-tabla-acciones" data-copiar-tabla hidden>
+                    <button type="button" class="btn btn-secondary" data-copiar-csv>Copiar tabla (CSV)</button>
+                    <span class="field-help" role="status" aria-live="polite" data-estado-copia></span>
+                </div>
+                <div class="table-wrap iterativo-tabla-marco" role="region" tabindex="0" aria-labelledby="tabla-{{ m.clave }}">
+                    <table class="procedure-table">
+                        <caption id="tabla-{{ m.clave }}">Iteraciones de {{ m.metodo }}</caption>
+                        <thead><tr><th scope="col">k</th>{% for variable in m.variables %}<th scope="col"><span class="iterativo-x" data-serie="{{ forloop.counter }}">{{ variable }}</span></th>{% endfor %}<th scope="col">Cambio máximo</th><th scope="col">‖r‖∞</th></tr></thead>
+                        <tbody>
+                            {% for fila in m.filas %}
+                            <tr data-iteracion="{{ fila.k }}"{% if fila.k == 1 %} aria-current="true"{% elif fila.k == 0 and m.final.k %} data-anterior{% endif %}>
                                 <th scope="row">{{ fila.k }}</th>
-                                {% for x in fila.x %}<td>{{ x }}</td>{% endfor %}
-                                <td>{{ fila.cambio }}</td><td>{{ fila.norma }}</td>
+                                {% for x in fila.x %}<td data-valor="{{ x|stringformat:'r' }}">{{ x|flotante }}</td>{% endfor %}
+                                <td data-valor="{% if fila.cambio is not None %}{{ fila.cambio|stringformat:'r' }}{% endif %}">{{ fila.cambio|flotante }}</td>
+                                <td data-valor="{{ fila.norma|stringformat:'r' }}">{{ fila.norma|flotante }}</td>
                             </tr>
-                        {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+        <noscript><p class="field-help">Activa JavaScript para recorrer las iteraciones con la gráfica; la tabla y la iteración 1 están completas.</p></noscript>
+    </section>
+
+    {% disclosure titulo="Comprobaciones" id="comprobaciones-iterativas" detalle="Dominancia diagonal por filas y Ax = b con la última aproximación" %}
+        <div class="iterativos-comprobaciones">
+            <div class="table-wrap">
+                <table class="procedure-table">
+                    <caption>Dominancia diagonal estricta: |aᵢᵢ| &gt; Σ<sub>j≠i</sub> |aᵢⱼ|</caption>
+                    <thead><tr><th scope="col">Fila</th><th scope="col">|aᵢᵢ|</th><th scope="col">Σ<sub>j≠i</sub> |aᵢⱼ|</th><th scope="col">¿Cumple?</th></tr></thead>
+                    <tbody>
+                        {% for f in r.dominancia %}<tr data-cumple="{{ f.cumple|yesno:'si,no' }}"><th scope="row">{{ f.fila }}</th><td>{{ f.diagonal }}</td><td>{{ f.resto }}</td><td>{{ f.cumple|yesno:"Sí,No" }}</td></tr>{% endfor %}
                     </tbody>
                 </table>
             </div>
-
-            {% if r.final.k %}
-                {% disclosure titulo="Ver sustituciones" nivel=4 clase="disclosure-procedure" abierto=True %}
-                    <p class="field-help">{% if r.clave == "jacobi" %}Jacobi toma cada componente de la vuelta anterior.{% else %}Gauss-Seidel usa las componentes nuevas ya calculadas y toma las restantes de la vuelta anterior.{% endif %} El redondeo se aplica solo al mostrar.</p>
-                    <div class="field-group iterativo-selector" data-iterativo-selector hidden>
-                        <label for="paso-{{ r.clave }}">Iteración a inspeccionar</label>
-                        <select id="paso-{{ r.clave }}" class="field-select" aria-controls="desarrollo-{{ r.clave }}">
-                            {% for fila in r.filas %}{% if fila.k %}<option value="{{ fila.k }}">Iteración {{ fila.k }}</option>{% endif %}{% endfor %}
-                        </select>
-                    </div>
-                    <noscript><p class="field-help">Aquí se muestran las sustituciones de la primera iteración. Activa JavaScript para explorar las demás.</p></noscript>
-                    <ol id="desarrollo-{{ r.clave }}" class="iterativo-desarrollo" data-iterativo-desarrollo>
-                        {% for fila in r.desarrollo %}
-                            <li>
-                                <p class="iterativo-despeje"><strong>{{ fila.variable }}</strong> = ({{ fila.independiente }}{% for termino in fila.terminos %} {{ termino.signo }} {{ termino.factor }}{{ termino.variable }}{% endfor %}) / {{ fila.diagonal }}</p>
-                                <p class="iterativo-sustitucion">
-                                    <span>= ({{ fila.independiente }}</span>
-                                    {% for termino in fila.terminos %}
-                                        <span class="iterativo-termino">{{ termino.signo }} {{ termino.factor }}<span class="iterativo-operando" data-origen="{{ termino.origen }}">(<span data-valor="{{ termino.j }}">{{ termino.valor }}</span>) <small>{{ termino.variable }} {{ termino.origen }}</small></span></span>
-                                    {% endfor %}
-                                    <span>) / {{ fila.diagonal }} ≈ <strong data-componente="{{ forloop.counter0 }}">{{ fila.valor }}</strong></span>
-                                </p>
-                            </li>
-                        {% endfor %}
-                    </ol>
-                    {{ r.filas|json_script:r.clave }}
-                {% enddisclosure %}
-            {% endif %}
-
-            {% if r.grafica %}
-                {% disclosure titulo="Ver evolución del cambio y el residuo" nivel=4 %}
-                    {% include "calculadora/modules/iterativos/_grafica.html" with grafica=r.grafica only %}
-                {% enddisclosure %}
-            {% endif %}
-        </section>
-    {% endfor %}
+            {% for m in r.metodos %}
+            <div class="table-wrap">
+                <table class="procedure-table">
+                    <caption>Ax = b con x⁽{{ m.final.k }}⁾ de {{ m.metodo }}: r = b − Ax</caption>
+                    <thead><tr><th scope="col">Ecuación</th><th scope="col">(Ax)ᵢ</th><th scope="col">bᵢ</th><th scope="col">rᵢ</th></tr></thead>
+                    <tbody>
+                        {% for v in m.verificacion %}<tr><th scope="row">{{ forloop.counter }}</th><td>{{ v.ax|flotante }}</td><td>{{ v.b }}</td><td>{{ v.r|flotante }}</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+    {% enddisclosure %}
 </section>
+{% endnumeric_results %}

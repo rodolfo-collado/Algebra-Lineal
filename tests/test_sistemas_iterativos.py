@@ -37,6 +37,28 @@ class SistemasIterativosTest(unittest.TestCase):
             Fraction(-306873, 302500), Fraction(9528423, 9680000),
         ))
 
+    def test_coincide_bit_a_bit_con_el_script_de_referencia(self):
+        # Transcripción de jacobi() y gauss_seidel() del script de clase (jacobi_gauss_seidel.py).
+        def referencia(a, b, anterior, metodo):
+            nuevo = [0.0] * len(a) if metodo == "jacobi" else list(anterior)
+            fuente = anterior if metodo == "jacobi" else nuevo
+            for i in range(len(a)):
+                suma = 0.0
+                for j in range(len(a)):
+                    if j != i:
+                        suma += a[i][j] * fuente[j]
+                nuevo[i] = (b[i] - suma) / a[i][i]
+            return nuevo
+
+        for a, b in ((CLASE_A, CLASE_B), (PRACTICA_A, PRACTICA_B)):
+            for metodo in ("jacobi", "gauss_seidel"):
+                with self.subTest(metodo=metodo, b=b):
+                    resultado = resolver_iterativo(a, b, metodo)
+                    x = [0.0] * len(a)
+                    for paso in resultado.iteraciones[1:]:
+                        x = referencia(a, b, x, metodo)
+                        self.assertEqual(paso.x, tuple(x))
+
     def test_primeras_tres_iteraciones_de_la_diapositiva_28(self):
         casos = {
             "jacobi": (

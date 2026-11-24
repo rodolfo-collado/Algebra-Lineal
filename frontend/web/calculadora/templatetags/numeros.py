@@ -13,7 +13,7 @@ from django import template
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
-from ..presentacion_numerica import PRECISIONES, representar_texto
+from ..presentacion_numerica import PRECISIONES, representar_flotante, representar_texto
 from ..servicios_matrices import SUBINDICES
 
 register = template.Library()
@@ -26,6 +26,20 @@ _INCOGNITA = re.compile(r"(?<![A-Za-z])x([0-9]+)")
 def incognitas(texto):
     """«2x1 - x2 = 3» → «2x₁ - x₂ = 3». Solo para salida matemática, nunca para ayudas de sintaxis."""
     return _INCOGNITA.sub(lambda m: "x" + m[1].translate(SUBINDICES), str(texto))
+
+
+@register.filter
+def flotante(valor, distinto_de=None):
+    """Un resultado de máquina (float) con las variantes del formato global; «—» si no existe.
+
+    `|flotante:tolerancia` se usa junto a ε: el valor nunca se lee igual que ella.
+    """
+    if valor is None:
+        return "—"
+    texto, datos = representar_flotante(float(valor), distinto_de)
+    if not datos:
+        return texto
+    return format_html('<span data-numeric="{}">{}</span>', json.dumps(datos, ensure_ascii=False), texto)
 
 
 def variantes(texto):

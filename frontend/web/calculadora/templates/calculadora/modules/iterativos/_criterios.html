@@ -1,0 +1,5 @@
+{% load numeros %}{% comment %}Los dos criterios de parada de la última iteración frente a ε; el texto dice si cumple, el color solo acompaña.{% endcomment %}
+<dl class="iterativos-criterios">
+    {% if m.final.cambio is not None %}<div data-cumple="{% if m.cumple_cambio %}si{% else %}no{% endif %}"><dt>Cambio máximo ‖x⁽ᵏ⁾ − x⁽ᵏ⁻¹⁾‖∞</dt><dd>{{ m.final.cambio|flotante:tolerancia }} {% if m.cumple_cambio %}&lt; ε · cumple{% else %}≥ ε · no cumple{% endif %}</dd></div>{% endif %}
+    <div data-cumple="{% if m.cumple_residuo %}si{% else %}no{% endif %}"><dt>Residuo ‖b − Ax⁽ᵏ⁾‖∞</dt><dd>{{ m.final.norma|flotante:tolerancia }} {% if m.cumple_residuo %}&lt; ε · cumple{% else %}≥ ε · no cumple{% endif %}</dd></div>
+</dl>

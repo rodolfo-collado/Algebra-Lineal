@@ -44,13 +44,18 @@ class ResultadoIterativo:
     estado: str
     tolerancia: Fraction
     limite: int
-    filas_no_dominantes: tuple[int, ...]
+    # Por fila: |aᵢᵢ| y la suma de |aᵢⱼ| con j ≠ i, con los coeficientes exactos ingresados.
+    dominancia: tuple[tuple[Fraction, Fraction], ...]
     despejes: tuple[Despeje, ...]
     iteraciones: tuple[Iteracion, ...]
 
     @property
     def final(self):
         return self.iteraciones[-1]
+
+    @property
+    def filas_no_dominantes(self):
+        return tuple(i for i, (diagonal, resto) in enumerate(self.dominancia, 1) if diagonal <= resto)
 
 
 def _finito(valor, mensaje):
@@ -111,7 +116,7 @@ def resolver_iterativo(a, b, metodo, *, inicial=None, tolerancia=TOLERANCIA,
     b_exacto = tuple(_exacto(valor) for valor in b)
     anterior = (0.0,) * n if inicial is None else _vector(inicial, n)
     despejes = []
-    filas_no_dominantes = []
+    dominancia = []
     for i, (fila, exacta) in enumerate(zip(a_numerica, a_exacta)):
         diagonal = fila[i]
         if diagonal == 0:
@@ -122,8 +127,7 @@ def resolver_iterativo(a, b, metodo, *, inicial=None, tolerancia=TOLERANCIA,
         terminos = tuple(Termino(j, coef, metodo == "gauss_seidel" and j < i)
                          for j, coef in enumerate(fila) if j != i and coef != 0)
         despejes.append(Despeje(b_numerico[i], diagonal, terminos))
-        if abs(exacta[i]) <= sum(abs(exacta[t.columna]) for t in terminos):
-            filas_no_dominantes.append(i + 1)
+        dominancia.append((abs(exacta[i]), sum(abs(exacta[t.columna]) for t in terminos)))
 
     primera = _registrar(0, a_exacta, b_exacto, anterior)
     if primera is None:
@@ -133,13 +137,10 @@ def resolver_iterativo(a, b, metodo, *, inicial=None, tolerancia=TOLERANCIA,
     for k in range(1, max_iteraciones + 1):
         nuevo = [0.0] * n
         for i, despeje in enumerate(despejes):
-            if metodo == "jacobi":
-                suma = sum(t.coeficiente * anterior[t.columna] for t in despeje.terminos)
-                nuevo[i] = (despeje.independiente - suma) / despeje.diagonal
-            else:
-                suma_nueva = sum(t.coeficiente * nuevo[t.columna] for t in despeje.terminos if t.usa_nuevo)
-                suma_anterior = sum(t.coeficiente * anterior[t.columna] for t in despeje.terminos if not t.usa_nuevo)
-                nuevo[i] = (despeje.independiente - suma_nueva - suma_anterior) / despeje.diagonal
+            # Jacobi lee solo x⁽ᵏ⁻¹⁾; Gauss-Seidel toma x⁽ᵏ⁾ de las columnas j < i ya actualizadas.
+            suma = sum(t.coeficiente * (nuevo if t.usa_nuevo else anterior)[t.columna]
+                       for t in despeje.terminos)
+            nuevo[i] = (despeje.independiente - suma) / despeje.diagonal
 
         cambio = max(abs(nuevo[i] - anterior[i]) for i in range(n))
         fila = (_registrar(k, a_exacta, b_exacto, nuevo, cambio)
@@ -154,4 +155,4 @@ def resolver_iterativo(a, b, metodo, *, inicial=None, tolerancia=TOLERANCIA,
         anterior = fila.x
 
     return ResultadoIterativo(metodo, estado, tolerancia, max_iteraciones,
-                              tuple(filas_no_dominantes), tuple(despejes), tuple(iteraciones))
+                              tuple(dominancia), tuple(despejes), tuple(iteraciones))

@@ -312,6 +312,12 @@ Las pruebas web cubren la verificación de raíz calculada, longitud, límite de
 iteraciones y estancamiento; el perfil del teclado se prueba con los demás perfiles.
 Verifica además flechas y arrastre físico del control, pantalla táctil, temas y
 anchos de 320, 768, 1024 y 1440 px, bloqueando las peticiones fuera de loopback.
+Jacobi y Gauss-Seidel: `uv run --locked python -m tests.iterativos_browser` (puerto 8906,
+`/__pruebas/`). Comprueba la `k` compartida por gráfica, sustitución y tabla (clic,
+flechas, control y clic en la gráfica), los orígenes anterior/nuevo de cada método,
+el formato global Exacto/Decimal con «≈», la copia CSV con cifras almacenadas, los
+ejemplos del menú de edición, la divergencia, el vector inicial exacto y los estilos y
+temas a 1280, 744 y 390 px. Véase [Jacobi y Gauss-Seidel](sistemas-iterativos.md).
 El runner de Conjuntos (`python -m tests.conjuntos_browser`, puerto 8894) usa las rutas
 públicas. Véase [Bisección](biseccion.md) y [Conjuntos](conjuntos.md).
 

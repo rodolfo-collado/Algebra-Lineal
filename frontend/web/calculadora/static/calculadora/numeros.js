@@ -7,12 +7,12 @@
     const precision = controls.querySelector("[data-numeric-precision]");
     const label = controls.querySelector("[data-numeric-precision-label]");
     const notice = controls.querySelector("[data-numeric-notice]");
-    const numbers = Array.from(result.querySelectorAll("[data-numeric]"), node =>
-        ({node, data: JSON.parse(node.dataset.numeric)}));
-    const attributes = Array.from(result.querySelectorAll("[data-numeric-attributes]"), node =>
-        ({node, data: JSON.parse(node.dataset.numericAttributes)}));
+    // Se leen en cada aplicación: un resultado interactivo puede copiar nodos marcados (p. ej. una
+    // sustitución que muestra otra iteración) y así siguen el formato vigente.
+    const marcados = (selector, atributo) => Array.from(result.querySelectorAll(selector), node =>
+        ({node, data: JSON.parse(node.dataset[atributo])}));
     // numeric_results solo marca texto cuya representación cambia en alguna precisión.
-    if (!numbers.length) return;
+    if (!result.querySelector("[data-numeric]")) return;
     // tema_inicial.html: localStorage en la sesión y, en escritorio, el archivo propio.
     const preferencias = window.preferencias;
 
@@ -24,11 +24,11 @@
             approximate ||= data.aproximados.includes(precision.value);
             return data.decimales[precision.value];
         }
-        numbers.forEach(({node, data}) => {
+        marcados("[data-numeric]", "numeric").forEach(({node, data}) => {
             const valor = text(data);
             if (node.textContent !== valor) node.textContent = valor;
         });
-        attributes.forEach(({node, data}) => {
+        marcados("[data-numeric-attributes]", "numericAttributes").forEach(({node, data}) => {
             Object.entries(data).forEach(([attribute, value]) => node.setAttribute(attribute, text(value)));
         });
         label.hidden = precision.hidden = !decimal;

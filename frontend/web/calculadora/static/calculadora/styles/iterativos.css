@@ -1,235 +1,217 @@
-.iterativos-enlaces {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
+/* Jacobi y Gauss-Seidel. Dos usos del color, sin mezclarlos:
+   - Cada incógnita tiene su serie (gráfica, punto en la tabla y en la sustitución).
+   - El fondo distingue el origen de un valor: x⁽ᵏ⁻¹⁾ anterior (neutro) o x⁽ᵏ⁾ nuevo (marca). */
+
+.iterativos-resultado {
+    --serie-1: #2f6db3; --serie-2: #c8601a; --serie-3: #2e8655; --serie-4: #b13f76; --serie-5: #6d55bd;
+    --serie-6: #0c7f90; --serie-7: #93681a; --serie-8: #c03636; --serie-9: #56657f; --serie-10: #5f7f1f;
+    --metodo-1: var(--serie-1); --metodo-2: var(--serie-2);
 }
 
-.iterativos-enlaces .btn {
-    white-space: normal;
+[data-theme="dark"] .iterativos-resultado {
+    --serie-1: #82b2ec; --serie-2: #f0a35f; --serie-3: #6fca96; --serie-4: #e88ab8; --serie-5: #b5a1f2;
+    --serie-6: #5ccbd9; --serie-7: #dcb35d; --serie-8: #f28b8b; --serie-9: #a6b5d1; --serie-10: #aacb62;
 }
+
+/* —— Entrada —— */
 
 .iterativo-parametros {
     display: grid;
     grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
-}
-
-.iterativo-parametros legend {
-    margin-block-end: var(--space-2);
-}
-
-.iterativo-parametros .field-group {
-    align-content: start;
-    min-width: 0;
-}
-
-.iterativos-diagnostico {
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-brand-soft);
-    border-inline-start: 3px solid var(--color-brand);
-    border-radius: var(--radius-sm);
-}
-
-.iterativos-diagnostico[data-dominancia="no-estricta"] {
-    background: var(--color-warning-soft);
-    border-color: var(--color-warning);
-}
-
-.iterativo-panel {
-    display: grid;
-    gap: var(--space-3);
-    min-width: 0;
-    scroll-margin-top: var(--anchor-offset, 6rem);
-}
-
-.iterativo-estado {
-    color: var(--color-warning);
-}
-
-.iterativo-estado[data-estado="convergio"] {
-    color: var(--color-success);
-}
-
-.iterativo-resumen {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-2);
-    margin: 0;
-}
-
-.iterativo-resumen > div {
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-surface-muted);
-    border-radius: var(--radius-sm);
-}
-
-.iterativo-resumen > :first-child,
-.iterativo-resumen > :last-child {
-    grid-column: 1 / -1;
-}
-
-.iterativo-resumen dt {
-    color: var(--color-muted);
-    font-size: var(--text-sm);
-}
-
-.iterativo-resumen dd {
-    margin: 0;
-    font-weight: 600;
-    overflow-wrap: anywhere;
-}
-
-.iterativo-vector {
-    font-family: var(--font-math);
-}
-
-.iterativo-tabla {
-    overflow: auto;
-    max-height: 22rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-}
-
-.iterativo-tabla:focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: 2px;
-}
-
-.iterativo-tabla caption {
-    padding: var(--space-2) var(--space-3);
-    text-align: start;
-    font-weight: 600;
-}
-
-.iterativo-tabla .procedure-table {
-    width: 100%;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-}
-
-.iterativo-tabla tr[aria-current] > * {
-    background: var(--color-brand-soft);
-    font-weight: 700;
-}
-
-.iterativo-selector {
-    width: fit-content;
-    margin-block: var(--space-2);
-}
-
-.iterativo-selector[hidden] {
-    display: none;
-}
-
-.iterativo-desarrollo {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: var(--space-2);
-}
-
-.iterativo-desarrollo li {
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-}
-
-.iterativo-despeje,
-.iterativo-sustitucion {
-    margin: 0;
-    font-family: var(--font-math);
-    font-size: var(--text-sm);
-}
-
-.iterativo-sustitucion {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.35rem;
-    margin-block-start: 0.45rem;
-}
-
-.iterativo-termino {
-    white-space: nowrap;
-}
-
-.iterativo-operando {
-    display: inline-block;
-    padding-inline: 0.3rem;
-    background: var(--color-surface-muted);
-    border-radius: 4px;
-}
-
-.iterativo-operando small {
-    margin-inline-start: 0.15rem;
-    color: var(--color-muted);
-    font-family: var(--font-ui);
-}
-
-.iterativo-operando[data-origen="nueva"] {
-    background: var(--color-brand-soft);
-    font-weight: 600;
-}
-
-.iterativo-operando[data-origen="nueva"] small {
-    color: var(--color-brand-strong);
-}
-
-.iterativo-grafica {
-    max-width: 40rem;
-    margin: 0;
-}
-
-.iterativo-grafica svg {
-    display: block;
-    width: 100%;
-    fill: var(--color-text);
-    font: 17px var(--font-ui);
-}
-
-.iterativo-ejes,
-.iterativo-serie {
-    fill: none;
-    stroke: var(--color-border-strong);
-    vector-effect: non-scaling-stroke;
-}
-
-.iterativo-serie {
-    stroke-width: 2;
-}
-
-.iterativo-serie-cambio { stroke: var(--color-brand); }
-.iterativo-serie-residuo { stroke: var(--color-warning); stroke-dasharray: 5 3; }
-
-.iterativo-grafica figcaption {
-    display: flex;
-    flex-wrap: wrap;
     gap: var(--space-2) var(--space-3);
-    font-size: var(--text-sm);
 }
 
-.iterativo-leyenda-cambio::before,
-.iterativo-leyenda-residuo::before {
-    content: "";
-    display: inline-block;
-    width: 1.4em;
-    margin-inline-end: 0.4em;
-    border-top: 2px solid var(--color-brand);
-    vertical-align: middle;
+.iterativo-parametros legend { margin-block-end: var(--space-2); }
+.iterativo-parametros .field-group { align-content: start; min-width: 0; }
+.iterativo-parametros .field-help { margin: 0; }
+.iterativo-criterio { grid-column: 1 / -1; }
+
+/* —— Veredicto —— */
+
+.iterativos-cabecera {
+    --tono: var(--color-border-strong);
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: var(--space-3) var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border); border-left: 4px solid var(--tono); border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+}
+.iterativos-cabecera[data-tono="exito"] { --tono: var(--color-success); }
+.iterativos-cabecera[data-tono="aviso"] { --tono: var(--color-warning); }
+.iterativos-cabecera .numeric-format { flex: 0 1 15rem; margin: 0; }
+.iterativos-veredicto { flex: 1 1 24rem; min-width: 0; }
+.iterativos-veredicto > p { margin: var(--space-1) 0 0; }
+.iterativos-veredicto > .iterativos-condiciones { margin: 0 0 var(--space-1); color: var(--color-muted); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.iterativos-estado { color: var(--tono); font-weight: 600; }
+.iterativos-solucion { font-family: var(--font-math); font-size: clamp(1.05rem, 2.4vw, 1.35rem); overflow-wrap: anywhere; }
+.iterativos-dominancia { color: var(--color-muted); font-size: var(--text-sm); }
+.iterativos-dominancia[data-dominancia="no-estricta"] strong { color: var(--color-warning); }
+
+.iterativos-criterios {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-1) var(--space-3);
+    margin: var(--space-2) 0 0;
+}
+.iterativos-criterios > div { min-width: 0; padding-left: var(--space-2); border-left: 2px solid var(--color-border); }
+.iterativos-criterios > [data-cumple="si"] { border-color: var(--color-success); }
+.iterativos-criterios > [data-cumple="no"] { border-color: var(--color-warning); }
+.iterativos-criterios dt { color: var(--color-muted); font-size: var(--text-sm); }
+.iterativos-criterios dd { margin: 0; font-family: var(--font-math); overflow-wrap: anywhere; }
+
+/* —— Comparación —— */
+
+.iterativos-comparacion { display: grid; gap: var(--space-3); container-type: inline-size; }
+.iterativos-comparacion .panel-title { margin: 0; }
+.iterativos-tabla-comparacion :is(th, td) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.iterativos-tabla-comparacion .iterativo-vector { min-width: 14rem; white-space: normal; overflow-wrap: anywhere; }
+.iterativos-tabla-comparacion tr[data-estado="convergio"] .iterativo-metodo { color: var(--color-success); }
+.iterativos-tabla-comparacion tr:not([data-estado="convergio"]) .iterativo-metodo { color: var(--color-warning); }
+.iterativo-metodo { font-weight: 700; }
+.iterativo-metodo::before {
+    content: ""; display: inline-block; width: .7em; height: .7em; margin-inline-end: .4em; border-radius: 50%;
+    background: var(--metodo-1); vertical-align: baseline;
+}
+.iterativo-metodo[data-metodo-serie="gauss_seidel"]::before { border-radius: 2px; background: var(--metodo-2); }
+.iterativo-vector { font-family: var(--font-math); }
+@container (min-width: 52rem) {
+    .iterativos-comparacion:has(> .iterativo-grafica:not([hidden])) { grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 1fr); align-items: start; }
+    .iterativos-comparacion .panel-title { grid-column: 1 / -1; }
 }
 
-.iterativo-leyenda-residuo::before {
-    border-color: var(--color-warning);
-    border-top-style: dashed;
+/* —— Zona de estudio: gráfica y sustitución juntas, la tabla debajo —— */
+
+.iterativos-estudio { container-type: inline-size; }
+.iterativos-estudio-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.iterativos-estudio-cabecera .panel-title { margin: 0; }
+.iterativos-selector[hidden], .iterativo[hidden], .iterativo-grafica[hidden], [data-control][hidden], [data-copiar-tabla][hidden] { display: none; }
+.iterativos-selector button { border: 0; background: none; font: inherit; }
+.iterativos-selector [aria-pressed="true"] { background: var(--color-surface-raised); color: var(--color-brand); box-shadow: var(--shadow-sm); }
+.iterativos-selector button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+
+.iterativo {
+    display: grid; gap: var(--space-3); min-width: 0;
+    grid-template-areas: "titulo" "variables" "paso" "error" "tabla";
 }
+.iterativo + .iterativo { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
+.iterativo-titulo, .iterativo-estado { grid-area: titulo; margin: 0; }
+.iterativo-estado { color: var(--color-warning); font-size: var(--text-sm); font-weight: 600; }
+.iterativo-estado[data-estado="convergio"] { color: var(--color-success); }
+.iterativo-grafica { grid-area: variables; min-width: 0; }
+.iterativo-grafica-secundaria { grid-area: error; }
+.iterativo-paso { grid-area: paso; min-width: 0; }
+.iterativo-tabla { grid-area: tabla; min-width: 0; }
+.iterativos-comparacion .iterativo-grafica { grid-area: auto; }
+
+@container (min-width: 50rem) {
+    .iterativo {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+        grid-template-rows: auto auto 1fr auto;
+        grid-template-areas: "titulo titulo" "variables paso" "error paso" "tabla tabla";
+        column-gap: var(--space-4);
+    }
+    .iterativo:not(:has(.iterativo-paso)) { grid-template-areas: "titulo titulo" "variables error" "tabla tabla"; }
+    /* Sin gráficas (sin JavaScript o sin Plotly), la sustitución ocupa todo el ancho. */
+    .iterativo:not(:has(.iterativo-grafica:not([hidden]))) { grid-template-columns: minmax(0, 1fr); grid-template-areas: "titulo" "paso" "tabla"; }
+}
+
+/* —— Iteración elegida —— */
+
+.iterativo-control { display: flex; align-items: center; gap: var(--space-1); }
+.iterativo-control .btn { min-width: 2.5rem; min-height: 2.25rem; padding: .2rem .6rem; font-size: 1.1rem; line-height: 1; }
+.iterativo-control input[type="range"] { flex: 1; min-width: 6rem; accent-color: var(--color-brand); }
+.iterativo-paso-titulo { margin: var(--space-2) 0 var(--space-1); font-size: var(--text-base); }
+.iterativo-regla { margin: 0 0 var(--space-2); color: var(--color-muted); font-size: var(--text-sm); }
+
+.iterativo-sustituciones { list-style: none; display: grid; gap: var(--space-1); margin: 0; padding: 0; counter-reset: orden; }
+/* Dos renglones alineados, como en la pizarra: xᵢ⁽ᵏ⁾ = despeje, y debajo = sustitución = valor. */
+.iterativo-sustituciones li {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .25rem .45rem;
+    padding: .45rem .6rem; border-radius: var(--radius-sm); background: var(--color-surface);
+    font-family: var(--font-math); font-size: var(--text-sm);
+    overflow-x: auto; /* solo si un único término no cabe */
+}
+/* Gauss-Seidel: el orden de actualización importa y se numera. */
+.iterativo-sustituciones[data-orden="secuencial"] li { counter-increment: orden; }
+.iterativo-sustituciones[data-orden="secuencial"] li { grid-template-columns: auto auto minmax(0, 1fr); }
+.iterativo-sustituciones[data-orden="secuencial"] li > .iterativo-x { grid-column: 2; }
+.iterativo-sustituciones[data-orden="secuencial"] .iterativo-linea { grid-column: 3; }
+.iterativo-sustituciones[data-orden="secuencial"] li::before {
+    grid-row: 1; content: counter(orden); display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border-radius: 50%;
+    background: var(--color-brand); color: var(--color-brand-text); font: 700 var(--text-xs) var(--font-ui);
+}
+.iterativo-linea { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .45rem; min-width: 0; }
+.iterativo-grupo { display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
+.iterativo-sustituciones li > .iterativo-x { grid-column: 1; grid-row: 1; }
+.iterativo-igual { color: var(--color-muted); }
+.iterativo-fraccion { display: inline-grid; text-align: center; line-height: 1.5; }
+.iterativo-fraccion > span { padding-inline: .3em; white-space: nowrap; }
+.iterativo-fraccion > span:first-child { border-bottom: 1.5px solid currentColor; }
+.iterativo-despeje { color: var(--color-muted); }
+/* Si no cabe (todas las cifras o pantalla estrecha), el numerador ocupa más renglones,
+   partiendo solo entre términos; «=» sigue junto a su fracción. */
+.iterativo-termino { white-space: nowrap; }
+.iterativo-grupo { max-width: 100%; }
+.iterativo-grupo > .iterativo-fraccion { min-width: 0; }
+.iterativo-fraccion > span:first-child { white-space: normal; }
+.iterativo-sustituciones sup { font-size: .72em; }
+
+.iterativo-x { font-weight: 700; white-space: nowrap; }
+.iterativo-x[data-serie]::before {
+    content: ""; display: inline-block; width: .55em; height: .55em; margin-inline-end: .3em; border-radius: 50%;
+    background: var(--serie); vertical-align: .08em;
+}
+[data-serie="1"] { --serie: var(--serie-1); } [data-serie="2"] { --serie: var(--serie-2); }
+[data-serie="3"] { --serie: var(--serie-3); } [data-serie="4"] { --serie: var(--serie-4); }
+[data-serie="5"] { --serie: var(--serie-5); } [data-serie="6"] { --serie: var(--serie-6); }
+[data-serie="7"] { --serie: var(--serie-7); } [data-serie="8"] { --serie: var(--serie-8); }
+[data-serie="9"] { --serie: var(--serie-9); } [data-serie="10"] { --serie: var(--serie-10); }
+
+/* Origen de cada valor: anterior x⁽ᵏ⁻¹⁾ en neutro; nuevo x⁽ᵏ⁾ en el color de marca. */
+.iterativo-valor, .iterativo-muestra { padding: .05em .3em; border-radius: 4px; }
+.iterativo-valor[data-origen="anterior"], .iterativo-muestra[data-origen="anterior"] {
+    background: var(--color-surface-muted); box-shadow: inset 0 0 0 1px var(--color-border);
+}
+.iterativo-valor[data-origen="nuevo"], .iterativo-muestra[data-origen="nuevo"] {
+    background: var(--color-brand-soft); color: var(--color-brand-strong); box-shadow: inset 0 0 0 1px var(--color-brand);
+}
+.iterativo-despeje .iterativo-muestra { font-weight: 600; }
+strong.iterativo-valor { font-size: 1.05em; }
+.iterativo-fuente { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+
+.iterativo-medidas { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: var(--space-2) 0 0; font-size: var(--text-sm); }
+.iterativo-medidas div { display: flex; gap: .4em; }
+.iterativo-medidas dt { color: var(--color-muted); }
+.iterativo-medidas dd { margin: 0; font-family: var(--font-math); }
+
+/* —— Tabla —— */
+
+.iterativo-tabla { display: grid; gap: var(--space-1); }
+.iterativo-tabla-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); justify-content: flex-end; }
+.iterativo-tabla-acciones .btn { min-height: 2.1rem; padding: .3rem .8rem; font-size: var(--text-sm); }
+.iterativo-tabla-acciones .field-help { margin: 0; }
+.iterativo-tabla-marco { overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+/* Con JavaScript (data-estilo solo existe entonces) la fila elegida se desplaza dentro del marco;
+   sin él, la tabla se lee completa. */
+[data-estilo] .iterativo-tabla-marco { max-height: 18rem; overscroll-behavior: contain; }
+.iterativo-tabla-marco:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.iterativo-tabla caption { padding: var(--space-1) var(--space-3); color: var(--color-muted); font-size: var(--text-xs); text-align: left; }
+.iterativo-tabla .procedure-table { width: 100%; }
+.iterativo-tabla th, .iterativo-tabla td { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.iterativo-tabla thead th { position: sticky; top: 0; z-index: 1; background: var(--color-surface-raised); box-shadow: inset 0 -1px 0 var(--color-border); }
+.iterativo-tabla tbody tr[data-iteracion]:not([data-iteracion="0"]) { cursor: pointer; }
+.iterativo-tabla tbody tr:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.iterativo-tabla tr[data-anterior] > * { background: var(--color-surface-muted); }
+.iterativo-tabla tr[aria-current] > * { background: var(--color-brand-soft); font-weight: 700; }
+.iterativo-tabla tr[aria-current] > th { box-shadow: inset 3px 0 0 var(--color-brand); }
+
+/* —— Comprobaciones —— */
+
+.iterativos-comprobaciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: var(--space-3); align-items: start; }
+.iterativos-comprobaciones caption { padding-bottom: var(--space-1); text-align: left; font-weight: 600; }
+.iterativos-comprobaciones td { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.iterativos-comprobaciones tr[data-cumple="no"] td:last-child { color: var(--color-warning); font-weight: 700; }
 
 @media (max-width: 600px) {
     .iterativo-parametros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .iterativo-parametros > :nth-child(2) { grid-column: 1 / -1; }
-    .iterativo-resumen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .iterativo-resumen > :nth-child(4) { grid-column: 1 / -1; }
-    .iterativo-desarrollo li { padding-inline: var(--space-2); }
-    .iterativo-termino { white-space: normal; }
-    .iterativo-grafica svg { font-size: 22px; }
+    .iterativo-parametros > .field-group:first-of-type { grid-column: 1 / -1; }
+    .iterativos-cabecera { padding: var(--space-3); }
+    .iterativo-sustituciones li { padding-inline: .4rem; }
 }
