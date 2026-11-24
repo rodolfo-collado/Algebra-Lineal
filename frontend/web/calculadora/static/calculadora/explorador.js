@@ -89,7 +89,10 @@
     // (las migas de una herramienta) elige la primera herramienta de esa categoría.
     const porId = (id) => items.find((a) => a.dataset.id === id);
     function inicial() {
-        const tema = decodeURIComponent(location.hash.slice(1));
+        let tema = "";
+        try {
+            tema = decodeURIComponent(location.hash.slice(1));
+        } catch { /* Un enlace incompleto conserva la selección del área. */ }
         const recordada = porId(leer(AREA)[area]);
         const delTema = tema && document.getElementById(tema)?.nextElementSibling?.querySelector("a.indice-item");
         if (delTema && recordada?.closest("ul") !== delTema.closest("ul")) return delTema;

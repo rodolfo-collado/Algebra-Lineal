@@ -121,6 +121,25 @@
             igual(items.map(a => a.tabIndex), [-1, -1, -1, 0, -1]);
             igual(Object.keys(w.localStorage).sort(), claves);
         }],
+        ["Fragmentos malformados permiten recorrer el área y abrir un ancla válida", "/areas/algebra-lineal/#%", async w => {
+            const items = todos(w, "a.indice-item");
+            igual(items.filter(a => a.tabIndex === 0).length, 1);
+            items[0].focus();
+            items[0].dispatchEvent(new w.KeyboardEvent("keydown", { key: "End", bubbles: true, cancelable: true }));
+            igual(w.document.activeElement, items.at(-1));
+            w.location.hash = "#%E0";
+            await turno(w);
+            igual(q(w, ".destacado-cuerpo:not([hidden])").dataset.id, items.at(-1).dataset.id);
+
+            const detalle = w.document.createElement("details");
+            const destino = w.document.createElement("p");
+            destino.id = "destino-prueba";
+            detalle.append(destino);
+            w.document.body.append(detalle);
+            w.location.hash = "#destino%2Dprueba";
+            await turno(w);
+            igual(detalle.open, true);
+        }],
         ["Panel destacado: contexto del tema y lema solo si hay varias herramientas", "/areas/sistemas-numericos/", w => {
             const panel = () => w.document.querySelector(".destacado-cuerpo:not([hidden])");
             w.document.querySelector('a.indice-item[data-id="conversion-bases"]').focus();
