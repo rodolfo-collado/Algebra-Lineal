@@ -17,7 +17,7 @@ from django.utils.html import strip_tags
 
 from backend.matrices import formatear_fraccion
 from frontend.web.calculadora.presentacion_numerica import (
-    PRECISIONES, formatear_exacto, representar, representar_texto,
+    PRECISIONES, formatear_exacto, representar, representar_flotante, representar_texto,
 )
 from frontend.web.calculadora.servicios import resolver_sistema_web
 from tests.test_ecuaciones_matriciales_web import datos_ecuacion
@@ -90,6 +90,46 @@ class PruebasRepresentacion(TestCase):
         ):
             with self.subTest(exacto=exacto):
                 self.assertEqual(representar_texto(exacto).decimal, decimal)
+
+
+class PruebasFlotantes(TestCase):
+    """Resultados de máquina (Jacobi, Gauss-Seidel) en el mismo formato Exacto/Decimal."""
+
+    def test_valor_de_referencia_es_el_decimal_mas_corto(self):
+        self.assertEqual(representar_flotante(0.6), ("0.6", None))
+        self.assertEqual(representar_flotante(1.0), ("1", None))
+        self.assertEqual(representar_flotante(-0.0), ("0", None))
+        texto, datos = representar_flotante(25 / 11)
+        self.assertEqual(texto, "2.272727272727273")
+        self.assertEqual(datos["decimales"], {"2": "2.27", "4": "2.2727", "6": "2.272727", "8": "2.27272727"})
+        self.assertEqual(datos["aproximados"], ["2", "4", "6", "8"])
+
+    def test_redondeo_al_par_sin_exponentes_ni_ceros_falsos(self):
+        # Mismo redondeo que representar: 0.125 → 0.12 con dos decimales.
+        self.assertEqual(representar_flotante(0.125)[1]["decimales"]["2"], "0.12")
+        texto, datos = representar_flotante(4.663227051907399e-05)
+        self.assertEqual(texto, "0.00004663227051907399")
+        self.assertEqual(datos["decimales"], {"2": "0.00005", "4": "0.00005", "6": "0.000047", "8": "0.00004663"})
+        self.assertEqual(representar_flotante(-1e-9), ("-0.000000001", None))
+        # Magnitudes enormes (una iteración que diverge): mantisa × 10ⁿ, sin «e+».
+        self.assertEqual(representar_flotante(1e250), ("1 × 10²⁵⁰", None))
+        texto, datos = representar_flotante(-8.08281277464764e+38)
+        self.assertEqual(texto, "-8.08281277464764 × 10³⁸")
+        self.assertEqual(datos["decimales"]["2"], "-8.08 × 10³⁸")
+
+    def test_junto_a_la_tolerancia_nunca_se_lee_igual(self):
+        _texto, datos = representar_flotante(8.291662466008987e-05, 0.0001)
+        self.assertEqual(datos["decimales"], {"2": "0.00008", "4": "0.00008", "6": "0.000083", "8": "0.00008292"})
+        _texto, datos = representar_flotante(0.00009996, 0.0001)
+        self.assertEqual(datos["decimales"]["4"], "0.00009996")
+        self.assertEqual(representar_flotante(0.0001, 0.0001), ("0.0001", None))
+
+    def test_filtro_flotante_marca_solo_lo_que_cambia(self):
+        plantilla = Template("{% load numeros %}{{ a|flotante }}|{{ b|flotante }}|{{ c|flotante }}")
+        a, b, c = plantilla.render(Context({"a": 0.5, "b": 1 / 3, "c": None})).split("|")
+        self.assertEqual((a, c), ("0.5", "—"))
+        self.assertTrue(b.startswith('<span data-numeric="'))
+        self.assertTrue(b.endswith('">0.3333333333333333</span>'))
 
 
 class ValoresHTML(HTMLParser):
