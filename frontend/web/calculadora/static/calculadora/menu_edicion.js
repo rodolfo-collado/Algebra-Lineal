@@ -61,7 +61,9 @@
         }
         const cuadricula = input.closest(".matrix-entry-table, #matrix-grid");
         if (!cuadricula) return null;
-        const comun = { celdas: filasDeMatriz(cuadricula).flat(), cuadricula, generar: entero };
+        // Una herramienta Ax = b con ejemplos (Métodos iterativos) los ofrece desde A y b.
+        const comun = { celdas: filasDeMatriz(cuadricula).flat(), cuadricula, generar: entero,
+            ejemplos: Boolean(input.form?.id === "ecuacion-form" && menu.querySelector("[data-ejemplos-menu]")) };
         if (cuadricula.id === "matrix-grid") return { ...comun, titulo: "Matriz aumentada [A | b]", matriz: cuadricula };
         const operando = cuadricula.closest("[data-simbolo]");
         if (operando) {
