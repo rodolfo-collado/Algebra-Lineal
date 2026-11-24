@@ -147,4 +147,5 @@ Pendiente: lector de pantalla y táctil físico.
 [Práctica en móvil](capturas/iterativos/03-practica-movil.jpg) ·
 [Formulario en móvil](capturas/iterativos/04-formulario-movil.jpg) ·
 [Ejemplos en el menú de edición](capturas/iterativos/05-menu-ejemplos.jpg) ·
-[Sin dominancia diagonal](capturas/iterativos/06-sin-dominancia.jpg)
+[Sin dominancia diagonal](capturas/iterativos/06-sin-dominancia.jpg) ·
+[WebView2 real, Exacto](capturas/iterativos/07-webview2-escritorio.jpg)
