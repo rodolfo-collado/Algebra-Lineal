@@ -16,6 +16,15 @@
     };
     const datos = w => JSON.parse(q(w,"#datos-raices").textContent).resultado;
     const casos = [
+        ["La potencia variable comparte derivada entre vista previa y cálculo", async (w, frame) => {
+            valor(w, "funcion", "x^x-4");
+            await esperar(() => lista(w) && q(w, "#raices-derivada").textContent.includes("ln(x)"));
+            const previa = q(w, "#raices-derivada").textContent;
+            w = await resolver(frame, {funcion: "x^x-4", x0: "1.8"});
+            ok(q(w, "#raices-derivada").textContent === previa, "Misma derivada");
+            const r = datos(w);
+            ok(r.convergio && Math.abs(r.x - 2) < .0001, "Newton converge a 2");
+        }],
         ["Previsualización y selección de x₀ antes de resolver", async w=>{
             valor(w,"funcion","x²-2"); await esperar(()=>lista(w));
             ok(!q(w,"#resultado"),"No calcula al explorar");
