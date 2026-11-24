@@ -77,9 +77,10 @@ ruta resuelta, así que las vistas no arman la navegación a mano.
 P27.5 publica `datos_buscador()` con `json_script`: índice, nombre normalizado,
 estado y orden de todas las herramientas, palabras vacías y separador de términos.
 El cliente deriva sus coincidencias de esos datos; no tiene otro catálogo.
-GET y live exigen todos los términos significativos y ordenan por disponibilidad,
-aciertos en el nombre y posición del registro. `tests.buscador_browser` compara
-los IDs del JS real con `buscar_herramientas()` para una tabla generada en Python.
+La búsqueda por GET y en vivo exige todos los términos significativos. Ordena por
+disponibilidad, aciertos en el nombre, coincidencias de palabra clave completa y
+posición en el registro. `tests.buscador_browser` compara los IDs del JS real con
+`buscar_herramientas()` para una tabla generada en Python.
 
 El catálogo permite sumar áreas sin rehacer la navegación. Los módulos marcados
 «Próximamente» no se enlazan como herramientas disponibles.
@@ -197,6 +198,13 @@ PyInstaller reúne el runtime Python y los recursos; Inno Setup transforma esa
 carpeta en el instalador de Windows. El build obtiene la versión únicamente de
 `pyproject.toml`. WebView2 renderiza la ventana; solo su instalación, si falta,
 puede requerir Internet. CSS, JavaScript, iconos y cálculos son locales.
+
+El actualizador recibe un proveedor de conexión HTTPS en `Actualizador(abrir=…)`.
+Lo usa tanto para consultar la release como para descargar sus archivos. Por
+defecto, `actualizador/conexion.py` abre la conexión en Windows con el almacén
+de certificados del sistema mediante `truststore`, y usa `urllib` en otras
+plataformas. La comprobación SHA-256 del instalador ocurre después de la
+descarga. Consulta el [flujo de actualización](instalacion-windows.md#actualizar-pygebra).
 
 Consulta [Instalación Windows](instalacion-windows.md), [Pruebas](pruebas.md)
 y [Releases](releases.md) para verificar y entregar el paquete.

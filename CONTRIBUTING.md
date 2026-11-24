@@ -90,6 +90,11 @@ GitHub muestra los enlaces, las imágenes y los bloques de código. Si cambias e
 empaquetado, realiza también
 el [build y smoke Windows](docs/instalacion-windows.md).
 
+Si cambias un flujo interactivo, ejecuta también sus
+[pruebas de navegador](docs/pruebas.md). Comprueba el manejo con teclado y el
+flujo básico sin JavaScript. Para cambios que afecten el escritorio, incluye
+una comprobación en Windows.
+
 ## Integración continua
 
 `.github/workflows/ci.yml` ejecuta esas mismas verificaciones en cada pull request
@@ -103,6 +108,19 @@ para la política de versiones y reintentos.
 **Un PR no se fusiona si el CI está en rojo.** Si un check falla, corrígelo en la
 misma rama `feature/*` y espera una ejecución verde. No desactives un check para
 poder mergear.
+
+## Cálculo e interfaz
+
+El backend calcula e interpreta los resultados matemáticos. El servidor valida
+la entrada y los servicios de cada interfaz adaptan el resultado para mostrarlo.
+Redondea solo para presentar y distingue el cambio entre iteraciones del
+residuo y de la tolerancia que se usa en el criterio de parada.
+
+Antes de crear un componente, revisa las [pautas para añadir una herramienta](docs/desarrollo.md#añadir-una-herramienta)
+y los [componentes de interfaz](docs/interfaz.md). Reutiliza el catálogo, los
+layouts, el teclado, los editores, el menú de edición y el formato numérico que
+corresponda. Conserva el formulario y la lectura básica del resultado sin
+JavaScript y aplica el presupuesto del proyecto a las operaciones costosas.
 
 ## Bibliotecas matemáticas y algoritmos educativos
 
@@ -204,6 +222,12 @@ falta leer un número en otro sitio, reutilízala en vez de escribir otro parser
 El parser devuelve solo la matriz aumentada, sin metadata sobre su origen: el
 backend matemático no debe saber si el sistema se escribió como texto o se ingresó
 coeficiente por coeficiente.
+
+## Nombres de dominio
+
+Usa nombres de dominio en español. En cálculos, conserva símbolos como `A`,
+`b` o `k` cuando coincidan con la notación matemática y su significado quede
+claro.
 
 ## Comentarios en el código
 
