@@ -8,7 +8,12 @@
     // Un destino (#categoria) dentro de un desplegable cerrado se abre al llegar por la URL,
     // por ejemplo desde los breadcrumbs; sin esto el ancla apuntaría a contenido plegado.
     function revelarDestino() {
-        const id = decodeURIComponent(window.location.hash.slice(1));
+        let id;
+        try {
+            id = decodeURIComponent(window.location.hash.slice(1));
+        } catch {
+            return;
+        }
         if (!id) return;
         let destino = document.getElementById(id);
         while (destino) {

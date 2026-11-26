@@ -100,7 +100,7 @@
                         <button class="btn btn-secondary" type="submit" name="accion" value="azar_regiones">Rellenar al azar</button>
                     </div>
                 {% elif diagrama.aviso %}
-                    <p class="conjuntos-vacio">No se dibuja el diagrama: {{ diagrama.aviso }}</p>
+                    {% if not opciones_abiertas %}<p class="conjuntos-vacio">No se dibuja el diagrama: {{ diagrama.aviso }}</p>{% endif %}
                 {% else %}
                     <p class="conjuntos-vacio">El diagrama dibuja conjuntos finitos. Los intervalos se ven en la recta real del resultado.</p>
                 {% endif %}
