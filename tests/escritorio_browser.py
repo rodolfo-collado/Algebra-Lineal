@@ -8,6 +8,7 @@ No sustituye la prueba en WebView2: aquí no existen el menú nativo ni sus ataj
 import json
 import os
 import tempfile
+import threading
 import time
 from pathlib import Path
 from wsgiref.simple_server import make_server
@@ -29,6 +30,10 @@ ERRORES = {
     "csrf": lambda request: csrf.csrf_failure(request, reason="CSRF cookie not set."),
     "500": defaults.server_error,
 }
+# override_settings cambia los ajustes globales, no los del hilo: dos peticiones solapadas
+# (el navegador pide a veces dos veces la misma página) se restauraban mutuamente y una se
+# renderizaba sin modo escritorio. Solo una petición a la vez usa los ajustes cambiados.
+AJUSTES_EN_USO = threading.Lock()
 
 
 def responder(start_response, contenido, tipo="text/html", estado="200 OK"):
@@ -56,13 +61,13 @@ def pruebas(environ, start_response):
         ARCHIVO.unlink(missing_ok=True)
         return responder(start_response, json.dumps({"archivo": str(ARCHIVO)}).encode(), "application/json")
     if ruta.startswith("/__pruebas/error/"):
-        with ajustes:
+        with AJUSTES_EN_USO, ajustes:
             respuesta = ERRORES[ruta.rstrip("/").rsplit("/", 1)[-1]](WSGIRequest(environ))
         return responder(start_response, respuesta.content, estado=f"{respuesta.status_code} {respuesta.reason_phrase}")
     if ruta == "/__pruebas/preferencia-lenta/":
         time.sleep(0.4)
         environ["PATH_INFO"] = "/preferencias/"
-    with ajustes:
+    with AJUSTES_EN_USO, ajustes:
         # Django renderiza dentro de la llamada; los estáticos no dependen del modo.
         return aplicacion(environ, start_response)
 

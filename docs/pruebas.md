@@ -17,6 +17,133 @@ Para cambios en Markdown, `uv run --locked python -m unittest tests.test_documen
 comprueba rutas relativas, imágenes, anclas y cierre de los bloques de código.
 Revisa en GitHub los recursos y fragmentos que cambiaste.
 
+## Navegador en CI
+
+Cada runner DOM (`tests/<nombre>_browser.py` + `.js`) sirve la app real con una
+página de pruebas que escribe un caso por fila en `#resultados` y el recuento
+`a/b` en `#total`. [`tests/navegador.mjs`](../tests/navegador.mjs) los ejecuta sin
+ventana por CDP (Node 22, sin dependencias):
+
+```bash
+uv run --locked node tests/navegador.mjs                       # la selección de CI
+uv run --locked node tests/navegador.mjs secante conjuntos     # runners concretos
+```
+
+Usa Chrome o Edge (o la ruta de `NAVEGADOR`), un perfil nuevo por runner, foco
+emulado y reproducción de audio sin gesto de usuario. Un runner falla si `a ≠ b`,
+si no escribe `#total` en `NAVEGADOR_LIMITE_MS` (240 s por defecto) o si su
+servidor muere, por ejemplo porque otro proceso ya ocupa su puerto. Ante un fallo
+imprime los casos fallidos y la consola, y deja en `build/navegador/` (o
+`NAVEGADOR_SALIDA`) las filas, la consola, la salida del servidor y una captura.
+En CI ese directorio se publica como artefacto `navegador-diagnostico`. No hay
+reintentos: un caso que falla hace fallar el job.
+
+### Selección
+
+El job `navegador` (Ubuntu, Chrome) ejecuta un runner por área prioritaria:
+
+| Área | Runners |
+|---|---|
+| Navegación | `escritorio`, `buscador` (incluye explorador del área y música) |
+| Edición matricial y teclado | `entradas`, `operandos`, `teclado` |
+| Formato numérico | `claridad` |
+| Gráficas de raíces | `biseccion`, `secante` |
+| Métodos iterativos | `iterativos` |
+| Conjuntos | `conjuntos` |
+
+Quedan fuera por coste o solapamiento, y se ejecutan a mano cuando su área
+cambia: `resultado` (184 s, el más lento; cubre Exacto/Decimal como `claridad`),
+`entrada_edicion` y `menu_edicion` (portapapeles: su comportamiento nativo solo
+es fiel en WebView2), `newton_raphson` y `regla_falsa` (misma gráfica que
+`biseccion` y `secante`), `determinantes`, `inversa`, `feedback`, `presentacion`,
+`pulido` y `residual`. `fluidez` mide tiempos con Playwright y no tiene recuento.
+Las verificaciones de WebView2 (portapapeles nativo, menú contextual, preferencias
+en archivo, ventana de pywebview) siguen siendo manuales sobre el ejecutable.
+
+### Limitaciones investigadas (2026-11-26)
+
+Medido en Edge 158 sin ventana, en serie: los 21 runners con recuento pasan en una
+primera vuelta (≈ 530 s en total).
+
+- **Música del buscador.** El caso «pausar antes de preparar las muestras» espera
+  `AudioContext.resume()`. Sin ventana no hay gesto de usuario y esa promesa no se
+  resuelve nunca: sin la bandera el runner se detiene en el caso 17 de 21. Con
+  `--autoplay-policy=no-user-gesture-required` (equivale al clic real que da el
+  usuario) pasa 11 de 11 veces. El caso conserva todas sus aserciones.
+- **Explorador del área.** Sin fallos en 16 ejecuciones: 11 en serie y 5 con
+  otros cuatro runners y un build de PyInstaller en paralelo. No se reprodujo. La
+  intermitencia anterior se vio con un driver sin la bandera de audio, en el que el
+  buscador nunca terminaba y se relanzaba junto a otros runners; queda como no
+  confirmada, no como corregida.
+- **`resultado` bajo carga.** 111/111 en serie (184 s) y 111/111 con cuatro
+  procesos de runners y el build en paralelo (231 s): el bloqueo no se reprodujo.
+  Si vuelve a ocurrir, el límite de tiempo del driver lo convierte en un fallo con
+  las filas ya escritas, que señalan el caso detenido. CI no lo incluye y ejecuta
+  los runners de uno en uno.
+- **`escritorio`: modo web en el primer caso.** Al repetirlo falló 12 de 12 veces
+  en «Alt+←/→ recorren GET y POST» (`data-desktop` ausente). El servidor de pruebas
+  cambia `DESKTOP_MODE` con `override_settings`, que modifica los ajustes globales y
+  no los del hilo. El navegador pidió `/` dos veces a la vez y, en la primera
+  renderización (la más lenta), una petición restauró los ajustes mientras la otra
+  renderizaba. Un candado alrededor de esos ajustes lo corrige: 12 de 12 correctas.
+  La aplicación no usa `override_settings`; el defecto era del runner.
+- **Driver.** En Windows el perfil del navegador queda bloqueado un instante tras
+  cerrarlo (`EBUSY`); su borrado ya no puede tumbar los runners siguientes.
+
+### Lo que no cubre ninguna prueba automatizada
+
+Los runners comprueban el DOM, el foco, el orden y los atributos ARIA, pero no lo
+que **oye** un usuario de lector de pantalla ni lo que hace un **dedo** real. Los
+eventos táctiles son sintéticos (`pointerType` asignado por la prueba), y Chrome
+sin ventana no emite gestos. Siguen pendientes de validación manual con NVDA o
+Narrador y en una pantalla táctil física:
+
+| Requiere | Qué falta comprobar |
+|---|---|
+| Lector de pantalla | Que las regiones `aria-live` (presentes en 13 plantillas: buscador en vivo, resultado desactualizado, estado de Actualizaciones, recta y Venn de Conjuntos, entre otras) se anuncien una vez y sin cortar la lectura en curso |
+| Lector de pantalla | La lectura de fórmulas y sustituciones de los métodos de raíces y de los valores redondeados («redondeado; valor almacenado …») |
+| Lector de pantalla | La navegación por tablas de matrices, por las cuadrículas `celda_<matriz>_<i>_<j>` y por los campos del diagrama de Venn con la barra de símbolos |
+| Lector de pantalla | Los pasos de Actualizaciones (`aria-current="step"`) y el menú de edición abierto con Shift+F10 o la tecla Menú |
+| Pantalla táctil | Explorador del área: el primer toque muestra la herramienta y el segundo la abre |
+| Pantalla táctil | Conjuntos: escribir en las regiones pequeñas del diagrama de tres conjuntos y proponer un punto de la recta con un toque sin arrastre |
+| Pantalla táctil | Gráficas de raíces: arrastrar las líneas de x₀, x₁ o del intervalo y acercar con pellizco |
+| Pantalla táctil | Menú de edición con pulsación larga (el código distingue `touch` y `pen` del ratón) y teclado matemático sin teclado físico |
+
+## Validación previa a v0.20.3 (2026-11-26)
+
+Sobre `develop` en `24cfaa3`, con #151–#159 fusionados. La versión sigue en 0.20.2.
+
+**Desde el código fuente:**
+
+- `unittest discover` desde PowerShell: 2158 pruebas correctas, sin omisiones, en
+  cada una de las dos ramas de esta ronda. También pasan `uv lock --check`,
+  `manage.py check`, `compileall` y `git diff --check`.
+- Los 21 runners DOM con recuento, en Edge 158 sin ventana: todos correctos.
+  La selección de CI, además, en Chrome sobre Ubuntu.
+
+**Sobre el distribuible** (`AlgebraLineal.exe` de PyInstaller y su instalador,
+construidos en local, WebView2 158, preferencias aisladas y CDP en puertos
+comprobados como propios):
+
+| Área | Runner dentro del WebView2 del ejecutable | Resultado |
+|---|---|---|
+| Operaciones matriciales | `operandos`, `determinantes` | 22/22, 9/9 |
+| Formato numérico | `claridad` | 28/28 |
+| Edición de funciones y gráficas de raíces | `biseccion`, `newton_raphson`, `regla_falsa` | 25/25, 11/11, 12/12 |
+| Secante y Jacobi | `secante`, `iterativos` | 10/10, 9/9 |
+| Conjuntos e inclusión-exclusión | `conjuntos` | 21/21 |
+| Construcción y navegación de cuadrículas | `entradas` | 23/27 (ver nota) |
+| Preferencias y temas | Tema oscuro, estilo Minimalista, formato y decimales elegidos en la app, cierre de la ventana y nueva apertura | Se conservan las cuatro; 76 escrituras con respuesta 204 |
+
+Nota sobre `entradas`: las cuatro diferencias son una misma aserción escrita para
+la web, que espera que Alt+← desde una celda no se intercepte. En escritorio, Alt+←
+es «Atrás» a propósito (lo fija `escritorio_browser`). No es un defecto.
+
+El instalador, en Windows Sandbox con la red desactivada: instalación limpia,
+actualización manual desde la v0.20.2 publicada y autoactualización desde la
+v0.20.1 publicada, con y sin acceso de escritorio. Todo correcto. Véase
+[Autoactualización desde la app instalada](instalacion-windows.md).
+
 ## Secante y Métodos abiertos, versión 0.18.0 (2026-11-12)
 
 - **Python:** 2.047 pruebas completas correctas (`unittest discover`, desde PowerShell).
