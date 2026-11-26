@@ -12,7 +12,9 @@ sobre la curva.
 ## Derivación y dominio
 
 El backend deriva el árbol de `FuncionReal` con las reglas de suma, producto,
-cociente, potencia constante y cadena. Admite las funciones del parser, entre
+cociente, potencia y cadena. Para una base positiva `u(x)` y un exponente
+variable `v(x)`, aplica (uᵛ)′ = uᵛ · (v′ ln(u) + (v/u) u′).
+Admite las funciones del parser, entre
 ellas sen, cos, tan, ln, log₁₀, exp, √ y valor absoluto. Valida la función
 original al evaluar la derivada para conservar su dominio. Por ejemplo, para
 `ln(2x) + x² − sen(x)` muestra `1/x + 2x − cos(x)`, con x > 0.
@@ -25,8 +27,7 @@ factores no numéricos, como en `x · cos(x)`.
 Un punto donde la derivada no se pueda evaluar detiene el cálculo. Esto incluye
 la cúspide de `abs(x)` en cero y la pendiente no finita de `√(x)` en cero.
 Algunas composiciones con singularidades removibles en la fórmula de la
-derivada requieren una simplificación adicional. Las potencias con exponente
-dependiente de x quedan fuera de la sintaxis de `FuncionReal`.
+derivada requieren una simplificación adicional.
 
 ## Algoritmo y parada
 
@@ -36,7 +37,9 @@ dependiente de x quedan fuera de la sintaxis de `FuncionReal`.
 4. Detenerse ante un cero calculado o cuando tanto |xₙ₊₁ − xₙ| como
    |f(xₙ₊₁)| cumplan la tolerancia. Un punto repetido con residuo distinto
    de cero produce estancamiento o ciclo antes de aceptar la tolerancia.
-5. Reevaluar f en la aproximación final válida.
+5. Antes de aceptar la tolerancia, comprobar que las reglas de signos no
+   excluyan los ceros de f y que se pueda certificar la continuidad en el
+   último paso. Reevaluar f en la aproximación final válida.
 
 La tolerancia predeterminada y máxima es 0.0001 y se puede reducir. El límite
 predeterminado es 200 iteraciones, configurable entre 1 y 1000. La actualización

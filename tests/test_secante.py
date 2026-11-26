@@ -39,6 +39,11 @@ class SecanteTests(unittest.TestCase):
         self.assertLessEqual(r["error_absoluto"], 1e-6)
         self.assertEqual(r["tolerancia"], 1e-6)
 
+    def test_acepta_una_funcion_python_sin_arbol_sintactico(self):
+        r = secante(lambda x: x*x - 2, 1, 2)
+        self.assertEqual(r["estado"], "tolerancia")
+        self.assertAlmostEqual(r["x"], math.sqrt(2), places=7)
+
     def test_cada_fila_es_una_secante_y_desplaza_los_puntos(self):
         f = FuncionReal("x^3-2x-5")
         r = secante(f, 2, 3, 1e-6)
