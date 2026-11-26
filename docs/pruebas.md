@@ -109,6 +109,41 @@ Narrador y en una pantalla táctil física:
 | Pantalla táctil | Gráficas de raíces: arrastrar las líneas de x₀, x₁ o del intervalo y acercar con pellizco |
 | Pantalla táctil | Menú de edición con pulsación larga (el código distingue `touch` y `pen` del ratón) y teclado matemático sin teclado físico |
 
+## Validación previa a v0.20.3 (2026-11-26)
+
+Sobre `develop` en `24cfaa3`, con #151–#159 fusionados. La versión sigue en 0.20.2.
+
+**Desde el código fuente:**
+
+- `unittest discover` desde PowerShell: 2158 pruebas correctas, sin omisiones, en
+  cada una de las dos ramas de esta ronda. También pasan `uv lock --check`,
+  `manage.py check`, `compileall` y `git diff --check`.
+- Los 21 runners DOM con recuento, en Edge 158 sin ventana: todos correctos.
+  La selección de CI, además, en Chrome sobre Ubuntu.
+
+**Sobre el distribuible** (`AlgebraLineal.exe` de PyInstaller y su instalador,
+construidos en local, WebView2 158, preferencias aisladas y CDP en puertos
+comprobados como propios):
+
+| Área | Runner dentro del WebView2 del ejecutable | Resultado |
+|---|---|---|
+| Operaciones matriciales | `operandos`, `determinantes` | 22/22, 9/9 |
+| Formato numérico | `claridad` | 28/28 |
+| Edición de funciones y gráficas de raíces | `biseccion`, `newton_raphson`, `regla_falsa` | 25/25, 11/11, 12/12 |
+| Secante y Jacobi | `secante`, `iterativos` | 10/10, 9/9 |
+| Conjuntos e inclusión-exclusión | `conjuntos` | 21/21 |
+| Construcción y navegación de cuadrículas | `entradas` | 23/27 (ver nota) |
+| Preferencias y temas | Tema oscuro, estilo Minimalista, formato y decimales elegidos en la app, cierre de la ventana y nueva apertura | Se conservan las cuatro; 76 escrituras con respuesta 204 |
+
+Nota sobre `entradas`: las cuatro diferencias son una misma aserción escrita para
+la web, que espera que Alt+← desde una celda no se intercepte. En escritorio, Alt+←
+es «Atrás» a propósito (lo fija `escritorio_browser`). No es un defecto.
+
+El instalador, en Windows Sandbox con la red desactivada: instalación limpia,
+actualización manual desde la v0.20.2 publicada y autoactualización desde la
+v0.20.1 publicada, con y sin acceso de escritorio. Todo correcto. Véase
+[Autoactualización desde la app instalada](instalacion-windows.md).
+
 ## Secante y Métodos abiertos, versión 0.18.0 (2026-11-12)
 
 - **Python:** 2.047 pruebas completas correctas (`unittest discover`, desde PowerShell).
