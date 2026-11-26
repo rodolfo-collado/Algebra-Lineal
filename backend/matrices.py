@@ -241,25 +241,55 @@ def producto_punto(u, v):
             f"u tiene {contar(len(u), 'componente')} y v tiene {contar(len(v), 'componente')}."
         )
 
-    resultado = Fraction(0)
-    for componente_u, componente_v in zip(u, v):
-        resultado = sumar_exacto(resultado, multiplicar_exacto(componente_u, componente_v))
-
-    return resultado
+    _, suma = _terminos_y_suma(u, v)
+    return suma
 
 
-def multiplicar_matrices(a, b):
-    """C = AB con cᵢⱼ = filaᵢ(A) · columnaⱼ(B); A m×n y B n×p dan C m×p.
+def _terminos_y_suma(u, v):
+    """Los términos u₁v₁, …, uₙvₙ y su suma u · v, con aritmética exacta.
 
-    No exige matrices cuadradas ni del mismo tamaño: solo que las columnas de A
-    coincidan con las filas de B. No modifica las entradas.
+    Es el único recorrido que multiplica y suma en este módulo. Quien llama ya
+    validó los vectores; los términos se devuelven para que un procedimiento los
+    muestre sin volver a multiplicarlos.
     """
+    terminos = []
+    suma = Fraction(0)
+    for componente_u, componente_v in zip(u, v):
+        termino = multiplicar_exacto(componente_u, componente_v)
+        terminos.append(termino)
+        suma = sumar_exacto(suma, termino)
+    return tuple(terminos), suma
+
+
+def _exigir_producto_definido(a, b):
+    """AB existe si A m×n y B n×p comparten n: columnas de A = filas de B."""
     (_, columnas_a), (filas_b, _) = dimensiones(a), dimensiones(b)
     if columnas_a != filas_b:
         raise ValueError(
             f"No se puede calcular AB: A tiene {contar(columnas_a, 'columna')} y B tiene "
             f"{contar(filas_b, 'fila')}. Para multiplicar matrices, esos valores deben coincidir."
         )
+
+
+def _exigir_matriz_vector_definido(a, x):
+    """Ax existe si x tiene tantas componentes como columnas tiene A."""
+    _, columnas_a = dimensiones(a)
+    _exigir_vector(x, "x")
+    if len(x) != columnas_a:
+        raise ValueError(
+            f"No se puede calcular Ax: A tiene {contar(columnas_a, 'columna')} y x tiene "
+            f"{contar(len(x), 'componente')}. Para multiplicar, esos valores deben coincidir."
+        )
+
+
+def multiplicar_matrices(a, b):
+    """C = AB con cᵢⱼ = filaᵢ(A) · columnaⱼ(B); A m×n y B n×p dan C m×p.
+
+    No exige matrices cuadradas ni del mismo tamaño: solo que las columnas de A
+    coincidan con las filas de B. No modifica las entradas. Es la ruta directa,
+    sin procedimiento; `resolver_operacion_matrices` da además los pasos.
+    """
+    _exigir_producto_definido(a, b)
     # Las columnas de B son las filas de su traspuesta.
     columnas_b = trasponer_matriz(b)
     return [[producto_punto(fila, columna) for columna in columnas_b] for fila in a]
@@ -271,54 +301,46 @@ def multiplicar_matriz_vector(a, x):
     Es el mismo producto AB con B = [x] escrito como columna n×1: no hay un
     segundo motor. Cambian la validación y la forma de explicarlo.
     """
-    _, columnas_a = dimensiones(a)
-    _exigir_vector(x, "x")
-    if len(x) != columnas_a:
-        raise ValueError(
-            f"No se puede calcular Ax: A tiene {contar(columnas_a, 'columna')} y x tiene "
-            f"{contar(len(x), 'componente')}. Para multiplicar, esos valores deben coincidir."
-        )
+    _exigir_matriz_vector_definido(a, x)
     return [fila[0] for fila in multiplicar_matrices(a, vector_columna(x))]
 
 
-def _pasos_producto(a, b, resultado):
-    """Los productos aᵢₖbₖⱼ se calculan una vez y se agrupan de dos maneras.
+def _producto_con_pasos(a, b):
+    """AB y su evidencia, con cada término aᵢₖbₖⱼ calculado una sola vez.
 
-    `pasos[i][j]` explica cada entrada como fila por columna; `columnas[j]`
-    explica cada columna del resultado como combinación lineal de las columnas
-    de A con los coeficientes de la columna j de B. Son las mismas cantidades,
-    así que ambos procedimientos conducen exactamente al mismo resultado.
+    Recorre C entrada por entrada, como fila por columna. `pasos[i][j]` guarda
+    la fila i de A, la columna j de B, sus términos y su suma cᵢⱼ, que ya es la
+    entrada del resultado. `columnas[j]` reagrupa esos mismos términos: la
+    columna j de AB es la combinación lineal de las columnas de A con los
+    coeficientes b₁ⱼ, …, bₙⱼ, y el k-ésimo sumando (`escaladas[k]`) reúne los
+    términos aᵢₖbₖⱼ de todas las filas i. Como ambas lecturas comparten los
+    mismos números, conducen exactamente al mismo resultado.
     """
     filas_a, comunes = dimensiones(a)
     columnas_de_a = trasponer_matriz(a)
     columnas_de_b = trasponer_matriz(b)
-    productos = [
-        [[multiplicar_exacto(a[i][k], b[k][j]) for k in range(comunes)] for j in range(len(columnas_de_b))]
-        for i in range(filas_a)
-    ]
-    pasos = [
-        [
-            {
-                "posicion": (i + 1, j + 1),
-                "fila": tuple(Fraction(valor) for valor in a[i]),
-                "columna": tuple(columnas_de_b[j]),
-                "productos": tuple(productos[i][j]),
-                "resultado": resultado[i][j],
-            }
-            for j in range(len(columnas_de_b))
-        ]
-        for i in range(filas_a)
-    ]
+    pasos = []
+    for i in range(filas_a):
+        fila = tuple(Fraction(valor) for valor in a[i])
+        pasos_fila = []
+        for j, columna in enumerate(columnas_de_b):
+            terminos, entrada = _terminos_y_suma(fila, columna)
+            pasos_fila.append({
+                "posicion": (i + 1, j + 1), "fila": fila, "columna": tuple(columna),
+                "productos": terminos, "resultado": entrada,
+            })
+        pasos.append(pasos_fila)
+    resultado = [[paso["resultado"] for paso in pasos_fila] for pasos_fila in pasos]
     columnas = [
         {
             "posicion": j + 1,
             "coeficientes": tuple(columnas_de_b[j]),
-            "escaladas": tuple(tuple(productos[i][j][k] for i in range(filas_a)) for k in range(comunes)),
+            "escaladas": tuple(tuple(pasos[i][j]["productos"][k] for i in range(filas_a)) for k in range(comunes)),
             "resultado": tuple(resultado[i][j] for i in range(filas_a)),
         }
         for j in range(len(columnas_de_b))
     ]
-    return {
+    return resultado, {
         "pasos": pasos, "columnas": columnas,
         "columnas_a": tuple(tuple(columna) for columna in columnas_de_a),
     }
@@ -365,12 +387,14 @@ def resolver_operacion_matrices(operacion, a, b=None, escalar=None, vector=None)
     """
     if operacion in ("producto", "matriz_vector"):
         if operacion == "producto":
-            resultado = multiplicar_matrices(a, b)
+            _exigir_producto_definido(a, b)
         else:
-            resultado = vector_columna(multiplicar_matriz_vector(a, vector))
+            # Ax es el producto AB con B = [x] escrito como columna n×1.
+            _exigir_matriz_vector_definido(a, vector)
             b = vector_columna(vector)
+        resultado, evidencia = _producto_con_pasos(a, b)
         return {
-            "operacion": operacion, "resultado": resultado, **_pasos_producto(a, b, resultado),
+            "operacion": operacion, "resultado": resultado, **evidencia,
             "dimensiones_entrada": dimensiones(a),
             "dimensiones_b": dimensiones(b),
             "dimensiones_resultado": dimensiones(resultado),
