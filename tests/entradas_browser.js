@@ -142,6 +142,135 @@
             if (ruta === '/matrices/operaciones/') igual(q(w, '[name="cantidad"]').value, '2');
         }]);
     }
+    // Cuadrículas `celda_<matriz>_<i>_<j>` de Determinantes, Inversa y Ax=b: el JS construye
+    // el mismo marcado que Aplicar sin JavaScript y las flechas no salen de la matriz.
+    const descriptor = fieldset => ({
+        matriz: fieldset.dataset.matriz, vector: fieldset.hasAttribute("data-vector"),
+        leyenda: fieldset.querySelector("legend").textContent.replace(/\s+/g, " ").trim(),
+        region: fieldset.querySelector(".matrix-scroll").getAttribute("aria-label"),
+        tabla: fieldset.querySelector("table").getAttribute("aria-label"),
+        celdas: [...fieldset.querySelectorAll("tbody tr")].map(tr => [...tr.children].map(td => {
+            const input = td.querySelector("input");
+            const label = td.querySelector("label");
+            return {
+                atributos: [...input.attributes].filter(a => a.name !== "value").map(a => `${a.name}=${a.value}`).sort(),
+                valor: input.value, etiqueta: label.textContent.trim(), para: label.htmlFor === input.id,
+            };
+        })),
+    });
+    const servidor = async (w, form) => {
+        // El mismo POST que Aplicar en el flujo sin JavaScript.
+        const datos = new w.FormData(form);
+        datos.append("ajustar", "1");
+        const respuesta = await w.fetch(form.action, { method: "POST", body: datos });
+        return new w.DOMParser().parseFromString(await respuesta.text(), "text/html");
+    };
+    const tecla = (w, input, key, { inicio = 0, fin = inicio, ...opciones } = {}) => {
+        input.focus(); input.setSelectionRange(inicio, fin);
+        const event = new w.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...opciones });
+        input.dispatchEvent(event);
+        return event.defaultPrevented;
+    };
+    const DIRECCIONES = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+    const abrirAplicaciones = w => { if (!q(w, "#aplicaciones").open) click(w, "#aplicaciones > summary"); };
+    const cuadriculas = [
+        ["Determinantes", "/matrices/determinantes/", w => valor(w, '[name="orden"]', 3),
+            [["A", 3, 3]], '[name="orden"]', null],
+        ["Inversa con B", "/matrices/inversa/", w => {
+            valor(w, '[name="orden"]', 3); abrirAplicaciones(w);
+            click(w, '[name="funcion_adicional"][value="producto"]');
+        }, [["A", 3, 3], ["B", 3, 3]], '[name="orden"]', '[name="funcion_adicional"][value="producto"]'],
+        ["Inversa con b", "/matrices/inversa/", w => {
+            valor(w, '[name="orden"]', 2); abrirAplicaciones(w);
+            click(w, '[name="funcion_adicional"][value="vector"]');
+        }, [["A", 2, 2], ["b", 2, 1]], '[name="orden"]', '[name="funcion_adicional"][value="vector"]'],
+        ["Ax=b rectangular", "/matrices/ecuaciones/", w => {
+            valor(w, '[name="filas"]', 2); valor(w, '[name="columnas"]', 3);
+        }, [["A", 2, 3], ["b", 2, 1]], '[name="columnas"]', '[name="metodo"][value="gauss_jordan"]'],
+    ];
+    for (const [titulo, ruta, preparar, matrices, dimension, radio] of cuadriculas) {
+        casos.push([`${titulo}: el JS construye el marcado de Aplicar y restaura lo escrito`, ruta, {}, async w => {
+            preparar(w);
+            const form = q(w, 'form[id$="-form"]');
+            for (const [nombre, m, n] of matrices) {
+                for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) valor(w, `[name="celda_${nombre}_${i}_${j}"]`, `${nombre}${i}${j}`);
+            }
+            // Reducir y volver a crecer redibuja todas las celdas desde la memoria local.
+            const campo = q(w, dimension);
+            const tamano = Number(campo.value);
+            valor(w, dimension, tamano - 1); valor(w, dimension, tamano);
+            const html = await servidor(w, form);
+            for (const [nombre] of matrices) {
+                const local = q(w, `[data-matriz="${nombre}"]`);
+                igual(descriptor(local), descriptor(html.querySelector(`[data-matriz="${nombre}"]`)));
+            }
+            igual(q(w, `[name="celda_${matrices[0][0]}_0_0"]`).value, `${matrices[0][0]}00`);
+        }]);
+        casos.push([`${titulo}: flechas dentro de cada matriz, sin cruzar a la vecina`, ruta, {}, w => {
+            preparar(w);
+            for (const [nombre, m, n] of matrices) {
+                for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) {
+                    for (const [key, [di, dj]] of Object.entries(DIRECCIONES)) {
+                        const origen = q(w, `[name="celda_${nombre}_${i}_${j}"]`);
+                        origen.value = "-1/2";
+                        const destino = q(w, `[name="celda_${nombre}_${i + di}_${j + dj}"]`);
+                        const movido = tecla(w, origen, key, { inicio: key === "ArrowRight" ? 4 : 0 });
+                        igual([`${nombre}${i}${j}${key}`, movido, w.document.activeElement === (destino ?? origen)],
+                            [`${nombre}${i}${j}${key}`, Boolean(destino), true]);
+                    }
+                }
+            }
+        }]);
+        casos.push([`${titulo}: cursor, selección, modificadores, IME y destinos inactivos`, ruta, {}, w => {
+            preparar(w);
+            const [nombre] = matrices[0];
+            const origen = q(w, `[name="celda_${nombre}_1_0"]`);
+            origen.value = "-12/7";
+            for (const [key, extremo] of [["ArrowLeft", 0], ["ArrowRight", 5]]) {
+                for (const opciones of [{ inicio: 2 }, { inicio: 1, fin: 3 }, { inicio: 0, fin: 5 },
+                    ...[{ ctrlKey: true }, { shiftKey: true }, { altKey: true }, { metaKey: true },
+                        { isComposing: true }, { keyCode: 229 }].map(o => ({ inicio: extremo, ...o }))]) {
+                    igual([key, opciones, tecla(w, origen, key, opciones)], [key, opciones, false]);
+                    igual(w.document.activeElement === origen, true);
+                }
+            }
+            origen.addEventListener("keydown", event => event.preventDefault(), { once: true });
+            tecla(w, origen, "ArrowUp");
+            igual(w.document.activeElement === origen, true);
+            const arriba = q(w, `[name="celda_${nombre}_0_0"]`);
+            for (const inactivo of ["disabled", "readOnly"]) {
+                arriba[inactivo] = true;
+                igual([inactivo, tecla(w, origen, "ArrowUp"), w.document.activeElement === origen], [inactivo, false, true]);
+                arriba[inactivo] = false;
+            }
+            const mismo = q(w, `[name="celda_${nombre}_1_0"]`);
+            mismo.readOnly = true;
+            igual(tecla(w, mismo, "ArrowUp"), false);
+            mismo.readOnly = false;
+            igual(tecla(w, origen, "ArrowUp"), true);
+            igual(w.document.activeElement === arriba, true);
+            // Las flechas de otros controles siguen siendo suyas.
+            for (const otro of [dimension, radio].filter(Boolean)) {
+                const control = q(w, otro);
+                control.focus();
+                const event = new w.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
+                control.dispatchEvent(event);
+                igual([otro, event.defaultPrevented, w.document.activeElement === control], [otro, false, true]);
+            }
+        }]);
+    }
+    casos.push(["Ax=b: tras redimensionar, las flechas usan las celdas nuevas y b sigue aparte", "/matrices/ecuaciones/", {}, w => {
+        valor(w, '[name="filas"]', 2); valor(w, '[name="columnas"]', 2);
+        click(w, '.stepper [data-paso="1"]');
+        igual([q(w, '[name="filas"]').value, Boolean(q(w, '[name="celda_A_2_1"]')), Boolean(q(w, '[name="celda_b_2_0"]'))], ["3", true, true]);
+        const ultima = q(w, '[name="celda_A_2_1"]');
+        igual(tecla(w, ultima, "ArrowRight"), false);
+        igual(tecla(w, ultima, "ArrowUp"), true);
+        igual(w.document.activeElement.name, "celda_A_1_1");
+        igual(tecla(w, q(w, '[name="celda_b_2_0"]'), "ArrowUp"), true);
+        igual(w.document.activeElement.name, "celda_b_1_0");
+        igual(tecla(w, q(w, '[name="celda_b_1_0"]'), "ArrowLeft"), false);
+    }]);
     let passed = 0;
     for (const [nombre, ruta, opciones, test] of casos) {
         const frame = document.createElement('iframe');
