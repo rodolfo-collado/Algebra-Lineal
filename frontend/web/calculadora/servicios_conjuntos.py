@@ -14,7 +14,7 @@ from backend.conjuntos.modelo import Conjunto, Par, orden, presentar
 from backend.conjuntos.parser import Operacion, Referencia, Relacion, analizar_expresion
 from backend.conjuntos.presupuesto import Presupuesto
 from backend.conjuntos.recta_visual import datos_recta, notacion_recta
-from backend.conjuntos.regiones import construir_venn, detectar_venn, seleccionar_regiones
+from backend.conjuntos.regiones import UniversoInvalido, construir_venn, detectar_venn, seleccionar_regiones
 
 # Por encima de estos tamaños el paso muestra su fórmula, sin desglosar elemento a elemento.
 CHIPS_MAXIMOS = 40
@@ -246,23 +246,34 @@ def _leer_punto(punto, presupuesto):
     return valor
 
 
+class OpcionesVennInvalidas(ValueError):
+    """La configuración explícita del diagrama requiere corregir una opción."""
+
+    def __init__(self, opcion, causa):
+        super().__init__(str(causa))
+        self.opcion = opcion
+
+
 def _venn(expresion, entorno, nombres, universo, presupuesto):
     """Regiones para el diagrama: las pedidas o, si no se pidieron, las que usa la expresión."""
-    resalta = True
-    if not nombres:
-        detectado = detectar_venn(expresion, entorno)
+    nombres_pedidos, universo_pedido = bool(nombres), bool(universo)
+    detectado = detectar_venn(expresion, entorno)
+    if not nombres_pedidos:
         if detectado is None:
             return None, None
         universo = universo or detectado[1]
         nombres = tuple(n for n in detectado[0] if n != universo)
-        try:
-            regiones = construir_venn(nombres, entorno, expresion, universo=universo, presupuesto=presupuesto)
-        except ValueError as error:
-            return None, f"No se dibuja el diagrama: {error}"
-    else:
-        # Una relación o cardinalidad conserva el diagrama de los conjuntos, sin sombrear un resultado distinto.
-        resalta = detectar_venn(expresion, entorno) is not None
-        regiones = construir_venn(nombres, entorno, expresion if resalta else Conjunto(), universo=universo, presupuesto=presupuesto)
+    # Una relación o cardinalidad conserva los conjuntos, sin sombrear un resultado distinto.
+    resalta = detectado is not None
+    try:
+        regiones = construir_venn(nombres, entorno, expresion if resalta else Conjunto(),
+                                  universo=universo, presupuesto=presupuesto)
+    except ValueError as error:
+        if isinstance(error, UniversoInvalido) and (nombres_pedidos or universo_pedido):
+            raise OpcionesVennInvalidas("universo", error) from error
+        if nombres_pedidos:
+            raise OpcionesVennInvalidas("nombres", error) from error
+        return None, f"No se dibuja el diagrama: {error}"
     return _venn_web(nombres, universo, regiones, resalta), None
 
 

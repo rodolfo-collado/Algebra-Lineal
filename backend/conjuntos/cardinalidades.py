@@ -2,7 +2,11 @@
 
 from .parser import analizar_expresion
 from .presupuesto import Presupuesto
-from .regiones import seleccionar_regiones
+from .regiones import UniversoInvalido, seleccionar_regiones
+
+
+class CardinalidadesIncoherentes(ValueError):
+    """Las intersecciones indicadas producen una región con cantidad negativa."""
 
 
 def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, expresion='A ∪ B', presupuesto=None):
@@ -27,7 +31,7 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
         for k in descontar:
             valor -= regiones[k]
         if valor < 0:
-            raise ValueError(f'Datos incoherentes: la región {etiqueta(m)} tendría {str(valor).replace('-', '−')} elementos. Una intersección no puede superar a los conjuntos que la contienen; revisa esos datos.')
+            raise CardinalidadesIncoherentes(f'Datos incoherentes: la región {etiqueta(m)} tendría {str(valor).replace('-', '−')} elementos. Una intersección no puede superar a los conjuntos que la contienen; revisa esos datos.')
         regiones[m] = valor
         pasos.append({'regla': 'region_exclusiva', 'mascara': m, 'etiqueta':etiqueta(m),
                       'inicial': datos[m], 'restar': descontar,
@@ -36,7 +40,7 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
     for valor in regiones.values():
         total += valor
     if universo is not None and universo < total:
-        raise ValueError('El universo no puede ser menor que la unión de los conjuntos.')
+        raise UniversoInvalido('El universo no puede ser menor que la unión de los conjuntos.')
     regiones[0] = None if universo is None else universo - total
     intersecciones = {}
     terminos = []
@@ -59,7 +63,7 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
     resultado = 0
     for m in seleccionadas:
         if regiones[m] is None:
-            raise ValueError('Se necesita la cardinalidad del universo para contar la región exterior.')
+            raise UniversoInvalido('Se necesita la cardinalidad del universo para contar la región exterior.')
         resultado += regiones[m]
     pasos.append({'regla': 'suma_regiones', 'regiones': seleccionadas,
                   'etiquetas':tuple(etiqueta(m) for m in seleccionadas), 'resultado': resultado})

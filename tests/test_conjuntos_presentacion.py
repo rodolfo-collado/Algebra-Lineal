@@ -105,6 +105,32 @@ class EditorPresentacionTests(SimpleTestCase):
         self.assertContains(respuesta, "No se dibuja el diagrama")
         self.assertContains(respuesta, 'data-respuesta-relacion>{2}</p>', html=False)
 
+    def test_error_de_expresion_no_depende_del_nombre_faltante(self):
+        for nombre in ("Venn", "Falta", "universo"):
+            with self.subTest(nombre=nombre):
+                respuesta = self.client.post(RUTA, editor(TRES, f"A ∪ {nombre}", venn_nombres="A, B"))
+                form = respuesta.context_data["form"]
+                self.assertEqual(set(form.errors), {"expresion"})
+                self.assertIn(nombre, form.errors["expresion"][0])
+                self.assertEqual(form["expresion"].value(), f"A ∪ {nombre}")
+
+    def test_error_de_universo_explicito_se_muestra_una_vez(self):
+        filas = [("U", "{1}"), ("A", "{1}"), ("B", "{2}")]
+        for opciones in (
+            {"venn_universo": "U", "venn_nombres": "A, B"},
+            {"venn_universo": "U"},
+            {"venn_universo": "U", "venn_nombres": "A, B", "accion": "editar_regiones"},
+        ):
+            with self.subTest(opciones=opciones):
+                respuesta = self.client.post(RUTA, editor(filas, "A ∪ B", **opciones))
+                form = respuesta.context_data["form"]
+                self.assertEqual(set(form.errors), {"venn_universo"})
+                self.assertContains(respuesta, "Todos los conjuntos de Venn deben estar incluidos en el universo.", count=1)
+
+    def test_error_de_nombres_del_diagrama_queda_en_su_campo(self):
+        respuesta = self.client.post(RUTA, editor(TRES, "A ∪ B", venn_nombres="A, A", venn_universo="U"))
+        self.assertEqual(set(respuesta.context_data["form"].errors), {"venn_nombres"})
+
     def test_procedimiento_marca_elementos(self):
         respuesta = self.client.post(RUTA, editor(TRES, "(A ∪ B) ∖ C"))
         texto = respuesta.content.decode()
@@ -129,6 +155,7 @@ class EditorPresentacionTests(SimpleTestCase):
         respuesta = self.client.post(RUTA, editor(filas, "I ∖ J", punto='"x"'))
         self.assertContains(respuesta, 'id="resultado"')
         self.assertContains(respuesta, "número exacto")
+        self.assertEqual(set(respuesta.context_data["form"].errors), {"punto"})
         self.assertIn("relacion", contrato(self.client.post(RUTA, editor(filas, "3 ∈ I")))["recta"])
 
 

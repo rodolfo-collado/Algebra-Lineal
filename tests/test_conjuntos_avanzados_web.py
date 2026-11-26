@@ -49,6 +49,17 @@ class AvanzadosWebTests(SimpleTestCase):
         # Un punto escrito para una recta anterior no se aplica a otros resultados.
         self.assertNotIn('recta', contrato(self.client.post(RUTA,datos(punto='1',expresion='A'))))
 
+    def test_error_cardinalidad_identifica_su_etapa(self):
+        ruta = '/conjuntos/cardinalidad/'
+        campos = {'numero': '2', 'modo': 'intersecciones', 'region_1': '10', 'region_2': '8',
+                  'region_3': '3', 'universo': '20', 'expresion': 'A ∪ B'}
+        for cambios, campo in (({'region_3': '11'}, '__all__'),
+                               ({'universo': '14'}, 'universo'),
+                               ({'expresion': 'A ∪ universo'}, 'expresion')):
+            with self.subTest(cambios=cambios):
+                respuesta = self.client.post(ruta, {**campos, **cambios})
+                self.assertEqual(set(respuesta.context_data['form'].errors), {campo})
+
     def test_cardinalidad_sin_javascript_y_ajustes(self):
         ruta = '/conjuntos/cardinalidad/'
         campos = {'numero':'2','modo':'intersecciones','region_1':'10','region_2':'8','region_3':'3','universo':'20','expresion':'∁(A,U)'}
