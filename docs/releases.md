@@ -393,6 +393,43 @@ Las correcciones y refactorizaciones generales quedan para la siguiente versión
 
 Véase [Métodos iterativos](sistemas-iterativos.md).
 
+## Preparación de v0.20.2
+
+Incremento **PATCH** desde v0.20.1. Corrige la evaluación en los métodos de
+raíces y añade una forma compatible de ingresar sistemas en Métodos iterativos.
+La matriz A y el vector b siguen siendo la entrada predeterminada.
+
+### Notas preparadas de PyGebra v0.20.2
+
+- **Potencias variables y compuestas.** Bisección, Regla Falsa, Newton-Raphson
+  y Secante aceptan expresiones como `2^x`, `e^(1/x)` y `x^(sen(x))`. También
+  se admite `tanx` como abreviatura de `tan(x)`, y `e^u` se evalúa igual que
+  `exp(u)`. [#147](https://github.com/Collado-Labs/Algebra-Lineal/pull/147)
+- **Dominio real y convergencia.** Se distinguen puntos fuera del dominio,
+  polos y valores que exceden el rango numérico o se redondean a cero por
+  subdesbordamiento. La gráfica conserva los huecos. Los métodos cerrados
+  comprueban el dominio y la continuidad en el intervalo con cotas
+  conservadoras. Newton-Raphson y Secante descartan la parada por tolerancia
+  cuando los signos excluyen una raíz o cuando el paso cruza un tramo cuya
+  continuidad no pueden certificar. La regla general de derivación de una
+  potencia con exponente variable requiere base positiva.
+  [#147](https://github.com/Collado-Labs/Algebra-Lineal/pull/147)
+- **Jacobi y Gauss-Seidel por ecuaciones.** En **Tipo de entrada → Sistema de
+  ecuaciones**, escribe un sistema lineal con incógnitas `x1, x2, …`. PyGebra
+  usa el mismo analizador que Reducción por filas y convierte el texto a A y b
+  para resolver con Jacobi, Gauss-Seidel o **Comparar ambos**. Se mantienen el
+  vector inicial, la tolerancia, el límite de iteraciones y las validaciones
+  del sistema. [#148](https://github.com/Collado-Labs/Algebra-Lineal/pull/148)
+
+Consulta [Bisección](biseccion.md#uso),
+[Newton-Raphson](newton-raphson.md#derivación-y-dominio),
+[Secante](secante.md#algoritmo-y-parada) y
+[Métodos iterativos](sistemas-iterativos.md).
+
+Para una versión posterior quedan admitir `x, y, z` en el analizador compartido,
+trasladar las ecuaciones a las celdas al cambiar de modo y mostrar las ecuaciones
+reescritas en el resultado de Métodos iterativos.
+
 ## Flujo de integración y entrega
 
 ```mermaid
