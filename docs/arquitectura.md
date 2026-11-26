@@ -183,10 +183,14 @@ desktop.py ─ Django (DESKTOP_MODE, DEBUG=False) ─ Waitress 127.0.0.1:<efíme
 ```
 
 WebView2 corre en modo privado: su perfil (historial, caché, formularios,
-autocompletado) se descarta al cerrar. Las únicas preferencias que sobreviven
-—tema, Exacto/Decimal y precisión— las escribe Django en un archivo propio que
-fija `desktop.preferences_path()`; como no dependen del origen, el puerto puede
-seguir siendo efímero y una segunda instancia comparte las mismas preferencias.
+autocompletado) se descarta al cerrar. Solo sobreviven las preferencias de la
+lista blanca `VALORES` de `frontend/web/calculadora/preferencias.py`: apariencia,
+formato numérico, decimales de raíces, sonido y música. Esa lista es la
+referencia canónica; [Interfaz · Escritorio](interfaz.md#escritorio) explica qué
+se recuerda de cada una. Django las escribe en un archivo propio que fija
+`desktop.preferences_path()`, con bloqueo y reemplazo atómico; como no dependen
+del origen, el puerto puede seguir siendo efímero y una segunda instancia
+comparte las mismas preferencias.
 La ventana abre maximizada y, al restaurarla, cabe en el área útil del monitor
 principal. El launcher también deja el menú contextual nativo solo con las
 acciones de edición mediante `ContextMenuRequested` de WebView2, al que llega por

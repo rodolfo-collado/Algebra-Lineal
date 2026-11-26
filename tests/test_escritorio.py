@@ -323,6 +323,13 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
                                                      "pygebra-raices-decimales", "pygebra-estilo", "pygebra-sonido", "pygebra-volumen",
                                                      "pygebra-musica-volumen", "pygebra-musica-pieza"})
 
+    def test_la_guia_de_escritorio_nombra_todas_las_preferencias_persistentes(self):
+        guia = (Path(__file__).resolve().parents[1] / "docs" / "interfaz.md").read_text(encoding="utf-8")
+        seccion = guia.split("## Escritorio", 1)[1].split("\n## ", 1)[0]
+        for clave in preferencias.VALORES:
+            with self.subTest(clave=clave):
+                self.assertIn(f"`{clave}`", seccion)
+
     def test_volver_no_restaura_formularios_que_no_corresponden_al_resultado(self):
         cliente = Client()
         for ruta in HERRAMIENTAS:

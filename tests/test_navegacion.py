@@ -351,7 +351,7 @@ class PruebasBuscador(SimpleTestCase):
                 self.assertContains(respuesta, herramienta.descripcion)
                 if herramienta.disponible:
                     self.assertContains(respuesta, f'href="{herramienta.ruta}"')
-        # Cada área es un canal; las próximas se anuncian sin enlace (Conjuntos y Cálculo).
+        # Cada área es un canal; las próximas (hoy, Cálculo) se anuncian sin enlace.
         for area in catalogo.AREAS:
             self.assertIn(area.id, documento.ids)
             self.assertEqual(f'href="{area.ruta}"' in respuesta.content.decode("utf-8"), area.disponible)
