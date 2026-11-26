@@ -29,6 +29,16 @@
         p.x = x; p.y = y;
         return p.matrixTransform(svg.getScreenCTM());
     };
+    const pulsarRecta = (w, svg) => {
+        const caja = svg.getBoundingClientRect();
+        // Los eventos sintéticos no tienen un puntero activo que el SVG pueda capturar.
+        svg.setPointerCapture = () => {};
+        for (const tipo of ["pointerdown", "pointerup"]) {
+            svg.dispatchEvent(new w.PointerEvent(tipo, {
+                clientX: caja.left + caja.width / 2, clientY: caja.top + 40, bubbles: true, pointerId: 1,
+            }));
+        }
+    };
     const filas = w => qa(w, "[data-conjunto]").map(fila =>
         `${fila.querySelector('[data-campo="nombre"]').value} = ${fila.querySelector("textarea").value}`);
     const tarjeta = (w, clave) => q(w, `[name="tarjeta"][value="${clave}"]`)?.closest(".tarjeta");
@@ -158,8 +168,7 @@
             tramo.click();
             ok(tramo.getAttribute("aria-pressed") === "true" && q(w, ".recta-tramo-grupo.es-activo"), "Tramo resaltado");
             q(w, ".recta-controles button:last-child").click();
-            const caja = svg.getBoundingClientRect();
-            for (const tipo of ["pointerdown", "pointerup"]) svg.dispatchEvent(new w.PointerEvent(tipo, { clientX: caja.left + caja.width / 2, clientY: caja.top + 40, bubbles: true, pointerId: 1 }));
+            pulsarRecta(w, svg);
             ok(q(w, '[name="punto"]').value !== "" && q(w, "[data-recta] [role=status]").textContent.includes("Comprobar"), "Pulsar propone un punto");
             valor(w, "punto", "1");
             w = await post(frame, "[data-consultar]");
@@ -170,6 +179,26 @@
             ok(q(w, "#resultado") && q(w, '[name="punto"]').getAttribute("aria-invalid") === "true", "Error junto al punto, con resultado");
             w = await cargar(frame, "/conjuntos/relaciones/?ejemplo=intervalos");
             ok(!q(w, "[data-venn-editor]") && !q(w, ".tarjetas") && q(w, ".conjuntos-diagrama").textContent.includes("recta real"), "Con intervalos no hay diagrama ni tarjetas, y se dice por qué");
+        }],
+        ["La recta conserva el punto si la escala no permite proponer uno", async (w, frame) => {
+            const grande = "1" + "0".repeat(20);
+            const enorme = "1" + "0".repeat(21);
+            for (const [inferior, superior] of [
+                [grande, grande.slice(0, -1) + "1"],
+                ["0", "1/" + "1" + "0".repeat(99)],
+                [enorme, "2" + enorme.slice(1)],
+            ]) {
+                valor(w, "expresion", "intervalo(" + inferior + ", " + superior + ", cerrado, cerrado)");
+                if (q(w, '[name="punto"]')) valor(w, "punto", "");
+                w = await post(frame);
+                valor(w, "punto", inferior);
+                const recta = q(w, "[data-recta]");
+                pulsarRecta(w, recta.querySelector("svg"));
+                ok(q(w, '[name="punto"]').value === inferior, "Conserva el punto escrito");
+                ok(recta.querySelector("[role=status]").textContent.includes("Escribe el punto"), "La recta invita a escribir un punto");
+                w = await post(frame, "[data-consultar]");
+                ok(q(w, "[data-consulta-punto]").textContent.includes("pertenece"), "El extremo exacto sigue siendo válido");
+            }
         }],
         ["P5: el resultado se sombrea en el diagrama editable, sin un segundo Venn", async (w, frame) => {
             valor(w, "expresion", "A ∖ B"); w = await post(frame);
