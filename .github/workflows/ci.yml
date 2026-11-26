@@ -139,6 +139,36 @@ jobs:
           if ($installers.Count -ne 1) { throw 'Se esperaba exactamente un instalador.' }
           .\scripts\test_windows_distribution.ps1 -InstallerPath $installers[0].FullName -PreviousInstallerPath $previous[0].FullName -PreviousDesktopIcon
 
+      # Cuenta limpia de nuevo. La base es la release publicada más reciente anterior al
+      # candidato, para que su actualizador lo ofrezca. GitHub se simula; lo demás es real.
+      - name: Probar la autoactualización desde la app instalada
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installers = @(Get-ChildItem dist/installer/PyGebra-Setup-*.exe)
+          if ($installers.Count -ne 1) { throw 'Se esperaba exactamente un instalador.' }
+          $candidate = [version]($installers[0].Name -replace '^PyGebra-Setup-(\d+\.\d+\.\d+)\.exe$', '$1')
+          $tags = @(gh release list --repo $env:GITHUB_REPOSITORY --exclude-drafts --exclude-pre-releases --limit 100 --json tagName --jq '.[].tagName')
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudieron listar las releases publicadas.' }
+          $base = $tags | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' -and [version]$_.Substring(1) -lt $candidate } |
+            Sort-Object { [version]$_.Substring(1) } | Select-Object -Last 1
+          if (-not $base) { throw "No hay una release publicada anterior a $candidate." }
+          $directory = Join-Path $env:RUNNER_TEMP 'release-base-autoactualizacion'
+          New-Item -ItemType Directory -Path $directory -Force | Out-Null
+          gh release download $base --repo $env:GITHUB_REPOSITORY --pattern 'PyGebra-Setup-*.exe' --pattern SHA256SUMS.txt --dir $directory
+          if ($LASTEXITCODE -ne 0) { throw "No se pudo descargar la release $base." }
+          $previous = @(Get-ChildItem -LiteralPath $directory -Filter 'PyGebra-Setup-*.exe')
+          if ($previous.Count -ne 1) { throw 'Se esperaba exactamente un instalador publicado.' }
+          $line = @(Get-Content -LiteralPath (Join-Path $directory 'SHA256SUMS.txt') | Where-Object { ($_ -split '\s+')[1] -eq $previous[0].Name })
+          if ($line.Count -ne 1) { throw 'SHA256SUMS.txt no tiene una entrada única para el instalador publicado.' }
+          if ((Get-FileHash -LiteralPath $previous[0].FullName -Algorithm SHA256).Hash -ne ($line[0] -split '\s+')[0]) { throw 'El instalador publicado no coincide con su SHA-256.' }
+          # El SHA-256 del candidato es el que publicaría SHA256SUMS.txt.
+          $sha256 = (Get-FileHash -LiteralPath $installers[0].FullName -Algorithm SHA256).Hash
+          Write-Host "Base $base → candidato $candidate ($sha256)"
+          .\scripts\test_windows_distribution.ps1 -InstallerPath $installers[0].FullName -PreviousInstallerPath $previous[0].FullName -AutoUpdate -InstallerSha256 $sha256
+
       - name: Conservar instalador para revisión
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

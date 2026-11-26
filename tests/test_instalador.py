@@ -251,7 +251,7 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
     def test_smoke_de_actualizacion_detecta_obsoletos_y_duplicados(self):
         smoke = SCRIPT_PRUEBA.read_text(encoding="utf-8")
         for marcador in ("$obsoleteFile", r"'_internal\obsoleto-'", "Get-PyGebraRegistrations",
-                         "$registrations.Count -ne 1", "$links.Count -ne 1"):
+                         "$registrations.Count -ne 1", "$links.Count -ne $count"):
             self.assertIn(marcador, smoke)
         # La base ya no está limitada a 0.8.0: cualquier PyGebra publicada vale.
         self.assertIn("$oldRegistration.DisplayName -eq 'Álgebra Lineal'", smoke)
@@ -343,6 +343,26 @@ class PruebasIdentidadYEstilo(unittest.TestCase):
         self.assertIn("Get-FileHash -LiteralPath $previous[0].FullName -Algorithm SHA256", ci)
         self.assertIn("-PreviousInstallerPath $previous[0].FullName -PreviousDesktopIcon", ci)
         self.assertLess(ci.index("-InstallerPath $installers[0].FullName\n"), ci.index("-PreviousInstallerPath"))
+
+    def test_ci_prueba_la_autoactualizacion_con_el_actualizador_de_la_base(self):
+        from actualizador import releases
+
+        ci = WORKFLOW_CI.read_text(encoding="utf-8")
+        smoke = SCRIPT_PRUEBA.read_text(encoding="utf-8")
+        self.assertIn("-AutoUpdate -InstallerSha256 $sha256", ci)
+        self.assertIn("[version]$_.Substring(1) -lt $candidate", ci)
+        self.assertLess(ci.index("-PreviousDesktopIcon\n"), ci.index("-AutoUpdate"))
+        # Los pasos se piden a la app instalada; el script no lanza el instalador por su cuenta.
+        for accion in ("'buscar'", "'descargar'", "'instalar'"):
+            self.assertIn(f"Invoke-UpdateAction $oldUrl $updateSession $updateToken {accion}", smoke)
+        self.assertNotIn("/ACTUALIZAR=1') -WorkingDirectory", smoke)
+        # El GitHub simulado responde en las rutas que construye el actualizador.
+        self.assertIn(releases.API_ULTIMA_RELEASE.removeprefix("https://").replace(releases.REPOSITORIO, "$repository"), smoke)
+        self.assertIn("releases/download/v$Version/", smoke)
+        # La CA temporal solo se instala en un Windows desechable y se retira al terminar.
+        self.assertIn("$env:GITHUB_ACTIONS -ne 'true' -and $env:USERNAME -ne 'WDAGUtilityAccount'", smoke)
+        self.assertIn("Stop-FakeGitHub $fakeGitHub", smoke)
+        self.assertIn("$root.Remove($trusted)", smoke)
 
     def test_ci_compila_con_la_version_de_inno_setup_documentada(self):
         ci = WORKFLOW_CI.read_text(encoding="utf-8")
