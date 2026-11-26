@@ -1,5 +1,6 @@
 """Métodos abiertos: contrato HTTP de Secante, selector de método, rutas antiguas y catálogo."""
 
+import math
 import re
 
 from django.test import Client, SimpleTestCase
@@ -7,6 +8,7 @@ from django.urls import reverse
 
 from backend.funciones_reales import FuncionReal
 from backend.secante import secante
+from frontend.terminal.adaptador import Tabla, ejecutar, procedimiento
 from frontend.web.calculadora import catalogo
 from tests.test_biseccion_web import datos_raices_html, resultado_html
 
@@ -84,6 +86,22 @@ class SecanteWebTests(SimpleTestCase):
         self.assertEqual(r["tolerancia"], 1e-6)
         self.assertAlmostEqual(r["x"], 2.0945514815, places=9)
         self.assertContains(self.client.get(RUTA), '"precision": "0.000001"')
+
+    def test_abscisa_repetida_llega_a_la_raiz_en_web_y_consola(self):
+        entrada = datos(funcion="1+2x-x^2", x0="0", x1="1")
+        r = self.client.post(RUTA, entrada)
+        resultado = resultado_html(r)
+        self.assertEqual((resultado["estado"], len(resultado["iteraciones"])), ("tolerancia", 7))
+        self.assertAlmostEqual(resultado["x"], 1 - math.sqrt(2), places=9)
+        self.assertContains(r, 'data-tono="exito"', count=1)
+
+        respuesta, _ = ejecutar("secante", entrada)
+        bloques = procedimiento(respuesta)
+        texto = " ".join(b for b in bloques if isinstance(b, str))
+        self.assertIn("Raíz aproximada", texto)
+        self.assertNotIn("entró en un ciclo", texto)
+        tabla = next(b for b in bloques if isinstance(b, Tabla))
+        self.assertEqual(len(tabla.filas), 7)
 
     def test_estados_sin_javascript(self):
         for cambios, estado, titulo, tono in [
