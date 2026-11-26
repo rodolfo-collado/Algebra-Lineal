@@ -90,6 +90,11 @@ GitHub muestra los enlaces, las imágenes y los bloques de código. Si cambias e
 empaquetado, realiza también
 el [build y smoke Windows](docs/instalacion-windows.md).
 
+Si cambias un flujo interactivo, ejecuta también sus
+[pruebas de navegador](docs/pruebas.md). Comprueba el manejo con teclado y el
+flujo básico sin JavaScript. Para cambios que afecten el escritorio, incluye
+una comprobación en Windows.
+
 ## Integración continua
 
 `.github/workflows/ci.yml` ejecuta esas mismas verificaciones en cada pull request
@@ -103,6 +108,19 @@ para la política de versiones y reintentos.
 **Un PR no se fusiona si el CI está en rojo.** Si un check falla, corrígelo en la
 misma rama `feature/*` y espera una ejecución verde. No desactives un check para
 poder mergear.
+
+## Cálculo e interfaz
+
+El backend calcula e interpreta los resultados matemáticos. El servidor valida
+la entrada y los servicios de cada interfaz adaptan el resultado para mostrarlo.
+Redondea solo para presentar y distingue el cambio entre iteraciones del
+residuo y de la tolerancia que se usa en el criterio de parada.
+
+Antes de crear un componente, revisa las [pautas para añadir una herramienta](docs/desarrollo.md#añadir-una-herramienta)
+y los [componentes de interfaz](docs/interfaz.md). Reutiliza el catálogo, los
+layouts, el teclado, los editores, el menú de edición y el formato numérico que
+corresponda. Conserva el formulario y la lectura básica del resultado sin
+JavaScript y aplica el presupuesto del proyecto a las operaciones costosas.
 
 ## Bibliotecas matemáticas y algoritmos educativos
 
@@ -205,25 +223,74 @@ El parser devuelve solo la matriz aumentada, sin metadata sobre su origen: el
 backend matemático no debe saber si el sistema se escribió como texto o se ingresó
 coeficiente por coeficiente.
 
-## Comentarios en el código
+## Calidad del código
 
-Comenta solo cuando ayude a entender una decisión que no es evidente. Prefiere
-comentarios de una línea, breves, que expliquen el porqué.
+Estas convenciones buscan que un estudiante pueda seguir el cálculo en el código
+y que un cambio no altere lo que la persona usuaria ve. Ante la duda, elige la
+versión más simple que cumpla las pruebas.
 
-Evita comentarios que repiten lo que el código ya dice:
+**Funciones con una responsabilidad clara.** Si para describir una función hace
+falta decir «y además», probablemente son dos. `ExpresionMatricialForm.clean`
+muestra de arriba abajo sus fases (campos, operandos, acciones de edición y
+cálculo) y delega cada una en un método con nombre propio. No partas una función
+solo por su longitud: el bucle de un método numérico puede ser largo y seguir
+expresando una sola idea, en el mismo orden en que se explica en clase.
+
+**Nombres descriptivos y fieles a la notación.** Usa nombres de dominio en
+español. Conserva `A`, `b`, `x`, `i`, `j` o `k` cuando una fórmula cercana fija
+qué representan o qué indexan. Si una variable cambia de papel, nómbrala por ese
+papel: en Secante, `anterior` y `actual` son los dos puntos que definen la
+próxima recta. No renombres funciones públicas, campos de formulario, claves de
+resultados ni rutas sin un motivo funcional: la consola, las plantillas, las
+pruebas y los enlaces guardados dependen de ellos.
+
+**Comentarios breves sobre lo que el código no dice.** Una línea junto a una
+fórmula, a una condición de parada, al significado de una variable o a una
+decisión que no se deduce del código. No repitas lo que ya dice la llamada:
 
 ```python
 # Recorre cada fila
 for fila in matriz:
 ```
 
-Un comentario útil se ve así:
+Un comentario útil explica una decisión matemática:
 
 ```python
-# La ultima columna representa los terminos independientes.
+# El estado es la pareja ordenada (xₙ₋₁, xₙ): una abscisa que reaparece con otra compañera
+# define otra recta y puede dar un punto nuevo. Solo una pareja repetida cierra un ciclo.
 ```
 
-No agregues docstrings largos solo por decorar.
+**Docstrings en los contratos públicos.** Una función que usan otras capas
+indica qué entrada admite, qué tipo de número usa (`Fraction` exacto o
+aproximación de máquina), cuándo se detiene, qué devuelve al fallar y qué
+excepciones lanza. Si la tabla completa de estados o claves ya está en `docs/`,
+enlázala en lugar de copiarla. Un ayudante privado cuyo nombre basta no necesita
+docstring, y ninguno debe ser largo solo por decorar.
+
+**Cálculo, validación y presentación separados.** `backend/` calcula e
+interpreta; los formularios validan y normalizan la entrada; los servicios,
+plantillas y JS presentan. Redondea solo para mostrar y no decidas una
+clasificación en la plantilla. Consulta [Cálculo e interfaz](#cálculo-e-interfaz).
+
+**Reutiliza cuando la responsabilidad es la misma.** Comparte código si dos
+usos representan la misma decisión: `aplicar_gauss_jordan` parte de
+`aplicar_gauss`, y Newton y Secante comparten `impedimento_paso_abierto`. Si
+solo se parecen, mantenlos separados: Bisección y Regla falsa comparten la
+preparación del intervalo, pero no el bucle, porque cortan, miden el error y
+confirman la cercanía de forma distinta.
+
+**Pruebas que protegen lo observable.** Comprueba lo que ve quien usa o consume
+la herramienta: valores, orden de los pasos, clasificación, el campo y el texto
+de un error, y en el navegador, foco, cursor y selección. Evita aserciones sobre
+nombres privados o sobre el espaciado del HTML; usa el DOM o los datos
+decodificados. Antes de reestructurar, escribe una prueba de caracterización
+que pase con el código actual y consérvala en el PR.
+
+**Sin sobreingeniería.** No añadas capas, clases base, configuraciones ni
+parámetros para casos que todavía no existen. Una herramienta nueva reutiliza el
+catálogo, los layouts y los componentes actuales; no necesita un sistema de
+plugins ni un motor matemático universal. Una optimización necesita una medición
+que muestre dónde está el costo antes de cambiar el diseño.
 
 ## Configuración local
 

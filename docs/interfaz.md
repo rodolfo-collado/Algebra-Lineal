@@ -975,10 +975,13 @@ comportamiento de su navegador.
   datos que produjeron el resultado, no ediciones posteriores que lo dejarían
   vigente por error. En navegadores con bfcache, `pageshow` restaura estilo, riel, tema
   y formato numérico (secciones anteriores).
-- **Preferencias.** Entre aperturas solo se conservan `pygebra-tema`,
-  `pygebra-formato-numerico`, `pygebra-precision-decimal`, `pygebra-estilo`,
+- **Preferencias.** Entre aperturas solo se conservan las claves de
+  `preferencias.VALORES`: `pygebra-tema`, `pygebra-formato-numerico`,
+  `pygebra-precision-decimal`, `pygebra-raices-decimales`, `pygebra-estilo`,
   `pygebra-sonido`, `pygebra-volumen`, `pygebra-musica-volumen` y
-  `pygebra-musica-pieza`. WebView2 corre en
+  `pygebra-musica-pieza`. De la música se recuerdan el volumen y la pieza
+  elegida, no si sonaba: cada visita empieza en silencio porque el encendido
+  vive en `sessionStorage`. WebView2 corre en
   modo privado y Django las guarda en `%LOCALAPPDATA%\PyGebra\preferencias.json`
   (`POST /preferencias/` con CSRF, lista blanca de claves y valores, escritura
   atómica) y las pinta como `data-pygebra-…` en `<html>`. Durante la ejecución

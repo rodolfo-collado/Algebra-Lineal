@@ -25,6 +25,17 @@ def _flotante(valor):
 
 
 def secante(funcion, x0, x1, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIONES):
+    """Itera la secante desde x₀ ≠ x₁ y devuelve un diccionario serializable con la tabla y su conclusión.
+
+    `funcion` recibe y devuelve floats; cada corte se calcula con diferencias racionales exactas y
+    solo el resultado se redondea a float. Parámetros inválidos (x₀ = x₁, tolerancia fuera de
+    (0, 0.0001], iteraciones fuera de 1–1000) lanzan ValueError. Converge (`estado` "exacta" o
+    "tolerancia", `convergio=True`) si f(x) = 0 en máquina, o si el cambio |xₙ₊₁ − xₙ| y el residuo
+    |f(xₙ₊₁)| no superan la tolerancia y `impedimento_paso_abierto` no objeta el último paso.
+    `x`, `fx` y `residuo` se vuelven a evaluar al terminar (None si no hubo evaluación válida).
+    `iteraciones` reúne los pasos completos; `intento_final`, el paso interrumpido o None.
+    Estados y claves de cada fila: docs/secante.md; clasificaciones: `ClasificacionRaices`.
+    """
     x0, x1, tolerancia = finito(x0), finito(x1), finito(tolerancia)
     if x0 == x1:
         raise ValueError("x₀ y x₁ deben ser distintos: la secante necesita dos puntos.")

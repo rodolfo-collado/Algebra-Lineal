@@ -10,6 +10,16 @@ from .resultados_raices import impedimento_paso_abierto
 
 
 def newton_raphson(funcion, x0, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIONES):
+    """Itera Newton-Raphson desde x₀ y devuelve un diccionario serializable con la tabla y su conclusión.
+
+    La derivada se obtiene de `funcion` con `DerivadaReal`, así que solo admite el subconjunto
+    derivable de `FuncionReal`; si no se puede, el `estado` es "derivacion". Parámetros inválidos
+    (tolerancia fuera de (0, 0.0001], iteraciones fuera de 1–1000) lanzan ValueError. El criterio
+    de convergencia es el mismo de `secante`: cero de máquina, o cambio y residuo dentro de la
+    tolerancia sin objeción de `impedimento_paso_abierto`. A diferencia de Secante, el estado de
+    Newton es una sola abscisa: repetir una aproximación anterior ya es un ciclo ("oscilacion").
+    Estados y claves de cada fila: docs/newton-raphson.md.
+    """
     x0, tolerancia = finito(x0), finito(tolerancia)
     if not 0 < tolerancia <= TOLERANCIA:
         raise ValueError("La tolerancia debe ser positiva y no mayor que 0.0001.")
