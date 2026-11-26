@@ -90,6 +90,25 @@ primera vuelta (≈ 530 s en total).
 - **Driver.** En Windows el perfil del navegador queda bloqueado un instante tras
   cerrarlo (`EBUSY`); su borrado ya no puede tumbar los runners siguientes.
 
+### Lo que no cubre ninguna prueba automatizada
+
+Los runners comprueban el DOM, el foco, el orden y los atributos ARIA, pero no lo
+que **oye** un usuario de lector de pantalla ni lo que hace un **dedo** real. Los
+eventos táctiles son sintéticos (`pointerType` asignado por la prueba), y Chrome
+sin ventana no emite gestos. Siguen pendientes de validación manual con NVDA o
+Narrador y en una pantalla táctil física:
+
+| Requiere | Qué falta comprobar |
+|---|---|
+| Lector de pantalla | Que las regiones `aria-live` (presentes en 13 plantillas: buscador en vivo, resultado desactualizado, estado de Actualizaciones, recta y Venn de Conjuntos, entre otras) se anuncien una vez y sin cortar la lectura en curso |
+| Lector de pantalla | La lectura de fórmulas y sustituciones de los métodos de raíces y de los valores redondeados («redondeado; valor almacenado …») |
+| Lector de pantalla | La navegación por tablas de matrices, por las cuadrículas `celda_<matriz>_<i>_<j>` y por los campos del diagrama de Venn con la barra de símbolos |
+| Lector de pantalla | Los pasos de Actualizaciones (`aria-current="step"`) y el menú de edición abierto con Shift+F10 o la tecla Menú |
+| Pantalla táctil | Explorador del área: el primer toque muestra la herramienta y el segundo la abre |
+| Pantalla táctil | Conjuntos: escribir en las regiones pequeñas del diagrama de tres conjuntos y proponer un punto de la recta con un toque sin arrastre |
+| Pantalla táctil | Gráficas de raíces: arrastrar las líneas de x₀, x₁ o del intervalo y acercar con pellizco |
+| Pantalla táctil | Menú de edición con pulsación larga (el código distingue `touch` y `pen` del ratón) y teclado matemático sin teclado físico |
+
 ## Secante y Métodos abiertos, versión 0.18.0 (2026-11-12)
 
 - **Python:** 2.047 pruebas completas correctas (`unittest discover`, desde PowerShell).
