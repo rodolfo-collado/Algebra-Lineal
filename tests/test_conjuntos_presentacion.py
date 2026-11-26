@@ -168,6 +168,28 @@ class CardinalidadPresentacionTests(SimpleTestCase):
         self.assertContains(respuesta, 'data-cubre="1 3 5 7"')
         self.assertContains(respuesta, "|A ∩ B ∩ C|")
 
+    def test_tarjeta_y_demostracion_comparten_los_terminos_en_orden(self):
+        for numero, mascaras in ((2, [1, 2, 3]), (3, [1, 2, 4, 3, 5, 6, 7])):
+            expresion = " ∪ ".join("ABC"[:numero])
+            cantidades = {m: m for m in range(1, 1 << numero)}
+            for universo in ("", str(sum(cantidades.values()) + 1)):
+                with self.subTest(numero=numero, universo=universo):
+                    respuesta = self.client.post(CARDINALIDAD, {
+                        "numero": str(numero), "modo": "regiones", "expresion": expresion, "universo": universo,
+                        **{f"region_{m}": str(valor) for m, valor in cantidades.items()},
+                    })
+                    datos = contrato(respuesta)
+                    paso = next(p for p in datos["pasos"] if p["regla"] == "inclusion_exclusion")
+                    self.assertEqual([t["mascara"] for t in paso["terminos"]], mascaras)
+                    self.assertEqual(paso["veces"], {str(m): 1 for m in cantidades})
+                    formula = f"|{expresion}| = " + " ".join(
+                        ("" if i == 0 else "+ " if termino["signo"] > 0 else "− ") + f"|{termino['etiqueta']}|"
+                        for i, termino in enumerate(paso["terminos"])
+                    )
+                    self.assertContains(respuesta, f'<p class="tarjeta-formula conjuntos-math">{formula}</p>', count=1)
+                    self.assertContains(respuesta, f'<p class="conjuntos-formula conjuntos-math">{formula}</p>', count=1)
+                    self.assertEqual(datos["union"], str(sum(cantidades.values())))
+
     def test_resultado_explica_regiones_y_veces(self):
         campos = {"numero": "2", "modo": "regiones", "region_1": "5", "region_2": "3", "region_3": "2",
                   "universo": "12", "expresion": "A ∪ B", "accion": "calcular"}

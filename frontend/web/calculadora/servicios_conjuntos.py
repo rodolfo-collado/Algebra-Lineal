@@ -6,7 +6,7 @@ la presentación. Ningún gráfico ni script vuelve a operar conjuntos."""
 
 from fractions import Fraction
 
-from backend.conjuntos.cardinalidades import resolver_cardinalidades
+from backend.conjuntos.cardinalidades import inclusion_exclusion, resolver_cardinalidades
 from backend.conjuntos.evaluador import evaluar_expresion
 from backend.conjuntos.intervalos import Recta
 from backend.conjuntos.literales import Lector
@@ -394,12 +394,13 @@ def catalogo_operaciones(nombres, universo=None):
     return filas
 
 
-def panorama_web(nombres, universo, regiones, *, cantidades=False):
+def panorama_web(nombres, universo, regiones, *, cantidades=False, inclusion=None):
     """Tarjetas de operaciones y propiedades de los conjuntos del diagrama.
 
     `regiones` asigna a cada máscara sus elementos o, con `cantidades`, cuántos tiene. Cada
     tarjeta reúne (o suma) las regiones que selecciona el mismo evaluador que sombrea el
-    diagrama: si solo se conocen cantidades, ninguna tarjeta escribe elementos."""
+    diagrama: si solo se conocen cantidades, ninguna tarjeta escribe elementos.
+    Cuando ya se resolvieron cardinalidades, `inclusion` es su paso de inclusión-exclusión."""
     presupuesto = Presupuesto()
     medidas = {}
 
@@ -443,13 +444,21 @@ def panorama_web(nombres, universo, regiones, *, cantidades=False):
     medibles = [*nombres, *((universo,) if universo else ())]
     cardinalidades = [(f"|{n}|", medir(n)[1]) for n in medibles]
     pares = [(x, y) for i, x in enumerate(nombres) for y in nombres[i + 1:]]
-    # Inclusión-exclusión: cada lado lo mide el modelo; aquí solo se escribe la identidad con sus valores.
-    terminos = [(' ∩ '.join(n for i, n in enumerate(nombres) if m & (1 << i)), '+' if m.bit_count() % 2 else '−')
-                for m in sorted(range(1, 1 << len(nombres)), key=lambda m: (m.bit_count(), m))]
+    if inclusion is None:
+        cantidades_regiones = regiones if cantidades else {mascara: len(elementos) for mascara, elementos in regiones.items()}
+        inclusion = inclusion_exclusion(nombres, cantidades_regiones)
+
+    def lado(escribir):
+        partes = []
+        for termino in inclusion['terminos']:
+            if partes:
+                partes.append('+' if termino['signo'] > 0 else '−')
+            partes.append(escribir(termino))
+        return ' '.join(partes)
+
     union = ' ∪ '.join(nombres)
-    lado = lambda escribir: ' '.join(f"{signo} {escribir(e)}" for e, signo in terminos)[2:]
-    formula = f"|{union}| = {lado(lambda e: f'|{e}|')}"
-    valores = f"{medir(union)[1]} = {lado(lambda e: str(medir(e)[1]))}"
+    formula = f"|{union}| = {lado(lambda t: f"|{t['etiqueta']}|")}"
+    valores = f"{inclusion['resultado']} = {lado(lambda t: str(t['valor']))}"
     return {'cantidades': cantidades,
             'operaciones': [tarjeta(*fila) for fila in catalogo_operaciones(nombres, universo)],
             'cardinalidades': cardinalidades,
@@ -489,7 +498,9 @@ def cardinalidades_web(nombres, datos, *, modo, universo, expresion):
                                  for m in p['regiones']]
         pasos.append(vista)
     # Sin universo no hay exterior que contar: las tarjetas se limitan a lo que está dentro.
-    panorama = panorama_web(nombres, 'U' if universo is not None else None, r['regiones'], cantidades=True)
+    inclusion = next(p for p in r['pasos'] if p['regla'] == 'inclusion_exclusion')
+    panorama = panorama_web(nombres, 'U' if universo is not None else None, r['regiones'],
+                            cantidades=True, inclusion=inclusion)
     return {**r, 'filas': regiones, 'pasos_vista': pasos, 'expresion': expresion, 'modo': modo, 'panorama': panorama, 'datos': {
         'venn': {'nombres': nombres, 'regiones': regiones, 'cantidades': True},
         'resultado': str(r['resultado']), 'union': str(r['union']), 'pasos': pasos}}
