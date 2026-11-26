@@ -316,7 +316,8 @@ Jacobi y Gauss-Seidel: `uv run --locked python -m tests.iterativos_browser` (pue
 `/__pruebas/`). Comprueba la `k` compartida por gráfica, sustitución y tabla (clic,
 flechas, control y clic en la gráfica), los orígenes anterior/nuevo de cada método,
 el formato global Exacto/Decimal con «≈», la copia CSV con cifras almacenadas, los
-ejemplos del menú de edición, la divergencia, el vector inicial exacto y los estilos y
+ejemplos del menú de edición, la entrada por ecuaciones (teclado de sistema y mismo
+resultado que A y b), la divergencia, el vector inicial exacto y los estilos y
 temas a 1280, 744 y 390 px. Véase [Jacobi y Gauss-Seidel](sistemas-iterativos.md).
 El runner de Conjuntos (`python -m tests.conjuntos_browser`, puerto 8894) usa las rutas
 públicas. Véase [Bisección](biseccion.md) y [Conjuntos](conjuntos.md).

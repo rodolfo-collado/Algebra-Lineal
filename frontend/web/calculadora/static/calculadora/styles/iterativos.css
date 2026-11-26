@@ -15,6 +15,13 @@
 
 /* —— Entrada —— */
 
+/* Tipo de entrada sin JavaScript: el radio marcado esconde la otra forma y su pista. El dock
+   del teclado (fixed) vive en la sección de A y b y debe seguir disponible para las ecuaciones. */
+[data-ecuacion]:has([name="tipo_entrada"][value="matriz"]:checked) :is(#system-fields, [data-input-hint="sistema"]),
+[data-ecuacion]:has([name="tipo_entrada"][value="sistema"]:checked) :is([data-input-hint="matriz"], #equation-fields > :not(.math-keyboard)) {
+    display: none;
+}
+
 .iterativo-parametros {
     display: grid;
     grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
