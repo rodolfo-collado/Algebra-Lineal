@@ -1,5 +1,6 @@
 import json
 import re
+from fractions import Fraction
 from html import unescape
 
 from django.test import SimpleTestCase
@@ -7,6 +8,8 @@ from django.test.utils import setup_test_environment, teardown_test_environment
 from django.urls import resolve, reverse
 
 from backend.sistemas_iterativos import resolver_iterativo
+from frontend.terminal.adaptador import ejecutar, procedimiento
+from frontend.terminal.algebra import preparar_algebra
 from frontend.web.calculadora import catalogo
 from frontend.web.calculadora.presentacion_numerica import representar_flotante
 from frontend.web.calculadora.servicios_iterativos import EJEMPLOS
@@ -196,11 +199,42 @@ class SistemasIterativosWebTest(SimpleTestCase):
         self.assertContains(respuesta, 'data-tono="aviso"')
 
     def test_vector_inicial_que_ya_es_solucion(self):
-        respuesta = self.resolver(CLASE_A, CLASE_B, "gauss_seidel", inicial_iterativo="1 2 -1 1")
-        resultado = respuesta.context["iterativos"]["metodos"][0]
-        self.assertEqual((resultado["estado"], resultado["final"]["k"], resultado["final"]["cambio"]), ("convergio", 1, 0))
-        self.assertEqual(respuesta.context["iterativos"]["titulo"], "Gauss-Seidel converge en 1 iteración")
-        self.assertContains(respuesta, "x⁽⁰⁾ ya satisface Ax = b: la iteración 1 lo confirma con cambio 0.")
+        for metodo, nombre in (("jacobi", "Jacobi"), ("gauss_seidel", "Gauss-Seidel")):
+            with self.subTest(metodo=metodo):
+                respuesta = self.resolver(CLASE_A, CLASE_B, metodo, inicial_iterativo="1 2 -1 1")
+                resultado = respuesta.context["iterativos"]["metodos"][0]
+                self.assertEqual((resultado["estado"], resultado["final"]["k"], resultado["final"]["cambio"]),
+                                 ("convergio", 1, 0))
+                self.assertEqual(respuesta.context["iterativos"]["titulo"], f"{nombre} converge en 1 iteración")
+                self.assertContains(respuesta, "x⁽⁰⁾ ya satisface Ax = b: la iteración 1 lo confirma con cambio 0.")
+
+    def test_solucion_inicial_que_se_mueve_por_redondeo_no_anuncia_cambio_cero(self):
+        # 0.1·1 + 0.2·1 = 0.3 es exacto, pero en float (0.3 − 0.2)/0.1 = 1 − 2⁻⁵²:
+        # el residuo inicial es cero y la primera vuelta sí mueve x1.
+        a, b = [["0.1", "0.2"], ["0", "1"]], ["0.3", "1"]
+        explicacion = "En la iteración 1, el cambio máximo y el residuo son menores que la tolerancia."
+        for metodo in ("jacobi", "gauss_seidel"):
+            matricial = self.resolver(a, b, metodo, inicial_iterativo="1 1")
+            ecuaciones = self.client.post(RUTA, {
+                "tipo_entrada": "sistema", "sistema": "0.1x1 + 0.2x2 = 0.3; x2 = 1",
+                "metodo": metodo, "inicial_iterativo": "1 1",
+            })
+            consola, _ = ejecutar("metodos-iterativos", preparar_algebra("metodos-iterativos", {
+                "@A": "0.1 0.2; 0 1", "@b": "0.3 1", "metodo": metodo, "inicial_iterativo": "1 1",
+            }, "."))
+            for entrada, respuesta in (("matriz", matricial), ("ecuaciones", ecuaciones), ("consola", consola)):
+                with self.subTest(metodo=metodo, entrada=entrada):
+                    resultado = respuesta.context_data["iterativos"]["metodos"][0]
+                    self.assertEqual((resultado["estado"], resultado["final"]["k"]), ("convergio", 1))
+                    self.assertEqual(resultado["filas"][0]["norma"], 0)
+                    self.assertEqual(resultado["final"]["x"], (1 - 2**-52, 1.0))
+                    self.assertEqual(resultado["final"]["cambio"], 2**-52)
+                    self.assertEqual(resultado["final"]["norma"], float(Fraction(1, 10 * 2**52)))
+                    self.assertEqual(resultado["mensaje"], explicacion)
+            self.assertEqual(matricial.context["iterativos"], ecuaciones.context["iterativos"])
+            texto = " ".join(bloque for bloque in procedimiento(consola) if isinstance(bloque, str))
+            self.assertIn(explicacion, texto)
+            self.assertNotIn("cambio 0.", texto)
 
     def test_comprobaciones_de_dominancia_y_ax_b(self):
         respuesta = self.resolver(CLASE_A, CLASE_B, "comparar_iterativos")
