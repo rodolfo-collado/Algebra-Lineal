@@ -67,10 +67,15 @@ async function conectar(binario, perfil) {
     // Ubuntu 24.04 restringe los espacios de nombres que usa el sandbox de Chrome; solo se
     // cargan páginas de 127.0.0.1 servidas por el propio runner.
     if (process.platform === "linux") argumentos.unshift("--no-sandbox");
-    const proceso = spawn(binario, argumentos, { stdio: "ignore" });
+    const proceso = spawn(binario, argumentos, { stdio: ["ignore", "ignore", "pipe"] });
+    const errores = [];
+    proceso.stderr.on("data", trozo => errores.push(trozo.toString()));
     const puertoArchivo = path.join(perfil, "DevToolsActivePort");
+    // El primer arranque en frío de Chrome en un runner nuevo pasó de 15 s; se espera a que
+    // publique su puerto, no un tiempo fijo, y se deja de esperar si el proceso muere.
+    const fin = Date.now() + 60000;
     let destino;
-    for (let i = 0; i < 150 && !destino; i++) {
+    while (!destino && Date.now() < fin && proceso.exitCode === null) {
         await dormir(100);
         try {
             const puerto = fs.readFileSync(puertoArchivo, "utf8").split("\n")[0];
@@ -78,7 +83,11 @@ async function conectar(binario, perfil) {
             destino = paginas.find(p => p.type === "page");
         } catch { /* Todavía arrancando (o EBUSY en Windows). */ }
     }
-    if (!destino) throw new Error("El navegador no abrió el puerto de depuración.");
+    if (!destino) {
+        const estado = proceso.exitCode === null ? "sigue sin responder tras 60 s" : `terminó con código ${proceso.exitCode}`;
+        proceso.kill();
+        throw new Error(`El navegador no abrió el puerto de depuración: ${estado}. ${errores.join("").trim().slice(-800)}`);
+    }
     const ws = new WebSocket(destino.webSocketDebuggerUrl);
     await new Promise((ok, mal) => { ws.onopen = ok; ws.onerror = mal; });
     let id = 0;
