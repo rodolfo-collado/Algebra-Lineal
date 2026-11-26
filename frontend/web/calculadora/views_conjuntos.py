@@ -8,15 +8,18 @@ from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
+from backend.conjuntos.cardinalidades import CardinalidadesIncoherentes
 from backend.conjuntos.literales import analizar_literal, validar_nombre
 from backend.conjuntos.presupuesto import Presupuesto
 from backend.conjuntos.modelo import Conjunto
 from backend.conjuntos.parser import analizar_expresion
-from backend.conjuntos.regiones import construir_venn
+from backend.conjuntos.regiones import UniversoInvalido, construir_venn
 from backend.operandos import OPERANDOS_MAXIMOS
 from .forms_conjuntos import (EJEMPLOS, GUIA, CardinalidadesForm, ConjuntosForm, elegir_nombres, escribir_region, inicial_editor,
                               inicial_ejemplo, nombres_diagrama, rellenar)
-from .servicios_conjuntos import cardinalidades_web, panorama_web, relacion_web, resumen_definiciones, venn_del_diagrama
+from .servicios_conjuntos import (
+    OpcionesVennInvalidas, cardinalidades_web, panorama_web, relacion_web, resumen_definiciones, venn_del_diagrama,
+)
 from .teclados import perfiles_para
 
 
@@ -120,18 +123,21 @@ def _con_diagrama(inicial, azar=False):
 
     # Sin universo pedido se ofrece U: el exterior queda disponible sin configurar nada.
     universo = pedido or ("U" if "U" not in nombres else None)
-    aviso = None
     try:
         regiones = leer(universo)
-    except ValueError as error:
-        aviso = str(error)
-        if pedido or not universo:
-            return inicial, {"aviso": aviso, "cantidades_url": cardinalidad}
-        # Un U que existe pero no contiene a los conjuntos no es su universo: se dibuja sin exterior.
-        try:
-            regiones, universo, aviso = leer(None), None, None
-        except ValueError as error:
-            return inicial, {"aviso": str(error), "cantidades_url": cardinalidad}
+    except ValueError as fallo:
+        error = fallo
+        if not pedido and universo:
+            # Un U automático incompatible no impide dibujar los conjuntos sin exterior.
+            try:
+                regiones = leer(None)
+            except ValueError as sin_universo:
+                error = sin_universo
+            else:
+                universo, error = None, None
+        if error is not None:
+            return inicial, {"aviso": str(error), "cantidades_url": cardinalidad,
+                             "opcion_invalida": "universo" if isinstance(error, UniversoInvalido) else "nombres"}
     valores = {f'venn_region_{r["mascara"]}': escribir_region(r["elementos"])
                for r in regiones if r["mascara"] or universo}
     if azar:
@@ -155,7 +161,7 @@ def _con_diagrama(inicial, azar=False):
     cardinalidad += "?" + urlencode(consulta)
     inicial = {**inicial, **valores, "base_nombres": ", ".join(nombres), "base_universo": universo or "",
                "venn_fuente": "regiones" if azar else ""}
-    return inicial, {"nombres": nombres, "universo": universo, "exterior_conocido": definido, "aviso": aviso,
+    return inicial, {"nombres": nombres, "universo": universo, "exterior_conocido": definido, "aviso": None,
                      "panorama": panorama, "cantidades_url": cardinalidad}
 
 
@@ -181,7 +187,9 @@ def _formulario(inicial, errores=(), azar=False):
     inicial, diagrama = _con_diagrama(inicial, azar)
     errores = list(errores)
     if diagrama and diagrama["aviso"] and (inicial.get("venn_nombres", "").strip() or inicial.get("venn_universo", "").strip()):
-        errores.append(("venn_universo" if "universo" in diagrama["aviso"] else "venn_nombres", diagrama["aviso"]))
+        campo = f'venn_{diagrama["opcion_invalida"]}'
+        if not any(nombre == campo for nombre, _ in errores):
+            errores.append((campo, diagrama["aviso"]))
     if not errores:
         return ConjuntosForm(initial=inicial), diagrama
     form = ConjuntosForm({nombre: str(valor) for nombre, valor in inicial.items()} | {"accion": "guardar"})
@@ -200,17 +208,16 @@ def relaciones_conjuntos(request):
     regiones_aplicadas = False
     if form is not None and form.is_valid():
         errores = []
-        venn = {}
         try:
             if form.accion == "calcular" and "eliminar" not in request.POST:
                 venn = {"venn_nombres": tuple(n.strip() for n in form.cleaned_data.get("venn_nombres", "").split(",") if n.strip()),
                         "venn_universo": form.cleaned_data.get("venn_universo", "").strip() or None}
                 resultado = relacion_web(form.expresion, form.entorno, presupuesto=form.presupuesto,
                                          punto=form.cleaned_data.get("punto", "").strip(), **venn)
+        except OpcionesVennInvalidas as error:
+            errores.append((f"venn_{error.opcion}", str(error)))
         except ValueError as error:
-            pedido = venn.get("venn_nombres") or venn.get("venn_universo")
-            campo = "venn_nombres" if pedido and ("Venn" in str(error) or "universo" in str(error)) else "expresion"
-            errores.append((campo, str(error)))
+            errores.append(("expresion", str(error)))
         if resultado and resultado["error_punto"]:
             # El resultado sigue siendo válido: el error queda junto al punto, en la recta.
             errores.append(("punto", resultado["error_punto"]))
@@ -263,11 +270,12 @@ def cardinalidades_conjuntos(request):
             datos = {m: form.cleaned_data[f'region_{m}'] for m in range(1, 1 << len(form.nombres))}
             resultado = cardinalidades_web(form.nombres, datos, modo=form.cleaned_data['modo'],
                                            universo=form.cleaned_data['universo'], expresion=form.cleaned_data['expresion'])
+        except CardinalidadesIncoherentes as error:
+            form.add_error(None, str(error))
+        except UniversoInvalido as error:
+            form.add_error('universo', str(error))
         except ValueError as error:
-            mensaje = str(error)
-            # Datos incoherentes afectan a varios campos: aviso general; el universo, junto a su campo.
-            campo = None if 'incoherentes' in mensaje else 'universo' if 'universo' in mensaje and 'expresión' not in mensaje else 'expresion'
-            form.add_error(campo, mensaje)
+            form.add_error('expresion', str(error))
     volver = (form.data if form.is_bound else form.initial).get('volver', '')
     return TemplateResponse(request, 'calculadora/modules/conjuntos/cardinalidades.html', {
         'form': form, 'resultado': resultado, 'perfiles_teclado': perfiles_para('regiones-conjuntos'),

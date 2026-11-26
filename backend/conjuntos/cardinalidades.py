@@ -2,7 +2,31 @@
 
 from .parser import analizar_expresion
 from .presupuesto import Presupuesto
-from .regiones import seleccionar_regiones
+from .regiones import UniversoInvalido, seleccionar_regiones
+
+
+class CardinalidadesIncoherentes(ValueError):
+    """Las intersecciones indicadas producen una región con cantidad negativa."""
+
+
+def inclusion_exclusion(nombres, regiones):
+    """Cada intersección suma las regiones que contienen todos sus conjuntos."""
+    mascaras = range(1, 1 << len(nombres))
+    terminos = []
+    for mascara in sorted(mascaras, key=lambda m: (m.bit_count(), m)):
+        # Cada bit es un conjunto: una región forma parte de la intersección si tiene todos sus bits.
+        cubre = tuple(region for region in mascaras if region & mascara == mascara)
+        terminos.append({
+            'mascara': mascara,
+            'etiqueta': ' ∩ '.join(nombre for i, nombre in enumerate(nombres) if mascara & (1 << i)),
+            'signo': 1 if mascara.bit_count() % 2 else -1,
+            'valor': sum(regiones[region] for region in cubre),
+            'cubre': cubre,
+        })
+    # La suma de los signos que alcanzan cada región explica por qué se cuenta una vez.
+    veces = {region: sum(t['signo'] for t in terminos if region in t['cubre']) for region in mascaras}
+    union = sum(t['signo'] * t['valor'] for t in terminos)
+    return {'regla': 'inclusion_exclusion', 'terminos': tuple(terminos), 'veces': veces, 'resultado': union}
 
 
 def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, expresion='A ∪ B', presupuesto=None):
@@ -27,7 +51,7 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
         for k in descontar:
             valor -= regiones[k]
         if valor < 0:
-            raise ValueError(f'Datos incoherentes: la región {etiqueta(m)} tendría {str(valor).replace('-', '−')} elementos. Una intersección no puede superar a los conjuntos que la contienen; revisa esos datos.')
+            raise CardinalidadesIncoherentes(f'Datos incoherentes: la región {etiqueta(m)} tendría {str(valor).replace('-', '−')} elementos. Una intersección no puede superar a los conjuntos que la contienen; revisa esos datos.')
         regiones[m] = valor
         pasos.append({'regla': 'region_exclusiva', 'mascara': m, 'etiqueta':etiqueta(m),
                       'inicial': datos[m], 'restar': descontar,
@@ -36,32 +60,19 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
     for valor in regiones.values():
         total += valor
     if universo is not None and universo < total:
-        raise ValueError('El universo no puede ser menor que la unión de los conjuntos.')
+        raise UniversoInvalido('El universo no puede ser menor que la unión de los conjuntos.')
     regiones[0] = None if universo is None else universo - total
-    intersecciones = {}
-    terminos = []
-    union = 0
-    for m in range(1,cantidad):
-        valor = 0
-        for k in range(1,cantidad):
-            if k & m == m:
-                valor += regiones[k]
-        intersecciones[m] = valor
-        signo = 1 if m.bit_count() % 2 else -1
-        union += signo * valor
-        terminos.append({'mascara': m, 'etiqueta':' ∩ '.join(n for i,n in enumerate(nombres) if m & (1 << i)), 'signo': signo, 'valor': valor,
-                         'cubre': tuple(k for k in range(1, cantidad) if k & m == m)})
-    # Cuántas veces cuenta cada región la suma con signos: siempre una, y por eso funciona.
-    veces = {k: sum(t['signo'] for t in terminos if k in t['cubre']) for k in range(1, cantidad)}
-    pasos.append({'regla': 'inclusion_exclusion', 'terminos': tuple(terminos), 'veces': veces, 'resultado': union})
+    inclusion = inclusion_exclusion(nombres, regiones)
+    intersecciones = {t['mascara']: t['valor'] for t in inclusion['terminos']}
+    pasos.append(inclusion)
     arbol = analizar_expresion(expresion, presupuesto=presupuesto)
     seleccionadas = seleccionar_regiones(arbol, nombres, 'U' if universo is not None else None, presupuesto)
     resultado = 0
     for m in seleccionadas:
         if regiones[m] is None:
-            raise ValueError('Se necesita la cardinalidad del universo para contar la región exterior.')
+            raise UniversoInvalido('Se necesita la cardinalidad del universo para contar la región exterior.')
         resultado += regiones[m]
     pasos.append({'regla': 'suma_regiones', 'regiones': seleccionadas,
                   'etiquetas':tuple(etiqueta(m) for m in seleccionadas), 'resultado': resultado})
-    return {'regiones': regiones, 'intersecciones': intersecciones, 'union': union,
+    return {'regiones': regiones, 'intersecciones': intersecciones, 'union': inclusion['resultado'],
             'seleccionadas': seleccionadas, 'resultado': resultado, 'pasos': tuple(pasos)}

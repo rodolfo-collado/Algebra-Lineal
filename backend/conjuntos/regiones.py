@@ -8,6 +8,10 @@ from .parser import Operacion, Referencia
 from .presupuesto import Presupuesto
 
 
+class UniversoInvalido(ValueError):
+    """El universo no permite representar los conjuntos o la región exterior."""
+
+
 def conjuntos_desde_regiones(nombres, regiones, *, universo=None, presupuesto=None):
     """Inversa de la distribución de Venn: cada elemento ocupa una única región."""
     presupuesto = presupuesto if presupuesto is not None else Presupuesto()
@@ -85,9 +89,11 @@ def construir_venn(nombres, entorno, arbol, *, universo=None, presupuesto=None):
     if len(nombres) not in (1,2,3) or len(set(nombres)) != len(nombres) or (len(nombres) == 1 and not universo):
         raise ValueError('Selecciona dos o tres nombres distintos para Venn (uno basta si indicas el universo).')
     if universo in nombres:
-        raise ValueError('El universo debe tener un nombre distinto de los conjuntos.')
-    if any(n not in entorno or not isinstance(entorno[n], Conjunto) for n in (*nombres, *((universo,) if universo else ()))):
-        raise ValueError('Venn requiere conjuntos finitos definidos, incluido el universo si se indica.')
+        raise UniversoInvalido('El universo debe tener un nombre distinto de los conjuntos.')
+    if any(not isinstance(entorno.get(nombre), Conjunto) for nombre in nombres):
+        raise ValueError('Venn requiere conjuntos finitos definidos.')
+    if universo and not isinstance(entorno.get(universo), Conjunto):
+        raise UniversoInvalido('El universo de Venn debe ser un conjunto finito definido.')
     conjuntos = tuple(entorno[n] for n in nombres)
     volumen = sum(peso(c) for c in conjuntos)
     if universo:
@@ -98,7 +104,7 @@ def construir_venn(nombres, entorno, arbol, *, universo=None, presupuesto=None):
     for conjunto in conjuntos:
         for e in conjunto.elementos:
             if universo and e not in u.elementos:
-                raise ValueError('Todos los conjuntos de Venn deben estar incluidos en el universo.')
+                raise UniversoInvalido('Todos los conjuntos de Venn deben estar incluidos en el universo.')
             elementos.add(e)
     if universo:
         elementos = u.elementos
