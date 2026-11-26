@@ -41,8 +41,15 @@
         igual(estado(), antes);
     });
     for (const ruta of herramientas) caso(`UI-72: ${ruta} sin kicker, con migas, h1 y descripción`, ruta, w => {
-        igual(q(w, ".tool-kicker"), null);
-        igual([...q(w, ".tool-header").children].map(n => n.className), ["tool-title", "tool-lead", "nota"]);
+        const cabecera = q(w, ".tool-header");
+        igual(cabecera.querySelector(".tool-kicker"), null);
+        cierto(cabecera.querySelector(":scope > h1")?.textContent.trim(), "Título de la herramienta");
+        cierto(cabecera.querySelector(":scope > p.tool-lead")?.textContent.trim(), "Descripción de la herramienta");
+        igual(cabecera.querySelector(":scope > details.nota > summary")?.textContent.trim(), "Para curiosos");
+        if (ruta === "/matrices/ecuaciones/") {
+            igual(cabecera.querySelector('a[href="/metodos-numericos/metodos-iterativos/"]')?.textContent.trim(),
+                "Métodos iterativos");
+        }
         const migas = todos(w, ".breadcrumbs li").map(n => n.textContent.trim());
         igual(migas.length, 4); igual(migas[3], q(w, "h1").textContent.trim());
         cierto(["Álgebra lineal", "Sistemas numéricos"].includes(migas[1]), `Área: ${migas[1]}`);
