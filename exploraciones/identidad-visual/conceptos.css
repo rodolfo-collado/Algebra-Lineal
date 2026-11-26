@@ -1,0 +1,147 @@
+/* Patio: canales con profundidad suave y un escenario central compartido. */
+body[data-concept=patio]{--bg:#f0f7f5;--surface:#fff;--ink:#193d39;--muted:#4d6863;--accent:#1a6560;--on-accent:#fff;--line:#c4d8d2;--input-border:#708d85;--hover:#d7ebe3;--wash:#e2efea;--bar:#e5efeb;--logo:#000;--focus:#1a6560;--radius:18px;--ui:'Trebuchet MS','Segoe UI',sans-serif;--display:'Trebuchet MS','Segoe UI',sans-serif;--math:'Cambria Math',Cambria,serif}
+[data-concept=patio] .topbar{background:#ffffffa6;border-bottom:1px solid var(--line)}
+[data-concept=patio] .welcome h1{max-width:9ch;font-weight:700;letter-spacing:-.065em}
+.patio-art{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;transform:rotate(-5deg);padding:1rem 1rem 2.5rem}
+.art-channel{height:175px;border:2px solid #bcd4ca;display:grid;place-items:center;background:#fff;border-radius:42px;box-shadow:0 12px 0 #d2e3db;font-family:Cambria,serif;font-size:3.5rem;color:#275d51}
+.art-channel.one{background:#daf0dd}
+.art-channel.two{background:#e6dcf7;color:#594575}
+.art-channel.three{background:#ffe8c8;color:#795324}
+.art-channel.four{background:#fff}
+.art-channel.four .mark{width:115px;height:115px}
+.patio-art .art-caption{position:absolute;bottom:-1rem;right:2rem;transform:rotate(5deg)}
+.art-channel .matrix{font-size:1.5rem}
+[data-concept=patio] .areas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem}
+[data-concept=patio] .area-card{padding:1.4rem 1.4rem 2rem;background:var(--surface);border:1px solid #bcd4ca;border-radius:28px;box-shadow:0 6px 0 #d5e5df}
+[data-concept=patio] .area-card:hover{transform:translateY(-3px);background:var(--hover)}
+[data-concept=patio] .area-art{height:100px;display:grid;place-items:center;font-size:2.5rem;border-radius:18px;margin-bottom:1.5rem;background:#daf0dd}
+[data-concept=patio] .area-numeros .area-art{background:#ffe8c8;color:#69451d}
+[data-concept=patio] .area-conjuntos .area-art{background:#e6dcf7;color:#594575}
+[data-concept=patio] .area-copy small{font-size:.73rem;padding-right:1rem}
+[data-concept=patio] .upcoming{grid-column:1/-1;padding:1rem}
+[data-concept=patio] .workbench{grid-template-columns:minmax(280px,1fr) minmax(300px,1.3fr)}
+[data-concept=patio] .input-panel,[data-concept=patio] .reasoning{padding:1.7rem;background:var(--surface);border:1px solid var(--line);border-radius:26px}
+[data-concept=patio] .result-panel{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.4rem 2rem;background:#dcece3;border:1px solid var(--line);border-radius:26px}
+[data-concept=patio] .result-panel h2{margin:0}
+[data-concept=patio] #result{display:flex;align-items:center;gap:2rem}
+[data-concept=patio] #result-matrix{padding:.2rem 0}
+[data-concept=patio] .result-caption{margin:0}
+/* Trama: margen de cuaderno, índice abierto y procedimiento continuo. */
+body[data-concept=trama]{--bg:#f6f5fb;--surface:#fff;--ink:#312644;--muted:#62576f;--accent:#62408c;--on-accent:#fff;--line:#d4ccdf;--input-border:#8c789f;--hover:#e8dff2;--wash:#eee8f5;--bar:#eeeaf5;--logo:#000;--focus:#62408c;--radius:3px;--ui:'Segoe UI',sans-serif;--display:'Palatino Linotype','Book Antiqua',Palatino,serif;--math:'Cambria Math',Cambria,serif;--weight:400}
+[data-concept=trama] .topbar{border-bottom:2px solid var(--ink);margin-inline:clamp(1rem,4vw,4rem);padding-inline:0}
+[data-concept=trama] .welcome{grid-template-columns:1.1fr 1fr;padding-top:3rem}
+[data-concept=trama] .welcome h1{font-size:clamp(4rem,7.8vw,8rem);max-width:8ch}
+[data-concept=trama] .welcome-copy{padding-left:1.5rem;border-left:5px solid var(--accent)}
+[data-concept=trama] .primary{border-radius:3px 14px 14px 3px}
+.trama-art{min-height:450px;position:relative;background:#fff;border-left:1px solid #b79ccf;padding:2rem 2rem 3rem 3rem;background-image:repeating-linear-gradient(transparent 0px,transparent 39px,#e8e1f0 39px,#e8e1f0 40px);transform:rotate(2deg)}
+.pencil-note{font-family:'Palatino Linotype',Palatino,serif;font-style:italic;color:#6c537f;font-size:1.15rem}
+.written-formula{font-family:Cambria,serif;font-style:italic;font-size:5.5rem;line-height:1.5;color:#62408c}
+.thread{width:80%;height:24px;border-top:3px solid #a1b268;transform:rotate(-4deg)}
+.written-answer{font-family:'Palatino Linotype',Palatino,serif;font-size:2.5rem;line-height:1.13}
+.paper-tab{position:absolute;bottom:0;right:0;background:#dfe8c2;color:#35441e;padding:.6rem 1rem;font-size:.7rem}
+[data-concept=trama] .menu-screen{display:grid;grid-template-columns:1fr 1.5fr;gap:1rem 4rem}
+[data-concept=trama] .menu-heading{grid-column:1}
+.menu-heading h1{margin-top:.5rem}
+[data-concept=trama] #search-form{grid-column:1;align-self:start}
+[data-concept=trama] .areas{grid-column:2;grid-row:1/4;margin:0;border-top:2px solid var(--ink)}
+[data-concept=trama] .area-card{display:flex;gap:1.5rem;align-items:center;border-bottom:1px solid var(--line);padding:2rem .5rem}
+[data-concept=trama] .area-art{min-width:90px;font-size:2.5rem;color:var(--accent)}
+[data-concept=trama] .area-card h2{font-family:var(--display);font-size:1.8rem;font-weight:400}
+[data-concept=trama] .area-card p{font-size:.9rem}
+.area-detail{scroll-margin-top:1rem}
+[data-concept=trama] .area-detail{grid-column:1/-1}
+.menu-foot{align-self:end}
+[data-concept=trama] .upcoming{padding-left:.5rem}
+[data-concept=trama] .tool-heading{border-bottom:2px solid var(--ink);padding-bottom:1.5rem}
+[data-concept=trama] .tool-heading h1{font-size:clamp(2.5rem,4vw,4rem)}
+[data-concept=trama] .workbench{grid-template-columns:280px 1fr;gap:0 3rem;background:#fff;padding:2rem 2.5rem;border:1px solid var(--line);border-left:7px solid var(--accent)}
+[data-concept=trama] .workbench h2{font-family:var(--display);font-weight:400;font-size:1.6rem}
+[data-concept=trama] .input-panel{grid-row:1/3;padding-right:2rem;border-right:1px solid var(--line)}
+[data-concept=trama] .operands{gap:1.2rem}
+.trama-art+.welcome-footer{border-top:1px solid var(--line)}
+[data-concept=trama] .operand legend{font-style:italic}
+[data-concept=trama] .input-matrix input{background:#faf8fd;border-color:#8c789f}
+[data-concept=trama] .step-view{background-image:repeating-linear-gradient(transparent 0px,transparent 31px,#ddd4e9 31px,#ddd4e9 32px);background-color:#fff;border-left:3px solid #a1b268;padding-left:1.5rem}
+[data-concept=trama] .result-panel{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1.5rem}
+[data-concept=trama] #result{display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+[data-concept=trama] #result-matrix{padding:.5rem 0}
+/* Prisma: relaciones en el espacio, mapa de áreas y banco de trabajo simultáneo. */
+html:has(body[data-concept=prisma]){color-scheme:dark}
+body[data-concept=prisma]{color-scheme:dark;--bg:#142f3c;--surface:#193b49;--ink:#eef5ef;--muted:#b4cccd;--accent:#99dfd1;--on-accent:#153a39;--line:#42616b;--input-border:#83a4ac;--hover:#285363;--wash:#204957;--bar:#102833;--logo:#fff;--focus:#f7d990;--radius:8px;--ui:'Bahnschrift','Segoe UI',sans-serif;--display:'Bahnschrift','Arial Narrow',sans-serif;--math:'Cambria Math',Cambria,serif}
+[data-concept=prisma] .topbar{border-bottom:1px solid var(--line)}
+[data-concept=prisma] .welcome{position:relative;grid-template-columns:1.1fr 1fr}
+[data-concept=prisma] .welcome h1{font-weight:600;font-size:clamp(4rem,7vw,7rem);max-width:9ch;letter-spacing:-.05em}
+[data-concept=prisma] .welcome-footer{border-top:1px solid var(--line)}
+.prisma-art{position:relative;min-height:420px;color:#84b8ba}
+.prisma-art svg{width:100%;height:100%;max-height:450px}
+.node{position:absolute;background:#142f3c;border:1px solid #7eb8b3;border-radius:8px;padding:.65rem 1rem;font:1.6rem Cambria,serif;color:#dcf4e8}
+.node-a{top:13%;left:47%}
+.node-b{top:62%;left:3%}
+.node-c{top:58%;right:0}
+.prisma-art .art-caption{position:absolute;bottom:0;left:0;width:100%;text-align:center}
+[data-concept=prisma] .menu-screen{display:grid;grid-template-columns:1fr 2fr;gap:1rem 3rem}
+[data-concept=prisma] .menu-heading{grid-column:1}
+[data-concept=prisma] #search-form{grid-column:1}
+[data-concept=prisma] .areas{grid-column:2;grid-row:1/4;display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;align-self:start;position:relative;padding-top:1rem}
+[data-concept=prisma] .area-card{padding:1.5rem;border:1px solid #74979c;border-radius:8px;background:var(--surface);display:flex;gap:1rem;align-items:center}
+[data-concept=prisma] .area-card:hover{border-color:var(--accent);background:var(--hover)}
+[data-concept=prisma] .area-algebra{grid-column:1/-1;margin-right:3rem}
+[data-concept=prisma] .area-conjuntos{grid-column:1/-1;margin-left:5rem}
+[data-concept=prisma] .area-numeros{grid-column:1/-1;margin-left:2rem;margin-right:1rem}
+[data-concept=prisma] .area-art{font-size:2.6rem;min-width:105px;color:var(--accent)}
+[data-concept=prisma] .area-card h2{font-size:1.3rem}
+[data-concept=prisma] .area-card p{font-size:.9rem}
+[data-concept=prisma] .upcoming{grid-column:1/-1;justify-content:end;border-top:1px solid var(--line)}
+[data-concept=prisma] .area-detail{grid-column:1/-1}
+[data-concept=prisma] .menu-foot{grid-column:1/-1}
+[data-concept=prisma] .workbench{grid-template-columns:minmax(250px,1fr) minmax(300px,1.3fr) minmax(210px,.75fr);gap:0;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+[data-concept=prisma] .workbench>section{padding:1.4rem}
+[data-concept=prisma] .reasoning{border-inline:1px solid var(--line)}
+[data-concept=prisma] .operands{gap:.8rem}
+[data-concept=prisma] .input-matrix input{background:#142f3c}
+[data-concept=prisma] .step-view{border:1px solid #547a83;background:#142f3c}
+[data-concept=prisma] .result-panel{background:#173844;border-radius:0 12px 12px 0}
+[data-concept=prisma] .step-track button{border-radius:6px}
+@media(max-width:1100px){[data-concept=prisma] .workbench{grid-template-columns:1fr 1.2fr}
+[data-concept=prisma] .result-panel{grid-column:1/-1;border-top:1px solid var(--line);border-radius:0 0 12px 12px}
+[data-concept=prisma] #result{display:flex;gap:2rem;align-items:center;flex-wrap:wrap}
+[data-concept=prisma] #result-matrix{padding:.3rem 0}
+}
+@media(max-width:850px){[data-concept=trama] .menu-screen,[data-concept=prisma] .menu-screen{display:block}
+[data-concept=trama] .workbench{grid-template-columns:1fr;gap:1.5rem;padding:1.5rem}
+[data-concept=trama] .input-panel{grid-row:auto;border-right:0;border-bottom:1px solid var(--line);padding:0 0 1.5rem}
+[data-concept=patio] .areas{grid-template-columns:1fr}
+[data-concept=patio] .area-card{display:flex;align-items:center;gap:1.3rem;padding:1rem 2.5rem 1rem 1rem}
+[data-concept=patio] .area-art{width:95px;height:95px;margin:0;flex-shrink:0}
+[data-concept=patio] .workbench{grid-template-columns:1fr}
+[data-concept=patio] #result{flex-wrap:wrap;gap:1rem}
+[data-concept=patio] .result-panel{display:block}
+[data-concept=patio] .result-panel h2{margin-bottom:1rem}
+}
+@media(max-width:650px){.patio-art{max-width:350px;width:100%;margin:1rem auto;gap:.8rem}
+.art-channel{height:125px;border-radius:30px}
+.art-channel.four .mark{width:75px;height:75px}
+[data-concept=trama] .welcome,[data-concept=prisma] .welcome{grid-template-columns:1fr}
+.trama-art{min-height:320px;transform:none;margin-top:1rem;padding:1.5rem 1.5rem 2.5rem 2rem}
+.written-formula{font-size:4rem}
+.written-answer{font-size:1.9rem}
+.prisma-art{min-height:300px}
+.prisma-art svg{max-height:320px}
+[data-concept=prisma] .welcome h1,[data-concept=trama] .welcome h1{font-size:3.6rem}
+[data-concept=trama] .area-card{gap:.8rem}
+[data-concept=trama] .area-art{min-width:65px;font-size:1.9rem}
+[data-concept=trama] .area-card h2{font-size:1.5rem}
+[data-concept=prisma] .areas{display:flex;flex-direction:column}
+[data-concept=prisma] .area-card{margin:0;padding:1rem;gap:.7rem}
+[data-concept=prisma] .area-art{min-width:60px;font-size:1.8rem}
+[data-concept=prisma] .area-open{display:none}
+[data-concept=prisma] .workbench{grid-template-columns:1fr}
+[data-concept=prisma] .reasoning{border-inline:0;border-block:1px solid var(--line)}
+[data-concept=prisma] .result-panel{grid-column:1}
+[data-concept=trama] .workbench{padding:1.2rem;border-left-width:4px}
+[data-concept=patio] .input-panel,[data-concept=patio] .reasoning{padding:1.2rem}
+[data-concept=patio] .area-card{gap:.8rem}
+[data-concept=patio] .area-art{width:68px;height:85px;font-size:1.8rem}
+[data-concept=patio] .area-copy p{font-size:.85rem}
+[data-concept=patio] .area-copy small{display:none}
+}
