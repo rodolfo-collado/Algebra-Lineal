@@ -11,10 +11,8 @@
     const metodos = root.querySelector("[data-inverse-method]");
     const adicional = root.querySelector("[data-inverse-additional-entry]");
     const metodoTemplate = document.getElementById("inverse-method-template");
-    const matrizTemplate = document.getElementById("matrix-entry-template");
-    const celdaTemplate = document.getElementById("matrix-cell-template");
     const memoria = new Map();
-    const { dimensionValida, validarDimension } = window.entradasSeguras;
+    const { dimensionValida, validarDimension, crearCuadricula, moverEntreCeldas, activarPasos } = window.entradasSeguras;
 
     function guardar() {
         root.querySelectorAll('[name^="celda_"]').forEach(input => memoria.set(input.name, input.value));
@@ -26,37 +24,6 @@
 
     function ocultarConfirmacion() {
         document.querySelectorAll("[data-confirmacion]").forEach(nodo => { nodo.hidden = true; });
-    }
-
-    function crearMatriz(nombre, n, vector = false) {
-        // Las plantillas inertes comparten el marcado con la versión del servidor.
-        const fragmento = matrizTemplate.content.cloneNode(true);
-        const matriz = fragmento.querySelector("fieldset");
-        matriz.dataset.matriz = nombre;
-        if (vector) matriz.dataset.vector = "";
-        matriz.querySelector("[data-tipo-matriz]").textContent = vector ? "Vector" : "Matriz";
-        matriz.querySelector("[data-nombre-matriz]").textContent = nombre;
-        matriz.querySelector("table").setAttribute("aria-label", `${vector ? "Vector" : "Matriz"} ${nombre}`);
-        matriz.querySelector(".matrix-scroll").setAttribute("aria-label", `${vector ? "Componentes del vector" : "Entradas de la matriz"} ${nombre}`);
-        const cuerpo = matriz.querySelector("tbody");
-        for (let i = 0; i < n; i += 1) {
-            const fila = document.createElement("tr");
-            for (let j = 0; j < (vector ? 1 : n); j += 1) {
-                const celda = celdaTemplate.content.cloneNode(true);
-                const input = celda.querySelector("input");
-                input.name = `celda_${nombre}_${i}_${j}`;
-                input.id = `id_${input.name}`;
-                input.value = memoria.get(input.name) ?? "";
-                const label = celda.querySelector("label");
-                label.htmlFor = input.id;
-                label.textContent = vector
-                    ? `Vector ${nombre}, componente ${i + 1}`
-                    : `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
-                fila.append(celda);
-            }
-            cuerpo.append(fila);
-        }
-        return matriz;
     }
 
     function actualizarMetodos(n) {
@@ -90,8 +57,8 @@
         // local permite recuperar lo escrito al cambiar temporalmente de radio.
         const anterior = adicional.querySelector("table");
         adicional.replaceChildren();
-        if (funcion === "producto") adicional.append(crearMatriz("B", n));
-        if (funcion === "vector") adicional.append(crearMatriz("b", n, true));
+        if (funcion === "producto") adicional.append(crearCuadricula("B", n, n, memoria));
+        if (funcion === "vector") adicional.append(crearCuadricula("b", n, 1, memoria, true));
         adicional.hidden = funcion !== "producto" && funcion !== "vector";
         const nueva = adicional.querySelector("table");
         if (conservar && anterior && nueva) window.seleccionMatricial.redimensionar(anterior, nueva);
@@ -110,7 +77,7 @@
         guardar();
         const n = Number(orden.value);
         const anterior = entrada.querySelector('[data-matriz="A"]');
-        const nueva = crearMatriz("A", n);
+        const nueva = crearCuadricula("A", n, n, memoria);
         anterior.replaceWith(nueva);
         window.seleccionMatricial.redimensionar(anterior.querySelector("table"), nueva.querySelector("table"));
         actualizarAdicional(n, true);
@@ -126,32 +93,11 @@
         guardar();
         actualizarAdicional(Number(orden.value));
     });
-    root.querySelectorAll(".stepper [data-paso]").forEach(button => {
-        button.hidden = false;
-        button.addEventListener("click", () => {
-            const actual = ordenValido() ? Number(orden.value) : Number(orden.min);
-            orden.value = String(Math.min(Number(orden.max), Math.max(Number(orden.min), actual + Number(button.dataset.paso))));
-            orden.dispatchEvent(new Event("input", { bubbles: true }));
-        });
-    });
+    activarPasos(root);
     root.addEventListener("input", ocultarConfirmacion);
     root.querySelectorAll("[data-aplicar]").forEach(button => { button.hidden = true; button.disabled = true; });
     if (ordenValido()) actualizarMetodos(Number(orden.value));
     actualizarBotones();
 
-    // Tab recorre todos los campos. Las flechas verticales cambian de fila;
-    // las horizontales solo cambian de celda al llegar al extremo del texto.
-    root.addEventListener("keydown", event => {
-        const input = event.target;
-        if (!window.entradasSeguras.flechaDeCelda(event) || !input.name.startsWith("celda_")) return;
-        const deltas = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
-        const delta = deltas[event.key];
-        if (!delta) return;
-        const [, nombre, i, j] = input.name.split("_");
-        const destino = root.querySelector(`[name="celda_${nombre}_${Number(i) + delta[0]}_${Number(j) + delta[1]}"]`);
-        if (destino && !destino.readOnly && !destino.matches(":disabled")) {
-            event.preventDefault();
-            destino.focus();
-        }
-    });
+    moverEntreCeldas(root);
 })();

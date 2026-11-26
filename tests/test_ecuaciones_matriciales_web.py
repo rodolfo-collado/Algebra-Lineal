@@ -481,9 +481,15 @@ class PruebasRecursosEcuacion(SimpleTestCase):
         for marca in ("data-ecuacion", "data-equation-entry", "data-unknown", "data-equation-shape", "data-aplicar", 'data-dimension="filas"', 'data-dimension="columnas"'):
             self.assertIn(marca, html)
         js = (ESTATICOS / "ecuaciones.js").read_text(encoding="utf-8")
-        for fragmento in ("data-ecuacion", "matrix-entry-template", "data-matriz=\"A\"", "data-matriz=\"b\"", "actualizarIncognita", "data-equation-shape", "ArrowDown"):
+        for fragmento in ("data-ecuacion", "crearCuadricula(\"A\"", "crearCuadricula(\"b\"", "data-matriz=\"A\"", "data-matriz=\"b\"",
+                          "actualizarIncognita", "data-equation-shape", "moverEntreCeldas(entrada)"):
             self.assertIn(fragmento, js)
         self.assertNotIn("innerHTML", js)
+        # La construcción y las flechas compartidas viven en entradas.js.
+        compartido = (ESTATICOS / "entradas.js").read_text(encoding="utf-8")
+        for fragmento in ("matrix-entry-template", "matrix-cell-template", "ArrowDown"):
+            self.assertIn(fragmento, compartido)
+        self.assertNotIn("innerHTML", compartido)
 
     def test_pyinstaller_incluye_los_modulos_de_p14(self):
         spec = (RAIZ / "AlgebraLineal.spec").read_text(encoding="utf-8")
