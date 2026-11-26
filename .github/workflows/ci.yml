@@ -52,6 +52,44 @@ jobs:
       - name: Verificar la compilacion
         run: uv run --locked python -m compileall -q actualizador backend frontend tests main.py manage.py desktop.py
 
+  navegador:
+    name: Pruebas de navegador
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.7"
+          enable-cache: true
+
+      # El driver usa WebSocket y fetch globales de Node 22; Chrome ya viene en la imagen.
+      - name: Instalar Node 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Preparar el entorno desde el lockfile
+        run: uv sync --locked
+
+      - name: Ejecutar los runners DOM seleccionados en Chrome sin ventana
+        run: uv run --locked node tests/navegador.mjs
+
+      - name: Conservar el diagnóstico de los runners fallidos
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: navegador-diagnostico
+          path: build/navegador/
+          if-no-files-found: ignore
+          retention-days: 14
+
   windows_python:
     name: Suite Python de Windows
     runs-on: windows-2025

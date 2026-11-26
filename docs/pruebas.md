@@ -17,6 +17,79 @@ Para cambios en Markdown, `uv run --locked python -m unittest tests.test_documen
 comprueba rutas relativas, imágenes, anclas y cierre de los bloques de código.
 Revisa en GitHub los recursos y fragmentos que cambiaste.
 
+## Navegador en CI
+
+Cada runner DOM (`tests/<nombre>_browser.py` + `.js`) sirve la app real con una
+página de pruebas que escribe un caso por fila en `#resultados` y el recuento
+`a/b` en `#total`. [`tests/navegador.mjs`](../tests/navegador.mjs) los ejecuta sin
+ventana por CDP (Node 22, sin dependencias):
+
+```bash
+uv run --locked node tests/navegador.mjs                       # la selección de CI
+uv run --locked node tests/navegador.mjs secante conjuntos     # runners concretos
+```
+
+Usa Chrome o Edge (o la ruta de `NAVEGADOR`), un perfil nuevo por runner, foco
+emulado y reproducción de audio sin gesto de usuario. Un runner falla si `a ≠ b`,
+si no escribe `#total` en `NAVEGADOR_LIMITE_MS` (240 s por defecto) o si su
+servidor muere, por ejemplo porque otro proceso ya ocupa su puerto. Ante un fallo
+imprime los casos fallidos y la consola, y deja en `build/navegador/` (o
+`NAVEGADOR_SALIDA`) las filas, la consola, la salida del servidor y una captura.
+En CI ese directorio se publica como artefacto `navegador-diagnostico`. No hay
+reintentos: un caso que falla hace fallar el job.
+
+### Selección
+
+El job `navegador` (Ubuntu, Chrome) ejecuta un runner por área prioritaria:
+
+| Área | Runners |
+|---|---|
+| Navegación | `escritorio`, `buscador` (incluye explorador del área y música) |
+| Edición matricial y teclado | `entradas`, `operandos`, `teclado` |
+| Formato numérico | `claridad` |
+| Gráficas de raíces | `biseccion`, `secante` |
+| Métodos iterativos | `iterativos` |
+| Conjuntos | `conjuntos` |
+
+Quedan fuera por coste o solapamiento, y se ejecutan a mano cuando su área
+cambia: `resultado` (184 s, el más lento; cubre Exacto/Decimal como `claridad`),
+`entrada_edicion` y `menu_edicion` (portapapeles: su comportamiento nativo solo
+es fiel en WebView2), `newton_raphson` y `regla_falsa` (misma gráfica que
+`biseccion` y `secante`), `determinantes`, `inversa`, `feedback`, `presentacion`,
+`pulido` y `residual`. `fluidez` mide tiempos con Playwright y no tiene recuento.
+Las verificaciones de WebView2 (portapapeles nativo, menú contextual, preferencias
+en archivo, ventana de pywebview) siguen siendo manuales sobre el ejecutable.
+
+### Limitaciones investigadas (2026-11-26)
+
+Medido en Edge 158 sin ventana, en serie: los 21 runners con recuento pasan en una
+primera vuelta (≈ 530 s en total).
+
+- **Música del buscador.** El caso «pausar antes de preparar las muestras» espera
+  `AudioContext.resume()`. Sin ventana no hay gesto de usuario y esa promesa no se
+  resuelve nunca: sin la bandera el runner se detiene en el caso 17 de 21. Con
+  `--autoplay-policy=no-user-gesture-required` (equivale al clic real que da el
+  usuario) pasa 11 de 11 veces. El caso conserva todas sus aserciones.
+- **Explorador del área.** Sin fallos en 16 ejecuciones: 11 en serie y 5 con
+  otros cuatro runners y un build de PyInstaller en paralelo. No se reprodujo. La
+  intermitencia anterior se vio con un driver sin la bandera de audio, en el que el
+  buscador nunca terminaba y se relanzaba junto a otros runners; queda como no
+  confirmada, no como corregida.
+- **`resultado` bajo carga.** 111/111 en serie (184 s) y 111/111 con cuatro
+  procesos de runners y el build en paralelo (231 s): el bloqueo no se reprodujo.
+  Si vuelve a ocurrir, el límite de tiempo del driver lo convierte en un fallo con
+  las filas ya escritas, que señalan el caso detenido. CI no lo incluye y ejecuta
+  los runners de uno en uno.
+- **`escritorio`: modo web en el primer caso.** Al repetirlo falló 12 de 12 veces
+  en «Alt+←/→ recorren GET y POST» (`data-desktop` ausente). El servidor de pruebas
+  cambia `DESKTOP_MODE` con `override_settings`, que modifica los ajustes globales y
+  no los del hilo. El navegador pidió `/` dos veces a la vez y, en la primera
+  renderización (la más lenta), una petición restauró los ajustes mientras la otra
+  renderizaba. Un candado alrededor de esos ajustes lo corrige: 12 de 12 correctas.
+  La aplicación no usa `override_settings`; el defecto era del runner.
+- **Driver.** En Windows el perfil del navegador queda bloqueado un instante tras
+  cerrarlo (`EBUSY`); su borrado ya no puede tumbar los runners siguientes.
+
 ## Secante y Métodos abiertos, versión 0.18.0 (2026-11-12)
 
 - **Python:** 2.047 pruebas completas correctas (`unittest discover`, desde PowerShell).
