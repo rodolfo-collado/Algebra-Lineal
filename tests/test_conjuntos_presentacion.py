@@ -105,6 +105,32 @@ class EditorPresentacionTests(SimpleTestCase):
         self.assertContains(respuesta, "No se dibuja el diagrama")
         self.assertContains(respuesta, 'data-respuesta-relacion>{2}</p>', html=False)
 
+    def test_error_de_expresion_no_depende_del_nombre_faltante(self):
+        for nombre in ("Venn", "Falta", "universo"):
+            with self.subTest(nombre=nombre):
+                respuesta = self.client.post(RUTA, editor(TRES, f"A ∪ {nombre}", venn_nombres="A, B"))
+                form = respuesta.context_data["form"]
+                self.assertEqual(set(form.errors), {"expresion"})
+                self.assertIn(nombre, form.errors["expresion"][0])
+                self.assertEqual(form["expresion"].value(), f"A ∪ {nombre}")
+
+    def test_error_de_universo_explicito_se_muestra_una_vez(self):
+        filas = [("U", "{1}"), ("A", "{1}"), ("B", "{2}")]
+        for opciones in (
+            {"venn_universo": "U", "venn_nombres": "A, B"},
+            {"venn_universo": "U"},
+            {"venn_universo": "U", "venn_nombres": "A, B", "accion": "editar_regiones"},
+        ):
+            with self.subTest(opciones=opciones):
+                respuesta = self.client.post(RUTA, editor(filas, "A ∪ B", **opciones))
+                form = respuesta.context_data["form"]
+                self.assertEqual(set(form.errors), {"venn_universo"})
+                self.assertContains(respuesta, "Todos los conjuntos de Venn deben estar incluidos en el universo.", count=1)
+
+    def test_error_de_nombres_del_diagrama_queda_en_su_campo(self):
+        respuesta = self.client.post(RUTA, editor(TRES, "A ∪ B", venn_nombres="A, A", venn_universo="U"))
+        self.assertEqual(set(respuesta.context_data["form"].errors), {"venn_nombres"})
+
     def test_procedimiento_marca_elementos(self):
         respuesta = self.client.post(RUTA, editor(TRES, "(A ∪ B) ∖ C"))
         texto = respuesta.content.decode()
@@ -129,6 +155,7 @@ class EditorPresentacionTests(SimpleTestCase):
         respuesta = self.client.post(RUTA, editor(filas, "I ∖ J", punto='"x"'))
         self.assertContains(respuesta, 'id="resultado"')
         self.assertContains(respuesta, "número exacto")
+        self.assertEqual(set(respuesta.context_data["form"].errors), {"punto"})
         self.assertIn("relacion", contrato(self.client.post(RUTA, editor(filas, "3 ∈ I")))["recta"])
 
 
@@ -140,6 +167,28 @@ class CardinalidadPresentacionTests(SimpleTestCase):
         respuesta = self.client.post(CARDINALIDAD, {"numero": "3", "modo": "intersecciones", "accion": "ajustar", "expresion": "A"})
         self.assertContains(respuesta, 'data-cubre="1 3 5 7"')
         self.assertContains(respuesta, "|A ∩ B ∩ C|")
+
+    def test_tarjeta_y_demostracion_comparten_los_terminos_en_orden(self):
+        for numero, mascaras in ((2, [1, 2, 3]), (3, [1, 2, 4, 3, 5, 6, 7])):
+            expresion = " ∪ ".join("ABC"[:numero])
+            cantidades = {m: m for m in range(1, 1 << numero)}
+            for universo in ("", str(sum(cantidades.values()) + 1)):
+                with self.subTest(numero=numero, universo=universo):
+                    respuesta = self.client.post(CARDINALIDAD, {
+                        "numero": str(numero), "modo": "regiones", "expresion": expresion, "universo": universo,
+                        **{f"region_{m}": str(valor) for m, valor in cantidades.items()},
+                    })
+                    datos = contrato(respuesta)
+                    paso = next(p for p in datos["pasos"] if p["regla"] == "inclusion_exclusion")
+                    self.assertEqual([t["mascara"] for t in paso["terminos"]], mascaras)
+                    self.assertEqual(paso["veces"], {str(m): 1 for m in cantidades})
+                    formula = f"|{expresion}| = " + " ".join(
+                        ("" if i == 0 else "+ " if termino["signo"] > 0 else "− ") + f"|{termino['etiqueta']}|"
+                        for i, termino in enumerate(paso["terminos"])
+                    )
+                    self.assertContains(respuesta, f'<p class="tarjeta-formula conjuntos-math">{formula}</p>', count=1)
+                    self.assertContains(respuesta, f'<p class="conjuntos-formula conjuntos-math">{formula}</p>', count=1)
+                    self.assertEqual(datos["union"], str(sum(cantidades.values())))
 
     def test_resultado_explica_regiones_y_veces(self):
         campos = {"numero": "2", "modo": "regiones", "region_1": "5", "region_2": "3", "region_3": "2",

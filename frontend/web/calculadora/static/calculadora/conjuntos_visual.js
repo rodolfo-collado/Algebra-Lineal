@@ -435,7 +435,13 @@
             const aproximado = minimo + (x - 10) / 80 * (maximo - minimo);
             const paso = 10 ** Math.floor(Math.log10(ancho / 80 * (maximo - minimo) / 20));
             const decimales = Math.max(0, -Math.round(Math.log10(paso)));
-            const texto = (Math.round(aproximado / paso) * paso).toFixed(decimales).replace(/^-0(\.0+)?$/, '0');
+            const propuesta = Math.round(aproximado / paso) * paso;
+            // toFixed solo admite hasta 100 decimales y usa exponentes a partir de 10²¹.
+            if (!(decimales <= 100 && Math.abs(propuesta) < 1e21)) {
+                estado.textContent = 'La escala no permite proponer un valor. Escribe el punto y pulsa Comprobar.';
+                return;
+            }
+            const texto = propuesta.toFixed(decimales).replace(/^-0(\.0+)?$/, '0');
             punto.value = texto;
             punto.dispatchEvent(new Event('input', { bubbles: true }));
             estado.textContent = `Punto propuesto: ${texto}. Pulsa Comprobar para saber si pertenece.`;

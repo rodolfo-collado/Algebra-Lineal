@@ -259,10 +259,14 @@ class ConjuntosForm(FormularioConErrores):
         try:
             if len(nombres) not in (2, 3) or len(set(nombres)) != len(nombres):
                 raise ValueError("Selecciona dos o tres nombres distintos, separados por comas.")
-            for n in (*nombres, *((universo,) if universo else ())):
-                validar_nombre(n)
-            if universo in nombres:
-                raise ValueError("El universo debe tener un nombre distinto de los conjuntos.")
+            for nombre in nombres:
+                validar_nombre(nombre)
+            if universo:
+                campo_error = "venn_universo"
+                validar_nombre(universo)
+                if universo in nombres:
+                    raise ValueError("El universo debe tener un nombre distinto de los conjuntos.")
+            campo_error = "venn_nombres"
             if len(set(self.entorno) | set(nombres) | ({universo} if universo else set())) > OPERANDOS_MAXIMOS:
                 raise ValueError(f"El editor admite hasta {OPERANDOS_MAXIMOS} conjuntos.")
             if not aplicar:
