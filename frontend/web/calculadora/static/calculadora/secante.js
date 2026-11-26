@@ -69,7 +69,7 @@
                 // Traza auxiliar: recta secante, etiquetas P y corte xₙ₊₁ con su altura f(xₙ₊₁).
                 trazo: { x: [...secante.x, null, p.siguiente, p.siguiente], y: [...secante.y, null, 0, p.fsiguiente],
                     size: [...secante.size, 0, 0, 0], text: secante.x.map(() => "").concat(["", "", ""]) },
-                rotulos: [{ x: p.anterior, y: p.fanterior, text: `Q${k0}` }, { x: p.actual, y: p.factual, text: `P${k1}` },
+                rotulos: [{ x: p.anterior, y: p.fanterior, text: `P${k0}` }, { x: p.actual, y: p.factual, text: `P${k1}` },
                     { x: p.siguiente, y: 0, text: `x${m}` }],
             };
         },
