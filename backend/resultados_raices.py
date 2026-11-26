@@ -2,6 +2,8 @@
 
 from enum import StrEnum
 
+from .funciones_reales import FuncionReal
+
 
 class ClasificacionRaices(StrEnum):
     ENTRADA_INVALIDA = "entrada_invalida"
@@ -11,6 +13,19 @@ class ClasificacionRaices(StrEnum):
     SIN_RAICES_DEMOSTRADO = "sin_raices_demostrado"
     EXPLORACION_NO_CONCLUYENTE = "exploracion_no_concluyente"
     INDICIOS_NUMERICOS = "indicios_numericos"
+
+
+def impedimento_paso_abierto(funcion, *puntos):
+    """Descartar falsos positivos cuando el cambio y el residuo son pequeños."""
+    if not isinstance(funcion, FuncionReal):
+        return None
+    if funcion.excluye_cero():
+        return ("sin_raices", "La expresión no puede valer cero en su dominio real, según sus signos.")
+    try:
+        funcion.rango(min(puntos), max(puntos))
+    except ValueError as error:
+        return ("continuidad", f"No pudimos verificar la continuidad en el último paso. {error}")
+    return None
 
 
 def evidencia_muestreo(ordenadas):

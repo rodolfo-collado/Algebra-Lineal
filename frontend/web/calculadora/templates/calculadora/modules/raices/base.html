@@ -34,7 +34,7 @@ el resumen, la lectura detallada y la verificación propios.{% endcomment %}
                     </div>
                     <div class="field-group">{{ form.max_iteraciones.label_tag }}{{ form.max_iteraciones }}{{ form.max_iteraciones.errors }}</div>
                 </div>
-                <p class="field-help">Funciones: sen, cos, tan, exp, log o ln (natural), log10, √() y abs. También se admiten sin() y sqrt(). Constantes: π (también pi) y e. ln es el logaritmo natural, de base e; log₁₀ (log10) es el de base diez. Exponentes constantes; ángulos en radianes.</p>
+                <p class="field-help">Funciones: sen(x), cos(x), tan(x), exp(x), log(x) o ln(x) (natural), log10(x), √(x) y abs(x). También se admiten sin(x), sqrt(x) y tanx. Usa π (o pi) y e como constantes, y radianes para los ángulos. Puedes escribir exponentes variables como e^x y x^(sen(x)).</p>
                 <p class="field-help">Conserva los nombres completos: sen(x) es una función; xx y senx no se admiten. 1e-3 es notación científica; para multiplicar por e escribe 2*e. Productos y divisiones tienen igual prioridad: 1/2x equivale a (1/2)*x; usa 1/(2x) si todo es denominador.</p>
             {% enddisclosure %}
         </div>

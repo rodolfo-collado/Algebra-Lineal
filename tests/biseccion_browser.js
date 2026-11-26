@@ -28,6 +28,17 @@
     const listaGrafica = w => grafica(w)?.data?.[0]?.x?.length === 801 &&
         !q(w, "#grafica-estado").textContent.includes("Actualizando");
     const casos = [
+        ["Exponente compuesto y tangente abreviada en la gráfica y el cálculo", async (w, frame) => {
+            valor(w, "funcion", "e^(1/x)+(2x/tanx)");
+            await esperar(() => listaGrafica(w), "La función debe producir muestras");
+            const curva = grafica(w).data[0];
+            const i = curva.x.indexOf(0);
+            ok(i > 0 && curva.y[i] === null && curva.y.some(Number.isFinite), "La gráfica conserva el hueco en cero");
+            valor(w, "a", "-2"); valor(w, "b", "-1.6");
+            w = await post(frame);
+            const r = JSON.parse(q(w, "#datos-raices").textContent).resultado;
+            ok(r?.convergio && Math.abs(r.c + 1.7314791865) < .0001, "Raíz aproximada en el intervalo");
+        }],
         ["Función sin extremos: exploración independiente y selección desde la curva", async w => {
             let peticiones = 0;
             const original = w.fetch; w.fetch = (...args) => { peticiones++; return original(...args); };

@@ -32,7 +32,7 @@
 <div><dt>Iteraciones</dt><dd>{{ resultado.iteraciones|length }}</dd></div>
 <div><dt>Error absoluto aproximado <span class="raices-formula">|xₙ₊₁ − xₙ|</span></dt><dd>{% if resultado.error_absoluto is not None %}{{ resultado.error_absoluto|numero_raices:"tolerancia" }}{% else %}No aplica: no hubo una actualización{% endif %}</dd></div>
 <div><dt>Residuo <span class="raices-formula">|f(x)|</span></dt><dd>{{ resultado.residuo|numero_raices:"tolerancia" }}</dd></div>
-<div data-cumple="{% if resultado.convergio %}true{% else %}false{% endif %}"><dt>Criterio de parada <span class="raices-formula">cambio y residuo ≤ tolerancia</span></dt><dd>{% if resultado.estado == "exacta" %}Cumplido: f(x) = 0 en aritmética de máquina{% elif resultado.convergio %}Cumplido: ambos ≤ {{ resultado.tolerancia|numero_raices:"tolerancia" }}{% else %}No cumplido{% endif %}</dd></div>
+<div data-cumple="{% if resultado.convergio %}true{% else %}false{% endif %}"><dt>Criterio de parada <span class="raices-formula">cambio y residuo ≤ tolerancia</span></dt><dd>{% if resultado.estado == "exacta" %}Cumplido: f(x) = 0 en aritmética de máquina{% elif resultado.convergio %}Cumplido: ambos ≤ {{ resultado.tolerancia|numero_raices:"tolerancia" }}{% elif resultado.estado == "sin_raices" or resultado.estado == "continuidad" %}Ambos valores están dentro de la tolerancia. La comprobación matemática descarta la aproximación.{% else %}No cumplido{% endif %}</dd></div>
 </dl>
 <p class="raices-garantia">Sin cota garantizada: un método abierto no conserva un intervalo con cambio de signo, así que el cambio y el residuo no acotan |x − raíz|.</p>
 {% endblock %}

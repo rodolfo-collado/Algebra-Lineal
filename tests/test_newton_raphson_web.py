@@ -95,6 +95,18 @@ class NewtonWebTests(SimpleTestCase):
         self.assertEqual(self.client.get(RUTA + "grafica/").status_code, 405)
         self.assertEqual(Client(enforce_csrf_checks=True).post(RUTA + "grafica/", {"funcion": "x"}).status_code, 403)
 
+    def test_derivada_de_potencia_variable_coincide_con_la_del_calculo(self):
+        entrada = datos(funcion="x^x-4", x0="1.8")
+        calculo = self.client.post(RUTA, entrada)
+        self.assertNotContains(calculo, "data-respuesta-errores")
+        resultado = resultado_html(calculo)
+        self.assertTrue(resultado["convergio"])
+        self.assertAlmostEqual(resultado["x"], 2, delta=1e-4)
+        grafica = self.client.post(RUTA + "grafica/", {"funcion": entrada["funcion"], "a": "1", "b": "2.5"})
+        self.assertEqual(grafica.status_code, 200)
+        self.assertTrue(grafica.json()["derivada"])
+        self.assertEqual(grafica.json()["derivada"], resultado["derivada"])
+
     def test_notacion_natural_solo_cambia_la_presentacion(self):
         from backend.derivacion_real import DerivadaReal, natural
         # Coeficientes pegados, superíndices, − tipográfico y nombres de clase; nunca 3 · x².

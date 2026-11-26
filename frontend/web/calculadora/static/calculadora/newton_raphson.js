@@ -10,7 +10,7 @@ const { subindice: subindiceNewton, nodo: nodoNewton, menos: menosNewton, fracci
     comprobacion: "Gráfica muestreada. Newton comprueba las evaluaciones de la función y la derivada en cada paso.",
     resumen: r => ({ nombre: "x", x: r.x, fx: r.fx }),
     historial: { metrica: "Error absoluto", tolerancia: "Tolerancia", valor: r => r.error_absoluto,
-        criterio: "El criterio se cumple si el error absoluto y el residuo no superan la tolerancia, o si f(x) = 0." },
+        criterio: "Se acepta un cero calculado o un paso con error absoluto y residuo dentro de la tolerancia que supere la comprobación matemática." },
     vista(p) {
         const a = Math.min(p.xn, p.siguiente), b = Math.max(p.xn, p.siguiente);
         const margen = Math.max((b - a) / 4, Math.abs(a) * 1e-8, 1e-8);

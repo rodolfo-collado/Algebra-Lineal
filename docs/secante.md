@@ -45,7 +45,9 @@ el método:
 6. Detenerse con f(x) = 0 o cuando **el cambio y el residuo** cumplan la tolerancia.
    Un cambio pequeño con residuo grande no es convergencia: con
    f(x) = 10⁶(x³ − x − 2), la iteración 6 tiene cambio 3.4·10⁻⁶ y residuo 0.007, y
-   el método sigue hasta la 7.
+   el método sigue hasta la 7. Antes de aceptar la tolerancia, PyGebra comprueba
+   que las reglas de signos no excluyan los ceros de f y que pueda certificar la
+   continuidad entre los puntos de la última secante y su nuevo corte.
 
 No exige cambio de signo ni orden: x₀ y x₁ no son extremos de un intervalo y pueden
 estar al mismo lado de la raíz o en orden descendente. Por eso tampoco conserva un
@@ -53,7 +55,9 @@ intervalo que encierre la raíz (diapositiva 24).
 
 | Estado | Cuándo | Clasificación |
 | --- | --- | --- |
-| `tolerancia` | Cambio y residuo cumplen la tolerancia. | Raíz aproximada |
+| `tolerancia` | Cambio y residuo cumplen la tolerancia y pasan las comprobaciones matemáticas. | Raíz aproximada |
+| `sin_raices` | Las reglas de signos excluyen el cero en el dominio real. | Ausencia de raíces demostrada |
+| `continuidad` | No se pudo certificar la continuidad en el último paso. | Sin convergencia |
 | `exacta` | f(x) = 0 en aritmética de máquina (también x₀ o x₁). | Raíz aproximada |
 | `denominador` | f(xₙ) − f(xₙ₋₁) = 0: la secante es horizontal. | No aplicable en la primera iteración; sin convergencia después |
 | `denominador_pequeno` | El denominador es menor que 10⁻¹² · max(\|f(xₙ)\|, \|f(xₙ₋₁)\|): la pendiente queda dominada por el redondeo. | Igual que `denominador` |

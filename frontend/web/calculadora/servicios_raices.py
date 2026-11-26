@@ -21,12 +21,16 @@ def muestrear(funcion, a, b):
         x = a + ancho * (i / 800)
         try:
             y = funcion(x)
-            # No unir dos muestras si el tramo entre ellas cruza un hueco del dominio.
-            if anterior is not None:
-                funcion.rango(anterior, x)
         except ValueError:
-            y = None
+            y = anterior = None
+        else:
+            previo, anterior = anterior, x
+            if previo is not None:
+                # No unir muestras válidas si el tramo entre ellas puede cruzar un hueco.
+                try:
+                    funcion.rango(previo, x)
+                except ValueError:
+                    y = None
         puntos["x"].append(x)
         puntos["y"].append(y)
-        anterior = x
     return puntos

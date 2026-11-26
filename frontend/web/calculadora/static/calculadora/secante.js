@@ -19,7 +19,7 @@
         comprobacion: "Gráfica muestreada. La secante no exige cambio de signo: x₀ y x₁ solo deben ser distintos.",
         resumen: r => ({ nombre: "x", x: r.x, fx: r.fx }),
         historial: { metrica: "Error absoluto", tolerancia: "Tolerancia", valor: r => r.error_absoluto,
-            criterio: "El criterio se cumple si el error absoluto y el residuo no superan la tolerancia, o si f(x) = 0." },
+            criterio: "Se acepta un cero calculado o un paso con error absoluto y residuo dentro de la tolerancia que supere la comprobación matemática." },
         vista(p) {
             const xs = [p.anterior, p.actual, p.siguiente];
             const a = Math.min(...xs), b = Math.max(...xs);
