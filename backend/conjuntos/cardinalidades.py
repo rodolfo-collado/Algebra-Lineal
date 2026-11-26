@@ -30,6 +30,20 @@ def inclusion_exclusion(nombres, regiones):
 
 
 def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, expresion='A ∪ B', presupuesto=None):
+    """Obtiene las regiones exclusivas de dos o tres conjuntos y cuenta los elementos de `expresion`.
+
+    Cada conjunto es un bit: `nombres[i]` corresponde a `1 << i` y una máscara `m` reúne los
+    conjuntos cuyos bits están encendidos. En el modo 'regiones', `datos[m]` es la región
+    exclusiva `m`: los elementos que están en esos conjuntos y en ningún otro. En el modo
+    'intersecciones', `datos[m]` es el cardinal de la intersección de esos conjuntos.
+    `datos` lleva una entrada por cada máscara de 1 a 2ⁿ − 1, con enteros no negativos.
+
+    La máscara 0 es la región exterior, fuera de todos los conjuntos: vale universo − |unión|
+    o None si no se indica universo. Devuelve `regiones`, `intersecciones`, `union`,
+    `seleccionadas`, `resultado` y los `pasos` que muestra la plantilla. Lanza ValueError ante
+    datos mal formados, CardinalidadesIncoherentes si una región quedaría negativa y
+    UniversoInvalido si el universo es menor que la unión o la expresión lo necesita y falta.
+    """
     presupuesto = presupuesto if presupuesto is not None else Presupuesto()
     n = len(nombres)
     if n not in (2,3) or len(set(nombres)) != n or 'U' in nombres:
@@ -45,6 +59,9 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
     pasos = []
     def etiqueta(m):
         return ' ∩ '.join(n if m & (1 << i) else f'{n}ᶜ' for i,n in enumerate(nombres))
+    # Primero las máscaras con más conjuntos. Si una región k ya obtenida contiene todos los bits
+    # de m (k & m == m), sus elementos están en la intersección m y se descuentan para dejar la
+    # región exclusiva. Con tres conjuntos, AB exclusiva = |A ∩ B| − ABC.
     for m in sorted(datos, key=lambda m: (-m.bit_count(),m)):
         descontar = tuple(k for k in regiones if k & m == m) if modo == 'intersecciones' else ()
         valor = datos[m]
@@ -61,6 +78,7 @@ def resolver_cardinalidades(nombres, datos, *, modo='regiones', universo=None, e
         total += valor
     if universo is not None and universo < total:
         raise UniversoInvalido('El universo no puede ser menor que la unión de los conjuntos.')
+    # Región exterior (máscara 0): sin universo no se puede contar.
     regiones[0] = None if universo is None else universo - total
     inclusion = inclusion_exclusion(nombres, regiones)
     intersecciones = {t['mascara']: t['valor'] for t in inclusion['terminos']}

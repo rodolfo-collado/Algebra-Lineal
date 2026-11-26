@@ -30,6 +30,15 @@ def confirmar_cercania(funcion, xr, fxr, a, b, tolerancia):
 
 
 def regla_falsa(funcion, a, b, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIONES):
+    """Aplica Regla falsa en [a, b] y devuelve un diccionario serializable con la tabla y su conclusión.
+
+    Valida como `biseccion`, mediante `preparar_intervalo`. Converge con f(xr) = 0 en máquina
+    ("exacta") o cuando Ea = |xrᵢ − xrᵢ₋₁| no supera la tolerancia y un cambio de signo a esa
+    distancia de xr confirma una raíz ("tolerancia"); solo entonces `cota` acota |xr − raíz|.
+    Sin esa confirmación sigue iterando; si se agotan las iteraciones con Ea ya pequeño, el
+    estado es "estancamiento", no convergencia.
+    Estados y claves de cada fila: docs/regla-falsa.md.
+    """
     inicial, tolerancia, impedimento = preparar_intervalo(funcion, a, b, tolerancia, max_iteraciones, "tolerancia")
     a, b, fa, fb = (inicial[k] for k in ("a", "b", "fa", "fb"))
     filas = []

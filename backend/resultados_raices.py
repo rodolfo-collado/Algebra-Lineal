@@ -6,6 +6,13 @@ from .funciones_reales import FuncionReal
 
 
 class ClasificacionRaices(StrEnum):
+    """Conclusión común de los métodos de raíces y de la exploración gráfica.
+
+    `estado` es el motivo de parada propio de cada método; la clasificación es lo que la
+    interfaz puede afirmar a partir de él. La tabla de cuándo se emite cada valor está en
+    docs/newton-raphson.md.
+    """
+
     ENTRADA_INVALIDA = "entrada_invalida"
     NO_APLICABLE = "no_aplicable"
     RAIZ_APROXIMADA = "raiz_aproximada"
