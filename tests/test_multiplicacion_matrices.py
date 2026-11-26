@@ -4,7 +4,9 @@ import random
 import unittest
 from copy import deepcopy
 from fractions import Fraction as F
+from unittest.mock import patch
 
+from backend import matrices
 from backend.matrices import (
     dimensiones, multiplicar_matrices, multiplicar_matriz_vector, producto_punto,
     resolver_operacion_matrices, trasponer_matriz, validar_vector, vector_columna,
@@ -293,6 +295,24 @@ class PruebasPasosProducto(unittest.TestCase):
         producto["resultado"][0][0] = 100
         matriz_vector["resultado"][0][0] = 100
         self.assertEqual((a, b, x), copias)
+
+    def test_cada_termino_se_multiplica_una_sola_vez(self):
+        # AB (m×n · n×p) necesita m·n·p términos aᵢₖbₖⱼ; ambas lecturas y el
+        # resultado los comparten. Ax es el caso p = 1.
+        a = [[F(1, 2), 2, 3], [3, 4, 5]]
+        b = [[2, 0], [1, -1], [0, 2]]
+        for operacion, argumentos, terminos, esperado in (
+            ("producto", {"b": b}, 2 * 3 * 2, [[3, 4], [10, 6]]),
+            ("matriz_vector", {"vector": columna(b, 0)}, 2 * 3, [[3], [10]]),
+        ):
+            with self.subTest(operacion=operacion), patch.object(
+                matrices, "multiplicar_exacto", wraps=matrices.multiplicar_exacto
+            ) as multiplicar:
+                calculo = resolver_operacion_matrices(operacion, a, **argumentos)
+            self.assertEqual(multiplicar.call_count, terminos)
+            self.assertEqual(calculo["resultado"], esperado)
+            self.assertEqual(calculo["pasos"][0][0]["productos"], (1, 2, 0))
+            self.assertEqual(calculo["columnas"][0]["escaladas"], ((1, 6), (2, 4), (0, 0)))
 
     def test_matriz_vector_una_columna_una_fila(self):
         calculo = resolver_operacion_matrices("matriz_vector", [[1, 2, 3]], vector=[4, 5, 6])

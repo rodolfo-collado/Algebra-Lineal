@@ -204,16 +204,20 @@ class PruebasProcedimiento(TestCase):
 
 class PruebasRegresion(TestCase):
     def test_coincide_con_las_primitivas(self):
+        # Los productos con procedimiento calculan sus términos una sola vez en el
+        # motor compartido; su resultado debe coincidir con la ruta directa.
+        motor = "backend.expresiones_matriciales.evaluador.resolver_operacion_matrices"
         casos = (
-            ("A + B", sumar_matrices, (A, B), "backend.matrices.sumar_matrices"),
-            ("A - B", restar_matrices, (A, B), "backend.matrices.restar_matrices"),
-            ("2*A", multiplicar_escalar_matriz, (2, A), "backend.matrices.multiplicar_escalar_matriz"),
-            ("AB", multiplicar_matrices, (A, B), "backend.matrices.multiplicar_matrices"),
-            ("Au", multiplicar_matriz_vector, (A, U), "backend.matrices.multiplicar_matriz_vector"),
+            ("A + B", sumar_matrices, (A, B), "backend.matrices.sumar_matrices", sumar_matrices),
+            ("A - B", restar_matrices, (A, B), "backend.matrices.restar_matrices", restar_matrices),
+            ("2*A", multiplicar_escalar_matriz, (2, A), "backend.matrices.multiplicar_escalar_matriz",
+             multiplicar_escalar_matriz),
+            ("AB", multiplicar_matrices, (A, B), motor, resolver_operacion_matrices),
+            ("Au", multiplicar_matriz_vector, (A, U), motor, resolver_operacion_matrices),
         )
-        for expresion, primitiva, argumentos, ruta in casos:
+        for expresion, primitiva, argumentos, ruta, envoltorio in casos:
             with self.subTest(expresion=expresion):
-                with patch(ruta, wraps=primitiva) as envuelta:
+                with patch(ruta, wraps=envoltorio) as envuelta:
                     obtenido = evaluar(expresion, {**MATRICES, "u": EJEMPLO["u"]}).principal.resultado
                 self.assertEqual(obtenido, primitiva(*argumentos))
                 envuelta.assert_called()
