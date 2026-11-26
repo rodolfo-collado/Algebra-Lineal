@@ -14,7 +14,11 @@ from backend.seguridad_numerica import (
 
 
 def buscar_fila_pivote(matriz, fila_inicio, columna):
-    # Búsqueda del pivote: primera fila con un valor distinto de cero
+    """Primera fila, desde `fila_inicio`, con un valor distinto de cero en `columna`; None si no hay.
+
+    Con `Fraction` no hay redondeo que amplificar, así que no se usa pivoteo parcial: se toma la
+    primera fila no nula, como al escalonar a mano.
+    """
     for fila in range(fila_inicio, len(matriz)):
         if matriz[fila][columna] != 0:
             return fila

@@ -9,6 +9,13 @@ MAX_ITERACIONES = 200
 
 
 def preparar_intervalo(funcion, a, b, tolerancia, max_iteraciones, magnitud="precisión"):
+    """Valida los parámetros de un método cerrado y comprueba si puede comenzar en [a, b].
+
+    Devuelve `(inicial, tolerancia, impedimento)`. `inicial` guarda a, b y sus imágenes (None si
+    no se pudieron evaluar). `impedimento` es None si el método puede iterar o una terna
+    `(estado, clasificacion, mensaje)` si el dominio, la continuidad o los signos de los extremos
+    lo impiden. Parámetros inválidos lanzan ValueError; `magnitud` nombra la tolerancia en el mensaje.
+    """
     a, b, tolerancia = finito(a), finito(b), finito(tolerancia)
     if a >= b:
         raise ValueError("El extremo a debe ser menor que b.")
