@@ -64,8 +64,17 @@ intervalo que encierre la raíz (diapositiva 24).
 | `dominio_inicial` | f(x₀) o f(x₁) no se puede evaluar. | No aplicable |
 | `dominio` | El corte cae fuera del dominio o da un valor no finito. | Sin convergencia; se conserva la última aproximación válida |
 | `divergencia` | El salto excede el rango de máquina. | Sin convergencia |
-| `estancamiento` / `oscilacion` | La máquina repite la aproximación o vuelve a una anterior. | Sin convergencia |
+| `estancamiento` | La nueva aproximación es igual a la actual en aritmética de máquina, sin obtener cero. | Sin convergencia |
+| `oscilacion` | Se repite una pareja ordenada (xₙ, xₙ₊₁) ya recorrida. | Sin convergencia |
 | `limite` | Se alcanzó el máximo de iteraciones. | Sin convergencia |
+
+**Qué cuenta como ciclo.** La siguiente secante depende de los dos últimos puntos,
+así que el estado del método es la pareja ordenada (xₙ₋₁, xₙ) y no una abscisa
+suelta. Con f(x) = 1 + 2x − x², x₀ = 0 y x₁ = 1, los cortes son −1 y 0: el 0 ya
+apareció, pero la recta por x = −1 y x = 0 corta en −1/3, un punto nuevo, y el
+método llega a 1 − √2 en siete iteraciones. Solo cuando reaparece una pareja los
+pasos siguientes se repiten sin fin. Newton-Raphson usa una sola abscisa como
+estado, por eso su detección no cambia.
 
 ## Ejemplos de clase
 

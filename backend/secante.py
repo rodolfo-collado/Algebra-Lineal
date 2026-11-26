@@ -67,7 +67,9 @@ def secante(funcion, x0, x1, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIO
     if fa == 0:
         x, fx = x0, fa
         return resultado("exacta", "El punto x₀ ya da f(x₀) = 0 en aritmética de máquina.")
-    visitados = {x0, x1}
+    # El estado es la pareja ordenada (xₙ₋₁, xₙ): una abscisa que reaparece con otra compañera
+    # define otra recta y puede dar un punto nuevo. Solo una pareja repetida cierra un ciclo.
+    parejas_visitadas = {(x0, x1)}
 
     for i in range(1, max_iteraciones + 1):
         intento_final = {"i": i, "anterior": xa, "fanterior": fa, "actual": x, "factual": fx,
@@ -97,7 +99,8 @@ def secante(funcion, x0, x1, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIO
         intento_final.update(fsiguiente=fnuevo, residuo=abs(fnuevo))
         filas.append(intento_final)
         intento_final = None
-        repetido = nuevo in visitados
+        pareja_siguiente = (x, nuevo)
+        pareja_repetida = pareja_siguiente in parejas_visitadas
         quieto = nuevo == x
         # Se desplazan los dos puntos: xₙ₋₁ ← xₙ y xₙ ← xₙ₊₁.
         anterior, xa, fa, x, fx = xa, x, fx, nuevo, fnuevo
@@ -105,13 +108,13 @@ def secante(funcion, x0, x1, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIO
             return resultado("exacta", "f(x) = 0 en aritmética de máquina.")
         if quieto:
             return resultado("estancamiento", "La máquina repite la aproximación sin obtener cero; no se declara convergencia.")
-        if repetido:
-            return resultado("oscilacion", "Se repite una aproximación anterior: el método entró en un ciclo sin convergencia.")
+        if pareja_repetida:
+            return resultado("oscilacion", "Se repite una pareja de aproximaciones consecutivas: el método entró en un ciclo sin convergencia.")
         # Un cambio pequeño no basta: el residuo también debe cumplir la tolerancia.
         if cambio <= tolerancia and abs(fx) <= tolerancia:
             impedimento = impedimento_paso_abierto(funcion, anterior, xa, x)
             if impedimento:
                 return resultado(*impedimento)
             return resultado("tolerancia", "El cambio y el residuo no superan la tolerancia solicitada.")
-        visitados.add(x)
+        parejas_visitadas.add(pareja_siguiente)
     return resultado("limite", "Se alcanzó el máximo de iteraciones sin cumplir el criterio de convergencia; puede haber divergencia u oscilación.")
