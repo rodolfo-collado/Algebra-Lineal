@@ -109,7 +109,8 @@ def _titulo_comparacion(calculos):
 def _mensaje(calculo):
     final = calculo.final
     if calculo.estado == "convergio":
-        if calculo.iteraciones[0].norma_residuo == 0 and final.k == 1:
+        # Residuo inicial cero no implica quedarse quieto: el redondeo del despeje puede mover x.
+        if calculo.iteraciones[0].norma_residuo == 0 and final.k == 1 and final.cambio == 0:
             return "x⁽⁰⁾ ya satisface Ax = b: la iteración 1 lo confirma con cambio 0."
         return f"En la iteración {final.k}, el cambio máximo y el residuo son menores que la tolerancia."
     if calculo.estado == "rango":
