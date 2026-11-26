@@ -387,9 +387,14 @@ try {
         if ((Get-FileHash -LiteralPath $downloaded -Algorithm SHA256).Hash -ne $InstallerSha256.ToUpperInvariant()) { throw 'La descarga no es el candidato.' }
         $state = Invoke-UpdateAction $oldUrl $updateSession $updateToken 'instalar'
         if ($state.estado -ne 'instalando') { throw "Instalar terminó en $($state.estado)." }
-        $setup = @(Get-Process -Name "PyGebra-Setup-$candidateVersion" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $downloaded })
-        if ($setup.Count -ne 1) { throw 'La app no lanzó el instalador descargado.' }
-        $setup = $setup[0]
+        # Se identifica por su padre y su SHA-256: %TEMP% puede estar en forma 8.3 (RUNNER~1)
+        # y la ruta del proceso en forma larga.
+        $launched = @(Get-CimInstance Win32_Process -Filter "Name = 'PyGebra-Setup-$candidateVersion.exe' AND ParentProcessId = $oldId")
+        if ($launched.Count -ne 1) { throw 'La app no lanzó el instalador descargado.' }
+        if ((Get-FileHash -LiteralPath $launched[0].ExecutablePath -Algorithm SHA256).Hash -ne $InstallerSha256.ToUpperInvariant()) {
+            throw "La app lanzó un instalador distinto del descargado: $($launched[0].ExecutablePath)"
+        }
+        $setup = Get-Process -Id $launched[0].ProcessId
         $null = $setup.Handle
         # La app se cierra sola (cerrar_aplicacion) y el instalador espera a que suelte el mutex.
         if (-not $process.WaitForExit(30000)) { throw 'La versión anterior no se cerró sola tras lanzar el instalador.' }
