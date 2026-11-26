@@ -38,8 +38,13 @@ def finito(valor):
 
 def acotar(inferior, superior):
     # Redondeo hacia fuera para no excluir valores por aritmética de máquina.
-    return (finito(math.nextafter(inferior, -math.inf)),
-            finito(math.nextafter(superior, math.inf)))
+    # Las operaciones verificadas conservan el cero exacto como cota.
+    return (finito(math.nextafter(inferior, -math.inf)) if inferior else 0.,
+            finito(math.nextafter(superior, math.inf)) if superior else 0.)
+
+
+def depende_de_x(nodo):
+    return any(isinstance(n, ast.Name) and n.id == "x" for n in ast.walk(nodo))
 
 
 def explicitar_productos(texto):
@@ -58,11 +63,15 @@ def explicitar_productos(texto):
             if anterior.type == tokenize.NUMBER and token in {"e", "E"} and anterior.end == actual.start:
                 raise ValueError("Completa el exponente científico o escribe *e para multiplicar por e.")
             fin = anterior.type == tokenize.NUMBER or previo in valores or previo == ")"
-            inicio = token in valores or token in FUNCIONES or token == "(" or tipo == tokenize.NUMBER
+            inicio = token in valores or token in FUNCIONES or token in {"(", "tanx"} or tipo == tokenize.NUMBER
             if fin and inicio and not (anterior.type == tipo == tokenize.NUMBER):
                 salida.append((tokenize.OP, "*"))
-        salida.append((tipo, token))
-        anterior = actual
+        if tipo == tokenize.NAME and token == "tanx":
+            salida.extend(((tokenize.NAME, "tan"), (tokenize.OP, "("), (tokenize.NAME, "x"), (tokenize.OP, ")")))
+            anterior = actual._replace(type=tokenize.OP, string=")")
+        else:
+            salida.append((tipo, token))
+            anterior = actual
     return tokenize.untokenize(salida)
 
 
@@ -77,21 +86,73 @@ def _signos(nodo, a, b):
     if isinstance(nodo, ast.UnaryOp):
         signos = _signos(nodo.operand, a, b)
         return {-s for s in signos} if isinstance(nodo.op, ast.USub) else signos
+    if isinstance(nodo, ast.Call) and nodo.func.id == "exp":
+        return {1}
     if isinstance(nodo, ast.BinOp):
         op = nodo.op
-        if isinstance(op, ast.Pow) and isinstance(nodo.right, ast.Constant):
-            n = nodo.right.value
-            if type(n) is int and n > 0 and n % 2 == 0:
-                return {abs(s) for s in _signos(nodo.left, a, b)}
-        if isinstance(op, (ast.Add, ast.Sub, ast.Mult)):
+        if isinstance(op, ast.Pow):
+            base = _signos(nodo.left, a, b)
+            if base == {1}:
+                return {1}
+            if isinstance(nodo.right, ast.Constant):
+                n = nodo.right.value
+                if type(n) is int and n > 0 and n % 2 == 0:
+                    return {abs(s) for s in base}
+        if isinstance(op, (ast.Add, ast.Sub, ast.Mult, ast.Div)):
             izq, der = _signos(nodo.left, a, b), _signos(nodo.right, a, b)
             if isinstance(op, ast.Mult):
                 return {s * t for s in izq for t in der}
+            if isinstance(op, ast.Div):
+                return {s * t for s in izq for t in der if t != 0}
             if isinstance(op, ast.Sub):
                 der = {-s for s in der}
             if not (-1 in izq and 1 in der or 1 in izq and -1 in der):
                 return {(s + t > 0) - (s + t < 0) for s in izq for t in der}
     return {-1, 0, 1}
+
+
+def _polo_tangente(x):
+    # Comparamos con los múltiplos de π/2 mientras la precisión distinga los polos.
+    if abs(x) >= math.pi * 2**51:
+        return False
+    n = round((x - math.pi / 2) / math.pi)
+    return x == (n + .5) * math.pi
+
+
+def _llamar(nombre, x):
+    if nombre == "tan" and _polo_tangente(x):
+        raise ValueError("La tangente tiene una discontinuidad y no está definida en un polo.")
+    if nombre == "sqrt" and x < 0:
+        raise ValueError("La raíz cuadrada real solo admite cantidades mayores o iguales que cero.")
+    if nombre in ("log", "ln", "log10") and x <= 0:
+        raise ValueError("El logaritmo solo admite cantidades mayores que cero.")
+    valor = finito(FUNCIONES[nombre](x))
+    if nombre == "exp" and valor == 0:
+        raise ValueError("Subdesbordamiento: la exponencial se redondeó a cero.")
+    return valor
+
+
+def _operacion(op, a, b):
+    if op is ast.Div and b == 0:
+        raise ValueError("No se puede dividir entre cero. El denominador se anula en este punto.")
+    valor = OPERACIONES[op](a, b)
+    if math.isinf(valor):
+        raise OverflowError
+    if valor == 0 and a != 0 and (op is ast.Pow or op in (ast.Mult, ast.Div) and b != 0):
+        raise ValueError("Subdesbordamiento: el resultado se redondeó a cero.")
+    return finito(valor)
+
+
+def _potencia(nodo, base, exponente):
+    if base < 0 and not exponente.is_integer():
+        raise ValueError("Potencia fuera del dominio real: una base negativa exige un exponente entero.")
+    if base == 0 and exponente < 0:
+        raise ValueError("Potencia fuera del dominio real: una base cero no admite un exponente negativo.")
+    if base == exponente == 0 and depende_de_x(nodo.right):
+        raise ValueError("Potencia fuera del dominio real: una base cero exige un exponente variable positivo.")
+    if isinstance(nodo.left, ast.Name) and nodo.left.id == "e":
+        return _llamar("exp", exponente)
+    return _operacion(ast.Pow, base, exponente)
 
 
 class FuncionReal:
@@ -123,9 +184,6 @@ class FuncionReal:
         elif isinstance(nodo, ast.BinOp) and type(nodo.op) in OPERACIONES:
             self._validar(nodo.left, nivel + 1)
             self._validar(nodo.right, nivel + 1)
-            if isinstance(nodo.op, ast.Pow) and any(isinstance(n, ast.Name) and n.id == "x"
-                                                   for n in ast.walk(nodo.right)):
-                raise ValueError("El exponente debe ser constante; no puede depender de x.")
         elif (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name)
               and nodo.func.id in FUNCIONES and len(nodo.args) == 1 and not nodo.keywords):
             self._validar(nodo.args[0], nivel + 1)
@@ -141,35 +199,40 @@ class FuncionReal:
             valor = self._numero(nodo.operand, x)
             return -valor if isinstance(nodo.op, ast.USub) else valor
         if isinstance(nodo, ast.Call):
-            argumento = self._numero(nodo.args[0], x)
-            if nodo.func.id == "tan" and abs(math.remainder(argumento, math.pi)) == math.pi / 2:
-                raise ValueError("La tangente no está definida en un polo.")
-            valor = finito(FUNCIONES[nodo.func.id](argumento))
-            if nodo.func.id == "exp" and valor == 0:
-                raise ValueError("Subdesbordamiento: exp(x) se redondeó a cero.")
-            return valor
+            return _llamar(nodo.func.id, self._numero(nodo.args[0], x))
         a, b = self._numero(nodo.left, x), self._numero(nodo.right, x)
-        valor = finito(OPERACIONES[type(nodo.op)](a, b))
-        if valor == 0 and a != 0 and ((isinstance(nodo.op, (ast.Mult, ast.Div)) and b != 0)
-                                    or isinstance(nodo.op, ast.Pow)):
-            raise ValueError("Subdesbordamiento: el resultado se redondeó a cero.")
-        return valor
+        return _potencia(nodo, a, b) if isinstance(nodo.op, ast.Pow) else _operacion(type(nodo.op), a, b)
+
+    def evaluar_arbol(self, nodo, x, nombre="f"):
+        x = finito(x)
+        try:
+            return self._numero(nodo, x)
+        except OverflowError as error:
+            raise ValueError(f"No se puede evaluar {nombre}({x:g}): desbordamiento del rango numérico.") from error
+        except ValueError as error:
+            raise ValueError(f"No se puede evaluar {nombre}({x:g}): {error}") from error
 
     def __call__(self, x):
-        try:
-            return self._numero(self.arbol, finito(x))
-        except (ArithmeticError, ValueError) as error:
-            raise ValueError(f"No se puede evaluar f({x:g}): {error}") from error
+        return self.evaluar_arbol(self.arbol, x)
 
     def signo_estricto(self, a, b):
         """Probar que cero queda excluido por los signos, dado un dominio válido."""
         return _signos(self.arbol, a, b) in ({-1}, {1})
 
+    def excluye_cero(self):
+        """Excluir un cero en todo el dominio mediante las reglas de signos."""
+        return 0 not in _signos(self.arbol, -math.inf, math.inf)
+
     def rango(self, a, b):
         """Envolvente conservadora; falla si no puede certificar dominio y continuidad."""
         try:
+            a, b = finito(a), finito(b)
+            if a > b:
+                raise ValueError("El extremo a debe ser menor o igual que b.")
             return self._rango(self.arbol, (a, b))
-        except (ArithmeticError, ValueError) as error:
+        except OverflowError as error:
+            raise ValueError("No podemos aplicar el método en este intervalo. Desbordamiento del rango numérico.") from error
+        except ValueError as error:
             raise ValueError("No podemos aplicar el método en este intervalo. " + str(error)) from error
 
     def _rango(self, nodo, intervalo):
@@ -190,7 +253,7 @@ class FuncionReal:
             if nombre == "tan":
                 primera = math.ceil(math.nextafter((a - math.pi/2)/math.pi, -math.inf))
                 ultima = math.floor(math.nextafter((b - math.pi/2)/math.pi, math.inf))
-                if primera <= ultima:
+                if primera <= ultima or _polo_tangente(a) or _polo_tangente(b):
                     raise ValueError("La tangente no está definida cuando su coseno vale cero. El argumento puede alcanzar uno de esos puntos dentro del intervalo. Elige extremos donde la tangente permanezca definida y continua.")
             if nombre in ("log", "ln", "log10") and a <= 0:
                 directo = isinstance(nodo.args[0], ast.Name) and nodo.args[0].id == "x"
@@ -202,26 +265,35 @@ class FuncionReal:
                 raise ValueError("La raíz cuadrada real √ solo admite cantidades mayores o iguales que cero. " +
                                  ("Tu intervalo incluye valores negativos de x. Para √(x), elige a ≥ 0 y b > a."
                                   if directo else "No pudimos descartar cantidades negativas dentro de la raíz en este intervalo. Elige extremos donde su contenido sea no negativo en todo el intervalo."))
-            valores = [FUNCIONES[nombre](a), FUNCIONES[nombre](b)]
-            if nombre == "exp" and min(valores) == 0:
-                raise ValueError("Subdesbordamiento de exp.")
+            valores = [_llamar(nombre, a), _llamar(nombre, b)]
             return acotar(min(valores), max(valores))
         a, b = self._rango(nodo.left, intervalo)
-        if isinstance(nodo.op, ast.Pow):
-            n = self._numero(nodo.right, 0.)
-            if (a < 0 and not n.is_integer()) or (a <= 0 <= b and n < 0):
-                raise ValueError("Esta potencia no está definida como número real en todo el intervalo: una base negativa con exponente no entero no está admitida, y una potencia negativa no admite base cero. Elige extremos donde la base cumpla esas condiciones.")
-            valores = [math.pow(a, n), math.pow(b, n)]
-            if a <= 0 <= b and n > 0:
+        op = type(nodo.op)
+        if op is ast.Pow:
+            variable = depende_de_x(nodo.right)
+            if variable:
+                c, d = self._rango(nodo.right, intervalo)
+            else:
+                c = d = self._numero(nodo.right, 0.)
+            if a < 0 and (c != d or not c.is_integer()):
+                raise ValueError("No se pudo certificar el dominio real de la potencia en todo el intervalo. "
+                                 "Si la base puede ser negativa, se necesita un exponente entero que permanezca fijo.")
+            if a <= 0 <= b and (c < 0 or c == 0 and variable):
+                raise ValueError("No se pudo certificar el dominio real de la potencia en todo el intervalo. "
+                                 "Si la base puede ser cero, el exponente variable debe permanecer positivo "
+                                 "y el exponente constante no puede ser negativo.")
+            # Para base positiva, log(base^exponente) es bilineal en log(base) y exponente.
+            exponentes = (c,) if c == d else (c, d)
+            valores = [_potencia(nodo, u, v) for u in (a, b) for v in exponentes]
+            if a <= 0 <= b and c > 0:
                 valores.append(0.)
         else:
             c, d = self._rango(nodo.right, intervalo)
-            if isinstance(nodo.op, ast.Add):
-                return acotar(a + c, b + d)
-            if isinstance(nodo.op, ast.Sub):
-                return acotar(a - d, b - c)
-            if isinstance(nodo.op, ast.Div) and c <= 0 <= d:
+            if op is ast.Add:
+                return acotar(_operacion(op, a, c), _operacion(op, b, d))
+            if op is ast.Sub:
+                return acotar(_operacion(op, a, d), _operacion(op, b, c))
+            if op is ast.Div and c <= 0 <= d:
                 raise ValueError("No se puede dividir entre cero. No pudimos descartar un denominador cero dentro de este intervalo. Elige extremos donde el denominador no se anule; cambiar de signo a través de un hueco no garantiza una raíz.")
-            op = OPERACIONES[type(nodo.op)]
-            valores = [op(u, v) for u in (a, b) for v in (c, d)]
+            valores = [_operacion(op, u, v) for u in (a, b) for v in (c, d)]
         return acotar(min(valores), max(valores))

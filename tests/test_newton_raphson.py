@@ -113,6 +113,6 @@ class NewtonTests(unittest.TestCase):
     def test_parametros_y_sintaxis_invalidos(self):
         for opciones in [{"tolerancia": 0}, {"tolerancia": .001}, {"tolerancia": math.nan},
                          {"max_iteraciones": True}, {"max_iteraciones": 1001}, {"x": math.inf},
-                         {"f": "x.__class__"}, {"f": "x^x"}]:
+                         {"f": "x.__class__"}, {"f": "x^"}]:
             with self.subTest(opciones=opciones), self.assertRaises(ValueError):
                 resolver(**opciones)

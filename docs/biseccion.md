@@ -51,13 +51,16 @@ Se admiten `+`, `-`, `*`, `/`, `^` o `**`, paréntesis, la variable `x`, constan
 La multiplicación puede ser explícita o implícita: `5*x^3` y `5x^3`, `2*(x+1)`
 y `2(x+1)`, `x*(x+1)` y `x(x+1)`, o `(x+1)*(x-1)` y `(x+1)(x-1)`.
 También se admiten `2sen(x)`, `sen(x)cos(x)` y `pi x`. Se insertan productos
-entre factores reconocidos antes de validar el AST; no se separan nombres:
-`xx`, `xpi` y `senx` son inválidos. `sen(x)` y `log(x)` siguen siendo llamadas.
+entre factores reconocidos antes de validar el AST. `tanx` es un alias de
+`tan(x)`. `xx`, `xpi` y `senx` son inválidos.
 Los números científicos completos (`1e-3`, `2E+2`) se conservan; `2e` se rechaza
 por ambiguo: escribe `2*e` para la constante. Productos y divisiones tienen igual
 prioridad y se agrupan de izquierda a derecha: `1/2x` es `(1/2)*x`; para dividir
-por todo el producto escribe `1/(2x)`. Los exponentes no pueden depender de `x`.
-Ambas notaciones generan la misma clave de comparación y los mismos resultados.
+por todo el producto escribe `1/(2x)`. Los exponentes admiten expresiones como
+`e^(1/x)`, `2^x` y `x^(sen(x))`. Con base negativa, la evaluación puntual
+requiere un exponente entero. Con base cero, un exponente variable debe ser
+positivo. Para aplicar un método cerrado, PyGebra comprueba las condiciones de
+dominio y continuidad en todo el intervalo mediante cotas conservadoras.
 
 Para preparar una demostración oral, consulta la [guía de exposición](guia-exposicion-biseccion.md).
 

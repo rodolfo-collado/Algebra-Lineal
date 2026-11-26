@@ -2,7 +2,7 @@
 
 import ast
 from decimal import Decimal
-from .funciones_reales import _signos, finito
+from .funciones_reales import _signos, depende_de_x
 
 _ELEVADOS = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
 
@@ -153,9 +153,8 @@ class DerivadaReal:
         self.texto = natural(self.arbol)
 
     def __call__(self, x):
-        x = finito(x)
         self.funcion(x)
-        return self.funcion._numero(self.arbol, x)
+        return self.funcion.evaluar_arbol(self.arbol, x, "f′")
 
     def _derivar(self, nodo):
         c = ast.Constant
@@ -203,7 +202,18 @@ class DerivadaReal:
         da = self._derivar(a)
         op = type(nodo.op)
         if op is ast.Pow:
-            exponente = self.funcion._numero(b, 0.)
+            if depende_de_x(b):
+                db = self._derivar(b)
+                if not depende_de_x(a):
+                    base = self.funcion.evaluar_arbol(a, 0.)
+                    if base == 0:
+                        return c(0)
+                    log_base = c(1) if isinstance(a, ast.Name) and a.id == "e" else _llamada("ln", a)
+                    return _operar(ast.Mult, nodo, _operar(ast.Mult, db, log_base))
+                cambio_exponente = _operar(ast.Mult, db, _llamada("ln", a))
+                cambio_base = _operar(ast.Mult, _operar(ast.Div, b, a), da)
+                return _operar(ast.Mult, nodo, _operar(ast.Add, cambio_exponente, cambio_base))
+            exponente = self.funcion.evaluar_arbol(b, 0.)
             if exponente == 0:
                 return c(0)
             if exponente == 1:

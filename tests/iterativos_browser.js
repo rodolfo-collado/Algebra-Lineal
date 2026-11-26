@@ -141,6 +141,26 @@
             w = frame.contentWindow;
             ok(q(w, '[name="celda_A_0_0"]').value === "8" && q(w, '[name="max_iteraciones"]').value === "3", "Carga la práctica");
         }],
+        ["Sistema de ecuaciones: alterna con CSS, teclado de sistema y mismo resultado que A y b", async (w, frame) => {
+            const visible = s => q(w, s).getClientRects().length > 0;
+            ok(q(w, '[name="tipo_entrada"]:checked').value === "matriz" && visible("#equation-entry") && !visible("#system-fields"), "Matriz por omisión");
+            q(w, '[name="tipo_entrada"][value="sistema"]').click();
+            ok(visible("#system-fields") && !visible("#equation-entry") && !visible("[data-aplicar]"), "Ecuaciones en lugar de A y b");
+            ok(visible('[data-input-hint="sistema"]') && !visible('[data-input-hint="matriz"]'), "Pista del tipo elegido");
+            const campo = q(w, "#id_sistema"), perfiles = JSON.parse(q(w, "#math-keyboard-profiles").textContent);
+            campo.focus();
+            await esperar(() => !q(w, ".math-keyboard").hidden, "Teclado al enfocar las ecuaciones");
+            ok(texto(q(w, ".math-keyboard-help")) === perfiles.sistema.ayuda, "Perfil de sistema, como en Reducción por filas");
+            campo.value = "10x1 - x2 + 2x3 = 6; -x1 + 11x2 - x3 + 3x4 = 25; 2x1 - x2 + 10x3 - x4 = -11; 3x2 - x3 + 8x4 = 15";
+            q(w, '[name="metodo"][value="comparar_iterativos"]').click();
+            await navegar(frame, () => q(w, "[data-calculo]").click()); w = frame.contentWindow;
+            await esperar(() => qa(w, ".iterativo-grafica:not([hidden]) .main-svg").length, "Gráficas dibujadas");
+            const desdeTexto = texto(q(w, "#results-title"));
+            ok(desdeTexto === "Gauss-Seidel converge en 6 y Jacobi en 15 iteraciones", desdeTexto);
+            ok(q(w, '[name="tipo_entrada"]:checked').value === "sistema" && visible("#system-fields"), "Conserva el tipo de entrada");
+            const matricial = await resolver(frame);
+            ok(texto(q(matricial, "#results-title")) === desdeTexto, "Igual que el ejemplo de clase en A y b");
+        }],
         ["Sin dominancia: crece sin converger; vector inicial exacto", async (w, frame) => {
             w = await resolver(frame, "sin-dominancia", "jacobi");
             ok(q(w, ".iterativos-cabecera").dataset.tono === "aviso" && texto(q(w, ".iterativos-estado")).includes("El cambio máximo crece"), "Aviso de crecimiento");

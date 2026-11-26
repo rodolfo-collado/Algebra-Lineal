@@ -110,6 +110,20 @@ class BiseccionWebTests(SimpleTestCase):
         self.assertEqual(a.status_code, 200)
         self.assertEqual(a.json(), b.json())
 
+    def test_potencia_variable_y_tanx_en_calculo_y_grafica(self):
+        entrada = datos(funcion="e^(1/x)+(2x/tanx)", a="-2", b="-1.6", precision="1e-8")
+        calculo = self.client.post(RUTA, entrada)
+        self.assertNotContains(calculo, "data-respuesta-errores")
+        resultado = resultado_html(calculo)
+        self.assertTrue(resultado["convergio"])
+        self.assertAlmostEqual(resultado["c"], -1.7314791865119594, delta=1e-8)
+        grafica = self.client.post(RUTA + "grafica/", entrada)
+        self.assertEqual(grafica.status_code, 200)
+        puntos = grafica.json()
+        self.assertEqual(puntos["y"][0], resultado["inicial"]["fa"])
+        self.assertEqual(puntos["y"][-1], resultado["inicial"]["fb"])
+        self.assertEqual(puntos["clasificacion"], "indicios_numericos")
+
     def test_catalogo_navegacion_y_assets_locales(self):
         self.assertEqual(reverse("calculadora:biseccion"), RUTA)
         self.assertTrue(catalogo.herramienta_por_id("metodos-cerrados").disponible)

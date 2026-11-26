@@ -6,6 +6,7 @@ from .derivacion_real import DerivadaReal
 from .funciones_reales import finito
 from .metodos_cerrados import MAX_ITERACIONES, TOLERANCIA
 from .resultados_raices import ClasificacionRaices as Clasificacion
+from .resultados_raices import impedimento_paso_abierto
 
 
 def newton_raphson(funcion, x0, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIONES):
@@ -22,6 +23,8 @@ def newton_raphson(funcion, x0, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERA
         convergio = estado in ("exacta", "tolerancia")
         if convergio:
             clasificacion = Clasificacion.RAIZ_APROXIMADA
+        elif estado == "sin_raices":
+            clasificacion = Clasificacion.SIN_RAICES_DEMOSTRADO
         elif not filas and estado in ("derivada", "dominio_inicial", "dominio_derivada", "derivacion"):
             clasificacion = Clasificacion.NO_APLICABLE
         else:
@@ -51,8 +54,8 @@ def newton_raphson(funcion, x0, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERA
                          "fsiguiente": None, "residuo": None, "error_absoluto": None}
         try:
             dfx = finito(derivada(x))
-        except (ValueError, ArithmeticError):
-            return resultado("dominio_derivada", "La derivada no está definida o no es finita en la aproximación actual.")
+        except ValueError as error:
+            return resultado("dominio_derivada", f"No pudimos evaluar la derivada en la aproximación actual. {error}")
         intento_final["dfxn"] = dfx
         if dfx == 0:
             return resultado("derivada", "La derivada es cero: la tangente no permite calcular otra aproximación.")
@@ -65,14 +68,14 @@ def newton_raphson(funcion, x0, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERA
         intento_final.update(siguiente=nuevo, error_absoluto=cambio)
         try:
             fnuevo = finito(funcion(nuevo))
-        except (ValueError, ArithmeticError):
-            return resultado("dominio", "El siguiente corte de la tangente sale del dominio o produce un valor no finito. Se conserva la última aproximación válida.")
+        except ValueError as error:
+            return resultado("dominio", f"El siguiente corte de la tangente no se pudo evaluar. {error} Se conserva la última aproximación válida.")
         intento_final.update(fsiguiente=fnuevo, residuo=abs(fnuevo))
         filas.append(intento_final)
         intento_final = None
         repetido = nuevo in visitados
         quieto = nuevo == x
-        x, fx = nuevo, fnuevo
+        anterior, x, fx = x, nuevo, fnuevo
         if fx == 0:
             return resultado("exacta", "f(x) = 0 en aritmética de máquina.")
         if quieto:
@@ -80,6 +83,9 @@ def newton_raphson(funcion, x0, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERA
         if repetido:
             return resultado("oscilacion", "Se repite una aproximación anterior: el método entró en un ciclo sin convergencia.")
         if cambio <= tolerancia and abs(fx) <= tolerancia:
+            impedimento = impedimento_paso_abierto(funcion, anterior, x)
+            if impedimento:
+                return resultado(*impedimento)
             return resultado("tolerancia", "El cambio y el residuo no superan la tolerancia solicitada.")
         visitados.add(x)
     return resultado("limite", "Se alcanzó el máximo de iteraciones sin cumplir el criterio de convergencia; puede haber divergencia u oscilación.")
