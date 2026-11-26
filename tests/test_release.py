@@ -231,7 +231,7 @@ class PruebasWorkflowRelease(unittest.TestCase):
     def test_checkout_y_assets_anclados_al_sha_del_evento(self):
         self.assertIn("ref: ${{ github.sha }}", self.validar)
         self.assertIn("fetch-depth: 0", self.validar)
-        self.assertEqual(self.ci.count("ref: ${{ github.sha }}"), 3)
+        self.assertEqual(self.ci.count("ref: ${{ github.sha }}"), 4)
         self.assertIn("needs.validar.outputs.commit", self.publicar)
         self.assertIn("needs.validar.outputs.tag", self.publicar)
         self.assertIn('-f object="$COMMIT"', self.publicar)
@@ -245,7 +245,7 @@ class PruebasWorkflowRelease(unittest.TestCase):
         self.assertRegex(bloque(self.release, "permissions"), r"contents:\s*read")
         self.assertRegex(bloque(self.ci, "permissions"), r"contents:\s*read")
         self.assertNotIn("actions/checkout@", self.publicar)
-        self.assertEqual((self.validar + self.ci).count("persist-credentials: false"), 4)
+        self.assertEqual((self.validar + self.ci).count("persist-credentials: false"), 5)
         self.assertNotIn("pull_request_target", self.release + self.ci)
 
     def test_ci_cubre_develop_y_pr_main_sin_duplicar_push_main(self):
@@ -281,6 +281,22 @@ class PruebasWorkflowRelease(unittest.TestCase):
         self.assertIn("dist/installer/PyGebra-Setup-*.exe", windows)
         self.assertEqual(jobs.count("name: algebra-lineal-windows"), 1)
         self.assertIn("name: algebra-lineal-windows", windows)
+
+    def test_ci_ejecuta_la_seleccion_de_runners_de_navegador(self):
+        navegador = bloque(bloque(self.ci, "jobs"), "navegador")
+        self.assertIn("uv run --locked node tests/navegador.mjs", navegador)
+        self.assertIn("if: ${{ failure() }}", navegador)
+        self.assertIn("path: build/navegador/", navegador)
+        driver = (RAIZ / "tests/navegador.mjs").read_text(encoding="utf-8")
+        seleccion = re.search(r"const SELECCION = \[(.*?)\];", driver, re.S).group(1)
+        nombres = re.findall(r'"(\w+)"', seleccion)
+        self.assertGreaterEqual(len(nombres), 6)
+        for nombre in nombres:
+            with self.subTest(runner=nombre):
+                self.assertTrue((RAIZ / f"tests/{nombre}_browser.py").is_file())
+        # Un fallo del navegador debe hacer fallar el job: sin reintentos ni continue-on-error.
+        self.assertIn("process.exit(fallidos.length ? 1 : 0)", driver)
+        self.assertNotIn("reintent", driver.lower())
 
     def test_actions_fijadas_a_sha(self):
         for workflow in (self.ci, self.release):
