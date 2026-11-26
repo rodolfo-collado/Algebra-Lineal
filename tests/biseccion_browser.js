@@ -340,6 +340,34 @@
             ok(q(w, "#resultado").dataset.resultado === "desactualizado", "Aviso de resultado anterior");
             ok(lista(w).length === 13, "No vuelve a ejecutar la bisección");
         }],
+        ["La vista previa oculta las trazas anteriores mientras se edita la función o el intervalo", async (w, frame) => {
+            valor(w, "funcion", "x²-2"); valor(w, "a", "1"); valor(w, "b", "2");
+            w = await post(frame); await esperar(() => listaGrafica(w));
+            const g = grafica(w);
+            const oculta = () => g.data[1].visible === false && g.data[2].visible === false
+                && !g.layout.shapes[2].visible && !g.layout.shapes[3].visible;
+            valor(w, "funcion", "x²-4");
+            valor(w, "funcion", "x²-9");
+            await esperar(() => oculta() && Math.abs(g.data[0].y[400] - (g.data[0].x[400] ** 2 - 9)) < 1e-12,
+                "La curva nueva aparece sin las trazas de la anterior");
+            q(w, '[data-iteracion="2"]').click();
+            const decimales = q(w, "#raices-decimales");
+            decimales.value = "4";
+            decimales.dispatchEvent(new w.Event("change"));
+            ok(oculta() && q(w, "#iteracion-raices").value === "2", "La tabla anterior sigue disponible");
+            ok(q(w, "#resultado").dataset.resultado === "desactualizado", "Se identifica el resultado anterior");
+
+            valor(w, "a", "1.5");
+            q(w, "#grafica-enfocar").click();
+            await esperar(() => g.data[0].x[0] === 1.375 && g.data[0].x[800] === 2.125);
+            ok(oculta(), "El enfoque usa el intervalo editado");
+            valor(w, "funcion", "x²-2");
+            await esperar(() => Math.abs(g.data[0].y[400] - (g.data[0].x[400] ** 2 - 2)) < 1e-12);
+            ok(oculta(), "Recuperar la función no recupera otro intervalo");
+            valor(w, "a", "1");
+            await esperar(() => g.data[1].visible !== false && g.data[1].x[1] === lista(w)[1].c
+                && g.layout.shapes[2].visible, "Recupera la misma iteración al restaurar la entrada gráfica");
+        }],
         ["Vista inicial cancela el zoom pendiente y conserva ejes y muestras coherentes", async w => {
             valor(w, "funcion", "x²-2"); await esperar(() => listaGrafica(w));
             await w.Plotly.relayout(grafica(w), { "xaxis.range": [40, 60] });

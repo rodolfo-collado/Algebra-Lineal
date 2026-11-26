@@ -34,10 +34,13 @@
     const etiqueta = (x, digitos) => x === null ? "" : `${Number(x.toPrecision(digitos)) === x ? "=" : "≈"} ${Number(x.toPrecision(digitos))}`;
     const etiquetas = (xs, ys, digitos) => xs.map((x, i) => [etiqueta(x, digitos), etiqueta(ys[i], digitos)]);
     const campo = nombre => form.elements.namedItem(nombre);
+    const entradasGrafica = ["funcion", ...extremos].map(nombre => campo(nombre));
+    const entradaResultado = entradasGrafica.map(input => input.defaultValue);
+    const vistaPrevia = () => entradasGrafica.some((input, i) => input.value !== entradaResultado[i]);
     const color = nombre => getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
     const valido = r => Array.isArray(r) && r.every(Number.isFinite) && r[0] < r[1];
-    let mutando = false, temporizador, peticion, inicializacion, generacion = 0, extremoElegido = null;
-    let actual = -1, reloj = null;
+    let mutacionesGrafica = 0, temporizador, peticion, inicializacion, generacion = 0, extremoElegido = null;
+    let actual = -1, reloj = null, pasoActivo, evidenciaMostrada, funcionMuestreada;
     // Newton empieza en n = 0 (punto inicial); los demás métodos, en la iteración 1.
     const primero = slider ? Number(slider.min) : 1;
     const vistaInicial = [-10, 10];
@@ -155,6 +158,15 @@
         return campo(nombre).value.trim() && Number.isFinite(Number(campo(nombre).value)) ? Number(campo(nombre).value) : null;
     }
 
+    async function cambiarGrafica(cambio) {
+        mutacionesGrafica++;
+        try {
+            return await cambio();
+        } finally {
+            mutacionesGrafica--;
+        }
+    }
+
     function sincronizarExtremos() {
         if (!grafica.data) return;
         const cambios = {};
@@ -165,8 +177,7 @@
             cambios[`shapes[${i}].y0`] = 0;
             cambios[`shapes[${i}].y1`] = 1;
         });
-        mutando = true;
-        return Plotly.relayout(grafica, cambios).finally(() => { mutando = false; });
+        return cambiarGrafica(() => Plotly.relayout(grafica, cambios));
     }
 
     function linea(x, nombre) {
@@ -179,7 +190,7 @@
     function franja(opacidad) {
         return { type: "rect", x0: 0, x1: 0, y0: 0, y1: 1, yref: "paper", editable: false,
             fillcolor: color("--color-brand"), opacity: opacidad, line: { width: 0 }, layer: "below",
-            visible: intervalo && pasos.length > 0 };
+            visible: false };
     }
 
     // ---- Recorrido: una sola fuente de verdad (actual) para tabla, gráfica y explicación. ----
@@ -233,21 +244,41 @@
                 if (enfocarFila) fila.focus({ preventScroll: true });
             } else fila.removeAttribute("aria-current");
         }
-        if (!grafica.data) return;
+        pasoActivo = { p, paso };
+        actualizarEvidencia();
+    }
+
+    function actualizarEvidencia() {
+        if (!grafica.data || !resultado) return;
+        // La tabla conserva el cálculo. El lienzo solo muestra su evidencia junto a las muestras correspondientes.
+        const coincide = !vistaPrevia() && funcionMuestreada === entradaResultado[0];
+        const evidencia = coincide ? pasoActivo ?? resumen : null;
+        if (evidencia === evidenciaMostrada) return;
+        evidenciaMostrada = evidencia;
+        if (!evidencia) {
+            return cambiarGrafica(() => Plotly.update(grafica, { visible: false },
+                { annotations: [], "shapes[2].visible": false, "shapes[3].visible": false }, [1, 2]));
+        }
+        if (evidencia === resumen) {
+            return Plotly.restyle(grafica, { visible: true, x: [[resumen.x]], y: [[resumen.fx]],
+                text: [[resumen.nombre]], customdata: [etiquetas([resumen.x], [resumen.fx], 12)] }, [1]);
+        }
+
+        const { p, paso } = pasoActivo;
         const { puntos, trazo } = paso;
-        mutando = true;
-        // Los puntos de la iteración van en la traza 1; la construcción auxiliar, en la 2.
-        // Solo cambian datos y franjas: los ejes respetan el zoom que haya elegido el usuario.
-        Plotly.restyle(grafica, { x: [trazo?.x || []], y: [trazo?.y || []], text: [trazo?.text || []],
-            "marker.size": [trazo?.size || []], textposition: trazo?.posicion || "top center" }, [2]);
-        // Rótulos de la construcción (P₀, P₁, xₙ₊₁ en Secante) como anotaciones: los textos de una traza
-        // de varios puntos no siempre se redibujan al actualizarla paso a paso.
+        // Actualizar las trazas del paso y sus anotaciones sin mover los ejes elegidos por el usuario.
         const rotulos = (paso.rotulos || []).map(({ x, y, text }) => ({ x, y, text, showarrow: false, yshift: 14 }));
-        Plotly.update(grafica, { x: [puntos.x], y: [puntos.y], text: [puntos.text],
-            customdata: [etiquetas(puntos.x, puntos.y, 12)], "marker.size": [puntos.size], "marker.symbol": [puntos.symbol] },
-            { annotations: rotulos, ...(intervalo ? { "shapes[2].x0": p.a, "shapes[2].x1": p.b,
-                "shapes[3].x0": p.nuevo_a ?? p.a, "shapes[3].x1": p.nuevo_b ?? p.b } : {}) }, [1])
-            .finally(() => { mutando = false; });
+        const franjas = intervalo ? {
+            "shapes[2].visible": true, "shapes[2].x0": p.a, "shapes[2].x1": p.b,
+            "shapes[3].visible": true, "shapes[3].x0": p.nuevo_a ?? p.a, "shapes[3].x1": p.nuevo_b ?? p.b,
+        } : {};
+        return cambiarGrafica(() => Promise.all([
+            Plotly.restyle(grafica, { visible: true, x: [trazo?.x || []], y: [trazo?.y || []], text: [trazo?.text || []],
+                "marker.size": [trazo?.size || []], textposition: trazo?.posicion || "top center" }, [2]),
+            Plotly.update(grafica, { visible: true, x: [puntos.x], y: [puntos.y], text: [puntos.text],
+                customdata: [etiquetas(puntos.x, puntos.y, 12)], "marker.size": [puntos.size], "marker.symbol": [puntos.symbol] },
+                { annotations: rotulos, ...franjas }, [1]),
+        ]));
     }
 
     const INTERVALO_MS = 1400;
@@ -285,8 +316,8 @@
         const n = ++generacion;
         peticion?.abort();
         peticion = new AbortController();
-        const post = new URLSearchParams({ funcion: campo("funcion").value,
-            a: String(rango[0]), b: String(rango[1]), csrfmiddlewaretoken: campo("csrfmiddlewaretoken").value });
+        const funcion = campo("funcion").value;
+        const post = new URLSearchParams({ funcion, a: String(rango[0]), b: String(rango[1]), csrfmiddlewaretoken: campo("csrfmiddlewaretoken").value });
         estado.textContent = "Actualizando gráfica…";
         try {
             const response = await fetch(new URL(datos.grafica_url, window.location.href), {
@@ -301,15 +332,17 @@
             ayudaGrafica.hidden = false;
             await (inicializacion ??= iniciar());
             if (n !== generacion) return;
+            if (funcionMuestreada !== funcion) funcionMuestreada = undefined;
             await Plotly.restyle(grafica, { x: [puntos.x], y: [puntos.y], customdata: [etiquetas(puntos.x, puntos.y, 10)] }, [0]);
             if (n !== generacion) return;
+            funcionMuestreada = funcion;
             if (moverEjes) {
-                mutando = true;
-                await Plotly.relayout(grafica, { "xaxis.range": rango, "yaxis.autorange": true });
-                mutando = false;
+                await cambiarGrafica(() => Plotly.relayout(grafica, { "xaxis.range": rango, "yaxis.autorange": true }));
                 if (n !== generacion) return;
             }
             await sincronizarExtremos();
+            if (n !== generacion) return;
+            await actualizarEvidencia();
             if (n !== generacion) return;
             seleccion.hidden = false;
             const dominio = puntos.y.some(y => y === null)
@@ -349,6 +382,7 @@
         // Invalidar también durante la espera evita pintar una respuesta de la entrada anterior.
         generacion++;
         peticion?.abort();
+        actualizarEvidencia();
         if (!campo("funcion").value.trim()) {
             grafica.hidden = true;
             ayudaGrafica.hidden = true;
@@ -394,7 +428,7 @@
             // Acercar y alejar sin rueda; «Vista inicial» y «Enfocar» sustituyen al reinicio de Plotly.
             modeBarButtons: [["zoomIn2d", "zoomOut2d"]] });
         grafica.on("plotly_relayout", cambio => {
-            if (mutando || grafica.hidden) return;
+            if (mutacionesGrafica || grafica.hidden) return;
             let cambioExtremos = false;
             extremos.forEach((nombre, i) => {
                 const x = cambio[`shapes[${i}].x0`] ?? cambio[`shapes[${i}].x1`] ?? cambio.shapes?.[i]?.x0;
@@ -435,9 +469,6 @@
             Plotly.restyle(grafica, { "line.color": color("--color-warning"), "marker.color": color("--color-warning"),
                 "textfont.color": color("--color-text") }, [2]);
         }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-estilo"] });
-        if (pasos.length) mostrarPaso(actual >= primero ? actual : primero);
-        else if (resumen) Plotly.restyle(grafica, { x: [[resumen.x]], y: [[resumen.fx]], text: [[resumen.nombre]],
-            customdata: [etiquetas([resumen.x], [resumen.fx], 12)] }, [1]);
     }
 
     // Rueda sobre la gráfica = zoom. Si la rueda ya venía desplazando la página y la gráfica
@@ -579,7 +610,10 @@
     form.addEventListener("input", actualizarEnlaces);
     actualizarEnlaces();
     campo("funcion").addEventListener("input", previsualizar);
-    extremos.forEach(n => campo(n).addEventListener("input", sincronizarExtremos));
+    extremos.forEach(n => campo(n).addEventListener("input", () => {
+        sincronizarExtremos();
+        actualizarEvidencia();
+    }));
     elegir.forEach(boton => boton.addEventListener("click", () => {
         extremoElegido = extremoElegido === boton.dataset.elegirExtremo ? null : boton.dataset.elegirExtremo;
         elegir.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.elegirExtremo === extremoElegido)));
@@ -587,7 +621,7 @@
     }));
     $("grafica-restablecer").addEventListener("click", () => muestrear(vistaInicial, true));
     $("grafica-enfocar").addEventListener("click", () => {
-        const rango = pasos.length ? vistaPaso(pasos[Math.max(actual, 1) - 1]) : vistaEntrada();
+        const rango = pasos.length && !vistaPrevia() ? vistaPaso(pasos[Math.max(actual, 1) - 1]) : vistaEntrada();
         if (valido(rango)) muestrear(rango, true);
         else estado.textContent = intervalo ? "Escribe a y b, con a < b, para enfocar su intervalo."
             : `Escribe ${extremos.map(rotulo).join(" y ")} para enfocar su entorno.`;

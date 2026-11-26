@@ -147,6 +147,11 @@
             ok(q(w,"#paso-breve").textContent.includes("Se detiene"),"Explica la parada");
             w=await resolver(frame,{funcion:"x^2-4",x0:"3",x1:"2"});
             ok(!q(w,"#iteracion-raices")&&g(w).data[1].x[0]===2,"Raíz inicial marcada sin pasos");
+            valor(w, "funcion", "x²-9");
+            await esperar(() => g(w).data[1].visible === false, "La raíz anterior se oculta en la vista previa");
+            valor(w, "funcion", "x^2-4");
+            await esperar(() => g(w).data[1].visible !== false && g(w).data[1].x[0] === 2,
+                "La raíz inicial vuelve con los datos del cálculo");
         }],
         ["Teclado matemático solo en la función", async w=>{
             const c=q(w,'[name="funcion"]');c.focus();
