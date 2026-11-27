@@ -287,9 +287,9 @@ permisos de administrador. Para probarlo en local, mapea en una Sandbox los dos
 instaladores y el script, y ejecuta en ella:
 
 ```powershell
-$sha256 = (Get-FileHash C:\Pruebas\PyGebra-Setup-0.20.2.exe -Algorithm SHA256).Hash
-.\test_windows_distribution.ps1 -InstallerPath C:\Pruebas\PyGebra-Setup-0.20.2.exe `
-  -PreviousInstallerPath C:\Pruebas\PyGebra-Setup-0.20.1.exe -AutoUpdate -InstallerSha256 $sha256
+$sha256 = (Get-FileHash C:\Pruebas\PyGebra-Setup-0.20.3.exe -Algorithm SHA256).Hash
+.\test_windows_distribution.ps1 -InstallerPath C:\Pruebas\PyGebra-Setup-0.20.3.exe `
+  -PreviousInstallerPath C:\Pruebas\PyGebra-Setup-0.20.2.exe -AutoUpdate -InstallerSha256 $sha256
 ```
 
 La Sandbox puede tener la red desactivada: así se comprueba además que la base no

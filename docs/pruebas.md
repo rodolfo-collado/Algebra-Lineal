@@ -144,6 +144,40 @@ actualización manual desde la v0.20.2 publicada y autoactualización desde la
 v0.20.1 publicada, con y sin acceso de escritorio. Todo correcto. Véase
 [Autoactualización desde la app instalada](instalacion-windows.md).
 
+## Validación de la release v0.20.3 (2026-11-26)
+
+Sobre `develop` en `6a51689` (#151–#161 fusionados), reconciliado con `main` sin
+cambios de contenido, y con la versión 0.20.3.
+
+- `unittest discover` desde PowerShell: 2159 pruebas correctas, sin omisiones.
+  También pasan `uv lock --check`, `manage.py check`, `compileall` y
+  `git diff --check`.
+- La selección de CI en local (`node tests/navegador.mjs`): 10 de 10 runners.
+- Build de PyInstaller e Inno Setup 6.7.3: `PyGebra-Setup-0.20.3.exe`, EXE con
+  versión 0.20.3.
+- Windows Sandbox con la red desactivada, con la v0.20.2 publicada como base
+  (SHA-256 igual al de la release): autoactualización desde la app instalada, con
+  y sin acceso de escritorio, con preferencias y accesos conservados; instalación
+  limpia, actualización manual y desinstalación. La CA de prueba se retiró.
+
+CI usa como base de la autoactualización la release anterior al candidato, que
+para 0.20.3 es la v0.20.2.
+
+### Pendiente de validación manual
+
+Además de lector de pantalla y pantalla táctil
+([tabla](#lo-que-no-cubre-ninguna-prueba-automatizada)):
+
+| Requiere | Qué falta comprobar sobre el ejecutable |
+|---|---|
+| Portapapeles nativo | Ctrl+C y Ctrl+V de celdas y selecciones entre herramientas |
+| Portapapeles nativo | Copiar y pegar entre PyGebra y Excel o Google Sheets |
+| Portapapeles nativo | Copiar, cortar y pegar desde el menú contextual de edición |
+| Portapapeles nativo | «Copiar tabla (CSV)» de Métodos iterativos |
+
+Los runners no se repitieron dentro del WebView2 del ejecutable en esta ronda; la
+última vez fue la [validación previa](#validación-previa-a-v0203-2026-11-26).
+
 ## Secante y Métodos abiertos, versión 0.18.0 (2026-11-12)
 
 - **Python:** 2.047 pruebas completas correctas (`unittest discover`, desde PowerShell).
