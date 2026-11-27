@@ -52,6 +52,44 @@ jobs:
       - name: Verificar la compilacion
         run: uv run --locked python -m compileall -q actualizador backend frontend tests main.py manage.py desktop.py
 
+  navegador:
+    name: Pruebas de navegador
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.7"
+          enable-cache: true
+
+      # El driver usa WebSocket y fetch globales de Node 22; Chrome ya viene en la imagen.
+      - name: Instalar Node 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Preparar el entorno desde el lockfile
+        run: uv sync --locked
+
+      - name: Ejecutar los runners DOM seleccionados en Chrome sin ventana
+        run: uv run --locked node tests/navegador.mjs
+
+      - name: Conservar el diagnóstico de los runners fallidos
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: navegador-diagnostico
+          path: build/navegador/
+          if-no-files-found: ignore
+          retention-days: 14
+
   windows_python:
     name: Suite Python de Windows
     runs-on: windows-2025
@@ -138,6 +176,36 @@ jobs:
           $installers = @(Get-ChildItem dist/installer/PyGebra-Setup-*.exe)
           if ($installers.Count -ne 1) { throw 'Se esperaba exactamente un instalador.' }
           .\scripts\test_windows_distribution.ps1 -InstallerPath $installers[0].FullName -PreviousInstallerPath $previous[0].FullName -PreviousDesktopIcon
+
+      # Cuenta limpia de nuevo. La base es la release publicada más reciente anterior al
+      # candidato, para que su actualizador lo ofrezca. GitHub se simula; lo demás es real.
+      - name: Probar la autoactualización desde la app instalada
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installers = @(Get-ChildItem dist/installer/PyGebra-Setup-*.exe)
+          if ($installers.Count -ne 1) { throw 'Se esperaba exactamente un instalador.' }
+          $candidate = [version]($installers[0].Name -replace '^PyGebra-Setup-(\d+\.\d+\.\d+)\.exe$', '$1')
+          $tags = @(gh release list --repo $env:GITHUB_REPOSITORY --exclude-drafts --exclude-pre-releases --limit 100 --json tagName --jq '.[].tagName')
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudieron listar las releases publicadas.' }
+          $base = $tags | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' -and [version]$_.Substring(1) -lt $candidate } |
+            Sort-Object { [version]$_.Substring(1) } | Select-Object -Last 1
+          if (-not $base) { throw "No hay una release publicada anterior a $candidate." }
+          $directory = Join-Path $env:RUNNER_TEMP 'release-base-autoactualizacion'
+          New-Item -ItemType Directory -Path $directory -Force | Out-Null
+          gh release download $base --repo $env:GITHUB_REPOSITORY --pattern 'PyGebra-Setup-*.exe' --pattern SHA256SUMS.txt --dir $directory
+          if ($LASTEXITCODE -ne 0) { throw "No se pudo descargar la release $base." }
+          $previous = @(Get-ChildItem -LiteralPath $directory -Filter 'PyGebra-Setup-*.exe')
+          if ($previous.Count -ne 1) { throw 'Se esperaba exactamente un instalador publicado.' }
+          $line = @(Get-Content -LiteralPath (Join-Path $directory 'SHA256SUMS.txt') | Where-Object { ($_ -split '\s+')[1] -eq $previous[0].Name })
+          if ($line.Count -ne 1) { throw 'SHA256SUMS.txt no tiene una entrada única para el instalador publicado.' }
+          if ((Get-FileHash -LiteralPath $previous[0].FullName -Algorithm SHA256).Hash -ne ($line[0] -split '\s+')[0]) { throw 'El instalador publicado no coincide con su SHA-256.' }
+          # El SHA-256 del candidato es el que publicaría SHA256SUMS.txt.
+          $sha256 = (Get-FileHash -LiteralPath $installers[0].FullName -Algorithm SHA256).Hash
+          Write-Host "Base $base → candidato $candidate ($sha256)"
+          .\scripts\test_windows_distribution.ps1 -InstallerPath $installers[0].FullName -PreviousInstallerPath $previous[0].FullName -AutoUpdate -InstallerSha256 $sha256
 
       - name: Conservar instalador para revisión
         if: ${{ !cancelled() }}

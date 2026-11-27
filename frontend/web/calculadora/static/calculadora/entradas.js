@@ -83,8 +83,76 @@
         return registro;
     }
 
+    // Cuadrículas con celdas `celda_<matriz>_<i>_<j>` (Determinantes, Inversa y Ax=b). La matriz
+    // aumentada (`data-cell`) y Operaciones (`data-campo`) siguen otras convenciones y no las usan.
+
+    // Mismo marcado que components/matriz_entrada.html y matriz_celda.html entregan con
+    // Aplicar sin JavaScript. `memoria` (nombre del campo → texto) restaura lo escrito.
+    function crearCuadricula(nombre, filas, columnas, memoria, vector = false) {
+        const matriz = document.getElementById("matrix-entry-template").content.cloneNode(true).querySelector("fieldset");
+        const celdaTemplate = document.getElementById("matrix-cell-template");
+        const tipo = vector ? "Vector" : "Matriz";
+        matriz.dataset.matriz = nombre;
+        matriz.toggleAttribute("data-vector", vector);
+        matriz.querySelector("[data-tipo-matriz]").textContent = tipo;
+        matriz.querySelector("[data-nombre-matriz]").textContent = nombre;
+        matriz.querySelector("table").setAttribute("aria-label", `${tipo} ${nombre}`);
+        matriz.querySelector(".matrix-scroll").setAttribute("aria-label",
+            vector ? `Componentes del vector ${nombre}` : `Entradas de la matriz ${nombre}`);
+        const cuerpo = matriz.querySelector("tbody");
+        for (let i = 0; i < filas; i += 1) {
+            const fila = document.createElement("tr");
+            for (let j = 0; j < columnas; j += 1) {
+                const celda = celdaTemplate.content.cloneNode(true);
+                const input = celda.querySelector("input");
+                input.name = `celda_${nombre}_${i}_${j}`;
+                input.id = `id_${input.name}`;
+                input.value = memoria.get(input.name) ?? "";
+                const label = celda.querySelector("label");
+                label.htmlFor = input.id;
+                label.textContent = vector ? `Vector ${nombre}, componente ${i + 1}` : `Matriz ${nombre}, fila ${i + 1}, columna ${j + 1}`;
+                fila.append(celda);
+            }
+            cuerpo.append(fila);
+        }
+        return matriz;
+    }
+
+    const DESPLAZAMIENTOS = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+
+    // Tab recorre todos los campos. Las flechas verticales cambian de fila; las horizontales
+    // solo cambian de celda al llegar al extremo del texto. El destino conserva el nombre de
+    // la matriz: desde el borde de A no se salta a B ni a b.
+    function moverEntreCeldas(ambito) {
+        ambito.addEventListener("keydown", event => {
+            const input = event.target;
+            const delta = DESPLAZAMIENTOS[event.key];
+            if (!delta || !flechaDeCelda(event) || !input.name.startsWith("celda_")) return;
+            const [, nombre, i, j] = input.name.split("_");
+            const destino = ambito.querySelector(`[name="celda_${nombre}_${Number(i) + delta[0]}_${Number(j) + delta[1]}"]`);
+            if (destino && !destino.readOnly && !destino.matches(":disabled")) {
+                event.preventDefault();
+                destino.focus();
+            }
+        });
+    }
+
+    // Botones − y + de matrices/_dimension.html, ocultos sin JavaScript. Desde un valor
+    // inválido parten del mínimo; el evento input deja que la herramienta redibuje.
+    function activarPasos(ambito) {
+        ambito.querySelectorAll(".stepper [data-paso]").forEach(button => {
+            button.hidden = false;
+            button.addEventListener("click", () => {
+                const input = button.closest(".stepper").querySelector("input");
+                const actual = dimensionValida(input) ? Number(input.value) : Number(input.min);
+                input.value = String(Math.min(Number(input.max), Math.max(Number(input.min), actual + Number(button.dataset.paso))));
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+        });
+    }
+
     window.entradasSeguras = { dimensionValida, validarDimension, flechaDeCelda, filasDeMatriz,
-        bloqueDeTexto, aplicarPegado };
+        bloqueDeTexto, aplicarPegado, crearCuadricula, moverEntreCeldas, activarPasos };
 
     // Solo texto tabulado; las filas/celdas existentes deciden el destino.
     // Las líneas vacías de los extremos (la terminación de una hoja de cálculo o un salto

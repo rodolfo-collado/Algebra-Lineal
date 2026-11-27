@@ -38,17 +38,14 @@ def aplicar_gauss(matriz, columnas_pivote=None):
         if fila_pivote >= cantidad_filas:
             break
 
-        # Búsqueda del pivote
         fila_encontrada = buscar_fila_pivote(matriz_escalonada, fila_pivote, columna)
         if fila_encontrada is None:
             # Columna sin pivote: se salta sin avanzar la fila del pivote.
             continue
 
-        # Intercambio de filas
         if fila_encontrada != fila_pivote:
             intercambiar_filas(matriz_escalonada, pasos, fila_pivote, fila_encontrada)
 
-        # Normalización del pivote
         pivote = matriz_escalonada[fila_pivote][columna]
         if pivote != 1:
             normalizar_fila(matriz_escalonada, pasos, fila_pivote, pivote)

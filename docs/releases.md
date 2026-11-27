@@ -430,6 +430,65 @@ Para una versión posterior quedan admitir `x, y, z` en el analizador compartido
 trasladar las ecuaciones a las celdas al cambiar de modo y mostrar las ecuaciones
 reescritas en el resultado de Métodos iterativos.
 
+## Preparación de v0.20.3
+
+Incremento **PATCH** desde v0.20.2: correcciones, refactorización y
+estabilización derivadas de las auditorías técnicas. No añade herramientas ni
+métodos, y no cambia rutas, formularios, algoritmos ni criterios de parada,
+salvo la detección de ciclos de Secante que se describe abajo.
+
+### Notas preparadas de PyGebra v0.20.3
+
+#### Correcciones matemáticas y funcionales
+
+- **Ciclos de Secante.** Solo se declara oscilación cuando se repite la pareja de
+  aproximaciones (xₙ₋₁, xₙ), no una abscisa suelta. Antes podía detenerse un
+  cálculo que todavía avanzaba.
+  [#151](https://github.com/Collado-Labs/Algebra-Lineal/pull/151)
+- **Jacobi y Gauss-Seidel.** El mensaje «cambio 0» solo aparece cuando la
+  primera iteración no mueve x.
+  [#152](https://github.com/Collado-Labs/Algebra-Lineal/pull/152)
+- **Conjuntos.** La recta ya no falla en escalas extremas, cada error aparece en
+  su campo una sola vez y el procedimiento de inclusión-exclusión de tres
+  conjuntos usa el mismo orden de términos que la tarjeta.
+  [#153](https://github.com/Collado-Labs/Algebra-Lineal/pull/153)
+- **Navegación.** Un fragmento de URL malformado ya no deja el explorador del
+  área sin manejo de teclado.
+  [#154](https://github.com/Collado-Labs/Algebra-Lineal/pull/154)
+- **Gráficas de raíces.** Al editar la función o el intervalo se ocultan los
+  puntos y rótulos del cálculo anterior hasta restaurar la entrada o recalcular.
+  [#155](https://github.com/Collado-Labs/Algebra-Lineal/pull/155)
+
+#### Refactorización y eficiencia
+
+Cambios internos: los resultados y las pantallas son los mismos.
+
+- El producto matricial con procedimiento multiplica cada término una sola vez.
+  [#156](https://github.com/Collado-Labs/Algebra-Lineal/pull/156)
+- La validación del formulario de Operaciones queda separada por fases.
+  [#157](https://github.com/Collado-Labs/Algebra-Lineal/pull/157)
+- Determinantes, Matriz inversa y Ax = b comparten la construcción de
+  cuadrículas, el movimiento con flechas y los botones de dimensión.
+  [#159](https://github.com/Collado-Labs/Algebra-Lineal/pull/159)
+
+#### Calidad del código y documentación
+
+- Convenciones de calidad en `CONTRIBUTING.md`, contratos de los algoritmos
+  públicos y lista completa de preferencias persistentes.
+  [#158](https://github.com/Collado-Labs/Algebra-Lineal/pull/158)
+
+#### Pruebas automatizadas y fiabilidad de la distribución
+
+- CI ejecuta una selección de 10 runners DOM en Chrome sin ventana.
+  [#160](https://github.com/Collado-Labs/Algebra-Lineal/pull/160)
+- CI prueba la autoactualización desde la app instalada: la release anterior
+  descarga, verifica e instala el candidato con su propio actualizador, con
+  GitHub simulado. Se comprueban preferencias y accesos.
+  [#161](https://github.com/Collado-Labs/Algebra-Lineal/pull/161)
+
+Las comprobaciones con lector de pantalla, pantalla táctil y portapapeles nativo
+siguen siendo [manuales](pruebas.md#pendiente-de-validación-manual).
+
 ## Flujo de integración y entrega
 
 ```mermaid

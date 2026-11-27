@@ -691,8 +691,22 @@ traspuesta, también la posición de origen; en `AB` y `Ax`, los productos
 `(A(B + C))₁₁ = fila₁(A) · columna₁(B + C)`. `opciones_matrices.py` guarda los
 nombres de las lecturas y sus identificadores compartidos entre `AB` y `Ax`.
 
-`components/matriz_entrada.html` y `matriz_celda.html` (Resolver Ax = b e
-inversa) representan cuadrículas editables; `components/matriz.html` muestra
+`components/matriz_entrada.html` y `matriz_celda.html` (Resolver Ax = b,
+Inversa y Determinantes) representan cuadrículas editables. En el cliente, esas
+tres herramientas comparten desde `entradas.js` lo que hacen igual con celdas
+`celda_<matriz>_<i>_<j>`: `crearCuadricula` redibuja A, B o b con las mismas
+plantillas inertes que entrega Aplicar y restaura lo escrito desde la memoria
+de cada herramienta; `moverEntreCeldas` mueve el foco con las flechas sin salir
+de la matriz (desde el borde de A no se salta a B ni a b); `activarPasos`
+conecta los botones − y + de `_dimension.html`. Cada controlador conserva lo
+suyo: cuándo guarda la memoria, qué piezas redibuja (B o b, la incógnita x), el
+selector de método y la elección del determinante. La matriz aumentada
+(`matriz.js`) y Operaciones con matrices (`expresiones.js`) comparten solo
+`flechaDeCelda`: la primera recorre por `data-cell` una cuadrícula que incluye
+la columna b, y la segunda busca el destino por `data-fila` y `data-columna`
+dentro de la tarjeta de cada operando, cuyos índices cambian al agregar o
+eliminar símbolos.
+`components/matriz.html` muestra
 valores o expresiones con corchetes, sin columna aumentada por defecto, y con
 una sola columna dibuja un vector columna. `matrix.html` es el adaptador de
 sistemas con `aumentada=True`.
@@ -961,10 +975,13 @@ comportamiento de su navegador.
   datos que produjeron el resultado, no ediciones posteriores que lo dejarían
   vigente por error. En navegadores con bfcache, `pageshow` restaura estilo, riel, tema
   y formato numérico (secciones anteriores).
-- **Preferencias.** Entre aperturas solo se conservan `pygebra-tema`,
-  `pygebra-formato-numerico`, `pygebra-precision-decimal`, `pygebra-estilo`,
+- **Preferencias.** Entre aperturas solo se conservan las claves de
+  `preferencias.VALORES`: `pygebra-tema`, `pygebra-formato-numerico`,
+  `pygebra-precision-decimal`, `pygebra-raices-decimales`, `pygebra-estilo`,
   `pygebra-sonido`, `pygebra-volumen`, `pygebra-musica-volumen` y
-  `pygebra-musica-pieza`. WebView2 corre en
+  `pygebra-musica-pieza`. De la música se recuerdan el volumen y la pieza
+  elegida, no si sonaba: cada visita empieza en silencio porque el encendido
+  vive en `sessionStorage`. WebView2 corre en
   modo privado y Django las guarda en `%LOCALAPPDATA%\PyGebra\preferencias.json`
   (`POST /preferencias/` con CSRF, lista blanca de claves y valores, escritura
   atómica) y las pinta como `data-pygebra-…` en `<html>`. Durante la ejecución

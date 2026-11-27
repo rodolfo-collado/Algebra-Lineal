@@ -2,6 +2,7 @@
 
 import os
 import re
+from fractions import Fraction
 from html.parser import HTMLParser
 from unittest.mock import patch
 
@@ -354,3 +355,139 @@ class PruebasIgualdadWeb(SimpleTestCase):
             {"nombre": "C", "tipo": "matriz", "valor": [[1, 2, 3]]},
             {"nombre": "D", "tipo": "matriz", "valor": [[1, 0], [0, 1]]},
         )), "En el lado izquierdo")
+
+
+class PruebasCaracterizacionFormulario(SimpleTestCase):
+    """Lo que ExpresionMatricialForm entrega a la vista: `estado` para redibujar o `entrada` para calcular.
+
+    Fija el orden de las validaciones (cada fase con errores detiene las siguientes),
+    el campo de cada mensaje y el armado de los operandos de cada tipo.
+    """
+
+    OPERANDOS = (
+        {"nombre": "A", "tipo": "matriz", "valor": [[1, "1/2"], [3, "-4"]]},
+        {"nombre": "u", "tipo": "vector", "valor": [4, "0.5"]},
+        {"nombre": "k", "tipo": "escalar", "valor": "2/3"},
+        {"nombre": "w", "tipo": "vector_lineal", "valor": ["3x1 - 2x2", "x2"]},
+        {"nombre": "X", "tipo": "matriz_desconocida", "filas": 2, "columnas": 1},
+        {"nombre": "y", "tipo": "vector_simbolico", "filas": 2},
+    )
+    GRANDES = tuple({"nombre": f"M{i}", "tipo": "matriz", "valor": [[1] * 10 for _ in range(10)]} for i in range(10))
+
+    def formulario(self, datos, accion=None):
+        form = ExpresionMatricialForm(datos, accion=accion)
+        form.is_valid()
+        return form
+
+    def errores(self, datos, accion=None):
+        return [(campo, list(mensajes)) for campo, mensajes in self.formulario(datos, accion).errors.items()]
+
+    def test_calcular_arma_un_operando_de_cada_tipo(self):
+        form = self.formulario(datos_expresion(" k*A*u + w ", self.OPERANDOS, nodo=" 2 ", metodo="columnas"))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertNotIn("estado", form.cleaned_data)
+        self.assertEqual(form.cleaned_data["entrada"], {
+            "expresion": "k*A*u + w",
+            "simbolos": {
+                "A": {"tipo": "matriz", "valor": [[1, Fraction(1, 2)], [3, -4]]},
+                "u": {"tipo": "vector", "valor": [4, Fraction(1, 2)]},
+                "k": {"tipo": "escalar", "valor": Fraction(2, 3)},
+                "w": {"tipo": "vector_lineal", "valor": ["3x1 - 2x2", "x2"]},
+                "X": {"tipo": "matriz_desconocida", "filas": 2, "columnas": 1},
+                "y": {"tipo": "vector_simbolico", "filas": 2},
+            },
+            "nodo": "2", "metodo": "columnas",
+        })
+        sin_nodo = self.formulario(datos_expresion("A", self.OPERANDOS[:1])).cleaned_data["entrada"]
+        self.assertEqual((sin_nodo["nodo"], sin_nodo["metodo"]), (None, "fila_columna"))
+
+    def test_las_acciones_redibujan_sin_calcular_ni_exigir_celdas(self):
+        datos = datos_expresion("", self.OPERANDOS[:3], metodo="comparar")
+        datos["celda_0_0_1"] = ""  # una celda vacía no impide editar la estructura
+        esperado = {
+            "expresion": "", "cantidad": 3, "metodo": "comparar",
+            "nombre_0": "A", "tipo_0": "matriz", "filas_0": 2, "columnas_0": 2,
+            "celda_0_0_0": "1", "celda_0_0_1": "", "celda_0_1_0": "3", "celda_0_1_1": "-4",
+            "nombre_1": "u", "tipo_1": "vector", "filas_1": 2, "celda_1_0_0": "4", "celda_1_1_0": "0.5",
+            "nombre_2": "k", "tipo_2": "escalar", "celda_2_0_0": "2/3",
+        }
+        ajustado = self.formulario(dict(datos, ajustar="1"), "ajustar")
+        self.assertNotIn("entrada", ajustado.cleaned_data)
+        self.assertEqual(ajustado.cleaned_data["estado"], esperado)
+        agregado = self.formulario(dict(datos, agregar="1"), "agregar").cleaned_data["estado"]
+        self.assertEqual(agregado, esperado | {
+            "cantidad": 4, "nombre_3": "B", "tipo_3": "matriz", "filas_3": 2, "columnas_3": 2,
+            "celda_3_0_0": "", "celda_3_0_1": "", "celda_3_1_0": "", "celda_3_1_1": "",
+        })
+        eliminado = self.formulario(dict(datos, eliminar="0"), "eliminar").cleaned_data["estado"]
+        self.assertEqual(eliminado, {
+            "expresion": "", "cantidad": 2, "metodo": "comparar",
+            "nombre_0": "u", "tipo_0": "vector", "filas_0": 2, "celda_0_0_0": "4", "celda_0_1_0": "0.5",
+            "nombre_1": "k", "tipo_1": "escalar", "celda_1_0_0": "2/3",
+        })
+        # Sin JS, Aplicar con otra dimensión conserva lo escrito y dibuja vacías las celdas nuevas.
+        html = self.client.post(RUTA, dict(datos, filas_0="3", ajustar="1")).content.decode()
+        self.assertIn('name="celda_0_2_1"', html)
+        self.assertRegex(html, r'name="celda_0_1_1" value="-4"')
+        self.assertNotIn('id="resultado"', html)
+
+    def test_cada_fase_con_errores_detiene_las_siguientes(self):
+        base = datos_expresion("A*u", self.OPERANDOS[:2])
+        nombre_y_celda = dict(base, nombre_0="1A")
+        del nombre_y_celda["celda_1_1_0"]
+        lineal_y_presupuesto = datos_expresion("+".join(["w"] * 60), self.OPERANDOS[3:4])
+        lineal_y_presupuesto["celda_0_0_0"] = "3x1 +"
+        casos = (
+            # Nombres y dimensiones, antes que el contrato de celdas.
+            (nombre_y_celda, None, [("nombre_0", ["Usa una letra seguida de letras o dígitos, como A, u o k."])]),
+            (dict(base, nombre_1="A"), None, [("nombre_1", ["El operando A está repetido."])]),
+            (dict(base, filas_0="", ajustar="1"), "ajustar", [("filas_0", ["Indica el número de filas."])]),
+            # La expresión vacía se informa antes de leer las celdas.
+            (dict(base, expresion=" ", celda_0_0_0="abc"), None, [("expresion", ["Escribe una expresión."])]),
+            # Celdas y componentes lineales se informan juntos, antes del presupuesto de la expresión.
+            (dict(base, celda_0_0_0="abc", celda_1_0_0=""), None, [
+                ("celda_0_0_0", ["'abc' no es un número válido."]),
+                ("celda_1_0_0", ["Completa vector u, componente 1."]),
+            ]),
+            (lineal_y_presupuesto, None, [("celda_0_0_0", ["La expresión está incompleta."])]),
+            (datos_expresion("+".join(["A"] * 60), self.OPERANDOS[:1]), None, [("expresion", [
+                "La expresión tiene 60 operandos y la interfaz admite hasta 50: "
+                "cada aparición de un operando o de un número cuenta."])]),
+            (datos_expresion("+".join(["A"] * 10), (dict(self.GRANDES[0], nombre="A"),)), None, [("expresion", [
+                "Los operandos de la expresión suman 1000 entradas y la interfaz admite hasta 900: "
+                "cada aparición de un operando cuenta todas sus entradas."])]),
+            # La sintaxis la explica el servicio al evaluar.
+            (dict(base, expresion="A + * ("), None, []),
+            (dict(base, eliminar="5"), "eliminar", [("__all__", ["No se puede eliminar ese operando."])]),
+        )
+        for datos, accion, esperado in casos:
+            with self.subTest(esperado=esperado, accion=accion):
+                self.assertEqual(self.errores(datos, accion), esperado)
+
+    def test_contrato_y_presupuestos_de_la_estructura(self):
+        incompleto = datos_expresion("A", self.OPERANDOS[:1])
+        del incompleto["celda_0_1_1"]
+        form = self.formulario(incompleto)
+        self.assertEqual(form.errors["__all__"], [
+            "Las celdas recibidas no coinciden con los operandos indicados. Pulsa Aplicar para ajustar la estructura."])
+        self.assertEqual(form.grupo_error, "symbol-list")
+        # Con una acción solo se rechazan los campos ajenos: las celdas pueden faltar.
+        self.assertTrue(self.formulario(dict(incompleto, ajustar="1"), "ajustar").is_valid())
+        self.assertFalse(self.formulario(dict(incompleto, intruso="1", ajustar="1"), "ajustar").is_valid())
+        for accion in (None, "ajustar"):
+            with self.subTest(accion=accion):
+                datos = datos_expresion("M0", self.GRANDES, **({accion: "1"} if accion else {}))
+                form = self.formulario(datos, accion)
+                self.assertEqual(form.errors["__all__"], [
+                    "Los 10 operandos suman 1000 celdas y la interfaz admite hasta 900: "
+                    "quita operandos o reduce sus dimensiones."])
+                self.assertEqual(form.grupo_error, "symbol-list")
+        escalares = [{"nombre": f"k{i}", "tipo": "escalar", "valor": 1} for i in range(50)]
+        for operandos, mensaje in (
+            (self.GRANDES[:9], "No se puede agregar otro operando: una matriz 2×2 más no cabe. Los 10 operandos "
+                               "suman 904 celdas y la interfaz admite hasta 900: quita operandos o reduce sus dimensiones."),
+            (escalares, "No se puede agregar otro operando: la interfaz admite hasta 50."),
+        ):
+            with self.subTest(mensaje=mensaje):
+                form = self.formulario(datos_expresion("", operandos, agregar="1"), "agregar")
+                self.assertEqual(form.errors["__all__"], [mensaje])

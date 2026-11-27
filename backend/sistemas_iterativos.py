@@ -94,7 +94,17 @@ def _registrar(k, a, b, x, cambio=None):
 
 def resolver_iterativo(a, b, metodo, *, inicial=None, tolerancia=TOLERANCIA,
                        max_iteraciones=ITERACIONES_PREDETERMINADAS):
-    """Resuelve con aritmética de máquina y conserva fila inicial y aproximaciones finitas."""
+    """Aplica Jacobi o Gauss-Seidel a Ax = b con los despejes en el orden de filas recibido.
+
+    Las aproximaciones se calculan en float; el residuo b − Ax⁽ᵏ⁾ se calcula con los coeficientes
+    exactos ingresados (`Fraction`). `iteraciones[0]` es la entrada (k = 0, con `cambio` None);
+    cada fila k ≥ 1 guarda x⁽ᵏ⁾, el cambio máx |xᵢ⁽ᵏ⁾ − xᵢ⁽ᵏ⁻¹⁾| y la norma máxima del residuo.
+    Siempre se calcula al menos x⁽¹⁾, aunque x⁽⁰⁾ ya resuelva el sistema. `estado` es
+    "convergio" cuando cambio y norma del residuo son estrictamente menores que la tolerancia,
+    "rango" si la siguiente aproximación no es finita (no se registra) y "limite" al agotar
+    `max_iteraciones`. La dominancia diagonal solo se informa; no se exige. Una diagonal nula o
+    datos no finitos lanzan ValueError.
+    """
     if metodo not in ("jacobi", "gauss_seidel"):
         raise ValueError("Elige Jacobi o Gauss-Seidel.")
     if not isinstance(a, Sequence) or not a:

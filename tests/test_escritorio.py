@@ -281,9 +281,15 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
     def test_las_cuadriculas_dejan_alt_flechas_al_historial(self):
         compartido = (STATIC / "entradas.js").read_text(encoding="utf-8")
         self.assertIn("event.altKey", compartido)
-        for nombre in ("matriz.js", "ecuaciones.js", "expresiones.js", "inversa.js"):
+        for nombre in ("matriz.js", "expresiones.js"):
             with self.subTest(script=nombre):
                 self.assertIn("window.entradasSeguras.flechaDeCelda(event)", (STATIC / nombre).read_text(encoding="utf-8"))
+        # Las cuadrículas celda_<matriz>_<i>_<j> delegan en moverEntreCeldas, que consulta flechaDeCelda.
+        mover = compartido[compartido.index("function moverEntreCeldas"):compartido.index("function activarPasos")]
+        self.assertIn("flechaDeCelda(event)", mover)
+        for nombre in ("ecuaciones.js", "inversa.js", "determinantes.js"):
+            with self.subTest(script=nombre):
+                self.assertIn("moverEntreCeldas(", (STATIC / nombre).read_text(encoding="utf-8"))
 
     def test_pageshow_restaurado_resincroniza_riel_estilo_y_preferencias(self):
         navegacion = (STATIC / "navigation.js").read_text(encoding="utf-8")
@@ -322,6 +328,13 @@ class PruebasHistorialYRestauracion(SimpleTestCase):
         self.assertEqual(set(preferencias.VALORES), {"pygebra-tema", "pygebra-formato-numerico", "pygebra-precision-decimal",
                                                      "pygebra-raices-decimales", "pygebra-estilo", "pygebra-sonido", "pygebra-volumen",
                                                      "pygebra-musica-volumen", "pygebra-musica-pieza"})
+
+    def test_la_guia_de_escritorio_nombra_todas_las_preferencias_persistentes(self):
+        guia = (Path(__file__).resolve().parents[1] / "docs" / "interfaz.md").read_text(encoding="utf-8")
+        seccion = guia.split("## Escritorio", 1)[1].split("\n## ", 1)[0]
+        for clave in preferencias.VALORES:
+            with self.subTest(clave=clave):
+                self.assertIn(f"`{clave}`", seccion)
 
     def test_volver_no_restaura_formularios_que_no_corresponden_al_resultado(self):
         cliente = Client()

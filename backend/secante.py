@@ -25,6 +25,17 @@ def _flotante(valor):
 
 
 def secante(funcion, x0, x1, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIONES):
+    """Itera la secante desde x₀ ≠ x₁ y devuelve un diccionario serializable con la tabla y su conclusión.
+
+    `funcion` recibe y devuelve floats; cada corte se calcula con diferencias racionales exactas y
+    solo el resultado se redondea a float. Parámetros inválidos (x₀ = x₁, tolerancia fuera de
+    (0, 0.0001], iteraciones fuera de 1–1000) lanzan ValueError. Converge (`estado` "exacta" o
+    "tolerancia", `convergio=True`) si f(x) = 0 en máquina, o si el cambio |xₙ₊₁ − xₙ| y el residuo
+    |f(xₙ₊₁)| no superan la tolerancia y `impedimento_paso_abierto` no objeta el último paso.
+    `x`, `fx` y `residuo` se vuelven a evaluar al terminar (None si no hubo evaluación válida).
+    `iteraciones` reúne los pasos completos; `intento_final`, el paso interrumpido o None.
+    Estados y claves de cada fila: docs/secante.md; clasificaciones: `ClasificacionRaices`.
+    """
     x0, x1, tolerancia = finito(x0), finito(x1), finito(tolerancia)
     if x0 == x1:
         raise ValueError("x₀ y x₁ deben ser distintos: la secante necesita dos puntos.")
@@ -67,7 +78,9 @@ def secante(funcion, x0, x1, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIO
     if fa == 0:
         x, fx = x0, fa
         return resultado("exacta", "El punto x₀ ya da f(x₀) = 0 en aritmética de máquina.")
-    visitados = {x0, x1}
+    # El estado es la pareja ordenada (xₙ₋₁, xₙ): una abscisa que reaparece con otra compañera
+    # define otra recta y puede dar un punto nuevo. Solo una pareja repetida cierra un ciclo.
+    parejas_visitadas = {(x0, x1)}
 
     for i in range(1, max_iteraciones + 1):
         intento_final = {"i": i, "anterior": xa, "fanterior": fa, "actual": x, "factual": fx,
@@ -97,7 +110,8 @@ def secante(funcion, x0, x1, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIO
         intento_final.update(fsiguiente=fnuevo, residuo=abs(fnuevo))
         filas.append(intento_final)
         intento_final = None
-        repetido = nuevo in visitados
+        pareja_siguiente = (x, nuevo)
+        pareja_repetida = pareja_siguiente in parejas_visitadas
         quieto = nuevo == x
         # Se desplazan los dos puntos: xₙ₋₁ ← xₙ y xₙ ← xₙ₊₁.
         anterior, xa, fa, x, fx = xa, x, fx, nuevo, fnuevo
@@ -105,13 +119,13 @@ def secante(funcion, x0, x1, tolerancia=TOLERANCIA, max_iteraciones=MAX_ITERACIO
             return resultado("exacta", "f(x) = 0 en aritmética de máquina.")
         if quieto:
             return resultado("estancamiento", "La máquina repite la aproximación sin obtener cero; no se declara convergencia.")
-        if repetido:
-            return resultado("oscilacion", "Se repite una aproximación anterior: el método entró en un ciclo sin convergencia.")
+        if pareja_repetida:
+            return resultado("oscilacion", "Se repite una pareja de aproximaciones consecutivas: el método entró en un ciclo sin convergencia.")
         # Un cambio pequeño no basta: el residuo también debe cumplir la tolerancia.
         if cambio <= tolerancia and abs(fx) <= tolerancia:
             impedimento = impedimento_paso_abierto(funcion, anterior, xa, x)
             if impedimento:
                 return resultado(*impedimento)
             return resultado("tolerancia", "El cambio y el residuo no superan la tolerancia solicitada.")
-        visitados.add(x)
+        parejas_visitadas.add(pareja_siguiente)
     return resultado("limite", "Se alcanzó el máximo de iteraciones sin cumplir el criterio de convergencia; puede haber divergencia u oscilación.")

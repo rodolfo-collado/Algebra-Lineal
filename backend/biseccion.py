@@ -10,6 +10,14 @@ from .resultados_raices import ClasificacionRaices as Clasificacion
 
 
 def biseccion(funcion, a, b, precision=PRECISION, max_iteraciones=MAX_ITERACIONES):
+    """Biseca [a, b] y devuelve un diccionario serializable con la tabla y su conclusión.
+
+    `preparar_intervalo` valida los parámetros (ValueError) y la aplicabilidad: dominio,
+    continuidad y cambio de signo en los extremos; si fallan, no hay filas y `c` es None.
+    Converge con f(c) = 0 en máquina ("exacta") o cuando la longitud b − a del intervalo
+    actualizado es estrictamente menor que `precision` ("longitud"). `c`, `fc` y `residuo`
+    se vuelven a evaluar al terminar. Estados y claves de cada fila: docs/biseccion.md.
+    """
     inicial, precision, impedimento = preparar_intervalo(funcion, a, b, precision, max_iteraciones)
     a, b, fa, fb = (inicial[k] for k in ("a", "b", "fa", "fb"))
     filas = []

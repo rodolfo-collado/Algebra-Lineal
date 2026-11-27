@@ -305,6 +305,15 @@ class ExpresionMatricialForm(FormularioCeldas):
         return f"Matriz {nombre}, fila {fila + 1}, columna {columna + 1}"
 
     def clean(self):
+        """Valida por fases; la primera fase con errores detiene las siguientes.
+
+        1. Campos del formulario y presupuesto de la estructura.
+        2. Nombre y dimensiones de cada operando.
+        3. Acciones del editor (Aplicar, agregar, eliminar): devuelven `estado`,
+           el formulario que se vuelve a dibujar, sin exigir celdas ni expresión.
+        4. Calcular: expresión, celdas numéricas y componentes lineales, y
+           presupuesto de la expresión. Devuelve `entrada` para el servicio.
+        """
         datos = super().clean()
         self.rechazar_campos_repetidos()
         if self.error_presupuesto:
@@ -312,6 +321,50 @@ class ExpresionMatricialForm(FormularioCeldas):
             self.add_error(None, self.error_presupuesto)
         if self.errors:
             return datos
+        simbolos = self._simbolos_declarados(datos)
+        if self.errors:
+            return datos
+        if self.accion == "eliminar" and not self._indice_eliminar(len(simbolos)):
+            self.add_error(None, "No se puede eliminar ese operando.")
+            return datos
+        if not self._contrato(simbolos):
+            self.grupo_error = "symbol-list"
+            self.add_error(None, "Las celdas recibidas no coinciden con los operandos indicados. Pulsa Aplicar para ajustar la estructura.")
+            return datos
+        if self.accion == "agregar":
+            impedimento = self._impedimento_para_agregar(simbolos)
+            if impedimento:
+                self.add_error(None, impedimento)
+                return datos
+        if self.accion:
+            datos["estado"] = self._estado(simbolos, datos.get("metodo"))
+            return datos
+        expresion = (datos.get("expresion") or "").strip()
+        if not expresion:
+            self.add_error("expresion", "Escribe una expresión.")
+            return datos
+        self.convertir_numeros(datos, self.nombres_celdas)
+        self._validar_componentes_lineales(datos)
+        if self.errors:
+            return datos
+        error = self._error_presupuesto_expresion(expresion, simbolos)
+        if error:
+            self.add_error("expresion", error)
+            return datos
+        nodo = (self.data.get("nodo") or "").strip() or None
+        datos["entrada"] = {
+            "expresion": expresion, "simbolos": self._operandos_para_calcular(datos, simbolos), "nodo": nodo,
+            "metodo": datos.get("metodo") or METODO_PREDETERMINADO,
+        }
+        return datos
+
+    def _simbolos_declarados(self, datos):
+        """Nombre, tipo y dimensiones de cada bloque, sin sus celdas.
+
+        Asocia cada error a su campo. Un nombre inválido deja fuera ese bloque;
+        una dimensión vacía se registra como 1 para que la lista siga completa
+        (`clean` se detiene igualmente por el error).
+        """
         simbolos = []
         vistos = set()
         for bloque in self.bloques:
@@ -324,6 +377,7 @@ class ExpresionMatricialForm(FormularioCeldas):
             if nombre in vistos:
                 self.add_error(f"nombre_{indice}", f"El operando {nombre} está repetido.")
             vistos.add(nombre)
+            # Un escalar no envía filas; solo las matrices envían columnas.
             filas = datos.get(f"filas_{indice}") if tipo != "escalar" else 1
             columnas = datos.get(f"columnas_{indice}") if tipo in _CON_COLUMNAS else 1
             if tipo != "escalar" and filas is None:
@@ -334,34 +388,22 @@ class ExpresionMatricialForm(FormularioCeldas):
                 "indice": indice, "nombre": nombre, "tipo": tipo,
                 "filas": filas or 1, "columnas": columnas or 1,
             })
-        if self.errors:
-            return datos
-        if self.accion == "eliminar" and not self._indice_eliminar(len(simbolos)):
-            self.add_error(None, "No se puede eliminar ese operando.")
-            return datos
-        if not self._contrato(simbolos):
-            self.grupo_error = "symbol-list"
-            self.add_error(None, "Las celdas recibidas no coinciden con los operandos indicados. Pulsa Aplicar para ajustar la estructura.")
-            return datos
-        if self.accion == "agregar":
-            if len(simbolos) >= OPERANDOS_MAXIMOS:
-                self.add_error(None, f"No se puede agregar otro operando: la interfaz admite hasta {OPERANDOS_MAXIMOS}.")
-                return datos
-            otra = presupuesto_estructura([
-                *((s["tipo"], s["filas"], s["columnas"]) for s in simbolos),
-                ("matriz", DIMENSION_PREDETERMINADA, DIMENSION_PREDETERMINADA),
-            ])
-            if otra:
-                self.add_error(None, f"No se puede agregar otro operando: una matriz 2×2 más no cabe. {otra}")
-                return datos
-        if self.accion:
-            datos["estado"] = self._estado(simbolos, datos.get("metodo"))
-            return datos
-        expresion = (datos.get("expresion") or "").strip()
-        if not expresion:
-            self.add_error("expresion", "Escribe una expresión.")
-            return datos
-        self.convertir_numeros(datos, self.nombres_celdas)
+        return simbolos
+
+    def _impedimento_para_agregar(self, simbolos):
+        """Por qué no cabe otro operando (una matriz 2×2 nueva), o None si cabe."""
+        if len(simbolos) >= OPERANDOS_MAXIMOS:
+            return f"No se puede agregar otro operando: la interfaz admite hasta {OPERANDOS_MAXIMOS}."
+        otra = presupuesto_estructura([
+            *((s["tipo"], s["filas"], s["columnas"]) for s in simbolos),
+            ("matriz", DIMENSION_PREDETERMINADA, DIMENSION_PREDETERMINADA),
+        ])
+        if otra:
+            return f"No se puede agregar otro operando: una matriz 2×2 más no cabe. {otra}"
+        return None
+
+    def _validar_componentes_lineales(self, datos):
+        """Cada componente de un vector lineal debe ser una expresión lineal; se conserva como texto."""
         for clave in self.nombres_lineales:
             texto = (datos.get(clave) or "").strip()
             if not texto:
@@ -373,43 +415,48 @@ class ExpresionMatricialForm(FormularioCeldas):
                 self.add_error(clave, str(error))
             else:
                 datos[clave] = texto
-        if self.errors:
-            return datos
+
+    @staticmethod
+    def _error_presupuesto_expresion(expresion, simbolos):
+        """Mensaje si la expresión excede el presupuesto; None si cabe o si no se puede leer.
+
+        Un error de sintaxis no se informa aquí: el servicio lo explica al evaluar.
+        """
         try:
             arbol = analizar_entrada(expresion, [simbolo["nombre"] for simbolo in simbolos])
         except ValueError:
-            pass  # El servicio explica el error de sintaxis al evaluar, como antes.
-        else:
-            tamanos = {s["nombre"]: tamano(s["tipo"], s["filas"], s["columnas"]) for s in simbolos}
-            error = presupuesto_expresion(arbol, tamanos)
-            if error:
-                self.add_error("expresion", error)
-                return datos
-        entrada = {}
+            return None
+        tamanos = {s["nombre"]: tamano(s["tipo"], s["filas"], s["columnas"]) for s in simbolos}
+        return presupuesto_expresion(arbol, tamanos)
+
+    @staticmethod
+    def _operandos_para_calcular(datos, simbolos):
+        """{nombre: definición} como la recibe el evaluador, con los valores ya validados.
+
+        Las matrices desconocidas y los vectores simbólicos solo llevan su forma;
+        el escalar es una celda, los vectores una lista de componentes (números
+        exactos o, en el vector lineal, texto) y la matriz una lista de filas.
+        """
+        operandos = {}
         for simbolo in simbolos:
-            indice, tipo = simbolo["indice"], simbolo["tipo"]
+            indice, tipo, filas = simbolo["indice"], simbolo["tipo"], simbolo["filas"]
             if tipo == "matriz_desconocida":
-                entrada[simbolo["nombre"]] = {"tipo": tipo, "filas": simbolo["filas"], "columnas": simbolo["columnas"]}
+                operandos[simbolo["nombre"]] = {"tipo": tipo, "filas": filas, "columnas": simbolo["columnas"]}
                 continue
             if tipo == "vector_simbolico":
-                entrada[simbolo["nombre"]] = {"tipo": tipo, "filas": simbolo["filas"]}
+                operandos[simbolo["nombre"]] = {"tipo": tipo, "filas": filas}
                 continue
             if tipo == "escalar":
                 valor = datos[f"celda_{indice}_0_0"]
             elif tipo in ("vector", "vector_lineal"):
-                valor = [datos[f"celda_{indice}_{fila}_0"] for fila in range(simbolo["filas"])]
+                valor = [datos[f"celda_{indice}_{fila}_0"] for fila in range(filas)]
             else:
                 valor = [
                     [datos[f"celda_{indice}_{fila}_{columna}"] for columna in range(simbolo["columnas"])]
-                    for fila in range(simbolo["filas"])
+                    for fila in range(filas)
                 ]
-            entrada[simbolo["nombre"]] = {"tipo": tipo, "valor": valor}
-        nodo = (self.data.get("nodo") or "").strip() or None
-        datos["entrada"] = {
-            "expresion": expresion, "simbolos": entrada, "nodo": nodo,
-            "metodo": datos.get("metodo") or METODO_PREDETERMINADO,
-        }
-        return datos
+            operandos[simbolo["nombre"]] = {"tipo": tipo, "valor": valor}
+        return operandos
 
     def _indice_eliminar(self, cantidad):
         try:

@@ -136,6 +136,34 @@ class SecanteTests(unittest.TestCase):
         r = resolver("abs(x)^0.5", 1, -1)
         self.assertFalse(r["convergio"])
 
+    def test_abscisa_repetida_con_otra_pareja_no_es_ciclo(self):
+        # De (0, 1) salen −1 y 0. El 0 ya apareció, pero la recta por (−1, −2) y (0, 1)
+        # corta en −1/3, un punto nuevo; la raíz de 1 + 2x − x² a la que llega es 1 − √2.
+        r = resolver("1+2x-x^2", 0, 1)
+        p = r["iteraciones"]
+        self.assertEqual([p[0]["siguiente"], p[1]["siguiente"]], [-1, 0])
+        self.assertEqual((p[2]["anterior"], p[2]["actual"]), (-1, 0))
+        self.assertAlmostEqual(p[2]["siguiente"], -1 / 3, places=15)
+        self.assertEqual((r["estado"], r["clasificacion"], len(p)), ("tolerancia", "raiz_aproximada", 7))
+        self.assertAlmostEqual(r["x"], 1 - math.sqrt(2), places=9)
+        self.assertLess(abs(1 + 2 * r["x"] - r["x"] ** 2), 1e-9)
+        self.assertLessEqual(r["error_absoluto"], r["tolerancia"])
+        self.assertLessEqual(r["residuo"], r["tolerancia"])
+
+    def test_pareja_repetida_es_un_ciclo(self):
+        # Valores construidos para que la recurrencia, exacta en enteros, recorra
+        # 0, 2, −5, −2, 1, 5 y regrese a la pareja inicial (0, 2).
+        tabla = {0: 40, 2: 56, -5: -42, -2: -21, 1: -12, 5: -60}
+        r = secante(tabla.__getitem__, 0, 2)
+        self.assertEqual([p["siguiente"] for p in r["iteraciones"]], [-5, -2, 1, 5, 0, 2])
+        self.assertEqual((r["estado"], r["clasificacion"]), ("oscilacion", "sin_convergencia"))
+
+    def test_paso_menor_que_la_precision_de_maquina_es_estancamiento(self):
+        # El corte es 1 + 1e-20, que en float vuelve a ser 1 con f(1) distinto de cero.
+        r = secante({0: 1.0, 1: 1e-20}.__getitem__, 0, 1)
+        self.assertEqual((r["estado"], r["clasificacion"], len(r["iteraciones"])),
+                         ("estancamiento", "sin_convergencia", 1))
+
 
 if __name__ == "__main__":
     unittest.main()

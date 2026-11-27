@@ -927,9 +927,12 @@ class PruebasRecursos(SimpleTestCase):
         for marca in ("data-inversa", "data-inverse-entry", "data-inverse-shape", "data-aplicar", 'data-dimension="orden"'):
             self.assertIn(marca, html)
         js = (ESTATICOS / "inversa.js").read_text(encoding="utf-8")
-        for fragmento in ("data-inversa", "matrix-entry-template", 'value="directo_2x2"', "data-confirmacion", "ArrowDown", "disabled"):
+        for fragmento in ("data-inversa", "crearCuadricula(\"A\"", 'value="directo_2x2"', "data-confirmacion", "moverEntreCeldas(root)", "disabled"):
             self.assertIn(fragmento, js)
         self.assertNotIn("innerHTML", js)
+        compartido = (ESTATICOS / "entradas.js").read_text(encoding="utf-8")
+        for fragmento in ("matrix-entry-template", "matrix-cell-template", "ArrowDown"):
+            self.assertIn(fragmento, compartido)
         from tests.test_teclado import Pagina
         self.assertEqual(set(Pagina(html).perfiles_publicados), {"numerico"})
 
