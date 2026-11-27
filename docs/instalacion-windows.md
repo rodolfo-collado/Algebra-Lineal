@@ -259,6 +259,42 @@ entrada de PyGebra en Aplicaciones y un único acceso en Inicio y en el escritor
 por la prueba en el grupo antiguo debe sobrevivir a actualización y
 desinstalación; el script retira únicamente ese archivo de prueba al terminar.
 
+### Autoactualización desde la app instalada
+
+`-AutoUpdate` recorre lo que hace un usuario en **Actualizaciones**: la versión
+anterior, instalada y abierta, busca, descarga, verifica e instala el candidato con
+su propio actualizador, se cierra sola y el instalador la reabre. CI lo ejecuta tras
+las otras dos pruebas, con la release publicada más reciente **anterior** al
+candidato como base (sin acceso de escritorio).
+
+| Parte | Real o simulada |
+|---|---|
+| Base publicada instalada, ventana WebView2, Waitress y mutex | Real |
+| Código de `actualizador/` de la base: consulta, descarga a `%TEMP%`, SHA-256, lanzamiento con `/SILENT /NORESTART /ACTUALIZAR=1`, cierre propio y borrado de la descarga | Real |
+| Botón de la página | Sustituido: el script pide los mismos `POST /actualizaciones/<paso>/` que envía `actualizaciones.js` y sigue `/actualizaciones/estado/` |
+| Instalador candidato: espera al mutex, `[InstallDelete]`, accesos, registro y reapertura | Real |
+| Preferencias en `%LOCALAPPDATA%\PyGebra` guardadas desde la base | Real (se comprueban en las dos aperturas y tras desinstalar) |
+| GitHub (`api.github.com` y `github.com/.../releases/download/`) | **Simulado**: un proxy HTTPS local (`HTTPS_PROXY`) sirve el candidato y un `SHA256SUMS.txt` con su SHA-256. Las descargas no pasan por la redirección de GitHub a su CDN |
+| Certificado de GitHub | **Simulado**: una CA temporal se añade a `LocalMachine\Root` solo durante la prueba y se retira al terminar |
+
+También ensaya dos fallos con la app abierta: GitHub no disponible
+(`error_conexion`) y un `SHA256SUMS.txt` que no coincide (`checksum_invalido`).
+En ambos la versión instalada no cambia y no queda nada en `%TEMP%`.
+
+Como confía temporalmente en una CA, el script se niega a ejecutarse fuera de
+GitHub Actions o de Windows Sandbox (usuario `WDAGUtilityAccount`) y exige
+permisos de administrador. Para probarlo en local, mapea en una Sandbox los dos
+instaladores y el script, y ejecuta en ella:
+
+```powershell
+$sha256 = (Get-FileHash C:\Pruebas\PyGebra-Setup-0.20.2.exe -Algorithm SHA256).Hash
+.\test_windows_distribution.ps1 -InstallerPath C:\Pruebas\PyGebra-Setup-0.20.2.exe `
+  -PreviousInstallerPath C:\Pruebas\PyGebra-Setup-0.20.1.exe -AutoUpdate -InstallerSha256 $sha256
+```
+
+La Sandbox puede tener la red desactivada: así se comprueba además que la base no
+llega al GitHub real.
+
 La inspección visual de Inicio, búsqueda de Windows, `shell:AppsFolder`, el
 asistente (incluido «Abrir PyGebra») y Configuración → Aplicaciones complementa
 las comprobaciones automatizadas del registro y los accesos.
