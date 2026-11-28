@@ -33,7 +33,8 @@
     }
 
     form.querySelectorAll("[data-marcar-grupo]").forEach(todas => {
-        todas.hidden = false;
+        // Solo si el grupo tiene algo que marcar (un ejercicio recién creado todavía no).
+        todas.hidden = !todas.closest("[data-grupo]").querySelector('input[name="ids"]');
         todas.addEventListener("change", () => {
             todas.closest("[data-grupo]").querySelectorAll('input[name="ids"]').forEach(m => { m.checked = todas.checked; });
             actualizar();

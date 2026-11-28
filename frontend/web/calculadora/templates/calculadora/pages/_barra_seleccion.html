@@ -1,0 +1,24 @@
+{% comment %}Acciones sobre las resoluciones marcadas (casillas name="ids" del formulario #cuaderno-seleccion). El destino agrupa los ejercicios por proyecto; «uno nuevo» se crea en el proyecto activo si lo hay.{% endcomment %}
+<div class="cuaderno-seleccion" data-seleccion role="group" aria-labelledby="seleccion-cuenta">
+    <p class="cuaderno-seleccion-cuenta" id="seleccion-cuenta" data-seleccion-cuenta aria-live="polite">Con las marcadas:</p>
+    <div class="cuaderno-seleccion-acciones">
+        <label class="cuaderno-destino">
+            <span>Llevar a</span>
+            <select class="field-select" name="ejercicio">
+                <option value="nuevo">un ejercicio nuevo{% if proyecto_activo %} en {{ proyecto_activo.proyecto.nombre|truncatechars:28 }}{% endif %}</option>
+                {% for grupo, opciones in destinos %}
+                    <optgroup label="{{ grupo }}">
+                        {% for e in opciones %}<option value="{{ e.id }}"{% if proyecto_activo.ejercicio.id == e.id %} selected{% endif %}>{{ e.etiqueta }}</option>{% endfor %}
+                    </optgroup>
+                {% endfor %}
+            </select>
+        </label>
+        {% if proyecto_activo %}<input type="hidden" name="proyecto" value="{{ proyecto_activo.proyecto.id }}">{% endif %}
+        <label class="cuaderno-nombre-nuevo"><span class="sr-only">Nombre del ejercicio nuevo</span>
+            <input class="field-input" name="nombre_ejercicio" maxlength="{{ max_nombre }}" placeholder="Nombre (opcional)">
+        </label>
+        <button class="btn btn-primary" type="submit" name="accion" value="agrupar" data-requiere-seleccion>Llevar</button>
+        <button class="btn btn-secondary" type="submit" name="accion" value="sacar" data-requiere-seleccion>Sacar del ejercicio</button>
+        <button class="btn btn-secondary cuaderno-peligro" type="submit" name="accion" value="eliminar" data-requiere-seleccion>Eliminar…</button>
+    </div>
+</div>

@@ -219,7 +219,7 @@
 }
 
 .hoja-cabecera { border-bottom: 1px solid var(--color-border); }
-.hoja-cabecera > :not(.hoja-marca, .hoja-editar) { grid-column: 2; }
+.hoja-cabecera > :not(.hoja-marca, .hoja-editar, .hoja-controles, .ejercicio-numero) { grid-column: 2; }
 
 .hoja-marca {
     justify-self: center;
@@ -326,7 +326,9 @@ ol.hoja-pasos .hoja-nombre::before {
 .hoja-editar > summary:hover { color: var(--color-brand); background: var(--color-brand-soft); }
 
 /* Abierto, el editor ocupa el renglón siguiente sin mover la casilla ni el nombre. */
-.hoja-editar[open] {
+.hoja-cabecera > .hoja-editar[open],
+.hoja-entrada > .hoja-editar[open],
+.hoja-controles:has(> .hoja-editar[open]) {
     grid-column: 2 / -1;
     grid-row: 2;
 }
@@ -471,4 +473,484 @@ ol.hoja-pasos .hoja-nombre::before {
 
 @media (forced-colors: active) {
     .hoja::before, .cuaderno-blanco-hoja::before { border-left-color: CanvasText; }
+}
+
+/* ====== Proyectos ======
+   Un proyecto es el borrador de un trabajo: tarjetas sobrias en el cuaderno, una cabecera con el
+   progreso, un mapa de casillas para orientarse en proyectos largos y las hojas de sus ejercicios
+   con el número en el margen, como en un cuaderno. */
+
+/* Migas a la izquierda; el proyecto activo, discreto, a la derecha. */
+.contexto-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
+}
+
+.contexto-fila > .breadcrumbs { min-width: 0; }
+
+.proyecto-activo {
+    position: relative;
+    margin-left: auto;
+    font-size: var(--text-sm);
+}
+
+.proyecto-activo-resumen {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    max-width: min(28rem, 80vw);
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    cursor: pointer;
+    list-style: none;
+}
+
+.proyecto-activo-resumen::-webkit-details-marker { display: none; }
+.proyecto-activo-resumen:hover { border-color: var(--color-brand); background: var(--color-brand-soft); }
+.proyecto-activo-icono { flex: none; width: 1rem; height: 1rem; color: var(--color-brand); }
+
+.proyecto-activo-nombre {
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.proyecto-activo-ejercicio {
+    flex: none;
+    padding: 0.05rem 0.45rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+    font: 600 0.78rem/1.4 var(--font-math);
+}
+
+[data-theme="dark"] .proyecto-activo-ejercicio { color: var(--color-brand); }
+.proyecto-activo .disclosure-chevron { width: 0.8rem; height: 0.8rem; transition: transform var(--motion-fast); }
+.proyecto-activo[open] .disclosure-chevron { transform: rotate(90deg); }
+
+.proyecto-activo-panel {
+    position: absolute;
+    right: 0;
+    z-index: 20;
+    display: grid;
+    gap: 0.75rem;
+    width: min(24rem, 92vw);
+    margin-top: 0.4rem;
+    padding: 0.9rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-lg);
+}
+
+.proyecto-activo-titulo { margin: 0; font-weight: 700; }
+.proyecto-activo-titulo a { color: var(--color-text); }
+.proyecto-activo-progreso { margin: -0.5rem 0 0; color: var(--color-muted); font-size: var(--text-xs); }
+
+.proyecto-activo-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--color-border);
+}
+
+.proyecto-activo-form .cuaderno-filtro:not(.campo-numero) { flex: 1 1 10rem; }
+.proyecto-activo-form :is(.field-select, .field-input) { width: 100%; }
+
+.proyecto-activo-enlaces {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--color-border);
+}
+
+.proyecto-activo-enlaces a { color: var(--color-brand); font-weight: 600; }
+
+.proyecto-activo-salir {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-muted);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.proyecto-activo-insignia { color: var(--color-brand); }
+
+/* Aviso: con un ejercicio activo, añadir es un solo botón. */
+.resolucion-anadir { margin: 0; }
+.resolucion-anadir .btn { min-height: 2.2rem; padding-block: 0.3rem; }
+.resolucion-anadir-proyecto { font-weight: 400; opacity: 0.85; }
+
+/* —— Proyectos en el cuaderno —— */
+
+.cuaderno-seccion-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.cuaderno-seccion-cabecera .cuaderno-seccion-titulo { margin: 0; }
+.cuaderno-pista { margin: 0.4rem 0 0; max-width: 44rem; }
+
+.cuaderno-nuevo > summary { list-style: none; cursor: pointer; }
+.cuaderno-nuevo > summary::-webkit-details-marker { display: none; }
+.cuaderno-nuevo[open] { flex-basis: 100%; order: 10; }
+
+.cuaderno-nuevo-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem 0.75rem;
+    margin-top: 0.6rem;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.cuaderno-nuevo-form .field-help { flex-basis: 100%; margin: 0; }
+.cuaderno-filtro-ancho { flex: 1 1 14rem; }
+.cuaderno-filtro-ancho .field-input { width: 100%; }
+.campo-numero .field-input { width: 5.5rem; }
+.ejercicio-enunciado-campo { flex: 1 1 100%; }
+.ejercicio-enunciado-campo textarea { width: 100%; font-family: var(--font-ui); }
+
+.proyectos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.75rem;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.proyecto-tarjeta {
+    position: relative;
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.85rem 0.95rem 0.95rem 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+}
+
+/* El lomo del cuaderno: una franja de acento, más intensa en el proyecto activo. */
+.proyecto-tarjeta::before {
+    content: "";
+    position: absolute;
+    inset: 0.6rem auto 0.6rem 0.5rem;
+    width: 3px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-brand) 35%, transparent);
+}
+
+.proyecto-tarjeta[data-activo]::before { background: var(--color-brand); }
+.proyecto-tarjeta[data-activo] { border-color: color-mix(in srgb, var(--color-brand) 45%, var(--color-border)); }
+.proyecto-tarjeta:hover { border-color: var(--color-brand); }
+
+.proyecto-tarjeta-enlace {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--color-text);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Toda la tarjeta abre el proyecto. */
+.proyecto-tarjeta-enlace::after { content: ""; position: absolute; inset: 0; }
+.proyecto-tarjeta-nombre { overflow-wrap: anywhere; }
+.proyecto-tarjeta-detalle { margin: 0; color: var(--color-muted); font-size: var(--text-xs); }
+.cuaderno-coincidencias-proyectos { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0; padding: 0; list-style: none; }
+
+.progreso {
+    width: 100%;
+    height: 0.45rem;
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    accent-color: var(--color-brand);
+    appearance: none;
+}
+
+.progreso::-webkit-progress-bar { border-radius: var(--radius-pill); background: var(--color-surface-muted); }
+.progreso::-webkit-progress-value { border-radius: var(--radius-pill); background: var(--color-brand); }
+.progreso::-moz-progress-bar { border-radius: var(--radius-pill); background: var(--color-brand); }
+.progreso-grande { height: 0.6rem; max-width: 32rem; }
+
+/* —— Página de un proyecto —— */
+
+.proyecto-cabecera { gap: 0.55rem; }
+.proyecto-progreso { display: grid; gap: 0.35rem; }
+
+.proyecto-acciones,
+.proyecto-herramientas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.proyecto-herramientas {
+    padding: 0.6rem 0;
+    border-block: 1px solid var(--color-border);
+}
+
+.proyecto-vistas {
+    display: flex;
+    gap: 0.2rem;
+    margin-right: auto;
+    padding: 0.2rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+}
+
+.proyecto-vistas a {
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-pill);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.proyecto-vistas a[aria-current] { background: var(--color-surface-raised); color: var(--color-text); box-shadow: var(--shadow-sm); }
+
+.proyecto-panel {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.proyecto-panel .cuaderno-seccion-titulo { margin: 0; }
+.proyecto-panel-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 1rem; }
+
+/* Mapa: una casilla por ejercicio, en el orden del documento. Rellena = con resolución. */
+.mapa {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.1rem, 1fr));
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mapa-celda {
+    display: grid;
+    place-items: center;
+    min-height: 2.1rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 6px;
+    background: var(--color-surface-raised);
+    color: var(--color-muted);
+    font: 600 0.72rem/1 var(--font-math);
+    text-decoration: none;
+}
+
+.mapa-celda[data-estado="resuelto"] { border-color: var(--color-brand); background: var(--color-brand); color: var(--color-brand-text); }
+.mapa-celda[data-estado="por-crear"] { border-style: dashed; border-color: var(--color-border); background: transparent; }
+.mapa-celda[data-excluido] { opacity: 0.45; }
+.mapa-celda[aria-current] { outline: 2px solid var(--color-text); outline-offset: 1px; }
+a.mapa-celda:hover { border-color: var(--color-brand); color: var(--color-text); }
+a.mapa-celda[data-estado="resuelto"]:hover { color: var(--color-brand-text); filter: brightness(1.08); }
+
+.mapa-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.6rem;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+}
+
+.mapa-muestra { display: inline-block; width: 0.8rem; height: 0.8rem; border: 1px solid var(--color-border-strong); border-radius: 3px; }
+.mapa-muestra[data-estado="resuelto"] { border-color: var(--color-brand); background: var(--color-brand); }
+.mapa-muestra[data-estado="por-crear"] { border-style: dashed; }
+
+.proyecto-borrador-cifras { margin: 0; font-size: 0.95rem; }
+.proyecto-borrador-pendiente { color: var(--color-warning); }
+.proyecto-borrador .field-help { margin: 0; }
+.proyecto-indice > summary { color: var(--color-brand); font-weight: 600; cursor: pointer; }
+
+.proyecto-indice-lista {
+    columns: 2 18rem;
+    margin: 0.5rem 0 0;
+    padding-left: 1.2rem;
+    font-size: var(--text-sm);
+}
+
+.proyecto-indice-lista li { break-inside: avoid; }
+.proyecto-indice-seccion { margin-top: 0.4rem; list-style: none; margin-left: -1.2rem; font-weight: 700; }
+.proyecto-indice-cuenta { color: var(--color-muted); font-size: var(--text-xs); }
+
+.proyecto-grupo { display: grid; gap: 0.1rem; }
+.proyecto-grupo[data-excluida] > .proyecto-seccion-cabecera .proyecto-seccion-titulo { color: var(--color-muted); text-decoration: line-through; }
+
+.proyecto-seccion-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
+    margin: 0.9rem 0 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 2px solid color-mix(in srgb, var(--color-brand) 50%, transparent);
+}
+
+.proyecto-seccion-titulo { margin: 0; font-size: 1.1rem; }
+.proyecto-seccion-vacia { padding-left: 0; }
+
+/* Cada sección es una sola hoja: los ejercicios son sus renglones numerados, no tarjetas sueltas. */
+.ejercicios {
+    --margen: 2.75rem;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    list-style: none;
+}
+
+.ejercicios::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 var(--margen);
+    z-index: 1;
+    border-left: 1px solid color-mix(in srgb, var(--color-brand) 40%, transparent);
+    pointer-events: none;
+}
+
+.ejercicio {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    scroll-margin-top: calc(var(--header-height) + 1rem);
+}
+
+.ejercicio::before { display: none; }
+.ejercicio + .ejercicio { border-top: 1px solid var(--color-border); }
+.ejercicio:target { background: var(--color-brand-soft); }
+.ejercicio[data-activo] { background: color-mix(in srgb, var(--color-brand-soft) 65%, transparent); box-shadow: inset 3px 0 0 var(--color-brand); }
+.ejercicio .hoja-cabecera { padding-block: 0.45rem; }
+.ejercicio[data-excluida] .hoja-titulo { color: var(--color-muted); }
+.ejercicio[data-excluida] { background: var(--color-surface); }
+.ejercicio .hoja-titulo { font-size: 0.98rem; }
+
+/* El número del ejercicio ocupa el margen de la hoja. */
+.ejercicio-numero {
+    justify-self: center;
+    max-width: calc(var(--margen) - 0.3rem);
+    overflow: hidden;
+    color: var(--color-brand);
+    font: 700 1.05rem/1.4 var(--font-math);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ejercicio[data-estado="pendiente"] .ejercicio-numero { color: var(--color-muted); }
+
+.hoja-enunciado {
+    margin: 0;
+    padding: 0.55rem 0.9rem 0.6rem calc(var(--margen) + 0.85rem);
+    border-bottom: 1px dashed var(--color-border);
+    color: var(--color-text);
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+.hoja-controles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.3rem;
+}
+
+.hoja-entrada[data-excluida] .hoja-cuerpo { opacity: 0.6; }
+
+/* Interruptor «En el documento»: icono de hoja con marca; excluido, la hoja vacía. */
+.incluir,
+.hoja-orden,
+.hoja-activar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 2rem;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-raised);
+    color: var(--color-muted);
+    font: 600 var(--text-xs)/1 var(--font-ui);
+    cursor: pointer;
+}
+
+.incluir svg,
+.hoja-activar svg { width: 1rem; height: 1rem; }
+
+/* Lo habitual es entrar en el documento: icono discreto. Lo excepcional, fuera, se lee entero. */
+.incluir[aria-pressed="true"],
+.hoja-orden,
+.hoja-activar { border-color: transparent; background: transparent; }
+.incluir[aria-pressed="false"] { border-color: var(--color-warning-border); background: var(--color-warning-soft); color: var(--color-warning); }
+
+.ejercicio-detalle { margin-top: -0.25rem; }
+
+.ejercicio-detalle > summary {
+    padding: 0.15rem 0.9rem 0.35rem calc(var(--margen) + 0.85rem);
+    color: var(--color-brand);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ejercicio-detalle[open] > summary { border-bottom: 1px dashed var(--color-border); }
+.ejercicio-detalle .hoja-enunciado { border-bottom: 1px dashed var(--color-border); }
+.ejercicio .hoja-cabecera { border-bottom: 0; }
+.ejercicio-respuesta { color: var(--color-text); }
+.incluir[aria-pressed="true"] { color: var(--color-brand-strong); }
+[data-theme="dark"] .incluir[aria-pressed="true"] { color: var(--color-brand); }
+.hoja-orden { min-width: 2rem; justify-content: center; font: 700 0.9rem/1 var(--font-math); }
+.hoja-activar { color: var(--color-text); }
+:is(.incluir, .hoja-orden, .hoja-activar):hover { border-color: var(--color-brand); background: var(--color-brand-soft); color: var(--color-text); }
+.hoja-ubicacion { color: var(--color-text); }
+
+.ejercicio-editar { align-items: flex-end; }
+.ejercicio-editar-acciones { display: flex; gap: 0.5rem; }
+
+.cuaderno-blanco-proyecto .cuaderno-blanco-linea { font-weight: 700; color: var(--color-brand); }
+
+@media (max-width: 640px) {
+    .contexto-fila { align-items: flex-start; }
+    .proyecto-activo { margin-left: 0; }
+    .proyecto-activo-panel { left: 0; right: auto; }
+    .incluir-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .hoja-cabecera .hoja-controles,
+    .hoja-entrada .hoja-controles { grid-column: 2 / -1; justify-content: flex-start; }
+    .proyecto-vistas { margin-right: 0; }
 }

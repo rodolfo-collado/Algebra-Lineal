@@ -56,6 +56,7 @@ TEMPLATES = [
             "context_processors": [
                 "frontend.web.calculadora.context_processors.navegacion",
                 "frontend.web.calculadora.context_processors.escritorio",
+                "frontend.web.calculadora.context_processors.proyecto_activo",
             ],
         },
     },

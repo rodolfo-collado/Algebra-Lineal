@@ -1,0 +1,5 @@
+{% comment %}Interruptor «En el documento» de una sección, un ejercicio o una resolución (botón del formulario #op). Excluir no borra nada.{% endcomment %}
+<button class="incluir" type="submit" form="op" name="op" value="incluir:{{ tabla }}:{{ objeto.id }}:{% if objeto.incluir %}0{% else %}1{% endif %}" aria-pressed="{% if objeto.incluir %}true{% else %}false{% endif %}" title="{% if objeto.incluir %}Entra en el documento: pulsa para dejarlo fuera (no se borra){% else %}Fuera del documento: pulsa para incluirlo{% endif %}">
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="3" y="2.5" width="14" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>{% if objeto.incluir %}<path d="M6.5 10.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>{% endif %}</svg>
+    {% if objeto.incluir %}<span class="sr-only">En el documento</span>{% else %}<span class="incluir-texto">Fuera del documento</span>{% endif %}<span class="sr-only">: {{ nombre }}</span>
+</button>

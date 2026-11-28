@@ -1,0 +1,32 @@
+{% comment %}Editar un ejercicio: número, título, enunciado y ubicación (sección, otro proyecto o independiente). Los campos pertenecen a formularios propios (atributo form), fuera de la selección.{% endcomment %}
+<details class="hoja-editar">
+    <summary>Editar<span class="sr-only"> «{{ e.etiqueta }}»</span></summary>
+    <div class="hoja-editar-cuerpo ejercicio-editar">
+        <label class="cuaderno-filtro campo-numero"><span>Número</span>
+            <input class="field-input" form="ejercicio-{{ e.id }}-renombrar" name="numero" value="{{ e.numero|default:'' }}" maxlength="20" inputmode="text" placeholder="12">
+        </label>
+        <label class="cuaderno-filtro cuaderno-filtro-ancho"><span>Título</span>
+            <input class="field-input" form="ejercicio-{{ e.id }}-renombrar" name="nombre" value="{{ e.nombre }}" maxlength="{{ max_nombre }}" placeholder="Inversa de A y su comprobación">
+        </label>
+        <label class="cuaderno-filtro ejercicio-enunciado-campo"><span>Enunciado (opcional)</span>
+            <textarea class="field-input" form="ejercicio-{{ e.id }}-renombrar" name="enunciado" rows="3" maxlength="2000">{{ e.enunciado|default:'' }}</textarea>
+        </label>
+        <label class="cuaderno-filtro"><span>Ubicación</span>
+            <select class="field-select" form="ejercicio-{{ e.id }}-renombrar" name="ubicacion">
+                {% if e.proyecto %}
+                    <option value="s:"{% if not e.seccion %} selected{% endif %}>{% if secciones %}Sin sección{% else %}En este proyecto{% endif %}</option>
+                    {% for s in secciones %}<option value="s:{{ s.id }}"{% if e.seccion == s.id %} selected{% endif %}>Sección: {{ s.titulo }}</option>{% endfor %}
+                {% else %}
+                    <option value="independiente" selected>Independiente</option>
+                {% endif %}
+                {% for p in proyectos %}{% if p.id != e.proyecto %}<option value="p:{{ p.id }}">Proyecto: {{ p.nombre }}</option>{% endif %}{% endfor %}
+                {% if e.proyecto %}<option value="independiente">Fuera del proyecto (independiente)</option>{% endif %}
+            </select>
+        </label>
+        <div class="ejercicio-editar-acciones">
+            <button class="btn btn-secondary" type="submit" form="ejercicio-{{ e.id }}-renombrar">Guardar</button>
+            <button class="btn btn-secondary" type="submit" form="ejercicio-{{ e.id }}-disolver">Desagrupar</button>
+        </div>
+        <p class="field-help">Desagrupar quita el ejercicio; sus resoluciones vuelven a «Sueltas». Nada se elimina.</p>
+    </div>
+</details>

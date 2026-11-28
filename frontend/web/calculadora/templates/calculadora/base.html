@@ -27,7 +27,10 @@
     {% include "calculadora/components/header.html" %}
     <div class="app-layout">
         <main id="contenido" class="app-content" tabindex="-1">
-            {% include "calculadora/components/breadcrumbs.html" %}
+            <div class="contexto-fila">
+                {% include "calculadora/components/breadcrumbs.html" %}
+                {% include "calculadora/components/proyecto_activo.html" %}
+            </div>
             {% block content %}{% endblock %}
         </main>
     </div>
