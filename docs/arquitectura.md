@@ -31,7 +31,7 @@ flowchart TD
 | `backend/` | Matrices, operaciones por filas, Gauss, Gauss-Jordan, expresiones lineales, expresiones matriciales, sistemas, vectores, Ax=b, matriz inversa, bases, numeración romana y presupuestos de entrada y de costo. |
 | `frontend/terminal/` | `interfaz.py` coordina la consola Textual, `navegacion.py` expone el catálogo, `adaptador.py` organiza procedimientos y `historial.py` guarda ejercicios y ajustes en SQLite. `menu.py` es el menú clásico. |
 | `frontend/web/algebra_web/` | Configuración Django, rutas raíz y entradas WSGI/ASGI. |
-| `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, exploraciones, templates y recursos locales. |
+| `frontend/web/calculadora/` | Formularios, vistas, servicios, catálogo, teclados, exploraciones, templates y recursos locales. `resoluciones/` guarda y reabre el [cuaderno de resoluciones](resoluciones.md) con un middleware, sin tocar las vistas. |
 | `desktop.py` | Servidor local y ciclo de vida de la ventana nativa. |
 | `actualizador/` | Consulta de releases, descarga y verificación SHA-256, preparación del instalador y limpieza de archivos temporales. |
 | `AlgebraLineal.spec` | PyInstaller: Python, dependencias, templates, recursos e icono en una carpeta `onedir`, sin consola (`windowed`). |
@@ -179,7 +179,8 @@ matemática y no usa `runserver` ni abre un navegador externo.
 ```text
 desktop.py ─ Django (DESKTOP_MODE, DEBUG=False) ─ Waitress 127.0.0.1:<efímero>
     └─ pywebview/WebView2 (modo privado) ── carga http://127.0.0.1:<puerto>/
-            └─ POST /preferencias/ ─ Django ─ %LOCALAPPDATA%\PyGebra\preferencias.json
+            ├─ POST /preferencias/ ─ Django ─ %LOCALAPPDATA%\PyGebra\preferencias.json
+            └─ resoluciones válidas ─ Django ─ %LOCALAPPDATA%\PyGebra\resoluciones.sqlite3
 ```
 
 WebView2 corre en modo privado: su perfil (historial, caché, formularios,
@@ -190,7 +191,9 @@ referencia canónica; [Interfaz · Escritorio](interfaz.md#escritorio) explica q
 se recuerda de cada una. Django las escribe en un archivo propio que fija
 `desktop.preferences_path()`, con bloqueo y reemplazo atómico; como no dependen
 del origen, el puerto puede seguir siendo efímero y una segunda instancia
-comparte las mismas preferencias.
+comparte las mismas preferencias. El [cuaderno de resoluciones](resoluciones.md)
+también sobrevive al cierre: Django anota cada resolución válida en SQLite, junto a
+las preferencias, sin depender del perfil de WebView2.
 La ventana abre maximizada y, al restaurarla, cabe en el área útil del monitor
 principal. El launcher también deja el menú contextual nativo solo con las
 acciones de edición mediante `ContextMenuRequested` de WebView2, al que llega por
