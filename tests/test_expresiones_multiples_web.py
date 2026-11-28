@@ -76,6 +76,16 @@ class PruebasExpresionesMultiples(ContextoHTTP):
             self.assertEqual(form["celda_0_0_0"].value(), "2")
             self.assertNotContains(respuesta, 'id="resultado"')
 
+    def test_expresion_larga_invalida_no_se_convierte_al_mostrar_resultados(self):
+        invalida = "9" * 5000 + "/3"
+        respuesta = self.client.post(RUTA, datos(("1/3", invalida, "1/0"), []))
+        self.assertEqual(respuesta.status_code, 200)
+        valida, larga, division = respuesta.context["resultados"]
+        self.assertEqual(valida["resultado"]["escalar"], "1/3")
+        self.assertIn("400 caracteres", larga["error"])
+        self.assertTrue(division["error"])
+        self.assertEqual(respuesta.context["form"]["expresion_1"].value(), invalida)
+
     def test_compatibilidad_con_post_anterior(self):
         respuesta = self.client.post(RUTA, datos_simbolos("A - C", EJERCICIO_56))
         self.assertEqual(respuesta.context["resultados"][0]["resultado"], respuesta.context["resultado"])

@@ -81,10 +81,11 @@
 
 {% block tool_result %}
 {% if hay_resultados %}
-    {% numeric_results %}
     <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
         {% if resultado %}
-            {% include "calculadora/modules/expresiones/_resultado.html" with sufijo="" prefijo_nodo="" nivel=3 %}
+            {% numeric_results %}
+                {% include "calculadora/modules/expresiones/_resultado.html" with sufijo="" prefijo_nodo="" nivel=3 %}
+            {% endnumeric_results %}
         {% else %}
             <header class="results-heading"><h2 id="results-title">Resultados</h2></header>
             {% include "calculadora/components/numeric_format.html" %}
@@ -92,11 +93,13 @@
                 {% with numero=forloop.counter|stringformat:"s" indice=fila.indice|stringformat:"s" %}
                     {% if fila.resultado %}
                         <section class="expression-result" data-resultado-expresion aria-labelledby="results-title-{{ numero }}">
-                            {% include "calculadora/modules/expresiones/_resultado.html" with resultado=fila.resultado sufijo="-"|add:numero prefijo_nodo=indice|add:"|" nivel=4 %}
+                            {% numeric_results %}
+                                {% include "calculadora/modules/expresiones/_resultado.html" with resultado=fila.resultado sufijo="-"|add:numero prefijo_nodo=indice|add:"|" nivel=4 %}
+                            {% endnumeric_results %}
                         </section>
                     {% else %}
                         <section class="panel expression-error" data-error-expresion aria-labelledby="results-title-{{ numero }}">
-                            <h3 id="results-title-{{ numero }}" class="panel-title">Expresión {{ numero }}{% if fila.expresion %} · {{ fila.expresion }}{% endif %}</h3>
+                            <h3 id="results-title-{{ numero }}" class="panel-title">Expresión {{ numero }}{% if fila.expresion %} · {{ fila.expresion|truncatechars:80 }}{% endif %}</h3>
                             <p>{{ fila.error }}</p>
                         </section>
                     {% endif %}
@@ -104,7 +107,6 @@
             {% endfor %}
         {% endif %}
     </section>
-    {% endnumeric_results %}
 {% endif %}
 {% endblock %}
 
