@@ -30,6 +30,7 @@
                 {% endif %}
             </header>
             {% block tool_input %}{% endblock %}
+            {% include "calculadora/components/resolucion_aviso.html" %}
             {% block tool_result %}{% endblock %}
             {% block tool_explanation %}{% endblock %}
             {% block tool_related %}{% include "calculadora/components/related_tools.html" %}{% endblock %}

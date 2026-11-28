@@ -1,0 +1,188 @@
+{% extends "calculadora/base.html" %}
+{% comment %}
+    Cuaderno de resoluciones. Ejercicios como hojas con sus pasos numerados; debajo, las
+    resoluciones sueltas por día. Una sola selección (las casillas pertenecen al formulario
+    #cuaderno-seleccion) para reunir, sacar o eliminar; renombrar usa formularios propios
+    (atributo form) para que Enter nunca dispare otra acción. Todo funciona sin JavaScript;
+    resoluciones.js añade el recuento, «marcar el ejercicio» y la barra flotante.
+{% endcomment %}
+
+{% block title %}Resoluciones · PyGebra{% endblock %}
+{% block body_attrs %} data-cuaderno{% endblock %}
+
+{% block content %}
+<div class="cuaderno">
+    <header class="cuaderno-cabecera">
+        <p class="section-kicker">Tu cuaderno</p>
+        <h1 class="tool-title">Resoluciones</h1>
+        <p class="tool-lead">Cada resultado que calculas queda anotado aquí con sus datos, su resultado y su procedimiento. Ábrelo cuando quieras o reúne varios en un ejercicio.</p>
+        {% if total %}<p class="cuaderno-cuenta">{{ total }} resoluci{{ total|pluralize:"ón,ones" }}{% if total_ejercicios %} · {{ total_ejercicios }} ejercicio{{ total_ejercicios|pluralize }}{% endif %}</p>{% endif %}
+    </header>
+
+    {% if hecho %}<p class="cuaderno-hecho" role="status">{{ hecho }}</p>{% endif %}
+    {% if apartado %}
+        <p class="cuaderno-nota" role="status">Encontramos el archivo del cuaderno dañado y lo apartamos sin borrarlo como <code>{{ apartado.name }}</code>. Desde ahora se anota en uno nuevo.</p>
+    {% endif %}
+    {% if no_disponible %}
+        <section class="cuaderno-nota cuaderno-nota-aviso" role="alert" aria-labelledby="no-disponible-titulo">
+            <h2 id="no-disponible-titulo" class="confirmation-title">No pudimos abrir el cuaderno</h2>
+            <p>{{ no_disponible }}</p>
+            <p><a href="{% url 'calculadora:resoluciones' %}">Intentar de nuevo</a></p>
+        </section>
+    {% endif %}
+
+    {% if confirmar %}
+        <form class="confirmation" method="post" action="{% url 'calculadora:resoluciones' %}" data-confirmacion tabindex="-1" aria-labelledby="eliminar-titulo">
+            {% csrf_token %}
+            <input type="hidden" name="filtros" value="{{ consulta_filtros }}">
+            <svg class="confirmation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="confirmation-body">
+                <h2 id="eliminar-titulo" class="confirmation-title">¿Eliminar {% if confirmar|length == 1 %}esta resolución{% else %}estas {{ confirmar|length }} resoluciones{% endif %}?</h2>
+                <ul class="cuaderno-confirmar">
+                    {% for r in confirmar %}<li><input type="hidden" name="ids" value="{{ r.id }}">{{ r.nombre }}</li>{% endfor %}
+                </ul>
+                <p>Desaparecen del cuaderno y de sus ejercicios. No se puede deshacer.</p>
+                <div class="confirmation-actions">
+                    <a class="btn btn-secondary" href="{% url 'calculadora:resoluciones' %}{% if consulta_filtros %}?{{ consulta_filtros }}{% endif %}">Cancelar</a>
+                    <button class="btn btn-primary cuaderno-peligro" type="submit" name="accion" value="eliminar_confirmado">Eliminar definitivamente</button>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+
+    {% if total %}
+        <form class="cuaderno-filtros" method="get" action="{% url 'calculadora:resoluciones' %}" role="search" aria-label="Buscar en el cuaderno">
+            <div class="search-box cuaderno-busqueda">
+                <label class="sr-only" for="cuaderno-q">Buscar por nombre, resultado o ejercicio</label>
+                <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <input class="search-input" id="cuaderno-q" type="search" name="q" value="{{ filtros.q }}" maxlength="{{ max_nombre }}" placeholder="Buscar en el cuaderno">
+            </div>
+            <label class="cuaderno-filtro">
+                <span>Herramienta</span>
+                <select class="field-select" name="herramienta">
+                    <option value="">Todas</option>
+                    {% for id, nombre in herramientas %}<option value="{{ id }}"{% if filtros.herramienta == id %} selected{% endif %}>{{ nombre }}</option>{% endfor %}
+                </select>
+            </label>
+            <label class="cuaderno-filtro"><span>Desde</span><input class="field-input" type="date" name="desde" value="{{ filtros.desde }}"></label>
+            <label class="cuaderno-filtro"><span>Hasta</span><input class="field-input" type="date" name="hasta" value="{{ filtros.hasta }}"></label>
+            <div class="cuaderno-filtros-acciones">
+                <button class="btn btn-secondary" type="submit">Filtrar</button>
+                {% if filtrando %}<a href="{% url 'calculadora:resoluciones' %}">Quitar filtros</a>{% endif %}
+            </div>
+        </form>
+        {% if filtrando %}<p class="cuaderno-cuenta" role="status">{{ visibles }} de {{ total }} resoluci{{ total|pluralize:"ón,ones" }} coinciden.</p>{% endif %}
+
+        <form id="cuaderno-seleccion" class="cuaderno-hojas" method="post" action="{% url 'calculadora:resoluciones' %}">
+            {% csrf_token %}
+            <input type="hidden" name="filtros" value="{{ consulta_filtros }}">
+
+            {% if ejercicios %}
+                <section class="cuaderno-seccion" aria-labelledby="ejercicios-titulo">
+                    <h2 id="ejercicios-titulo" class="cuaderno-seccion-titulo">Ejercicios</h2>
+                    {% for e in ejercicios %}
+                        <section class="hoja" id="ejercicio-{{ e.id }}" aria-labelledby="ejercicio-{{ e.id }}-titulo" data-grupo>
+                            <header class="hoja-cabecera">
+                                <input class="hoja-marca" type="checkbox" data-marcar-grupo aria-label="Marcar todas las resoluciones de «{{ e.nombre }}»" hidden>
+                                <div class="hoja-titulos">
+                                    <h3 id="ejercicio-{{ e.id }}-titulo" class="hoja-titulo">{{ e.nombre }}</h3>
+                                    <p class="hoja-detalle">{% if filtrando and e.pasos|length != e.total %}{{ e.pasos|length }} de {% endif %}{{ e.total }} resoluci{{ e.total|pluralize:"ón,ones" }}{% if e.ultima %} · <time datetime="{{ e.ultima|date:'c' }}">{{ e.ultima|date:"j \d\e F" }}</time>{% endif %}</p>
+                                </div>
+                                <details class="hoja-editar">
+                                    <summary>Editar</summary>
+                                    <div class="hoja-editar-cuerpo">
+                                        <label class="sr-only" for="nombre-ejercicio-{{ e.id }}">Nombre del ejercicio</label>
+                                        <input class="field-input" id="nombre-ejercicio-{{ e.id }}" form="ejercicio-{{ e.id }}-renombrar" name="nombre" value="{{ e.nombre }}" maxlength="{{ max_nombre }}" required>
+                                        <button class="btn btn-secondary" type="submit" form="ejercicio-{{ e.id }}-renombrar">Guardar nombre</button>
+                                        <button class="btn btn-secondary" type="submit" form="ejercicio-{{ e.id }}-disolver">Desagrupar</button>
+                                        <p class="field-help">Desagrupar quita el ejercicio; sus resoluciones vuelven a «Sueltas».</p>
+                                    </div>
+                                </details>
+                            </header>
+                            {% if e.pasos %}
+                                <ol class="hoja-pasos">
+                                    {% for r in e.pasos %}{% include "calculadora/pages/_resolucion.html" with nivel=4 %}{% endfor %}
+                                </ol>
+                            {% else %}
+                                <p class="hoja-vacia">Este ejercicio todavía no tiene resoluciones. Marca alguna y elige «{{ e.nombre }}» en <strong>Reunir en</strong>.</p>
+                            {% endif %}
+                        </section>
+                    {% endfor %}
+                </section>
+            {% endif %}
+
+            {% if sueltas %}
+                <section class="cuaderno-seccion" aria-labelledby="sueltas-titulo">
+                    <h2 id="sueltas-titulo" class="cuaderno-seccion-titulo">Sueltas</h2>
+                    {% if not ejercicios %}<p class="field-help">Cuando varias resoluciones formen parte de un mismo ejercicio —un determinante, la inversa y su comprobación—, márcalas y reúnelas.</p>{% endif %}
+                    {% for dia in sueltas %}
+                        <section class="hoja hoja-dia" aria-labelledby="dia-{{ forloop.counter }}" data-grupo>
+                            <header class="hoja-cabecera">
+                                <input class="hoja-marca" type="checkbox" data-marcar-grupo aria-label="Marcar las resoluciones de {% if dia.rotulo %}{{ dia.rotulo|lower }}{% else %}{{ dia.dia|date:'j \d\e F' }}{% endif %}" hidden>
+                                <h3 class="hoja-titulo hoja-titulo-dia" id="dia-{{ forloop.counter }}">{% if dia.rotulo %}{{ dia.rotulo }}{% elif dia.dia %}{{ dia.dia|date:"l j \d\e F"|capfirst }}{% else %}Sin fecha{% endif %}</h3>
+                            </header>
+                            <ul class="hoja-pasos hoja-pasos-sueltos">
+                                {% for r in dia.resoluciones %}{% include "calculadora/pages/_resolucion.html" with nivel=4 %}{% endfor %}
+                            </ul>
+                        </section>
+                    {% endfor %}
+                </section>
+            {% endif %}
+
+            {% if not ejercicios and not sueltas %}
+                <div class="empty-state cuaderno-sin-coincidencias">
+                    <p><strong>Nada coincide con esos filtros.</strong></p>
+                    <p>Prueba con otra palabra, otra herramienta u otras fechas, o <a href="{% url 'calculadora:resoluciones' %}">mira todo el cuaderno</a>.</p>
+                </div>
+            {% else %}
+                <div class="cuaderno-seleccion" data-seleccion role="group" aria-labelledby="seleccion-cuenta">
+                    <p class="cuaderno-seleccion-cuenta" id="seleccion-cuenta" data-seleccion-cuenta aria-live="polite">Con las marcadas:</p>
+                    <div class="cuaderno-seleccion-acciones">
+                        <label class="cuaderno-destino">
+                            <span>Reunir en</span>
+                            <select class="field-select" name="ejercicio">
+                                <option value="nuevo">un ejercicio nuevo</option>
+                                {% for e in todos_los_ejercicios %}<option value="{{ e.id }}">{{ e.nombre }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="cuaderno-nombre-nuevo"><span class="sr-only">Nombre del ejercicio nuevo</span>
+                            <input class="field-input" name="nombre_ejercicio" maxlength="{{ max_nombre }}" placeholder="Nombre (opcional)">
+                        </label>
+                        <button class="btn btn-primary" type="submit" name="accion" value="agrupar" data-requiere-seleccion>Reunir</button>
+                        <button class="btn btn-secondary" type="submit" name="accion" value="sacar" data-requiere-seleccion>Sacar del ejercicio</button>
+                        <button class="btn btn-secondary cuaderno-peligro" type="submit" name="accion" value="eliminar" data-requiere-seleccion>Eliminar…</button>
+                    </div>
+                </div>
+            {% endif %}
+        </form>
+
+        {# Formularios de una sola acción, fuera de la selección: renombrar y desagrupar. #}
+        {% for e in ejercicios %}
+            <form id="ejercicio-{{ e.id }}-renombrar" method="post" action="{% url 'calculadora:resoluciones' %}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="renombrar_ejercicio"><input type="hidden" name="id" value="{{ e.id }}"><input type="hidden" name="filtros" value="{{ consulta_filtros }}"></form>
+            <form id="ejercicio-{{ e.id }}-disolver" method="post" action="{% url 'calculadora:resoluciones' %}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="disolver"><input type="hidden" name="id" value="{{ e.id }}"><input type="hidden" name="filtros" value="{{ consulta_filtros }}"></form>
+            {% for r in e.pasos %}{% include "calculadora/pages/_resolucion_formulario.html" %}{% endfor %}
+        {% endfor %}
+        {% for dia in sueltas %}{% for r in dia.resoluciones %}{% include "calculadora/pages/_resolucion_formulario.html" %}{% endfor %}{% endfor %}
+    {% elif not no_disponible %}
+        <section class="cuaderno-blanco" aria-labelledby="blanco-titulo">
+            <div class="cuaderno-blanco-hoja" aria-hidden="true">
+                <span class="cuaderno-blanco-linea">det(A) = ?</span>
+                <span class="cuaderno-blanco-linea">A⁻¹ = ?</span>
+                <span class="cuaderno-blanco-linea">x ≈ ?</span>
+            </div>
+            <div class="cuaderno-blanco-texto">
+                <h2 id="blanco-titulo">Tu cuaderno está en blanco</h2>
+                <p>Resuelve algo en cualquier herramienta y quedará anotado aquí, listo para volver a abrirlo con sus datos y su procedimiento.</p>
+                <p class="field-help">Cuando varias resoluciones formen parte de un mismo ejercicio, podrás reunirlas en una sola hoja.</p>
+                {% if sugeridas %}
+                    <p class="cuaderno-blanco-empieza">Para empezar:</p>
+                    <ul class="cuaderno-sugeridas">
+                        {% for herramienta in sugeridas %}<li><a class="btn btn-secondary" href="{{ herramienta.ruta }}">{{ herramienta.nombre }}</a></li>{% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}
+

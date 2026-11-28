@@ -1,0 +1,444 @@
+/* Cuaderno de resoluciones y su aviso en las herramientas. Solo tokens: cada estilo y cada tema
+   lo dibujan con sus colores, radios y tipografías. La «personalidad» de cuaderno es contenida:
+   una línea de margen, pasos numerados y renglones discontinuos; nada que compita con la matemática. */
+
+/* —— Enlace de la cabecera ——
+   Usa las clases de Buscar. Con la navegación por áreas visible no cabe un botón más con texto:
+   hasta 1440 px se queda en el icono; el texto sigue ahí para los lectores de pantalla. */
+@media (max-width: 1439px) {
+    .header-resoluciones .header-buscar-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .header-resoluciones { padding-inline: 0.6rem; }
+}
+
+/* —— Aviso en una herramienta —— */
+
+.resolucion-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin: 0 0 1rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-brand);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-size: var(--text-sm);
+}
+
+.results-heading + .resolucion-aviso { margin-top: 0.6rem; }
+
+.resolucion-aviso:is([data-estado="no_guardada"], [data-estado="no_disponible"], [data-estado="danado"],
+    [data-estado="futuro"], [data-estado="inexistente"], [data-estado="antiguo"]) {
+    border-left-color: var(--color-warning);
+}
+
+.resolucion-aviso-icono {
+    flex: none;
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-top: 0.05rem;
+    color: var(--color-brand);
+}
+
+.resolucion-aviso:is([data-estado="no_guardada"], [data-estado="no_disponible"], [data-estado="danado"],
+    [data-estado="futuro"], [data-estado="inexistente"], [data-estado="antiguo"]) .resolucion-aviso-icono {
+    color: var(--color-warning);
+}
+
+.resolucion-aviso-cuerpo { min-width: 0; }
+.resolucion-aviso-texto { margin: 0; overflow-wrap: anywhere; }
+
+.resolucion-aviso-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1.1rem;
+    margin-top: 0.35rem;
+}
+
+:is(.resolucion-aviso-enlace, .resolucion-agrupar > summary) {
+    color: var(--color-brand);
+    font-weight: 600;
+}
+
+.resolucion-agrupar > summary { cursor: pointer; }
+.resolucion-agrupar[open] { flex-basis: 100%; }
+
+.resolucion-agrupar-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* El nombre solo hace falta cuando el destino es un ejercicio nuevo. */
+:is(.cuaderno-seleccion-acciones, .resolucion-agrupar-form):has(select[name="ejercicio"] option[value="nuevo"]:not(:checked)) .cuaderno-nombre-nuevo {
+    display: none;
+}
+
+/* —— Cuaderno —— */
+
+.cuaderno {
+    display: grid;
+    gap: 1.1rem;
+    max-width: 58rem;
+    margin: 0 auto;
+}
+
+.cuaderno-cabecera { display: grid; gap: 0.35rem; }
+
+.cuaderno-cuenta {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+}
+
+.cuaderno-hecho,
+.cuaderno-nota {
+    margin: 0;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--color-success-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-success-soft);
+    font-size: var(--text-sm);
+}
+
+.cuaderno-nota {
+    border-color: var(--color-warning-border);
+    background: var(--color-warning-soft);
+}
+
+.cuaderno-nota p { margin: 0.2rem 0 0; }
+.cuaderno-confirmar { margin: 0.35rem 0; padding-left: 1.2rem; font-size: 0.9rem; }
+
+.cuaderno-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem 0.75rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.cuaderno-busqueda { flex: 1 1 12rem; }
+.cuaderno-filtro .field-select { max-width: 13rem; }
+
+.cuaderno-filtro {
+    display: grid;
+    gap: 0.2rem;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+}
+
+.cuaderno-filtro :is(.field-input, .field-select) { min-height: 2.35rem; }
+
+.cuaderno-filtros-acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: var(--text-sm);
+}
+
+.cuaderno-seccion-titulo {
+    margin: 0.4rem 0 0.6rem;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Hoja: un ejercicio o un día. La columna de margen lleva las casillas; la línea, el borde del cuaderno. */
+.hoja {
+    --margen: 2.75rem;
+    position: relative;
+    margin-bottom: 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+}
+
+.hoja::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 var(--margen);
+    border-left: 1px solid color-mix(in srgb, var(--color-brand) 40%, transparent);
+    pointer-events: none;
+}
+
+.hoja-dia { background: var(--color-surface); }
+
+.hoja-cabecera,
+.hoja-entrada {
+    display: grid;
+    grid-template-columns: var(--margen) minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 0.85rem;
+    padding: 0.65rem 0.9rem 0.65rem 0;
+}
+
+.hoja-cabecera { border-bottom: 1px solid var(--color-border); }
+.hoja-cabecera > :not(.hoja-marca, .hoja-editar) { grid-column: 2; }
+
+.hoja-marca {
+    justify-self: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0.2rem 0 0;
+    accent-color: var(--color-brand);
+}
+
+.hoja-titulo {
+    margin: 0;
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+}
+
+.hoja-titulo-dia {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.hoja-detalle {
+    margin: 0.1rem 0 0;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+}
+
+.hoja-pasos {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: paso;
+}
+
+/* Renglones del cuaderno: discontinuos, sin cajas dentro de cajas. */
+.hoja-entrada + .hoja-entrada { border-top: 1px dashed var(--color-border); }
+.hoja-entrada:target { background: var(--color-brand-soft); }
+.hoja-entrada:has(.hoja-marca:checked) { background: color-mix(in srgb, var(--color-brand-soft) 70%, transparent); }
+
+.hoja-cuerpo { min-width: 0; }
+
+.hoja-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+}
+
+.hoja-meta .tema-chip { padding: 0.15rem 0.35rem; font-size: 0.7rem; }
+
+.hoja-nombre {
+    margin: 0.2rem 0 0;
+    font-size: 0.98rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* Los pasos de un ejercicio se numeran como en el cuaderno: 1., 2., 3. */
+ol.hoja-pasos > .hoja-entrada { counter-increment: paso; }
+
+ol.hoja-pasos .hoja-nombre::before {
+    content: counter(paso) ". ";
+    color: var(--color-brand);
+    font-family: var(--font-math);
+}
+
+.hoja-nombre a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.hoja-nombre a:hover { color: var(--color-brand); text-decoration: underline; }
+
+/* La respuesta en la letra de la interfaz: mezcla frases («Consistente de solución única») y valores. */
+.hoja-respuesta {
+    margin: 0.2rem 0 0;
+    color: var(--color-text);
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.hoja-aviso {
+    margin: 0.25rem 0 0;
+    color: var(--color-warning);
+    font-size: var(--text-sm);
+}
+
+.hoja-entrada:not([data-estado="ok"], [data-estado="antiguo"]) .hoja-nombre { color: var(--color-muted); }
+
+.hoja-editar > summary {
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    list-style: none;
+}
+
+.hoja-editar > summary::-webkit-details-marker { display: none; }
+.hoja-editar > summary:hover { color: var(--color-brand); background: var(--color-brand-soft); }
+
+/* Abierto, el editor ocupa el renglón siguiente sin mover la casilla ni el nombre. */
+.hoja-editar[open] {
+    grid-column: 2 / -1;
+    grid-row: 2;
+}
+
+.hoja-editar[open] > summary { display: inline-block; margin-top: 0.4rem; }
+
+.hoja-editar-cuerpo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+
+.hoja-editar-cuerpo .field-input { flex: 1 1 14rem; }
+.hoja-editar-cuerpo .field-help { flex-basis: 100%; margin: 0; }
+
+.hoja-vacia {
+    margin: 0;
+    padding: 0.8rem 0.9rem 0.9rem calc(var(--margen) + 0.85rem);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+}
+
+/* Barra de selección: al final de la lista; con algo marcado (JS), flota al pie de la ventana. */
+.cuaderno-seleccion {
+    position: sticky;
+    bottom: 0.75rem;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-lg);
+}
+
+[data-mejorado] .cuaderno-seleccion:not([data-activa]) {
+    position: static;
+    border-color: var(--color-border);
+    box-shadow: none;
+}
+
+.cuaderno-seleccion-cuenta {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.cuaderno-seleccion-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cuaderno-destino {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--text-sm);
+}
+
+.cuaderno-seleccion [aria-disabled="true"] { opacity: 0.55; }
+
+.btn.cuaderno-peligro { color: var(--color-danger); border-color: var(--color-danger-border); }
+
+.btn-primary.cuaderno-peligro {
+    border-color: var(--color-danger);
+    background: var(--color-danger);
+    color: var(--color-bg);
+}
+
+/* —— Cuaderno en blanco —— */
+
+.cuaderno-blanco {
+    display: grid;
+    grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+    align-items: center;
+    gap: 1.75rem;
+    padding: 1.5rem;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.cuaderno-blanco h2 { margin: 0 0 0.4rem; font-size: 1.2rem; }
+.cuaderno-blanco p { margin: 0 0 0.5rem; }
+.cuaderno-blanco-empieza { margin-top: 0.9rem; font-weight: 600; }
+
+/* Una hoja rayada con su margen y tres preguntas por resolver. */
+.cuaderno-blanco-hoja {
+    --renglon: 1.6rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 3 / 4;
+    padding: calc(var(--renglon) * 1.5) 0.6rem 0 2.3rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background:
+        repeating-linear-gradient(to bottom, transparent 0 calc(var(--renglon) - 1px),
+            var(--color-border) calc(var(--renglon) - 1px) var(--renglon)) 0 calc(var(--renglon) * 0.5) / 100% 100% no-repeat,
+        var(--color-surface-raised);
+    box-shadow: var(--shadow-sm);
+}
+
+.cuaderno-blanco-hoja::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 1.7rem;
+    border-left: 1px solid color-mix(in srgb, var(--color-brand) 45%, transparent);
+}
+
+.cuaderno-blanco-linea {
+    height: var(--renglon);
+    color: var(--color-muted);
+    font: 0.85rem/var(--renglon) var(--font-math);
+    white-space: nowrap;
+}
+
+.cuaderno-sugeridas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (max-width: 640px) {
+    .cuaderno-blanco { grid-template-columns: 1fr; padding: 1.1rem; }
+    .cuaderno-blanco-hoja { width: min(11rem, 60%); justify-self: center; }
+    .hoja { --margen: 2.3rem; }
+    .cuaderno-seleccion { bottom: 0.5rem; }
+    .cuaderno-seleccion-acciones .btn { flex: 1 1 auto; }
+}
+
+@media (forced-colors: active) {
+    .hoja::before, .cuaderno-blanco-hoja::before { border-left-color: CanvasText; }
+}

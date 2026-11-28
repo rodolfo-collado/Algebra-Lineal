@@ -1,0 +1,1 @@
+<form id="resolucion-{{ r.id }}-renombrar" method="post" action="{% url 'calculadora:resoluciones' %}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="renombrar"><input type="hidden" name="id" value="{{ r.id }}"><input type="hidden" name="filtros" value="{{ consulta_filtros }}"></form>

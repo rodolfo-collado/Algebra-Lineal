@@ -1,0 +1,51 @@
+{% comment %}
+    Aviso del cuaderno en una herramienta: lo que se guardó o se reabrió y, si procede, añadirlo
+    a un ejercicio. Llega en el contexto `resolucion` (middleware de resoluciones). Sin JavaScript
+    queda entre la entrada y el resultado; resoluciones.js lo coloca bajo el encabezado del resultado.
+{% endcomment %}
+{% if resolucion %}
+<aside class="resolucion-aviso" id="resolucion-aviso" data-estado="{{ resolucion.estado }}" aria-label="Cuaderno de resoluciones">
+    <svg class="resolucion-aviso-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.5 3.5v17M11.5 8.5h4.5M11.5 12h4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+    <div class="resolucion-aviso-cuerpo">
+        <p class="resolucion-aviso-texto" role="status">
+            {% if resolucion.estado == "guardada" %}Anotada en tu cuaderno como <strong>{{ resolucion.nombre }}</strong>{% if resolucion.ejercicio %}, en el ejercicio <strong>{{ resolucion.ejercicio.nombre }}</strong>{% endif %}.
+            {% elif resolucion.estado == "existente" %}Ya estaba en tu cuaderno como <strong>{{ resolucion.nombre }}</strong>{% if resolucion.ejercicio %}, en el ejercicio <strong>{{ resolucion.ejercicio.nombre }}</strong>{% endif %}; no se anotó dos veces.
+            {% elif resolucion.estado == "abierta" %}Desde tu cuaderno: <strong>{{ resolucion.nombre }}</strong>{% if resolucion.fecha %}, resuelta el <time datetime="{{ resolucion.creado }}">{{ resolucion.fecha|date:"j \d\e F, H:i" }}</time>{% endif %}{% if resolucion.ejercicio %} · ejercicio <strong>{{ resolucion.ejercicio.nombre }}</strong>{% endif %}. Si cambias los datos y vuelves a calcular, se anotará como una resolución nueva.
+            {% elif resolucion.estado == "antiguo" %}<strong>{{ resolucion.nombre }}</strong> se guardó con una versión anterior de esta herramienta. Sus datos están cargados: pulsa calcular para obtener el resultado con esta versión.
+            {% elif resolucion.estado == "futuro" %}Esta resolución se guardó con una versión más reciente de PyGebra; esta versión no puede mostrarla, pero sigue intacta en tu cuaderno.
+            {% elif resolucion.estado == "danado" %}Esta resolución no se pudo abrir porque su registro está dañado. Puedes eliminarla desde el cuaderno.
+            {% elif resolucion.estado == "inexistente" %}Esa resolución ya no está en tu cuaderno.
+            {% elif resolucion.estado == "otra_ruta" %}Esta resolución se calculó con otro método.{% if resolucion.url %} <a href="{{ resolucion.url }}">Ábrela con su método</a>.{% endif %}
+            {% else %}{{ resolucion.motivo|default:"El cuaderno no está disponible en este momento." }}{% endif %}
+        </p>
+        {% if resolucion.id and resolucion.estado in "guardada existente abierta antiguo" %}
+            <div class="resolucion-aviso-acciones">
+                {% if not resolucion.ejercicio and resolucion.ejercicios is not None %}
+                    <details class="resolucion-agrupar">
+                        <summary>Añadir a un ejercicio</summary>
+                        <form class="resolucion-agrupar-form" method="post" action="{% url 'calculadora:resoluciones' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="agrupar">
+                            <input type="hidden" name="ids" value="{{ resolucion.id }}">
+                            <input type="hidden" name="volver" value="herramienta">
+                            <label class="cuaderno-destino"><span class="sr-only">Ejercicio</span>
+                                <select class="field-select" name="ejercicio">
+                                    <option value="nuevo">Un ejercicio nuevo</option>
+                                    {% for e in resolucion.ejercicios %}<option value="{{ e.id }}">{{ e.nombre }}</option>{% endfor %}
+                                </select>
+                            </label>
+                            <label class="cuaderno-nombre-nuevo"><span class="sr-only">Nombre del ejercicio nuevo</span>
+                                <input class="field-input" name="nombre_ejercicio" maxlength="120" placeholder="Nombre (opcional)">
+                            </label>
+                            <button class="btn btn-secondary" type="submit">Añadir</button>
+                        </form>
+                    </details>
+                {% endif %}
+                <a class="resolucion-aviso-enlace" href="{% url 'calculadora:resoluciones' %}#resolucion-{{ resolucion.id }}">Ver en el cuaderno</a>
+            </div>
+        {% elif resolucion.estado != "no_guardada" %}
+            <div class="resolucion-aviso-acciones"><a class="resolucion-aviso-enlace" href="{% url 'calculadora:resoluciones' %}">Ir al cuaderno</a></div>
+        {% endif %}
+    </div>
+</aside>
+{% endif %}

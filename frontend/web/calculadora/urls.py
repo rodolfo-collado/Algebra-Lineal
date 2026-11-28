@@ -7,6 +7,7 @@ from .views_raices import (cerrados_ruta_antigua, explorar_funcion, newton_raphs
                            resolver_newton_raphson, resolver_regla_falsa, resolver_secante)
 from .views_conjuntos import relaciones_conjuntos, cardinalidades_conjuntos
 from .views_iterativos import metodos_iterativos
+from .views_resoluciones import resoluciones
 
 
 app_name = "calculadora"
@@ -51,6 +52,8 @@ urlpatterns = [
     path("matrices/determinantes/", views.determinantes, name="determinantes"),
     path("bases/conversion/", views.conversion_bases, name="conversion-bases"),
     path("romanos/conversion/", views.conversion_romanos, name="conversion-romanos"),
+    # Cuaderno de resoluciones: cada resultado válido se guarda solo y se reabre desde aquí.
+    path("resoluciones/", resoluciones, name="resoluciones"),
     # Solo la app de escritorio: tema y formato numérico entre aperturas (404 en la web).
     path("preferencias/", views.guardar_preferencia, name="preferencias"),
     # Solo la app de escritorio: buscar, descargar e instalar actualizaciones (404 en la web).

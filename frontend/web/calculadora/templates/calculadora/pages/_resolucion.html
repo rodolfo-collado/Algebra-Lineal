@@ -1,0 +1,21 @@
+{% comment %}Una resolución del cuaderno: casilla, herramienta y hora, nombre (abre la herramienta), respuesta y edición del nombre.{% endcomment %}
+<li class="hoja-entrada" id="resolucion-{{ r.id }}" data-estado="{{ r.estado }}">
+    <input class="hoja-marca" type="checkbox" name="ids" value="{{ r.id }}" id="marca-{{ r.id }}" aria-labelledby="nombre-{{ r.id }}">
+    <div class="hoja-cuerpo">
+        <p class="hoja-meta">{% if r.chip %}<span class="tema-chip" title="{{ r.herramienta_nombre }}" aria-hidden="true">{{ r.chip }}</span>{% endif %}{% if r.mostrar_herramienta %}<span>{{ r.herramienta_nombre }}</span> · {% endif %}{% if r.fecha %}<time datetime="{{ r.creado }}">{{ r.fecha|date:"j b, H:i" }}</time>{% endif %}</p>
+        <h{{ nivel }} class="hoja-nombre" id="nombre-{{ r.id }}">{% if r.url %}<a href="{{ r.url }}">{{ r.nombre }}</a>{% else %}{{ r.nombre }}{% endif %}</h{{ nivel }}>
+        {% if r.estado == "ok" and r.resumen %}<p class="hoja-respuesta">{{ r.resumen }}</p>{% endif %}
+        {% if r.estado == "antiguo" %}<p class="hoja-aviso">Se guardó con una versión anterior de la herramienta: se abre con sus datos para calcularla de nuevo.</p>
+        {% elif r.estado == "futuro" %}<p class="hoja-aviso">Se guardó con una versión más reciente de PyGebra; esta versión la conserva intacta pero no puede abrirla.</p>
+        {% elif r.estado == "sin_herramienta" %}<p class="hoja-aviso">Su herramienta no está disponible en esta versión; se conserva intacta.</p>
+        {% elif r.estado == "danado" %}<p class="hoja-aviso">No se puede abrir: el registro está dañado. Puedes eliminarlo.</p>{% endif %}
+    </div>
+    <details class="hoja-editar">
+        <summary>Renombrar<span class="sr-only"> «{{ r.nombre }}»</span></summary>
+        <div class="hoja-editar-cuerpo">
+            <label class="sr-only" for="nuevo-nombre-{{ r.id }}">Nuevo nombre</label>
+            <input class="field-input" id="nuevo-nombre-{{ r.id }}" form="resolucion-{{ r.id }}-renombrar" name="nombre" value="{{ r.nombre }}" maxlength="{{ max_nombre }}" required>
+            <button class="btn btn-secondary" type="submit" form="resolucion-{{ r.id }}-renombrar">Guardar</button>
+        </div>
+    </details>
+</li>
