@@ -49,8 +49,9 @@ class PruebasCatalogoEstudio(SimpleTestCase):
 
     def test_hermanas_agrupa_las_disponibles_del_area(self):
         grupos = catalogo.hermanas(catalogo.DETERMINANTES)
-        self.assertEqual([c for c, _ in grupos], [catalogo.MATRICES])
+        self.assertEqual([c for c, _ in grupos], [catalogo.MATRICES, catalogo.VECTORES])
         self.assertIn(catalogo.DETERMINANTES, dict(grupos)[catalogo.MATRICES])
+        self.assertEqual(dict(grupos)[catalogo.VECTORES], (catalogo.INDEPENDENCIA_LINEAL,))
         self.assertEqual(catalogo.hermanas(catalogo.METODOS_CERRADOS), (
             (catalogo.RAICES, (catalogo.METODOS_CERRADOS, catalogo.METODOS_ABIERTOS)),
             (catalogo.SISTEMAS_ITERATIVOS, (catalogo.METODOS_ITERATIVOS,)),
