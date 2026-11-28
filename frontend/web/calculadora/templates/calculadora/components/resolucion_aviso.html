@@ -1,0 +1,68 @@
+{% comment %}
+    Aviso del cuaderno en una herramienta: lo que se guardó o se reabrió y dónde está. Con un
+    proyecto activo, «Añadir a Ej. N» lo lleva con un clic al ejercicio en el que se trabaja;
+    «Otro ejercicio» elige cualquiera (o uno nuevo). Llega en `resolucion_cuaderno` (middleware).
+    Sin JavaScript queda entre la entrada y el resultado; resoluciones.js lo pone bajo su encabezado.
+{% endcomment %}
+{% if resolucion_cuaderno %}
+{% with aviso=resolucion_cuaderno activo=proyecto_activo.ejercicio %}
+<aside class="resolucion-aviso" id="resolucion-aviso" data-estado="{{ aviso.estado }}" aria-label="Cuaderno de resoluciones">
+    <svg class="resolucion-aviso-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.5 3.5v17M11.5 8.5h4.5M11.5 12h4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+    <div class="resolucion-aviso-cuerpo">
+        <p class="resolucion-aviso-texto" role="status">
+            {% if aviso.estado == "guardada" %}Anotada en tu cuaderno como <strong>{{ aviso.nombre }}</strong>{% if aviso.ejercicio %}, en <strong>{{ aviso.ejercicio.etiqueta }}</strong>{% if aviso.ejercicio.proyecto_nombre %} de {{ aviso.ejercicio.proyecto_nombre }}{% endif %}{% endif %}.
+            {% elif aviso.estado == "existente" %}Ya estaba en tu cuaderno como <strong>{{ aviso.nombre }}</strong>{% if aviso.ejercicio %}, en <strong>{{ aviso.ejercicio.etiqueta }}</strong>{% if aviso.ejercicio.proyecto_nombre %} de {{ aviso.ejercicio.proyecto_nombre }}{% endif %}{% endif %}; no se anotó dos veces.
+            {% elif aviso.estado == "abierta" %}Desde tu cuaderno: <strong>{{ aviso.nombre }}</strong>{% if aviso.fecha %}, resuelta el <time datetime="{{ aviso.creado }}">{{ aviso.fecha|date:"j \d\e F, H:i" }}</time>{% endif %}{% if aviso.ejercicio %} · <strong>{{ aviso.ejercicio.etiqueta }}</strong>{% if aviso.ejercicio.proyecto_nombre %} de {{ aviso.ejercicio.proyecto_nombre }}{% endif %}{% endif %}. Si cambias los datos y vuelves a calcular, se anotará como una resolución nueva.
+            {% elif aviso.estado == "antiguo" %}<strong>{{ aviso.nombre }}</strong> se guardó con una versión anterior de esta herramienta. Sus datos están cargados: pulsa calcular para obtener el resultado con esta versión.
+            {% elif aviso.estado == "futuro" %}Esta resolución se guardó con una versión más reciente de PyGebra; esta versión no puede mostrarla, pero sigue intacta en tu cuaderno.
+            {% elif aviso.estado == "danado" %}Esta resolución no se pudo abrir porque su registro está dañado. Puedes eliminarla desde el cuaderno.
+            {% elif aviso.estado == "inexistente" %}Esa resolución ya no está en tu cuaderno.
+            {% elif aviso.estado == "otra_ruta" %}Esta resolución se calculó con otro método.{% if aviso.url %} <a href="{{ aviso.url }}">Ábrela con su método</a>.{% endif %}
+            {% else %}{{ aviso.motivo|default:"El cuaderno no está disponible en este momento." }}{% endif %}
+        </p>
+        {% if aviso.id and aviso.estado in "guardada existente abierta antiguo" %}
+            <div class="resolucion-aviso-acciones">
+                {% if activo and activo.id != aviso.ejercicio.id %}
+                    <form class="resolucion-anadir" method="post" action="{% url 'calculadora:resoluciones' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="agrupar"><input type="hidden" name="ids" value="{{ aviso.id }}">
+                        <input type="hidden" name="ejercicio" value="{{ activo.id }}"><input type="hidden" name="volver_a" value="herramienta">
+                        <button class="btn btn-primary" type="submit">{% if aviso.ejercicio %}Mover{% else %}Añadir{% endif %} a {{ activo.corta }}<span class="resolucion-anadir-proyecto"> · {{ proyecto_activo.proyecto.nombre|truncatechars:32 }}</span></button>
+                    </form>
+                {% endif %}
+                {% if aviso.destinos is not None %}
+                    <details class="resolucion-agrupar">
+                        <summary>{% if activo %}Otro ejercicio{% elif aviso.ejercicio %}Llevar a otro ejercicio{% else %}Añadir a un ejercicio{% endif %}</summary>
+                        <form class="resolucion-agrupar-form" method="post" action="{% url 'calculadora:resoluciones' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="agrupar">
+                            <input type="hidden" name="ids" value="{{ aviso.id }}">
+                            <input type="hidden" name="volver_a" value="herramienta">
+                            {% if proyecto_activo %}<input type="hidden" name="proyecto" value="{{ proyecto_activo.proyecto.id }}">{% endif %}
+                            <label class="cuaderno-destino"><span class="sr-only">Ejercicio</span>
+                                <select class="field-select" name="ejercicio">
+                                    <option value="nuevo">Un ejercicio nuevo{% if proyecto_activo %} en {{ proyecto_activo.proyecto.nombre|truncatechars:28 }}{% endif %}</option>
+                                    {% for grupo, opciones in aviso.destinos %}
+                                        <optgroup label="{{ grupo }}">{% for e in opciones %}<option value="{{ e.id }}">{{ e.etiqueta }}</option>{% endfor %}</optgroup>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label class="cuaderno-nombre-nuevo campo-numero"><span class="sr-only">Número del ejercicio nuevo</span>
+                                <input class="field-input" name="numero" maxlength="20" placeholder="Nº">
+                            </label>
+                            <label class="cuaderno-nombre-nuevo"><span class="sr-only">Título del ejercicio nuevo</span>
+                                <input class="field-input" name="nombre_ejercicio" maxlength="120" placeholder="Título (opcional)">
+                            </label>
+                            <button class="btn btn-secondary" type="submit">Añadir</button>
+                        </form>
+                    </details>
+                {% endif %}
+                <a class="resolucion-aviso-enlace" href="{% if aviso.ejercicio.proyecto %}{% url 'calculadora:proyecto' aviso.ejercicio.proyecto %}#ejercicio-{{ aviso.ejercicio.id }}{% else %}{% url 'calculadora:resoluciones' %}#resolucion-{{ aviso.id }}{% endif %}">{% if aviso.ejercicio.proyecto %}Ver en el proyecto{% else %}Ver en el cuaderno{% endif %}</a>
+            </div>
+        {% elif aviso.estado != "no_guardada" %}
+            <div class="resolucion-aviso-acciones"><a class="resolucion-aviso-enlace" href="{% url 'calculadora:resoluciones' %}">Ir al cuaderno</a></div>
+        {% endif %}
+    </div>
+</aside>
+{% endwith %}
+{% endif %}

@@ -184,6 +184,20 @@
     }
 }
 
+/* Hasta 1440 px las pestañas se compactan: junto a los botones (con Resoluciones) no cabían
+   con fuentes más anchas que la de Windows y quedaban debajo de ellos. */
+@media (min-width: 1200px) and (max-width: 1439px) {
+    [data-estilo="heyalgb"] .nav-areas ul {
+        gap: 0.1rem;
+    }
+
+    [data-estilo="heyalgb"] .areas-enlace {
+        padding-inline: 0.55rem;
+        font-size: 0.82rem;
+        letter-spacing: 0.03em;
+    }
+}
+
 /* —— Inicio: un cartel. Cortes diagonales a sangre, titular enorme y el sello del equipo —— */
 
 [data-estilo="heyalgb"] .home-hero {

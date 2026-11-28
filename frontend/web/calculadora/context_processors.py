@@ -52,6 +52,14 @@ def navegacion(request):
     }
 
 
+def proyecto_activo(request):
+    """El proyecto del cuaderno en el que se trabaja: visible y cambiable desde cualquier página."""
+    from .resoluciones import organizacion
+
+    # Las plantillas no reciben `request`: la ruta actual sirve para volver aquí tras una acción.
+    return {"proyecto_activo": organizacion.activo(), "ruta_actual": request.get_full_path()}
+
+
 def escritorio(request):
     """Señal de la app de escritorio y sus preferencias guardadas; nada en la web."""
     if not settings.DESKTOP_MODE:

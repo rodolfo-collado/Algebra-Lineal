@@ -1,0 +1,31 @@
+{% comment %}Mensajes del cuaderno compartidos por sus páginas: lo hecho, archivo apartado, no disponible y confirmación de eliminar.{% endcomment %}
+{% if hecho %}<p class="cuaderno-hecho" role="status">{{ hecho }}</p>{% endif %}
+{% if apartado %}
+    <p class="cuaderno-nota" role="status">Encontramos el archivo del cuaderno dañado y lo apartamos sin borrarlo como <code>{{ apartado.name }}</code>. Desde ahora se anota en uno nuevo.</p>
+{% endif %}
+{% if no_disponible %}
+    <section class="cuaderno-nota cuaderno-nota-aviso" role="alert" aria-labelledby="no-disponible-titulo">
+        <h2 id="no-disponible-titulo" class="confirmation-title">No pudimos abrir el cuaderno</h2>
+        <p>{{ no_disponible }}</p>
+        <p><a href="{{ pagina }}">Intentar de nuevo</a></p>
+    </section>
+{% endif %}
+{% if confirmar %}
+    <form class="confirmation" method="post" action="{{ pagina }}" data-confirmacion tabindex="-1" aria-labelledby="eliminar-titulo">
+        {% csrf_token %}
+        <input type="hidden" name="filtros" value="{{ consulta_filtros }}">
+        <input type="hidden" name="volver" value="{{ pagina }}">
+        <svg class="confirmation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="confirmation-body">
+            <h2 id="eliminar-titulo" class="confirmation-title">¿Eliminar {% if confirmar|length == 1 %}esta resolución{% else %}estas {{ confirmar|length }} resoluciones{% endif %}?</h2>
+            <ul class="cuaderno-confirmar">
+                {% for r in confirmar %}<li><input type="hidden" name="ids" value="{{ r.id }}">{{ r.nombre }}</li>{% endfor %}
+            </ul>
+            <p>Desaparecen del cuaderno, de sus ejercicios y de sus proyectos. No se puede deshacer. Si solo quieres dejarlas fuera del documento, desmarca «En el documento».</p>
+            <div class="confirmation-actions">
+                <a class="btn btn-secondary" href="{{ pagina }}{% if consulta_filtros %}?{{ consulta_filtros }}{% endif %}">Cancelar</a>
+                <button class="btn btn-primary cuaderno-peligro" type="submit" name="accion" value="eliminar_confirmado">Eliminar definitivamente</button>
+            </div>
+        </div>
+    </form>
+{% endif %}

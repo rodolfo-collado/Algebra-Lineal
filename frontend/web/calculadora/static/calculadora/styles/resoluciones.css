@@ -1,0 +1,956 @@
+/* Cuaderno de resoluciones y su aviso en las herramientas. Solo tokens: cada estilo y cada tema
+   lo dibujan con sus colores, radios y tipografías. La «personalidad» de cuaderno es contenida:
+   una línea de margen, pasos numerados y renglones discontinuos; nada que compita con la matemática. */
+
+/* —— Cabecera ——
+   Resoluciones usa las clases de Buscar y hasta 1600 px se queda en su icono. Donde el espacio
+   es justo, los demás botones también, como ya hacía HeyAlgb: en pantallas estrechas tapaban la
+   marca y, con la navegación por áreas a la vista y fuentes más anchas (Linux, zoom), las áreas
+   quedaban debajo de ellos. El nombre sigue para lectores de pantalla y en el title. */
+@media (max-width: 1599px) {
+    .header-resoluciones .header-buscar-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .header-resoluciones { padding-inline: 0.6rem; }
+}
+
+@media (max-width: 640px) {
+    .app-header :is(.header-buscar-text, .theme-toggle-text, .options-toggle-text) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .app-header :is(.header-buscar, .theme-toggle, .options-toggle) { padding-inline: 0.6rem; }
+}
+
+/* Áreas en la cabecera: ChocoLab desde 1180 px, HeyAlgb desde 1200 y Estudio y Minimalista desde
+   1240. BelugaCalc las lleva en su riel lateral y conserva los nombres. */
+@media (min-width: 1180px) and (max-width: 1439px) {
+    html:not([data-estilo="belugacalc"]) :is(.header-buscar-text, .theme-toggle-text, .options-toggle-text) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    html:not([data-estilo="belugacalc"]) :is(.header-buscar, .theme-toggle, .options-toggle) { padding-inline: 0.6rem; }
+}
+
+/* —— Aviso en una herramienta —— */
+
+.resolucion-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin: 0 0 1rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-brand);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-size: var(--text-sm);
+}
+
+.results-heading + .resolucion-aviso { margin-top: 0.6rem; }
+
+.resolucion-aviso:is([data-estado="no_guardada"], [data-estado="no_disponible"], [data-estado="danado"],
+    [data-estado="futuro"], [data-estado="inexistente"], [data-estado="antiguo"]) {
+    border-left-color: var(--color-warning);
+}
+
+.resolucion-aviso-icono {
+    flex: none;
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-top: 0.05rem;
+    color: var(--color-brand);
+}
+
+.resolucion-aviso:is([data-estado="no_guardada"], [data-estado="no_disponible"], [data-estado="danado"],
+    [data-estado="futuro"], [data-estado="inexistente"], [data-estado="antiguo"]) .resolucion-aviso-icono {
+    color: var(--color-warning);
+}
+
+.resolucion-aviso-cuerpo { min-width: 0; }
+.resolucion-aviso-texto { margin: 0; overflow-wrap: anywhere; }
+
+.resolucion-aviso-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1.1rem;
+    margin-top: 0.35rem;
+}
+
+:is(.resolucion-aviso-enlace, .resolucion-agrupar > summary) {
+    color: var(--color-brand);
+    font-weight: 600;
+}
+
+.resolucion-agrupar > summary { cursor: pointer; }
+.resolucion-agrupar[open] { flex-basis: 100%; }
+
+.resolucion-agrupar-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* El nombre solo hace falta cuando el destino es un ejercicio nuevo. */
+:is(.cuaderno-seleccion-acciones, .resolucion-agrupar-form):has(select[name="ejercicio"] option[value="nuevo"]:not(:checked)) .cuaderno-nombre-nuevo {
+    display: none;
+}
+
+/* —— Cuaderno —— */
+
+.cuaderno {
+    display: grid;
+    gap: 1.1rem;
+    max-width: 58rem;
+    margin: 0 auto;
+}
+
+.cuaderno-cabecera { display: grid; gap: 0.35rem; }
+
+.cuaderno-cuenta {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+}
+
+.cuaderno-hecho,
+.cuaderno-nota {
+    margin: 0;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--color-success-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-success-soft);
+    font-size: var(--text-sm);
+}
+
+.cuaderno-nota {
+    border-color: var(--color-warning-border);
+    background: var(--color-warning-soft);
+}
+
+.cuaderno-nota p { margin: 0.2rem 0 0; }
+.cuaderno-confirmar { margin: 0.35rem 0; padding-left: 1.2rem; font-size: 0.9rem; }
+
+.cuaderno-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem 0.75rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.cuaderno-busqueda { flex: 1 1 12rem; }
+.cuaderno-filtro .field-select { max-width: 13rem; }
+
+.cuaderno-filtro {
+    display: grid;
+    gap: 0.2rem;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+}
+
+.cuaderno-filtro :is(.field-input, .field-select) { min-height: 2.35rem; }
+
+.cuaderno-filtros-acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: var(--text-sm);
+}
+
+.cuaderno-seccion-titulo {
+    margin: 0.4rem 0 0.6rem;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Hoja: un ejercicio o un día. La columna de margen lleva las casillas; la línea, el borde del cuaderno. */
+.hoja {
+    --margen: 2.75rem;
+    position: relative;
+    margin-bottom: 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+}
+
+.hoja::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 var(--margen);
+    border-left: 1px solid color-mix(in srgb, var(--color-brand) 40%, transparent);
+    pointer-events: none;
+}
+
+.hoja-dia { background: var(--color-surface); }
+
+.hoja-cabecera,
+.hoja-entrada {
+    display: grid;
+    grid-template-columns: var(--margen) minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 0.85rem;
+    padding: 0.65rem 0.9rem 0.65rem 0;
+}
+
+.hoja-cabecera { border-bottom: 1px solid var(--color-border); }
+.hoja-cabecera > :not(.hoja-marca, .hoja-editar, .hoja-controles, .ejercicio-numero) { grid-column: 2; }
+
+.hoja-marca {
+    justify-self: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0.2rem 0 0;
+    accent-color: var(--color-brand);
+}
+
+.hoja-titulo {
+    margin: 0;
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+}
+
+.hoja-titulo-dia {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.hoja-detalle {
+    margin: 0.1rem 0 0;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+}
+
+.hoja-pasos {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: paso;
+}
+
+/* Renglones del cuaderno: discontinuos, sin cajas dentro de cajas. */
+.hoja-entrada + .hoja-entrada { border-top: 1px dashed var(--color-border); }
+.hoja-entrada:target { background: var(--color-brand-soft); }
+.hoja-entrada:has(.hoja-marca:checked) { background: color-mix(in srgb, var(--color-brand-soft) 70%, transparent); }
+
+.hoja-cuerpo { min-width: 0; }
+
+.hoja-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+}
+
+.hoja-meta .tema-chip { padding: 0.15rem 0.35rem; font-size: 0.7rem; }
+
+.hoja-nombre {
+    margin: 0.2rem 0 0;
+    font-size: 0.98rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* Los pasos de un ejercicio se numeran como en el cuaderno: 1., 2., 3. */
+ol.hoja-pasos > .hoja-entrada { counter-increment: paso; }
+
+ol.hoja-pasos .hoja-nombre::before {
+    content: counter(paso) ". ";
+    color: var(--color-brand);
+    font-family: var(--font-math);
+}
+
+.hoja-nombre a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.hoja-nombre a:hover { color: var(--color-brand); text-decoration: underline; }
+
+/* La respuesta en la letra de la interfaz: mezcla frases («Consistente de solución única») y valores. */
+.hoja-respuesta {
+    margin: 0.2rem 0 0;
+    color: var(--color-text);
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.hoja-aviso {
+    margin: 0.25rem 0 0;
+    color: var(--color-warning);
+    font-size: var(--text-sm);
+}
+
+.hoja-entrada:not([data-estado="ok"], [data-estado="antiguo"]) .hoja-nombre { color: var(--color-muted); }
+
+.hoja-editar > summary {
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    list-style: none;
+}
+
+.hoja-editar > summary::-webkit-details-marker { display: none; }
+.hoja-editar > summary:hover { color: var(--color-brand); background: var(--color-brand-soft); }
+
+/* Abierto, el editor ocupa el renglón siguiente sin mover la casilla ni el nombre. */
+.hoja-cabecera > .hoja-editar[open],
+.hoja-entrada > .hoja-editar[open],
+.hoja-controles:has(> .hoja-editar[open]) {
+    grid-column: 2 / -1;
+    grid-row: 2;
+}
+
+.hoja-editar[open] > summary { display: inline-block; margin-top: 0.4rem; }
+
+.hoja-editar-cuerpo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+
+.hoja-editar-cuerpo .field-input { flex: 1 1 14rem; }
+.hoja-editar-cuerpo .field-help { flex-basis: 100%; margin: 0; }
+
+.hoja-vacia {
+    margin: 0;
+    padding: 0.8rem 0.9rem 0.9rem calc(var(--margen) + 0.85rem);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+}
+
+/* Barra de selección: al final de la lista; con algo marcado (JS), flota al pie de la ventana. */
+.cuaderno-seleccion {
+    position: sticky;
+    bottom: 0.75rem;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-lg);
+}
+
+[data-mejorado] .cuaderno-seleccion:not([data-activa]) {
+    position: static;
+    border-color: var(--color-border);
+    box-shadow: none;
+}
+
+.cuaderno-seleccion-cuenta {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.cuaderno-seleccion-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cuaderno-destino {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--text-sm);
+}
+
+.cuaderno-seleccion [aria-disabled="true"] { opacity: 0.55; }
+
+.btn.cuaderno-peligro { color: var(--color-danger); border-color: var(--color-danger-border); }
+
+.btn-primary.cuaderno-peligro {
+    border-color: var(--color-danger);
+    background: var(--color-danger);
+    color: var(--color-bg);
+}
+
+/* —— Cuaderno en blanco —— */
+
+.cuaderno-blanco {
+    display: grid;
+    grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+    align-items: center;
+    gap: 1.75rem;
+    padding: 1.5rem;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.cuaderno-blanco h2 { margin: 0 0 0.4rem; font-size: 1.2rem; }
+.cuaderno-blanco p { margin: 0 0 0.5rem; }
+.cuaderno-blanco-empieza { margin-top: 0.9rem; font-weight: 600; }
+
+/* Una hoja rayada con su margen y tres preguntas por resolver. */
+.cuaderno-blanco-hoja {
+    --renglon: 1.6rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 3 / 4;
+    padding: calc(var(--renglon) * 1.5) 0.6rem 0 2.3rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background:
+        repeating-linear-gradient(to bottom, transparent 0 calc(var(--renglon) - 1px),
+            var(--color-border) calc(var(--renglon) - 1px) var(--renglon)) 0 calc(var(--renglon) * 0.5) / 100% 100% no-repeat,
+        var(--color-surface-raised);
+    box-shadow: var(--shadow-sm);
+}
+
+.cuaderno-blanco-hoja::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 1.7rem;
+    border-left: 1px solid color-mix(in srgb, var(--color-brand) 45%, transparent);
+}
+
+.cuaderno-blanco-linea {
+    height: var(--renglon);
+    color: var(--color-muted);
+    font: 0.85rem/var(--renglon) var(--font-math);
+    white-space: nowrap;
+}
+
+.cuaderno-sugeridas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (max-width: 640px) {
+    .cuaderno-blanco { grid-template-columns: 1fr; padding: 1.1rem; }
+    .cuaderno-blanco-hoja { width: min(11rem, 60%); justify-self: center; }
+    .hoja { --margen: 2.3rem; }
+    .cuaderno-seleccion { bottom: 0.5rem; }
+    .cuaderno-seleccion-acciones .btn { flex: 1 1 auto; }
+}
+
+@media (forced-colors: active) {
+    .hoja::before, .cuaderno-blanco-hoja::before { border-left-color: CanvasText; }
+}
+
+/* ====== Proyectos ======
+   Un proyecto es el borrador de un trabajo: tarjetas sobrias en el cuaderno, una cabecera con el
+   progreso, un mapa de casillas para orientarse en proyectos largos y las hojas de sus ejercicios
+   con el número en el margen, como en un cuaderno. */
+
+/* Migas a la izquierda; el proyecto activo, discreto, a la derecha. */
+.contexto-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
+}
+
+.contexto-fila > .breadcrumbs { min-width: 0; }
+
+.proyecto-activo {
+    position: relative;
+    margin-left: auto;
+    font-size: var(--text-sm);
+}
+
+.proyecto-activo-resumen {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    max-width: min(28rem, 80vw);
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    cursor: pointer;
+    list-style: none;
+}
+
+.proyecto-activo-resumen::-webkit-details-marker { display: none; }
+.proyecto-activo-resumen:hover { border-color: var(--color-brand); background: var(--color-brand-soft); }
+.proyecto-activo-icono { flex: none; width: 1rem; height: 1rem; color: var(--color-brand); }
+
+.proyecto-activo-nombre {
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.proyecto-activo-ejercicio {
+    flex: none;
+    padding: 0.05rem 0.45rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+    font: 600 0.78rem/1.4 var(--font-math);
+}
+
+[data-theme="dark"] .proyecto-activo-ejercicio { color: var(--color-brand); }
+.proyecto-activo .disclosure-chevron { width: 0.8rem; height: 0.8rem; transition: transform var(--motion-fast); }
+.proyecto-activo[open] .disclosure-chevron { transform: rotate(90deg); }
+
+.proyecto-activo-panel {
+    position: absolute;
+    right: 0;
+    z-index: 20;
+    display: grid;
+    gap: 0.75rem;
+    width: min(24rem, 92vw);
+    margin-top: 0.4rem;
+    padding: 0.9rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-lg);
+}
+
+.proyecto-activo-titulo { margin: 0; font-weight: 700; }
+.proyecto-activo-titulo a { color: var(--color-text); }
+.proyecto-activo-progreso { margin: -0.5rem 0 0; color: var(--color-muted); font-size: var(--text-xs); }
+
+.proyecto-activo-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--color-border);
+}
+
+.proyecto-activo-form .cuaderno-filtro:not(.campo-numero) { flex: 1 1 10rem; }
+.proyecto-activo-form :is(.field-select, .field-input) { width: 100%; }
+
+.proyecto-activo-enlaces {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--color-border);
+}
+
+.proyecto-activo-enlaces a { color: var(--color-brand); font-weight: 600; }
+
+.proyecto-activo-salir {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-muted);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.proyecto-activo-insignia { color: var(--color-brand); }
+
+/* Aviso: con un ejercicio activo, añadir es un solo botón. */
+.resolucion-anadir { margin: 0; }
+.resolucion-anadir .btn { min-height: 2.2rem; padding-block: 0.3rem; }
+.resolucion-anadir-proyecto { font-weight: 400; opacity: 0.85; }
+
+/* —— Proyectos en el cuaderno —— */
+
+.cuaderno-seccion-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.cuaderno-seccion-cabecera .cuaderno-seccion-titulo { margin: 0; }
+.cuaderno-pista { margin: 0.4rem 0 0; max-width: 44rem; }
+
+.cuaderno-nuevo > summary { list-style: none; cursor: pointer; }
+.cuaderno-nuevo > summary::-webkit-details-marker { display: none; }
+.cuaderno-nuevo[open] { flex-basis: 100%; order: 10; }
+
+.cuaderno-nuevo-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem 0.75rem;
+    margin-top: 0.6rem;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.cuaderno-nuevo-form .field-help { flex-basis: 100%; margin: 0; }
+.cuaderno-filtro-ancho { flex: 1 1 14rem; }
+.cuaderno-filtro-ancho .field-input { width: 100%; }
+.campo-numero .field-input { width: 5.5rem; }
+.ejercicio-enunciado-campo { flex: 1 1 100%; }
+.ejercicio-enunciado-campo textarea { width: 100%; font-family: var(--font-ui); }
+
+.proyectos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.75rem;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.proyecto-tarjeta {
+    position: relative;
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.85rem 0.95rem 0.95rem 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+}
+
+/* El lomo del cuaderno: una franja de acento, más intensa en el proyecto activo. */
+.proyecto-tarjeta::before {
+    content: "";
+    position: absolute;
+    inset: 0.6rem auto 0.6rem 0.5rem;
+    width: 3px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-brand) 35%, transparent);
+}
+
+.proyecto-tarjeta[data-activo]::before { background: var(--color-brand); }
+.proyecto-tarjeta[data-activo] { border-color: color-mix(in srgb, var(--color-brand) 45%, var(--color-border)); }
+.proyecto-tarjeta:hover { border-color: var(--color-brand); }
+
+.proyecto-tarjeta-enlace {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--color-text);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Toda la tarjeta abre el proyecto. */
+.proyecto-tarjeta-enlace::after { content: ""; position: absolute; inset: 0; }
+.proyecto-tarjeta-nombre { overflow-wrap: anywhere; }
+.proyecto-tarjeta-detalle { margin: 0; color: var(--color-muted); font-size: var(--text-xs); }
+.cuaderno-coincidencias-proyectos { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0; padding: 0; list-style: none; }
+
+.progreso {
+    width: 100%;
+    height: 0.45rem;
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    accent-color: var(--color-brand);
+    appearance: none;
+}
+
+.progreso::-webkit-progress-bar { border-radius: var(--radius-pill); background: var(--color-surface-muted); }
+.progreso::-webkit-progress-value { border-radius: var(--radius-pill); background: var(--color-brand); }
+.progreso::-moz-progress-bar { border-radius: var(--radius-pill); background: var(--color-brand); }
+.progreso-grande { height: 0.6rem; max-width: 32rem; }
+
+/* —— Página de un proyecto —— */
+
+.proyecto-cabecera { gap: 0.55rem; }
+.proyecto-progreso { display: grid; gap: 0.35rem; }
+
+.proyecto-acciones,
+.proyecto-herramientas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.proyecto-herramientas {
+    padding: 0.6rem 0;
+    border-block: 1px solid var(--color-border);
+}
+
+.proyecto-vistas {
+    display: flex;
+    gap: 0.2rem;
+    margin-right: auto;
+    padding: 0.2rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+}
+
+.proyecto-vistas a {
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-pill);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.proyecto-vistas a[aria-current] { background: var(--color-surface-raised); color: var(--color-text); box-shadow: var(--shadow-sm); }
+
+.proyecto-panel {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.proyecto-panel .cuaderno-seccion-titulo { margin: 0; }
+.proyecto-panel-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 1rem; }
+
+/* Mapa: una casilla por ejercicio, en el orden del documento. Rellena = con resolución. */
+.mapa {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.1rem, 1fr));
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mapa-celda {
+    display: grid;
+    place-items: center;
+    min-height: 2.1rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 6px;
+    background: var(--color-surface-raised);
+    color: var(--color-muted);
+    font: 600 0.72rem/1 var(--font-math);
+    text-decoration: none;
+}
+
+.mapa-celda[data-estado="resuelto"] { border-color: var(--color-brand); background: var(--color-brand); color: var(--color-brand-text); }
+.mapa-celda[data-estado="por-crear"] { border-style: dashed; border-color: var(--color-border); background: transparent; }
+.mapa-celda[data-excluido] { opacity: 0.45; }
+.mapa-celda[aria-current] { outline: 2px solid var(--color-text); outline-offset: 1px; }
+a.mapa-celda:hover { border-color: var(--color-brand); color: var(--color-text); }
+a.mapa-celda[data-estado="resuelto"]:hover { color: var(--color-brand-text); filter: brightness(1.08); }
+
+.mapa-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.6rem;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+}
+
+.mapa-muestra { display: inline-block; width: 0.8rem; height: 0.8rem; border: 1px solid var(--color-border-strong); border-radius: 3px; }
+.mapa-muestra[data-estado="resuelto"] { border-color: var(--color-brand); background: var(--color-brand); }
+.mapa-muestra[data-estado="por-crear"] { border-style: dashed; }
+
+.proyecto-borrador-cifras { margin: 0; font-size: 0.95rem; }
+.proyecto-borrador-pendiente { color: var(--color-warning); }
+.proyecto-borrador .field-help { margin: 0; }
+.proyecto-indice > summary { color: var(--color-brand); font-weight: 600; cursor: pointer; }
+
+.proyecto-indice-lista {
+    columns: 2 18rem;
+    margin: 0.5rem 0 0;
+    padding-left: 1.2rem;
+    font-size: var(--text-sm);
+}
+
+.proyecto-indice-lista li { break-inside: avoid; }
+.proyecto-indice-seccion { margin-top: 0.4rem; list-style: none; margin-left: -1.2rem; font-weight: 700; }
+.proyecto-indice-cuenta { color: var(--color-muted); font-size: var(--text-xs); }
+
+.proyecto-grupo { display: grid; gap: 0.1rem; }
+.proyecto-grupo[data-excluida] > .proyecto-seccion-cabecera .proyecto-seccion-titulo { color: var(--color-muted); text-decoration: line-through; }
+
+.proyecto-seccion-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
+    margin: 0.9rem 0 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 2px solid color-mix(in srgb, var(--color-brand) 50%, transparent);
+}
+
+.proyecto-seccion-titulo { margin: 0; font-size: 1.1rem; }
+.proyecto-seccion-vacia { padding-left: 0; }
+
+/* Cada sección es una sola hoja: los ejercicios son sus renglones numerados, no tarjetas sueltas. */
+.ejercicios {
+    --margen: 2.75rem;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    list-style: none;
+}
+
+.ejercicios::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 var(--margen);
+    z-index: 1;
+    border-left: 1px solid color-mix(in srgb, var(--color-brand) 40%, transparent);
+    pointer-events: none;
+}
+
+.ejercicio {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    scroll-margin-top: calc(var(--header-height) + 1rem);
+}
+
+.ejercicio::before { display: none; }
+.ejercicio + .ejercicio { border-top: 1px solid var(--color-border); }
+.ejercicio:target { background: var(--color-brand-soft); }
+.ejercicio[data-activo] { background: color-mix(in srgb, var(--color-brand-soft) 65%, transparent); box-shadow: inset 3px 0 0 var(--color-brand); }
+.ejercicio .hoja-cabecera { padding-block: 0.45rem; }
+.ejercicio[data-excluida] .hoja-titulo { color: var(--color-muted); }
+.ejercicio[data-excluida] { background: var(--color-surface); }
+.ejercicio .hoja-titulo { font-size: 0.98rem; }
+
+/* El número del ejercicio ocupa el margen de la hoja. */
+.ejercicio-numero {
+    justify-self: center;
+    max-width: calc(var(--margen) - 0.3rem);
+    overflow: hidden;
+    color: var(--color-brand);
+    font: 700 1.05rem/1.4 var(--font-math);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ejercicio[data-estado="pendiente"] .ejercicio-numero { color: var(--color-muted); }
+
+.hoja-enunciado {
+    margin: 0;
+    padding: 0.55rem 0.9rem 0.6rem calc(var(--margen) + 0.85rem);
+    border-bottom: 1px dashed var(--color-border);
+    color: var(--color-text);
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+.hoja-controles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.3rem;
+}
+
+.hoja-entrada[data-excluida] .hoja-cuerpo { opacity: 0.6; }
+
+/* Interruptor «En el documento»: icono de hoja con marca; excluido, la hoja vacía. */
+.incluir,
+.hoja-orden,
+.hoja-activar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 2rem;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-raised);
+    color: var(--color-muted);
+    font: 600 var(--text-xs)/1 var(--font-ui);
+    cursor: pointer;
+}
+
+.incluir svg,
+.hoja-activar svg { width: 1rem; height: 1rem; }
+
+/* Lo habitual es entrar en el documento: icono discreto. Lo excepcional, fuera, se lee entero. */
+.incluir[aria-pressed="true"],
+.hoja-orden,
+.hoja-activar { border-color: transparent; background: transparent; }
+.incluir[aria-pressed="false"] { border-color: var(--color-warning-border); background: var(--color-warning-soft); color: var(--color-warning); }
+
+.ejercicio-detalle { margin-top: -0.25rem; }
+
+.ejercicio-detalle > summary {
+    padding: 0.15rem 0.9rem 0.35rem calc(var(--margen) + 0.85rem);
+    color: var(--color-brand);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ejercicio-detalle[open] > summary { border-bottom: 1px dashed var(--color-border); }
+.ejercicio-detalle .hoja-enunciado { border-bottom: 1px dashed var(--color-border); }
+.ejercicio .hoja-cabecera { border-bottom: 0; }
+.ejercicio-respuesta { color: var(--color-text); }
+.incluir[aria-pressed="true"] { color: var(--color-brand-strong); }
+[data-theme="dark"] .incluir[aria-pressed="true"] { color: var(--color-brand); }
+.hoja-orden { min-width: 2rem; justify-content: center; font: 700 0.9rem/1 var(--font-math); }
+.hoja-activar { color: var(--color-text); }
+:is(.incluir, .hoja-orden, .hoja-activar):hover { border-color: var(--color-brand); background: var(--color-brand-soft); color: var(--color-text); }
+.hoja-ubicacion { color: var(--color-text); }
+
+.ejercicio-editar { align-items: flex-end; }
+.ejercicio-editar-acciones { display: flex; gap: 0.5rem; }
+
+.cuaderno-blanco-proyecto .cuaderno-blanco-linea { font-weight: 700; color: var(--color-brand); }
+
+@media (max-width: 640px) {
+    .contexto-fila { align-items: flex-start; }
+    .proyecto-activo { margin-left: 0; }
+    .proyecto-activo-panel { left: 0; right: auto; }
+    .incluir-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .hoja-cabecera .hoja-controles,
+    .hoja-entrada .hoja-controles { grid-column: 2 / -1; justify-content: flex-start; }
+    .proyecto-vistas { margin-right: 0; }
+}

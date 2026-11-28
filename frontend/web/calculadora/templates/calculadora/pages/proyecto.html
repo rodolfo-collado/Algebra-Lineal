@@ -1,0 +1,220 @@
+{% extends "calculadora/base.html" %}
+{% comment %}
+    Un proyecto del cuaderno: el borrador persistente de un documento. Cabecera con el progreso,
+    mapa de ejercicios (uno por casilla, en el orden del documento), borrador e índice de lo que
+    se exportará, herramientas para preparar ejercicios y, en orden, las secciones con sus
+    ejercicios y las resoluciones de cada uno. Ordenar e incluir son botones del formulario #op;
+    las casillas de las resoluciones, del formulario #cuaderno-seleccion. Todo funciona sin JavaScript.
+{% endcomment %}
+
+{% block title %}{{ proyecto.nombre|default:"Proyecto" }} · Resoluciones · PyGebra{% endblock %}
+{% block body_attrs %} data-cuaderno{% endblock %}
+
+{% block content %}
+<div class="cuaderno cuaderno-proyecto">
+    {% include "calculadora/pages/_avisos_cuaderno.html" %}
+    {% if proyecto %}
+    <header class="cuaderno-cabecera proyecto-cabecera">
+        <p class="section-kicker">Proyecto{% if proyecto.activo %} · <span class="proyecto-activo-insignia">activo</span>{% endif %}</p>
+        <h1 class="tool-title">{{ proyecto.nombre }}</h1>
+        <div class="proyecto-progreso">
+            <progress class="progreso progreso-grande" max="{{ progreso.total|default:1 }}" value="{{ progreso.resueltos }}" aria-labelledby="progreso-texto">{{ progreso.porcentaje }} %</progress>
+            <p class="cuaderno-cuenta" id="progreso-texto"><strong>{{ progreso.resueltos }} de {{ progreso.total }}</strong> ejercicio{{ progreso.total|pluralize }} con resolución{% if progreso.objetivo %} · objetivo: {{ progreso.objetivo }}{% endif %}{% if progreso.pendientes_por_crear %} · faltan {{ progreso.pendientes_por_crear }} por preparar{% endif %}</p>
+        </div>
+        <div class="proyecto-acciones">
+            {% if not proyecto.activo %}
+                <button class="btn btn-primary" type="submit" form="activar-proyecto">Trabajar en este proyecto</button>
+            {% else %}
+                <button class="btn btn-secondary" type="submit" form="desactivar-proyecto">Dejar de trabajar en él</button>
+            {% endif %}
+            <details class="cuaderno-nuevo">
+                <summary class="btn btn-secondary">Editar proyecto</summary>
+                <form class="cuaderno-nuevo-form" method="post" action="{{ pagina }}">
+                    {% csrf_token %}<input type="hidden" name="accion" value="editar_proyecto"><input type="hidden" name="proyecto" value="{{ proyecto.id }}">
+                    <label class="cuaderno-filtro cuaderno-filtro-ancho"><span>Nombre</span><input class="field-input" name="nombre" value="{{ proyecto.nombre }}" maxlength="{{ max_nombre }}" required></label>
+                    <label class="cuaderno-filtro"><span>Ejercicios previstos</span><input class="field-input" type="number" name="objetivo" min="1" max="999" value="{{ proyecto.objetivo|default:'' }}"></label>
+                    <button class="btn btn-primary" type="submit">Guardar</button>
+                    <button class="btn btn-secondary cuaderno-peligro" type="submit" name="accion" value="eliminar_proyecto" formnovalidate>Eliminar proyecto…</button>
+                </form>
+            </details>
+        </div>
+    </header>
+
+    {% if confirmar_proyecto %}
+        <form class="confirmation" method="post" action="{{ pagina }}" data-confirmacion tabindex="-1" aria-labelledby="eliminar-proyecto-titulo">
+            {% csrf_token %}<input type="hidden" name="proyecto" value="{{ proyecto.id }}">
+            <div class="confirmation-body">
+                <h2 id="eliminar-proyecto-titulo" class="confirmation-title">¿Eliminar el proyecto «{{ proyecto.nombre }}»?</h2>
+                <p>Se quitan el proyecto, sus secciones y su selección para el documento. Sus {{ progreso.creados }} ejercicio{{ progreso.creados|pluralize }} y todas sus resoluciones siguen en el cuaderno como ejercicios independientes.</p>
+                <div class="confirmation-actions">
+                    <a class="btn btn-secondary" href="{{ pagina }}">Cancelar</a>
+                    <button class="btn btn-primary cuaderno-peligro" type="submit" name="accion" value="eliminar_proyecto_confirmado">Eliminar el proyecto</button>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+
+    {% if mapa or progreso.pendientes_por_crear %}
+        <section class="proyecto-panel" aria-labelledby="mapa-titulo">
+            <div class="proyecto-panel-cabecera">
+                <h2 id="mapa-titulo" class="cuaderno-seccion-titulo">Mapa del proyecto</h2>
+                <p class="mapa-leyenda" aria-hidden="true"><span class="mapa-muestra" data-estado="resuelto"></span>Con resolución <span class="mapa-muestra" data-estado="pendiente"></span>Pendiente <span class="mapa-muestra" data-estado="por-crear"></span>Por preparar</p>
+            </div>
+            <ol class="mapa" aria-label="Ejercicios del proyecto en orden">
+                {% for celda in mapa %}<li><a class="mapa-celda" href="#ejercicio-{{ celda.id }}" data-estado="{{ celda.estado }}"{% if not celda.incluir %} data-excluido{% endif %}{% if celda.id == ejercicio_activo %} aria-current="true"{% endif %} title="{{ celda.etiqueta }} · {% if celda.estado == 'resuelto' %}con resolución{% else %}pendiente{% endif %}{% if not celda.incluir %} · fuera del documento{% endif %}"><span class="sr-only">{{ celda.etiqueta }}, {% if celda.estado == 'resuelto' %}con resolución{% else %}pendiente{% endif %}</span><span aria-hidden="true">{{ celda.corta }}</span></a></li>{% endfor %}
+                {% for _ in huecos %}<li><span class="mapa-celda" data-estado="por-crear" aria-hidden="true"></span></li>{% endfor %}
+            </ol>
+            {% if progreso.pendientes_por_crear %}<p class="sr-only">Faltan {{ progreso.pendientes_por_crear }} ejercicios por preparar.</p>{% endif %}
+        </section>
+    {% endif %}
+
+    <section class="proyecto-panel proyecto-borrador" aria-labelledby="borrador-titulo">
+        <h2 id="borrador-titulo" class="cuaderno-seccion-titulo">Borrador del documento</h2>
+        <p class="proyecto-borrador-cifras"><strong>{{ borrador.ejercicios }}</strong> ejercicio{{ borrador.ejercicios|pluralize }} · <strong>{{ borrador.resoluciones }}</strong> resoluci{{ borrador.resoluciones|pluralize:"ón,ones" }}{% if borrador.sin_resolver %} · <span class="proyecto-borrador-pendiente">{{ borrador.sin_resolver }} todavía sin resolver</span>{% endif %}</p>
+        <p class="field-help">Entra lo marcado «En el documento», en este orden. Dejar algo fuera no lo borra del cuaderno. La exportación a PDF llegará en una próxima versión y usará esta selección.</p>
+        {% if borrador.ejercicios %}
+            <details class="proyecto-indice">
+                <summary>Ver el índice</summary>
+                <ol class="proyecto-indice-lista">
+                    {% for grupo in indice %}
+                        {% if grupo.seccion %}<li class="proyecto-indice-seccion">{{ grupo.seccion.titulo }}</li>{% endif %}
+                        {% for e in grupo.ejercicios %}<li><a href="#ejercicio-{{ e.id }}">{{ e.etiqueta }}</a> <span class="proyecto-indice-cuenta">{% if e.resoluciones %}{{ e.resoluciones|length }} resoluci{{ e.resoluciones|length|pluralize:"ón,ones" }}{% else %}sin resolver{% endif %}</span></li>{% endfor %}
+                    {% endfor %}
+                </ol>
+            </details>
+        {% endif %}
+    </section>
+
+    <div class="proyecto-herramientas" role="toolbar" aria-label="Preparar el proyecto">
+        <nav class="proyecto-vistas" aria-label="Mostrar">
+            {% for clave, rotulo in vistas %}<a href="?ver={{ clave }}"{% if vista == clave %} aria-current="page"{% endif %}>{{ rotulo }}</a>{% endfor %}
+        </nav>
+        <details class="cuaderno-nuevo">
+            <summary class="btn btn-secondary">Nuevo ejercicio</summary>
+            <form class="cuaderno-nuevo-form" method="post" action="{{ pagina }}">
+                {% csrf_token %}<input type="hidden" name="accion" value="crear_ejercicio"><input type="hidden" name="proyecto" value="{{ proyecto.id }}">
+                <label class="cuaderno-filtro campo-numero"><span>Número</span><input class="field-input" name="numero" maxlength="20" placeholder="{{ progreso.creados|add:1 }}"></label>
+                <label class="cuaderno-filtro cuaderno-filtro-ancho"><span>Título (opcional)</span><input class="field-input" name="nombre" maxlength="{{ max_nombre }}"></label>
+                <label class="cuaderno-filtro ejercicio-enunciado-campo"><span>Enunciado (opcional)</span><textarea class="field-input" name="enunciado" rows="2" maxlength="2000"></textarea></label>
+                {% if secciones %}<label class="cuaderno-filtro"><span>Sección</span><select class="field-select" name="seccion"><option value="">Sin sección</option>{% for s in secciones %}<option value="{{ s.id }}">{{ s.titulo }}</option>{% endfor %}</select></label>{% endif %}
+                <label class="option"><input type="checkbox" name="activar" value="1" checked><span>Trabajar en él ahora</span></label>
+                <button class="btn btn-primary" type="submit">Crear ejercicio</button>
+            </form>
+        </details>
+        <details class="cuaderno-nuevo"{% if not mapa %} open{% endif %}>
+            <summary class="btn btn-secondary">Preparar varios</summary>
+            <form class="cuaderno-nuevo-form" method="post" action="{{ pagina }}">
+                {% csrf_token %}<input type="hidden" name="accion" value="crear_ejercicios"><input type="hidden" name="proyecto" value="{{ proyecto.id }}">
+                <label class="cuaderno-filtro campo-numero"><span>Del</span><input class="field-input" type="number" name="desde" min="0" value="1" required></label>
+                <label class="cuaderno-filtro campo-numero"><span>al</span><input class="field-input" type="number" name="hasta" min="0" value="{{ proyecto.objetivo|default:10 }}" required></label>
+                {% if secciones %}<label class="cuaderno-filtro"><span>Sección</span><select class="field-select" name="seccion"><option value="">Sin sección</option>{% for s in secciones %}<option value="{{ s.id }}">{{ s.titulo }}</option>{% endfor %}</select></label>{% endif %}
+                <button class="btn btn-primary" type="submit">Crear ejercicios numerados</button>
+                <p class="field-help">Los números que ya existen no se repiten. Luego podrás darles título y enunciado.</p>
+            </form>
+        </details>
+        <details class="cuaderno-nuevo">
+            <summary class="btn btn-secondary">Nueva sección</summary>
+            <form class="cuaderno-nuevo-form" method="post" action="{{ pagina }}">
+                {% csrf_token %}<input type="hidden" name="accion" value="crear_seccion"><input type="hidden" name="proyecto" value="{{ proyecto.id }}">
+                <label class="cuaderno-filtro cuaderno-filtro-ancho"><span>Título</span><input class="field-input" name="nombre" maxlength="{{ max_nombre }}" required placeholder="Capítulo 2 · Matrices"></label>
+                <button class="btn btn-primary" type="submit">Crear sección</button>
+            </form>
+        </details>
+        {% if mapa|length > 1 %}<button class="btn btn-secondary" type="submit" form="ordenar-proyecto">Ordenar por número</button>{% endif %}
+    </div>
+
+    <form id="cuaderno-seleccion" class="cuaderno-hojas" method="post" action="{{ pagina }}">
+        {% csrf_token %}
+        <input type="hidden" name="volver" value="{{ volver }}">
+        {% for grupo in grupos %}
+            <section class="proyecto-grupo"{% if grupo.seccion %} id="seccion-{{ grupo.seccion.id }}" aria-labelledby="seccion-{{ grupo.seccion.id }}-titulo"{% if not grupo.seccion.incluir %} data-excluida{% endif %}{% else %} aria-label="Ejercicios sin sección"{% endif %}>
+                {% if grupo.seccion %}
+                    <header class="proyecto-seccion-cabecera">
+                        <h2 class="proyecto-seccion-titulo" id="seccion-{{ grupo.seccion.id }}-titulo">{{ grupo.seccion.titulo }}</h2>
+                        <div class="hoja-controles">
+                            {% include "calculadora/pages/_incluir.html" with tabla="secciones" objeto=grupo.seccion nombre=grupo.seccion.titulo %}
+                            {% if not grupo.primera %}<button class="hoja-orden" type="submit" form="op" name="op" value="mover:secciones:{{ grupo.seccion.id }}:-1" aria-label="Subir la sección «{{ grupo.seccion.titulo }}»" title="Subir">↑</button>{% endif %}
+                            {% if not grupo.ultima %}<button class="hoja-orden" type="submit" form="op" name="op" value="mover:secciones:{{ grupo.seccion.id }}:1" aria-label="Bajar la sección «{{ grupo.seccion.titulo }}»" title="Bajar">↓</button>{% endif %}
+                            <details class="hoja-editar">
+                                <summary>Editar<span class="sr-only"> la sección «{{ grupo.seccion.titulo }}»</span></summary>
+                                <div class="hoja-editar-cuerpo">
+                                    <input class="field-input" form="seccion-{{ grupo.seccion.id }}-editar" name="nombre" value="{{ grupo.seccion.titulo }}" maxlength="{{ max_nombre }}" required aria-label="Título de la sección">
+                                    <button class="btn btn-secondary" type="submit" form="seccion-{{ grupo.seccion.id }}-editar">Guardar</button>
+                                    <button class="btn btn-secondary" type="submit" form="seccion-{{ grupo.seccion.id }}-eliminar">Quitar sección</button>
+                                    <p class="field-help">Quitar la sección deja sus ejercicios en el proyecto, sin sección.</p>
+                                </div>
+                            </details>
+                        </div>
+                    </header>
+                {% endif %}
+                {% if grupo.ejercicios %}
+                    <ol class="ejercicios">
+                        {% for e in grupo.ejercicios %}
+                            <li class="hoja ejercicio" id="ejercicio-{{ e.id }}" data-grupo data-estado="{% if e.resuelto %}resuelto{% else %}pendiente{% endif %}"{% if not e.incluir %} data-excluida{% endif %}{% if e.id == ejercicio_activo %} data-activo{% endif %}>
+                                <header class="hoja-cabecera ejercicio-cabecera">
+                                    <span class="ejercicio-numero" aria-hidden="true">{{ e.numero|default:"·" }}</span>
+                                    <div class="hoja-titulos">
+                                        <h3 class="hoja-titulo" id="ejercicio-{{ e.id }}-titulo"><span class="sr-only">{% if e.numero %}Ejercicio {{ e.numero }}{% endif %}{% if e.nombre and e.numero %}: {% endif %}</span>{% if e.nombre %}{{ e.nombre }}{% elif e.numero %}<span aria-hidden="true">Ejercicio {{ e.numero }}</span>{% else %}Ejercicio sin título{% endif %}</h3>
+                                        <p class="hoja-detalle">{% if e.id == ejercicio_activo %}<strong class="proyecto-activo-insignia">Trabajando aquí</strong> · {% endif %}{% if e.resuelto %}<span class="ejercicio-respuesta">{{ e.resoluciones.0.resumen|default:e.resoluciones.0.nombre }}</span>{% if e.resoluciones|length > 1 %} · +{{ e.resoluciones|length|add:-1 }}{% endif %}{% else %}Pendiente{% endif %}</p>
+                                    </div>
+                                    <div class="hoja-controles">
+                                        {% include "calculadora/pages/_incluir.html" with tabla="ejercicios" objeto=e nombre=e.etiqueta %}
+                                        {% if not forloop.first %}<button class="hoja-orden" type="submit" form="op" name="op" value="mover:ejercicios:{{ e.id }}:-1" aria-label="Subir «{{ e.etiqueta }}»" title="Subir">↑</button>{% endif %}
+                                        {% if not forloop.last %}<button class="hoja-orden" type="submit" form="op" name="op" value="mover:ejercicios:{{ e.id }}:1" aria-label="Bajar «{{ e.etiqueta }}»" title="Bajar">↓</button>{% endif %}
+                                        {% if e.id != ejercicio_activo %}<button class="hoja-activar" type="submit" form="activar-{{ e.id }}" title="Trabajar aquí: lo que calcules se añadirá a este ejercicio con un clic"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="10" cy="10" r="2.2" fill="currentColor"/></svg><span class="sr-only">Trabajar en «{{ e.etiqueta }}»</span></button>{% endif %}
+                                        {% include "calculadora/pages/_ejercicio_editar.html" %}
+                                    </div>
+                                </header>
+                                {% if e.enunciado or e.resoluciones %}
+                                    {# Plegado salvo en el ejercicio activo: en proyectos largos cada ejercicio ocupa un renglón. #}
+                                    <details class="ejercicio-detalle"{% if e.id == ejercicio_activo %} open{% endif %}>
+                                        <summary>{% if e.resoluciones %}{{ e.resoluciones|length }} resoluci{{ e.resoluciones|length|pluralize:"ón,ones" }}{% else %}Enunciado{% endif %}<span class="sr-only"> de «{{ e.etiqueta }}»</span></summary>
+                                        {% if e.enunciado %}<p class="hoja-enunciado">{{ e.enunciado|linebreaksbr }}</p>{% endif %}
+                                        {% if e.resoluciones %}
+                                            <ol class="hoja-pasos">
+                                                {% for r in e.resoluciones %}{% include "calculadora/pages/_resolucion.html" with nivel=4 en_proyecto=True %}{% endfor %}
+                                            </ol>
+                                        {% endif %}
+                                    </details>
+                                {% elif e.id == ejercicio_activo %}
+                                    <p class="hoja-vacia">Resuélvelo con cualquier herramienta y pulsa <strong>Añadir a {{ e.corta }}</strong> en el aviso del resultado.</p>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ol>
+                {% elif grupo.seccion %}
+                    <p class="hoja-vacia proyecto-seccion-vacia">Sección vacía. Lleva ejercicios aquí desde su <strong>Editar → Ubicación</strong>.</p>
+                {% endif %}
+            </section>
+        {% empty %}
+            <div class="cuaderno-blanco cuaderno-blanco-proyecto">
+                <div class="cuaderno-blanco-hoja" aria-hidden="true"><span class="cuaderno-blanco-linea">1.</span><span class="cuaderno-blanco-linea">2.</span><span class="cuaderno-blanco-linea">3.</span></div>
+                <div class="cuaderno-blanco-texto">
+                    <h2>Un proyecto en blanco</h2>
+                    <p>Prepara sus ejercicios —uno a uno o numerados de una vez con <strong>Preparar varios</strong>— y resuélvelos con cualquier herramienta. Cada resolución se añade con un clic al ejercicio en el que estés trabajando.</p>
+                </div>
+            </div>
+        {% endfor %}
+        {% if vista != "todos" and not visibles and mapa %}<p class="empty-state">No hay ejercicios {% if vista == "pendientes" %}pendientes{% else %}con resolución{% endif %} en este proyecto. <a href="?ver=todos">Ver todos</a></p>{% endif %}
+        {% if total %}{% include "calculadora/pages/_barra_seleccion.html" %}{% endif %}
+    </form>
+
+    {# Formularios de una sola acción, fuera de la selección. #}
+    <form id="op" method="post" action="{{ pagina }}" hidden>{% csrf_token %}<input type="hidden" name="volver" value="{{ volver }}"></form>
+    <form id="ordenar-proyecto" method="post" action="{{ pagina }}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="ordenar"><input type="hidden" name="proyecto" value="{{ proyecto.id }}"></form>
+    <form id="activar-proyecto" method="post" action="{{ pagina }}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="activar"><input type="hidden" name="proyecto" value="{{ proyecto.id }}"><input type="hidden" name="volver" value="{{ pagina }}"></form>
+    <form id="desactivar-proyecto" method="post" action="{{ pagina }}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="desactivar"><input type="hidden" name="volver" value="{{ pagina }}"></form>
+    {% for grupo in grupos %}
+        {% if grupo.seccion %}
+            <form id="seccion-{{ grupo.seccion.id }}-editar" method="post" action="{{ pagina }}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="editar_seccion"><input type="hidden" name="id" value="{{ grupo.seccion.id }}"><input type="hidden" name="volver" value="{{ volver }}"></form>
+            <form id="seccion-{{ grupo.seccion.id }}-eliminar" method="post" action="{{ pagina }}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="eliminar_seccion"><input type="hidden" name="id" value="{{ grupo.seccion.id }}"><input type="hidden" name="volver" value="{{ volver }}"></form>
+        {% endif %}
+        {% for e in grupo.ejercicios %}
+            {% include "calculadora/pages/_ejercicio_formularios.html" %}
+            <form id="activar-{{ e.id }}" method="post" action="{{ pagina }}" hidden>{% csrf_token %}<input type="hidden" name="accion" value="activar"><input type="hidden" name="proyecto" value="{{ proyecto.id }}"><input type="hidden" name="ejercicio" value="{{ e.id }}"><input type="hidden" name="volver" value="{{ volver }}#ejercicio-{{ e.id }}"></form>
+            {% for r in e.resoluciones %}{% include "calculadora/pages/_resolucion_formulario.html" %}{% endfor %}
+        {% endfor %}
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

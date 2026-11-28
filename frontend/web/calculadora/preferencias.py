@@ -1,7 +1,8 @@
 """Preferencias de presentación que la app de escritorio recuerda entre aperturas.
 
-Solo unas pocas claves con valores cerrados. WebView2 corre en modo privado, así que
-nada más (entradas, resultados, historial ni navegación) sobrevive al cierre.
+Solo unas pocas claves con valores cerrados. WebView2 corre en modo privado: su perfil
+(navegación, formularios) no sobrevive al cierre. Las resoluciones viven aparte, en el
+cuaderno que Django guarda en SQLite (resoluciones/almacen.py).
 """
 
 import json

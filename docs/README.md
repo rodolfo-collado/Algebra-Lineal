@@ -12,6 +12,7 @@
 - [Actualizaciones de escritorio](instalacion-windows.md#actualizar-pygebra) y
   [verificación de descargas](releases.md#verificar-una-descarga).
 - [Opciones de la interfaz visual](interfaz.md#opciones) y [galería de temas](temas-homenaje.md).
+- [Cuaderno de resoluciones](resoluciones.md): guardar, reabrir y organizar en ejercicios y proyectos.
 - Edición de datos en la interfaz visual: [menú de entradas](edicion-entradas.md),
   [selección](seleccion-matricial.md), [copiado](copiado-matricial.md),
   [pegado](pegado-matricial.md) y [deshacer el último pegado](deshacer-pegado.md).
@@ -40,6 +41,8 @@
   [protección numérica](seguridad-numerica.md),
   [presupuesto computacional](presupuesto-computacional.md) y
   [presupuesto de entrada de Sistemas](presupuesto-sistemas.md).
+- [Contrato del cuaderno de resoluciones](resoluciones.md#contrato-pygebraresolucion-v1)
+  y [cómo incorporar una herramienta](resoluciones.md#incorporar-una-herramienta).
 - [Pruebas y verificaciones](pruebas.md),
   [construcción y prueba del instalador](instalacion-windows.md#construir-el-instalador)
   y [flujo de publicación](releases.md#flujo-de-integración-y-entrega).

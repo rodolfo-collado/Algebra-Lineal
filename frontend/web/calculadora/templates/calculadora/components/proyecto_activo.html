@@ -1,0 +1,52 @@
+{% comment %}
+    Proyecto activo del cuaderno, junto a las migas de cualquier página: discreto, con el ejercicio
+    en el que se trabaja y un panel para cambiar de ejercicio, crear uno nuevo o dejar el proyecto.
+    Tras un cálculo vuelve a la resolución reabierta (su URL), no a un formulario vacío.
+{% endcomment %}
+{% if proyecto_activo %}
+{% with p=proyecto_activo.proyecto e=proyecto_activo.ejercicio %}
+<details class="proyecto-activo" id="proyecto-activo">
+    <summary class="proyecto-activo-resumen">
+        <svg class="proyecto-activo-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.5 3.5v17M11.5 8.5h4.5M11.5 12h4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        <span class="sr-only">Proyecto activo: </span>
+        <span class="proyecto-activo-nombre">{{ p.nombre }}</span>
+        <span class="proyecto-activo-ejercicio">{% if e %}{{ e.corta }}{% else %}elige un ejercicio{% endif %}</span>
+        <svg class="disclosure-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 3.5 9.5 8 5 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </summary>
+    <div class="proyecto-activo-panel">
+        <p class="proyecto-activo-titulo"><a href="{% url 'calculadora:proyecto' p.id %}">{{ p.nombre }}</a></p>
+        <p class="proyecto-activo-progreso">{{ p.resueltos }} de {% if p.objetivo and p.objetivo > p.ejercicios %}{{ p.objetivo }}{% else %}{{ p.ejercicios }}{% endif %} ejercicios con resolución</p>
+        <form class="proyecto-activo-form" method="post" action="{% url 'calculadora:resoluciones' %}">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="activar">
+            <input type="hidden" name="proyecto" value="{{ p.id }}">
+            <input type="hidden" name="volver" value="{% if resolucion_cuaderno.url %}{{ resolucion_cuaderno.url }}{% else %}{{ ruta_actual }}{% endif %}">
+            <label class="cuaderno-filtro"><span>Ejercicio en el que trabajas</span>
+                <select class="field-select" name="ejercicio">
+                    <option value="">Ninguno</option>
+                    {% for opcion in proyecto_activo.ejercicios %}<option value="{{ opcion.id }}"{% if opcion.id == e.id %} selected{% endif %}>{{ opcion.etiqueta }}</option>{% endfor %}
+                </select>
+            </label>
+            <button class="btn btn-secondary" type="submit">Cambiar</button>
+        </form>
+        <form class="proyecto-activo-form" method="post" action="{% url 'calculadora:resoluciones' %}">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="crear_ejercicio">
+            <input type="hidden" name="proyecto" value="{{ p.id }}">
+            <input type="hidden" name="activar" value="1">
+            <input type="hidden" name="volver" value="{% if resolucion_cuaderno.url %}{{ resolucion_cuaderno.url }}{% else %}{{ ruta_actual }}{% endif %}">
+            <label class="cuaderno-filtro campo-numero"><span>Nuevo: número</span><input class="field-input" name="numero" maxlength="20" placeholder="{{ p.ejercicios|add:1 }}"></label>
+            <label class="cuaderno-filtro"><span>Título</span><input class="field-input" name="nombre" maxlength="120" placeholder="Opcional"></label>
+            <button class="btn btn-secondary" type="submit">Crear y trabajar en él</button>
+        </form>
+        <div class="proyecto-activo-enlaces">
+            <a href="{% url 'calculadora:proyecto' p.id %}{% if e %}#ejercicio-{{ e.id }}{% endif %}">Abrir el proyecto</a>
+            <form method="post" action="{% url 'calculadora:resoluciones' %}">
+                {% csrf_token %}<input type="hidden" name="accion" value="desactivar"><input type="hidden" name="volver" value="{% if resolucion_cuaderno.url %}{{ resolucion_cuaderno.url }}{% else %}{{ ruta_actual }}{% endif %}">
+                <button class="proyecto-activo-salir" type="submit">Dejar de trabajar en él</button>
+            </form>
+        </div>
+    </div>
+</details>
+{% endwith %}
+{% endif %}

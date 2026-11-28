@@ -38,6 +38,9 @@ hiddenimports = [
     "frontend.web.calculadora.apps",
     # Django lo carga por nombre desde settings; el análisis estático no lo ve.
     "frontend.web.calculadora.context_processors",
+    # Cuaderno de resoluciones: el middleware se carga por nombre desde settings.MIDDLEWARE.
+    "frontend.web.calculadora.resoluciones.middleware",
+    "frontend.web.calculadora.views_resoluciones",
     "frontend.web.calculadora.forms",
     "frontend.web.calculadora.forms_raices",
     "frontend.web.calculadora.views_raices",

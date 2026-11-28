@@ -25,6 +25,11 @@
                 <span class="header-buscar-text">Buscar</span>
             </a>
         {% endif %}
+        {# Reutiliza las clases de Buscar: los cinco estilos y los dos temas lo dibujan igual. #}
+        <a class="header-buscar header-resoluciones" href="{% url 'calculadora:resoluciones' %}" title="Resoluciones: tu cuaderno"{% if pagina_resoluciones %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 3.5v17M11.5 8.5h4.5M11.5 12h4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="header-buscar-text">Resoluciones</span>
+        </a>
 
         <button
             type="button"
