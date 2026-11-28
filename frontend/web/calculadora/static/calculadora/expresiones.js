@@ -3,6 +3,7 @@
 
     const root = document.querySelector("[data-expresiones]");
     if (!root) return;
+    const form = root.querySelector("form");
     const lista = root.querySelector("[data-simbolos]");
     const cantidad = root.querySelector('[name="cantidad"]');
     const plantilla = document.getElementById("symbol-template");
@@ -51,7 +52,77 @@
         if (confirmacion) confirmacion.hidden = true;
         const firma = root.querySelector('input[name="confirmacion"]');
         if (firma) firma.value = "";
+        form.querySelector('input[name="nodo"]')?.remove();
     }
+
+    const listaExpresiones = form.querySelector("[data-lista-expresiones]");
+    const agregarExpresion = form.querySelector("[data-agregar-expresion]");
+    const avisoExpresiones = form.querySelector("[data-aviso-expresiones]");
+    const calcular = form.querySelector(".workspace-actions [data-calculo]");
+    const filasExpresiones = () => [...listaExpresiones.querySelectorAll("[data-fila-expresion]")];
+
+    function numerarExpresiones() {
+        const filas = filasExpresiones();
+        const varias = filas.length > 1;
+        filas.forEach((fila, indice) => {
+            const entrada = fila.querySelector("textarea");
+            const rotulo = fila.querySelector("label");
+            const quitar = fila.querySelector("[data-eliminar-expresion]");
+            const error = fila.querySelector("[data-error-field]");
+            entrada.name = indice ? `expresion_${indice}` : "expresion";
+            entrada.id = `id_${entrada.name}`;
+            rotulo.htmlFor = entrada.id;
+            rotulo.textContent = varias ? `Expresión ${indice + 1}` : "Expresión";
+            quitar.type = "button";
+            quitar.value = String(indice);
+            quitar.hidden = !varias;
+            quitar.setAttribute("aria-label", `Eliminar expresión ${indice + 1}`);
+            if (error) {
+                error.id = `${entrada.id}_error`;
+                error.dataset.errorField = entrada.id;
+                entrada.setAttribute("aria-describedby", error.id);
+            }
+        });
+        agregarExpresion.disabled = filas.length >= Number(listaExpresiones.dataset.maximo);
+        calcular.textContent = varias ? "Calcular expresiones" : "Calcular";
+    }
+
+    function editarExpresiones(destino, mensaje) {
+        numerarExpresiones();
+        avisoExpresiones.textContent = mensaje;
+        ocultarConfirmacion();
+        form.dispatchEvent(new Event("entrada-cambiada", { bubbles: true }));
+        destino.querySelector("textarea").focus();
+    }
+
+    agregarExpresion.type = "button";
+    agregarExpresion.addEventListener("click", () => {
+        if (agregarExpresion.disabled) return;
+        const nueva = filasExpresiones()[0].cloneNode(true);
+        const entrada = nueva.querySelector("textarea");
+        entrada.defaultValue = entrada.value = "";
+        entrada.removeAttribute("aria-invalid");
+        entrada.removeAttribute("aria-describedby");
+        nueva.querySelector("[data-error-field]")?.remove();
+        listaExpresiones.append(nueva);
+        editarExpresiones(nueva, `Se agregó la expresión ${filasExpresiones().length}.`);
+    });
+    listaExpresiones.addEventListener("click", event => {
+        const boton = event.target.closest("[data-eliminar-expresion]");
+        if (!boton || boton.hidden) return;
+        const filas = filasExpresiones();
+        const indice = Number(boton.value);
+        const vecina = filas[indice + 1] || filas[indice - 1];
+        filas[indice].remove();
+        editarExpresiones(vecina, `Se eliminó la expresión ${indice + 1}.`);
+    });
+    listaExpresiones.addEventListener("input", event => {
+        const fila = event.target.closest("[data-fila-expresion]");
+        fila?.querySelector("[data-error-field]")?.remove();
+        event.target.removeAttribute("aria-invalid");
+        event.target.removeAttribute("aria-describedby");
+    });
+    numerarExpresiones();
 
     // Lo que cada operando dibuja y envía, con la misma regla que forms_expresiones.py.
     function forma(tipo, filas, columnas) {

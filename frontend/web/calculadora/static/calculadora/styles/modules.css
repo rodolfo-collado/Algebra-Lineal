@@ -1735,10 +1735,54 @@ textarea:focus {
     margin-top: 1rem;
 }
 
-/* El hueco de la rejilla ya separa la etiqueta de su campo. */
-.workspace .expression-field > label {
+.expression-row {
+    display: grid;
+    gap: var(--space-1);
+}
+
+.expression-row + .expression-row { margin-top: 0.75rem; }
+
+.expression-row-heading,
+.expression-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.expression-row-heading { justify-content: space-between; }
+
+.workspace .expression-row-heading > label {
     margin-bottom: 0;
 }
+
+.expression-actions > .field-help { margin: 0; }
+
+.expression-row-heading > [hidden],
+[data-resultado="desactualizado"] [data-recalcular-expresion] {
+    display: none;
+}
+
+.expression-result {
+    display: grid;
+    gap: 0.9rem;
+    min-width: 0;
+}
+
+.expression-result + .expression-result,
+.expression-error + .expression-result {
+    border-top: 1px solid var(--color-border);
+    padding-top: 0.9rem;
+}
+
+.expression-result .results-heading h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    overflow-wrap: anywhere;
+}
+
+.expression-error { overflow-wrap: anywhere; }
+.expression-error > p { margin: 0; }
 
 .expression-steps {
     display: grid;

@@ -65,6 +65,7 @@ CONTROLES = {
         "celda_1_0_0", "celda_1_0_1", "celda_1_1_0", "celda_1_1_1", "columnas_0", "columnas_1",
         "csrfmiddlewaretoken", "eliminar", "expresion", "filas_0", "filas_1", "metodo", "nombre_0",
         "nombre_1", "tipo_0", "tipo_1", "confirmacion",  # P26.7
+        "agregar_expresion", "eliminar_expresion",  # Acciones del editor de expresiones sin JavaScript.
     },
     "/matrices/ecuaciones/": {
         "ajustar", "celda_A_0_0", "celda_A_0_1", "celda_A_1_0", "celda_A_1_1", "celda_b_0_0",

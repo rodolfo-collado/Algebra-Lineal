@@ -15,11 +15,16 @@
     const operandos = w => [...w.document.querySelectorAll('.math-keyboard-operands button')];
     const nombres = w => operandos(w).map(b => b.dataset.insercion);
     const enfocarExpresion = w => expresion(w).focus();
-    const enviar = frame => new Promise((resolve, reject) => {
+    const enviar = (frame, selector = '.workspace-actions button') => new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error("Sin respuesta al calcular")), 10000);
         frame.onload = () => { clearTimeout(timeout); resolve(frame.contentWindow); };
-        click(frame.contentWindow, '.workspace-actions button');
+        click(frame.contentWindow, selector);
     });
+    const camposExpresion = w => [...w.document.querySelectorAll('[data-fila-expresion] textarea')];
+    const panelesExpresion = w => [...w.document.querySelectorAll('[data-resultado-expresion]')];
+    const valoresDelPanel = panel => [...panel.querySelectorAll('.panel-final tr')]
+        .map(fila => [...fila.querySelectorAll('td')].map(celda => celda.textContent.trim()));
+    const estilos = ['estudio', 'minimalista', 'chocolab', 'belugacalc', 'heyalgb'];
     const casos = [
         // La antigua Operaciones con vectores redirige al ejemplo de vectores de Operaciones.
         ["Vectores: la ruta antigua abre Operaciones con u, v y su expresión", "vectores", w => {
@@ -224,7 +229,106 @@
             igual(cantidad(w, '[data-simbolo]'), 1);
             igual(w.document.querySelector('[name="cantidad"]').value, '1');
         }],
+        ["Expresiones: agregar, editar con teclado contextual y eliminar conservando el foco", "matrices", w => {
+            valor(w, '[name="celda_0_0_0"]', "1/3");
+            valor(w, '[name="expresion"]', 'A + B');
+            click(w, '[data-agregar-expresion]');
+            igual(w.document.activeElement === camposExpresion(w)[1], true);
+            igual(nombres(w), ['A', 'B']);
+            operandos(w)[1].click();
+            igual(camposExpresion(w).map(campo => campo.value), ['A + B', 'B']);
+            click(w, '[data-agregar-expresion]');
+            click(w, '[data-agregar-expresion]');
+            click(w, '[data-agregar-expresion]');
+            igual(w.document.querySelector('[data-agregar-expresion]').disabled, true);
+            igual(camposExpresion(w).length, 5);
+            while (camposExpresion(w).length > 1) click(w, '[data-eliminar-expresion]');
+            const [campo] = camposExpresion(w);
+            igual([campo.name, campo.labels[0].textContent.trim(), w.document.activeElement === campo],
+                ['expresion', 'Expresión', true]);
+            igual(w.document.querySelector('[name="celda_0_0_0"]').value, '1/3');
+        }],
+        ["Expresiones: errores locales, Exacto/Decimal común y edición con resultados visibles", "matrices", async (w, frame) => {
+            click(w, '[data-eliminar]');
+            click(w, '[data-eliminar]');
+            valor(w, '[name="expresion"]', '1/3 + 1/3');
+            click(w, '[data-agregar-expresion]');
+            valor(w, '[name="expresion_1"]', '1+');
+            click(w, '[data-agregar-expresion]');
+            valor(w, '[name="expresion_2"]', '2/7');
+            w = await enviar(frame);
+            const doc = w.document;
+            igual(doc.querySelector('#resultado').dataset.resultado, 'vigente');
+            igual(panelesExpresion(w).length, 2);
+            igual(doc.querySelector('[name="expresion_1"]').getAttribute('aria-invalid'), 'true');
+            igual(doc.querySelector('[data-error-expresion] h3').textContent.trim(), 'Expresión 2 · 1+');
+            igual(cantidad(w, '[data-numeric-controls]'), 1);
+            const cambiar = (selector, nuevo) => {
+                const control = doc.querySelector(selector);
+                control.value = nuevo;
+                control.dispatchEvent(new w.Event('change', {bubbles: true}));
+            };
+            cambiar('#numeric-mode', 'decimal');
+            cambiar('#numeric-precision', '6');
+            const texto = () => panelesExpresion(w).map(panel => panel.querySelector('.panel-final').textContent);
+            igual(texto()[0].includes('0.666667'), true);
+            igual(texto()[1].includes('0.285714'), true);
+            cambiar('#numeric-mode', 'exacto');
+            igual(texto()[0].includes('2/3'), true);
+            igual(doc.querySelector('#resultado').dataset.resultado, 'vigente');
+            doc.querySelectorAll('[data-eliminar-expresion]')[1].click();
+            igual(doc.querySelector('#resultado').dataset.resultado, 'desactualizado');
+            igual(texto()[0].includes('2/3'), true);
+            igual(camposExpresion(w).map(campo => campo.value), ['1/3 + 1/3', '2/7']);
+            w = await enviar(frame);
+            igual(w.document.querySelector('#resultado').dataset.resultado, 'vigente');
+            igual(cantidad(w, '[data-error-expresion]'), 0);
+        }],
     ];
+    for (const estilo of estilos) for (const tema of ['light', 'dark']) {
+        casos.push([`Ejercicio 56 · ${estilo} · ${tema}`, 'matrices', async (w, frame) => {
+            igual(w.document.documentElement.dataset.estilo, estilo);
+            igual(w.document.documentElement.dataset.theme, tema);
+            click(w, '[data-agregar]');
+            const matrices = [[[2, 0], [-1, 3], [4, 2]], [[-3, 5], [2, 1], [0, -4]], [[1, 2], [0, -2], [3, 1]]];
+            matrices.forEach((matriz, k) => {
+                valor(w, `[name="filas_${k}"]`, 3);
+                matriz.forEach((fila, i) => fila.forEach((v, j) => valor(w, `[name="celda_${k}_${i}_${j}"]`, v)));
+            });
+            click(w, '[data-agregar-expresion]');
+            click(w, '[data-agregar-expresion]');
+            const expresiones = ['A + B', 'A - C', 'A + B + C'];
+            camposExpresion(w).forEach((campo, i) => valor(w, `#${campo.id}`, expresiones[i]));
+            w = await enviar(frame);
+            const doc = w.document;
+            igual(w.location.hash, '#resultado');
+            igual(camposExpresion(w).map(campo => campo.value), expresiones);
+            igual(panelesExpresion(w).map(panel => panel.querySelector('.results-heading h3').textContent), expresiones);
+            igual(panelesExpresion(w).map(valoresDelPanel), [
+                [['-1', '5'], ['1', '4'], ['4', '-2']],
+                [['1', '-2'], ['-1', '5'], ['1', '1']],
+                [['0', '7'], ['1', '2'], ['7', '-1']],
+            ]);
+            const procedimientos = panelesExpresion(w).map(panel => panel.querySelector('details'));
+            igual(procedimientos.map(p => p.open), [false, false, false]);
+            igual(procedimientos.map(p => p.querySelectorAll('.expression-step').length), [1, 1, 2]);
+            procedimientos[2].querySelector('summary').focus();
+            igual(doc.activeElement === procedimientos[2].querySelector('summary'), true);
+            procedimientos[2].querySelector('summary').click();
+            igual(procedimientos.map(p => p.open), [false, false, true]);
+            const ids = [...doc.querySelectorAll('#resultado [id]')].map(nodo => nodo.id);
+            igual(new Set(ids).size, ids.length);
+            igual(doc.documentElement.scrollWidth <= doc.documentElement.clientWidth + 1, true);
+            if (estilo === 'estudio' && tema === 'light') {
+                w = await enviar(frame, '#procedimiento-3 [name="nodo"]');
+                igual(panelesExpresion(w).map(panel => panel.querySelector('.results-heading h3').textContent),
+                    ['A + B', 'A - C', 'A + B']);
+                igual(panelesExpresion(w)[2].querySelector('.section-kicker').textContent.includes('Subexpresión'), true);
+                valor(w, '[name="celda_0_0_0"]', 4);
+                igual(w.document.querySelector('#resultado').dataset.resultado, 'desactualizado');
+            }
+        }, {estilo, tema}]);
+    }
     for (const metodo of ['fila_columna', 'columnas', 'comparar']) {
         casos.push([`Producto rectangular de cuatro: ${metodo}`, 'matrices', async (w, frame) => {
             click(w, '[data-agregar]'); click(w, '[data-agregar]');
@@ -246,8 +350,14 @@
         }]);
     }
     let passed = 0;
-    for (const [nombre, modulo, test] of casos) {
+    for (const [nombre, modulo, test, apariencia] of casos) {
         const frame = document.createElement('iframe');
+        if (apariencia) {
+            localStorage.setItem('pygebra-estilo', apariencia.estilo);
+            localStorage.setItem('pygebra-tema', apariencia.tema);
+            frame.style.width = apariencia.tema === 'dark' ? '390px' : '1280px';
+            frame.style.height = '700px';
+        }
         frame.src = `/${modulo}/operaciones/`;
         const loaded = new Promise(resolve => { frame.onload = resolve; });
         document.body.append(frame);
@@ -257,6 +367,10 @@
         catch (error) { item.textContent = `FAIL · ${nombre}: ${error.message}`; }
         document.querySelector('#resultados').append(item);
         frame.remove();
+        if (apariencia) {
+            localStorage.removeItem('pygebra-estilo');
+            localStorage.removeItem('pygebra-tema');
+        }
     }
     document.querySelector('#total').textContent = `${passed}/${casos.length} PASS`;
 })();

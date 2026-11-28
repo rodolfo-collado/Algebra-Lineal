@@ -1,0 +1,53 @@
+{% load componentes %}
+{% with titulo_id="results-title"|add:sufijo final_id="final-title"|add:sufijo procedimiento_id="procedimiento"|add:sufijo %}
+<header class="results-heading">
+    {% if resultado.modo == "combinacion" %}
+        <p class="section-kicker">{% if numero %}Expresión {{ numero }} · {% endif %}Combinación lineal · vectores de {{ resultado.dimension }} componente{{ resultado.dimension|pluralize }}</p>
+    {% elif resultado.modo == "determinacion" %}
+        <p class="section-kicker">{% if numero %}Expresión {{ numero }} · {% endif %}Matriz determinada · {{ resultado.filas }}×{{ resultado.columnas }}</p>
+    {% elif resultado.modo == "igualdad" %}
+        <p class="section-kicker">{% if numero %}Expresión {{ numero }} · {% endif %}{% if resultado.alcance == "simbolica" %}Igualdad simbólica{% else %}Igualdad{% endif %}{% if resultado.dimensiones %} · {{ resultado.dimensiones }}{% endif %}</p>
+    {% else %}
+        <p class="section-kicker">{% if numero %}Expresión {{ numero }} · {% endif %}{% if resultado.parcial %}Subexpresión · {% elif not numero %}Expresión · {% endif %}{{ resultado.tipo_texto }}</p>
+    {% endif %}
+    {% if sufijo %}<h3 id="{{ titulo_id }}">{{ resultado.texto }}</h3>{% else %}<h2 id="{{ titulo_id }}">{{ resultado.texto }}</h2>{% endif %}
+</header>
+{% if not sufijo %}{% include "calculadora/components/numeric_format.html" %}{% endif %}
+{% if resultado.modo == "combinacion" %}
+    {% include "calculadora/modules/expresiones/_combinacion.html" with combinacion_id="combination-result-title"|add:sufijo %}
+{% elif resultado.modo == "determinacion" %}
+    {% include "calculadora/modules/expresiones/_determinacion.html" %}
+{% elif resultado.modo == "igualdad" %}
+    <section class="panel panel-final" aria-labelledby="{{ final_id }}">
+        <h{{ nivel }} id="{{ final_id }}" class="panel-title equality-verdict equality-verdict-{{ resultado.veredicto }}">{{ resultado.titulo }}</h{{ nivel }}>
+        <p class="equality-message">{{ resultado.mensaje }}</p>
+    </section>
+    <div class="equality-sides">
+        {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.izquierda titulo="Lado izquierdo" identificador="lado-izquierdo"|add:sufijo %}
+        {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.derecha titulo="Lado derecho" identificador="lado-derecho"|add:sufijo %}
+    </div>
+    {% disclosure titulo="Ver procedimiento" id=procedimiento_id clase="disclosure-procedure" nivel=nivel %}
+        <h{{ nivel|add:1 }} class="stage-title">Lado izquierdo</h{{ nivel|add:1 }}>
+        {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos texto=resultado.izquierda.texto nivel=nivel|add:2 %}
+        <h{{ nivel|add:1 }} class="stage-title">Lado derecho</h{{ nivel|add:1 }}>
+        {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos texto=resultado.derecha.texto nivel=nivel|add:2 %}
+    {% enddisclosure %}
+{% else %}
+    <section class="panel panel-final" aria-labelledby="{{ final_id }}">
+        <h{{ nivel }} id="{{ final_id }}" class="panel-title">Resultado</h{{ nivel }}>
+        <div class="matrix-equation">
+            <span class="matrix-expression">{{ resultado.igualdad }}</span>
+            {% if resultado.matriz %}
+                {% if resultado.tipo == "matriz" %}
+                    {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" copiar="matriz" only %}
+                {% else %}
+                    {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" only %}
+                {% endif %}
+            {% endif %}
+        </div>
+    </section>
+    {% disclosure titulo="Ver procedimiento" id=procedimiento_id clase="disclosure-procedure" nivel=nivel %}
+        {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos texto=resultado.texto nivel=nivel|add:1 %}
+    {% enddisclosure %}
+{% endif %}
+{% endwith %}
