@@ -35,7 +35,9 @@ def nombre_por_defecto(herramienta, entrada):
     if valor("funcion"):
         detalle = f"f(x) = {valor('funcion')}"
     elif valor("expresion"):
-        detalle = valor("expresion")
+        # Expresiones múltiples: la primera y cuántas más la acompañan.
+        otras = sum(1 for clave in entrada if clave.startswith("expresion_") and valor(clave))
+        detalle = valor("expresion") + (f" (+{otras})" if otras else "")
     elif valor("sistema") and valor("tipo_entrada") != "matriz":
         detalle = valor("sistema")
     elif valor("numero"):
@@ -51,12 +53,14 @@ def nombre_por_defecto(herramienta, entrada):
 
 
 def _aviso(identificador, estado, **extra):
-    """Lo que necesita el aviso de la página: la ficha y los ejercicios para agrupar."""
+    """Lo que necesita el aviso de la página: la ficha, dónde está y a qué ejercicios llevarla."""
+    from . import organizacion
+
     datos = {"estado": estado, "id": identificador, **extra}
     try:
         cuaderno = almacen()
         ficha = cuaderno.obtener(identificador, documento=False) if identificador else None
-        ejercicios = cuaderno.ejercicios()
+        ejercicios, proyectos = cuaderno.ejercicios(), cuaderno.proyectos()
     except AlmacenNoDisponible:
         return datos
     if ficha:
@@ -64,9 +68,12 @@ def _aviso(identificador, estado, **extra):
             fecha = datetime.fromisoformat(ficha["creado"])
         except ValueError:
             fecha = None
-        datos.update(nombre=ficha["nombre"], creado=ficha["creado"], fecha=fecha, ejercicio=next(
-            (e for e in ejercicios if e["id"] == ficha["ejercicio"]), None))
-    datos["ejercicios"] = ejercicios
+        ejercicio = next((e for e in ejercicios if e["id"] == ficha["ejercicio"]), None)
+        if ejercicio:
+            ejercicio = ejercicio | {"etiqueta": organizacion.etiqueta(ejercicio), "proyecto_nombre": next(
+                (p["nombre"] for p in proyectos if p["id"] == ejercicio["proyecto"]), None)}
+        datos.update(nombre=ficha["nombre"], creado=ficha["creado"], fecha=fecha, ejercicio=ejercicio)
+    datos["destinos"] = organizacion.destinos(ejercicios, proyectos)
     return datos
 
 
@@ -81,7 +88,7 @@ def guardar(request, adaptador, contexto):
     try:
         doc = contrato.documento(
             herramienta=herramienta.id, nombre_herramienta=herramienta.nombre, ruta=ruta, esquema=adaptador.esquema,
-            entrada=entrada, resultado={clave: contexto.get(clave) for clave in adaptador.claves},
+            entrada=entrada, resultado=adaptador.datos(contexto),
             creado=ahora(), resumen=adaptador.resumir(contexto), grafica=adaptador.graficar(contexto),
         )
         identificador, nueva = almacen().guardar(
@@ -139,7 +146,7 @@ def reabrir(abierta, adaptador, contexto):
     datos = abierta.get("datos")
     if datos is not None:
         try:
-            contexto["form"] = adaptador.formulario(contexto["form"], datos)
+            contexto["form"] = adaptador.formulario(contexto["form"], datos, abierta.get("resultado") or {})
         except (KeyError, TypeError, ValueError):
             LOG.warning("No se pudo reconstruir el formulario de la resolución %s.", abierta.get("id"), exc_info=True)
     if abierta["estado"] == "abierta":
