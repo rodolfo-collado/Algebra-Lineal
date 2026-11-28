@@ -180,9 +180,12 @@ class PruebasBuscador(SimpleTestCase):
 
     def test_busca_por_nombre_palabras_clave_categoria_y_area(self):
         # Lo que antes eran herramientas aparte sigue encontrándose: ahora lleva a Reducción por filas.
-        for consulta in ("pivote", "clasificacion", "gauss jordan", "escalonada"):
+        for consulta in ("clasificacion", "gauss jordan", "escalonada"):
             with self.subTest(consulta=consulta):
                 self.assertEqual(catalogo.buscar_herramientas(consulta), (catalogo.REDUCCION_FILAS,))
+        self.assertEqual(catalogo.buscar_herramientas("pivote"),
+                         (catalogo.REDUCCION_FILAS, catalogo.INDEPENDENCIA_LINEAL))
+        self.assertEqual(catalogo.buscar_herramientas("independencia lineal"), (catalogo.INDEPENDENCIA_LINEAL,))
         self.assertEqual(catalogo.buscar_herramientas("Gauss"),
                          (catalogo.REDUCCION_FILAS, catalogo.METODOS_ITERATIVOS))
         # «inconsistente» también describe Ax = b (P14); Reducción por filas conserva el primer lugar.
@@ -258,8 +261,10 @@ class PruebasBuscador(SimpleTestCase):
         directos = (catalogo.ECUACIONES_MATRICIALES, catalogo.REDUCCION_FILAS)
         for consulta in ("sistema de ecuaciones", "ecuaciones lineales"):
             self.assertEqual(catalogo.buscar_herramientas(consulta), directos)
-        for consulta in ("sistema lineal", "sistemas lineales"):
-            self.assertEqual(catalogo.buscar_herramientas(consulta), (*directos, catalogo.METODOS_ITERATIVOS))
+        self.assertEqual(catalogo.buscar_herramientas("sistema lineal"),
+                         (directos[0], catalogo.INDEPENDENCIA_LINEAL, directos[1], catalogo.METODOS_ITERATIVOS))
+        self.assertEqual(catalogo.buscar_herramientas("sistemas lineales"), (*directos, catalogo.METODOS_ITERATIVOS))
+        self.assertEqual(catalogo.buscar_herramientas("sistema homogéneo"), (catalogo.INDEPENDENCIA_LINEAL,))
         limites, = catalogo.buscar_herramientas("LÍMITES")
         self.assertEqual(limites.id, "limites-funciones")
         self.assertEqual(limites.estado, "proximamente")
