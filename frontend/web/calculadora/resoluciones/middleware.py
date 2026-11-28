@@ -1,6 +1,6 @@
 """Guarda y reabre resoluciones alrededor de las vistas, sin modificarlas.
 
-- POST con un resultado válido: se guarda y la página recibe ``resolucion`` (el aviso).
+- POST con un resultado válido: se guarda y la página recibe ``resolucion_cuaderno`` (el aviso).
 - GET con ``?resolucion=<id>``: la vista arma su página vacía, sin calcular, y aquí se
   reponen el formulario y el resultado guardados. La plantilla es la misma de siempre.
 
@@ -39,18 +39,18 @@ class ResolucionesMiddleware:
         if adaptador is None or contexto is None:
             return response
         if request.method == "POST":
-            contexto["resolucion"] = servicio.guardar(request, adaptador, contexto)
+            contexto["resolucion_cuaderno"] = servicio.guardar(request, adaptador, contexto)
             return response
         abierta = getattr(request, "resolucion", None)
         if abierta is None:
             return response
         original = dict(contexto)
-        contexto["resolucion"] = servicio.reabrir(abierta, adaptador, contexto)
+        contexto["resolucion_cuaderno"] = servicio.reabrir(abierta, adaptador, contexto)
         try:
             # Se renderiza aquí para que un documento que la plantilla no sepa mostrar no rompa la página.
             response.render()
         except Exception:
             LOG.exception("La resolución %s no se pudo mostrar.", abierta.get("id"))
-            response.context_data = original | {"resolucion": {"estado": "danado", "id": abierta.get("id")}}
+            response.context_data = original | {"resolucion_cuaderno": {"estado": "danado", "id": abierta.get("id")}}
             response.render()
         return response
