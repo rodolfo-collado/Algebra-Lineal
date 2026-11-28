@@ -31,7 +31,7 @@
         ["gauss → inversa → vectores → límites no envía GET ni duplica filas", "/?q=gauss", w => {
             const documento = w.document;
             for (const [texto, esperado] of [["inversa", ["matriz-inversa"]],
-                ["Gauss-Seidel", ["metodos-iterativos"]], ["vectores", ["operaciones-matrices"]], ["límites", ["limites-funciones"]]]) {
+                ["Gauss-Seidel", ["metodos-iterativos"]], ["vectores", ["operaciones-matrices", "independencia-lineal"]], ["límites", ["limites-funciones"]]]) {
                 valor(w, texto); igual(ids(w), esperado);
                 igual(w.document, documento); igual(w.location.search, "?q=gauss");
                 igual(q(w, "[data-busqueda-servidor]").hidden, true);
@@ -112,13 +112,14 @@
             const visible = () => todos(w, ".destacado-cuerpo").filter(c => !c.hidden).map(c => c.dataset.id);
             igual(items.filter(a => a.tabIndex === 0).length, 1);
             items[0].focus(); tecla("End"); igual(w.document.activeElement, items.at(-1));
-            igual(visible(), ["determinantes"]);
+            igual(visible(), ["independencia-lineal"]);
+            tecla("ArrowUp"); igual(visible(), ["determinantes"]);
             tecla("ArrowUp"); igual(visible(), ["matriz-inversa"]);
-            // Cinco herramientas en Álgebra lineal: la inversa es la cuarta.
+            const inversa = items.find(a => a.dataset.id === "matriz-inversa");
             tecla("ArrowRight"); igual(w.document.activeElement.matches(".destacado-abrir"), true);
             igual(w.document.activeElement.getAttribute("href"), "/matrices/inversa/");
-            tecla("ArrowLeft"); igual(w.document.activeElement, items[3]);
-            igual(items.map(a => a.tabIndex), [-1, -1, -1, 0, -1]);
+            tecla("ArrowLeft"); igual(w.document.activeElement, inversa);
+            igual(items.filter(a => a.tabIndex === 0).length, 1); igual(inversa.tabIndex, 0);
             igual(Object.keys(w.localStorage).sort(), claves);
         }],
         ["Fragmentos malformados permiten recorrer el área y abrir un ancla válida", "/areas/algebra-lineal/#%", async w => {
