@@ -27,9 +27,15 @@
             <p class="field-help" data-presupuesto role="status" aria-live="polite"></p>
             <noscript><p class="field-help">Cambia un tipo o las dimensiones y pulsa <strong>Aplicar</strong> antes de calcular. <strong>Agregar operando</strong> y <strong>Eliminar</strong> también funcionan sin JavaScript.</p></noscript>
             <div class="expression-field" data-perfil="expresion" data-operandos="#symbol-list">
-                <label for="{{ form.expresion.id_for_label }}">Expresión</label>
-                {{ form.expresion }}
-                {{ form.expresion.errors }}
+                <div data-lista-expresiones data-maximo="{{ form.expresiones_maximas }}">
+                    {% for campo in form.expresiones %}
+                        {% include "calculadora/modules/expresiones/_campo.html" %}
+                    {% endfor %}
+                </div>
+                <div class="expression-actions">
+                    <button class="btn btn-secondary" type="submit" name="agregar_expresion" value="1" data-agregar-expresion{% if form.expresiones|length == form.expresiones_maximas %} disabled{% endif %}>Agregar expresión</button>
+                    <p class="field-help" role="status" data-aviso-expresiones></p>
+                </div>
                 {# Ejemplos editables: cada enlace carga sus operandos y su expresión, también sin JavaScript. #}
                 <nav class="plantillas" aria-label="Ejemplos">
                     <span class="plantillas-titulo">Ejemplos</span>
@@ -61,70 +67,41 @@
             </fieldset>
         {% enddisclosure %}
         {% if confirmacion %}
-            {% if form.cleaned_data.entrada.nodo %}<input type="hidden" name="nodo" value="{{ form.cleaned_data.entrada.nodo }}">{% endif %}
-            {% include "calculadora/components/confirmacion_costo.html" with operacion=form.expresion.value %}
+            {% if form.data.nodo %}<input type="hidden" name="nodo" value="{{ form.data.nodo }}">{% endif %}
+            {% if form.expresiones|length > 1 %}
+                {% include "calculadora/components/confirmacion_costo.html" with operacion="Expresiones del formulario" %}
+            {% else %}
+                {% include "calculadora/components/confirmacion_costo.html" with operacion=form.expresion.value %}
+            {% endif %}
         {% endif %}
-        <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>Calcular</button></div>
+        <div class="workspace-actions"><button class="btn btn-primary" type="submit" data-calculo>{% if form.expresiones|length > 1 %}Calcular expresiones{% else %}Calcular{% endif %}</button></div>
     </form>
 </section>
 {% endblock %}
 
 {% block tool_result %}
-{% if resultado %}
-    {% comment %}Resultado primero y procedimiento plegable después, en todos los modos. En una igualdad, el valor de cada lado y el veredicto forman el resultado.{% endcomment %}
+{% if hay_resultados %}
     {% numeric_results %}
     <section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
-        {% if resultado.modo == "combinacion" %}
-            <header class="results-heading">
-                <p class="section-kicker">Combinación lineal · vectores de {{ resultado.dimension }} componente{{ resultado.dimension|pluralize }}</p>
-                <h2 id="results-title">{{ resultado.texto }}</h2>
-            </header>
-            {% include "calculadora/components/numeric_format.html" %}
-            {% include "calculadora/modules/expresiones/_combinacion.html" %}
-        {% elif resultado.modo == "determinacion" %}
-            {% include "calculadora/modules/expresiones/_determinacion.html" %}
-        {% elif resultado.modo == "igualdad" %}
-            <header class="results-heading">
-                <p class="section-kicker">{% if resultado.alcance == "simbolica" %}Igualdad simbólica{% else %}Igualdad{% endif %}{% if resultado.dimensiones %} · {{ resultado.dimensiones }}{% endif %}</p>
-                <h2 id="results-title">{{ resultado.texto }}</h2>
-            </header>
-            {% include "calculadora/components/numeric_format.html" %}
-            <section class="panel panel-final" aria-labelledby="final-title">
-                <h3 id="final-title" class="panel-title equality-verdict equality-verdict-{{ resultado.veredicto }}">{{ resultado.titulo }}</h3>
-                <p class="equality-message">{{ resultado.mensaje }}</p>
-            </section>
-            <div class="equality-sides">
-                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.izquierda titulo="Lado izquierdo" identificador="lado-izquierdo" %}
-                {% include "calculadora/modules/expresiones/_lado.html" with lado=resultado.derecha titulo="Lado derecho" identificador="lado-derecho" %}
-            </div>
-            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                <h4 class="stage-title">Lado izquierdo</h4>
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.izquierda.pasos texto=resultado.izquierda.texto nivel=5 %}
-                <h4 class="stage-title">Lado derecho</h4>
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.derecha.pasos texto=resultado.derecha.texto nivel=5 %}
-            {% enddisclosure %}
+        {% if resultado %}
+            {% include "calculadora/modules/expresiones/_resultado.html" with sufijo="" prefijo_nodo="" nivel=3 %}
         {% else %}
-            <header class="results-heading">
-                <p class="section-kicker">{% if resultado.parcial %}Subexpresión{% else %}Expresión{% endif %} · {{ resultado.tipo_texto }}</p>
-                <h2 id="results-title">{{ resultado.texto }}</h2>
-            </header>
+            <header class="results-heading"><h2 id="results-title">Resultados</h2></header>
             {% include "calculadora/components/numeric_format.html" %}
-            <section class="panel panel-final" aria-labelledby="final-title">
-                <h3 id="final-title" class="panel-title">Resultado</h3>
-                <div class="matrix-equation">
-                    <span class="matrix-expression">{{ resultado.igualdad }}</span>
-                    {% if resultado.matriz %}
-                        {% if resultado.tipo == "matriz" %}
-                            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" copiar="matriz" only %}
-                        {% else %}
-                            {% include "calculadora/components/matriz.html" with matriz=resultado.matriz etiqueta="Resultado" only %}
-                        {% endif %}
+            {% for fila in resultados %}
+                {% with numero=forloop.counter|stringformat:"s" indice=fila.indice|stringformat:"s" %}
+                    {% if fila.resultado %}
+                        <section class="expression-result" data-resultado-expresion aria-labelledby="results-title-{{ numero }}">
+                            {% include "calculadora/modules/expresiones/_resultado.html" with resultado=fila.resultado sufijo="-"|add:numero prefijo_nodo=indice|add:"|" nivel=4 %}
+                        </section>
+                    {% else %}
+                        <section class="panel expression-error" data-error-expresion aria-labelledby="results-title-{{ numero }}">
+                            <h3 id="results-title-{{ numero }}" class="panel-title">Expresión {{ numero }}{% if fila.expresion %} · {{ fila.expresion }}{% endif %}</h3>
+                            <p>{{ fila.error }}</p>
+                        </section>
                     {% endif %}
-                </div>
-            </section>
-            {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
-                {% include "calculadora/modules/expresiones/_pasos.html" with pasos=resultado.pasos texto=resultado.texto %}
-            {% enddisclosure %}
+                {% endwith %}
+            {% endfor %}
         {% endif %}
     </section>
     {% endnumeric_results %}

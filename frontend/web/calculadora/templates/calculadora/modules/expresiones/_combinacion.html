@@ -1,9 +1,9 @@
-{% load componentes numeros %}
+{% load componentes numeros %}{% with nivel=nivel|default:3 combinacion_id=combinacion_id|default:"combination-result-title" procedimiento_id=procedimiento_id|default:"procedimiento" %}
 {% comment %}x1 u + x2 v = b en Operaciones: primero la conclusión (sí/no y con qué coeficientes) y la igualdad que la comprueba; después, plegados, el planteamiento, el sistema equivalente, Gauss-Jordan (el de Reducción por filas, con incógnitas x₁, x₂, …) y la lectura de la matriz.{% endcomment %}
 
 
-<section class="panel panel-final" aria-labelledby="combination-result-title">
-    <h3 id="combination-result-title" class="panel-title">Resultado</h3>
+<section class="panel panel-final" aria-labelledby="{{ combinacion_id }}">
+    <h{{ nivel }} id="{{ combinacion_id }}" class="panel-title">Resultado</h{{ nivel }}>
     <div class="classification combination-verdict" data-kind="{{ resultado.clasificacion_clave }}">
         <span class="classification-icon" aria-hidden="true"></span>
         <div>
@@ -40,7 +40,7 @@
         </div>
     {% endif %}
 </section>
-{% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" %}
+{% disclosure titulo="Ver procedimiento" id=procedimiento_id clase="disclosure-procedure" nivel=nivel %}
     <div class="procedure-stage">
         <h4 class="stage-title">1 · Planteamiento</h4>
         <p class="procedure-lead">Buscamos {{ resultado.incognitas|incognitas }} tales que:</p>
@@ -81,3 +81,4 @@
         {% endif %}
     </div>
 {% enddisclosure %}
+{% endwith %}

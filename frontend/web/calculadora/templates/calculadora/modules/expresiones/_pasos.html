@@ -23,7 +23,7 @@
                 </div>
             {% endif %}
             {% if paso.recalcular %}
-                <button class="btn btn-secondary" type="submit" name="nodo" value="{{ paso.id }}" form="expresiones-form">Calcular solo esta parte</button>
+                <button class="btn btn-secondary" type="submit" name="nodo" value="{{ prefijo_nodo }}{{ paso.id }}" form="expresiones-form" data-recalcular-expresion>{% if prefijo_nodo %}Calcular esta parte de la expresión{% else %}Calcular solo esta parte{% endif %}</button>
             {% endif %}
         </li>
     {% endfor %}
