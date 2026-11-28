@@ -131,6 +131,10 @@ class PyGebra(App):
             self.decimal = "," if ajustes.get("decimal") == "," else "."
             self.screen.set_class(ajustes.get("densidad") == "holgada", "holgada")
             self.debugging = ajustes.get("debugging") == "si"
+            if self.historial.omitidos:
+                n = self.historial.omitidos
+                self.notify("1 ejercicio del historial no se pudo leer y se omitió." if n == 1 else
+                            f"{n} ejercicios del historial no se pudieron leer y se omitieron.", severity="warning")
             if historico:
                 fichas = [Ficha(e) for e in historico]
                 await self.query_one("#resultados").mount(*fichas)

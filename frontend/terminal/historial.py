@@ -57,14 +57,24 @@ class Historial:
         self.archivo = Path(archivo) if archivo is not None else user_data_path(
             "PyGebra", appauthor=False,
         ) / "consola.sqlite3"
+        # Registros que no se pudieron leer en la última apertura; siguen en el archivo.
+        self.omitidos = 0
 
     def abrir(self):
+        """Ejercicios legibles y ajustes. Un registro dañado se omite sin perder los demás."""
         self.archivo.parent.mkdir(parents=True, exist_ok=True)
         with closing(sqlite3.connect(self.archivo)) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS ejercicios (id INTEGER PRIMARY KEY, datos TEXT NOT NULL)")
             db.execute("CREATE TABLE IF NOT EXISTS ajustes (clave TEXT PRIMARY KEY, valor TEXT NOT NULL)")
-            historial = [Ejercicio.leer(datos) for (datos,) in db.execute("SELECT datos FROM ejercicios ORDER BY id")]
+            filas = db.execute("SELECT datos FROM ejercicios ORDER BY id").fetchall()
             ajustes = dict(db.execute("SELECT clave, valor FROM ajustes"))
+        historial = []
+        for (datos,) in filas:
+            try:
+                historial.append(Ejercicio.leer(datos))
+            except (TypeError, ValueError, KeyError, AttributeError, IndexError):
+                continue
+        self.omitidos = len(filas) - len(historial)
         return historial, ajustes
 
     def agregar(self, ejercicio):
