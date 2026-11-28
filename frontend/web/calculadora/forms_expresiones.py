@@ -10,6 +10,7 @@ Presupuesto común (P26.6), comprobado antes de crear un campo por celda:
 
 from django import forms
 
+from backend.expresiones_matriciales.combinacion import incognitas
 from backend.expresiones_matriciales.lineal import analizar_lineal
 from backend.expresiones_matriciales.nodos import Simbolo, nodos
 from backend.expresiones_matriciales.parser import analizar_entrada, nombre_valido
@@ -22,6 +23,10 @@ from .opciones_matrices import (
 
 SIMBOLOS_INICIALES = 2
 LONGITUD_COMPONENTE_MAXIMA = 200
+LONGITUD_EXPRESION_MAXIMA = 400
+# 990 campos de operandos + 5 expresiones + csrf, cantidad, método, firma y nodo.
+EXPRESIONES_MAXIMAS = 5
+NOMBRES_EXPRESIONES = ("expresion", *(f"expresion_{i}" for i in range(1, EXPRESIONES_MAXIMAS)))
 # Los tipos simbólicos siguen disponibles, agrupados aparte para no competir con los valores.
 TIPOS = (
     ("Con valores", (("matriz", "Matriz"), ("vector", "Vector"), ("escalar", "Escalar"))),
@@ -104,22 +109,29 @@ def presupuesto_estructura(estructuras):
     return None
 
 
-def presupuesto_expresion(arbol, tamanos):
+def medir_expresion(arbol, tamanos):
+    todos = nodos(arbol)
+    hojas = [nodo for nodo in todos if not nodo.hijos()]
+    # En x1 u + x2 v = b, cada xᵢ marca un coeficiente a hallar y su producto se
+    # resuelve como parte del sistema, que conserva su propia estimación.
+    coeficientes = sum(isinstance(hoja, Simbolo) and hoja.nombre not in tamanos for hoja in hojas)
+    entradas = sum(tamanos.get(hoja.nombre, 0) if isinstance(hoja, Simbolo) else 1 for hoja in hojas)
+    return len(hojas) - coeficientes, len(todos) - len(hojas) - coeficientes, entradas
+
+
+def presupuesto_expresion(uso):
     """Como una operación de hasta 50 operandos del módulo anterior: AAAA usa cuatro veces A.
 
     Los operandos son las apariciones de símbolos y números, con todas sus entradas;
     las operaciones (49 para 50 operandos) acotan también las cadenas de signos y traspuestas.
     """
-    todos = nodos(arbol)
-    operandos = [nodo for nodo in todos if not nodo.hijos()]
-    if len(operandos) > OPERANDOS_MAXIMOS:
-        return (f"La expresión tiene {len(operandos)} operandos y la interfaz admite hasta {OPERANDOS_MAXIMOS}: "
+    operandos, operaciones, entradas = uso
+    if operandos > OPERANDOS_MAXIMOS:
+        return (f"La expresión tiene {operandos} operandos y la interfaz admite hasta {OPERANDOS_MAXIMOS}: "
                 "cada aparición de un operando o de un número cuenta.")
-    operaciones = len(todos) - len(operandos)
     if operaciones > OPERANDOS_MAXIMOS - 1:
         return (f"La expresión tiene {operaciones} operaciones y la interfaz admite hasta {OPERANDOS_MAXIMOS - 1}: "
                 "cada suma, resta, producto, signo menos o traspuesta cuenta.")
-    entradas = sum(tamanos[hoja.nombre] if isinstance(hoja, Simbolo) else 1 for hoja in operandos)
     if entradas > CELDAS_MAXIMAS:
         return (f"Los operandos de la expresión suman {entradas} entradas y la interfaz admite hasta {CELDAS_MAXIMAS}: "
                 "cada aparición de un operando cuenta todas sus entradas.")
@@ -134,12 +146,11 @@ class ExpresionMatricialForm(FormularioCeldas):
     confirmacion = forms.CharField(required=False, strip=False, widget=forms.HiddenInput)
 
     expresion = forms.CharField(
-        label="Expresión", required=False, max_length=400,
+        label="Expresión", required=False,
         widget=forms.Textarea(attrs={
             "class": "field-input field-input-code", "rows": 2, "spellcheck": "false",
-            "placeholder": "A + B",
+            "placeholder": "A + B", "maxlength": LONGITUD_EXPRESION_MAXIMA,
         }),
-        error_messages={"max_length": "La expresión admite hasta 400 caracteres."},
     )
     cantidad = forms.IntegerField(
         min_value=0, max_value=OPERANDOS_MAXIMOS, initial=SIMBOLOS_INICIALES,
@@ -167,6 +178,16 @@ class ExpresionMatricialForm(FormularioCeldas):
         super().__init__(*args, **kwargs)
         self.nombres_lineales = []
         self.bloques = []
+        self.expresiones_maximas = EXPRESIONES_MAXIMAS
+        self.expresiones = [self["expresion"]]
+        origen = self.data if self.is_bound else self.initial
+        for nombre in NOMBRES_EXPRESIONES[1:]:
+            if nombre not in origen:
+                break
+            self.fields[nombre] = forms.CharField(required=False, widget=forms.Textarea(
+                attrs=self.fields["expresion"].widget.attrs.copy(),
+            ))
+            self.expresiones.append(self[nombre])
         estructuras = [self._estructura(indice) for indice in range(self._cantidad())]
         # Presupuesto antes de crear un campo por celda. Si no cabe, se dibujan los mismos
         # símbolos con las dimensiones iniciales (a lo sumo 50 de 2×2) y clean() lo rechaza.
@@ -311,8 +332,7 @@ class ExpresionMatricialForm(FormularioCeldas):
         2. Nombre y dimensiones de cada operando.
         3. Acciones del editor (Aplicar, agregar, eliminar): devuelven `estado`,
            el formulario que se vuelve a dibujar, sin exigir celdas ni expresión.
-        4. Calcular: expresión, celdas numéricas y componentes lineales, y
-           presupuesto de la expresión. Devuelve `entrada` para el servicio.
+        4. Calcular: valida los valores compartidos y prepara cada expresión.
         """
         datos = super().clean()
         self.rechazar_campos_repetidos()
@@ -337,25 +357,26 @@ class ExpresionMatricialForm(FormularioCeldas):
                 self.add_error(None, impedimento)
                 return datos
         if self.accion:
+            if self.accion == "agregar_expresion" and len(self.expresiones) == EXPRESIONES_MAXIMAS:
+                self.add_error(None, f"La interfaz admite hasta {EXPRESIONES_MAXIMAS} expresiones.")
+                return datos
+            if self.accion == "eliminar_expresion" and not (
+                len(self.expresiones) > 1 and self._indice_eliminar(len(self.expresiones), self.accion)
+            ):
+                self.add_error(None, "No se puede eliminar esa expresión.")
+                return datos
             datos["estado"] = self._estado(simbolos, datos.get("metodo"))
             return datos
-        expresion = (datos.get("expresion") or "").strip()
-        if not expresion:
+        if len(self.expresiones) == 1 and not datos["expresion"]:
             self.add_error("expresion", "Escribe una expresión.")
             return datos
         self.convertir_numeros(datos, self.nombres_celdas)
         self._validar_componentes_lineales(datos)
         if self.errors:
             return datos
-        error = self._error_presupuesto_expresion(expresion, simbolos)
-        if error:
-            self.add_error("expresion", error)
-            return datos
-        nodo = (self.data.get("nodo") or "").strip() or None
-        datos["entrada"] = {
-            "expresion": expresion, "simbolos": self._operandos_para_calcular(datos, simbolos), "nodo": nodo,
-            "metodo": datos.get("metodo") or METODO_PREDETERMINADO,
-        }
+        datos["entradas"] = self._entradas(datos, simbolos)
+        if len(self.expresiones) == 1 and datos["entradas"] and not self.errors:
+            datos["entrada"] = datos["entradas"][0]["entrada"]
         return datos
 
     def _simbolos_declarados(self, datos):
@@ -416,18 +437,47 @@ class ExpresionMatricialForm(FormularioCeldas):
             else:
                 datos[clave] = texto
 
-    @staticmethod
-    def _error_presupuesto_expresion(expresion, simbolos):
-        """Mensaje si la expresión excede el presupuesto; None si cabe o si no se puede leer.
-
-        Un error de sintaxis no se informa aquí: el servicio lo explica al evaluar.
-        """
-        try:
-            arbol = analizar_entrada(expresion, [simbolo["nombre"] for simbolo in simbolos])
-        except ValueError:
-            return None
+    def _entradas(self, datos, simbolos):
+        nodo = (self.data.get("nodo") or "").strip()
+        indice_nodo = 0
+        if nodo and len(self.expresiones) > 1:
+            indice, separador, nodo = nodo.partition("|")
+            indices = {str(i): i for i in range(len(self.expresiones))}
+            if not separador or not nodo or indice not in indices:
+                self.add_error(None, "La subexpresión no corresponde a ninguna expresión del formulario.")
+                return []
+            indice_nodo = indices[indice]
         tamanos = {s["nombre"]: tamano(s["tipo"], s["filas"], s["columnas"]) for s in simbolos}
-        return presupuesto_expresion(arbol, tamanos)
+        operandos = self._operandos_para_calcular(datos, simbolos)
+        metodo = datos.get("metodo") or METODO_PREDETERMINADO
+        filas = []
+        for indice, campo in enumerate(self.expresiones):
+            texto = datos[campo.name]
+            uso = (0, 0, 0)
+            error = None
+            if not texto:
+                error = "Escribe una expresión."
+            elif len(texto) > LONGITUD_EXPRESION_MAXIMA:
+                error = f"La expresión admite hasta {LONGITUD_EXPRESION_MAXIMA} caracteres."
+            else:
+                # Los coeficientes de una combinación lineal cuentan como hojas.
+                nombres = set(tamanos)
+                if "=" in texto:
+                    nombres.update(incognitas(texto, nombres))
+                try:
+                    uso = medir_expresion(analizar_entrada(texto, nombres), tamanos)
+                except ValueError:
+                    # El servicio conserva los diagnósticos del analizador y de las igualdades.
+                    pass
+                error = presupuesto_expresion(uso)
+            if error:
+                self.add_error(campo.name, error)
+            filas.append({
+                "campo": campo.name, "indice": indice, "uso": uso, "error": error,
+                "entrada": {"expresion": texto, "simbolos": operandos, "metodo": metodo,
+                            "nodo": (nodo or None) if indice == indice_nodo else None},
+            })
+        return filas
 
     @staticmethod
     def _operandos_para_calcular(datos, simbolos):
@@ -458,9 +508,9 @@ class ExpresionMatricialForm(FormularioCeldas):
             operandos[simbolo["nombre"]] = {"tipo": tipo, "valor": valor}
         return operandos
 
-    def _indice_eliminar(self, cantidad):
+    def _indice_eliminar(self, cantidad, campo="eliminar"):
         try:
-            indice = int(self.data.get("eliminar"))
+            indice = int(self.data.get(campo))
         except (TypeError, ValueError):
             return False
         return 0 <= indice < cantidad
@@ -468,13 +518,13 @@ class ExpresionMatricialForm(FormularioCeldas):
     def _contrato(self, simbolos):
         recibidos = set(self.data)
         if self.accion:
-            conocidos = set(self.fields) | {"csrfmiddlewaretoken", "ajustar", "agregar", "eliminar", "nodo"}
+            conocidos = set(self.fields) | {"csrfmiddlewaretoken", self.accion, "nodo"}
             return all(
                 nombre in conocidos or nombre.startswith(("celda_", "filas_", "columnas_"))
                 for nombre in recibidos
             )
         opcionales = {"nodo", "csrfmiddlewaretoken", "metodo", "confirmacion"}
-        esperados = {"expresion", "cantidad"} | opcionales
+        esperados = {"cantidad", *(campo.name for campo in self.expresiones)} | opcionales
         for simbolo in simbolos:
             indice, tipo = simbolo["indice"], simbolo["tipo"]
             esperados.update((f"nombre_{indice}", f"tipo_{indice}"))
@@ -505,7 +555,13 @@ class ExpresionMatricialForm(FormularioCeldas):
                 "nombre": nombre_libre({simbolo["nombre"] for simbolo in lista}), "tipo": "matriz", "filas": 2, "columnas": 2,
                 "celdas": {(fila, columna): "" for fila in range(2) for columna in range(2)},
             })
-        plano = {"expresion": self.data.get("expresion", ""), "cantidad": len(lista), "metodo": metodo or METODO_PREDETERMINADO}
+        expresiones = [self.data.get(campo.name, "") for campo in self.expresiones]
+        if self.accion == "eliminar_expresion":
+            expresiones.pop(int(self.data["eliminar_expresion"]))
+        if self.accion == "agregar_expresion":
+            expresiones.append("")
+        plano = {"cantidad": len(lista), "metodo": metodo or METODO_PREDETERMINADO}
+        plano.update(zip(NOMBRES_EXPRESIONES, expresiones))
         for indice, simbolo in enumerate(lista):
             plano[f"nombre_{indice}"] = simbolo["nombre"]
             plano[f"tipo_{indice}"] = simbolo["tipo"]

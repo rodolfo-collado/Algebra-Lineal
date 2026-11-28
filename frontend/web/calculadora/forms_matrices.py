@@ -16,17 +16,17 @@ def _minuscula_inicial(texto):
     return texto[:1].lower() + texto[1:]
 
 
-def campo_dimension(etiqueta, requerido=True):
+def campo_dimension(etiqueta, requerido=True, *, maximo=DIMENSION_MAXIMA):
     nombre = _minuscula_inicial(etiqueta)
     return forms.IntegerField(
         label=etiqueta, initial=DIMENSION_PREDETERMINADA, required=requerido,
-        min_value=DIMENSION_MINIMA, max_value=DIMENSION_MAXIMA,
+        min_value=DIMENSION_MINIMA, max_value=maximo,
         widget=forms.NumberInput(attrs={"class": "field-input", "inputmode": "numeric"}),
         error_messages={
             "required": f"Indica el número de {nombre}.",
             "invalid": f"El número de {nombre} debe ser entero.",
             "min_value": f"El número de {nombre} debe ser al menos {DIMENSION_MINIMA}.",
-            "max_value": f"La interfaz admite hasta {DIMENSION_MAXIMA} {nombre}.",
+            "max_value": f"La interfaz admite hasta {maximo} {nombre}.",
         },
     )
 

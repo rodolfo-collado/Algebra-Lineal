@@ -63,7 +63,7 @@ class PruebasCatalogo(SimpleTestCase):
              catalogo.DETERMINANTES),
         )
         # UI-17 añade inversa desde operaciones, sin sugerir resolver Ax=b por inversión.
-        self.assertEqual(set(herramienta.relacionadas), {"ecuaciones-matriciales", "matriz-inversa"})
+        self.assertEqual(set(herramienta.relacionadas), {"ecuaciones-matriciales", "matriz-inversa", "independencia-lineal"})
         respuesta = self.client.get("/")
         self.assertContains(respuesta, f'href="{RUTA}"')
         self.assertNotContains(respuesta, f'href="{ANTIGUA}"')

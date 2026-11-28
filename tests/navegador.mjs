@@ -25,6 +25,7 @@ const SELECCION = [
     "secante",
     "iterativos",   // Jacobi y Gauss-Seidel
     "conjuntos",
+    "independencia",
     "resoluciones", // cuaderno: guardar, reabrir, agrupar y los cinco estilos
 ];
 const LIMITE_MS = Number(process.env.NAVEGADOR_LIMITE_MS || 240000);

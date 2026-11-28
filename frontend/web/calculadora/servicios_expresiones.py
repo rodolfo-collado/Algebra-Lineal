@@ -114,6 +114,7 @@ def presentar(evaluacion, metodo=METODO_PREDETERMINADO, raiz=True):
         "dimensiones": dimensiones(principal),
         "igualdad": igualdad(principal),
         "matriz": matriz_de(principal),
+        "escalar": formatear_exacto(principal.resultado) if principal.tipo == "escalar" else None,
         # El último paso es lo que se pidió calcular: no repite su valor ni ofrece recalcularse.
         # En una igualdad, cada lado sí puede pedirse solo.
         "pasos": [

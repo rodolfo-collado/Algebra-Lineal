@@ -149,11 +149,13 @@ CONJUNTOS = Area("conjuntos", "Conjuntos", "Definición de conjuntos, sus operac
 METODOS_NUMERICOS = Area("metodos-numericos", "Métodos numéricos", "Aproximación de raíces de funciones y soluciones de sistemas lineales.", "f(c) ≈ 0")
 AREAS = (ALGEBRA_LINEAL, SISTEMAS_NUMERICOS, METODOS_NUMERICOS, CONJUNTOS, CALCULO)
 
-# Una sola sección de Álgebra lineal: operaciones (también con vectores), sistemas lineales,
-# reducción por filas, la matriz inversa y determinantes trabajan con las mismas matrices.
 MATRICES = Categoria(
     "matrices", "Matrices", ALGEBRA_LINEAL,
     "Operaciones con matrices, vectores y escalares, sistemas lineales Ax = b, reducción por filas, la matriz inversa y determinantes.", "[ A ]",
+)
+VECTORES = Categoria(
+    "vectores", "Vectores", ALGEBRA_LINEAL,
+    "Independencia y dependencia lineal de conjuntos de vectores.", "v",
 )
 BASES_NUMERICAS = Categoria(
     "bases-numericas", "Bases numéricas", SISTEMAS_NUMERICOS,
@@ -173,7 +175,7 @@ SISTEMAS_ITERATIVOS = Categoria(
     "sistemas-lineales", "Sistemas lineales", METODOS_NUMERICOS,
     "Aproximaciones sucesivas de la solución de Ax = b.", "Ax",
 )
-CATEGORIAS = (MATRICES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, SISTEMAS_ITERATIVOS, CONJUNTOS_FINITOS, LIMITES)
+CATEGORIAS = (MATRICES, VECTORES, BASES_NUMERICAS, NUMERACION_ROMANA, RAICES, SISTEMAS_ITERATIVOS, CONJUNTOS_FINITOS, LIMITES)
 
 
 # Reducción por filas de [A | b]: método a elegir (o comparar los dos) y
@@ -259,11 +261,25 @@ OPERACIONES_MATRICES = Herramienta(
                     "vector", "vectores", "suma de vectores", "resta de vectores",
                     "multiplicación por escalar", "producto por escalar", "ecuación vectorial", "span",
                     "generado", "conjunto generado", "componentes", "rn"),
-    relacionadas=("ecuaciones-matriciales", "matriz-inversa"),
+    relacionadas=("ecuaciones-matriciales", "matriz-inversa", "independencia-lineal"),
     invitacion="Combina matrices, vectores y escalares en una expresión.",
     puntos=('Suma, producto, escalares y traspuesta', 'Vectores y coeficientes de una combinación lineal'),
     curiosidad="El producto de matrices no es conmutativo: en general AB ≠ BA. Pruébalo con dos matrices 2 × 2.",
 )
+
+INDEPENDENCIA_LINEAL = Herramienta(
+    id="independencia-lineal", nombre="Independencia lineal", categoria=VECTORES,
+    descripcion="Determina si tus vectores son linealmente independientes. Si hay dependencia, encuentra y comprueba una relación entre ellos.",
+    estado="disponible", route_name="calculadora:independencia-lineal",
+    palabras_clave=("vectores", "dependencia lineal", "independencia lineal", "sistema homogéneo",
+                    "rango", "pivotes", "variables libres"),
+    relacionadas=("operaciones-matrices", "reduccion-filas"),
+    invitacion="Ingresa las componentes de tus vectores y descubre qué relación hay entre ellos.",
+    puntos=("Plantea un sistema homogéneo con los vectores como columnas",
+            "Obtén una relación de dependencia con coeficientes exactos"),
+    curiosidad="Si hay más vectores que componentes por vector, siempre queda una variable libre y el conjunto es dependiente.",
+)
+
 
 # Un sistema lineal escrito como Ax = b: A y b conocidos, x es la incógnita. Se reutilizan
 # los motores de sistemas (Gauss, Gauss-Jordan, LU o Cramer) sobre [A | b].
@@ -396,6 +412,7 @@ HERRAMIENTAS = (
     REDUCCION_FILAS,
     MATRIZ_INVERSA,
     DETERMINANTES,
+    INDEPENDENCIA_LINEAL,
     CONVERSION_BASES,
     CONVERSION_ROMANOS,
     METODOS_CERRADOS,

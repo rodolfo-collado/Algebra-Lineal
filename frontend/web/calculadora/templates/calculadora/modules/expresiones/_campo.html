@@ -1,0 +1,9 @@
+<div class="expression-row" data-fila-expresion>
+    <div class="expression-row-heading">
+        <label for="{{ campo.id_for_label }}">Expresión{% if form.expresiones|length > 1 %} {{ forloop.counter }}{% endif %}</label>
+        <button class="btn btn-secondary" type="submit" name="eliminar_expresion" value="{{ forloop.counter0 }}"
+                aria-label="Eliminar expresión {{ forloop.counter }}" data-eliminar-expresion{% if form.expresiones|length == 1 %} hidden{% endif %}>Eliminar</button>
+    </div>
+    {{ campo }}
+    {{ campo.errors }}
+</div>

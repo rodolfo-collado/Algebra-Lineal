@@ -23,7 +23,7 @@ from .forms_romanos import ConversionRomanosForm
 from .opciones_ecuaciones import AYUDA_METODOS as AYUDA_METODOS_ECUACION
 from .servicios_ecuaciones import resolver_ecuacion_web, confirmacion_pendiente as confirmar_ecuacion
 from .servicios_expresiones import evaluar_expresion_web
-from .presupuesto_expresiones import confirmacion_pendiente as confirmar_expresion
+from .presupuesto_expresiones import confirmacion_pendiente as confirmar_expresion, estimar_expresion_web, sumar_uso
 from .servicios_determinantes import (
     calcular_determinante_web, confirmacion_pendiente as confirmar_determinante, recomendar_metodo_web,
     firmar_matriz,
@@ -160,33 +160,66 @@ def sistemas_ruta_antigua(request, herramienta=None):
 
 @require_http_methods(["GET", "POST"])
 def operaciones_matrices(request, datos=None):
-    """Operaciones: matrices, vectores y escalares definidos uno a uno y una expresión que los combina.
-
-    A + B, 2u − v, AB, Ax, Aᵀ o A(B + C) - 2D usan el mismo flujo y el mismo motor de
-    expresiones, que reutiliza las operaciones exactas de backend.matrices. x1 u + x2 v = b
-    pide los coeficientes de una combinación lineal. ?plantilla=… carga un ejemplo editable.
-    """
+    """Una o varias expresiones sobre operandos compartidos. ?plantilla=… carga un ejemplo editable."""
     datos = datos if datos is not None else request.POST if request.method == "POST" else None
-    accion = next((nombre for nombre in ("agregar", "eliminar", "ajustar") if datos and nombre in datos), None)
+    acciones = ("agregar", "eliminar", "ajustar", "agregar_expresion", "eliminar_expresion")
+    accion = next((nombre for nombre in acciones if datos and nombre in datos), None)
     plantilla = estado_plantilla(request.GET.get("plantilla", "")) if datos is None else None
     form = ExpresionMatricialForm(datos, accion=accion, initial=plantilla)
-    resultado = confirmacion = None
-    if request.method == "POST" and form.is_valid():
-        if accion:
+    resultados, confirmacion = [], None
+    if request.method == "POST":
+        form.full_clean()
+        if "estado" in form.cleaned_data:
             form = ExpresionMatricialForm(initial=form.cleaned_data["estado"])
-        else:
-            try:
-                entrada = form.cleaned_data["entrada"]
-                confirmacion = confirmar_expresion(entrada, form.cleaned_data["confirmacion"])
-                if confirmacion is None:
-                    resultado = evaluar_expresion_web(entrada)
-            except ValueError as error:
-                form.add_error("expresion", str(error))
+        elif form.cleaned_data.get("entradas"):
+            resultados, confirmacion = _resolver_expresiones(form)
     return TemplateResponse(request, "calculadora/modules/expresiones/index.html", {
-        "form": form, "resultado": resultado, "confirmacion": confirmacion,
+        "form": form, "resultados": resultados, "confirmacion": confirmacion,
+        "resultado": resultados[0]["resultado"] if len(resultados) == 1 else None,
+        "hay_resultados": any(fila["resultado"] is not None for fila in resultados),
         "plantillas": [(identificador, rotulo) for identificador, rotulo, _, _ in PLANTILLAS],
         "perfiles_teclado": perfiles_para("numerico", "expresion", "lineal"),
     })
+
+
+def _resolver_expresiones(form):
+    """Prepara el lote antes de evaluar. Cada fila expone su resultado estructurado o su error."""
+    filas = form.cleaned_data["entradas"]
+    estimaciones = []
+    acumulado = (0, 0, 0)
+    for fila in filas:
+        if fila["error"]:
+            continue
+        try:
+            estimacion = estimar_expresion_web(fila["entrada"], incluir_combinacion=len(filas) > 1)
+            acumulado = sumar_uso(acumulado, fila["uso"])
+        except ValueError as error:
+            fila["error"] = str(error)
+            form.add_error(fila["campo"], fila["error"])
+        else:
+            if estimacion is not None:
+                estimaciones.append(estimacion)
+    entradas = [fila["entrada"] for fila in filas]
+    lote = [(entrada["expresion"], entrada["nodo"]) for entrada in entradas] if len(filas) > 1 else ()
+    confirmacion = confirmar_expresion(entradas[0], form.cleaned_data["confirmacion"], estimaciones, lote)
+    if confirmacion:
+        return [], confirmacion
+
+    resultados = []
+    for fila in filas:
+        entrada = fila["entrada"]
+        resultado, error = None, fila["error"]
+        if not error:
+            try:
+                resultado = evaluar_expresion_web(entrada)
+            except ValueError as fallo:
+                error = str(fallo)
+                form.add_error(fila["campo"], error)
+        resultados.append({
+            "indice": fila["indice"], "expresion": entrada["expresion"], "nodo": entrada["nodo"],
+            "resultado": resultado, "error": error,
+        })
+    return resultados, None
 
 
 @require_http_methods(["GET", "POST"])

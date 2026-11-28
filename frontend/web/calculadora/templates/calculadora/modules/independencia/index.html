@@ -1,0 +1,130 @@
+{% extends "calculadora/layouts/herramienta.html" %}
+{% load static componentes numeros %}
+
+{% block tool_input %}
+<section class="panel workspace" data-independencia aria-labelledby="vectores-title">
+    <form id="independencia-form" data-entrada-calculo autocomplete="off" action="{{ herramienta_actual.ruta }}#resultado" method="post" novalidate{% if form.errors %} data-respuesta-errores{% endif %}>
+        {% csrf_token %}
+        {% include "calculadora/components/errores_generales.html" %}
+        <div class="workspace-section" data-perfil="numerico">
+            <h2 id="vectores-title" class="section-title">Vectores del conjunto</h2>
+            <p class="field-help">Ingresa las componentes en orden. Todos los vectores tienen la misma dimensión. Puedes usar enteros, fracciones como <code>1/2</code> y decimales como <code>0.5</code>.</p>
+            <nav class="plantillas" aria-label="Ejemplos">
+                <span class="plantillas-titulo">Ejemplos</span>
+                {% for clave, rotulo in ejemplos %}<a class="plantilla" href="?ejemplo={{ clave }}">{{ rotulo }}</a>{% endfor %}
+            </nav>
+            <div class="structure-controls structure-controls-matrices" role="group" aria-label="Tamaño del conjunto">
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.cantidad quitar="Quitar un vector" agregar="Agregar un vector" %}
+                {% include "calculadora/modules/matrices/_dimension.html" with campo=form.dimension quitar="Quitar una componente de cada vector" agregar="Agregar una componente a cada vector" %}
+            </div>
+            <p class="field-help" data-presupuesto-vectores="{{ form.celdas_maximas }}" role="status"></p>
+            <button class="btn btn-secondary" type="submit" name="ajustar" value="1" data-aplicar formnovalidate>Aplicar</button>
+            <noscript><p class="field-help">Si cambias las cantidades, pulsa <strong>Aplicar</strong> antes de analizar el conjunto.</p></noscript>
+            <div id="vector-entry" class="matrix-entry-list">
+                {% for vector in form.matrices %}
+                    {% include "calculadora/components/matriz_entrada.html" with nombre=vector.nombre filas=vector.filas vector=True indice_vector=forloop.counter only %}
+                {% endfor %}
+            </div>
+            {% include "calculadora/components/errores_grupo.html" %}
+            {% include "calculadora/components/math_keyboard.html" %}
+        </div>
+        <div class="workspace-actions">
+            <button class="btn btn-primary" type="submit" data-calculo>Analizar independencia</button>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block tool_result %}
+{% if resultado %}
+{% numeric_results %}
+<section id="resultado" data-resultado="vigente" class="results" aria-labelledby="results-title" tabindex="-1">
+    <section class="panel panel-final" aria-labelledby="results-title">
+        <header class="results-heading classification independencia-veredicto" data-kind="{% if resultado.es_independiente %}independiente{% else %}dependiente{% endif %}">
+            <span class="classification-icon" aria-hidden="true">
+                {% if not resultado.es_independiente %}
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                    <path d="M3 6h13m-3-3 3 3-3 3M3 14h9m-3-3 3 3-3 3"/>
+                </svg>
+                {% endif %}
+            </span>
+            <div>
+                <h2 class="classification-value" id="results-title">Conjunto linealmente {% if resultado.es_independiente %}independiente{% else %}dependiente{% endif %}</h2>
+                <p class="combination-detail independencia-criterio">
+                    <code data-criterio>rango(A) = {{ resultado.rango }} {% if resultado.es_independiente %}={% else %}&lt;{% endif %} {{ resultado.cantidad }}</code>
+                    <span class="muted">El rango {% if resultado.es_independiente %}coincide con{% else %}es menor que{% endif %} la cantidad de vectores.</span>
+                </p>
+            </div>
+        </header>
+        <dl class="independencia-medidas">
+            <div><dt>Rango de A</dt><dd data-rango>{{ resultado.rango }}</dd></div>
+            <div><dt>Vectores</dt><dd data-cantidad-vectores>{{ resultado.cantidad }}</dd></div>
+            <div><dt>Variables libres</dt><dd data-cantidad-libres>{{ resultado.cantidad_libres }}</dd></div>
+        </dl>
+        {% if resultado.relacion %}
+        <div class="final-block">
+            <h3 class="final-label">Relación de dependencia</h3>
+            <p class="combination-equality"><code data-relacion>{{ resultado.relacion.igualdad }}</code></p>
+            {% if resultado.relacion.despeje %}
+                <p class="combination-equality"><code data-despeje>{{ resultado.relacion.despeje }}</code></p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+
+    {% include "calculadora/components/numeric_format.html" %}
+    {% disclosure titulo="Ver procedimiento" id="procedimiento" clase="disclosure-procedure" nivel=3 %}
+        <div class="procedure-stage">
+            <h4 class="stage-title">Planteamiento del sistema homogéneo</h4>
+            <p class="procedure-lead">Buscamos los coeficientes que hacen que la combinación dé el vector nulo <code>{{ resultado.vector_nulo }}</code>.</p>
+            <p class="combination-equality"><code>{{ resultado.planteamiento }}</code></p>
+            <p class="procedure-lead">Cada vector ocupa una columna de <code>A = [{{ resultado.columnas }}]</code>. En el sistema <code>A{{ resultado.vector_coeficientes }} = {{ resultado.vector_nulo }}</code>, el vector de coeficientes es <code>{{ resultado.vector_coeficientes }}</code> y la columna aumentada contiene el vector nulo.</p>
+            {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_aumentada etiqueta="Matriz aumentada del sistema homogéneo" columnas_pivote=None %}
+            <ol class="equations">
+                {% for ecuacion in resultado.ecuaciones %}<li><code>{{ ecuacion }}</code></li>{% endfor %}
+            </ol>
+        </div>
+        <div class="procedure-stage">
+            <h4 class="stage-title">Reducción por Gauss-Jordan</h4>
+            {% include "calculadora/modules/sistemas/_pasos.html" %}
+            <div class="final-block">
+                <p class="final-label">Matriz reducida</p>
+                {% include "calculadora/components/matrix.html" with matriz=resultado.matriz_reducida etiqueta="Matriz aumentada reducida" columnas_pivote=resultado.columnas_pivote %}
+            </div>
+        </div>
+        <div class="procedure-stage">
+            <h4 class="stage-title">Lectura de la solución</h4>
+            <dl class="independencia-medidas independencia-datos-reduccion">
+                <div><dt>Columnas pivote</dt><dd data-pivotes>{{ resultado.pivotes|default:"Ninguna" }}</dd></div>
+                <div><dt>Coeficientes libres</dt><dd data-libres>{{ resultado.variables_libres|default:"Ninguno" }}</dd></div>
+            </dl>
+            <p class="procedure-lead">El rango es la cantidad de columnas pivote. {% if resultado.es_independiente %}Como hay un pivote por coeficiente, cada coeficiente vale cero.{% else %}Como el rango es menor que la cantidad de vectores, los coeficientes de las columnas sin pivote se pueden elegir libremente.{% endif %}</p>
+            <ul class="equations solution-list">
+                {% for linea in resultado.solucion %}<li><code>{{ linea }}</code></li>{% endfor %}
+            </ul>
+            {% if resultado.relacion %}
+                <p class="procedure-lead">Para obtener una relación, elegimos <code>{{ resultado.relacion.asignacion }}</code>. Al sustituir, queda <code>{{ resultado.vector_coeficientes }} = {{ resultado.relacion.coeficientes }}</code>.</p>
+            {% endif %}
+        </div>
+        {% if resultado.relacion %}
+        <div class="procedure-stage">
+            <h4 class="stage-title">Comprobación algebraica</h4>
+            <p class="procedure-lead">Sustituimos las componentes de los vectores en la relación.</p>
+            <p class="combination-equality"><code data-verificacion><span>{{ resultado.relacion.verificacion }}</span> = {{ resultado.vector_nulo }}</code></p>
+        </div>
+        {% endif %}
+    {% enddisclosure %}
+</section>
+{% endnumeric_results %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% include "calculadora/components/seleccion_matricial.html" %}
+{% include "calculadora/components/menu_edicion.html" %}
+<template id="matrix-entry-template">{% include "calculadora/components/matriz_entrada.html" only %}</template>
+<template id="matrix-cell-template">{% include "calculadora/components/matriz_celda.html" only %}</template>
+<script src="{% static 'calculadora/independencia.js' %}" defer></script>
+<script src="{% static 'calculadora/teclado.js' %}" defer></script>
+<script src="{% static 'calculadora/numeros.js' %}" defer></script>
+{% endblock %}

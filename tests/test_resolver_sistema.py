@@ -50,7 +50,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
     def test_la_navegacion_no_lista_las_pseudo_herramientas(self):
         rutas = (
             "/matrices/reduccion/", "/matrices/operaciones/",
-            "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/",
+            "/matrices/ecuaciones/", "/matrices/inversa/", "/matrices/determinantes/", "/vectores/independencia/", "/bases/conversion/",
             "/romanos/conversion/", "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/metodos-numericos/metodos-iterativos/", "/conjuntos/relaciones/",
             "/conjuntos/cardinalidad/",
         )
@@ -85,7 +85,7 @@ class PruebasNavegacionUnificada(SimpleTestCase):
         self.assertEqual(
             [a["href"] for _, a in Documento(inicio).enlaces if a.get("class") == "tool-link"],
             ["/matrices/operaciones/", "/matrices/ecuaciones/", "/matrices/reduccion/",
-             "/matrices/inversa/", "/matrices/determinantes/", "/bases/conversion/", "/romanos/conversion/",
+             "/matrices/inversa/", "/matrices/determinantes/", "/vectores/independencia/", "/bases/conversion/", "/romanos/conversion/",
              "/metodos-numericos/metodos-cerrados/biseccion/", "/metodos-numericos/metodos-abiertos/newton-raphson/", "/metodos-numericos/metodos-iterativos/", "/conjuntos/relaciones/", "/conjuntos/cardinalidad/"],
         )
         self.assertNotContains(inicio, "Acceso rápido")

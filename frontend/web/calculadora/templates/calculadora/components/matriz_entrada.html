@@ -1,6 +1,6 @@
 {% comment %}Cuadrícula editable de una matriz o, con `vector`, de un vector columna (n×1). matrices.js genera este mismo marcado al cambiar la estructura.{% endcomment %}
 <fieldset class="matrix-entry" data-matriz="{{ nombre }}"{% if vector %} data-vector{% endif %}>
-    <legend><span data-tipo-matriz>{% if vector %}Vector{% else %}Matriz{% endif %}</span> <span data-nombre-matriz>{{ nombre }}</span></legend>
+    <legend><span data-tipo-matriz>{% if vector %}Vector{% else %}Matriz{% endif %}</span> <span data-nombre-matriz>{% if indice_vector %}v<sub>{{ indice_vector }}</sub>{% else %}{{ nombre }}{% endif %}</span></legend>
     <div class="matrix">
         <div class="matrix-scroll" role="region" aria-label="{% if vector %}Componentes del vector{% else %}Entradas de la matriz{% endif %} {{ nombre }}">
             <div class="matrix-content">

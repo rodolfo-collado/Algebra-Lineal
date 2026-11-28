@@ -6,6 +6,7 @@ from . import views
 from .views_raices import (cerrados_ruta_antigua, explorar_funcion, newton_raphson_ruta_antigua, resolver_biseccion,
                            resolver_newton_raphson, resolver_regla_falsa, resolver_secante)
 from .views_conjuntos import relaciones_conjuntos, cardinalidades_conjuntos
+from .views_independencia import independencia_lineal
 from .views_iterativos import metodos_iterativos
 from .views_resoluciones import resoluciones
 
@@ -44,6 +45,7 @@ urlpatterns = [
     # Compatibilidad: Operaciones con vectores es ahora Operaciones (GET 301 con contexto de
     # vectores; el POST antiguo se traduce a la expresión equivalente y se calcula aquí mismo).
     path("vectores/operaciones/", views.operaciones_vectores_ruta_antigua, name="operaciones-vectores"),
+    path("vectores/independencia/", independencia_lineal, name="independencia-lineal"),
     path("matrices/operaciones/", views.operaciones_matrices, name="operaciones-matrices"),
     # Compatibilidad: Expresiones matriciales es ahora Operaciones con matrices (GET 301, POST 308).
     path("matrices/expresiones/", views.expresiones_ruta_antigua, name="expresiones-matriciales"),
