@@ -37,15 +37,18 @@
         w = await resolver(frame, w);
         igual(texto(w, "#results-title"), "Conjunto linealmente dependiente");
         igual(texto(w, "[data-rango]"), "2");
+        igual(texto(w, "[data-cantidad-vectores]"), "3");
+        igual(texto(w, "[data-cantidad-libres]"), "1");
+        igual(texto(w, "[data-criterio]"), "rango(A) = 2 < 3");
         igual(texto(w, "[data-pivotes]"), "1, 2");
         igual(texto(w, "[data-libres]"), "α₃");
-        igual(texto(w, "[data-relacion]"), "-2v₁ - v₂ + v₃ = 0");
+        igual(texto(w, "[data-relacion]"), "-2v₁ - v₂ + v₃ = 𝟎");
         igual(texto(w, "[data-despeje]"), "v₃ = 2v₁ + v₂");
         igual(q(w, "#procedimiento").open, false);
         q(w, "#procedimiento > summary").click();
         igual(q(w, "#procedimiento").open, true);
         igual(w.document.querySelectorAll("#procedimiento .step").length > 0, true);
-        igual(texto(w, "[data-verificacion]"), "-2(1, 2, 0) - (0, 1, 3) + (2, 5, 3) = (0, 0, 0)");
+        igual(texto(w, "[data-verificacion]"), "-2(1, 2, 0) - (0, 1, 3) + (2, 5, 3) = (0, 0, 0) = 𝟎");
     });
 
     caso("Exacto y Decimal aplicados a la relación y al procedimiento", async frame => {
@@ -53,23 +56,25 @@
         for (const [fila, valor] of ["1/9", "1/3", "0"].entries()) celda(w, 2, fila).value = valor;
         w = await resolver(frame, w);
         elegir(w, "#numeric-mode", "exacto");
-        igual(texto(w, "[data-relacion]"), "-1/3v₁ + v₂ = 0");
+        igual(texto(w, "[data-relacion]"), "-1/3v₁ + v₂ = 𝟎");
         elegir(w, "#numeric-mode", "decimal");
-        igual(texto(w, "[data-relacion]"), "-0.3333v₁ + v₂ ≈ 0");
-        igual(texto(w, "[data-verificacion]").includes("≈"), true);
+        igual(texto(w, "[data-relacion]"), "-0.3333v₁ + v₂ ≈ 𝟎");
+        igual(texto(w, "[data-verificacion]").endsWith("≈ (0, 0, 0) = 𝟎"), true);
         elegir(w, "#numeric-precision", "2");
-        igual(texto(w, "[data-relacion]"), "-0.33v₁ + v₂ ≈ 0");
+        igual(texto(w, "[data-relacion]"), "-0.33v₁ + v₂ ≈ 𝟎");
         elegir(w, "#numeric-mode", "exacto");
-        igual(texto(w, "[data-relacion]"), "-1/3v₁ + v₂ = 0");
+        igual(texto(w, "[data-relacion]"), "-1/3v₁ + v₂ = 𝟎");
         elegir(w, "#numeric-precision", "4");
     });
 
     caso("Redimensionar conserva celdas y respeta las flechas y el teclado contextual", async frame => {
         const w = await abrir(frame, "dependiente");
+        igual(texto(w, '[data-matriz="v3"] legend sub'), "3");
         q(w, '[data-dimension="cantidad"] [data-paso="-1"]').click();
         igual(celda(w, 3, 2), null);
         q(w, '[data-dimension="cantidad"] [data-paso="1"]').click();
         igual(celda(w, 3, 2).value, "3");
+        igual(texto(w, '[data-matriz="v3"] legend sub'), "3");
         celda(w, 1, 0).focus();
         igual(q(w, ".math-keyboard").hidden, false);
         const diagonal = q(w, '[data-insercion="/"]');
@@ -112,22 +117,38 @@
 
     for (const estilo of ["estudio", "minimalista", "chocolab", "belugacalc", "heyalgb"]) {
         for (const tema of ["light", "dark"]) {
-            caso(`Resultado y procedimiento a 390 px · ${estilo} · ${tema}`, async frame => {
-                frame.style.width = "390px";
-                let w = await abrir(frame, "independiente");
-                const raiz = () => w.document.documentElement;
-                q(w, "#opciones-toggle").click();
-                q(w, `[name="estilo"][value="${estilo}"]`).click();
-                await esperar(() => raiz().dataset.estilo === estilo);
-                if (raiz().dataset.theme !== tema) q(w, "#theme-toggle").click();
-                await esperar(() => raiz().dataset.theme === tema);
-                w = await resolver(frame, w);
-                igual(raiz().dataset.theme, tema);
-                igual(raiz().dataset.estilo, estilo);
-                igual(texto(w, "#results-title"), "Conjunto linealmente independiente");
-                q(w, "#procedimiento > summary").click();
-                igual(raiz().scrollWidth <= raiz().clientWidth + 1, true);
-            });
+            for (const clasificacion of ["independiente", "dependiente"]) {
+                caso(`${clasificacion} a 390 px · ${estilo} · ${tema}`, async frame => {
+                    frame.style.width = "390px";
+                    let w = await abrir(frame, clasificacion);
+                    const raiz = () => w.document.documentElement;
+                    q(w, "#opciones-toggle").click();
+                    q(w, `[name="estilo"][value="${estilo}"]`).click();
+                    await esperar(() => raiz().dataset.estilo === estilo);
+                    if (raiz().dataset.theme !== tema) q(w, "#theme-toggle").click();
+                    await esperar(() => raiz().dataset.theme === tema);
+                    w = await resolver(frame, w);
+                    igual(raiz().dataset.theme, tema);
+                    igual(raiz().dataset.estilo, estilo);
+                    igual(texto(w, "#results-title"), `Conjunto linealmente ${clasificacion}`);
+                    const dependiente = clasificacion === "dependiente";
+                    igual(texto(w, "[data-rango]"), "2");
+                    igual(texto(w, "[data-cantidad-vectores]"), dependiente ? "3" : "2");
+                    igual(texto(w, "[data-cantidad-libres]"), dependiente ? "1" : "0");
+                    igual(texto(w, "[data-criterio]"), dependiente ? "rango(A) = 2 < 3" : "rango(A) = 2 = 2");
+                    const posiciones = ["[data-rango]", "[data-cantidad-vectores]", "[data-cantidad-libres]"]
+                        .map(selector => q(w, selector).getBoundingClientRect().top);
+                    igual(Math.max(...posiciones) - Math.min(...posiciones) <= 1, true);
+                    const icono = q(w, ".independencia-veredicto .classification-icon");
+                    igual(icono.getAttribute("aria-hidden"), "true");
+                    igual(Boolean(icono.querySelector("svg")), dependiente);
+                    igual(w.getComputedStyle(icono, "::before").content, dependiente ? "none" : '"✓"');
+                    igual(q(w, "#procedimiento").open, false);
+                    igual(raiz().scrollWidth <= raiz().clientWidth + 1, true);
+                    q(w, "#procedimiento > summary").click();
+                    igual(raiz().scrollWidth <= raiz().clientWidth + 1, true);
+                });
+            }
         }
     }
 

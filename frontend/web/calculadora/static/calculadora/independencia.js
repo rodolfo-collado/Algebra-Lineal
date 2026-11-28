@@ -26,6 +26,9 @@
             crearCuadricula(`v${indice + 1}`, componentes, 1, memoria, true));
         vectores.replaceChildren(...nuevas);
         nuevas.forEach((vector, indice) => {
+            const subindice = document.createElement("sub");
+            subindice.textContent = indice + 1;
+            vector.querySelector("[data-nombre-matriz]").replaceChildren("v", subindice);
             if (anteriores[indice]) {
                 window.seleccionMatricial.redimensionar(anteriores[indice], vector.querySelector("table"));
             }

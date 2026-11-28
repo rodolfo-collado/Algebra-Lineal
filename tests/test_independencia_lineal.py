@@ -127,16 +127,28 @@ class IndependenciaWebTests(SimpleTestCase):
     def test_conclusion_y_procedimiento_estructurado(self):
         respuesta = Client().post(RUTA, datos(VECTORES_ACEPTACION))
         for texto in (
-            "Conjunto linealmente dependiente", "-2v₁ - v₂ + v₃ = 0",
-            "v₃ = 2v₁ + v₂", "α₁v₁ + α₂v₂ + α₃v₃ = 0",
-            "α₃ es libre", "-2(1, 2, 0) - (0, 1, 3) + (2, 5, 3) = (0, 0, 0)",
+            "Conjunto linealmente dependiente", 'data-kind="dependiente"',
+            "rango(A) = 2 &lt; 3", "-2v₁ - v₂ + v₃ = 𝟎", "v₃ = 2v₁ + v₂",
+            "α₁v₁ + α₂v₂ + α₃v₃ = 𝟎", "A𝛂 = 𝟎", "𝛂 = (-2, -1, 1)",
+            "α₁ + 2α₃ = 0", "α₃ es libre", "F₂ = F₂ - (2)F₁",
+            "-2(1, 2, 0) - (0, 1, 3) + (2, 5, 3) = (0, 0, 0)</span> = 𝟎",
         ):
             self.assertContains(respuesta, texto)
+        self.assertContains(respuesta, "<dt>Rango de A</dt><dd data-rango>2</dd>", html=True)
+        self.assertContains(respuesta, "<dt>Vectores</dt><dd data-cantidad-vectores>3</dd>", html=True)
+        self.assertContains(respuesta, "<dt>Variables libres</dt><dd data-cantidad-libres>1</dd>", html=True)
         self.assertLess(respuesta.content.index(b"results-title"), respuesta.content.index(b"Ver procedimiento"))
         resolucion = respuesta.context_data["resolucion"]
         self.assertEqual(resolucion["rango"], 2)
         self.assertTrue(resolucion["sistema"]["pasos"])
         self.assertTrue(resolucion["relacion"]["verificada"])
+
+    def test_el_rango_justifica_la_independencia(self):
+        respuesta = Client().post(RUTA, datos([(1, 0), (0, 1)]))
+        self.assertContains(respuesta, "Conjunto linealmente independiente")
+        self.assertContains(respuesta, "rango(A) = 2 = 2")
+        self.assertContains(respuesta, "<dt>Variables libres</dt><dd data-cantidad-libres>0</dd>", html=True)
+        self.assertNotContains(respuesta, "Relación de dependencia")
 
     def test_metodos_y_celdas_invalidas(self):
         self.assertEqual(Client().put(RUTA).status_code, 405)
