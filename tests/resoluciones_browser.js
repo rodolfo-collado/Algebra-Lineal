@@ -29,6 +29,20 @@
         return navegar(frame, w => q(w, "[data-calculo]").click());
     };
     const reiniciar = () => fetch("/__pruebas/reiniciar", {cache: "no-store"});
+    // Preparar datos sin pasar por la interfaz: el mismo POST que harían los formularios.
+    const enviar = async (ruta, datos) => {
+        const token = document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "";
+        const cuerpo = new URLSearchParams();
+        for (const [clave, v] of Object.entries(datos)) [].concat(v).forEach(x => cuerpo.append(clave, String(x)));
+        return fetch(ruta, {method: "POST", body: cuerpo, headers: {"X-CSRFToken": token}, credentials: "same-origin"});
+    };
+    const proyectoDePrueba = async (hasta = 12) => {
+        await fetch("/resoluciones/");  // cookie CSRF
+        await enviar("/resoluciones/", {accion: "crear_proyecto", nombre: "Banco de Álgebra Lineal", objetivo: 64});
+        const id = (await (await fetch("/__pruebas/proyectos")).json())[0];
+        await enviar("/resoluciones/", {accion: "crear_ejercicios", proyecto: id, desde: 1, hasta});
+        return id;
+    };
 
     const casos = [
         ["Calcular anota la resolución y el aviso queda bajo el encabezado del resultado", {}, async (w, frame) => {
@@ -48,8 +62,8 @@
             w = await navegar(frame, w => q(w, ".resolucion-agrupar-form button").click());
             igual(new URL(w.location.href).searchParams.has("resolucion"), true);
             igual(q(w, "#resolucion-aviso").dataset.estado, "abierta");
-            cierto(texto(w, "#resolucion-aviso").includes("ejercicio Tarea 3"), texto(w, "#resolucion-aviso"));
-            igual(todos(w, ".resolucion-agrupar").length, 0, "ya agrupada, no se ofrece otra vez:");
+            cierto(texto(w, "#resolucion-aviso").includes("· Tarea 3"), texto(w, "#resolucion-aviso"));
+            igual(texto(w, ".resolucion-agrupar > summary"), "Llevar a otro ejercicio", "ya agrupada:");
         }],
         ["Reabrir desde el cuaderno muestra datos y resultado; editar lo marca desactualizado", {}, async (w, frame) => {
             w = await calcularInversa(frame, [[4, 7], [2, 6]]);
@@ -79,7 +93,7 @@
             igual(dia.indeterminate, true);
             dia.click();
             w = await navegar(frame, w => q(w, '[data-requiere-seleccion][value="agrupar"]').click());
-            cierto(texto(w, ".cuaderno-hecho").startsWith("Reuniste 2 resoluciones en «Ejercicio 1»"), texto(w, ".cuaderno-hecho"));
+            cierto(texto(w, ".cuaderno-hecho").startsWith("Llevaste 2 resoluciones a «Ejercicio 1»"), texto(w, ".cuaderno-hecho"));
             igual(todos(w, "ol.hoja-pasos > .hoja-entrada").length, 2);
             cierto(w.getComputedStyle(q(w, "ol.hoja-pasos .hoja-nombre"), "::before").content.includes("counter(paso"), "pasos numerados");
         }],
@@ -120,7 +134,7 @@
             igual(q(w, "[data-marcar-grupo]").hidden, true);
             marcar(w, '.hoja-entrada input[name="ids"]');
             w = await navegar(frame, w => q(w, '[data-requiere-seleccion][value="agrupar"]').click());
-            cierto(texto(w, ".cuaderno-hecho").startsWith("Reuniste 1 resolución"), texto(w, ".cuaderno-hecho"));
+            cierto(texto(w, ".cuaderno-hecho").startsWith("Llevaste 1 resolución"), texto(w, ".cuaderno-hecho"));
         }],
     ];
 
@@ -135,19 +149,74 @@
         }
     };
 
+    casos.push(["Proyecto: crear, preparar ejercicios, trabajar en uno y añadir con un clic tras calcular", {}, async (w, frame) => {
+        w = await abrir(frame, "/resoluciones/");
+        q(w, ".cuaderno-nuevo > summary").click();
+        valor(w, '.cuaderno-nuevo-form [name="nombre"]', "Banco de Álgebra Lineal");
+        valor(w, '.cuaderno-nuevo-form [name="objetivo"]', 64);
+        w = await navegar(frame, w => q(w, ".cuaderno-nuevo-form [type=submit]").click());
+        cierto(texto(w, ".cuaderno-hecho").startsWith("Creaste el proyecto"), texto(w, ".cuaderno-hecho"));
+        cierto(q(w, "#proyecto-activo"), "el proyecto nuevo queda activo");
+        const preparar = todos(w, ".cuaderno-nuevo").find(d => d.textContent.includes("Preparar varios"));
+        igual(preparar.open, true, "en blanco, «Preparar varios» se ofrece abierto:");
+        valor(w, '[name="hasta"]', 12);
+        w = await navegar(frame, () => preparar.querySelector("form").requestSubmit());
+        igual(todos(w, ".mapa-celda").length, 64, "12 creados + 52 por preparar:");
+        igual(todos(w, '.mapa-celda[data-estado="por-crear"]').length, 52);
+        const tercero = todos(w, ".ejercicio")[2];
+        w = await navegar(frame, () => tercero.querySelector(".hoja-activar").click());
+        igual(texto(w, ".proyecto-activo-ejercicio"), "Ej. 3");
+        w = await calcularInversa(frame, [[3, 1], [5, 2]]);
+        const anadir = q(w, ".resolucion-anadir button");
+        cierto(anadir && texto(w, ".resolucion-anadir button").startsWith("Añadir a Ej. 3"), "botón de un clic");
+        w = await navegar(frame, () => anadir.click());
+        igual(q(w, "#resolucion-aviso").dataset.estado, "abierta");
+        cierto(texto(w, "#resolucion-aviso").includes("Ejercicio 3 de Banco de Álgebra Lineal"), texto(w, "#resolucion-aviso"));
+        // Cambiar de ejercicio desde el indicador vuelve a la misma resolución.
+        q(w, ".proyecto-activo-resumen").click();
+        const selector = q(w, '.proyecto-activo-form [name="ejercicio"]');
+        selector.value = [...selector.options].find(o => o.textContent === "Ejercicio 5").value;
+        w = await navegar(frame, () => selector.form.requestSubmit());
+        igual(texto(w, ".proyecto-activo-ejercicio"), "Ej. 5");
+        igual(new URL(w.location.href).searchParams.has("resolucion"), true, "vuelve a la resolución:");
+        w = await abrir(frame, "/resoluciones/proyectos/" + new URL(q(w, ".proyecto-activo-titulo a").href).pathname.split("/")[3] + "/");
+        igual(q(w, '.mapa-celda[data-estado="resuelto"] [aria-hidden]').textContent.trim(), "3");
+    }]);
+    casos.push(["Proyecto: dejar fuera del documento sin borrar, reordenar y ordenar por número", {}, async (w, frame) => {
+        const id = await proyectoDePrueba(4);
+        w = await abrir(frame, `/resoluciones/proyectos/${id}/`);
+        igual(texto(w, ".proyecto-borrador-cifras").startsWith("4 ejercicios"), true, texto(w, ".proyecto-borrador-cifras"));
+        w = await navegar(frame, w => todos(w, ".ejercicio .incluir")[1].click());
+        igual(todos(w, ".ejercicio")[1].hasAttribute("data-excluida"), true);
+        igual(todos(w, ".ejercicio")[1].querySelector(".incluir").getAttribute("aria-pressed"), "false");
+        cierto(texto(w, ".proyecto-borrador-cifras").startsWith("3 ejercicios"), texto(w, ".proyecto-borrador-cifras"));
+        igual(todos(w, ".ejercicio").length, 4, "excluir no borra:");
+        w = await navegar(frame, w => todos(w, ".ejercicio")[0].querySelector('.hoja-orden[aria-label^="Bajar"]').click());
+        igual(todos(w, ".ejercicio-numero").map(n => n.textContent.trim()), ["2", "1", "3", "4"]);
+        igual(new URL(w.location.href).pathname, `/resoluciones/proyectos/${id}/`, "vuelve al proyecto:");
+        w = await navegar(frame, w => q(w, '[form="ordenar-proyecto"]').click());
+        igual(todos(w, ".ejercicio-numero").map(n => n.textContent.trim()), ["1", "2", "3", "4"]);
+    }]);
+
     // Coherencia en los cinco estilos y los dos temas: la cabecera no se solapa y el cuaderno no se desborda.
     for (const estilo of ["estudio", "minimalista", "chocolab", "belugacalc", "heyalgb"]) {
         for (const tema of ["light", "dark"]) {
-            casos.push([`${estilo} · ${tema}: cabecera sin solapes, aviso y hoja legibles`, {estilo, tema, ancho: 1280}, async (w, frame) => {
+            casos.push([`${estilo} · ${tema}: cabecera sin solapes, aviso, proyecto y hoja legibles`, {estilo, tema, ancho: 1280}, async (w, frame) => {
+                const id = await proyectoDePrueba(6);
                 await calcularInversa(frame, [[2, 0], [0, 2]]);
                 w = frame.contentWindow;
                 igual(w.document.documentElement.dataset.estilo, estilo);
                 cabeceraSinSolapes(w);
                 const aviso = q(w, "#resolucion-aviso");
                 cierto(getComputedStyle(aviso).color !== getComputedStyle(aviso).backgroundColor, "texto del aviso visible");
+                cierto(q(w, "#proyecto-activo").getBoundingClientRect().right <= w.innerWidth, "indicador dentro de la página");
                 w = await abrir(frame, "/resoluciones/");
                 igual(q(w, ".header-resoluciones").getAttribute("aria-current"), "page");
                 cierto(w.document.documentElement.scrollWidth <= w.innerWidth, "sin desbordamiento horizontal");
+                w = await abrir(frame, `/resoluciones/proyectos/${id}/`);
+                cierto(w.document.documentElement.scrollWidth <= w.innerWidth, "proyecto sin desbordamiento");
+                const celda = q(w, ".mapa-celda");
+                cierto(getComputedStyle(celda).color !== getComputedStyle(celda).backgroundColor, "casilla legible");
             }]);
         }
     }
@@ -160,6 +229,14 @@
                 cabeceraSinSolapes(w, `${estilo} a ${ancho} px:`);
             }
         }
+    }]);
+    casos.push(["Móvil (390 px): el proyecto y su indicador caben sin desbordar", {ancho: 390}, async (w, frame) => {
+        const id = await proyectoDePrueba(64);
+        w = await abrir(frame, `/resoluciones/proyectos/${id}/`);
+        cierto(w.document.documentElement.scrollWidth <= w.innerWidth, `desborda: ${w.document.documentElement.scrollWidth}`);
+        q(w, ".proyecto-activo-resumen").click();
+        const panel = q(w, ".proyecto-activo-panel").getBoundingClientRect();
+        cierto(panel.left >= 0 && panel.right <= w.innerWidth, "panel del proyecto activo dentro de la pantalla");
     }]);
     casos.push(["Móvil (390 px): filtros, hoja y barra caben sin desbordar", {ancho: 390}, async (w, frame) => {
         await calcularInversa(frame, [[1, 3], [2, 7]]);
@@ -184,8 +261,10 @@
         document.body.append(frame);
         await cargado;
         const item = document.createElement("li");
-        try { await prueba(frame.contentWindow, frame); pasadas++; item.textContent = `PASS · ${nombre}`; }
-        catch (error) { item.textContent = `FAIL · ${nombre}: ${error.message}`; }
+        const inicio = performance.now();
+        const duracion = () => `${((performance.now() - inicio) / 1000).toFixed(1)} s`;
+        try { await prueba(frame.contentWindow, frame); pasadas++; item.textContent = `PASS · ${nombre} (${duracion()})`; }
+        catch (error) { item.textContent = `FAIL · ${nombre}: ${error.message} (${duracion()})`; }
         document.querySelector("#resultados").append(item);
         frame.remove();
     }

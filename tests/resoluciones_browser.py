@@ -4,6 +4,7 @@ Abrir http://127.0.0.1:8907/__pruebas/. El cuaderno es un archivo temporal propi
 (tests/__init__.py fija ALGEBRA_RESOLUCIONES); /__pruebas/reiniciar lo vacía entre casos.
 """
 
+import json
 import os
 from pathlib import Path
 from wsgiref.simple_server import make_server
@@ -20,6 +21,9 @@ def vaciar():
     cuaderno.eliminar([fila["id"] for fila in cuaderno.listar()])
     for ejercicio in cuaderno.ejercicios():
         cuaderno.disolver_ejercicio(ejercicio["id"])
+    for proyecto in cuaderno.proyectos():
+        cuaderno.eliminar_proyecto(proyecto["id"])
+    cuaderno.activar(None)
 
 
 def pruebas(environ, start_response):
@@ -35,6 +39,8 @@ def pruebas(environ, start_response):
     elif ruta == "/__pruebas/reiniciar":
         vaciar()
         contenido, tipo = b"{}", "application/json"
+    elif ruta == "/__pruebas/proyectos":
+        contenido, tipo = json.dumps([p["id"] for p in almacen().proyectos()]).encode(), "application/json"
     else:
         return aplicacion(environ, start_response)
     start_response("200 OK", [("Content-Type", tipo + "; charset=utf-8"), ("Cache-Control", "no-store")])
