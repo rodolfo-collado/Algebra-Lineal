@@ -369,6 +369,8 @@ class PruebasBuscador(SimpleTestCase):
         destinos = {attrs["href"] for _, attrs in Documento(respuesta).enlaces}
         self.assertEqual(destinos, {"/", "#contenido", *(h.ruta for h in disponibles()),
                                     *(a.ruta for a in catalogo.AREAS if a.disponible),
+                                    # El cuaderno de resoluciones, en la cabecera.
+                                    "/resoluciones/",
                                     "/?q=gauss", "/?q=matriz", "/?q=vectores"})
 
     def test_sistemas_tiene_url_propia(self):
