@@ -12,7 +12,7 @@
 - [Actualizaciones de escritorio](instalacion-windows.md#actualizar-pygebra) y
   [verificación de descargas](releases.md#verificar-una-descarga).
 - [Opciones de la interfaz visual](interfaz.md#opciones) y [galería de temas](temas-homenaje.md).
-- [Cuaderno de resoluciones](resoluciones.md): guardar, reabrir y agrupar en ejercicios.
+- [Cuaderno de resoluciones](resoluciones.md): guardar, reabrir y organizar en ejercicios y proyectos.
 - Edición de datos en la interfaz visual: [menú de entradas](edicion-entradas.md),
   [selección](seleccion-matricial.md), [copiado](copiado-matricial.md),
   [pegado](pegado-matricial.md) y [deshacer el último pegado](deshacer-pegado.md).

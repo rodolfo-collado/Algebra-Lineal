@@ -3,12 +3,12 @@
 [Índice de documentación](README.md) · [Arquitectura](arquitectura.md)
 
 Cada resolución válida de la interfaz visual se anota sola en un cuaderno local. Desde
-**Resoluciones** (cabecera) se consulta, se busca por nombre, resultado o ejercicio,
-se filtra por herramienta y fecha, se renombra, se elimina y se reúne en ejercicios.
-Abrir una resolución lleva a su herramienta con los datos, el resultado y el
-procedimiento originales, sin volver a calcular.
+**Resoluciones** (cabecera) se consulta, se busca por nombre, resultado, ejercicio o
+proyecto, se filtra por herramienta y fecha, se renombra, se elimina y se organiza en
+**Proyecto → Ejercicio → Resoluciones**. Abrir una resolución lleva a su herramienta con
+los datos, el resultado y el procedimiento originales, sin volver a calcular.
 
-![El cuaderno en Estudio, claro](capturas/resoluciones/cuaderno-estudio.jpg)
+![Un proyecto de 64 ejercicios en Estudio](capturas/resoluciones/proyecto-estudio.jpg)
 
 ## Uso
 
@@ -16,12 +16,13 @@ procedimiento originales, sin volver a calcular.
   resolución («Matriz inversa · 2×2») y permite añadirla a un ejercicio.
 - **Sin duplicados.** Recargar, volver atrás o calcular lo mismo otra vez no crea una
   segunda resolución: el aviso dice «Ya estaba en tu cuaderno».
-- **Ejercicios.** Un ejercicio es una hoja con pasos numerados (por ejemplo, un
-  determinante, la inversa y su comprobación). Cada resolución conserva su resultado.
-  Las que no pertenecen a ninguno quedan en **Sueltas**, agrupadas por día.
-- **Selección.** Las casillas, «marcar el ejercicio o el día» y la barra *Reunir en ·
-  Sacar del ejercicio · Eliminar…* trabajan sobre la misma selección, que usará la
-  exportación a PDF. Eliminar siempre pide confirmación.
+- **Ejercicios.** Un ejercicio reúne resoluciones (por ejemplo, un determinante, la
+  inversa y su comprobación); cada una conserva su resultado. Puede tener número, título
+  y enunciado, pertenecer a un proyecto o ser independiente. Las resoluciones que no
+  pertenecen a ninguno quedan en **Sueltas**, agrupadas por día.
+- **Selección.** Las casillas, «marcar el ejercicio o el día» y la barra *Llevar a ·
+  Sacar del ejercicio · Eliminar…* trabajan sobre la misma selección. Eliminar siempre
+  pide confirmación.
 - **Reabrir.** Si cambias los datos de una resolución reabierta y calculas, se anota
   una resolución nueva; la original no se sobrescribe.
 - Todo funciona sin JavaScript; `resoluciones.js` añade el recuento, marcar un grupo
@@ -32,6 +33,39 @@ procedimiento originales, sin volver a calcular.
   ya hacía HeyAlgb, cuyas pestañas se compactan en ese tramo. Con fuentes más anchas que
   Segoe UI (Linux, zoom) las áreas o la marca quedaban debajo de los botones; el runner
   `resoluciones` lo comprueba de 481 a 1600 px en los cinco estilos.
+
+## Proyectos
+
+Un proyecto es un trabajo que se construye poco a poco (por ejemplo, un banco de 64
+ejercicios) y el borrador persistente de su documento.
+
+- **Crear y preparar.** *Nuevo proyecto* (nombre y ejercicios previstos) lo crea y lo deja
+  activo. *Preparar varios* crea ejercicios numerados de una vez (del 1 al 64, sin repetir
+  números) y *Nuevo ejercicio* uno con número, título, enunciado y sección. Los ejercicios
+  pueden existir antes de tener resoluciones.
+- **Proyecto activo.** Junto a las migas de cualquier página, un indicador discreto dice
+  en qué proyecto y ejercicio se trabaja; desde él se cambia de ejercicio, se crea uno
+  nuevo o se deja el proyecto. Tras calcular, el aviso ofrece **Añadir a Ej. N** (un clic)
+  u **Otro ejercicio**. *Trabajar aquí* (icono de diana) activa un ejercicio desde el
+  proyecto. El estado activo se guarda en el cuaderno, no en el navegador: sobrevive al
+  cierre de la app.
+- **Orden.** Flechas para subir o bajar ejercicios, secciones y resoluciones; *Ordenar por
+  número* aplica un orden natural (2 < 10, 3a < 3b, 4.1 < 4.10). Las secciones son
+  opcionales y agrupan ejercicios dentro del proyecto.
+- **Mover y quitar sin perder nada.** *Editar → Ubicación* lleva un ejercicio a otra
+  sección, a otro proyecto o fuera de todos (independiente). Quitar una sección deja sus
+  ejercicios en el proyecto; eliminar un proyecto deja sus ejercicios como independientes,
+  con sus resoluciones; *Desagrupar* deja las resoluciones sueltas.
+- **Borrador del documento.** Cada sección, ejercicio y resolución tiene su interruptor
+  *En el documento*: lo habitual (dentro) es un icono discreto y lo excepcional (fuera) se
+  lee entero. El panel *Borrador del documento* cuenta lo que entraría y muestra el
+  índice. Excluir nunca borra.
+- **Orientarse en proyectos largos.** La barra de progreso cuenta los ejercicios con
+  resolución sobre el objetivo; el **mapa** dibuja una casilla por ejercicio en el orden
+  del documento (rellena = con resolución, punteada = por preparar, atenuada = fuera del
+  documento) y enlaza a cada uno. Las vistas *Todos · Pendientes · Con resolución*
+  filtran la lista. Cada sección es una sola hoja con un renglón por ejercicio y su
+  respuesta principal; las resoluciones se despliegan (abiertas en el ejercicio activo).
 
 ## Dónde se guarda
 
@@ -60,13 +94,34 @@ GET herramienta?resolucion=<id>
 | Módulo (`frontend/web/calculadora/resoluciones/`) | Responsabilidad |
 | --- | --- |
 | `contrato.py` | Documento versionado, codificación exacta, huella y validación al leer. |
-| `almacen.py` | SQLite (biblioteca estándar): tablas, transacciones, límites y recuperación. |
+| `almacen.py` | SQLite (biblioteca estándar): tablas, migraciones, orden, selección, límites y recuperación. |
+| `organizacion.py` | Proyectos listos para mostrar o exportar: árbol, progreso, mapa, borrador y proyecto activo. |
 | `registro.py` | Un `Adaptador` por herramienta: qué guardar y cómo reabrir. |
 | `servicio.py` | Guardar un contexto válido y prepararlo para reabrir. |
 | `middleware.py` | Enlaza lo anterior con las vistas sin modificarlas. |
 
 Ninguna vista, motor ni formulario de herramienta cambió. La plantilla común
-`layouts/herramienta.html` incluye `components/resolucion_aviso.html`.
+`layouts/herramienta.html` incluye `components/resolucion_aviso.html`; `base.html`
+incluye `components/proyecto_activo.html` junto a las migas (context processor
+`proyecto_activo`, una sola consulta por página).
+
+### Base de datos (versión 2)
+
+```text
+proyectos(id, nombre, objetivo, creado)
+secciones(id, proyecto → proyectos ON DELETE CASCADE, titulo, posicion, incluir)
+ejercicios(id, nombre, numero, enunciado, proyecto → SET NULL, seccion → SET NULL, posicion, incluir, creado)
+resoluciones(id, huella UNIQUE, ruta, herramienta, nombre, ejercicio → SET NULL, posicion, incluir, creado, usado, documento)
+ajustes(clave, valor)        -- activo_proyecto, activo_ejercicio
+```
+
+Las migraciones (`almacen.MIGRACIONES`) se aplican en orden, cada una en su
+transacción (`BEGIN … PRAGMA user_version … COMMIT`): si una falla, el cuaderno queda
+en su versión anterior, intacto. Antes de migrar un cuaderno con datos se copia completo
+a `resoluciones.v<N>-respaldo.sqlite3` (API de respaldo de SQLite). La v2 solo añade
+tablas y columnas; las resoluciones y ejercicios v1 quedan independientes, en su orden.
+El contrato de los documentos no cambia (sigue en v1): la organización vive en las
+tablas, no dentro de cada resolución.
 
 ## Contrato `pygebra.resolucion` v1
 
@@ -130,41 +185,66 @@ idéntico al original.
 
 Si una herramienta cambia la forma de esas claves, sube su `esquema`.
 
-### Operaciones con matrices y expresiones múltiples
+### Operaciones con matrices (expresiones múltiples) e Independencia lineal
 
-Operaciones queda fuera hasta que se integre el PR de expresiones múltiples. Con su
-vista nueva (`resultados` por fila, `resultado` cuando hay una sola y `hay_resultados`):
+Ambas están registradas desde la integración de los PR #164 y #166, sin tocar sus
+vistas, formularios ni motores:
 
-1. Añadir `"operaciones-matrices": Adaptador(("resultados", "resultado", "hay_resultados"),
-   principal="hay_resultados", …)`.
-2. Si un lote con filas erróneas debe guardarse, sustituir `es_valida` por un predicado
-   que acepte errores por fila; hoy un formulario con errores no se guarda.
-3. Guardar en cada fila solo datos de presentación: el contrato rechaza objetos como
-   los nodos del AST (`NoCodificable`) y entonces la resolución no se anota.
-4. `formulario` por defecto reconstruye `ExpresionMatricialForm(datos)`; si su
-   constructor exige más argumentos, dar una fábrica propia.
-5. Añadir el caso a `CASOS` con dos o más expresiones.
+- **Operaciones**: guarda `resultados` (una fila por expresión con su resultado
+  estructurado o su error), `resultado` y `hay_resultados`. `errores_parciales=True`
+  permite anotar un lote con filas erróneas; `preparar` quita de cada fila el nodo del
+  AST, que no es un dato, y `formulario` repone al reabrir los errores de evaluación que
+  la vista añadió junto a cada campo. El nombre indica cuántas expresiones acompañan a la
+  primera («Operaciones · A + B (+2)»).
+- **Independencia lineal**: guarda su `resultado` de presentación (planteamiento,
+  matrices, pasos, rango, relación de dependencia). La clave `resolucion` de su contexto
+  es del backend; por eso el aviso del cuaderno usa `resolucion_cuaderno`.
+
+Sus casos en `CASOS` (con un error parcial en Operaciones) exigen el mismo HTML al reabrir.
 
 ## Exportación a PDF (futura)
 
-El PDF debe leer los documentos con `almacen().obtener(id)` y `contrato.leer`/`decodificar`,
-y los ejercicios con `almacen().ejercicios()` y el orden de `creado`. Con `entrada`,
-`resultado`, `resumen` y `grafica` tiene la matemática exacta y las muestras de las
-gráficas, así que puede tener su propio diseño: no necesita capturas, ni el DOM, ni
-las plantillas visuales, ni recalcular. La selección del cuaderno (`ids`) es la que
-recibirá.
+Un proyecto ya es el borrador del documento. El exportador recorrerá
+`organizacion.arbol(proyecto, ejercicios, secciones, resoluciones, solo_incluidos=True)`
+(secciones → ejercicios con número, título y enunciado → resoluciones, en el orden y con
+la selección guardados) y leerá cada documento con `almacen().obtener(id)` y
+`contrato.leer`/`decodificar`. Con `entrada`, `resultado`, `resumen` y `grafica` tiene la
+matemática exacta y las muestras de las gráficas, así que podrá tener su propio diseño:
+no necesita capturas, ni el DOM, ni las plantillas visuales, ni recalcular. Para un PDF
+fuera de proyectos, la selección del cuaderno (`ids`) sirve igual.
 
 ## Verificación
 
 - `tests/test_resoluciones.py`: contrato, almacén (persistencia, duplicados, límites,
-  fila y archivo dañados, bloqueo temporal, base futura), las 13 rutas registradas
-  guardadas una vez y reabiertas idénticas, sin recálculo, agrupar, buscar, filtrar,
-  renombrar, eliminar con confirmación y consola.
+  fila y archivo dañados, bloqueo temporal, base futura), migración v1 → v2 (datos y
+  respaldo) y migración fallida sin efectos, las 15 rutas registradas guardadas una vez y
+  reabiertas idénticas (con errores parciales de expresiones múltiples), sin recálculo,
+  proyectos (crear y activar, preparar 1–64, numeración y orden natural, secciones,
+  mover entre proyectos, eliminar sin perder resoluciones), proyecto activo y añadir con
+  un clic, borrador persistente tras reiniciar, resoluciones de todos los módulos en un
+  proyecto, un proyecto de 64 ejercicios en menos de 3 s, `volver` solo a rutas locales,
+  buscar, filtrar, renombrar, eliminar con confirmación y consola.
 - `tests/resoluciones_browser.py`/`.js` (en la selección de CI): aviso, agrupar desde la
   herramienta, reabrir, selección, renombrar con Enter, eliminar, flujo sin JavaScript,
-  los cinco estilos en claro y oscuro y móvil.
+  proyecto completo (crear, preparar, trabajar aquí, calcular, añadir con un clic,
+  cambiar de ejercicio desde el indicador), excluir y reordenar, los cinco estilos en
+  claro y oscuro con proyecto activo, cabecera de 481 a 1600 px y móvil.
 - WebView2 real (`desktop.py`, CDP): calcular, agrupar, cerrar la app, reabrirla,
-  recuperar la resolución y recalcular sin duplicar.
+  recuperar la resolución y recalcular sin duplicar; y con proyectos: crear, preparar,
+  trabajar en un ejercicio, añadir, excluir y reordenar, reiniciar y encontrar el
+  proyecto activo, el orden, la exclusión y la resolución intactos.
+
+![Proyecto en los cinco estilos, claro y oscuro](capturas/resoluciones/estilos-proyecto.jpg)
+
+![Renglones de ejercicios en los cinco estilos](capturas/resoluciones/estilos-hojas.jpg)
+
+![Aviso con «Añadir a Ej. 44» tras calcular](capturas/resoluciones/aviso-anadir.jpg)
+
+![Indicador del proyecto activo abierto](capturas/resoluciones/indicador-activo.jpg)
+
+![Proyecto a 390 px](capturas/resoluciones/proyecto-movil.jpg)
+
+![Proyecto en WebView2 tras reiniciar la app](capturas/resoluciones/webview2-proyecto.jpg)
 
 ![Cuaderno en los cinco estilos, claro y oscuro](capturas/resoluciones/estilos-cuaderno.jpg)
 
@@ -178,12 +258,13 @@ recibirá.
 
 ## Limitaciones conocidas
 
-- Operaciones con matrices todavía no se anota (ver arriba).
 - Si el contexto de una herramienta trae un objeto que no es dato, la resolución no se
-  anota y el aviso lo dice; las 13 rutas registradas están cubiertas por las pruebas.
+  anota y el aviso lo dice; las 15 rutas registradas están cubiertas por las pruebas.
+- Reordenar es con flechas (y *Ordenar por número*), sin arrastrar. Un solo proyecto
+  activo a la vez.
+- *Preparar varios* crea hasta 200 ejercicios de una vez.
 - Las muestras de la gráfica de raíces son las del encuadre inicial. Acercar o mover la
   gráfica vuelve a muestrear la función guardada: es exploración, no el resultado.
-- Los pasos de un ejercicio siguen el orden en que se calcularon; no se reordenan a mano.
 - «Comparar ambos» de Reducción por filas es una sola resolución con los dos métodos.
 - La búsqueda filtra los metadatos en Python: sencilla y suficiente con el límite de
   256 MB; si el cuaderno creciera mucho, convendría un índice en SQLite.
