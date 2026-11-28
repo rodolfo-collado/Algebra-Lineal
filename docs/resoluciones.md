@@ -26,6 +26,12 @@ procedimiento originales, sin volver a calcular.
   una resolución nueva; la original no se sobrescribe.
 - Todo funciona sin JavaScript; `resoluciones.js` añade el recuento, marcar un grupo
   y la barra flotante.
+- **Cabecera.** Resoluciones usa las clases de Buscar y muestra su nombre desde 1600 px.
+  Hasta 640 px y mientras las áreas están en la cabecera con poco espacio (1180–1439 px;
+  BelugaCalc las lleva en su riel), Buscar, Tema y Opciones también quedan en icono, como
+  ya hacía HeyAlgb, cuyas pestañas se compactan en ese tramo. Con fuentes más anchas que
+  Segoe UI (Linux, zoom) las áreas o la marca quedaban debajo de los botones; el runner
+  `resoluciones` lo comprueba de 481 a 1600 px en los cinco estilos.
 
 ## Dónde se guarda
 

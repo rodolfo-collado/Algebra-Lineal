@@ -124,6 +124,17 @@
         }],
     ];
 
+    // Ni las áreas ni la marca quedan debajo de los botones de la cabecera.
+    const cabeceraSinSolapes = (w, contexto = "") => {
+        const acciones = q(w, ".header-actions").getBoundingClientRect();
+        const inicio = q(w, ".header-start").getBoundingClientRect();
+        cierto(inicio.right <= acciones.left + 1, `${contexto} la marca queda bajo las acciones`);
+        for (const enlace of todos(w, ".nav-areas a").filter(a => a.getClientRects().length)) {
+            cierto(enlace.getBoundingClientRect().right <= acciones.left + 1,
+                `${contexto} «${enlace.textContent.trim()}» queda bajo las acciones`);
+        }
+    };
+
     // Coherencia en los cinco estilos y los dos temas: la cabecera no se solapa y el cuaderno no se desborda.
     for (const estilo of ["estudio", "minimalista", "chocolab", "belugacalc", "heyalgb"]) {
         for (const tema of ["light", "dark"]) {
@@ -131,11 +142,7 @@
                 await calcularInversa(frame, [[2, 0], [0, 2]]);
                 w = frame.contentWindow;
                 igual(w.document.documentElement.dataset.estilo, estilo);
-                const acciones = q(w, ".header-actions").getBoundingClientRect();
-                const areas = todos(w, ".nav-areas a").filter(a => a.getClientRects().length);
-                for (const enlace of areas) {
-                    cierto(enlace.getBoundingClientRect().right <= acciones.left + 1, `«${enlace.textContent.trim()}» queda bajo las acciones`);
-                }
+                cabeceraSinSolapes(w);
                 const aviso = q(w, "#resolucion-aviso");
                 cierto(getComputedStyle(aviso).color !== getComputedStyle(aviso).backgroundColor, "texto del aviso visible");
                 w = await abrir(frame, "/resoluciones/");
@@ -144,6 +151,16 @@
             }]);
         }
     }
+    casos.push(["Cabecera sin solapes de 481 a 1600 px en los cinco estilos", {}, async (w, frame) => {
+        for (const ancho of [481, 600, 768, 1180, 1240, 1366, 1440, 1600]) {
+            for (const estilo of ["estudio", "minimalista", "chocolab", "belugacalc", "heyalgb"]) {
+                localStorage.setItem("pygebra-estilo", estilo);
+                frame.style.width = `${ancho}px`;
+                w = await abrir(frame, "/matrices/inversa/");
+                cabeceraSinSolapes(w, `${estilo} a ${ancho} px:`);
+            }
+        }
+    }]);
     casos.push(["Móvil (390 px): filtros, hoja y barra caben sin desbordar", {ancho: 390}, async (w, frame) => {
         await calcularInversa(frame, [[1, 3], [2, 7]]);
         w = await abrir(frame, "/resoluciones/");

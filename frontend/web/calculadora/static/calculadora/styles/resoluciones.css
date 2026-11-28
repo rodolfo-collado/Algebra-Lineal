@@ -2,20 +2,50 @@
    lo dibujan con sus colores, radios y tipografías. La «personalidad» de cuaderno es contenida:
    una línea de margen, pasos numerados y renglones discontinuos; nada que compita con la matemática. */
 
-/* —— Enlace de la cabecera ——
-   Usa las clases de Buscar. Con la navegación por áreas visible no cabe un botón más con texto:
-   hasta 1440 px se queda en el icono; el texto sigue ahí para los lectores de pantalla. */
-@media (max-width: 1439px) {
+/* —— Cabecera ——
+   Resoluciones usa las clases de Buscar y hasta 1600 px se queda en su icono. Donde el espacio
+   es justo, los demás botones también, como ya hacía HeyAlgb: en pantallas estrechas tapaban la
+   marca y, con la navegación por áreas a la vista y fuentes más anchas (Linux, zoom), las áreas
+   quedaban debajo de ellos. El nombre sigue para lectores de pantalla y en el title. */
+@media (max-width: 1599px) {
     .header-resoluciones .header-buscar-text {
         position: absolute;
         width: 1px;
         height: 1px;
         overflow: hidden;
-        clip: rect(0, 0, 0, 0);
+        clip-path: inset(50%);
         white-space: nowrap;
     }
 
     .header-resoluciones { padding-inline: 0.6rem; }
+}
+
+@media (max-width: 640px) {
+    .app-header :is(.header-buscar-text, .theme-toggle-text, .options-toggle-text) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .app-header :is(.header-buscar, .theme-toggle, .options-toggle) { padding-inline: 0.6rem; }
+}
+
+/* Áreas en la cabecera: ChocoLab desde 1180 px, HeyAlgb desde 1200 y Estudio y Minimalista desde
+   1240. BelugaCalc las lleva en su riel lateral y conserva los nombres. */
+@media (min-width: 1180px) and (max-width: 1439px) {
+    html:not([data-estilo="belugacalc"]) :is(.header-buscar-text, .theme-toggle-text, .options-toggle-text) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    html:not([data-estilo="belugacalc"]) :is(.header-buscar, .theme-toggle, .options-toggle) { padding-inline: 0.6rem; }
 }
 
 /* —— Aviso en una herramienta —— */
